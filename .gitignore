@@ -1,4 +1,4 @@
 .cairn/state/*
-!.cairn/state/.gitkeep
+.cairn/log.md
 map.json
 map.md
