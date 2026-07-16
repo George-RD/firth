@@ -229,7 +229,8 @@ call             : r * Int * [r * Int -> r * Bool]^many -> r * Bool
 ```
 
 The literal quotation contains no `lit` and owns no capture, so it is `many`.
-`call` removes the quotation value and splices its code once.
+`call` removes the quotation value and splices its code once in that transition;
+over any finite trace, the same linear quotation is invoked at most once.
 
 ### `dip`
 
@@ -237,8 +238,10 @@ The literal quotation contains no `lit` and owns no capture, so it is `many`.
 dip : r * t * [r -> s]^u -> s * t
 ```
 
-The quotation may be linear because `dip` consumes it once. The buried value
-is moved out of the active prefix and restored, not copied or dropped.
+The quotation may be linear because `dip` removes it without duplication in
+one transition. The buried value is moved out of the active prefix and
+scheduled for restoration if the quotation terminates; it is not copied or
+dropped by the `dip` transition.
 
 ### `quote`
 
