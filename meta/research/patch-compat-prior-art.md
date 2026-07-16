@@ -210,7 +210,8 @@ consume. Adding an untracked effect to a pure word is therefore rejected by the
 kernel obligation.
 
 For an already effectful word, equal `World` positions prove only ordered,
-exactly-once threading. They do not prove that the same external actions occur.
+single-threaded, at-most-once use over finite traces. They do not prove that the
+same external actions occur.
 Until the registered gap selects an observable state or trace contract, this
 research does not define `S_new <=spec S_old` for effectful words. The verified
 patch protocol must reject such patches as unsupported, or route them through
