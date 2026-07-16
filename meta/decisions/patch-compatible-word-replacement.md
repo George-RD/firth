@@ -12,33 +12,33 @@ informed_by:
 ## Context
 
 R7 permits a live word replacement only when its stack effect and refinements
-are compatible with the word it replaces. R9 requires independently checkable
-word-level obligations. Exact contract equality is unnecessarily restrictive,
-while whole-image contextual equivalence defeats incremental verification.
+are compatible with the word it replaces. Kernel `WordType` contains only the
+prenex stack effect, while refinements live in the elaborator. R9 requires
+independently checkable word-level obligations across both layers.
 
 ## Decision
 
-Propose that a v1 compatible patch retain the old public `WordType` and replace
-only the dictionary body. Accept the body when its inferred contract is a
-behavioural subtype of the old contract: old inputs imply new inputs, new
-outputs imply old outputs under old-valid inputs, and the erased calling
-convention, row shape and usage annotations remain equal.
+Propose that a public elaborator contract be represented as `(WordType, Spec)`.
+For pure and refinement-typed words, a v1 compatible patch retains that pair
+and replaces only the kernel dictionary body. Admission has two separate
+obligations: exact equality of the erased kernel `WordType`, preserving
+dictionary well-formedness, and behavioural subsumption of the replacement
+`Spec` by the old public `Spec`.
 
 ## Rationale
 
-Stable public signatures preserve the existing dictionary well-formedness
-proof and allow self-recursion and mutual recursion to keep using the contracts
-against which callers were checked. Behavioural subtyping admits safe input
-weakening and output strengthening while reducing refinement compatibility to
-Lean or SMT implication obligations. Representation or interface changes stay
-explicit through versioned words, adapters or a future image-transition
-protocol.
+The separation respects the kernel specification, which excludes refinements.
+Stable erased signatures preserve dictionary well-formedness. Stable
+elaborator contracts allow self-recursion, mutual recursion and existing
+callers to keep using the pair against which they were checked. `Spec`
+subsumption admits safe input weakening and output strengthening through Lean
+or SMT implication obligations without changing kernel `WordType`.
 
 ## Consequences
 
-Kernel-spec-freeze must define the replacement theorem and version-cut
-semantics. The verified-patch protocol must bind proof artefacts to old and new
-contract and body hashes, verify target correspondence before an atomic swap,
-and retain rollback state. This decision remains proposed until the effect
-contract chooses an abstract state relation, an event trace, or both for
-observational refinement of the linear `World` thread.
+Kernel-spec-freeze must define the erased dictionary replacement theorem and
+version-cut semantics. The elaborator must separately define `Spec`
+subsumption. The verified-patch protocol must bind both kinds of evidence to
+the body and image version before an atomic swap. Effectful compatibility is
+outside this proposal's completed scope and remains blocked on
+`dec.gap-firth-runtime-patch-should-effectful-verified-patch-compatibility-use-an`.
