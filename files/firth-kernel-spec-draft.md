@@ -68,14 +68,21 @@ Rows are rest-of-stack rows. Quantification is prenex only: row variables are
 bound at word signatures, never inside types. Higher-rank stack polymorphism,
 subtyping, and overloading are outside v0.1 to keep inference decidable.
 
-The usage of `β = ι^u` is `u`. A quotation owns all values embedded into it.
-Define `literalUsage(p)` as the meet of the usages of every `lit c` occurring
-in `p`, recursively including literals in nested quotation bodies. The empty
-meet is `many`. A quotation formed by `[p]` therefore has usage
-`literalUsage(p)`, so `[lit h]` is `linear` when `h` has a linear base type.
-Values supplied later through a quotation input stack are not embedded values.
-The meet is `many ⊓ many = many` and every meet involving `linear` is
-`linear`.
+The usage of `β = ι^u` is `u`. Literal constants are always `many`, even when
+`Γ` contains a linear resource type. Define `literalUsage(p) = many`, after
+checking recursively that every `lit c` in `p`, including nested quotation
+bodies, has a many base type. A quotation's full usage is
+`quotationUsage(p,C) = literalUsage(p) ⊓ meet(usage(v) for v in C)`, where `C`
+is the list of already-linear or many stack values captured by the quotation.
+The empty meet is `many`. Thus a closed `[p]` quotation is `many`, while a
+quotation capturing a linear stack value is `linear`. The meet is
+`many ⊓ many = many` and every meet involving `linear` is `linear`.
+
+This is a kernel invariant: no linear value is introduced by a replayable
+literal. Linear values arise from word inputs already on the stack, from any
+primitive signature that yields a linear result, and from capture of an
+already-linear stack value by `quote`. World threading is one example of an
+effectful primitive that can yield a linear value, not the sole source.
 
 `dup` and `drop` require `many`; there is no implicit `linear` to `many`
 coercion. A linear value may be moved, consumed by a primitive, buried by
@@ -94,14 +101,14 @@ The program judgement is `Γ;D ⊢ p : Σ₁ → Σ₂`. Value and stack judgeme
             ─────────────────────────────────────
             Γ;D ⊢ a p : Σ₁ → Σ₃
 
-(LIT)       c : ι^u ∈ Γ
-            Γ;D ⊢ lit c : Σ → Σ · ι^u
+(LIT)       c : ι^many ∈ Γ
+            Γ;D ⊢ lit c : Σ → Σ · ι^many
 
 (PUSH)      Γ;D ⊢ᵥ v : τ
             Γ;D ⊢ push v : Σ → Σ · τ
 
 (QUOT)      Γ;D ⊢ p : Σ₁ → Σ₂
-            Γ;D ⊢ [p] : Σ → Σ · [Σ₁ → Σ₂]^{literalUsage(p)}
+            Γ;D ⊢ [p] : Σ → Σ · [Σ₁ → Σ₂]^many
 
 (DUP)       usage(τ) = many
             Γ;D ⊢ dup : Σ · τ → Σ · τ · τ
@@ -119,7 +126,7 @@ The program judgement is `Γ;D ⊢ p : Σ₁ → Σ₂`. Value and stack judgeme
               Σ · [Σ₁ → Σ₂]^{u₁} · [Σ₂ → Σ₃]^{u₂}
               → Σ · [Σ₁ → Σ₃]^{u₁ ⊓ u₂}
 
-(QUOTE)     Γ;D ⊢ quote : Σ · τ → Σ · [Σ' → Σ' · τ]^{usage(τ)}
+(QUOTE)     Γ;D ⊢ quote : Σ · τ → Σ · [Σ' → Σ' · τ]^{many ⊓ usage(τ)}
             where Σ' is a fresh row
 
 (IF)        Γ;D ⊢ if :
@@ -138,9 +145,9 @@ quotation value once in the transition and accept either quotation usage.
 `compose` consumes both quotation values and transfers their ownership to the
 result. `quote` transfers the top value without copying it.
 
-Value typing assigns `Γ;D ⊢ᵥ c : ι^u` when `c : ι^u ∈ Γ` and assigns a quotation
-value its stored program effect and usage. Stack typing is the pointwise
-typing of its values against `Σ`, preserving order and usage.
+Value typing assigns `Γ;D ⊢ᵥ c : ι^many` when `c : ι^many ∈ Γ` and assigns a
+quotation value its stored program effect and usage. Stack typing is the
+pointwise typing of its values against `Σ`, preserving order and usage.
 
 Dictionary well-formedness requires every `D(w) = (T,p)` to satisfy
 `Γ;D ⊢ p : T` while assuming all declared erased signatures, which permits
@@ -150,7 +157,9 @@ Non-termination is expressible; the kernel guarantees safety, not totality.
 Primitive-signature well-formedness requires each declared `π` to have one
 typed input and output stack shape, a deterministic total delta operation on
 that shape, and ownership behaviour consistent with its usage annotations.
-`δ_π` may neither duplicate nor silently discard a linear value. These
+`δ_π` may return linear resources whenever its typed signature declares a
+linear result, whether or not it threads `World`; it may neither duplicate nor
+silently discard a linear value. These
 conditions, together with dictionary well-formedness and the syntax-directed
 rules, are the assumptions used by determinism and progress.
 
@@ -160,7 +169,7 @@ Small-step execution is over configurations `⟨V ∣ p⟩`. The administrative 
 `push v` exists only in the semantics, not surface syntax.
 
 ```
-(S-LIT)     ⟨V ∣ lit c ; p⟩          → ⟨V c ∣ p⟩
+(S-LIT)     ⟨V ∣ lit c ; p⟩          → ⟨V c ∣ p⟩    (c : ι^many)
 (S-PUSH)    ⟨V ∣ push v ; p⟩         → ⟨V v ∣ p⟩
 (S-QUOT)    ⟨V ∣ [q] ; p⟩            → ⟨V ⟦q⟧ ∣ p⟩
 (S-DUP)     ⟨V v ∣ dup ; p⟩         → ⟨V v v ∣ p⟩
@@ -178,7 +187,8 @@ Small-step execution is over configurations `⟨V ∣ p⟩`. The administrative 
 
 `call` and `w` unfold by program concatenation. There is no return stack, so
 the semantics is a pure rewrite system. Effectful primitives thread the
-linear `World` value. Terminal configurations are `⟨V ∣ ε⟩`; every other
+linear `World` value. `S-LIT` can therefore only push a many literal; it never
+introduces a linear resource. Terminal configurations are `⟨V ∣ ε⟩`; every other
 well-typed configuration can take a step.
 
 ### 6. Metatheory Obligations
@@ -187,7 +197,10 @@ Lean mechanisation targets zero admitted proofs (S1):
 
 1. **Determinism.** Every configuration has at most one successor.
 2. **Preservation.** A step from a well-typed configuration produces a
-   well-typed configuration with an appropriately residual stack type.
+   well-typed configuration with an appropriately residual stack type. In
+   particular, `S-QUOTE` preserves the captured value's usage in the resulting
+   quotation ownership footprint, and `S-LIT` preserves the many-only literal
+   invariant.
 3. **Progress.** Every well-typed non-terminal configuration steps.
 4. **At-most-once linearity safety.** Over every finite execution trace, no
    linear value is duplicated, silently discarded, or consumed by two distinct

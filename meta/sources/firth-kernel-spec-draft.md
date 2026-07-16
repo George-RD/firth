@@ -4,7 +4,7 @@ file: files/firth-kernel-spec-draft.md
 verification: verified
 type: frozen kernel calculus specification
 date: 2026-07-16
-sha256: e64e2dff3d321f043cf7219ab2744f3fdf56ed21c498f096493a03cade467a85
+sha256: daf4fd085664cf2320c5dbead6f7e52d69af35369a143be9d46895f3e19fcf0b
 ---
 
 Frozen v0.1 specification of the Firth kernel calculus: a typed concatenative

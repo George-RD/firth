@@ -16,10 +16,11 @@ syntax used only by the operational semantics.
 The primitive signature `Γ` and stack rows `Σ` are distinct. Value types attach
 usage directly to base types and quotation types. Quotation usage is the meet
 of every embedded `quote` or `lit` value, recursively through nested quotation
-bodies. The empty meet is `many`; `[lit h]` is linear for a linear handle.
-`compose` meets operand usage, `call` and `dip` consume one quotation in their
-transition and accept either usage, and `if` requires both `many` branches with
-identical stack effects. `dup` and `drop` require `many`.
+bodies. Literals are always `many`; quotation usage additionally meets the
+usages of captured stack values, so capturing a linear handle makes the
+quotation linear. `compose` meets operand usage, `call` and `dip` consume one
+quotation in their transition and accept either usage, and `if` requires both
+`many` branches with identical stack effects. `dup` and `drop` require `many`.
 
 The dictionary is `D : Name ⇀ (WordType, Program)`, where `WordType` is a
 prenex erased stack effect and contains no refinements. The elaborator owns the

@@ -23,8 +23,9 @@ Opened by `cairn gap firth.language.kernel --question "OPEN-3: validate quotatio
 
 The v0.1 quotation usage rule is accepted. A quotation's usage is the meet of
 all usages embedded by `quote` and `lit`, computed recursively through nested
-quotation bodies. The empty meet is `many`; any embedded `linear` value makes
-the quotation `linear`, including `[lit h]` when `h` has a linear base type.
+quotation bodies. Literal constants are always `many`, so `[p]` has `many`
+usage after its recursive literal check. Any captured `linear` value makes the
+quotation `linear`.
 `compose` takes the meet of its operands, while `call` and `dip` consume one
 quotation value in their transition and accept either usage. `if` requires
 both branch quotations to be `many` and to have identical stack effects, so
