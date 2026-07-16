@@ -21,14 +21,25 @@ Opened by `cairn gap firth.language.kernel --question "OPEN-3: validate quotatio
 
 ## Resolution
 
-Research `res.quotation-typing-prior-art` validates the meet rule for `quote`
-and `compose` when construction transfers capture ownership: `many meet many`
-is `many`, and every meet involving `linear` is `linear`.
+Not resolved. Research `res.quotation-typing-prior-art` supplies supporting
+prior art for a Firth-derived meet proposal, but it does not validate the rule.
+Mirth has no reviewed mechanised proof, Kitten has no linear-capture soundness
+result, and Cat has no affine usage dimension. Lean must still prove
+preservation and at-most-once linearity safety.
+
+The proposal must account for literal ownership as well as dynamic captures.
+For `[p]`, recursively meet the usages of every base literal `lit c` embedded
+in `p`; the empty meet is `many`. Thus `[lit h]` is `linear` when `h` has a
+linear base type. For `quote` and `compose`, every meet involving `linear`
+remains the conservative candidate result `linear`.
 
 The research also finds that the draft `if` rule is not linearity-safe. It
 accepts branch quotations of arbitrary usage, while execution discards the
-unchosen branch. The recommended v1 rule requires both branches to be `many`.
+unchosen branch. CTO has ratified the v1 recommendation that both branches be
+`many`.
 
-This gap remains proposed pending CTO ratification of that conservative `if`
-restriction. The alternative is a larger ownership-aware conditional that
-returns or otherwise accounts for the unselected linear capture.
+This gap remains `proposed` and explicitly unresolved until the normative
+kernel rules include literal ownership and the Lean mechanisation discharges
+the required proofs. Unrestricted recursion limits the general theorem to
+at-most-once safety over finite traces; exact-once consumption additionally
+requires termination and an empty-linear-residue terminal condition.
