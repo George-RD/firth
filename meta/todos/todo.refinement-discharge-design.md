@@ -4,6 +4,8 @@ status: open
 created: 2026-07-16
 ---
 
+Requires:
+
 ## Goal
 Define the SMT refinement-discharge boundary and its fallback to interactive Lean proofs.
 

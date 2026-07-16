@@ -4,6 +4,8 @@ status: open
 created: 2026-07-16
 ---
 
+Requires:
+
 ## Goal
 Draft the Forth-flavoured surface syntax and its complete desugaring into kernel terms.
 

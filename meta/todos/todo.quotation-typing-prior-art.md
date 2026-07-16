@@ -4,6 +4,8 @@ status: open
 created: 2026-07-16
 ---
 
+Requires:
+
 ## Goal
 Write a focused prior-art note on quotation typing in Mirth, Kitten, and Cat to resolve Firth's highest language risk.
 

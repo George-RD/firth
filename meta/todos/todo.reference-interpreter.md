@@ -1,8 +1,10 @@
 ---
 node: firth.toolchain.interpreter
-status: blocked
+status: open
 created: 2026-07-16
 ---
+
+Requires: kernel-spec-freeze, pin-lean-toolchain
 
 ## Goal
 Implement the executable Lean reference interpreter directly from the kernel operational semantics.

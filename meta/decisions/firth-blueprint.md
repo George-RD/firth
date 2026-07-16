@@ -1,7 +1,7 @@
 ---
 id: dec.firth-blueprint
 nodes: [firth, firth.language, firth.language.kernel, firth.language.surface, firth.language.types, firth.toolchain, firth.toolchain.elaborator, firth.toolchain.interpreter, firth.toolchain.compiler, firth.toolchain.diffharness, firth.toolchain.smt, firth.toolchain.agent, firth.runtime, firth.runtime.vm, firth.runtime.image, firth.runtime.patch, firth.ecosystem, firth.ecosystem.stdlib, firth.ecosystem.lsp, firth.ecosystem.specs]
-status: accepted
+status: superseded
 date: 2026-07-16
 informed_by: [res.firth-prd.summary, res.firth-kernel-spec.summary]
 ---

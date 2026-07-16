@@ -84,28 +84,35 @@ System Firth "Concatenative language elaborated through Lean 4 and compiled to a
             path "specs"
         }
     }
+
 }
 
-# Edges: data flow source -> elaborator -> kernel terms -> compiler -> VM,
-# with the reference interpreter as behavioural oracle (R5) and the
-# differential harness, patch protocol, and ecosystem surfaces attached
-# per the toolchain/runtime contracts in files/firth-prd.md.
+# Edges are implementation prerequisites, not narrative data flow:
+# kernel semantics first, then interpreter and target contract, then compiler
+# and elaborator components, with differential, patch, and ecosystem surfaces
+# depending on the checked artefacts described in files/firth-prd.md.
 
-firth.language.surface -> firth.toolchain.elaborator "surface syntax is elaborated into kernel terms"
-firth.language.types -> firth.toolchain.elaborator "type, linearity, and refinement checking is discharged during elaboration"
-firth.toolchain.elaborator -> firth.language.kernel "elaboration produces kernel terms"
-firth.toolchain.elaborator -> firth.toolchain.smt "refinement obligations are discharged via SMT where possible"
-firth.language.kernel -> firth.toolchain.compiler "kernel terms are compiled to the Forth-class target"
-firth.language.kernel -> firth.toolchain.interpreter "kernel terms are executed directly as the reference semantics"
-firth.toolchain.compiler -> firth.runtime.vm "compiled output targets the VM"
-firth.toolchain.diffharness -> firth.toolchain.compiler "fuzzes and checks compiler output"
-firth.toolchain.diffharness -> firth.toolchain.interpreter "fuzzes and checks interpreter output for agreement"
-firth.toolchain.agent -> firth.toolchain.elaborator "exposes elaborator diagnostics and typed holes to agent loops"
-firth.runtime.patch -> firth.toolchain.elaborator "patches require re-elaboration and re-checking of the replacement word"
-firth.runtime.vm -> firth.runtime.image "the VM hosts the hot-redefinition image model"
-firth.runtime.patch -> firth.runtime.vm "verified patches are admitted to the VM"
-firth.ecosystem.stdlib -> firth.toolchain.elaborator "standard library words are elaborated and checked like any other source"
-firth.ecosystem.lsp -> firth.toolchain.elaborator "the language server surfaces elaborator diagnostics"
-firth.ecosystem.lsp -> firth.toolchain.agent "the language server consumes the structured agent interface"
-firth.ecosystem.specs -> firth.language.kernel "the specs document the kernel calculus for third-party reimplementation"
-firth.ecosystem.specs -> firth.runtime.vm "the specs document the VM for third-party reimplementation"
+# Edges use cairn's depends-on semantics: A -> B means A requires B.
+firth.language.surface -> firth.language.kernel "surface syntax targets the kernel"
+firth.language.types -> firth.language.kernel "type rules target the kernel"
+firth.toolchain.elaborator -> firth.language.surface "elaborator consumes surface syntax"
+firth.toolchain.elaborator -> firth.language.types "elaborator consumes type rules"
+firth.toolchain.elaborator -> firth.language.kernel "elaborator produces checked kernel terms"
+firth.toolchain.elaborator -> firth.toolchain.smt "elaborator discharges refinements via SMT"
+firth.toolchain.smt -> firth.language.kernel "refinement discharge targets kernel stack semantics"
+firth.toolchain.compiler -> firth.language.kernel "compiler consumes kernel terms"
+firth.toolchain.compiler -> firth.runtime.vm "compiler targets the VM instruction contract"
+firth.toolchain.interpreter -> firth.language.kernel "interpreter executes kernel terms"
+firth.runtime.vm -> firth.toolchain.interpreter "VM target is validated against interpreter semantics"
+firth.toolchain.diffharness -> firth.toolchain.compiler "harness checks compiler output"
+firth.toolchain.diffharness -> firth.toolchain.interpreter "harness checks interpreter output"
+firth.toolchain.agent -> firth.toolchain.elaborator "agent consumes elaborator diagnostics"
+firth.runtime.image -> firth.runtime.vm "image model runs on the VM"
+firth.runtime.patch -> firth.toolchain.elaborator "patches re-elaborate replacement words"
+firth.runtime.patch -> firth.runtime.vm "patches are admitted to the VM"
+firth.runtime.patch -> firth.runtime.image "patches update the live image"
+firth.ecosystem.stdlib -> firth.toolchain.elaborator "stdlib words are elaborated"
+firth.ecosystem.lsp -> firth.toolchain.elaborator "LSP surfaces elaborator diagnostics"
+firth.ecosystem.lsp -> firth.toolchain.agent "LSP consumes structured agent feedback"
+firth.ecosystem.specs -> firth.language.kernel "specs document the kernel"
+firth.ecosystem.specs -> firth.runtime.vm "specs document the VM"

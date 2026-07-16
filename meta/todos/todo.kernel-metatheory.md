@@ -1,8 +1,10 @@
 ---
 node: firth.language.kernel
-status: blocked
+status: open
 created: 2026-07-16
 ---
+
+Requires: kernel-spec-freeze, pin-lean-toolchain
 
 ## Goal
 Mechanise the kernel metatheory in Lean with zero admitted lemmas.

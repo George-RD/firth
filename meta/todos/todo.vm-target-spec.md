@@ -4,6 +4,8 @@ status: open
 created: 2026-07-16
 ---
 
+Requires: host-language-decision
+
 ## Goal
 Draft the reimplementable Forth-class VM and target specification before compiler work begins.
 

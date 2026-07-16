@@ -4,6 +4,8 @@ status: open
 created: 2026-07-16
 ---
 
+Requires:
+
 ## Goal
 Define the structured diagnostic and typed-hole schema before elaborator implementation emits user-facing errors.
 
