@@ -355,9 +355,9 @@ validated theorem, until the Lean model establishes preservation and
 at-most-once linearity safety.
 
 The current `if` rule exposes a separate soundness hole discovered while
-checking quotation boundaries. The v1 recommendation is that both branch
-quotations be `many`, but OPEN-3 itself remains proposed and explicitly
-unresolved pending the Lean proof and the correction of literal quotation
-usage in the normative kernel rules. A larger ownership-aware conditional
-would need to return or otherwise account for the unselected linear capture
-and should not be inferred from the current semantics.
+checking quotation boundaries. The accepted v0.1 decision requires both branch
+quotations to be `many`; the prior-art note still records that Lean must prove
+the resulting preservation and at-most-once obligations. A larger
+ownership-aware conditional would need to return or otherwise account for the
+unselected linear capture and should not be inferred from the current
+semantics.

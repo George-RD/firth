@@ -1,13 +1,15 @@
 ---
 id: dec.patch-compatible-word-replacement
 nodes:
+  - firth.language.kernel
+  - firth.toolchain.elaborator
   - firth.runtime.patch
-status: proposed
+status: accepted
 date: 2026-07-16
 informed_by:
   - res.patch-compat-prior-art
 ---
-# Patch Compatible Word Replacement
+# Accepted patch-compatible word replacement boundary
 
 ## Context
 
@@ -18,7 +20,7 @@ independently checkable word-level obligations across both layers.
 
 ## Decision
 
-Propose that a public elaborator contract be represented as `(WordType, Spec)`.
+The public elaborator contract is represented as `(WordType, Spec)`.
 For pure and refinement-typed words, a v1 compatible patch retains that pair
 and replaces only the kernel dictionary body. Admission has two separate
 obligations: exact equality of the erased kernel `WordType`, preserving
@@ -36,9 +38,10 @@ or SMT implication obligations without changing kernel `WordType`.
 
 ## Consequences
 
-Kernel-spec-freeze must define the erased dictionary replacement theorem and
-version-cut semantics. The elaborator must separately define `Spec`
-subsumption. The verified-patch protocol must bind both kinds of evidence to
-the body and image version before an atomic swap. Effectful compatibility is
-outside this proposal's completed scope and remains blocked on
+The kernel dictionary stores only `(WordType, Program)` and no refinements.
+The kernel obligation preserves the erased `WordType` and dictionary
+well-formedness. The elaborator separately proves refinement subsumption by
+weakening inputs and strengthening outputs. The verified-patch protocol must
+bind both kinds of evidence to the body and image version before an atomic
+swap. Effectful compatibility remains outside v0.1 and is blocked on
 `dec.gap-firth-runtime-patch-should-effectful-verified-patch-compatibility-use-an`.
