@@ -1,0 +1,231 @@
+# PRD obligations matrix for the Firth autonomous loop.
+# Each [obligation.<id>] row maps one PRD section-4 scope bullet, requirement
+# (R1-R17), or success criterion (S1-S7) to the blueprint node responsible for
+# it and the todo slugs that discharge it. satisfied_by = [] means the
+# obligation is ungenerated: no todo exists yet. Enabling research or design
+# work is intentionally not sufficient for a product obligation.
+
+[obligation.scope-language-kernel-calculus]
+node = "firth.language.kernel"
+source = "PRD 4.1 kernel calculus"
+satisfied_by = ["kernel-spec-freeze", "kernel-metatheory"]
+
+[obligation.scope-language-surface-syntax]
+node = "firth.language.surface"
+source = "PRD 4.1 surface syntax"
+satisfied_by = ["surface-syntax-spec"]
+
+[obligation.scope-language-type-system]
+node = "firth.language.types"
+source = "PRD 4.1 type system"
+satisfied_by = []
+
+[obligation.scope-language-quotations]
+node = "firth.language.types"
+source = "PRD 4.1 quotations"
+satisfied_by = ["quotation-typing-prior-art"]
+
+[obligation.scope-language-vocabulary-layering]
+node = "firth.language.surface"
+source = "PRD 4.1 vocabulary layering"
+satisfied_by = []
+
+[obligation.scope-language-spec-predicates]
+node = "firth.language.types"
+source = "PRD 4.1 specification predicates"
+satisfied_by = []
+
+[obligation.scope-language-naming-grammar]
+node = "firth.language.surface"
+source = "PRD 4.1 naming grammar"
+satisfied_by = ["surface-syntax-spec"]
+
+[obligation.scope-language-visibility-model]
+node = "firth.language.surface"
+source = "PRD 4.1 module and word visibility model"
+satisfied_by = []
+
+[obligation.scope-toolchain-elaborator]
+node = "firth.toolchain.elaborator"
+source = "PRD 4.2 elaborator"
+satisfied_by = []
+
+[obligation.scope-toolchain-interpreter]
+node = "firth.toolchain.interpreter"
+source = "PRD 4.2 reference interpreter"
+satisfied_by = ["reference-interpreter"]
+
+[obligation.scope-toolchain-compiler]
+node = "firth.toolchain.compiler"
+source = "PRD 4.2 compiler"
+satisfied_by = []
+
+[obligation.scope-toolchain-diffharness]
+node = "firth.toolchain.diffharness"
+source = "PRD 4.2 differential test harness"
+satisfied_by = ["diffharness-fuzz-strategy"]
+
+[obligation.scope-toolchain-smt]
+node = "firth.toolchain.smt"
+source = "PRD 4.2 SMT integration"
+satisfied_by = ["refinement-discharge-design"]
+
+[obligation.scope-toolchain-agent-interface]
+node = "firth.toolchain.agent"
+source = "PRD 4.2 agent interface"
+satisfied_by = ["diagnostic-schema"]
+
+[obligation.scope-toolchain-signature-search]
+node = "firth.toolchain.agent"
+source = "PRD 4.2 signature search"
+satisfied_by = []
+
+[obligation.scope-runtime-vm]
+node = "firth.runtime.vm"
+source = "PRD 4.3 VM implementation"
+satisfied_by = []
+
+[obligation.scope-runtime-image]
+node = "firth.runtime.image"
+source = "PRD 4.3 image model"
+satisfied_by = []
+
+[obligation.scope-runtime-patch]
+node = "firth.runtime.patch"
+source = "PRD 4.3 verified-patch protocol"
+satisfied_by = []
+
+[obligation.scope-ecosystem-stdlib]
+node = "firth.ecosystem.stdlib"
+source = "PRD 4.4 standard library"
+satisfied_by = []
+
+[obligation.scope-ecosystem-lsp]
+node = "firth.ecosystem.lsp"
+source = "PRD 4.4 language server"
+satisfied_by = []
+
+[obligation.scope-ecosystem-specs]
+node = "firth.ecosystem.specs"
+source = "PRD 4.4 specification documents"
+satisfied_by = ["component-spec-boundaries"]
+
+[obligation.req-r1]
+node = "firth.language.kernel"
+source = "PRD R1"
+satisfied_by = ["kernel-spec-freeze"]
+
+[obligation.req-r2]
+node = "firth.language.surface"
+source = "PRD R2"
+satisfied_by = ["kernel-spec-freeze", "surface-syntax-spec"]
+
+[obligation.req-r3]
+node = "firth.toolchain.elaborator"
+source = "PRD R3"
+satisfied_by = []
+
+[obligation.req-r4]
+node = "firth.toolchain.elaborator"
+source = "PRD R4"
+satisfied_by = []
+
+[obligation.req-r5]
+node = "firth.toolchain.interpreter"
+source = "PRD R5"
+satisfied_by = []
+
+[obligation.req-r6]
+node = "firth.runtime.patch"
+source = "PRD R6"
+satisfied_by = []
+
+[obligation.req-r7]
+node = "firth.runtime.patch"
+source = "PRD R7"
+satisfied_by = []
+
+[obligation.req-r8]
+node = "firth.language.kernel"
+source = "PRD R8"
+satisfied_by = []
+
+[obligation.req-r9]
+node = "firth.language.kernel"
+source = "PRD R9"
+satisfied_by = []
+
+[obligation.req-r10]
+node = "firth.language.kernel"
+source = "PRD R10"
+satisfied_by = []
+
+[obligation.req-r11]
+node = "firth.language.kernel"
+source = "PRD R11"
+satisfied_by = []
+
+[obligation.req-r12]
+node = "firth.toolchain.agent"
+source = "PRD R12"
+satisfied_by = ["pin-lean-toolchain", "diagnostic-schema", "component-spec-boundaries"]
+
+[obligation.req-r13]
+node = "firth.toolchain.agent"
+source = "PRD R13"
+satisfied_by = ["diagnostic-schema"]
+
+[obligation.req-r14]
+node = "firth.language.surface"
+source = "PRD R14"
+satisfied_by = ["surface-syntax-spec"]
+
+[obligation.req-r15]
+node = "firth.language.types"
+source = "PRD R15"
+satisfied_by = ["kernel-spec-freeze", "surface-syntax-spec", "refinement-discharge-design"]
+
+[obligation.req-r16]
+node = "firth.toolchain.agent"
+source = "PRD R16"
+satisfied_by = []
+
+[obligation.req-r17]
+node = "firth.language.surface"
+source = "PRD R17"
+satisfied_by = ["surface-syntax-spec"]
+
+[obligation.sc-s1]
+node = "firth.language.kernel"
+source = "PRD S1"
+satisfied_by = ["kernel-spec-freeze", "kernel-metatheory"]
+
+[obligation.sc-s2]
+node = "firth.toolchain.diffharness"
+source = "PRD S2"
+satisfied_by = []
+
+[obligation.sc-s3]
+node = "firth.runtime.patch"
+source = "PRD S3"
+satisfied_by = []
+
+[obligation.sc-s4]
+node = "firth.ecosystem.stdlib"
+source = "PRD S4"
+satisfied_by = []
+
+[obligation.sc-s5]
+node = "firth.runtime.vm"
+source = "PRD S5"
+satisfied_by = []
+
+[obligation.sc-s6]
+node = "firth.runtime.vm"
+source = "PRD S6"
+satisfied_by = []
+
+[obligation.sc-s7]
+node = "firth.toolchain.agent"
+source = "PRD S7"
+satisfied_by = []

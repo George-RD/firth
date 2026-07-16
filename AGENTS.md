@@ -13,8 +13,10 @@ granularity keeps changes small and independent, and a mechanical checker
 The repo is currently in a **spec/design phase, with no source code yet.**
 The authoritative material lives in `files/` as markdown specs, and the
 architecture is governed by [cairn](https://github.com/cairn-framework/cairn).
-`cairn.blueprint` is still the starter template; the next real step is to model
-the Firth architecture in it and begin the cairn dev loop.
+`cairn.blueprint` declares the real 22-node architecture: four product
+containers (Language, Toolchain, Runtime, Ecosystem) plus the Governance
+container for loop machinery. The repository remains in the no-`src/`
+spec/design phase.
 
 ## Architecture & Data Flow
 
@@ -56,7 +58,7 @@ combinator. Effects are modelled by a linear `World` base type in the signature
 | Path | Purpose |
 | --- | --- |
 | `files/` | Design specs. `firth-prd.md` (PRD v0.1), `firth-kernel-spec-draft.md` (kernel calculus). |
-| `cairn.blueprint` | Declared architecture (nodes/modules/paths). Still the starter template. |
+| `cairn.blueprint` | Declared 22-node architecture: four product containers plus Governance and loop paths. |
 | `cairn.config.yaml` | Cairn config (`ignore: [target]`). |
 | `meta/` | Cairn artefacts. `todos/` and `contracts/` exist; `decisions/`, `research/`, `sources/`, `changes/` are created on demand. |
 | `.cairn/` | Cairn state plus its authoritative guide `.cairn/AGENTS.md`. |
@@ -65,10 +67,10 @@ combinator. Effects are modelled by a linear `World` base type in the signature
 
 ## Development Commands
 
-There is **no build/test/lint tooling wired up yet** (no `src/`, no
-`Cargo.toml`/`lakefile`). The specs name the intended stack (Lean 4 for
-mechanisation and elaboration, a Forth-class target VM), but nothing is
-implemented. Today the operative commands are cairn governance commands:
+There is no product source or Lake project yet, but the control-plane tooling is
+operational. The current commands are selector, coverage, and Cairn governance
+checks; Lean gates are staged for when a root `lakefile.toml` or
+`lakefile.lean` lands:
 
 ```sh
 cairn status          # project summary: nodes, findings, backlog. Start here.
@@ -79,12 +81,19 @@ cairn neighbourhood <id>
 cairn decisions / cairn research / cairn sources <id>   # provenance chain
 cairn scan            # run before committing; zero findings is the target
 cairn hook all        # strict gate; exit 0 means the commit is safe
+python3 tools/loop/test_select_unit.py
+python3 tools/loop/test_coverage.py
+python3 tools/loop/select_unit.py --validate
+python3 tools/loop/coverage.py --validate
 ```
 
-`--json` is accepted by every command for machine-readable output. When
-implementation begins, the `cairn-apply` skill runs the project verification
-gates (`cargo build`/`clippy`/`fmt`/`test` per its template). Update this
-section with the real toolchain once it lands.
+For the autonomous Codex loop launch contract and maintainer preflight, read
+[`docs/loop-runbook.md`](docs/loop-runbook.md). It defines the required
+`origin/main` publication, invocation, terminal tokens, and smoke checks.
+
+`--json` is accepted by every command for machine-readable output. Once a Lake
+project lands, the staged gates are `lake build` and `lake test` when a test
+driver is configured, alongside Cairn scan and hook checks.
 
 ## Code Conventions & Common Patterns
 
@@ -130,7 +139,10 @@ section with the real toolchain once it lands.
 
 ## Testing & QA
 
-- No test suite exists today. The kernel spec calls for a **differential test
+- Control-plane tests live in `tools/loop/test_select_unit.py` and
+  `tools/loop/test_coverage.py`; both use temporary synthetic todo trees and
+  never read the real tracker in fixtures.
+- Product source is not present yet. The kernel spec calls for a **differential test
   harness** (fuzzed programs checked for compiler-vs-interpreter agreement) and
   **Lean metatheory obligations** (determinism, preservation, progress,
   linearity soundness, cost invariance) mechanised with zero admits.

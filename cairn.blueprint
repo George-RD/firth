@@ -85,6 +85,14 @@ System Firth "Concatenative language elaborated through Lean 4 and compiled to a
         }
     }
 
+    Container Governance "Development governance and loop machinery" id "firth.governance" {
+
+        Module Loop "Autonomous dev-loop command, procedures, and deterministic unit selector" id "firth.governance.loop" {
+            path ".claude"
+            path "tools/loop"
+            path "docs"
+        }
+    }
 }
 
 # Edges are implementation prerequisites, not narrative data flow:

@@ -2,3 +2,6 @@
 .cairn/log.md
 map.json
 map.md
+
+__pycache__/
+*.pyc
