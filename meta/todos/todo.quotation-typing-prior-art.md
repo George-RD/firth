@@ -1,6 +1,6 @@
 ---
 node: firth.language.types
-status: open
+status: done
 created: 2026-07-16
 ---
 
