@@ -287,8 +287,11 @@ well-formedness and old kernel-typed callers. Do not add refinements to kernel
 
 Kernel-spec-freeze must also treat the registered effectful-observation gap as
 a dependency before claiming verified replacement for words containing
-`World`. OPEN-3 remains a dependency before allowing elaborator quotation
-contracts to vary, even when their erased quotation types remain equal.
+`World`. The accepted decision
+`dec.gap-firth-language-kernel-open-3-validate-quotation-usage-meet-inference`
+freezes the quotation usage rule, so the quotation-typing dependency is
+satisfied. Lean proof obligations for that accepted rule remain part of the
+kernel metatheory, but OPEN-3 is not an outstanding patch-compatibility gap.
 
 ### Verified-patch protocol
 
