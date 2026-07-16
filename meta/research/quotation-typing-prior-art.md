@@ -14,11 +14,13 @@ It focuses on quotation formation, higher-order list combinators, stack rows,
 linearity across quotation boundaries, and failure modes relevant to a small
 Lean-mechanised kernel.
 
-The recommendation is to keep Firth quotation effects monomorphic and row
-polymorphism prenex at word boundaries. A quotation owns any values embedded by
-`quote` and any literal values embedded in its stored code; constructing or
-composing quotations transfers that ownership. Its usage is `many` exactly
-when every owned value has `many` usage, and `linear` otherwise. With the order
+The accepted v0.1 decision
+`dec.gap-firth-language-kernel-open-3-validate-quotation-usage-meet-inference`
+keeps Firth quotation effects monomorphic and row polymorphism prenex at word
+boundaries. A quotation owns values captured by `quote`; literal values in
+stored code are always `many`. Constructing or composing quotations transfers
+that ownership. Its usage is `many` exactly when every owned value has `many`
+usage, and `linear` otherwise. With the order
 `linear <= many`, the Firth-derived proposal uses the meet:
 
 ```text
@@ -28,17 +30,13 @@ linear meet many   = linear
 linear meet linear = linear
 ```
 
-Prior art supports this shape but does not validate it: Mirth has no reviewed
+Prior art supports this shape but does not prove it: Mirth has no reviewed
 mechanised proof, Kitten has no linear-capture soundness result, and Cat has no
-affine usage dimension. OPEN-3 therefore remains unresolved until Lean proves
-preservation and linearity safety for Firth's rules. The current `if` rule also
-accepts branch quotations of arbitrary usage, but the operational semantics
-executes one and silently discards the other. If the unchosen quotation owns a
-linear value, linearity safety is false. For v1, require both branch quotations
-passed to `if` to have usage `many`. This is a local, decidable restriction and
-needs no borrowing, subtyping, or effect system. A future ownership-aware
-conditional may return the unchosen capture, but that is not required in the
-kernel.
+affine usage dimension. The accepted decision records the Lean obligations.
+The accepted decision requires both branch quotations to have usage `many` and
+identical stack effects, so the unchosen branch is safe to discard. This is a
+local, decidable restriction and needs no borrowing, subtyping, or effect
+system.
 
 ## Comparison
 
@@ -163,15 +161,12 @@ ownership.
    Quotation literals inside a word are checked at one monomorphic
    instantiation. A quotation needing two distinct stack-row instantiations in
    the same word is rejected or written twice.
-3. Let `literalUsage(p)` be the meet of `usage(type(c))` for every `lit c`
-   occurring in `p`, recursively including literals inside nested quotation
-   bodies. The empty meet is `many`. The usage of `[p]` is
-   `literalUsage(p)`: it is `many` only when every embedded literal has a
-   `many` type, and is `linear` when any embedded literal has a `linear` type.
-   A linear value supplied later through the quotation's input stack is not an
-   embedded literal and does not affect the stored quotation's usage.
-4. `quote` transfers the top value into the quotation. The quotation usage is
-   `usage(t)`. No copy is made.
+3. `literalUsage(p)` is always `many`, with a recursive check that every
+   `lit c` in `p`, including nested quotation bodies, has a many base type.
+   Literal push is not a source of linear values.
+4. `quote` transfers the top value into the quotation. Its usage is the meet
+   of `literalUsage(push v)` and `usage(type(v))`, so capturing a linear stack
+   value makes the quotation linear. No copy is made.
 5. `compose` consumes both input quotations and transfers all their captures to
    the result. The result usage is the meet of the operands.
 6. `call` and `dip` remove one quotation value and splice its body once in a
@@ -274,25 +269,26 @@ Both branches must have the same effect and both must be `many`. The selected
 quotation is executed; discarding the other is safe because it owns no linear
 value.
 
-The current draft would also accept:
+The historical pre-freeze rule accepted:
 
 ```text
 r * Bool * [r -> s]^linear * [r -> s]^many
 ```
 
-This must fail. When the second branch is selected, the first quotation and its
-captured linear value disappear without consumption.
+The accepted OPEN-3 decision supersedes that rule. Both branches are now
+required to be `many`, and this case must fail because the first quotation's
+usage is `linear`.
 
 ## Explicit failure cases
 
 - `dup` or `drop` applied to `[S1 -> S2]^linear` fails the existing usage
   premise.
-- `[lit h]` is `linear` when `h` has a linear base type, even though it has no
-  dynamic capture. Duplicating or dropping it fails. The same recursive check
-  applies when `lit h` occurs inside a nested quotation body.
-- Inferring a literal quotation as `many` without checking all embedded literal
-  types fails because duplicating its stored code could materialise the same
-  linear literal more than once.
+- `lit h` fails when `h` has a linear base type. Literal push is restricted to
+  many base types because it is replayable and must never introduce a linear
+  value. The same recursive check applies inside nested quotation bodies.
+- A quotation formed from literals is `many`; a quotation formed by `quote`
+  over a linear stack value is `linear`. Inferring the latter as `many` would
+  permit duplication or dropping of its captured value.
 - `compose` fails when the first output row cannot unify with the second input
   row.
 - A composite quotation is never inferred `many` if either operand is
@@ -315,10 +311,10 @@ captured linear value disappear without consumption.
    commutativity, associativity, idempotence, and that `meet u v = many` exactly
    when both operands are `many`.
 2. Make quotation value typing record both its stack effect and an ownership
-   footprint. For source `[p]`, compute that footprint recursively from every
-   embedded `lit c`; for runtime quotations, include every embedded `push v`.
-   A syntactically closed source quotation is not automatically `many` because
-   its stored code may contain a linear literal.
+   footprint. For source `[p]`, recursively check that every `lit c` is many;
+   for runtime quotations, include every captured `push v` and meet its usage.
+   A syntactically closed source quotation is `many`; a captured linear value
+   makes the quotation linear.
 3. State ownership transfer explicitly in preservation lemmas for `S-QUOTE`
    and `S-COMP`. Neither rule duplicates a runtime value.
 4. Prove `S-CALL` and `S-DIP` remove one quotation value and splice its body
@@ -341,23 +337,21 @@ captured linear value disappear without consumption.
    Exact-once consumption may be proved only for terminating executions, with
    an explicit totality premise and a terminal-stack condition that leaves no
    unconsumed linear values.
-9. Add negative examples for linear literals in duplicated quotations,
-   discarded linear branches, repeated linear callbacks, and linear filtering
-   to the metatheory test corpus.
+9. Add negative examples for invalid literal pushes, discarded linear captures,
+   repeated linear callbacks, and linear filtering to the metatheory test
+   corpus.
 
 ## OPEN-3 disposition
 
-The usage meet is a Firth-derived proposal for `quote` and `compose`, subject to
-an ownership footprint that includes both dynamic captures and embedded
-literals. Prior art supports the direction but does not prove it. In
-particular, `many meet linear = linear` is the conservative candidate, not a
-validated theorem, until the Lean model establishes preservation and
-at-most-once linearity safety.
+The accepted decision
+`dec.gap-firth-language-kernel-open-3-validate-quotation-usage-meet-inference`
+defines the usage meet for `quote` and `compose`. Prior art supports the
+direction but does not prove it. Literals are always many, while captured stack
+values contribute their usage, so `many meet linear = linear` applies to
+capture ownership. Lean must establish preservation and at-most-once
+linearity safety.
 
-The current `if` rule exposes a separate soundness hole discovered while
-checking quotation boundaries. The v1 recommendation is that both branch
-quotations be `many`, but OPEN-3 itself remains proposed and explicitly
-unresolved pending the Lean proof and the correction of literal quotation
-usage in the normative kernel rules. A larger ownership-aware conditional
-would need to return or otherwise account for the unselected linear capture
-and should not be inferred from the current semantics.
+The accepted decision supersedes the historical arbitrary-usage `if` rule. Both
+branch quotations must be `many` and have identical stack effects. The note
+records the remaining Lean preservation and at-most-once obligations without
+reopening the accepted rule.
