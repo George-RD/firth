@@ -35,8 +35,8 @@ remains the conservative candidate result `linear`.
 
 The research also finds that the draft `if` rule is not linearity-safe. It
 accepts branch quotations of arbitrary usage, while execution discards the
-unchosen branch. CTO has ratified the v1 recommendation that both branches be
-`many`.
+unchosen branch. The v1 recommendation is that both branches be `many`, but
+that recommendation remains subject to the unresolved proof obligation.
 
 This gap remains `proposed` and explicitly unresolved until the normative
 kernel rules include literal ownership and the Lean mechanisation discharges
