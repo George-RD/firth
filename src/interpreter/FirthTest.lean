@@ -4,6 +4,51 @@ import Firth.Linearity
 
 open Firth.Interpreter
 
+example (tag : Tag) (value : Literal) :
+    taggedLinearTagsValue (.literal tag value) = [] := by
+  rfl
+
+example (tag : Tag) (payload : Nat) :
+    taggedLinearTagsValue (.world tag payload) = [tag] := by
+  rfl
+
+example (tag : Tag) :
+    taggedLinearTagsValue (.quotation tag .empty .many) = [] := by
+  rfl
+
+example (tag : Tag) :
+    taggedLinearTagsValue (.quotation tag .empty .linear) = [tag] := by
+  rfl
+
+example (tag : Tag) :
+    ∃ step : InstrumentedStep defaultGamma emptyDictionary defaultCosts
+        { stack := [.literal tag (.nat 7)], program := .cons .dup .empty, nextTag := tag + 1 }
+        { stack := [.literal tag (.nat 7), .literal tag (.nat 7)], program := .empty,
+          nextTag := tag + 1 }, True := by
+  exact ⟨.dup rfl, trivial⟩
+
+example (tag : Tag) :
+    ¬ taggedLinearTagsValue (.world tag 0) = [] := by
+  intro h
+  cases h
+
+example (tag : Tag) :
+    ¬ taggedLinearTagsValue (.quotation tag .empty .linear) = [] := by
+  intro h
+  cases h
+
+example (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
+    (before after : AConfig) (hbefore : FrontierInvariant before)
+    (hstep : InstrumentedStep gamma dictionary costs before after) :
+    FrontierInvariant after := by
+  exact instrumented_frontier_preserved before after hbefore hstep
+
+example (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
+    (before after : AConfig)
+    (hstep : InstrumentedStep gamma dictionary costs before after) :
+    HasSuccessor gamma dictionary costs (eraseAConfig before) (eraseAConfig after) := by
+  exact instrumented_step_erases hstep
+
 example (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
     (config next₁ next₂ : Config) :
     HasSuccessor gamma dictionary costs config next₁ →
