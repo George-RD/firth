@@ -109,6 +109,22 @@ def quotationUsage (captured : Value) : Usage :=
   | .world _ => .linear
   | .literal literal => literalUsage literal
 
+def usageMeet : Usage → Usage → Usage
+  | .many, .many => .many
+  | _, _ => .linear
+
+mutual
+  /-- The ownership footprint of a program's statically captured values. -/
+  def programUsage : Program → Usage
+    | .empty => .many
+    | .cons head tail => usageMeet (atomUsage head) (programUsage tail)
+
+  def atomUsage : Atom → Usage
+    | .push value => quotationUsage value
+    | .quotation body => programUsage body
+    | _ => .many
+end
+
 structure PrimitiveSpec where
   input : StackType
   output : StackType
@@ -166,8 +182,8 @@ def step (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable) : Config 
           -- records the current zero-cost interpreter choice.
           .stepped { stack := value :: stack, program := rest } 0
       | .quotation body =>
-          -- (S-QUOT): a closed quotation is replayable and therefore many.
-          .stepped { stack := .quotation body .many :: stack, program := rest }
+          -- (S-QUOT): closed quotations carry their recursive capture footprint.
+          .stepped { stack := .quotation body (programUsage body) :: stack, program := rest }
             (costs.atom atom)
       | .dup =>
           -- (S-DUP): the type system admits this only for many values.
@@ -258,10 +274,6 @@ def run (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable) : Nat → 
 the symbolic row `ρ` from the bottom upwards; this matches the executable
 top-first stack representation with the specification's bottom-to-top rules. -/
 
-def usageMeet : Usage → Usage → Usage
-  | .many, .many => .many
-  | _, _ => .linear
-
 def ValueType.usage : ValueType → Usage
   | .base _ usage => usage
   | .quotation _ _ usage => usage
@@ -271,10 +283,10 @@ mutual
     | literal {literal : Literal} {base : BaseType}
         (h : gamma.literalType literal = some base) :
         ValueTyping gamma dictionary (.literal literal) (.base base .many)
-    | quotation {body : Program} {input output : StackType} {usage : Usage}
+    | quotation {body : Program} {input output : StackType}
         (h : ProgramTyping gamma dictionary body input output) :
-        ValueTyping gamma dictionary (.quotation body usage)
-          (.quotation input output usage)
+        ValueTyping gamma dictionary (.quotation body (programUsage body))
+          (.quotation input output (programUsage body))
     | world {id : Nat} :
         ValueTyping gamma dictionary (.world id) (.base .world .linear)
 
@@ -296,7 +308,7 @@ mutual
     | quotation {body : Program} {input output stack : StackType}
         (h : ProgramTyping gamma dictionary body input output) :
         AtomTyping gamma dictionary (.quotation body) stack
-          (.snoc stack (.quotation input output .many))
+          (.snoc stack (.quotation input output (programUsage body)))
     | dup {stack : StackType} {type : ValueType}
         (h : type.usage = .many) :
         AtomTyping gamma dictionary .dup (.snoc stack type)

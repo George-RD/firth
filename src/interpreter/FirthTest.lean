@@ -61,6 +61,13 @@ def main : IO Unit := do
   runTest "S-QUOT closed usage is many" (match closedQuotationResult with
     | .terminal { stack := [.quotation .empty .many], .. } _ _ => true
     | _ => false)
+  let nestedCaptureQuotationResult := run gamma d c 20
+    { stack := [], program := .cons (.quotation
+        (.cons (.push (.world 0)) .empty)) .empty }
+  runTest "S-QUOT recursive capture footprint is linear" (match nestedCaptureQuotationResult with
+    | .terminal { stack := [.quotation body .linear], .. } _ _ =>
+        body == .cons (.push (.world 0)) .empty
+    | _ => false)
   -- S-DIP preserves the value by administrative push.
   let dipResult := run gamma d c 20
     { stack := [], program := .cons (.lit (.nat 4))
