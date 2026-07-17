@@ -746,7 +746,103 @@ def InstrumentedTrace (gamma : Gamma) (dictionary : Dictionary) (costs : CostTab
     AConfig → List AConfig → Prop
   | start, [] => True
   | start, next :: rest =>
-      InstrumentedStep gamma dictionary costs start next ∧
+        InstrumentedStep gamma dictionary costs start next ∧
         InstrumentedTrace gamma dictionary costs next rest
+
+/-! Frontier-indexed annotation relations.
+
+The lower bound is the input frontier, not a requirement that pre-existing
+tags be freshly minted.  An annotation may therefore retain ownership tags
+below `n`, while every identity tag introduced by the annotation lies in the
+half-open interval `[n, n')`.
+-/
+
+mutual
+  def annotationIdentityTagsValue : AValue → Ownerships
+    | .literal tag _ => [tag]
+    | .world tag _ => [tag]
+    | .quotation tag body _ => tag :: annotationIdentityTagsProgram body
+
+  def annotationIdentityTagsAtom : AAtom → Ownerships
+    | .push value => annotationIdentityTagsValue value
+    | .quotation body => annotationIdentityTagsProgram body
+    | _ => []
+
+  def annotationIdentityTagsProgram : AProgram → Ownerships
+    | .empty => []
+    | .cons head tail => annotationIdentityTagsAtom head ++ annotationIdentityTagsProgram tail
+end
+
+def AnnotationValue (input : Tag) (plain : Value) (annotated : AValue) (output : Tag) : Prop :=
+  eraseValue annotated = plain ∧
+    input ≤ output ∧
+    (∀ tag, tag ∈ annotationIdentityTagsValue annotated → input ≤ tag ∧ tag < output) ∧
+    (∀ tag, tag ∈ taggedLinearTagsValue annotated → tag < output)
+
+def AnnotationProgram (input : Tag) (plain : Program) (annotated : AProgram)
+    (output : Tag) : Prop :=
+  eraseProgram annotated = plain ∧
+    input ≤ output ∧
+    (∀ tag, tag ∈ annotationIdentityTagsProgram annotated → input ≤ tag ∧ tag < output) ∧
+    (∀ tag, tag ∈ taggedLinearTagsProgram annotated → tag < output)
+
+def annotationIdentityTagsValueList : AStack → Ownerships
+  | [] => []
+  | value :: tail => annotationIdentityTagsValue value ++ annotationIdentityTagsValueList tail
+
+def AnnotationConfig (input : Tag) (plain : Config) (annotated : AConfig) (output : Tag) : Prop :=
+  eraseAConfig annotated = plain ∧
+    input ≤ output ∧
+    (∀ tag, tag ∈ annotationIdentityTagsValueList annotated.stack →
+      input ≤ tag ∧ tag < output) ∧
+    (∀ tag, tag ∈ annotationIdentityTagsProgram annotated.program →
+      input ≤ tag ∧ tag < output) ∧
+    (∀ tag, tag ∈ taggedLinearTags annotated → tag < output)
+
+theorem annotation_value_erases {input output : Tag} {plain : Value} {annotated : AValue}
+    (h : AnnotationValue input plain annotated output) : eraseValue annotated = plain := h.1
+
+theorem annotation_value_advances {input output : Tag} {plain : Value} {annotated : AValue}
+    (h : AnnotationValue input plain annotated output) : input ≤ output := h.2.1
+
+theorem annotation_program_erases {input output : Tag} {plain : Program} {annotated : AProgram}
+    (h : AnnotationProgram input plain annotated output) : eraseProgram annotated = plain := h.1
+
+theorem annotation_program_advances {input output : Tag} {plain : Program} {annotated : AProgram}
+    (h : AnnotationProgram input plain annotated output) : input ≤ output := h.2.1
+
+theorem annotation_config_erases {input output : Tag} {plain : Config} {annotated : AConfig}
+    (h : AnnotationConfig input plain annotated output) : eraseAConfig annotated = plain := h.1
+
+theorem annotation_config_advances {input output : Tag} {plain : Config} {annotated : AConfig}
+    (h : AnnotationConfig input plain annotated output) : input ≤ output := h.2.1
+
+def AnnotatedDictionary (dictionary : Dictionary) (annotated : String → Option AProgram)
+    (frontier : Tag) : Prop :=
+  ∀ name entry, dictionary name = some entry →
+    ∃ body, annotated name = some body ∧ eraseProgram body = entry.body ∧
+      (∀ tag, tag ∈ taggedLinearTagsProgram body → tag < frontier)
+
+def PrimitiveTagLift (gamma : Gamma) (name : Prim) : Prop :=
+  ∀ input nextTag specification plainInput plainOutput,
+    gamma.primitive name = some specification →
+    input.map eraseValue = plainInput →
+    specification.delta plainInput = some plainOutput →
+    ∃ output nextTag',
+      output.map eraseValue = plainOutput ∧ nextTag ≤ nextTag' ∧
+      PrimitiveTagContract gamma name input output nextTag nextTag' ∧
+      (∀ tag, tag ∈ taggedLinearTagsValueList output → tag < nextTag')
+
+theorem primitive_tag_lift_is_contract
+    (h : PrimitiveTagLift gamma name) :
+    ∀ input nextTag specification plainInput plainOutput,
+      gamma.primitive name = some specification →
+      input.map eraseValue = plainInput →
+      specification.delta plainInput = some plainOutput →
+      ∃ output nextTag', PrimitiveTagContract gamma name input output nextTag nextTag' := by
+  intro input nextTag specification plainInput plainOutput hname hin hdelta
+  rcases h input nextTag specification plainInput plainOutput hname hin hdelta with
+    ⟨output, nextTag', _, _, hcontract, _⟩
+  exact ⟨output, nextTag', hcontract⟩
 
 end Firth.Interpreter
