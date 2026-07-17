@@ -576,39 +576,162 @@ theorem instrumented_frontier_preserved
       · exact Nat.lt_of_lt_of_le
           (hbefore tag (by simp [taggedLinearTags, taggedLinearTagsProgram, hrest])) hnext
 
+theorem instrumented_step_erases_lit
+    {config : AConfig} {literal : Literal} {rest : AProgram}
+    (h : (gamma.literalType literal).isSome) (nextTag : Tag) :
+    HasSuccessor gamma dictionary costs
+      (eraseAConfig ⟨config.stack, .cons (.lit literal) rest, nextTag⟩)
+      (eraseAConfig ⟨.literal nextTag literal :: config.stack, rest,
+        nextTag + 1⟩) := by
+  refine ⟨costs.atom (.lit literal), ?_⟩
+  simp only [step, h, eraseAConfig, eraseValue, eraseAtom, eraseProgram, List.map]
+  rfl
+
+theorem instrumented_step_erases_push
+    {value : AValue} {stack : AStack} {rest : AProgram} {nextTag : Tag} :
+    HasSuccessor gamma dictionary costs
+      (eraseAConfig ⟨stack, .cons (.push value) rest, nextTag⟩)
+      (eraseAConfig ⟨value :: stack, rest, nextTag⟩) := by
+  refine ⟨0, ?_⟩
+  rfl
+
+theorem instrumented_step_erases_quotation
+    {body : AProgram} {stack : AStack} {rest : AProgram} {nextTag : Tag} :
+    HasSuccessor gamma dictionary costs
+      (eraseAConfig (aQuotationSource stack body rest nextTag))
+      (eraseAConfig (aQuotationTarget stack body rest nextTag)) := by
+  refine ⟨costs.atom (.quotation (eraseProgram body)), ?_⟩
+  rfl
+
+theorem instrumented_step_erases_dup
+    {value : AValue} {tail : AStack} {rest : AProgram} {nextTag : Tag}
+    (h : taggedLinearTagsValue value = []) :
+    HasSuccessor gamma dictionary costs
+      (eraseAConfig ⟨value :: tail, .cons .dup rest, nextTag⟩)
+      (eraseAConfig ⟨value :: value :: tail, rest, nextTag⟩) := by
+  refine ⟨costs.atom .dup, ?_⟩
+  rfl
+
+theorem instrumented_step_erases_drop
+    {value : AValue} {tail : AStack} {rest : AProgram} {nextTag : Tag}
+    (h : taggedLinearTagsValue value = []) :
+    HasSuccessor gamma dictionary costs
+      (eraseAConfig ⟨value :: tail, .cons .drop rest, nextTag⟩)
+      (eraseAConfig ⟨tail, rest, nextTag⟩) := by
+  refine ⟨costs.atom .drop, ?_⟩
+  rfl
+
+theorem instrumented_step_erases_swap
+    {first second : AValue} {tail : AStack} {rest : AProgram} {nextTag : Tag} :
+    HasSuccessor gamma dictionary costs
+      (eraseAConfig ⟨second :: first :: tail, .cons .swap rest, nextTag⟩)
+      (eraseAConfig ⟨first :: second :: tail, rest, nextTag⟩) := by
+  refine ⟨costs.atom .swap, ?_⟩
+  rfl
+
+theorem instrumented_step_erases_call
+    {body : AProgram} {tail : AStack} {rest : AProgram}
+    {usage : Usage} {tag nextTag : Tag} :
+    HasSuccessor gamma dictionary costs
+      (eraseAConfig ⟨.quotation tag body usage :: tail, .cons .call rest, nextTag⟩)
+      (eraseAConfig ⟨tail, AProgram.append body rest, nextTag⟩) := by
+  refine ⟨costs.atom .call, ?_⟩
+  simp only [step, eraseAConfig, eraseValue, eraseAtom, eraseProgram,
+    eraseProgram_append, List.map]
+
+theorem instrumented_step_erases_dip
+    {body : AProgram} {value : AValue} {tail : AStack} {rest : AProgram}
+    {usage : Usage} {tag nextTag : Tag} :
+    HasSuccessor gamma dictionary costs
+      (eraseAConfig ⟨.quotation tag body usage :: value :: tail, .cons .dip rest, nextTag⟩)
+      (eraseAConfig ⟨tail, AProgram.append body (.cons (.push value) rest), nextTag⟩) := by
+  refine ⟨costs.atom .dip, ?_⟩
+  simp only [step, eraseAConfig, eraseValue, eraseAtom, eraseProgram,
+    eraseProgram_append, List.map]
+
+theorem instrumented_step_erases_compose
+    {first second : AProgram} {usage₁ usage₂ : Usage} {tail : AStack}
+    {rest : AProgram} {tag₁ tag₂ nextTag : Tag} :
+    HasSuccessor gamma dictionary costs
+      (eraseAConfig ⟨.quotation tag₂ second usage₂ :: .quotation tag₁ first usage₁ :: tail,
+        .cons .compose rest, nextTag⟩)
+      (eraseAConfig ⟨.quotation nextTag (AProgram.append first second)
+          (if usage₁ == .linear || usage₂ == .linear then .linear else .many) :: tail,
+        rest, nextTag + 1⟩) := by
+  refine ⟨costs.atom .compose, ?_⟩
+  cases usage₁ <;> cases usage₂ <;>
+    simp only [step, eraseAConfig, eraseValue, eraseAtom, eraseProgram,
+      eraseProgram_append, List.map, Bool.false_eq_true, if_true, if_false]
+
+theorem instrumented_step_erases_quote
+    {value : AValue} {tail : AStack} {rest : AProgram} {nextTag : Tag} :
+    HasSuccessor gamma dictionary costs
+      (eraseAConfig ⟨value :: tail, .cons .quote rest, nextTag⟩)
+      (eraseAConfig ⟨.quotation nextTag (.cons (.push value) .empty)
+          (quotationUsage (eraseValue value)) :: tail, rest, nextTag + 1⟩) := by
+  refine ⟨costs.atom .quote, ?_⟩
+  rfl
+
+theorem instrumented_step_erases_ifThenElse
+    {condition : Bool} {trueBranch falseBranch : AProgram} {tail : AStack}
+    {rest : AProgram} {falseTag trueTag conditionTag nextTag : Tag} :
+    HasSuccessor gamma dictionary costs
+      (eraseAConfig ⟨.quotation falseTag falseBranch .many ::
+          .quotation trueTag trueBranch .many :: .literal conditionTag (.bool condition) :: tail,
+        .cons .ifThenElse rest, nextTag⟩)
+      (eraseAConfig ⟨tail, AProgram.append (if condition then trueBranch else falseBranch) rest,
+        nextTag⟩) := by
+  cases condition
+  · refine ⟨costs.atom .ifThenElse, ?_⟩
+    simp only [step, eraseAConfig, eraseValue, eraseAtom, eraseProgram, eraseProgram_append,
+      eraseProgram_if, List.map, Bool.false_eq_true, if_false, if_true]
+  · refine ⟨costs.atom .ifThenElse, ?_⟩
+    simp only [step, eraseAConfig, eraseValue, eraseAtom, eraseProgram, eraseProgram_append,
+      eraseProgram_if, List.map, Bool.false_eq_true, if_false, if_true]
+
+theorem instrumented_step_erases_word
+    {name : String} {body : AProgram} {stack : AStack} {rest : AProgram}
+    {nextTag : Tag}
+    (h : ∃ entry, dictionary name = some entry ∧ eraseProgram body = entry.body ∧
+      ∀ tag, tag ∈ taggedLinearTagsProgram body → tag < nextTag) :
+    HasSuccessor gamma dictionary costs
+      (eraseAConfig ⟨stack, .cons (.word name) rest, nextTag⟩)
+      (eraseAConfig ⟨stack, AProgram.append body rest, nextTag⟩) := by
+  rcases h with ⟨entry, hdict, herase, hfront⟩
+  refine ⟨costs.unfold, ?_⟩
+  simp only [step, eraseAConfig, eraseValue, eraseAtom, eraseProgram,
+    hdict, herase, eraseProgram_append]
+
+theorem instrumented_step_erases_prim
+    {primitive : Prim} {input output : AStack} {rest : AProgram}
+    {nextTag nextTag' : Tag}
+    (h : PrimitiveTagContract gamma primitive input output nextTag nextTag') :
+    HasSuccessor gamma dictionary costs
+      (eraseAConfig ⟨input, .cons (.prim primitive) rest, nextTag⟩)
+      (eraseAConfig ⟨output, rest, nextTag'⟩) := by
+  rcases h with ⟨specification, plainInput, plainOutput, hname, hin, hdelta,
+    hout, hnext, hnd, htags⟩
+  refine ⟨costs.primitive primitive, ?_⟩
+  simp only [step, eraseAConfig, eraseValue, eraseAtom, eraseProgram,
+    hname, hin, hdelta, hout]
+
 theorem instrumented_step_erases
     (hstep : InstrumentedStep gamma dictionary costs before after) :
     HasSuccessor gamma dictionary costs (eraseAConfig before) (eraseAConfig after) := by
   cases hstep with
-  | lit h nextTag => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
-      eraseProgram, h]
-  | push => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom, eraseProgram]
-  | quotation => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
-      eraseProgram, aQuotationSource, aQuotationTarget]
-  | dup h => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
-      eraseProgram, h]
-  | drop h => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
-      eraseProgram, h]
-  | swap => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom, eraseProgram]
-  | call => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
-      eraseProgram, eraseProgram_append]
-  | dip => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
-      eraseProgram, eraseProgram_append]
-  | compose => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
-      eraseProgram, eraseProgram_append]
-  | quote => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
-      eraseProgram, quotationUsage]
-  | ifThenElse => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
-      eraseProgram, eraseProgram_append, eraseProgram_if]
-  | word h =>
-      rcases h with ⟨entry, hdict, herase, hfront⟩
-      simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom, eraseProgram,
-        hdict, herase, eraseProgram_append]
-  | prim h =>
-      rcases h with ⟨specification, plainInput, plainOutput, hname, hin, hdelta,
-        hout, hnext, hnd, htags⟩
-      simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom, eraseProgram,
-        hname, hin, hdelta, hout]
+  | lit h nextTag => exact instrumented_step_erases_lit h nextTag
+  | push => exact instrumented_step_erases_push
+  | quotation => exact instrumented_step_erases_quotation
+  | dup h => exact instrumented_step_erases_dup h
+  | drop h => exact instrumented_step_erases_drop h
+  | swap => exact instrumented_step_erases_swap
+  | call => exact instrumented_step_erases_call
+  | dip => exact instrumented_step_erases_dip
+  | compose => exact instrumented_step_erases_compose
+  | quote => exact instrumented_step_erases_quote
+  | ifThenElse => exact instrumented_step_erases_ifThenElse
+  | word h => exact instrumented_step_erases_word h
+  | prim h => exact instrumented_step_erases_prim h
 
 def InstrumentedTrace (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable) :
     AConfig → List AConfig → Prop
