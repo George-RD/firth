@@ -33,6 +33,36 @@ theorem quotation_capture_footprint {value : Value} {type : ValueType}
     quotationUsage value = type.usage := by
   exact quotationUsage_of_typing hv
 
+theorem usageMeet_assoc (a b c : Usage) :
+    usageMeet (usageMeet a b) c = usageMeet a (usageMeet b c) := by
+  cases a <;> cases b <;> cases c <;> rfl
+
+theorem usageMeet_many_right (usage : Usage) :
+    usageMeet .many usage = usage := by
+  cases usage <;> rfl
+
+theorem programTyping_append (left right : Program) {input middle output : StackType}
+    (leftTyping : ProgramTyping gamma dictionary left input middle)
+    (rightTyping : ProgramTyping gamma dictionary right middle output) :
+    ProgramTyping gamma dictionary (left.append right) input output := by
+  cases left with
+  | empty =>
+      cases leftTyping
+      simpa [Program.append] using rightTyping
+  | cons head tail =>
+      cases leftTyping with
+      | cons headTyping tailTyping =>
+          exact ProgramTyping.cons headTyping
+            (programTyping_append tail right tailTyping rightTyping)
+
+theorem programUsage_append (left right : Program) :
+    programUsage (left.append right) = usageMeet (programUsage left) (programUsage right) := by
+  cases left with
+  | empty => simp [Program.append, programUsage, usageMeet_many_right]
+  | cons head tail =>
+      simp [Program.append, programUsage,
+        programUsage_append tail right, usageMeet_assoc]
+
 theorem stackTyping_snoc_inv {rest : StackType} {type : ValueType} {stack : Stack}
     (hs : StackTyping gamma dictionary stack (.snoc rest type)) :
     ∃ value tail, stack = value :: tail ∧
