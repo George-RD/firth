@@ -160,25 +160,34 @@ leaves `[b,c,a]`. Focus never copies or discards a value.
 A local name is a select operation that places its slot on top for the next
 ordinary item. If a slot has `d` total selects, the first select emits
 `focus(x,S)` followed by exactly `d - 1` `dup` atoms, provided `x` is `many`.
-The resulting copies receive distinct identities and preserve one copy for
-each future select before any intervening consumer can remove a selected copy.
-For `d = 1` no `dup` is emitted. A linear slot must have exactly one select and
-is never passed to `dup`. Ordinary words and primitives then apply their
-declared stack effects to `S`, consuming and producing fresh slot identities
-as appropriate. The kernel type checker validates every transition.
+The original and each resulting copy receive distinct identities in production
+order. Every select always uses the most recently produced identity that remains
+available in `S`, including the first select; consequently, the original
+identity is selected last. This agrees with `dup` leaving its newly produced
+copy on top. A selected identity is marked used and removed from the available
+set immediately, so consecutive demands select distinct identities. A used
+identity never becomes available again; an ordinary word or primitive may
+consume it or leave it on `S` according to its declared stack effect. For
+`d = 1` no `dup` is emitted. A linear slot must have exactly one select and is
+never passed to `dup`. Ordinary words and primitives then apply their declared
+stack effects to `S`, consuming and producing fresh slot identities as
+appropriate. The kernel type checker validates every transition.
 
-At the end of the block, cleanup repeatedly chooses the unused slot nearest the
-top of the current stack (breaking any tie by the stable bottom-to-top slot
-order), emits `focus(x,S)`, and then emits `drop`. The stack state is updated
-after each removal. A linear slot with no select, or any slot that would need
-to be silently discarded, is an error.
+At the end of the block, cleanup repeatedly chooses the unused declared-local
+slot identity nearest the top of the current stack (breaking any tie by the
+stable bottom-to-top slot order), emits `focus(x,S)`, and then emits `drop`.
+Fresh identities produced by ordinary items and identities marked used by a
+select are not cleanup candidates. The stack state is updated after each
+removal. A linear slot with no select, or any slot that would need to be
+silently discarded, is an error.
 
 This is a total algorithm: the finite body is scanned once, each focus emits a
-finite number of adjacent swaps, and each usage count is finite. It fails with
-a diagnostic if a name is absent, a required focus is not represented by the
-current typed stack, or a linear usage count is not exactly one. The canonical
-output is therefore unique and contains only kernel atoms, dictionary words,
-primitives, and recursively constructed quotation literals.
+finite number of adjacent swaps, each usage count is finite, and the
+most-recently-produced remaining copy rule gives exactly one identity to every
+demand. It fails with a diagnostic if a name is absent, a required focus is not
+represented by the current typed stack, or a linear usage count is not exactly
+one. The canonical output is therefore unique and contains only kernel atoms,
+dictionary words, primitives, and recursively constructed quotation literals.
 
 The frozen `dip` atom is never emitted bare. Its only legal expansion is
 `[q] dip`: first recursively erase `q` to a complete kernel program, construct
@@ -193,6 +202,13 @@ expansion total, with no search or implementation-defined choice.
 
 The expansion is checked normally, so locals cannot bypass stack, usage, or
 refinement checking.
+
+The same algorithm is applied recursively to every nested quotation or local
+block. Each body is erased against its own typed symbolic stack, and each local
+declaration creates a fresh identity family scoped to that body; no local copy
+identity is selected across a quotation boundary. The completed unique kernel
+expansion of a nested body is then used as the body of its enclosing quotation
+or local expansion.
 
 The linter reports `LOCAL_DEPTH` when a local block declares more than four
 names and `STACK_JUGGLE` when its expansion contains more than four
