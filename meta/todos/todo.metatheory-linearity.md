@@ -11,10 +11,7 @@ created: 2026-07-17
 Mechanise finite-trace linearity soundness for the frozen v0.1 kernel without
 admitted proofs.
 
-## Requires
-
-- `metatheory-preservation`
-- `kernel-spec-freeze`
+Requires: metatheory-preservation, kernel-spec-freeze
 
 ## Acceptance criteria
 
