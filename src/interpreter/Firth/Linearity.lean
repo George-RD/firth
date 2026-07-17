@@ -54,10 +54,10 @@ theorem linearFootprint_quote_capture {value : Value} {stack : Stack} {rest : Pr
     Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
 
 def consumedOwners (before after : Ownerships) : Ownerships :=
-  before.filter (fun id => id ∉ after)
+  before.filter (fun id => !(after.contains id))
 
 def producedOwners (before after : Ownerships) : Ownerships :=
-  after.filter (fun id => id ∉ before)
+  after.filter (fun id => !(before.contains id))
 
 def OwnershipAccounting (before after : Config) : Prop :=
   (consumedOwners (configOwners before) (configOwners after)).Nodup ∧
@@ -185,10 +185,30 @@ def eraseAConfig (config : AConfig) : Config :=
   { stack := config.stack.map eraseValue, program := eraseProgram config.program }
 
 mutual
+theorem eraseProgram_append (left right : AProgram) :
+      eraseProgram (AProgram.append left right) =
+        (eraseProgram left).append (eraseProgram right) := by
+    cases left with
+    | empty => rfl
+    | cons head tail =>
+        simp [AProgram.append, eraseProgram, eraseProgram_append, Program.append]
+end
+
+theorem usageMeet_decide (left right : Usage) :
+    (if left == .linear || right == .linear then .linear else .many) =
+      usageMeet left right := by
+  cases left <;> cases right <;> rfl
+
+theorem eraseProgram_if (condition : Bool) (trueBranch falseBranch : AProgram) :
+    eraseProgram (if condition then trueBranch else falseBranch) =
+      if condition then eraseProgram trueBranch else eraseProgram falseBranch := by
+  cases condition <;> rfl
+
+mutual
   def taggedLinearTagsValue : AValue → Ownerships
-    | .literal _ _ => []
+    | .literal tag _ => [tag]
     | .world tag _ => [tag]
-    | .quotation _ body _ => taggedLinearTagsProgram body
+    | .quotation tag body _ => tag :: taggedLinearTagsProgram body
 
   def taggedLinearTagsAtom : AAtom → Ownerships
     | .push value => taggedLinearTagsValue value
@@ -200,8 +220,24 @@ mutual
     | .cons head tail => taggedLinearTagsAtom head ++ taggedLinearTagsProgram tail
 end
 
+mutual
+  theorem taggedLinearTagsProgram_append (left right : AProgram) :
+      taggedLinearTagsProgram (AProgram.append left right) =
+        taggedLinearTagsProgram left ++ taggedLinearTagsProgram right := by
+    cases left with
+    | empty => rfl
+    | cons head tail =>
+        simp [AProgram.append, taggedLinearTagsProgram,
+          taggedLinearTagsProgram_append, List.append_assoc]
+end
+
+def taggedLinearTagsValueList : AStack → Ownerships
+  | [] => []
+  | value :: tail => taggedLinearTagsValue value ++ taggedLinearTagsValueList tail
+
 def taggedLinearTags (config : AConfig) : Ownerships :=
-  config.stack.flatMap taggedLinearTagsValue ++ taggedLinearTagsProgram config.program
+  config.stack.foldr (fun value tags => taggedLinearTagsValue value ++ tags) [] ++
+    taggedLinearTagsProgram config.program
 
 def InstrumentedWellFormed (config : AConfig) : Prop :=
   (taggedLinearTags config).Nodup ∧
@@ -215,9 +251,20 @@ def FreshTag (before after : AConfig) (tag : Tag) : Prop :=
 def TagPreserving (before after : AConfig) : Prop :=
   taggedLinearTags before = taggedLinearTags after ∧ after.nextTag = before.nextTag
 
-def taggedLinearTagsValueList : AStack → Ownerships
-  | [] => []
-  | value :: tail => taggedLinearTagsValue value ++ taggedLinearTagsValueList tail
+theorem taggedLinearTagsValueList_eq_flatMap (stack : AStack) :
+    taggedLinearTagsValueList stack = stack.flatMap taggedLinearTagsValue := by
+  induction stack with
+  | nil => rfl
+  | cons value tail ih => simp [taggedLinearTagsValueList, ih]
+
+theorem taggedLinearTagsValueList_eq_foldr (stack : AStack) :
+    taggedLinearTagsValueList stack =
+      stack.foldr (fun value tags => taggedLinearTagsValue value ++ tags) [] := by
+  induction stack with
+  | nil => rfl
+  | cons value tail ih => simp [taggedLinearTagsValueList, ih]
+
+attribute [-simp] List.mem_flatMap
 
 def PrimitiveTagContract (gamma : Gamma) (name : Prim)
     (input output : AStack) (nextTag nextTag' : Tag) : Prop :=
@@ -237,7 +284,7 @@ def aQuotationSource (stack : AStack) (body rest : AProgram) (nextTag : Tag) : A
   { stack := stack, program := .cons (.quotation body) rest, nextTag := nextTag }
 
 def aQuotationTarget (stack : AStack) (body rest : AProgram) (nextTag : Tag) : AConfig :=
-  { stack := .quotation nextTag body .many :: stack, program := rest,
+  { stack := .quotation nextTag body (programUsage (eraseProgram body)) :: stack, program := rest,
     nextTag := nextTag + 1 }
 
 inductive InstrumentedStep (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable) :
@@ -248,7 +295,7 @@ inductive InstrumentedStep (gamma : Gamma) (dictionary : Dictionary) (costs : Co
       InstrumentedStep gamma dictionary costs
         { stack := config.stack, program := (.cons (.lit literal) rest), nextTag := nextTag }
         { stack := (.literal nextTag literal :: config.stack), program := rest,
-          nextTag := nextTag }
+          nextTag := nextTag + 1 }
   | push {value : AValue} {stack : AStack} {rest : AProgram} {nextTag : Tag} :
       InstrumentedStep gamma dictionary costs
         { stack := stack, program := (.cons (.push value) rest), nextTag := nextTag }
@@ -284,17 +331,18 @@ inductive InstrumentedStep (gamma : Gamma) (dictionary : Dictionary) (costs : Co
           program := .cons .dip rest, nextTag := nextTag }
         { stack := tail, program := AProgram.append body (.cons (.push value) rest), nextTag := nextTag }
   | compose {first second : AProgram} {usage₁ usage₂ : Usage} {tail : AStack}
-      {rest : AProgram} {tag₁ tag₂ tag : Tag} :
+      {rest : AProgram} {tag₁ tag₂ nextTag : Tag} :
       InstrumentedStep gamma dictionary costs
         { stack := .quotation tag₂ second usage₂ :: .quotation tag₁ first usage₁ :: tail,
           program := .cons .compose rest, nextTag := nextTag }
-        { stack := .quotation tag (AProgram.append first second) (usageMeet usage₁ usage₂) :: tail,
-          program := rest, nextTag := nextTag }
+        { stack := .quotation nextTag (AProgram.append first second)
+            (if usage₁ == .linear || usage₂ == .linear then .linear else .many) :: tail,
+          program := rest, nextTag := nextTag + 1 }
   | quote {value : AValue} {tail : AStack} {rest : AProgram} {nextTag : Tag} :
       InstrumentedStep gamma dictionary costs
         { stack := value :: tail, program := .cons .quote rest, nextTag := nextTag }
         { stack := .quotation nextTag (.cons (.push value) .empty) (quotationUsage (eraseValue value)) :: tail,
-          program := rest, nextTag := nextTag }
+          program := rest, nextTag := nextTag + 1 }
   | ifThenElse {condition : Bool} {trueBranch falseBranch : AProgram} {tail : AStack}
       {rest : AProgram} {falseTag trueTag conditionTag nextTag : Tag} :
       InstrumentedStep gamma dictionary costs
@@ -304,7 +352,9 @@ inductive InstrumentedStep (gamma : Gamma) (dictionary : Dictionary) (costs : Co
         { stack := tail, program := AProgram.append (if condition then trueBranch else falseBranch) rest,
           nextTag := nextTag }
   | word {name : String} {body : AProgram} {stack : AStack} {rest : AProgram}
-      {nextTag : Tag} (h : ∃ entry, dictionary name = some entry ∧ eraseProgram body = entry.body) :
+      {nextTag : Tag}
+      (h : ∃ entry, dictionary name = some entry ∧ eraseProgram body = entry.body ∧
+        ∀ tag, tag ∈ taggedLinearTagsProgram body → tag < nextTag) :
       InstrumentedStep gamma dictionary costs
         { stack := stack, program := .cons (.word name) rest, nextTag := nextTag }
         { stack := stack, program := AProgram.append body rest, nextTag := nextTag }
@@ -316,6 +366,198 @@ inductive InstrumentedStep (gamma : Gamma) (dictionary : Dictionary) (costs : Co
 
 def FrontierInvariant (config : AConfig) : Prop :=
   ∀ tag, tag ∈ taggedLinearTags config → tag < config.nextTag
+
+theorem frontier_succ {tag frontier : Tag}
+    (h : tag = frontier ∨ tag < frontier) : tag < frontier + 1 := by
+  rcases h with rfl | h
+  · exact Nat.lt_succ_self _
+  · exact Nat.lt_succ_of_lt h
+
+theorem instrumented_frontier_preserved
+    (before after : AConfig) (hbefore : FrontierInvariant before)
+    (hstep : InstrumentedStep gamma dictionary costs before after) :
+    FrontierInvariant after := by
+  cases hstep with
+  | lit h nextTag =>
+      intro tag htag
+      simp [aQuotationTarget, taggedLinearTags, taggedLinearTagsValue] at htag
+      rcases htag with hfresh | hold
+      · have : tag = nextTag := by simpa [taggedLinearTagsValue] using hfresh
+        subst tag
+        exact Nat.lt_succ_self _
+      · have hold' := hbefore tag (by simpa [taggedLinearTags,
+          taggedLinearTagsProgram, taggedLinearTagsAtom, taggedLinearTagsValue,
+          or_comm, or_left_comm, or_assoc] using hold)
+        exact Nat.lt_succ_of_lt hold'
+  | push =>
+      intro tag htag
+      exact hbefore tag (by simpa [taggedLinearTags, taggedLinearTagsProgram,
+        taggedLinearTagsAtom, taggedLinearTagsValue, or_comm, or_left_comm,
+        or_assoc] using htag)
+  | quotation =>
+      rename_i body stack rest nextTag
+      intro tag htag
+      simp [aQuotationTarget, taggedLinearTags, taggedLinearTagsValue] at htag
+      rcases htag with hfresh | hrest
+      · have : tag = nextTag := by simpa [taggedLinearTagsValue] using hfresh
+        subst tag
+        exact Nat.lt_succ_self _
+      · exact Nat.lt_succ_of_lt (hbefore tag (by simpa [aQuotationSource,
+          taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
+          taggedLinearTagsValue, or_comm, or_left_comm, or_assoc] using hrest))
+  | dup h =>
+      intro tag htag
+      exact hbefore tag (by simpa [taggedLinearTags, taggedLinearTagsProgram,
+        taggedLinearTagsAtom, taggedLinearTagsValue, h, or_comm, or_left_comm,
+        or_assoc] using htag)
+  | drop h =>
+      intro tag htag
+      exact hbefore tag (by simpa [taggedLinearTags, taggedLinearTagsProgram,
+        taggedLinearTagsAtom, taggedLinearTagsValue, h, or_comm, or_left_comm,
+        or_assoc] using htag)
+  | swap =>
+      intro tag htag
+      exact hbefore tag (by simpa [taggedLinearTags, taggedLinearTagsProgram,
+        taggedLinearTagsAtom, taggedLinearTagsValue, or_comm, or_left_comm,
+        or_assoc] using htag)
+  | call =>
+      rename_i body tail rest usage tag nextTag
+      intro tag htag
+      simp [taggedLinearTags] at htag
+      apply hbefore tag
+      rcases htag with htail | hprog
+      · simp [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
+          taggedLinearTagsValue, htail, or_comm, or_left_comm, or_assoc]
+      · rw [taggedLinearTagsProgram_append] at hprog
+        rcases List.mem_append.mp hprog with hbody | hrest
+        · simp [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
+            taggedLinearTagsValue, hbody, or_comm, or_left_comm, or_assoc]
+        · simp [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
+            taggedLinearTagsValue, hrest, or_comm, or_left_comm, or_assoc]
+  | dip =>
+      rename_i body value tail rest usage tag nextTag
+      intro tag htag
+      simp [taggedLinearTags] at htag
+      apply hbefore tag
+      rcases htag with htail | hprog
+      · simp [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
+          taggedLinearTagsValue, htail, or_comm, or_left_comm, or_assoc]
+      · rw [taggedLinearTagsProgram_append] at hprog
+        rcases List.mem_append.mp hprog with hbody | hrest
+        · simp [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
+            taggedLinearTagsValue, hbody, or_comm, or_left_comm, or_assoc]
+        · change tag ∈ taggedLinearTagsValue value ++ taggedLinearTagsProgram rest at hrest
+          rcases List.mem_append.mp hrest with hvalue | hrest
+          · simp [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
+              taggedLinearTagsValue, hvalue, or_comm, or_left_comm, or_assoc]
+          · simp [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
+              taggedLinearTagsValue, hrest, or_comm, or_left_comm, or_assoc]
+  | compose =>
+      rename_i first second usage₁ usage₂ tail rest tag₁ tag₂ nextTag
+      intro tag htag
+      simp [taggedLinearTags, taggedLinearTagsValue] at htag
+      rcases htag with hfresh | hrest
+      · have : tag = nextTag := by simpa using hfresh
+        subst tag
+        exact Nat.lt_succ_self _
+      · apply Nat.lt_succ_of_lt
+        apply hbefore tag
+        rw [taggedLinearTagsProgram_append] at hrest
+        rcases hrest with h12 | htail | hrest
+        · rcases List.mem_append.mp h12 with hfirst | hsecond
+          · simp [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
+              taggedLinearTagsValue, hfirst, or_comm, or_left_comm, or_assoc]
+          · simp [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
+              taggedLinearTagsValue, hsecond, or_comm, or_left_comm, or_assoc]
+        · rcases htail with ⟨a, ha, hatag⟩
+          simp only [taggedLinearTags, List.mem_append, taggedLinearTagsValue,
+            taggedLinearTagsProgram, taggedLinearTagsAtom]
+          simp_all [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
+            taggedLinearTagsValue, or_comm, or_left_comm, or_assoc]
+          right
+          right
+          right
+          right
+          right
+          exact ⟨a, ha, hatag⟩
+        · simp [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
+            taggedLinearTagsValue, hrest, or_comm, or_left_comm, or_assoc]
+  | quote =>
+      rename_i value tail rest nextTag
+      intro tag htag
+      simp [taggedLinearTags, taggedLinearTagsValue] at htag
+      rcases htag with hfresh | hold
+      · have : tag = nextTag := by simpa [taggedLinearTagsValue] using hfresh
+        subst tag
+        exact Nat.lt_succ_self _
+      · exact Nat.lt_succ_of_lt (hbefore tag (by simpa [taggedLinearTags,
+        taggedLinearTagsProgram,
+        taggedLinearTagsAtom, taggedLinearTagsValue, or_comm, or_left_comm,
+        or_assoc] using hold))
+  | ifThenElse =>
+      rename_i condition trueBranch falseBranch tail rest falseTag trueTag conditionTag nextTag
+      intro tag htag
+      cases condition <;> exact hbefore tag (by
+        simp_all [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
+          taggedLinearTagsValue, taggedLinearTagsProgram_append, AProgram.append,
+          List.mem_append, or_comm, or_left_comm, or_assoc])
+  | word h =>
+      rcases h with ⟨entry, hname, hbody, htags⟩
+      intro tag htag
+      simp only [taggedLinearTags, List.mem_append] at htag
+      rcases htag with hstack | hprog
+      · exact hbefore tag (by
+          simp only [taggedLinearTags, List.mem_append]
+          exact Or.inl hstack)
+      · simp only [taggedLinearTagsProgram_append, List.mem_append] at hprog
+        rcases hprog with hbody' | hrest
+        · exact htags tag hbody'
+        · exact hbefore tag (by simp [taggedLinearTags, taggedLinearTagsProgram, hrest])
+  | prim h =>
+      rcases h with ⟨specification, plainInput, plainOutput, hname, hin, hdelta,
+        hout, hnext, hnd, htags⟩
+      intro tag htag
+      simp only [taggedLinearTags, List.mem_append] at htag
+      rcases htag with houtput | hrest
+      · exact htags tag (by
+          rw [taggedLinearTagsValueList_eq_foldr]
+          exact houtput)
+      · exact Nat.lt_of_lt_of_le
+          (hbefore tag (by simp [taggedLinearTags, taggedLinearTagsProgram, hrest])) hnext
+
+theorem instrumented_step_erases
+    (hstep : InstrumentedStep gamma dictionary costs before after) :
+    HasSuccessor gamma dictionary costs (eraseAConfig before) (eraseAConfig after) := by
+  cases hstep with
+  | lit h nextTag => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
+      eraseProgram, h]
+  | push => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom, eraseProgram]
+  | quotation => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
+      eraseProgram, aQuotationSource, aQuotationTarget]
+  | dup h => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
+      eraseProgram, h]
+  | drop h => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
+      eraseProgram, h]
+  | swap => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom, eraseProgram]
+  | call => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
+      eraseProgram, eraseProgram_append]
+  | dip => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
+      eraseProgram, eraseProgram_append]
+  | compose => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
+      eraseProgram, eraseProgram_append]
+  | quote => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
+      eraseProgram, quotationUsage]
+  | ifThenElse => simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom,
+      eraseProgram, eraseProgram_append, eraseProgram_if]
+  | word h =>
+      rcases h with ⟨entry, hdict, herase, hfront⟩
+      simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom, eraseProgram,
+        hdict, herase, eraseProgram_append]
+  | prim h =>
+      rcases h with ⟨specification, plainInput, plainOutput, hname, hin, hdelta,
+        hout, hnext, hnd, htags⟩
+      simp [HasSuccessor, step, eraseAConfig, eraseValue, eraseAtom, eraseProgram,
+        hname, hin, hdelta, hout]
 
 def InstrumentedTrace (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable) :
     AConfig → List AConfig → Prop
