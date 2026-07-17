@@ -254,6 +254,113 @@ def run (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable) : Nat → 
               | .stuck stuckConfig steps cost => .stuck stuckConfig (steps + 1) (cost + stepCost)
               | .outOfFuel last steps cost => .outOfFuel last (steps + 1) (cost + stepCost)
 
+/-! The shared kernel typing judgements. Concrete stacks are typed by extending
+the symbolic row `ρ` from the bottom upwards; this matches the executable
+top-first stack representation with the specification's bottom-to-top rules. -/
+
+def usageMeet : Usage → Usage → Usage
+  | .many, .many => .many
+  | _, _ => .linear
+
+def ValueType.usage : ValueType → Usage
+  | .base _ usage => usage
+  | .quotation _ _ usage => usage
+
+mutual
+  inductive ValueTyping (gamma : Gamma) (dictionary : Dictionary) : Value → ValueType → Prop where
+    | literal {literal : Literal} {base : BaseType}
+        (h : gamma.literalType literal = some base) :
+        ValueTyping gamma dictionary (.literal literal) (.base base .many)
+    | quotation {body : Program} {input output : StackType} {usage : Usage}
+        (h : ProgramTyping gamma dictionary body input output) :
+        ValueTyping gamma dictionary (.quotation body usage)
+          (.quotation input output usage)
+    | world {id : Nat} :
+        ValueTyping gamma dictionary (.world id) (.base .world .linear)
+
+  inductive StackTyping (gamma : Gamma) (dictionary : Dictionary) : Stack → StackType → Prop where
+    | empty : StackTyping gamma dictionary [] (.row "ρ")
+    | cons {value : Value} {tail : Stack} {rest : StackType} {type : ValueType}
+        (valueType : ValueTyping gamma dictionary value type)
+        (tailType : StackTyping gamma dictionary tail rest) :
+        StackTyping gamma dictionary (value :: tail) (.snoc rest type)
+
+  inductive AtomTyping (gamma : Gamma) (dictionary : Dictionary) : Atom → StackType → StackType → Prop where
+    | lit {literal : Literal} {base : BaseType} {stack : StackType}
+        (h : gamma.literalType literal = some base) :
+        AtomTyping gamma dictionary (.lit literal) stack
+          (.snoc stack (.base base .many))
+    | push {value : Value} {type : ValueType} {stack : StackType}
+        (h : ValueTyping gamma dictionary value type) :
+        AtomTyping gamma dictionary (.push value) stack (.snoc stack type)
+    | quotation {body : Program} {input output stack : StackType}
+        (h : ProgramTyping gamma dictionary body input output) :
+        AtomTyping gamma dictionary (.quotation body) stack
+          (.snoc stack (.quotation input output .many))
+    | dup {stack : StackType} {type : ValueType}
+        (h : type.usage = .many) :
+        AtomTyping gamma dictionary .dup (.snoc stack type)
+          (.snoc (.snoc stack type) type)
+    | drop {stack : StackType} {type : ValueType}
+        (h : type.usage = .many) :
+        AtomTyping gamma dictionary .drop (.snoc stack type) stack
+    | swap {stack : StackType} {first second : ValueType} :
+        AtomTyping gamma dictionary .swap (.snoc (.snoc stack first) second)
+          (.snoc (.snoc stack second) first)
+    | call {input output : StackType} {usage : Usage} :
+        AtomTyping gamma dictionary .call
+          (.snoc input (.quotation input output usage)) output
+    | dip {input output : StackType} {type : ValueType} {usage : Usage} :
+        AtomTyping gamma dictionary .dip
+          (.snoc (.snoc input type) (.quotation input output usage))
+          (.snoc output type)
+    | compose {stack input middle output : StackType} {usage₁ usage₂ : Usage} :
+        AtomTyping gamma dictionary .compose
+          (.snoc (.snoc stack (.quotation input middle usage₁))
+            (.quotation middle output usage₂))
+          (.snoc stack (.quotation input output (usageMeet usage₁ usage₂)))
+    | quote {stack : StackType} {type : ValueType} {row : String} :
+        AtomTyping gamma dictionary .quote (.snoc stack type)
+          (.snoc stack (.quotation (.row row) (.snoc (.row row) type)
+            (usageMeet .many type.usage)))
+    | ifThenElse {input output : StackType} :
+        AtomTyping gamma dictionary .ifThenElse
+          (.snoc (.snoc (.snoc input (.base .bool .many))
+            (.quotation input output .many)) (.quotation input output .many)) output
+    | word {name : String} {input output : StackType}
+        (h : ∃ entry, dictionary name = some entry ∧ entry.type.input = input ∧
+          entry.type.output = output) :
+        AtomTyping gamma dictionary (.word name) input output
+    | prim {name : Prim} {specification : PrimitiveSpec}
+        (h : gamma.primitive name = some specification) :
+        AtomTyping gamma dictionary (.prim name) specification.input specification.output
+
+  inductive ProgramTyping (gamma : Gamma) (dictionary : Dictionary) :
+      Program → StackType → StackType → Prop where
+    | empty {stack : StackType} :
+        ProgramTyping gamma dictionary .empty stack stack
+    | cons {head : Atom} {tail : Program} {input middle output : StackType}
+        (headType : AtomTyping gamma dictionary head input middle)
+        (tailType : ProgramTyping gamma dictionary tail middle output) :
+        ProgramTyping gamma dictionary (.cons head tail) input output
+end
+
+def TypedConfig (gamma : Gamma) (dictionary : Dictionary) (config : Config) : Prop :=
+  ∃ stackType outputType,
+    StackTyping gamma dictionary config.stack stackType ∧
+      ProgramTyping gamma dictionary config.program stackType outputType
+
+def DictionaryWellTyped (gamma : Gamma) (dictionary : Dictionary) : Prop :=
+  ∀ name entry, dictionary name = some entry →
+    ProgramTyping gamma dictionary entry.body entry.type.input entry.type.output
+
+def PrimitivesPreserve (gamma : Gamma) (dictionary : Dictionary) : Prop :=
+  ∀ name specification stack result,
+    gamma.primitive name = some specification →
+    StackTyping gamma dictionary stack specification.input →
+    specification.delta stack = some result →
+    StackTyping gamma dictionary result specification.output
+
 def emptyDictionary : Dictionary := fun _ => none
 
 end Firth.Interpreter
