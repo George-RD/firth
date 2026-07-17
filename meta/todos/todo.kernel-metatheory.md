@@ -23,6 +23,20 @@ sequence-cost foundations and adds the zero-admit check.  The remaining
 obligations are deferred under `dec.kernel-metatheory-shared-library`; no
 admitted theorem or weakened typing theorem is introduced.
 
+## Decomposition
+
+- `metatheory-preservation`: add the frozen typing and typed-configuration
+  judgements, then prove step preservation, including capture-aware quotation
+  usage and many-only literals.
+- `metatheory-progress`: Requires `metatheory-preservation`; prove every
+  well-typed non-terminal configuration steps under dictionary and primitive
+  well-formedness.
+- `metatheory-linearity`: Requires `metatheory-preservation`; prove finite
+  trace at-most-once consumption and conditional exact-once consumption only
+  with termination and empty linear residue premises.
+- `metatheory-cost-invariance`: Requires `metatheory-preservation`; prove
+  parameterised cost well-definedness and compositionality over `SEQ`.
+
 ## Blockers
 Depends on the frozen kernel rules and the pinned Lean project; it must land before compiler correctness claims.
 
