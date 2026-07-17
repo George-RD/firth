@@ -32,6 +32,9 @@ System Firth "Concatenative language elaborated through Lean 4 and compiled to a
 
         Module Elaborator "Elaborator: surface syntax into kernel terms, embedded in Lean 4; checks types, linearity, and proof obligations" id "firth.toolchain.elaborator" {
             path "src/elaborator"
+            path "lean-toolchain"
+            path "lakefile.toml"
+            path "lake-manifest.json"
         }
 
         Module Interpreter "Reference interpreter: deliberately simple executable semantics in Lean, the behavioural oracle for program meaning" id "firth.toolchain.interpreter" {

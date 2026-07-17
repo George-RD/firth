@@ -67,10 +67,9 @@ combinator. Effects are modelled by a linear `World` base type in the signature
 
 ## Development Commands
 
-There is no product source or Lake project yet, but the control-plane tooling is
-operational. The current commands are selector, coverage, and Cairn governance
-checks; Lean gates are staged for when a root `lakefile.toml` or
-`lakefile.lean` lands:
+There is no product source yet, but the root Lake package and Lean toolchain pin
+are now declared. The control-plane tooling remains operational, and product
+Lean gates stay meaningful only once source targets and a test driver exist:
 
 ```sh
 cairn status          # project summary: nodes, findings, backlog. Start here.
@@ -85,15 +84,25 @@ python3 tools/loop/test_select_unit.py
 python3 tools/loop/test_coverage.py
 python3 tools/loop/select_unit.py --validate
 python3 tools/loop/coverage.py --validate
+
+# Once Lean source targets exist:
+lake build
+# When a Lake lint/test driver is configured:
+lake lint
+lake test
+! rg -n '\b(sorry|admit)\b' src
+git diff --check
 ```
 
 For the autonomous Codex loop launch contract and maintainer preflight, read
 [`docs/loop-runbook.md`](docs/loop-runbook.md). It defines the required
 `origin/main` publication, invocation, terminal tokens, and smoke checks.
 
-`--json` is accepted by every command for machine-readable output. Once a Lake
-project lands, the staged gates are `lake build` and `lake test` when a test
-driver is configured, alongside Cairn scan and hook checks.
+`--json` is accepted by every command for machine-readable output. The Lean CI
+gate is formatting, compilation, tests when a test driver is configured, and a
+zero-admit scan once source targets exist, alongside Cairn scan and hook checks.
+The current root package has no Lean targets yet, so these commands are a
+declared CI contract rather than an implementation claim.
 
 ## Code Conventions & Common Patterns
 
