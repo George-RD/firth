@@ -41,6 +41,10 @@ theorem usageMeet_many_right (usage : Usage) :
     usageMeet .many usage = usage := by
   cases usage <;> rfl
 
+theorem usageMeet_many_left (usage : Usage) :
+    usageMeet usage .many = usage := by
+  cases usage <;> rfl
+
 theorem programTyping_append (left right : Program) {input middle output : StackType}
     (leftTyping : ProgramTyping gamma dictionary left input middle)
     (rightTyping : ProgramTyping gamma dictionary right middle output) :
@@ -102,5 +106,42 @@ theorem atomSequenceCost_append (costs : CostTable)
     sequenceCost costs.atom (left ++ right) =
       sequenceCost costs.atom left + sequenceCost costs.atom right :=
   sequenceCost_append costs.atom left right
+
+theorem preservation_lit {literal : Literal} {stack : Stack}
+    {stackType output : StackType} {base : BaseType}
+    (literalTyping : gamma.literalType literal = some base)
+    (stackTyping : StackTyping gamma dictionary stack stackType)
+    (restTyping : ProgramTyping gamma dictionary rest
+      (.snoc stackType (.base base .many)) output) :
+    TypedConfig gamma dictionary
+      { stack := .literal literal :: stack, program := rest } := by
+  exact ⟨_, _, StackTyping.cons (.literal literalTyping) stackTyping, restTyping⟩
+
+theorem preservation_quote {value : Value} {type : ValueType} {stack : Stack}
+    {stackType output : StackType}
+    (valueTyping : ValueTyping gamma dictionary value type)
+    (stackTyping : StackTyping gamma dictionary stack stackType)
+    (restTyping : ProgramTyping gamma dictionary rest
+      (.snoc stackType (.quotation (.row "ρ") (.snoc (.row "ρ") type)
+        (usageMeet .many type.usage))) output) :
+    TypedConfig gamma dictionary
+      { stack := .quotation (.cons (.push value) .empty) (quotationUsage value) :: stack,
+        program := rest } := by
+  have usageBridge : quotationUsage value = usageMeet .many type.usage := by
+    cases valueTyping with
+    | literal h => rfl
+    | world => rfl
+    | quotation h => cases programUsage _ <;> rfl
+  have bodyTyping : ProgramTyping gamma dictionary
+      (.cons (.push value) .empty) (.row "ρ")
+      (.snoc (.row "ρ") type) := push_program_typing valueTyping
+  have quotationTyping : ValueTyping gamma dictionary
+      (.quotation (.cons (.push value) .empty) (quotationUsage value))
+      (.quotation (.row "ρ") (.snoc (.row "ρ") type)
+        (usageMeet .many type.usage)) := by
+    simpa [programUsage, atomUsage, usageBridge, usageMeet_many_left,
+      usageMeet_many_right, usageMeet_assoc] using
+      (ValueTyping.quotation bodyTyping)
+  exact ⟨_, _, StackTyping.cons quotationTyping stackTyping, restTyping⟩
 
 end Firth.Interpreter
