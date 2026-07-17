@@ -4,6 +4,12 @@ import Firth.Linearity
 
 open Firth.Interpreter
 
+def testPolicy : PrimitiveOwnershipPolicy where
+  authorised := fun name consumed produced =>
+    (name == "addNat" ∧ consumed = [] ∧ produced = []) ∨
+    (name == "makeWorld" ∧ consumed = [] ∧ produced.length = 1) ∨
+    (name == "consumeWorld" ∧ consumed.length = 1 ∧ produced = [])
+
 #print axioms eraseProgram_append
 #print axioms usageMeet_decide
 #print axioms eraseProgram_if
@@ -89,7 +95,7 @@ example (tag : Tag) :
   rfl
 
 example (tag : Tag) :
-    ∃ step : InstrumentedStep defaultGamma emptyDictionary defaultCosts
+    ∃ step : InstrumentedStep testPolicy defaultGamma emptyDictionary defaultCosts
         { stack := [.literal tag (.nat 7)], program := .cons .dup .empty, nextTag := tag + 1 }
         { stack := [.literal tag (.nat 7), .literal tag (.nat 7)], program := .empty,
           nextTag := tag + 1 }, True := by
@@ -105,7 +111,7 @@ example (tag : Tag) :
   intro h
   cases h
 
-example : InstrumentedStep defaultGamma emptyDictionary defaultCosts
+example : InstrumentedStep testPolicy defaultGamma emptyDictionary defaultCosts
     { stack := [.quotation 10 .empty .many, .quotation 11 .empty .many,
         .literal 12 (.bool true)],
       program := .cons .ifThenElse .empty, nextTag := 13 }
@@ -122,19 +128,19 @@ example : PrimitiveStackContract "makeWorld" [] [.world 5 0] :=
 example : PrimitiveStackContract "consumeWorld" [.world 5 0] [] :=
   .consumeWorld
 
-example : PrimitiveAuthorisation "makeWorld" [] [5] :=
-  .makeWorld 5
+example : testPolicy.authorised "makeWorld" [] [5] :=
+  by simp [testPolicy]
 
-example : PrimitiveAuthorisation "consumeWorld" [5] [] :=
-  .consumeWorld 5
+example : testPolicy.authorised "consumeWorld" [5] [] :=
+  by simp [testPolicy]
 
-example : ∃ step : InstrumentedStep defaultGamma emptyDictionary defaultCosts
+example : ∃ step : InstrumentedStep testPolicy defaultGamma emptyDictionary defaultCosts
     { stack := [], program := .cons (.prim "makeWorld") .empty, nextTag := 0 }
     { stack := [.world 5 0], program := .empty, nextTag := 6 }, True := by
   let specification : PrimitiveSpec :=
     { input := .row "ρ", output := .snoc (.row "ρ") (.base .world .linear),
       delta := makeWorldDelta }
-  let contract : PrimitiveTagContract defaultGamma "makeWorld" [] [.world 5 0] .empty
+  let contract : PrimitiveTagContract testPolicy defaultGamma "makeWorld" [] [.world 5 0] .empty
       specification [] [.world 0] [] [] [] [5] 0 6 :=
     { name_resolves := by simp [specification, defaultGamma]
       input_erases := by simp [eraseValue]
@@ -156,19 +162,19 @@ example : ∃ step : InstrumentedStep defaultGamma emptyDictionary defaultCosts
       frontier_monotone := by decide
       row_tail_retained := by simp
       stack_contract := .makeWorld
-      authorised := .makeWorld 5 }
+      authorised := by simp [testPolicy] }
   exact ⟨.prim (specification := specification) (plainInput := [])
     (plainOutput := [.world 0]) (rowTail := []) (retained := [])
     (consumed := []) (produced := [5])
     ⟨specification, [], [.world 0], [], [], [], [5], contract⟩, trivial⟩
 
-example : ∃ step : InstrumentedStep defaultGamma emptyDictionary defaultCosts
+example : ∃ step : InstrumentedStep testPolicy defaultGamma emptyDictionary defaultCosts
     { stack := [.world 0 7], program := .cons (.prim "consumeWorld") .empty, nextTag := 1 }
     { stack := [], program := .empty, nextTag := 1 }, True := by
   let specification : PrimitiveSpec :=
     { input := .snoc (.row "ρ") (.base .world .linear), output := .row "ρ",
       delta := consumeWorldDelta }
-  let contract : PrimitiveTagContract defaultGamma "consumeWorld" [.world 0 7] [] .empty
+  let contract : PrimitiveTagContract testPolicy defaultGamma "consumeWorld" [.world 0 7] [] .empty
       specification [.world 7] [] [] [] [0] [] 1 1 :=
     { name_resolves := by simp [specification, defaultGamma]
       input_erases := by simp [eraseValue]
@@ -191,7 +197,7 @@ example : ∃ step : InstrumentedStep defaultGamma emptyDictionary defaultCosts
       frontier_monotone := by decide
       row_tail_retained := by simp
       stack_contract := .consumeWorld
-      authorised := .consumeWorld 0 }
+      authorised := by simp [testPolicy] }
   exact ⟨.prim (specification := specification) (plainInput := [.world 7])
     (plainOutput := []) (rowTail := []) (retained := []) (consumed := [0])
     (produced := []) ⟨specification, [.world 7], [], [], [], [0], [], contract⟩, trivial⟩
@@ -211,13 +217,13 @@ example : (traceConsumed [consumedWorldBefore, consumedWorldAfter]).Nodup := by
 
 example (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
     (before after : AConfig) (hbefore : FrontierInvariant before)
-    (hstep : InstrumentedStep gamma dictionary costs before after) :
+    (hstep : InstrumentedStep policy gamma dictionary costs before after) :
     FrontierInvariant after := by
   exact instrumented_frontier_preserved before after hbefore hstep
 
 example (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
     (before after : AConfig)
-    (hstep : InstrumentedStep gamma dictionary costs before after) :
+    (hstep : InstrumentedStep policy gamma dictionary costs before after) :
     HasSuccessor gamma dictionary costs (eraseAConfig before) (eraseAConfig after) := by
   exact instrumented_step_erases hstep
 
@@ -231,6 +237,87 @@ example (costs : CostTable) (left right : List Atom) :
     sequenceCost costs.atom (left ++ right) =
       sequenceCost costs.atom left + sequenceCost costs.atom right := by
   exact atomSequenceCost_append costs left right
+
+def quoteBefore : AConfig :=
+  { stack := [.world 0 7], program := .cons .quote .empty, nextTag := 1 }
+
+def quoteAfter : AConfig :=
+  { stack := [.quotation 1 (.cons (.push (.world 0 7)) .empty) .linear],
+    program := .empty, nextTag := 2 }
+
+example : InstrumentedTrace testPolicy defaultGamma emptyDictionary defaultCosts
+    quoteBefore [quoteAfter] ∧ taggedLinearTags quoteBefore = [0] ∧
+      taggedLinearTags quoteAfter = [1, 0] := by
+  refine ⟨⟨.quote, trivial⟩, rfl, rfl⟩
+
+example : InstrumentedTrace testPolicy defaultGamma emptyDictionary defaultCosts
+    { stack := [.quotation 1 (.cons (.push (.world 0 7)) .empty) .linear],
+      program := .cons .call .empty, nextTag := 2 }
+    [{ stack := [], program := .cons (.push (.world 0 7)) .empty, nextTag := 2 },
+      { stack := [.world 0 7], program := .empty, nextTag := 2 }] ∧
+      consumed
+        { stack := [.quotation 1 (.cons (.push (.world 0 7)) .empty) .linear],
+          program := .cons .call .empty, nextTag := 2 }
+        { stack := [], program := .cons (.push (.world 0 7)) .empty, nextTag := 2 } = [1] := by
+  refine ⟨⟨.call, ⟨.push, trivial⟩⟩, rfl⟩
+
+example : InstrumentedTrace testPolicy defaultGamma emptyDictionary defaultCosts
+    { stack := [.quotation 2 .empty .many, .world 0 7],
+      program := .cons .dip .empty, nextTag := 3 }
+    [{ stack := [], program := .cons (.push (.world 0 7)) .empty, nextTag := 3 },
+      { stack := [.world 0 7], program := .empty, nextTag := 3 }] ∧
+      taggedLinearTags
+        { stack := [.quotation 2 .empty .many, .world 0 7],
+          program := .cons .dip .empty, nextTag := 3 } = [0] ∧
+      taggedLinearTags
+        { stack := [], program := .cons (.push (.world 0 7)) .empty, nextTag := 3 } = [0] := by
+  refine ⟨⟨.dip, ⟨.push, trivial⟩⟩, rfl, rfl⟩
+
+example : InstrumentedTrace testPolicy defaultGamma emptyDictionary defaultCosts
+    { stack := [.quotation 11 .empty .linear, .quotation 10 .empty .linear],
+      program := .cons .compose .empty, nextTag := 12 }
+    [{ stack := [.quotation 12 .empty .linear], program := .empty, nextTag := 13 }] ∧
+      taggedLinearTags
+        { stack := [.quotation 11 .empty .linear, .quotation 10 .empty .linear],
+          program := .cons .compose .empty, nextTag := 12 } = [11, 10] ∧
+      taggedLinearTags
+        { stack := [.quotation 12 .empty .linear], program := .empty, nextTag := 13 } = [12] := by
+  refine ⟨⟨.compose, trivial⟩, rfl, rfl⟩
+
+example : ∃ (dictionary : Dictionary) (run : Nat → AConfig),
+    InfiniteInstrumentedTrace testPolicy defaultGamma dictionary defaultCosts run := by
+  exact divergence_may_leave_linear_live testPolicy
+
+def makeWorldLiftContractWitness : ∃ output nextTag',
+    PrimitiveTagContract testPolicy defaultGamma "makeWorld" [] output .empty
+      { input := .row "ρ", output := .snoc (.row "ρ") (.base .world .linear), delta := makeWorldDelta }
+      [] [.world 0] [] [] [] [5] 0 nextTag' := by
+  let specification : PrimitiveSpec :=
+    { input := .row "ρ", output := .snoc (.row "ρ") (.base .world .linear),
+      delta := makeWorldDelta }
+  let contract : PrimitiveTagContract testPolicy defaultGamma "makeWorld" [] [.world 5 0] .empty
+      specification [] [.world 0] [] [] [] [5] 0 6 :=
+    { name_resolves := by simp [specification, defaultGamma]
+      input_erases := rfl
+      delta := rfl
+      output_erases := rfl
+      input_partition := by simp [taggedLinearTagsValueList]
+      output_partition := by intro tag; simp [taggedLinearTagsValueList, taggedLinearTagsValue]
+      retained_nodup := by simp
+      consumed_nodup := by simp
+      produced_nodup := by simp
+      retained_exact := by simp [taggedLinearTagsValueList]
+      consumed_exact := by simp [taggedLinearTagsValueList]
+      produced_exact := by intro tag; simp [taggedLinearTagsValueList, taggedLinearTagsValue]
+      retained_unchanged := by simp [taggedLinearTagsValueList]
+      consumed_absent := by simp [taggedLinearTagsValueList, taggedLinearTagsProgram]
+      produced_fresh := by intro tag htag; simp at htag; subst tag; exact ⟨by decide, by decide⟩
+      output_residue_nodup := by simp [taggedLinearTagsValueList, taggedLinearTagsValue, taggedLinearTagsProgram]
+      frontier_monotone := by decide
+      row_tail_retained := by simp
+      stack_contract := .makeWorld
+      authorised := by simp [testPolicy] }
+  exact ⟨[.world 5 0], 6, contract⟩
 
 def expectTerminalStack (expected : Stack) : RunResult → Bool
   | .terminal config _ _ => config.stack == expected
