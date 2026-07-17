@@ -16,6 +16,36 @@ def chargedCost (costs : CostTable) : Atom → Nat
   | .word _ => costs.unfold
   | atom => costs.atom atom
 
+theorem programAppend_assoc (left middle right : Program) :
+    left.append (middle.append right) = (left.append middle).append right := by
+  cases left with
+  | empty => rfl
+  | cons head tail =>
+      simp [Program.append]
+      exact programAppend_assoc tail middle right
+
+theorem programAppend_push_assoc (body rest suffix : Program) (value : Value) :
+    body.append (Program.cons (Atom.push value) (rest.append suffix)) =
+      (body.append (Program.cons (Atom.push value) rest)).append suffix := by
+  exact programAppend_assoc body (Program.cons (Atom.push value) rest) suffix
+
+theorem step_append_congruence (gamma : Gamma) (dictionary : Dictionary)
+    (costs : CostTable) (suffix : Program) (stack : Stack) (atom : Atom)
+    (rest : Program) (next : Config) (cost : Nat)
+    (h : step gamma dictionary costs
+      { stack := stack, program := .cons atom rest } = .stepped next cost) :
+    step gamma dictionary costs
+        { stack := stack, program := (Program.cons atom rest).append suffix } =
+      .stepped { stack := next.stack, program := next.program.append suffix } cost := by
+  cases atom <;> simp only [Program.append, step] at h ⊢
+  all_goals try split at h
+  all_goals try split at h
+  all_goals try split at h
+  all_goals try split at h
+  all_goals try simp_all
+  all_goals rcases h with ⟨rfl, rfl⟩ <;> simp [programAppend_assoc]
+  all_goals try apply programAppend_push_assoc
+
 theorem step_cost_matches_kappa (gamma : Gamma) (dictionary : Dictionary)
     (costs : CostTable) (stack : Stack) (atom : Atom) (rest : Program)
     (next : Config) (cost : Nat)
@@ -76,6 +106,73 @@ def traceLength {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
     Trace gamma dictionary costs start finish → Nat
   | .nil _ => 0
   | .cons _ _ tail => Nat.succ (traceLength tail)
+
+theorem run_terminal_to_trace (gamma : Gamma) (dictionary : Dictionary)
+    (costs : CostTable) (fuel : Nat) (start finish : Config)
+    (steps cost : Nat)
+    (h : run gamma dictionary costs fuel start = .terminal finish steps cost) :
+    ∃ trace : Trace gamma dictionary costs start finish,
+      traceLength trace = steps ∧ traceCost trace = cost := by
+  induction fuel generalizing start finish steps cost with
+  | zero =>
+      cases start with
+      | mk stack program =>
+          cases program with
+          | empty =>
+              simp [run] at h
+              rcases h with ⟨rfl, rfl, rfl⟩
+              exact ⟨.nil _, rfl, rfl⟩
+          | cons atom rest =>
+              simp only [run] at h
+              generalize hs : step gamma dictionary costs
+                { stack := stack, program := .cons atom rest } = result at h
+              cases result with
+              | terminal config =>
+                  cases atom <;> simp only [step] at hs
+                  all_goals try split at hs
+                  all_goals try split at hs
+                  all_goals try split at hs
+                  all_goals try split at hs
+                  all_goals cases hs
+              | stuck config => cases h
+              | stepped next stepCost => cases h
+  | succ fuel ih =>
+      rw [run] at h
+      generalize hs : step gamma dictionary costs start = result at h
+      cases result with
+      | terminal config =>
+          cases start with
+          | mk stack program =>
+              cases program with
+              | empty =>
+                  simp [step] at hs
+                  cases hs
+                  cases h
+                  exact ⟨.nil { stack := stack, program := .empty }, rfl, rfl⟩
+              | cons atom rest =>
+                  cases atom <;> simp only [step] at hs
+                  all_goals try split at hs
+                  all_goals try split at hs
+                  all_goals try split at hs
+                  all_goals try split at hs
+                  all_goals cases hs
+      | stuck config =>
+          simp_all
+      | stepped next stepCost =>
+          cases recursive : run gamma dictionary costs fuel next with
+          | terminal final tailSteps tailCost =>
+              simp [recursive] at h
+              rcases h with ⟨rfl, rfl, rfl⟩
+              rcases ih (start := next) (finish := final)
+                (steps := tailSteps) (cost := tailCost) recursive with
+                ⟨tail, lengthTail, costTail⟩
+              refine ⟨.cons stepCost hs tail, ?_, ?_⟩
+              · simp [traceLength, lengthTail, Nat.add_comm]
+              · simp [traceCost, costTail, Nat.add_comm]
+          | stuck config tailSteps tailCost =>
+              simp [recursive] at h
+          | outOfFuel config tailSteps tailCost =>
+              simp [recursive] at h
 
 theorem traceCost_eq_sequenceCost {gamma : Gamma} {dictionary : Dictionary}
     {costs : CostTable} {start finish : Config} (trace : Trace gamma dictionary costs start finish) :
