@@ -105,6 +105,97 @@ example (tag : Tag) :
   intro h
   cases h
 
+example : InstrumentedStep defaultGamma emptyDictionary defaultCosts
+    { stack := [.quotation 10 .empty .many, .quotation 11 .empty .many,
+        .literal 12 (.bool true)],
+      program := .cons .ifThenElse .empty, nextTag := 13 }
+    { stack := [], program := .empty, nextTag := 13 } := by
+  exact .ifThenElse rfl rfl
+
+example : ∃ (dictionary : Dictionary) (annotated : String → Option AProgram),
+    AnnotatedDictionary dictionary annotated :=
+  annotated_dictionary_self_recursive_witness
+
+example : PrimitiveStackContract "makeWorld" [] [.world 5 0] :=
+  .makeWorld
+
+example : PrimitiveStackContract "consumeWorld" [.world 5 0] [] :=
+  .consumeWorld
+
+example : PrimitiveAuthorisation "makeWorld" [] [5] :=
+  .makeWorld 5
+
+example : PrimitiveAuthorisation "consumeWorld" [5] [] :=
+  .consumeWorld 5
+
+example : ∃ step : InstrumentedStep defaultGamma emptyDictionary defaultCosts
+    { stack := [], program := .cons (.prim "makeWorld") .empty, nextTag := 0 }
+    { stack := [.world 5 0], program := .empty, nextTag := 6 }, True := by
+  let specification : PrimitiveSpec :=
+    { input := .row "ρ", output := .snoc (.row "ρ") (.base .world .linear),
+      delta := makeWorldDelta }
+  let contract : PrimitiveTagContract defaultGamma "makeWorld" [] [.world 5 0] .empty
+      specification [] [.world 0] [] [] [] [5] 0 6 :=
+    { name_resolves := by simp [specification, defaultGamma]
+      input_erases := by simp [eraseValue]
+      delta := rfl
+      output_erases := rfl
+      input_partition := by simp [taggedLinearTagsValueList]
+      output_partition := by intro tag; simp [taggedLinearTagsValueList, taggedLinearTagsValue]
+      retained_nodup := by simp
+      consumed_nodup := by simp
+      produced_nodup := by simp
+      retained_exact := by simp [taggedLinearTagsValueList]
+      consumed_exact := by simp [taggedLinearTagsValueList]
+      produced_exact := by intro tag; simp [taggedLinearTagsValueList, taggedLinearTagsValue]
+      retained_unchanged := by simp [taggedLinearTagsValueList]
+      consumed_absent := by simp [taggedLinearTagsValueList, taggedLinearTagsProgram]
+      produced_fresh := by intro tag htag; simp at htag; subst tag; exact ⟨by decide, by decide⟩
+      output_residue_nodup := by simp [taggedLinearTagsValueList, taggedLinearTagsValue,
+        taggedLinearTagsProgram]
+      frontier_monotone := by decide
+      row_tail_retained := by simp
+      stack_contract := .makeWorld
+      authorised := .makeWorld 5 }
+  exact ⟨.prim (specification := specification) (plainInput := [])
+    (plainOutput := [.world 0]) (rowTail := []) (retained := [])
+    (consumed := []) (produced := [5])
+    ⟨specification, [], [.world 0], [], [], [], [5], contract⟩, trivial⟩
+
+example : ∃ step : InstrumentedStep defaultGamma emptyDictionary defaultCosts
+    { stack := [.world 0 7], program := .cons (.prim "consumeWorld") .empty, nextTag := 1 }
+    { stack := [], program := .empty, nextTag := 1 }, True := by
+  let specification : PrimitiveSpec :=
+    { input := .snoc (.row "ρ") (.base .world .linear), output := .row "ρ",
+      delta := consumeWorldDelta }
+  let contract : PrimitiveTagContract defaultGamma "consumeWorld" [.world 0 7] [] .empty
+      specification [.world 7] [] [] [] [0] [] 1 1 :=
+    { name_resolves := by simp [specification, defaultGamma]
+      input_erases := by simp [eraseValue]
+      delta := rfl
+      output_erases := rfl
+      input_partition := by intro tag; simp [taggedLinearTagsValueList, taggedLinearTagsValue]
+      output_partition := by simp [taggedLinearTagsValueList]
+      retained_nodup := by simp
+      consumed_nodup := by simp
+      produced_nodup := by simp
+      retained_exact := by simp [taggedLinearTagsValueList]
+      consumed_exact := by intro tag; simp [taggedLinearTagsValueList, taggedLinearTagsValue]
+      produced_exact := by simp [taggedLinearTagsValueList]
+      retained_unchanged := by simp [taggedLinearTagsValueList, taggedLinearTagsValue,
+        ownershipContains]
+      consumed_absent := by intro tag htag; simp [taggedLinearTagsValueList,
+        taggedLinearTagsValue, taggedLinearTagsProgram, ownershipContains] at htag ⊢
+      produced_fresh := by simp
+      output_residue_nodup := by simp [taggedLinearTagsValueList, taggedLinearTagsProgram]
+      frontier_monotone := by decide
+      row_tail_retained := by simp
+      stack_contract := .consumeWorld
+      authorised := .consumeWorld 0 }
+  exact ⟨.prim (specification := specification) (plainInput := [.world 7])
+    (plainOutput := []) (rowTail := []) (retained := []) (consumed := [0])
+    (produced := []) ⟨specification, [.world 7], [], [], [], [0], [], contract⟩, trivial⟩
+
 def consumedWorldBefore : AConfig :=
   { stack := [.world 0 7], program := .cons (.prim "consumeWorld") .empty,
     nextTag := 1 }

@@ -160,6 +160,14 @@ def traceConsumed (configs : List AConfig) : Ownerships :=
 
 def InstrumentedTraceConsumed (trace : List AConfig) : Ownerships := traceConsumed trace
 
+def traceProduced (configs : List AConfig) : Ownerships :=
+  match configs with
+  | before :: after :: rest => produced before after ++ traceProduced (after :: rest)
+  | _ => []
+
+def bornTags (start : AConfig) (configs : List AConfig) : Ownerships :=
+  taggedLinearTags start ++ traceProduced (start :: configs)
+
 def InstrumentedWellFormed (config : AConfig) : Prop :=
   (taggedLinearTags config).Nodup ∧
     ∀ tag, tag ∈ taggedLinearTags config → tag < config.nextTag
@@ -343,18 +351,22 @@ theorem filter_not_contains_self (tags : Ownerships) :
   rw [filter_not_contains_self tags] at h
   cases h
 
-abbrev PrimitiveAuthorisation :=
-  Prim → Ownerships → Ownerships → Prop
+inductive PrimitiveAuthorisation : Prim → Ownerships → Ownerships → Prop where
+  | addNat : PrimitiveAuthorisation "addNat" [] []
+  | makeWorld (tag : Tag) : PrimitiveAuthorisation "makeWorld" [] [tag]
+  | consumeWorld (tag : Tag) : PrimitiveAuthorisation "consumeWorld" [tag] []
 
-def primitiveAuthorisation : PrimitiveAuthorisation :=
-  fun name consumed produced =>
-    match name with
-    | "addNat" => consumed = [] ∧ produced = []
-    | "makeWorld" => consumed = [] ∧ produced.length = 1
-    | "consumeWorld" => consumed.length = 1 ∧ produced = []
-    | _ => False
+inductive PrimitiveStackContract : Prim → AStack → AStack → Prop where
+  | addNat {rightTag leftTag outputTag : Tag} {right left : Nat} {rest : AStack} :
+      PrimitiveStackContract "addNat"
+        (.literal rightTag (.nat right) :: .literal leftTag (.nat left) :: rest)
+        (.literal outputTag (.nat (left + right)) :: rest)
+  | makeWorld {tag : Tag} {rest : AStack} :
+      PrimitiveStackContract "makeWorld" rest (.world tag 0 :: rest)
+  | consumeWorld {tag : Tag} {payload : Nat} {rest : AStack} :
+      PrimitiveStackContract "consumeWorld" (.world tag payload :: rest) rest
 
-structure PrimitiveTagContract (authorised : PrimitiveAuthorisation)
+structure PrimitiveTagContract
     (gamma : Gamma) (name : Prim) (input output : AStack) (residue : AProgram)
     (specification : PrimitiveSpec) (plainInput plainOutput : Stack)
     (rowTail retained consumed produced : Ownerships)
@@ -386,7 +398,8 @@ structure PrimitiveTagContract (authorised : PrimitiveAuthorisation)
     (taggedLinearTagsValueList output ++ taggedLinearTagsProgram residue).Nodup
   frontier_monotone : nextTag ≤ nextTag'
   row_tail_retained : ∀ tag, tag ∈ rowTail → tag ∈ retained
-  authorised : authorised name consumed produced
+  stack_contract : PrimitiveStackContract name input output
+  authorised : PrimitiveAuthorisation name consumed produced
 
 /- A dictionary body is annotated at the frontier at which the word is
 unfolded.  It is not a globally tagged cache: each word step receives a fresh
@@ -467,7 +480,9 @@ inductive InstrumentedStep (gamma : Gamma) (dictionary : Dictionary) (costs : Co
         { stack := .quotation nextTag (.cons (.push value) .empty) (quotationUsage (eraseValue value)) :: tail,
           program := rest, nextTag := nextTag + 1 }
   | ifThenElse {condition : Bool} {trueBranch falseBranch : AProgram} {tail : AStack}
-      {rest : AProgram} {falseTag trueTag conditionTag nextTag : Tag} :
+      {rest : AProgram} {falseTag trueTag conditionTag nextTag : Tag}
+      (trueOwnershipEmpty : taggedLinearTagsProgram trueBranch = [])
+      (falseOwnershipEmpty : taggedLinearTagsProgram falseBranch = []) :
       InstrumentedStep gamma dictionary costs
         { stack := .quotation falseTag falseBranch .many :: .quotation trueTag trueBranch .many ::
             .literal conditionTag (.bool condition) :: tail,
@@ -485,7 +500,7 @@ inductive InstrumentedStep (gamma : Gamma) (dictionary : Dictionary) (costs : Co
       {rowTail retained consumed produced : Ownerships}
       {nextTag nextTag' : Tag}
       (h : ∃ specification plainInput plainOutput rowTail retained consumed produced,
-        PrimitiveTagContract primitiveAuthorisation gamma primitive input output rest
+        PrimitiveTagContract gamma primitive input output rest
           specification plainInput plainOutput rowTail retained consumed produced
           nextTag nextTag') :
       InstrumentedStep gamma dictionary costs
@@ -637,6 +652,7 @@ theorem instrumented_frontier_preserved
           hlinear] using htag))
   | ifThenElse =>
       rename_i condition trueBranch falseBranch tail rest falseTag trueTag conditionTag nextTag
+        htrueEmpty hfalseEmpty
       intro tag htag
       cases condition <;> apply hbefore tag <;>
         simp only [taggedLinearTags, taggedLinearTagsProgram_append, AProgram.append,
@@ -816,7 +832,7 @@ theorem instrumented_step_erases_prim
     {primitive : Prim} {input output : AStack} {rest : AProgram}
     {nextTag nextTag' : Tag}
     (h : ∃ specification plainInput plainOutput rowTail retained consumed produced,
-      PrimitiveTagContract primitiveAuthorisation gamma primitive input output rest
+      PrimitiveTagContract gamma primitive input output rest
         specification plainInput plainOutput rowTail retained consumed produced
         nextTag nextTag') :
     HasSuccessor gamma dictionary costs
@@ -1421,6 +1437,7 @@ theorem step_ownership_of_step
         · exact Nat.le_add_right _ _
   | ifThenElse =>
       rename_i condition trueBranch falseBranch tail rest falseTag trueTag conditionTag nextTag
+        htrueEmpty hfalseEmpty
       rcases hbefore with ⟨hnodup, hfrontier⟩
       let falseTags := taggedLinearTagsProgram falseBranch
       let trueTags := taggedLinearTagsProgram trueBranch
@@ -1810,6 +1827,121 @@ theorem exact_once_of_terminating_empty_residue
     cases hlive
   · exact hconsumed
 
+theorem trace_produced_ge_frontier
+    {start : AConfig} {configs : List AConfig}
+    (hstart : InstrumentedWellFormedAt start)
+    (htrace : InstrumentedTrace gamma dictionary costs start configs) :
+    ∀ tag, tag ∈ traceProduced (start :: configs) → start.nextTag ≤ tag := by
+  induction configs generalizing start with
+  | nil => intro tag htag; cases htag
+  | cons after rest ih =>
+      have hownership := step_ownership_of_step hstart htrace.1
+      have hnext := instrumented_well_formed_preserved_of_step_ownership hstart htrace.1
+      intro tag htag
+      simp only [traceProduced, List.mem_append] at htag
+      rcases htag with hfirst | hlater
+      · exact (hownership.2.2.2.1 tag hfirst).1
+      · exact Nat.le_trans hownership.2.2.2.2 (ih hnext htrace.2 tag hlater)
+
+theorem born_tags_nodup
+    {start : AConfig} {configs : List AConfig}
+    (hstart : InstrumentedWellFormedAt start)
+    (htrace : InstrumentedTrace gamma dictionary costs start configs) :
+    (bornTags start configs).Nodup := by
+  induction configs generalizing start with
+  | nil => simpa [bornTags, traceProduced] using hstart.1
+  | cons after rest ih =>
+      have hownership := step_ownership_of_step hstart htrace.1
+      have hnext := instrumented_well_formed_preserved_of_step_ownership hstart htrace.1
+      have hlater := ih hnext htrace.2
+      have hproducedNd : (produced start after).Nodup := nodup_filter_bool hownership.1
+      have hfirst : (taggedLinearTags start ++ produced start after).Nodup := by
+        apply nodup_append_constructive.mpr
+        refine ⟨hstart.1, hproducedNd, ?_⟩
+        intro tag htagBefore _ htagProduced heq
+        exact hownership.2.2.1 tag (heq ▸ htagProduced) htagBefore
+      have hlaterProduced : (traceProduced (after :: rest)).Nodup := by
+        simpa [bornTags] using (nodup_append_constructive.mp hlater).2.1
+      have hlaterGe : ∀ tag, tag ∈ traceProduced (after :: rest) → after.nextTag ≤ tag :=
+        trace_produced_ge_frontier hnext htrace.2
+      have hbaseLater :
+          (taggedLinearTags start ++ produced start after ++
+            traceProduced (after :: rest)).Nodup := by
+        apply nodup_append_constructive.mpr
+        refine ⟨hfirst, hlaterProduced, ?_⟩
+        intro tag hbase _ hlaterTag heq
+        have hbaseLt : tag < after.nextTag := by
+          rcases List.mem_append.mp hbase with hinitial | hproduced
+          · exact Nat.lt_of_lt_of_le (hstart.2 tag hinitial) hownership.2.2.2.2
+          · exact (hownership.2.2.2.1 tag hproduced).2
+        exact Nat.not_lt_of_ge (hlaterGe tag (heq ▸ hlaterTag)) hbaseLt
+      simpa [bornTags, traceProduced, List.append_assoc] using hbaseLater
+
+theorem born_tag_survives_or_consumed
+    {start terminal : AConfig} {configs : List AConfig}
+    (hstart : InstrumentedWellFormedAt start)
+    (htrace : InstrumentedTrace gamma dictionary costs start configs)
+    (hlast : TraceLast configs terminal) :
+    ∀ tag, tag ∈ bornTags start configs →
+      tag ∈ taggedLinearTags terminal ∨ tag ∈ traceConsumed (start :: configs) := by
+  induction configs generalizing start terminal with
+  | nil =>
+      intro tag htag
+      simp only [bornTags, traceProduced, List.mem_append] at htag
+      rcases htag with hinitial | hnone
+      · exact initial_tag_survives_or_consumed_at htrace hlast hinitial
+      · cases hnone
+  | cons after rest ih =>
+      have hownership := step_ownership_of_step hstart htrace.1
+      have hnext := instrumented_well_formed_preserved_of_step_ownership hstart htrace.1
+      intro tag htag
+      simp only [bornTags, traceProduced, List.mem_append] at htag
+      rcases htag with hinitial | hproduced | hlater
+      · exact initial_tag_survives_or_consumed_at htrace hlast hinitial
+      · have hafter : tag ∈ taggedLinearTags after := (mem_produced_iff.mp hproduced).1
+        cases rest with
+        | nil =>
+            cases hlast with
+            | single => exact Or.inl hafter
+            | cons h => cases h
+        | cons next tail =>
+            cases hlast with
+            | cons hlastTail =>
+                rcases initial_tag_survives_or_consumed_at htrace.2 hlastTail hafter with
+                  hlive | hconsumed
+                · exact Or.inl hlive
+                · exact Or.inr (List.mem_append.mpr (Or.inr hconsumed))
+      · cases rest with
+        | nil => cases hlater
+        | cons next tail =>
+            cases hlast with
+            | cons hlastTail =>
+                rcases ih hnext htrace.2 hlastTail tag (by
+                  simp only [bornTags, traceProduced, List.mem_append]
+                  simp only [traceProduced, List.mem_append] at hlater
+                  exact Or.inr hlater) with hlive | hconsumed
+                · exact Or.inl hlive
+                · exact Or.inr (List.mem_append.mpr (Or.inr hconsumed))
+
+theorem exact_once_of_terminating_empty_residue_all_born
+    {start terminal : AConfig} {configs : List AConfig}
+    (hstart : InstrumentedWellFormedAt start)
+    (htrace : InstrumentedTrace gamma dictionary costs start configs)
+    (hlast : TraceLast configs terminal)
+    (hterm : terminal.program = .empty)
+    (hempty : taggedLinearTags terminal = []) :
+    (bornTags start configs).Nodup ∧
+      (traceConsumed (start :: configs)).Nodup ∧
+      (∀ tag, tag ∈ bornTags start configs →
+        tag ∈ traceConsumed (start :: configs)) := by
+  refine ⟨born_tags_nodup hstart htrace, finite_trace_at_most_once hstart htrace, ?_⟩
+  intro tag hborn
+  rcases born_tag_survives_or_consumed hstart htrace hlast tag hborn with
+    hlive | hconsumed
+  · rw [hempty] at hlive
+    cases hlive
+  · exact hconsumed
+
 def InfiniteInstrumentedTrace (gamma : Gamma) (dictionary : Dictionary)
     (costs : CostTable) (run : Nat → AConfig) : Prop :=
   (∀ n, InstrumentedStep gamma dictionary costs (run n) (run (n + 1))) ∧
@@ -1818,32 +1950,54 @@ def InfiniteInstrumentedTrace (gamma : Gamma) (dictionary : Dictionary)
 theorem divergence_may_leave_linear_live :
   ∃ (dictionary : Dictionary) (run : Nat → AConfig),
       InfiniteInstrumentedTrace defaultGamma dictionary defaultCosts run := by
-  let dictionary : Dictionary := fun _ => some
-    { type := { rowVariables := ["ρ"], input := .row "ρ", output := .row "ρ" },
-      body := .cons (.word "loop") .empty }
-  let live : AConfig :=
-    { stack := [.world 0 7], program := .cons (.word "loop") .empty, nextTag := 1 }
-  let run : Nat → AConfig := fun _ => live
+  let dictionary : Dictionary := fun name =>
+    if name = "even" then some
+      { type := { rowVariables := ["ρ"], input := .row "ρ", output := .row "ρ" },
+        body := .cons (.word "odd") .empty }
+    else if name = "odd" then some
+      { type := { rowVariables := ["ρ"], input := .row "ρ", output := .row "ρ" },
+        body := .cons (.word "even") .empty }
+    else none
+  let even : AConfig :=
+    { stack := [.world 0 7], program := .cons (.word "even") .empty, nextTag := 1 }
+  let odd : AConfig :=
+    { stack := [.world 0 7], program := .cons (.word "odd") .empty, nextTag := 1 }
+  let run : Nat → AConfig := fun n => if n % 2 = 0 then even else odd
   refine ⟨dictionary, run, ?_⟩
   constructor
   · intro n
-    change InstrumentedStep defaultGamma dictionary defaultCosts live live
-    refine InstrumentedStep.word (name := "loop")
-      (body := .cons (.word "loop") .empty) (stack := [.world 0 7])
-      (rest := .empty) (nextTag := 1) (nextTag' := 1) ?_
-    let entry : WordEntry :=
-      { type := { rowVariables := ["ρ"], input := StackType.row "ρ", output := StackType.row "ρ" },
-        body := Program.cons (.word "loop") Program.empty }
-    refine ⟨entry, ?_, ?_⟩
-    · simp [dictionary, entry]
-    · refine ⟨rfl, Nat.le_refl _, ?_, ?_⟩
-      · intro tag htag
-        cases htag
-      · simp [taggedLinearTagsProgram, taggedLinearTagsAtom]
+    by_cases h : n % 2 = 0
+    · have hnext : (n + 1) % 2 ≠ 0 := by omega
+      simp [run, h, hnext]
+      refine InstrumentedStep.word (name := "even")
+        (body := .cons (.word "odd") .empty) (stack := [.world 0 7])
+        (rest := .empty) (nextTag := 1) (nextTag' := 1) ?_
+      let entry : WordEntry :=
+        { type := { rowVariables := ["ρ"], input := .row "ρ", output := .row "ρ" },
+          body := .cons (.word "odd") .empty }
+      refine ⟨entry, ?_, ?_⟩
+      · simp [dictionary, entry]
+      · refine ⟨rfl, Nat.le_refl _, ?_, ?_⟩
+        · intro tag htag; cases htag
+        · simp [taggedLinearTagsProgram, taggedLinearTagsAtom]
+    · have hnext : (n + 1) % 2 = 0 := by omega
+      simp [run, h, hnext]
+      refine InstrumentedStep.word (name := "odd")
+        (body := .cons (.word "even") .empty) (stack := [.world 0 7])
+        (rest := .empty) (nextTag := 1) (nextTag' := 1) ?_
+      let entry : WordEntry :=
+        { type := { rowVariables := ["ρ"], input := .row "ρ", output := .row "ρ" },
+          body := .cons (.word "even") .empty }
+      refine ⟨entry, ?_, ?_⟩
+      · simp [dictionary, entry]
+      · refine ⟨rfl, Nat.le_refl _, ?_, ?_⟩
+        · intro tag htag; cases htag
+        · simp [taggedLinearTagsProgram, taggedLinearTagsAtom]
   · refine ⟨0, ?_⟩
     intro n
-    simp [run, live, taggedLinearTags, taggedLinearTagsValue,
-      taggedLinearTagsProgram, taggedLinearTagsAtom]
+    by_cases h : n % 2 = 0 <;>
+      simp [run, h, even, odd, taggedLinearTags, taggedLinearTagsValue,
+        taggedLinearTagsProgram, taggedLinearTagsAtom]
 
 /-! Frontier-indexed annotation relations.
 
@@ -1916,11 +2070,35 @@ theorem annotation_config_advances {input output : Tag} {plain : Config} {annota
     (h : AnnotationConfig input plain annotated output) : input ≤ output := h.2.1
 
 def AnnotatedDictionary (dictionary : Dictionary) (annotated : String → Option AProgram) : Prop :=
-  ∀ name entry residue frontier frontier',
+  ∀ name entry frontier,
     dictionary name = some entry →
     ∃ body, annotated name = some body ∧
-      WordAnnotation entry.body body frontier frontier' ∧
-      TagsDisjoint (taggedLinearTagsProgram body) (taggedLinearTagsProgram residue)
+      ∃ frontier', WordAnnotation entry.body body frontier frontier'
+
+theorem annotated_dictionary_self_recursive_witness :
+    ∃ (dictionary : Dictionary) (annotated : String → Option AProgram),
+      AnnotatedDictionary dictionary annotated := by
+  let body : AProgram := .cons (.word "loop") .empty
+  let entry : WordEntry :=
+    { type := { rowVariables := ["ρ"], input := .row "ρ", output := .row "ρ" },
+      body := .cons (.word "loop") .empty }
+  let dictionary : Dictionary := fun name =>
+    if name = "loop" then some entry else none
+  let annotated : String → Option AProgram := fun name =>
+    if name = "loop" then some body else none
+  refine ⟨dictionary, annotated, ?_⟩
+  intro name entry' frontier hentry
+  by_cases hname : name = "loop"
+  · subst name
+    have hentryEq : entry' = entry := by simpa [dictionary] using hentry.symm
+    subst entry'
+    refine ⟨body, ?_, frontier, ?_⟩
+    · simp [annotated, body]
+    · refine ⟨rfl, Nat.le_refl _, ?_, ?_⟩
+      · intro tag htag
+        cases htag
+      · simp [body, taggedLinearTagsProgram, taggedLinearTagsAtom]
+  · simp [dictionary, hname] at hentry
 
 def PrimitiveTagLift (gamma : Gamma) (name : Prim) : Prop :=
   ∀ input residue nextTag specification plainInput plainOutput,
@@ -1930,7 +2108,7 @@ def PrimitiveTagLift (gamma : Gamma) (name : Prim) : Prop :=
     ∃ output nextTag',
       output.map eraseValue = plainOutput ∧ nextTag ≤ nextTag' ∧
       (∃ specification plainInput plainOutput rowTail retained consumed produced,
-        PrimitiveTagContract primitiveAuthorisation gamma name input output residue
+        PrimitiveTagContract gamma name input output residue
           specification plainInput plainOutput rowTail retained consumed produced
           nextTag nextTag') ∧
       (∀ tag, tag ∈ taggedLinearTagsValueList output → tag < nextTag')
@@ -1942,7 +2120,7 @@ theorem primitive_tag_lift_is_contract
       input.map eraseValue = plainInput →
       specification.delta plainInput = some plainOutput →
       ∃ output nextTag', ∃ specification plainInput plainOutput rowTail retained consumed produced,
-        PrimitiveTagContract primitiveAuthorisation gamma name input output residue
+        PrimitiveTagContract gamma name input output residue
           specification plainInput plainOutput rowTail retained consumed produced
           nextTag nextTag' := by
   intro input residue nextTag specification plainInput plainOutput hname hin hdelta
@@ -2350,6 +2528,14 @@ theorem backward_adequacy
                                                       (if condition then trueBranch
                                                         else falseBranch) rest,
                                                     nextTag := nextTag }
+                                                have htrueEmpty :
+                                                    taggedLinearTagsProgram trueBranch = [] :=
+                                                  many_annotated_program_has_no_linear_tags
+                                                    trueBodyTyping htrueStored.symm
+                                                have hfalseEmpty :
+                                                    taggedLinearTagsProgram falseBranch = [] :=
+                                                  many_annotated_program_has_no_linear_tags
+                                                    falseBodyTyping hfalseStored.symm
                                                 have hinstrumented :
                                                     InstrumentedStep gamma dictionary costs
                                                       { stack := .quotation falseTag falseBranch .many ::
@@ -2357,7 +2543,7 @@ theorem backward_adequacy
                                                           .literal conditionTag (.bool condition) :: tail,
                                                         program := .cons .ifThenElse rest,
                                                         nextTag := nextTag }
-                                                      annotatedAfter := .ifThenElse
+                                                      annotatedAfter := .ifThenElse htrueEmpty hfalseEmpty
                                                 exact ⟨annotatedAfter, hinstrumented,
                                                   by cases condition <;>
                                                     simp [annotatedAfter, eraseAConfig,
@@ -2370,11 +2556,11 @@ theorem backward_adequacy
                 rcases hword with ⟨entry, hentry, hinput, houtput⟩
                 simp [eraseAConfig, eraseProgram, eraseAtom, step, hentry] at hstep
                 rcases hstep with ⟨rfl, rfl⟩
-                rcases hdictionary name entry rest nextTag nextTag hentry with
-                  ⟨body, hbody, hannotation, hdisjoint⟩
+                rcases hdictionary name entry nextTag hentry with
+                  ⟨body, hbody, nextTag', hannotation⟩
                 let annotatedAfter : AConfig :=
                   { stack := stack, program := AProgram.append body rest,
-                    nextTag := nextTag }
+                    nextTag := nextTag' }
                 have hinstrumented : InstrumentedStep gamma dictionary costs
                     { stack := stack, program := .cons (.word name) rest,
                       nextTag := nextTag }
@@ -2397,7 +2583,7 @@ theorem backward_adequacy
                       hname, hdelta] at hstep
                     rcases hstep with ⟨rfl, rfl⟩
                     rcases hprimitive primitive stack rest nextTag specification
-                        (stack.map eraseValue) plainOutput hname rfl hdelta with
+                      (stack.map eraseValue) plainOutput hname rfl hdelta with
                       ⟨output, nextTag', houtput, hmonotone, hcontract, hfrontier⟩
                     let annotatedAfter : AConfig :=
                       { stack := output, program := rest, nextTag := nextTag' }
