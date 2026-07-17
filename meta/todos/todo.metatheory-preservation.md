@@ -1,6 +1,6 @@
 ---
 node: firth.language.kernel
-status: in_progress
+status: done
 created: 2026-07-17
 ---
 
