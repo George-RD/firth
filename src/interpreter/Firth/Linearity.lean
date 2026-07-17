@@ -264,7 +264,45 @@ theorem taggedLinearTagsValueList_eq_foldr (stack : AStack) :
   | nil => rfl
   | cons value tail ih => simp [taggedLinearTagsValueList, ih]
 
+theorem taggedLinearTagsValue_mem_foldr {stack : AStack} {tag : Tag}
+    (h : ∃ value, value ∈ stack ∧ tag ∈ taggedLinearTagsValue value) :
+    tag ∈ stack.foldr (fun value tags => taggedLinearTagsValue value ++ tags) [] := by
+  induction stack with
+  | nil => cases h with | intro value h => cases h.1
+  | cons value tail ih =>
+      simp only [List.foldr, List.mem_append]
+      rcases h with ⟨value', hvalue', htag⟩
+      rcases List.mem_cons.mp hvalue' with rfl | hvalue'
+      · exact Or.inl htag
+      · exact Or.inr (ih ⟨value', hvalue', htag⟩)
+
+@[simp] theorem taggedLinearTagsValue_mem_foldr_iff {stack : AStack} {tag : Tag} :
+    tag ∈ stack.foldr (fun value tags => taggedLinearTagsValue value ++ tags) [] ↔
+      ∃ value, value ∈ stack ∧ tag ∈ taggedLinearTagsValue value := by
+  induction stack with
+  | nil =>
+      constructor
+      · intro h
+        cases h
+      · rintro ⟨value, hvalue, htag⟩
+        cases hvalue
+  | cons value tail ih =>
+      constructor
+      · intro h
+        simp only [List.foldr, List.mem_append] at h
+        rcases h with hvalue | htail
+        · exact ⟨value, List.mem_cons_self, hvalue⟩
+        · rcases ih.mp htail with ⟨value', hvalue', htag⟩
+          exact ⟨value', List.mem_cons_of_mem _ hvalue', htag⟩
+      · rintro ⟨value', hvalue', htag⟩
+        simp only [List.foldr, List.mem_append]
+        rcases List.mem_cons.mp hvalue' with rfl | hvalue'
+        · exact Or.inl htag
+        · exact Or.inr (ih.mpr ⟨value', hvalue', htag⟩)
+
 attribute [-simp] List.mem_flatMap
+attribute [-simp] List.mem_map
+attribute [-simp] List.mem_flatten
 
 def PrimitiveTagContract (gamma : Gamma) (name : Prim)
     (input output : AStack) (nextTag nextTag' : Tag) : Prop :=
@@ -455,33 +493,38 @@ theorem instrumented_frontier_preserved
   | compose =>
       rename_i first second usage₁ usage₂ tail rest tag₁ tag₂ nextTag
       intro tag htag
-      simp [taggedLinearTags, taggedLinearTagsValue] at htag
-      rcases htag with hfresh | hrest
-      · have : tag = nextTag := by simpa using hfresh
-        subst tag
-        exact Nat.lt_succ_self _
+      simp only [taggedLinearTags, List.mem_append] at htag
+      rcases htag with hstack | hprog
+      · simp only [List.foldr, taggedLinearTagsValue, taggedLinearTagsProgram,
+          taggedLinearTagsAtom, taggedLinearTagsProgram_append, List.mem_append,
+          List.mem_cons] at hstack
+        rcases hstack with h123 | htail
+        · rcases h123 with hfresh | hbody | hbody
+          · subst tag
+            exact Nat.lt_add_one _
+          · apply Nat.lt_succ_of_lt
+            apply hbefore tag
+            simp only [taggedLinearTags, List.mem_append, List.foldr,
+              taggedLinearTagsValue, taggedLinearTagsProgram, taggedLinearTagsAtom,
+              List.mem_cons]
+            exact Or.inl (Or.inr (Or.inl (Or.inr hbody)))
+          · apply Nat.lt_succ_of_lt
+            apply hbefore tag
+            simp only [taggedLinearTags, List.mem_append, List.foldr,
+              taggedLinearTagsValue, taggedLinearTagsProgram, taggedLinearTagsAtom,
+              List.mem_cons]
+            exact Or.inl (Or.inl (Or.inr hbody))
+        · apply Nat.lt_succ_of_lt
+          apply hbefore tag
+          simp only [taggedLinearTags, List.mem_append, List.foldr,
+            taggedLinearTagsValue, taggedLinearTagsProgram, taggedLinearTagsAtom,
+            List.mem_cons]
+          exact Or.inl (Or.inr (Or.inr htail))
       · apply Nat.lt_succ_of_lt
         apply hbefore tag
-        rw [taggedLinearTagsProgram_append] at hrest
-        rcases hrest with h12 | htail | hrest
-        · rcases List.mem_append.mp h12 with hfirst | hsecond
-          · simp [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
-              taggedLinearTagsValue, hfirst, or_comm, or_left_comm, or_assoc]
-          · simp [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
-              taggedLinearTagsValue, hsecond, or_comm, or_left_comm, or_assoc]
-        · rcases htail with ⟨a, ha, hatag⟩
-          simp only [taggedLinearTags, List.mem_append, taggedLinearTagsValue,
-            taggedLinearTagsProgram, taggedLinearTagsAtom]
-          simp_all [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
-            taggedLinearTagsValue, or_comm, or_left_comm, or_assoc]
-          right
-          right
-          right
-          right
-          right
-          exact ⟨a, ha, hatag⟩
-        · simp [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
-            taggedLinearTagsValue, hrest, or_comm, or_left_comm, or_assoc]
+        simp only [taggedLinearTags, List.mem_append, taggedLinearTagsProgram,
+          taggedLinearTagsProgram_append, List.mem_cons, List.foldr]
+        exact Or.inr (Or.inr hprog)
   | quote =>
       rename_i value tail rest nextTag
       intro tag htag
@@ -497,10 +540,18 @@ theorem instrumented_frontier_preserved
   | ifThenElse =>
       rename_i condition trueBranch falseBranch tail rest falseTag trueTag conditionTag nextTag
       intro tag htag
-      cases condition <;> exact hbefore tag (by
-        simp_all [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
-          taggedLinearTagsValue, taggedLinearTagsProgram_append, AProgram.append,
-          List.mem_append, or_comm, or_left_comm, or_assoc])
+      cases condition <;> apply hbefore tag <;>
+        simp only [taggedLinearTags, taggedLinearTagsProgram_append, AProgram.append,
+          List.mem_append, List.foldr, taggedLinearTagsProgram, taggedLinearTagsAtom,
+          taggedLinearTagsValue, List.mem_cons, Bool.false_eq_true] at htag ⊢
+      · rcases htag with htail | hbranch | hrest
+        · exact Or.inl (Or.inr (Or.inr (Or.inr htail)))
+        · exact Or.inl (Or.inl (Or.inr hbranch))
+        · exact Or.inr (Or.inr hrest)
+      · rcases htag with htail | hbranch | hrest
+        · exact Or.inl (Or.inr (Or.inr (Or.inr htail)))
+        · exact Or.inl (Or.inr (Or.inl (Or.inr hbranch)))
+        · exact Or.inr (Or.inr hrest)
   | word h =>
       rcases h with ⟨entry, hname, hbody, htags⟩
       intro tag htag
