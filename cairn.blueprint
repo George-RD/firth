@@ -52,6 +52,7 @@ System Firth "Concatenative language elaborated through Lean 4 and compiled to a
 
         Module Smt "SMT integration for automatic refinement discharge" id "firth.toolchain.smt" {
             path "src/smt"
+            path "spec/smt"
         }
 
         Module AgentInterface "Agent interface: structured machine-parseable diagnostics, typed holes, signature search over the dictionary" id "firth.toolchain.agent" {
