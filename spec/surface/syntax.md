@@ -23,9 +23,9 @@ case-sensitive.
     letter       = "a" … "z" | "A" … "Z" ;
     digit        = "0" … "9" ;
     word-name    = letter , { letter | digit | "-" | "?" | "!" } ;
-    qualified    = word-name , { "." , word-name } ;
+    name         = word-name , { "." , word-name } ;
     row-name     = "ρ" , { letter | digit | "-" } ;
-    type-name    = qualified ;
+    type-name    = name ;
     integer      = [ "-" ] , digit , { digit } ;
     character    = "'" , printable-character , "'" ;
     string       = '"' , { string-character | escape } , '"' ;
@@ -55,13 +55,13 @@ errors.
     file            = { vocabulary | use-declaration | word-definition } ;
     vocabulary      = "vocab" , word-name , "{" ,
                       { use-declaration | word-definition } , "}" ;
-    use-declaration = "use" , qualified , [ "as" , word-name ] , ";" ;
+    use-declaration = "use" , name , [ "as" , word-name ] , ";" ;
     word-definition = ":" , word-name , stack-effect , body , ";" ;
     body            = { item } ;
-    item            = literal | quotation | kernel-atom | primitive | qualified
-                    | word-name | local-block ;
+    item            = literal | quotation | kernel-atom | primitive | name
+                    | local-block ;
     quotation       = "[" , { item } , "]" ;
-    primitive        = "prim" , qualified ;
+    primitive        = "prim" , name ;
     local-block     = "locals" , "{" , word-name , { word-name } , "}" ,
                       "{" , { item } , "}" ;
 
@@ -95,10 +95,11 @@ The chosen v0.1 annotation is a parenthesised effect at the word boundary:
     type-expression  = type-name , [ "^" , ( "many" | "linear" ) ] ,
                        [ "{" , predicate , { "," , predicate } , "}" ] ;
 
-A row variable is written as a stack item by itself, for example
+Every row variable must be explicitly bound by the prenex `forall` clause. A
+row variable is written as a stack item by itself, for example
 `(forall ρ; ρ -- ρ x:Int^many)`. The semicolon terminates the prenex binder;
-all row variables are bound there and nowhere inside a type. A signature may
-omit `forall` only when it has no row variables. Named value entries are
+row variables are bound there and nowhere inside a type. A signature with no
+row variables may omit `forall`. Named value entries are
 documentation and refinement anchors; their order is bottom to top. `--`
 separates input and output rows. `^many` is the default and may be written
 explicitly; `^linear` is mandatory for a linear value.
@@ -139,14 +140,59 @@ values, naming them in declaration order from bottom to top, and elaborates
 each name occurrence in `body` as a demand for that value. It creates no
 variable or environment in the kernel.
 
-The macro uses a deterministic stack-permutation algorithm: produce the
-shortest sequence of `swap`, `dip`, and `dup`/`drop` atoms that brings
-each demanded value to the top while preserving later live values. A value used
-zero times is dropped only if it is `many`; a value used more than once is
-duplicated only if it is `many`. A linear value must occur exactly once. Ties
-prefer the leftmost live value, then `swap` before `dip`. If no legal
-expansion exists, elaboration fails. The expansion is checked normally, so
-locals cannot bypass stack, usage, or refinement checking.
+### 5.1 Complete erasure algorithm
+
+The eraser maintains a symbolic stack `S`, bottom to top. Each entry is a
+unique slot identity with its usage and type, for example
+`[a:Handle^linear, b:Bytes^linear]`. It also maintains the remaining sequence
+of body items and the number of future demands for each slot. A local name is a
+slot demand, not a kernel atom.
+
+For a demand of slot `x`, canonical `focus(x,S)` is defined recursively. It is
+empty when `x` is top; it is `swap` when `x` is immediately below top; and when
+the top is a protected value `v` above `x`, it emits `[focus(x,S_without_v)] dip
+swap`. The recursive quotation is constructed first, then pushed above `v`;
+`dip` runs the recursive focus below `v`, and the final `swap` moves the focused
+slot above `v`. For example, focusing the bottom of `[a,b,c]` emits
+`[swap] dip swap`, which is a sequence of valid kernel steps and
+leaves `[b,c,a]`. Focus never copies or discards a value.
+
+A local name is a select operation that places its slot on top for the next
+ordinary item. If a slot has `d` total selects, the first select emits
+`focus(x,S)` followed by exactly `d - 1` `dup` atoms, provided `x` is `many`.
+The resulting copies receive distinct identities and preserve one copy for
+each future select before any intervening consumer can remove a selected copy.
+For `d = 1` no `dup` is emitted. A linear slot must have exactly one select and
+is never passed to `dup`. Ordinary words and primitives then apply their
+declared stack effects to `S`, consuming and producing fresh slot identities
+as appropriate. The kernel type checker validates every transition.
+
+At the end of the block, cleanup repeatedly chooses the unused slot nearest the
+top of the current stack (breaking any tie by the stable bottom-to-top slot
+order), emits `focus(x,S)`, and then emits `drop`. The stack state is updated
+after each removal. A linear slot with no select, or any slot that would need
+to be silently discarded, is an error.
+
+This is a total algorithm: the finite body is scanned once, each focus emits a
+finite number of adjacent swaps, and each usage count is finite. It fails with
+a diagnostic if a name is absent, a required focus is not represented by the
+current typed stack, or a linear usage count is not exactly one. The canonical
+output is therefore unique and contains only kernel atoms, dictionary words,
+primitives, and recursively constructed quotation literals.
+
+The frozen `dip` atom is never emitted bare. Its only legal expansion is
+`[q] dip`: first recursively erase `q` to a complete kernel program, construct
+the quotation literal `[q]`, push it above the protected top value, then emit
+`dip`. Its state transition is:
+
+    (S · v, [q] dip)  ->  (S' · v)  when  q : S -> S'
+
+The quotation is therefore an explicit operand, exactly as required by the
+kernel rule. The recursive focus definition and the finite body scan make the
+expansion total, with no search or implementation-defined choice.
+
+The expansion is checked normally, so locals cannot bypass stack, usage, or
+refinement checking.
 
 The linter reports `LOCAL_DEPTH` when a local block declares more than four
 names and `STACK_JUGGLE` when its expansion contains more than four
@@ -158,7 +204,7 @@ warnings, not typing rules. Splitting the word is recommended.
 Assume Γ contains `Int^many`, `Bool^many`, and `prim +` with effect
 `Int^many Int^many → Int^many`:
 
-    : inc ( ρ n:Int^many -- ρ n:Int^many ) 1 prim + ;
+    : inc ( forall ρ; ρ n:Int^many -- ρ n:Int^many ) 1 prim + ;
 
 Its body is exactly:
 
@@ -167,7 +213,7 @@ Its body is exactly:
 A word reference `arith.inc` elaborates to the single atom `arith.inc`, not
 to an inline copy. For quotation and conditional syntax:
 
-    : choose-inc ( ρ n:Int^many b:Bool^many -- ρ n:Int^many )
+    : choose-inc ( forall ρ; ρ n:Int^many b:Bool^many -- ρ n:Int^many )
       [ 1 prim + ] [ ] if ;
 
 The body is:
@@ -180,20 +226,20 @@ always rejected; surface syntax cannot weaken that rule.
 
 For a local permutation:
 
-    : add-top-two ( ρ a:Int^many b:Int^many -- ρ r:Int^many )
+    : add-top-two ( forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many )
       locals { a b } { a b prim + } ;
 
-The canonical expansion is `prim +` because the declared stack already has
-`a` below `b`, and both values are consumed in the required order.
+The canonical expansion is `swap swap prim +`: the first select focuses `a`,
+the second focuses `b`, and `prim +` then consumes the top two values.
 
 Assume linear `Handle^linear`, linear `Bytes^linear`, and `prim send` with
 effect `Handle^linear Bytes^linear →`:
 
-    : send-once ( ρ h:Handle^linear b:Bytes^linear -- ρ )
+    : send-once ( forall ρ; ρ h:Handle^linear b:Bytes^linear -- ρ )
       locals { h b } { h b prim send } ;
 
-Its local expansion is `prim send` when `send` expects `h` below `b`; each
-linear value occurs exactly once.
+Its local expansion is `swap swap prim send` when `send` expects `h` below `b`;
+each linear value occurs exactly once.
 Writing `1`, or any literal with a linear type, is rejected before expansion.
 
 ## 7. Machine-authorship requirements
