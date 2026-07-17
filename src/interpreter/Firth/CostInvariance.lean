@@ -95,6 +95,32 @@ theorem traceCost_trans {gamma : Gamma} {dictionary : Dictionary} {costs : CostT
   | cons cost stepProof tail ih =>
       simp [Trace.trans, traceCost, ih, Nat.add_assoc]
 
+theorem programAppend_traceCost_decomposes
+    {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
+    (p₁ p₂ : Program) (initialStack boundaryStack : Stack) (finish : Config)
+    (first : Trace gamma dictionary costs
+      { stack := initialStack, program := p₁.append p₂ }
+      { stack := boundaryStack, program := p₂ })
+    (second : Trace gamma dictionary costs
+      { stack := boundaryStack, program := p₂ } finish) :
+    traceCost (Trace.trans first second) =
+      sequenceCost id (traceCosts first) + sequenceCost id (traceCosts second) := by
+  rw [traceCost_trans, traceCost_eq_sequenceCost first,
+    traceCost_eq_sequenceCost second]
+
+theorem programAppend_traceCost_sequenceCost
+    {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
+    (p₁ p₂ : Program) (initialStack boundaryStack : Stack) (finish : Config)
+    (first : Trace gamma dictionary costs
+      { stack := initialStack, program := p₁.append p₂ }
+      { stack := boundaryStack, program := p₂ })
+    (second : Trace gamma dictionary costs
+      { stack := boundaryStack, program := p₂ } finish) :
+    traceCost (Trace.trans first second) =
+      sequenceCost id (traceCosts first ++ traceCosts second) := by
+  rw [programAppend_traceCost_decomposes p₁ p₂ initialStack boundaryStack finish first second,
+    sequenceCost_append]
+
 theorem run_agrees_with_terminal_trace
     (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
     {start finish : Config} (trace : Trace gamma dictionary costs start finish)
