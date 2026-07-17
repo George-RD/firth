@@ -255,7 +255,7 @@ def executableCostChecks : List Bool :=
     chargedCost { defaultCosts with atom := fun _ => 99 }
       (.push (.literal (.nat 1))) == 0 ]
 
-example : executableCostChecks.all id = true := by native_decide
+example : executableCostChecks.all id = true := by decide
 
 def executableTraceCostChecks : List Bool :=
   [ match run defaultGamma emptyDictionary defaultCosts 10
@@ -270,7 +270,149 @@ def executableTraceCostChecks : List Bool :=
     | .terminal _ _ cost => cost == 0
     | _ => false ]
 
-example : executableTraceCostChecks.all id = true := by native_decide
+example : executableTraceCostChecks.all id = true := by decide
+
+theorem step_program_append_congruence (gamma : Gamma) (dictionary : Dictionary)
+    (costs : CostTable) (suffix : Program) (stack : Stack) (program : Program)
+    (next : Config) (cost : Nat)
+    (h : step gamma dictionary costs { stack := stack, program := program } =
+      .stepped next cost) :
+    step gamma dictionary costs { stack := stack, program := program.append suffix } =
+      .stepped { stack := next.stack, program := next.program.append suffix } cost := by
+  cases program with
+  | empty => simp [step] at h
+  | cons atom rest =>
+      exact step_append_congruence gamma dictionary costs suffix stack atom rest next cost h
+
+theorem run_append_lift (gamma : Gamma) (dictionary : Dictionary)
+    (costs : CostTable) (fuel₁ fuel₂ : Nat) (p₁ p₂ : Program)
+    (initialStack boundaryStack finalStack : Stack) (steps₁ cost₁ steps₂ cost₂ : Nat)
+    (h : run gamma dictionary costs fuel₁
+      { stack := initialStack, program := p₁ } =
+      .terminal { stack := boundaryStack, program := .empty } steps₁ cost₁)
+    (h₂ : run gamma dictionary costs fuel₂
+      { stack := boundaryStack, program := p₂ } =
+      .terminal { stack := finalStack, program := .empty } steps₂ cost₂) :
+    run gamma dictionary costs (fuel₂ + steps₁)
+      { stack := initialStack, program := p₁.append p₂ } =
+      .terminal { stack := finalStack, program := .empty }
+        (steps₁ + steps₂) (cost₁ + cost₂) := by
+  induction fuel₁ generalizing initialStack boundaryStack p₁ steps₁ cost₁ with
+  | zero =>
+      cases p₁ with
+      | empty =>
+          simp [run] at h
+          rcases h with ⟨rfl, rfl, rfl⟩
+          simpa [Program.append, Nat.add_zero] using h₂
+      | cons atom rest =>
+          simp only [run] at h
+          generalize hs : step gamma dictionary costs
+            { stack := initialStack, program := .cons atom rest } = result at h
+          cases result with
+          | terminal config =>
+              cases atom <;> simp only [step] at hs
+              all_goals try split at hs
+              all_goals try split at hs
+              all_goals try split at hs
+              all_goals try split at hs
+              all_goals cases hs
+          | stuck config => simp_all
+          | stepped next stepCost => simp_all
+  | succ fuel₁ ih =>
+      rw [run] at h
+      generalize hs : step gamma dictionary costs
+        { stack := initialStack, program := p₁ } = result at h
+      cases result with
+      | terminal config =>
+          cases p₁ with
+          | empty =>
+              simp [step] at hs
+              cases hs
+              cases h
+              simpa [Program.append, Nat.add_zero] using h₂
+          | cons atom rest =>
+              cases atom <;> simp only [step] at hs
+              all_goals try split at hs
+              all_goals try split at hs
+              all_goals try split at hs
+              all_goals try split at hs
+              all_goals cases hs
+      | stuck config => simp_all
+      | stepped next stepCost =>
+          cases recursive : run gamma dictionary costs fuel₁ next with
+          | terminal final tailSteps tailCost =>
+              simp [recursive] at h
+              rcases h with ⟨rfl, rfl, rfl⟩
+              have liftedStep := step_program_append_congruence gamma dictionary costs p₂
+                initialStack p₁ next stepCost hs
+              rw [← Nat.add_assoc fuel₂ tailSteps 1, run, liftedStep]
+              simp only
+              rw [ih next.program next.stack boundaryStack tailSteps tailCost recursive h₂]
+              simp [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+          | stuck config tailSteps tailCost => simp [recursive] at h
+          | outOfFuel config tailSteps tailCost => simp [recursive] at h
+
+theorem seq_execution_decomposes
+    {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
+    (fuel₁ fuel₂ : Nat) (p₁ p₂ : Program)
+    (initialStack boundaryStack finalStack : Stack)
+    (steps₁ cost₁ steps₂ cost₂ : Nat)
+    (first : run gamma dictionary costs fuel₁
+      { stack := initialStack, program := p₁ } =
+      .terminal { stack := boundaryStack, program := .empty } steps₁ cost₁)
+    (second : run gamma dictionary costs fuel₂
+      { stack := boundaryStack, program := p₂ } =
+      .terminal { stack := finalStack, program := .empty } steps₂ cost₂) :
+    run gamma dictionary costs (fuel₂ + steps₁)
+      { stack := initialStack, program := p₁.append p₂ } =
+      .terminal { stack := finalStack, program := .empty }
+        (steps₁ + steps₂) (cost₁ + cost₂) := by
+  exact run_append_lift gamma dictionary costs fuel₁ fuel₂ p₁ p₂
+    initialStack boundaryStack finalStack steps₁ cost₁ steps₂ cost₂ first second
+
+theorem seq_cost_composes
+    {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
+    (fuel₁ fuel₂ : Nat) (p₁ p₂ : Program)
+    (initialStack boundaryStack finalStack : Stack)
+    (steps₁ cost₁ steps₂ cost₂ totalSteps totalCost : Nat)
+    (first : run gamma dictionary costs fuel₁
+      { stack := initialStack, program := p₁ } =
+      .terminal { stack := boundaryStack, program := .empty } steps₁ cost₁)
+    (second : run gamma dictionary costs fuel₂
+      { stack := boundaryStack, program := p₂ } =
+      .terminal { stack := finalStack, program := .empty } steps₂ cost₂)
+    (combined : run gamma dictionary costs (fuel₂ + steps₁)
+      { stack := initialStack, program := p₁.append p₂ } =
+      .terminal { stack := finalStack, program := .empty } totalSteps totalCost) :
+    totalSteps = steps₁ + steps₂ ∧ totalCost = cost₁ + cost₂ := by
+  have expected := seq_execution_decomposes fuel₁ fuel₂ p₁ p₂ initialStack
+    boundaryStack finalStack steps₁ cost₁ steps₂ cost₂ first second
+  rw [expected] at combined
+  cases combined
+  exact ⟨rfl, rfl⟩
+
+theorem seq_execution_splits_runs
+    {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
+    (fuel₁ fuel₂ : Nat) (p₁ p₂ : Program)
+    (initialStack boundaryStack finalStack : Stack)
+    (steps₁ cost₁ steps₂ cost₂ totalSteps totalCost : Nat)
+    (first : run gamma dictionary costs fuel₁
+      { stack := initialStack, program := p₁ } =
+      .terminal { stack := boundaryStack, program := .empty } steps₁ cost₁)
+    (second : run gamma dictionary costs fuel₂
+      { stack := boundaryStack, program := p₂ } =
+      .terminal { stack := finalStack, program := .empty } steps₂ cost₂)
+    (combined : run gamma dictionary costs (fuel₂ + steps₁)
+      { stack := initialStack, program := p₁.append p₂ } =
+      .terminal { stack := finalStack, program := .empty } totalSteps totalCost) :
+    ∃ isolatedSteps isolatedCost,
+      totalSteps = steps₁ + isolatedSteps ∧
+      totalCost = cost₁ + isolatedCost ∧
+      isolatedSteps = steps₂ ∧ isolatedCost = cost₂ := by
+  rcases seq_cost_composes fuel₁ fuel₂ p₁ p₂ initialStack boundaryStack finalStack
+    steps₁ cost₁ steps₂ cost₂ totalSteps totalCost first second combined with
+    ⟨hs, hc⟩
+  exact ⟨steps₂, cost₂, hs, hc, rfl, rfl⟩
 
 theorem traceStep_cost_matches_kappa {gamma : Gamma} {dictionary : Dictionary}
     {costs : CostTable} {start middle : Config} (cost : Nat)
