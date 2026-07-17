@@ -2079,16 +2079,21 @@ theorem annotated_dictionary_self_recursive_witness :
   refine ⟨dictionary, annotated, ?_⟩
   intro name entry' frontier hentry
   by_cases hname : name = "loop"
-  · subst name
-    have hentryEq : entry' = entry := by simpa [dictionary] using hentry.symm
-    subst entry'
+  · rw [hname] at hentry ⊢
+    change some entry = some entry' at hentry
+    cases hentry
     refine ⟨body, ?_, frontier, ?_⟩
-    · simp [annotated, body]
+    · change some body = some body
+      rfl
     · refine ⟨rfl, Nat.le_refl _, ?_, ?_⟩
       · intro tag htag
         cases htag
       · simp [body, taggedLinearTagsProgram, taggedLinearTagsAtom]
-  · simp [dictionary, hname] at hentry
+  · have hnone : dictionary name = none := by
+      change (if name = "loop" then some entry else none) = none
+      rw [if_neg hname]
+    rw [hnone] at hentry
+    cases hentry
 
 def PrimitiveTagLift (policy : PrimitiveOwnershipPolicy) (gamma : Gamma) (name : Prim) : Prop :=
   ∀ input residue nextTag specification plainInput plainOutput,

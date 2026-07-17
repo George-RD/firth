@@ -10,6 +10,9 @@ def testPolicy : PrimitiveOwnershipPolicy where
     (name == "makeWorld" ∧ consumed = [] ∧ produced.length = 1) ∨
     (name == "consumeWorld" ∧ consumed.length = 1 ∧ produced = [])
 
+abbrev examplePolicy := testPolicy
+abbrev exampleGamma := defaultGamma
+
 #print axioms eraseProgram_append
 #print axioms usageMeet_decide
 #print axioms eraseProgram_if
@@ -64,6 +67,10 @@ def testPolicy : PrimitiveOwnershipPolicy where
 #print axioms finite_trace_at_most_once
 #print axioms initial_tag_survives_or_consumed_at
 #print axioms exact_once_of_terminating_empty_residue
+#print axioms exact_once_of_terminating_empty_residue_all_born
+#print axioms trace_produced_ge_frontier
+#print axioms born_tags_nodup
+#print axioms born_tag_survives_or_consumed
 #print axioms divergence_may_leave_linear_live
 #print axioms annotation_value_erases
 #print axioms annotation_value_advances
@@ -77,6 +84,7 @@ def testPolicy : PrimitiveOwnershipPolicy where
 #print axioms many_annotated_program_has_no_linear_tags
 #print axioms backward_adequacy
 #print axioms trace_backward_adequacy
+#print axioms annotated_dictionary_self_recursive_witness
 
 example (tag : Tag) (value : Literal) :
     taggedLinearTagsValue (.literal tag value) = [] := by
@@ -286,7 +294,25 @@ example : InstrumentedTrace testPolicy defaultGamma emptyDictionary defaultCosts
 
 example : ∃ (dictionary : Dictionary) (run : Nat → AConfig),
     InfiniteInstrumentedTrace testPolicy defaultGamma dictionary defaultCosts run := by
-  exact divergence_may_leave_linear_live testPolicy
+  let entry : WordEntry :=
+    { type := { rowVariables := ["ρ"], input := .row "ρ", output := .row "ρ" },
+      body := .cons (.word "loop") .empty }
+  let dictionary : Dictionary := fun _ => some entry
+  let live : AConfig :=
+    { stack := [.world 0 7], program := .cons (.word "loop") .empty, nextTag := 1 }
+  let run : Nat → AConfig := fun _ => live
+  refine ⟨dictionary, run, ?_⟩
+  constructor
+  · intro n
+    exact .word (name := "loop") (body := .cons (.word "loop") .empty)
+      (stack := [.world 0 7]) (rest := .empty) (nextTag := 1) (nextTag' := 1) (by
+        refine ⟨entry, ?_, ?_⟩
+        · simp [dictionary, entry]
+        · exact ⟨rfl, Nat.le_refl _, by simp [taggedLinearTagsProgram, taggedLinearTagsAtom]⟩)
+  · refine ⟨0, ?_⟩
+    intro n
+    simp [run, live, taggedLinearTags, taggedLinearTagsValue,
+      taggedLinearTagsProgram, taggedLinearTagsAtom]
 
 def makeWorldLiftContractWitness : ∃ output nextTag',
     PrimitiveTagContract testPolicy defaultGamma "makeWorld" [] output .empty
@@ -318,6 +344,418 @@ def makeWorldLiftContractWitness : ∃ output nextTag',
       stack_contract := .makeWorld
       authorised := by simp [testPolicy] }
   exact ⟨[.world 5 0], 6, contract⟩
+
+theorem examplePrimitiveTagLift :
+    ∀ name, PrimitiveTagLift examplePolicy exampleGamma name := by
+  have filterContainsEqSelf : ∀ (source candidates : Ownerships),
+      (∀ tag, tag ∈ candidates → tag ∈ source) →
+      candidates.filter (fun tag => ownershipContains source tag) = candidates := by
+    intro source candidates hsubset
+    induction candidates with
+    | nil => rfl
+    | cons head tail ih =>
+      have hhead : ownershipContains source head = true :=
+        ownershipContains_eq_true_iff_mem.mpr (hsubset head List.mem_cons_self)
+      simp only [List.filter, hhead]
+      exact congrArg (List.cons head) (ih (by
+        intro tag htag
+        exact hsubset tag (List.mem_cons_of_mem head htag)))
+  intro name input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  by_cases haddNat : name = "addNat"
+  · subst name
+    have hspecification : specification =
+        { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
+          output := .snoc (.row "ρ") (.base .nat .many), delta := addNatDelta } :=
+      (Option.some.inj hname).symm
+    subst specification
+    subst plainInput
+    cases input with
+    | nil => simp [addNatDelta] at hdelta
+    | cons rightValue inputTail =>
+      cases rightValue with
+      | quotation rightTag body usage => simp [eraseValue, addNatDelta] at hdelta
+      | world rightTag payload => simp [eraseValue, addNatDelta] at hdelta
+      | literal rightTag rightLiteral =>
+        cases rightLiteral with
+        | bool right => simp [eraseValue, addNatDelta] at hdelta
+        | unit => simp [eraseValue, addNatDelta] at hdelta
+        | nat right =>
+          cases inputTail with
+          | nil => simp [eraseValue, addNatDelta] at hdelta
+          | cons leftValue tail =>
+            cases leftValue with
+            | quotation leftTag body usage => simp [eraseValue, addNatDelta] at hdelta
+            | world leftTag payload => simp [eraseValue, addNatDelta] at hdelta
+            | literal leftTag leftLiteral =>
+              cases leftLiteral with
+              | bool left => simp [eraseValue, addNatDelta] at hdelta
+              | unit => simp [eraseValue, addNatDelta] at hdelta
+              | nat left =>
+                simp [eraseValue, addNatDelta] at hdelta
+                subst plainOutput
+                let tailTags := taggedLinearTagsValueList tail
+                have htags :
+                    taggedLinearTags
+                      { stack := .literal rightTag (.nat right) ::
+                          .literal leftTag (.nat left) :: tail,
+                        program := .cons (.prim "addNat") residue,
+                        nextTag := nextTag } =
+                      tailTags ++ taggedLinearTagsProgram residue := by
+                  simp [taggedLinearTags, taggedLinearTagsValueList,
+                    taggedLinearTagsValue, taggedLinearTagsProgram,
+                    taggedLinearTagsAtom, tailTags,
+                    taggedLinearTagsValueList_eq_foldr]
+                unfold InstrumentedWellFormed at hwellformed
+                rw [htags] at hwellformed
+                let output : AStack := .literal rightTag (.nat (left + right)) :: tail
+                refine ⟨output, nextTag, ?_, Nat.le_refl _, ?_, ?_⟩
+                · simp [output, eraseValue]
+                · refine ⟨
+                    { input := .snoc (.snoc (.row "ρ") (.base .nat .many))
+                        (.base .nat .many),
+                      output := .snoc (.row "ρ") (.base .nat .many),
+                      delta := addNatDelta },
+                    .literal (.nat right) :: .literal (.nat left) :: tail.map eraseValue,
+                    .literal (.nat (left + right)) :: tail.map eraseValue,
+                    tailTags, tailTags, [], [], ?_⟩
+                  refine
+                    { name_resolves := hname
+                      input_erases := by simp [eraseValue]
+                      delta := by simp [addNatDelta, eraseValue]
+                      output_erases := by simp [output, eraseValue]
+                      input_partition := ?_
+                      output_partition := ?_
+                      retained_nodup := ?_
+                      consumed_nodup := by simp
+                      produced_nodup := by simp
+                      retained_exact := ?_
+                      consumed_exact := ?_
+                      produced_exact := ?_
+                      retained_unchanged := ?_
+                      consumed_absent := by simp
+                      produced_fresh := by simp
+                      output_residue_nodup := ?_
+                      frontier_monotone := Nat.le_refl _
+                      row_tail_retained := by simp
+                      stack_contract := .addNat
+                      authorised := by
+                        change ("addNat" == "addNat" ∧ [] = [] ∧ [] = []) ∨ _
+                        exact Or.inl ⟨rfl, rfl, rfl⟩ }
+                  · simp [taggedLinearTagsValueList, taggedLinearTagsValue, tailTags]
+                  · simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                      tailTags]
+                  · exact (nodup_append_constructive.mp hwellformed.1).1
+                  · simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                      tailTags]
+                  · simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                      tailTags]
+                  · simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                      tailTags]
+                  · exact (filterContainsEqSelf _ tailTags (by
+                      intro tag htag
+                      simpa [output, taggedLinearTagsValueList,
+                        taggedLinearTagsValue, tailTags] using htag)).symm
+                  · simpa [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                      tailTags] using hwellformed.1
+                · intro tag htag
+                  apply hwellformed.2 tag
+                  simpa [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                    tailTags] using List.mem_append_left
+                      (taggedLinearTagsProgram residue) htag
+  · by_cases hmakeWorld : name = "makeWorld"
+    · subst name
+      have hspecification : specification =
+          { input := .row "ρ",
+            output := .snoc (.row "ρ") (.base .world .linear),
+            delta := makeWorldDelta } :=
+        (Option.some.inj hname).symm
+      subst specification
+      subst plainInput
+      simp [makeWorldDelta] at hdelta
+      subst plainOutput
+      let inputTags := taggedLinearTagsValueList input
+      have htags :
+          taggedLinearTags
+            { stack := input, program := .cons (.prim "makeWorld") residue,
+              nextTag := nextTag } =
+            inputTags ++ taggedLinearTagsProgram residue := by
+        simp [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
+          inputTags, taggedLinearTagsValueList_eq_foldr]
+      unfold InstrumentedWellFormed at hwellformed
+      rw [htags] at hwellformed
+      have hnextAbsent :
+          nextTag ∉ inputTags ++ taggedLinearTagsProgram residue := by
+        intro hmem
+        exact (Nat.lt_irrefl nextTag) (hwellformed.2 nextTag hmem)
+      have hnextInputAbsent : nextTag ∉ inputTags := by
+        intro hmem
+        exact hnextAbsent (List.mem_append_left _ hmem)
+      let output : AStack := .world nextTag 0 :: input
+      refine ⟨output, nextTag + 1, ?_, Nat.le_succ _, ?_, ?_⟩
+      · simp [output, eraseValue]
+      · refine ⟨
+          { input := .row "ρ",
+            output := .snoc (.row "ρ") (.base .world .linear),
+            delta := makeWorldDelta },
+          input.map eraseValue, .world 0 :: input.map eraseValue,
+          inputTags, inputTags, [], [nextTag], ?_⟩
+        refine
+          { name_resolves := hname
+            input_erases := by simp [eraseValue]
+            delta := by simp [makeWorldDelta]
+            output_erases := by simp [output, eraseValue]
+            input_partition := ?_
+            output_partition := ?_
+            retained_nodup := ?_
+            consumed_nodup := by simp
+            produced_nodup := by simp
+            retained_exact := ?_
+            consumed_exact := ?_
+            produced_exact := ?_
+            retained_unchanged := ?_
+            consumed_absent := by simp
+            produced_fresh := ?_
+            output_residue_nodup := ?_
+            frontier_monotone := Nat.le_succ _
+            row_tail_retained := by simp
+            stack_contract := .makeWorld
+            authorised := by
+              change _ ∨ ("makeWorld" == "makeWorld" ∧ [] = [] ∧ [nextTag].length = 1) ∨ _
+              exact Or.inr (Or.inl ⟨rfl, rfl, rfl⟩) }
+        · simp [inputTags]
+        · simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+            inputTags, or_comm]
+        · exact (nodup_append_constructive.mp hwellformed.1).1
+        · intro tag
+          constructor
+          · intro htag
+            exact ⟨htag, by simp [output, taggedLinearTagsValueList,
+                taggedLinearTagsValue, inputTags, htag]⟩
+          · intro htag
+            exact htag.1
+        · intro tag
+          constructor
+          · intro htag
+            cases htag
+          · rintro ⟨hin, hnot⟩
+            exact (hnot (by simp [output, taggedLinearTagsValueList,
+              taggedLinearTagsValue, inputTags, hin])).elim
+        · intro tag
+          constructor
+          · intro htag
+            simp at htag
+            subst tag
+            exact ⟨by simp [output, taggedLinearTagsValueList,
+              taggedLinearTagsValue, inputTags], hnextInputAbsent⟩
+          · rintro ⟨hout, hnot⟩
+            simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+              inputTags] at hout
+            rcases hout with rfl | hin
+            · simp
+            · exact (hnot hin).elim
+        · exact (filterContainsEqSelf _ inputTags (by
+            intro tag htag
+            simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+              inputTags, htag])).symm
+        · intro tag htag
+          simp at htag
+          subst tag
+          exact ⟨Nat.le_refl _, Nat.lt_succ_self _⟩
+        · simpa [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+            inputTags] using List.nodup_cons.2 ⟨hnextAbsent, hwellformed.1⟩
+      · intro tag htag
+        simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+          inputTags] at htag
+        rcases htag with rfl | htag
+        · exact Nat.lt_succ_self _
+        · exact Nat.lt_succ_of_lt
+            (hwellformed.2 tag (List.mem_append_left _ htag))
+    · by_cases hconsumeWorld : name = "consumeWorld"
+      · subst name
+        have hspecification : specification =
+            { input := .snoc (.row "ρ") (.base .world .linear),
+              output := .row "ρ", delta := consumeWorldDelta } :=
+          (Option.some.inj hname).symm
+        subst specification
+        subst plainInput
+        cases input with
+        | nil => simp [consumeWorldDelta] at hdelta
+        | cons first tail =>
+          cases first with
+          | literal tag literal => simp [eraseValue, consumeWorldDelta] at hdelta
+          | quotation tag body usage => simp [eraseValue, consumeWorldDelta] at hdelta
+          | world worldTag payload =>
+            simp [eraseValue, consumeWorldDelta] at hdelta
+            subst plainOutput
+            let tailTags := taggedLinearTagsValueList tail
+            let residueTags := taggedLinearTagsProgram residue
+            have htags :
+                taggedLinearTags
+                  { stack := .world worldTag payload :: tail,
+                    program := .cons (.prim "consumeWorld") residue,
+                    nextTag := nextTag } =
+                  worldTag :: (tailTags ++ residueTags) := by
+              simp [taggedLinearTags, taggedLinearTagsValueList,
+                taggedLinearTagsValue, taggedLinearTagsProgram,
+                taggedLinearTagsAtom, tailTags, residueTags,
+                taggedLinearTagsValueList_eq_foldr]
+            unfold InstrumentedWellFormed at hwellformed
+            rw [htags] at hwellformed
+            have hworldAbsent : worldTag ∉ tailTags ++ residueTags :=
+              (List.nodup_cons.mp hwellformed.1).1
+            have hworldTailAbsent : worldTag ∉ tailTags := by
+              intro hmem
+              exact hworldAbsent (List.mem_append_left _ hmem)
+            have hworldResidueAbsent : worldTag ∉ residueTags := by
+              intro hmem
+              exact hworldAbsent (List.mem_append_right _ hmem)
+            have htailResidueNodup : (tailTags ++ residueTags).Nodup :=
+              (List.nodup_cons.mp hwellformed.1).2
+            let output : AStack := tail
+            refine ⟨output, nextTag, ?_, Nat.le_refl _, ?_, ?_⟩
+            · simp [output]
+            · refine ⟨
+                { input := .snoc (.row "ρ") (.base .world .linear),
+                  output := .row "ρ", delta := consumeWorldDelta },
+                .world payload :: tail.map eraseValue, tail.map eraseValue,
+                tailTags, tailTags, [worldTag], [], ?_⟩
+              refine
+                { name_resolves := hname
+                  input_erases := by simp [eraseValue]
+                  delta := by simp [consumeWorldDelta, eraseValue]
+                  output_erases := by simp [output]
+                  input_partition := ?_
+                  output_partition := ?_
+                  retained_nodup := ?_
+                  consumed_nodup := by simp
+                  produced_nodup := by simp
+                  retained_exact := ?_
+                  consumed_exact := ?_
+                  produced_exact := ?_
+                  retained_unchanged := ?_
+                  consumed_absent := ?_
+                  produced_fresh := by simp
+                  output_residue_nodup := by simpa [output, tailTags, residueTags]
+                    using htailResidueNodup
+                  frontier_monotone := Nat.le_refl _
+                  row_tail_retained := by simp
+                  stack_contract := .consumeWorld
+                  authorised := by
+                    change _ ∨ _ ∨
+                      ("consumeWorld" == "consumeWorld" ∧ [worldTag].length = 1 ∧ [] = [])
+                    exact Or.inr (Or.inr ⟨rfl, rfl, rfl⟩) }
+              · simp [taggedLinearTagsValueList, taggedLinearTagsValue,
+                  tailTags, or_comm]
+              · intro tag
+                change tag ∈ tailTags ↔ tag ∈ tailTags ∨ tag ∈ ([] : Ownerships)
+                simp
+              · exact (nodup_append_constructive.mp htailResidueNodup).1
+              · intro tag
+                constructor
+                · intro htag
+                  refine ⟨?_, htag⟩
+                  simpa [taggedLinearTagsValueList, taggedLinearTagsValue,
+                    tailTags] using Or.inr htag
+                · intro htag
+                  exact htag.2
+              · intro tag
+                constructor
+                · intro htag
+                  have heq : tag = worldTag := by simpa using htag
+                  subst tag
+                  refine ⟨?_, hworldTailAbsent⟩
+                  simp [taggedLinearTagsValueList, taggedLinearTagsValue]
+                · rintro ⟨hinputTag, houtputAbsent⟩
+                  have hinputCases : tag = worldTag ∨ tag ∈ tailTags := by
+                    simpa [taggedLinearTagsValueList, taggedLinearTagsValue,
+                      tailTags] using hinputTag
+                  rcases hinputCases with heq | htail
+                  · simpa using heq
+                  · exact (houtputAbsent htail).elim
+              · intro tag
+                constructor
+                · intro htag
+                  cases htag
+                · rintro ⟨houtputTag, hinputAbsent⟩
+                  exact (hinputAbsent (by
+                    simpa [output, taggedLinearTagsValueList,
+                      taggedLinearTagsValue, tailTags] using Or.inr houtputTag)).elim
+              · have hfilter : List.filter
+                    (fun tag => ownershipContains tailTags tag) tailTags = tailTags :=
+                    filterContainsEqSelf tailTags tailTags (fun _ htag => htag)
+                have hworldContainsFalse : ownershipContains tailTags worldTag = false := by
+                  cases hcontains : ownershipContains tailTags worldTag with
+                  | false => rfl
+                  | true =>
+                    exact (hworldTailAbsent
+                      (ownershipContains_eq_true_iff_mem.mp hcontains)).elim
+                change tailTags = List.filter
+                  (fun tag => ownershipContains tailTags tag) (worldTag :: tailTags)
+                simp [hworldContainsFalse, hfilter]
+              · intro tag htag
+                simp at htag
+                subst tag
+                exact ⟨hworldTailAbsent, hworldResidueAbsent⟩
+            · intro tag htag
+              exact hwellformed.2 tag (List.mem_cons_of_mem _
+                (List.mem_append_left residueTags (by simpa [output, tailTags] using htag)))
+      · have hnone : exampleGamma.primitive name = none := by
+          simp only [exampleGamma, defaultGamma, haddNat, hmakeWorld, hconsumeWorld]
+        rw [hnone] at hname
+        cases hname
+
+#print axioms examplePrimitiveTagLift
+
+theorem example_backward_adequacy_primitive_step :
+    ∃ annotatedAfter,
+      InstrumentedStep examplePolicy exampleGamma emptyDictionary defaultCosts
+        { stack := [.literal 0 (.nat 3), .literal 1 (.nat 4)],
+          program := .cons (.prim "addNat") .empty, nextTag := 2 }
+        annotatedAfter ∧
+      eraseAConfig annotatedAfter =
+        { stack := [.literal (.nat (4 + 3))], program := .empty } ∧
+      InstrumentedWellFormed annotatedAfter := by
+  let annotatedBefore : AConfig :=
+    { stack := [.literal 0 (.nat 3), .literal 1 (.nat 4)],
+      program := .cons (.prim "addNat") .empty, nextTag := 2 }
+  let before : Config :=
+    { stack := [.literal (.nat 3), .literal (.nat 4)],
+      program := .cons (.prim "addNat") .empty }
+  let after : Config :=
+    { stack := [.literal (.nat (4 + 3))], program := .empty }
+  have hdictionary : AnnotatedDictionary emptyDictionary (fun _ => none) := by
+    intro name entry frontier hentry
+    simp [emptyDictionary] at hentry
+  have hwellformed : InstrumentedWellFormed annotatedBefore := by
+    simp [annotatedBefore, InstrumentedWellFormed, taggedLinearTags,
+      taggedLinearTagsValue, taggedLinearTagsProgram, taggedLinearTagsAtom]
+  have herases : eraseAConfig annotatedBefore = before := by
+    rfl
+  have htyped : TypedConfig exampleGamma emptyDictionary before := by
+    refine ⟨
+      .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
+      .snoc (.row "ρ") (.base .nat .many), ?_, ?_⟩
+    · exact .cons (.literal rfl) (.cons (.literal rfl) .empty)
+    · exact ProgramTyping.cons
+        (AtomTyping.prim (name := "addNat")
+          (specification :=
+            { input := .snoc (.snoc (.row "ρ") (.base .nat .many))
+                (.base .nat .many),
+              output := .snoc (.row "ρ") (.base .nat .many),
+              delta := addNatDelta }) rfl)
+        ProgramTyping.empty
+  have hstep : HasSuccessor exampleGamma emptyDictionary defaultCosts before after := by
+    refine ⟨defaultCosts.primitive "addNat", ?_⟩
+    simp only [before, after, exampleGamma, defaultGamma, defaultCosts, step,
+      addNatDelta]
+  simpa [annotatedBefore, before, after] using
+    (backward_adequacy (dictionary := emptyDictionary)
+      (policy := examplePolicy) (gamma := exampleGamma)
+      (costs := defaultCosts) (fun _ => none) hdictionary
+      examplePrimitiveTagLift hwellformed herases htyped hstep)
+
+#print axioms example_backward_adequacy_primitive_step
 
 def expectTerminalStack (expected : Stack) : RunResult → Bool
   | .terminal config _ _ => config.stack == expected
