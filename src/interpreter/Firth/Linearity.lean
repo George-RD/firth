@@ -132,12 +132,26 @@ decidable `Bool` membership operation, so an event is constructive data. -/
 
 def beforeTags (before after : AConfig) : Ownerships := taggedLinearTags before
 def afterTags (before after : AConfig) : Ownerships := taggedLinearTags after
+def ownershipContains : Ownerships → OwnershipId → Bool
+  | [], _ => false
+  | head :: tail, tag => if head = tag then true else ownershipContains tail tag
+def ownershipAbsent (tags : Ownerships) (tag : OwnershipId) : Bool :=
+  match ownershipContains tags tag with
+  | true => false
+  | false => true
+theorem ownershipAbsent_of_false {tags : Ownerships} {tag : OwnershipId}
+    (h : ownershipContains tags tag = false) : ownershipAbsent tags tag = true := by
+  simp [ownershipAbsent, h]
+
+theorem ownershipAbsent_of_true {tags : Ownerships} {tag : OwnershipId}
+    (h : ownershipContains tags tag = true) : ownershipAbsent tags tag = false := by
+  simp [ownershipAbsent, h]
 def preserved (before after : AConfig) : Ownerships :=
-  (beforeTags before after).filter (fun tag => (afterTags before after).contains tag)
+  (beforeTags before after).filter (fun tag => ownershipContains (afterTags before after) tag)
 def consumed (before after : AConfig) : Ownerships :=
-  (beforeTags before after).filter (fun tag => !(afterTags before after).contains tag)
+  (beforeTags before after).filter (fun tag => ownershipAbsent (afterTags before after) tag)
 def produced (before after : AConfig) : Ownerships :=
-  (afterTags before after).filter (fun tag => !(beforeTags before after).contains tag)
+  (afterTags before after).filter (fun tag => ownershipAbsent (beforeTags before after) tag)
 
 def traceConsumed (configs : List AConfig) : Ownerships :=
   match configs with
@@ -237,25 +251,34 @@ theorem mem_filter_bool_iff {p : OwnershipId → Bool} {tag : OwnershipId}
           · exact (h (by simpa [hhead] using hp)).elim
           · exact ih.mpr ⟨hm, hp⟩
 
+theorem ownershipContains_eq_true_iff_mem {tags : Ownerships} {tag : OwnershipId} :
+    ownershipContains tags tag = true ↔ tag ∈ tags := by
+  induction tags with
+  | nil => simp [ownershipContains]
+  | cons head tail ih =>
+      by_cases h : head = tag
+      · simp [ownershipContains, h]
+      · simp [ownershipContains, h, Ne.symm h, ih]
+
 theorem mem_produced_iff {before after : AConfig} {tag : OwnershipId} :
     tag ∈ produced before after ↔
       tag ∈ afterTags before after ∧ tag ∉ beforeTags before after := by
   change tag ∈ (afterTags before after).filter
-      (fun value => !(beforeTags before after).contains value) ↔ _
+      (fun value => ownershipAbsent (beforeTags before after) value) ↔ _
   rw [mem_filter_bool_iff]
   constructor
   · rintro ⟨hafter, hnotContains⟩
     refine ⟨hafter, ?_⟩
     intro hbefore
-    have hcontains : (beforeTags before after).contains tag = true :=
-      List.contains_iff_mem.mpr hbefore
-    rw [hcontains] at hnotContains
-    cases hnotContains
+    have hcontains : ownershipContains (beforeTags before after) tag = true :=
+      ownershipContains_eq_true_iff_mem.mpr hbefore
+    have hfalse := ownershipAbsent_of_true hcontains
+    cases hnotContains.symm.trans hfalse
   · rintro ⟨hafter, hbefore⟩
     refine ⟨hafter, ?_⟩
-    cases hcontains : (beforeTags before after).contains tag with
-    | false => rfl
-    | true => exact (hbefore (List.contains_iff_mem.mp hcontains)).elim
+    cases hcontains : ownershipContains (beforeTags before after) tag with
+    | false => exact ownershipAbsent_of_false hcontains
+    | true => exact (hbefore (ownershipContains_eq_true_iff_mem.mp hcontains)).elim
 
 theorem nodup_filter_bool {p : OwnershipId → Bool} {tags : Ownerships}
     (h : tags.Nodup) : (tags.filter p).Nodup := by
@@ -295,20 +318,28 @@ theorem filter_partition_membership {p : OwnershipId → Bool} {tags : Ownership
     · exact (mem_filter_bool_iff.mp htag).1
     · exact (mem_filter_bool_iff.mp htag).1
 
+theorem filter_absent_eq_nil_of_subset (source candidates : Ownerships)
+    (hsubset : ∀ tag, tag ∈ candidates → tag ∈ source) :
+    candidates.filter (fun tag => ownershipAbsent source tag) = [] := by
+  induction candidates with
+  | nil => rfl
+  | cons head tail ih =>
+      have hhead : head ∈ source := hsubset head List.mem_cons_self
+      have hcontains : ownershipContains source head = true :=
+        ownershipContains_eq_true_iff_mem.mpr hhead
+      have habsent : ownershipAbsent source head = false :=
+        ownershipAbsent_of_true hcontains
+      rw [List.filter, habsent]
+      exact ih (by
+        intro tag htag
+        exact hsubset tag (List.mem_cons_of_mem head htag))
+
 theorem filter_not_contains_self (tags : Ownerships) :
-    tags.filter (fun tag => !(tags.contains tag)) = [] := by
-  apply List.eq_nil_iff_forall_not_mem.mpr
-  intro tag htag
-  have hfiltered := mem_filter_bool_iff.mp htag
-  have hcontains : tags.contains tag = true := List.contains_iff_mem.mpr hfiltered.1
-  have hnot : tags.contains tag ≠ true := by
-    intro htrue
-    rw [htrue] at hfiltered
-    simp at hfiltered
-  exact hnot hcontains
+    tags.filter (fun tag => ownershipAbsent tags tag) = [] := by
+  exact filter_absent_eq_nil_of_subset tags tags (fun _ htag => htag)
 
  theorem mem_filter_not_contains_self {tags : Ownerships} {tag : OwnershipId}
-    (h : tag ∈ tags.filter (fun value => !(tags.contains value))) : False := by
+    (h : tag ∈ tags.filter (fun value => ownershipAbsent tags value)) : False := by
   rw [filter_not_contains_self tags] at h
   cases h
 
@@ -347,7 +378,7 @@ structure PrimitiveTagContract (authorised : PrimitiveAuthorisation)
     tag ∈ taggedLinearTagsValueList output ∧ tag ∉ taggedLinearTagsValueList input
   retained_unchanged : retained =
     (taggedLinearTagsValueList input).filter
-      (fun tag => (taggedLinearTagsValueList output).contains tag)
+      (fun tag => ownershipContains (taggedLinearTagsValueList output) tag)
   consumed_absent : ∀ tag, tag ∈ consumed →
     tag ∉ taggedLinearTagsValueList output ∧ tag ∉ taggedLinearTagsProgram residue
   produced_fresh : ∀ tag, tag ∈ produced → nextTag ≤ tag ∧ tag < nextTag'
@@ -850,24 +881,48 @@ theorem step_ownership_from_events
   refine ⟨hafter, ?_, ?_, hproduced, hfrontier⟩
   intro tag htag hafterTag
   have hfiltered := mem_filter_bool_iff.mp htag
-  have hcontains : (afterTags before after).contains tag = true :=
-    List.contains_iff_mem.mpr hafterTag
-  have hnot : (afterTags before after).contains tag ≠ true := by
+  have hcontains : ownershipContains (afterTags before after) tag = true :=
+    ownershipContains_eq_true_iff_mem.mpr hafterTag
+  have hnot : ownershipContains (afterTags before after) tag ≠ true := by
     intro htrue
-    rw [htrue] at hfiltered
-    simp at hfiltered
+    have hfalse := ownershipAbsent_of_true htrue
+    exact Bool.noConfusion (hfiltered.2.symm.trans hfalse)
   exact (hnot hcontains).elim
   intro tag htag hbeforeTag
   have hfiltered := mem_filter_bool_iff.mp htag
-  have hcontains : (beforeTags before after).contains tag = true :=
-    List.contains_iff_mem.mpr hbeforeTag
-  have hnot : (beforeTags before after).contains tag ≠ true := by
+  have hcontains : ownershipContains (beforeTags before after) tag = true :=
+    ownershipContains_eq_true_iff_mem.mpr hbeforeTag
+  have hnot : ownershipContains (beforeTags before after) tag ≠ true := by
     intro htrue
-    have hfalse : (beforeTags before after).contains tag = false := by
-      simpa using hfiltered.2
-    rw [htrue] at hfalse
-    cases hfalse
+    have hfalse := ownershipAbsent_of_true htrue
+    cases hfiltered.2.symm.trans hfalse
   exact (hnot hcontains).elim
+
+theorem perm_mem_constructive {left right : Ownerships}
+    (h : left.Perm right) {tag : OwnershipId} :
+    tag ∈ left ↔ tag ∈ right := by
+  induction h with
+  | nil => simp
+  | cons ownership hperm ih =>
+      simp only [List.mem_cons]
+      exact or_congr (by rfl) ih
+  | swap first second tail =>
+      simp only [List.mem_cons]
+      constructor
+      · intro hmem
+        rcases hmem with rfl | hmem
+        · exact Or.inr (Or.inl rfl)
+        · rcases hmem with rfl | hmem
+          · exact Or.inl rfl
+          · exact Or.inr (Or.inr hmem)
+      · intro hmem
+        rcases hmem with rfl | hmem
+        · exact Or.inr (Or.inl rfl)
+        · rcases hmem with rfl | hmem
+          · exact Or.inl rfl
+          · exact Or.inr (Or.inr hmem)
+  | trans hleft hright ihleft ihright =>
+      exact ihleft.trans ihright
 
 theorem perm_nodup_constructive {left right : Ownerships}
     (h : left.Perm right) : left.Nodup ↔ right.Nodup := by
@@ -879,12 +934,12 @@ theorem perm_nodup_constructive {left right : Ownerships}
         apply List.nodup_cons.mpr
         refine ⟨?_, ih.mp (List.nodup_cons.mp hnd).2⟩
         intro hmem
-        exact (List.nodup_cons.mp hnd).1 (hperm.mem_iff.mpr hmem)
+        exact (List.nodup_cons.mp hnd).1 (perm_mem_constructive hperm |>.mpr hmem)
       · intro hnd
         apply List.nodup_cons.mpr
         refine ⟨?_, ih.mpr (List.nodup_cons.mp hnd).2⟩
         intro hmem
-        exact (List.nodup_cons.mp hnd).1 (hperm.mem_iff.mp hmem)
+        exact (List.nodup_cons.mp hnd).1 (perm_mem_constructive hperm |>.mp hmem)
   | swap first second tail =>
       constructor
       · intro hnd
@@ -916,6 +971,44 @@ theorem perm_nodup_constructive {left right : Ownerships}
   | trans hleft hright ihleft ihright =>
       exact ihleft.trans ihright
 
+theorem nodup_append_constructive {left right : Ownerships} :
+    (left ++ right).Nodup ↔
+      left.Nodup ∧ right.Nodup ∧
+        ∀ tag, tag ∈ left → ∀ other, other ∈ right → tag = other → False := by
+  induction left with
+  | nil =>
+      constructor
+      · intro h
+        exact ⟨List.nodup_nil, h, fun _ htag _ _ _ => List.not_mem_nil htag⟩
+      · rintro ⟨_, h, _⟩
+        exact h
+  | cons head tail ih =>
+      constructor
+      · intro h
+        have hhead := (List.nodup_cons.mp h).1
+        have htail := (List.nodup_cons.mp h).2
+        have hparts := ih.mp htail
+        refine ⟨List.nodup_cons.mpr ⟨?_, hparts.1⟩, hparts.2.1, ?_⟩
+        · intro hmem
+          exact hhead (List.mem_append.mpr (Or.inl hmem))
+        · intro tag htag other hright heq
+          have htag' : tag = head ∨ tag ∈ tail := List.mem_cons.mp htag
+          rcases htag' with hEq | hTail
+          · have hheadOther : head = other := hEq.symm.trans heq
+            exact hhead (List.mem_append.mpr (Or.inr (hheadOther ▸ hright)))
+          · exact hparts.2.2 tag hTail other hright heq
+      · rintro ⟨hleft, hright, hdisjoint⟩
+        have hleft' := List.nodup_cons.mp hleft
+        apply List.nodup_cons.mpr
+        refine ⟨?_, ?_⟩
+        · intro hmem
+          rcases List.mem_append.mp hmem with heq | htail
+          · exact hleft'.1 heq
+          · exact hdisjoint head List.mem_cons_self head htail (by rfl)
+        · exact (ih.mpr ⟨hleft'.2, hright, by
+            intro tag htag other hother heq
+            exact hdisjoint tag (List.mem_cons_of_mem _ htag) other hother heq⟩)
+
 theorem nodup_reorder_three (left middle right : Ownerships)
     (h : (left ++ middle ++ right).Nodup) :
     (middle ++ left ++ right).Nodup := by
@@ -934,12 +1027,13 @@ theorem step_ownership_of_tag_permutation
   · exact (perm_nodup_constructive htags.symm).mp hbefore
   · intro tag htag
     have hfiltered := mem_filter_bool_iff.mp htag
-    have hmem : tag ∈ beforeTags before after := htags.mem_iff.mp hfiltered.1
-    have hcontains := List.contains_iff_mem.mpr hmem
-    have hnot : (beforeTags before after).contains tag ≠ true := by
+    have hmem : tag ∈ beforeTags before after :=
+      (perm_mem_constructive htags).mp hfiltered.1
+    have hcontains := ownershipContains_eq_true_iff_mem.mpr hmem
+    have hnot : ownershipContains (beforeTags before after) tag ≠ true := by
       intro htrue
-      rw [htrue] at hfiltered
-      simp at hfiltered
+      have hfalse := ownershipAbsent_of_true htrue
+      cases hfiltered.2.symm.trans hfalse
     exact False.elim (hnot hcontains)
   · exact hfrontier
 
@@ -965,9 +1059,9 @@ theorem step_ownership_of_step
         have hfiltered := mem_filter_bool_iff.mp htag
         rw [htags] at hfiltered
         rcases hfiltered with ⟨hmem, hnot⟩
-        have hcontains := List.contains_iff_mem.mpr hmem
-        rw [hcontains] at hnot
-        simp at hnot
+        have hcontains := ownershipContains_eq_true_iff_mem.mpr hmem
+        have hfalse := ownershipAbsent_of_true hcontains
+        cases hnot.symm.trans hfalse
       · exact Nat.le_add_right _ _
   | push =>
       rename_i value stack rest nextTag
@@ -1009,7 +1103,8 @@ theorem step_ownership_of_step
           (perm_nodup_constructive hbasePerm.symm).mp hnodup
         have hfresh : nextTag ∉ bodyTags ++ (stackTags ++ restTags) := by
           intro htag
-          exact Nat.lt_irrefl _ (hfrontier nextTag (hbasePerm.mem_iff.mp htag))
+          exact Nat.lt_irrefl _
+            (hfrontier nextTag ((perm_mem_constructive hbasePerm).mp htag))
         apply step_ownership_from_events
         · rw [afterTags, hafterShape]
           exact List.nodup_cons.mpr ⟨hfresh, hbaseNodup⟩
@@ -1019,7 +1114,7 @@ theorem step_ownership_of_step
           rcases List.mem_cons.mp hevent.1 with hnew | hbase
           · subst tag
             exact ⟨Nat.le_refl _, Nat.lt_succ_self _⟩
-          · exact (hevent.2 (hbasePerm.mem_iff.mp hbase)).elim
+          · exact (hevent.2 ((perm_mem_constructive hbasePerm).mp hbase)).elim
         · exact Nat.le_add_right _ _
       · rcases hbefore with ⟨hnodup, hfrontier⟩
         apply step_ownership_of_tag_permutation hnodup
@@ -1084,7 +1179,7 @@ theorem step_ownership_of_step
           bodyTags, restTags, List.append_assoc]
       rw [hbeforeShape] at hnodup
       have hbaseNodup : (bodyTags ++ (tailTags ++ restTags)).Nodup :=
-        (List.nodup_append.mp hnodup).2.1
+        (nodup_append_constructive.mp hnodup).2.1
       have hbasePerm : (bodyTags ++ (tailTags ++ restTags)).Perm
           (tailTags ++ (bodyTags ++ restTags)) := by
         simpa only [List.append_assoc] using
@@ -1138,7 +1233,7 @@ theorem step_ownership_of_step
       rw [hbeforeShape] at hnodup
       have hbaseNodup :
           (bodyTags ++ (valueTags ++ (tailTags ++ restTags))).Nodup :=
-        (List.nodup_append.mp hnodup).2.1
+        (nodup_append_constructive.mp hnodup).2.1
       have hbasePerm : (bodyTags ++ (valueTags ++ (tailTags ++ restTags))).Perm
           (tailTags ++ (bodyTags ++ (valueTags ++ restTags))) := by
         simpa only [List.append_assoc] using
@@ -1240,7 +1335,7 @@ theorem step_ownership_of_step
             tag ∈ secondWrapper ++ secondTags ++ firstWrapper ++ firstTags ++
               tailTags ++ restTags := by
         intro tag htag
-        exact List.Sublist.mem (hbasePerm.mem_iff.mp htag) hsub
+        exact List.Sublist.mem ((perm_mem_constructive hbasePerm).mp htag) hsub
       by_cases hout : outputUsage == .linear
       · have hfresh : nextTag ∉ firstTags ++ secondTags ++ tailTags ++ restTags := by
           intro htag
@@ -1353,10 +1448,10 @@ theorem step_ownership_of_step
               tailTags ++ (falseTags ++ restTags) := by
             simp only [taggedLinearTags, taggedLinearTagsProgram_append,
               falseTags, tailTags, restTags, List.append_assoc]
-          have hparts := List.nodup_append.mp hnodup
-          have hrightParts := List.nodup_append.mp hparts.2.1
+          have hparts := nodup_append_constructive.mp hnodup
+          have hrightParts := nodup_append_constructive.mp hparts.2.1
           have hselectedNodup : (falseTags ++ (tailTags ++ restTags)).Nodup := by
-            apply List.nodup_append.mpr
+            apply nodup_append_constructive.mpr
             refine ⟨hparts.1, hrightParts.2.1, ?_⟩
             intro ownership hfalse other htailRest heq
             exact hparts.2.2 ownership hfalse other
@@ -1393,7 +1488,7 @@ theorem step_ownership_of_step
             simp only [taggedLinearTags, taggedLinearTagsProgram_append,
               trueTags, tailTags, restTags, List.append_assoc]
           have hselectedNodup : (trueTags ++ (tailTags ++ restTags)).Nodup :=
-            (List.nodup_append.mp hnodup).2.1
+            (nodup_append_constructive.mp hnodup).2.1
           have hselectedPerm : (trueTags ++ (tailTags ++ restTags)).Perm
               (tailTags ++ (trueTags ++ restTags)) := by
             simpa only [List.append_assoc] using
@@ -1447,15 +1542,15 @@ theorem step_ownership_of_step
         rcases hfront tag hbody with ⟨hlo, _⟩
         exact Nat.not_lt_of_ge hlo (hfrontier tag hbase)
       have hafterNodup : (stackTags ++ (bodyTags ++ restTags)).Nodup := by
-        have hbaseParts := List.nodup_append.mp hbaseNodup
+        have hbaseParts := nodup_append_constructive.mp hbaseNodup
         have hbodyRest : (bodyTags ++ restTags).Nodup := by
-          apply List.nodup_append.mpr
+          apply nodup_append_constructive.mpr
           refine ⟨hnd, hbaseParts.2.1, ?_⟩
           intro tag hbody other hrest heq
           exact hbodyBaseDisjoint tag (by simpa [heq] using hbody) (by
             simp only [List.mem_append]
             exact Or.inr (by simpa [heq] using hrest))
-        apply List.nodup_append.mpr
+        apply nodup_append_constructive.mpr
         refine ⟨hbaseParts.1, hbodyRest, ?_⟩
         intro tag hstack other hbodyRest heq
         rcases List.mem_append.mp hbodyRest with hbody | hrest
@@ -1554,18 +1649,26 @@ theorem consumed_mem_before
     (h : tag ∈ consumed before after) : tag ∈ beforeTags before after :=
   (mem_filter_bool_iff.mp h).1
 
+theorem mem_consumed_of_contains_false
+    {before after : AConfig} {tag : Tag}
+    (hbefore : tag ∈ beforeTags before after)
+    (hcontains : ownershipContains (afterTags before after) tag = false) :
+    tag ∈ consumed before after := by
+  apply mem_filter_bool_iff.mpr
+  exact ⟨hbefore, ownershipAbsent_of_false hcontains⟩
+
 theorem after_mem_before_or_produced
     {before after : AConfig} {tag : Tag}
     (h : tag ∈ afterTags before after) :
     tag ∈ beforeTags before after ∨ tag ∈ produced before after := by
-  by_cases hbefore : tag ∈ beforeTags before after
-  · exact Or.inl hbefore
-  · apply Or.inr
-    apply mem_filter_bool_iff.mpr
-    refine ⟨h, ?_⟩
-    cases hcontains : (beforeTags before after).contains tag with
-    | false => rfl
-    | true => exact (hbefore (List.contains_iff_mem.mp hcontains)).elim
+  cases hcontains : ownershipContains (beforeTags before after) tag with
+  | true => exact Or.inl (ownershipContains_eq_true_iff_mem.mp hcontains)
+  | false =>
+      apply Or.inr
+      have hnot : ownershipAbsent (beforeTags before after) tag = true := by
+        exact ownershipAbsent_of_false hcontains
+      apply mem_filter_bool_iff.mpr
+      exact ⟨h, hnot⟩
 
 theorem consumed_lt_frontier
     (hbefore : InstrumentedWellFormedAt before)
@@ -1603,7 +1706,7 @@ theorem tag_never_consumed_through_trace
     (habsent : tag ∉ taggedLinearTags start) :
     tag ∉ traceConsumed (start :: configs) := by
   induction configs generalizing start with
-  | nil => simp [traceConsumed]
+  | nil => exact List.not_mem_nil
   | cons after rest ih =>
       have hownership := step_ownership_of_step hstart htrace.1
       have hnext := instrumented_well_formed_preserved_of_step_ownership hstart htrace.1
@@ -1625,12 +1728,12 @@ theorem finite_trace_at_most_once
     (htrace : InstrumentedTrace gamma dictionary costs start configs) :
     (traceConsumed (start :: configs)).Nodup := by
   induction configs generalizing start with
-  | nil => simp [traceConsumed]
+  | nil => exact List.nodup_nil
   | cons after rest ih =>
       have hownership := step_ownership_of_step hstart htrace.1
       have hnext := instrumented_well_formed_preserved_of_step_ownership hstart htrace.1
       have hlater := ih hnext htrace.2
-      apply List.nodup_append.mpr
+      apply nodup_append_constructive.mpr
       refine ⟨?_, hlater, ?_⟩
       · exact nodup_filter_bool hstart.1
       · intro tag htagBefore _ htagLater heq
@@ -1639,57 +1742,62 @@ theorem finite_trace_at_most_once
           exact hownership.2.1 tag htagBefore
         have hnot := tag_never_consumed_through_trace hnext htrace.2
           (Nat.lt_of_lt_of_le hlt hownership.2.2.2.2) hafter
-        exact hnot (by simpa [heq] using htagLater)
+        exact hnot (heq ▸ htagLater)
+
+inductive TraceLast : List AConfig → AConfig → Prop where
+  | single {terminal : AConfig} : TraceLast [terminal] terminal
+  | cons {head : AConfig} {rest : List AConfig} {terminal : AConfig} :
+      TraceLast rest terminal → TraceLast (head :: rest) terminal
 
 theorem initial_tag_survives_or_consumed_at
     {start terminal : AConfig} {configs : List AConfig}
     (htrace : InstrumentedTrace gamma dictionary costs start configs)
-    (hlast : configs.getLast? = some terminal)
+    (hlast : TraceLast configs terminal)
     {tag : Tag} (hinitial : tag ∈ taggedLinearTags start) :
     tag ∈ taggedLinearTags terminal ∨
       tag ∈ traceConsumed (start :: configs) := by
   induction configs generalizing start terminal with
-  | nil => simp at hlast
+  | nil => cases hlast
   | cons after rest ih =>
       cases rest with
       | nil =>
-          simp at hlast
-          subst terminal
-          by_cases hafter : tag ∈ afterTags start after
-          · exact Or.inl hafter
-          · exact Or.inr (by
-              simp only [traceConsumed]
-              apply List.mem_append.mpr
-              left
-              exact mem_filter_bool_iff.mpr ⟨hinitial, by
-                cases hcontains : (afterTags start after).contains tag with
-                | false => rfl
-                | true => exact (hafter (List.contains_iff_mem.mp hcontains)).elim⟩)
+          cases hlast with
+          | single =>
+              cases hcontains : ownershipContains (afterTags start after) tag with
+              | true =>
+                  exact Or.inl (ownershipContains_eq_true_iff_mem.mp hcontains)
+              | false =>
+                  exact Or.inr (by
+                    change tag ∈ consumed start after ++ []
+                    apply List.mem_append.mpr
+                    exact Or.inl (mem_consumed_of_contains_false hinitial hcontains))
+          | cons hlast => cases hlast
       | cons next rest =>
-          by_cases hafter : tag ∈ afterTags start after
-          · have hrest := ih htrace.2 hlast hafter
-            rcases hrest with hlive | hconsumed
-            · exact Or.inl hlive
-            · exact Or.inr (by
-                simp only [traceConsumed]
-                exact List.mem_append.mpr (Or.inr hconsumed))
-          · exact Or.inr (by
-              simp only [traceConsumed]
-              apply List.mem_append.mpr
-              left
-              exact mem_filter_bool_iff.mpr ⟨hinitial, by
-                cases hcontains : (afterTags start after).contains tag with
-                | false => rfl
-                | true => exact (hafter (List.contains_iff_mem.mp hcontains)).elim⟩)
+          cases hlast with
+          | cons hlast =>
+              cases hcontains : ownershipContains (afterTags start after) tag with
+              | true =>
+                  have hafter := ownershipContains_eq_true_iff_mem.mp hcontains
+                  have hrest := ih htrace.2 hlast hafter
+                  rcases hrest with hlive | hconsumed
+                  · exact Or.inl hlive
+                  · exact Or.inr (by
+                      change tag ∈ consumed start after ++ traceConsumed (after :: next :: rest)
+                      exact List.mem_append.mpr (Or.inr hconsumed))
+              | false =>
+                  exact Or.inr (by
+                    change tag ∈ consumed start after ++ traceConsumed (after :: next :: rest)
+                    apply List.mem_append.mpr
+                    exact Or.inl (mem_consumed_of_contains_false hinitial hcontains))
 
 theorem exact_once_of_terminating_empty_residue
     {start terminal : AConfig} {configs : List AConfig}
     (hstart : InstrumentedWellFormedAt start)
     (htrace : InstrumentedTrace gamma dictionary costs start configs)
-    (hlast : configs.getLast? = some terminal)
+    (hlast : TraceLast configs terminal)
     (hterm : terminal.program = .empty)
     (hempty : taggedLinearTags terminal = []) :
-    configs.getLast? = some terminal ∧ terminal.program = .empty ∧
+    TraceLast configs terminal ∧ terminal.program = .empty ∧
       taggedLinearTags terminal = [] ∧
       (traceConsumed (start :: configs)).Nodup ∧
       (∀ tag, tag ∈ taggedLinearTags start →
@@ -1698,10 +1806,7 @@ theorem exact_once_of_terminating_empty_residue
   refine ⟨hlast, hterm, hempty, hatmost, ?_⟩
   intro tag hinitial
   rcases initial_tag_survives_or_consumed_at htrace hlast hinitial with hlive | hconsumed
-  · have hterminal : taggedLinearTags (configs.getLast?.getD start) = [] := by
-      simp [hlast, hempty]
-    have : taggedLinearTags terminal = [] := hempty
-    rw [this] at hlive
+  · rw [hempty] at hlive
     cases hlive
   · exact hconsumed
 
@@ -1810,11 +1915,12 @@ theorem annotation_config_erases {input output : Tag} {plain : Config} {annotate
 theorem annotation_config_advances {input output : Tag} {plain : Config} {annotated : AConfig}
     (h : AnnotationConfig input plain annotated output) : input ≤ output := h.2.1
 
-def AnnotatedDictionary (dictionary : Dictionary) (annotated : String → Option AProgram)
-    (frontier : Tag) : Prop :=
-  ∀ name entry, dictionary name = some entry →
-    ∃ body, annotated name = some body ∧ eraseProgram body = entry.body ∧
-      (∀ tag, tag ∈ taggedLinearTagsProgram body → tag < frontier)
+def AnnotatedDictionary (dictionary : Dictionary) (annotated : String → Option AProgram) : Prop :=
+  ∀ name entry residue frontier frontier',
+    dictionary name = some entry →
+    ∃ body, annotated name = some body ∧
+      WordAnnotation entry.body body frontier frontier' ∧
+      TagsDisjoint (taggedLinearTagsProgram body) (taggedLinearTagsProgram residue)
 
 def PrimitiveTagLift (gamma : Gamma) (name : Prim) : Prop :=
   ∀ input residue nextTag specification plainInput plainOutput,
@@ -1828,27 +1934,6 @@ def PrimitiveTagLift (gamma : Gamma) (name : Prim) : Prop :=
           specification plainInput plainOutput rowTail retained consumed produced
           nextTag nextTag') ∧
       (∀ tag, tag ∈ taggedLinearTagsValueList output → tag < nextTag')
-
-def PlainStepLiftContract (gamma : Gamma) (dictionary : Dictionary)
-    (costs : CostTable) : Prop :=
-  ∀ before after,
-    TypedConfig gamma dictionary before →
-    HasSuccessor gamma dictionary costs before after →
-    ∃ annotatedBefore annotatedAfter,
-      eraseAConfig annotatedBefore = before ∧ eraseAConfig annotatedAfter = after ∧
-      InstrumentedWellFormedAt annotatedBefore ∧
-      InstrumentedStep gamma dictionary costs annotatedBefore annotatedAfter
-
-theorem backward_adequacy_of_lift_contract
-    (hlift : PlainStepLiftContract gamma dictionary costs)
-    {before after : Config}
-    (htyped : TypedConfig gamma dictionary before)
-    (hstep : HasSuccessor gamma dictionary costs before after) :
-    ∃ annotatedBefore annotatedAfter,
-      eraseAConfig annotatedBefore = before ∧ eraseAConfig annotatedAfter = after ∧
-      InstrumentedWellFormedAt annotatedBefore ∧
-      InstrumentedStep gamma dictionary costs annotatedBefore annotatedAfter := by
-  exact hlift before after htyped hstep
 
 theorem primitive_tag_lift_is_contract
     (h : PrimitiveTagLift gamma name) :
@@ -1864,5 +1949,507 @@ theorem primitive_tag_lift_is_contract
   rcases h input residue nextTag specification plainInput plainOutput hname hin hdelta with
     ⟨output, nextTag', _, _, hcontract, _⟩
   exact ⟨output, nextTag', hcontract⟩
+
+mutual
+  theorem many_annotated_value_has_no_linear_tags
+      {value : AValue} {type : ValueType}
+      (htyped : ValueTyping gamma dictionary (eraseValue value) type)
+      (hmany : type.usage = .many) :
+      taggedLinearTagsValue value = [] := by
+    cases value with
+    | literal tag literal => rfl
+    | world tag payload =>
+        cases htyped
+        cases hmany
+    | quotation tag body usage =>
+        cases htyped with
+        | quotation hbody =>
+            have husage : programUsage (eraseProgram body) = .many := by
+              simpa using hmany
+            have hbodyTags := many_annotated_program_has_no_linear_tags hbody husage
+            have hnotLinear : (Usage.many == Usage.linear) = false := rfl
+            simp [taggedLinearTagsValue, husage, hbodyTags, hnotLinear]
+
+  theorem many_annotated_atom_has_no_linear_tags
+      {atom : AAtom} {input output : StackType}
+      (htyped : AtomTyping gamma dictionary (eraseAtom atom) input output)
+      (hmany : atomUsage (eraseAtom atom) = .many) :
+      taggedLinearTagsAtom atom = [] := by
+    cases atom with
+    | lit literal => rfl
+    | push value =>
+        cases htyped with
+        | push hvalue =>
+            apply many_annotated_value_has_no_linear_tags hvalue
+            rw [← quotationUsage_of_typing hvalue]
+            exact hmany
+    | quotation body =>
+        cases htyped with
+        | quotation hbody =>
+            exact many_annotated_program_has_no_linear_tags hbody hmany
+    | dup | drop | swap | dip | call | compose | quote | ifThenElse | word | prim => rfl
+
+  theorem many_annotated_program_has_no_linear_tags
+      {program : AProgram} {input output : StackType}
+      (htyped : ProgramTyping gamma dictionary (eraseProgram program) input output)
+      (hmany : programUsage (eraseProgram program) = .many) :
+      taggedLinearTagsProgram program = [] := by
+    cases program with
+    | empty => rfl
+    | cons head tail =>
+        cases htyped with
+        | cons hhead htail =>
+            change usageMeet (atomUsage (eraseAtom head))
+              (programUsage (eraseProgram tail)) = .many at hmany
+            cases hheadUsage : atomUsage (eraseAtom head) with
+            | linear =>
+                rw [hheadUsage] at hmany
+                change Usage.linear = Usage.many at hmany
+                cases hmany
+            | many =>
+                cases htailUsage : programUsage (eraseProgram tail) with
+                | linear =>
+                    rw [hheadUsage, htailUsage] at hmany
+                    change Usage.linear = Usage.many at hmany
+                    cases hmany
+                | many =>
+                    simp [taggedLinearTagsProgram,
+                      many_annotated_atom_has_no_linear_tags hhead hheadUsage,
+                      many_annotated_program_has_no_linear_tags htail htailUsage]
+end
+
+set_option maxHeartbeats 2000000 in
+theorem backward_adequacy
+    (annotatedDictionary : String → Option AProgram)
+    (hdictionary : AnnotatedDictionary dictionary annotatedDictionary)
+    (hprimitive : ∀ name, PrimitiveTagLift gamma name)
+    {before after : Config} {annotatedBefore : AConfig}
+    (hwellformed : InstrumentedWellFormed annotatedBefore)
+    (herases : eraseAConfig annotatedBefore = before)
+    (htyped : TypedConfig gamma dictionary before)
+    (hstep : HasSuccessor gamma dictionary costs before after) :
+    ∃ annotatedAfter,
+      InstrumentedStep gamma dictionary costs annotatedBefore annotatedAfter ∧
+      eraseAConfig annotatedAfter = after ∧
+      InstrumentedWellFormed annotatedAfter := by
+  subst before
+  rcases annotatedBefore with ⟨stack, program, nextTag⟩
+  rcases htyped with ⟨stackType, outputType, stackTyping, programTyping⟩
+  rcases hstep with ⟨cost, hstep⟩
+  cases program with
+  | empty => simp [eraseAConfig, eraseProgram, step] at hstep
+  | cons head rest =>
+      cases programTyping with
+      | cons headTyping restTyping =>
+        cases head with
+        | lit literal =>
+            cases headTyping with
+            | lit hliteral =>
+                simp [eraseAConfig, eraseProgram, eraseAtom, step, hliteral] at hstep
+                rcases hstep with ⟨rfl, rfl⟩
+                have hisSome : (gamma.literalType literal).isSome = true := by
+                  rw [hliteral]
+                  rfl
+                let annotatedAfter : AConfig :=
+                  { stack := .literal nextTag literal :: stack, program := rest,
+                    nextTag := nextTag + 1 }
+                have hinstrumented : InstrumentedStep gamma dictionary costs
+                    { stack := stack, program := .cons (.lit literal) rest,
+                      nextTag := nextTag }
+                    annotatedAfter := by
+                  simpa [annotatedAfter] using
+                    (InstrumentedStep.lit (gamma := gamma) (dictionary := dictionary)
+                      (costs := costs)
+                      (config := { stack := stack, program := .empty, nextTag := nextTag })
+                      (rest := rest) hisSome nextTag)
+                exact ⟨annotatedAfter, hinstrumented, rfl,
+                  instrumented_well_formed_preserved_of_step_ownership
+                    hwellformed hinstrumented⟩
+        | push value =>
+            cases headTyping with
+            | push hvalue =>
+                simp [eraseAConfig, eraseProgram, eraseAtom, step] at hstep
+                rcases hstep with ⟨rfl, rfl⟩
+                let annotatedAfter : AConfig :=
+                  { stack := value :: stack, program := rest, nextTag := nextTag }
+                have hinstrumented : InstrumentedStep gamma dictionary costs
+                    { stack := stack, program := .cons (.push value) rest,
+                      nextTag := nextTag }
+                    annotatedAfter := .push
+                exact ⟨annotatedAfter, hinstrumented, rfl,
+                  instrumented_well_formed_preserved_of_step_ownership
+                    hwellformed hinstrumented⟩
+        | quotation body =>
+            cases headTyping with
+            | quotation hbody =>
+                simp [eraseAConfig, eraseProgram, eraseAtom, step] at hstep
+                rcases hstep with ⟨rfl, rfl⟩
+                let annotatedAfter := aQuotationTarget stack body rest nextTag
+                have hinstrumented : InstrumentedStep gamma dictionary costs
+                    (aQuotationSource stack body rest nextTag) annotatedAfter :=
+                  .quotation
+                exact ⟨annotatedAfter, hinstrumented, rfl,
+                  instrumented_well_formed_preserved_of_step_ownership
+                    hwellformed hinstrumented⟩
+        | dup =>
+            cases headTyping with
+            | dup hmany =>
+                cases stack with
+                | nil => cases stackTyping
+                | cons value tail =>
+                    cases stackTyping with
+                    | cons valueTyping tailTyping =>
+                        simp [eraseAConfig, eraseProgram, eraseAtom, step] at hstep
+                        rcases hstep with ⟨rfl, rfl⟩
+                        have htags := many_annotated_value_has_no_linear_tags
+                          valueTyping hmany
+                        let annotatedAfter : AConfig :=
+                          { stack := value :: value :: tail, program := rest,
+                            nextTag := nextTag }
+                        have hinstrumented : InstrumentedStep gamma dictionary costs
+                            { stack := value :: tail, program := .cons .dup rest,
+                              nextTag := nextTag }
+                            annotatedAfter := .dup htags
+                        exact ⟨annotatedAfter, hinstrumented, rfl,
+                          instrumented_well_formed_preserved_of_step_ownership
+                            hwellformed hinstrumented⟩
+        | drop =>
+            cases headTyping with
+            | drop hmany =>
+                cases stack with
+                | nil => cases stackTyping
+                | cons value tail =>
+                    cases stackTyping with
+                    | cons valueTyping tailTyping =>
+                        simp [eraseAConfig, eraseProgram, eraseAtom, step] at hstep
+                        rcases hstep with ⟨rfl, rfl⟩
+                        have htags := many_annotated_value_has_no_linear_tags
+                          valueTyping hmany
+                        let annotatedAfter : AConfig :=
+                          { stack := tail, program := rest, nextTag := nextTag }
+                        have hinstrumented : InstrumentedStep gamma dictionary costs
+                            { stack := value :: tail, program := .cons .drop rest,
+                              nextTag := nextTag }
+                            annotatedAfter := .drop htags
+                        exact ⟨annotatedAfter, hinstrumented, rfl,
+                          instrumented_well_formed_preserved_of_step_ownership
+                            hwellformed hinstrumented⟩
+        | swap =>
+            cases headTyping with
+            | swap =>
+                cases stack with
+                | nil => cases stackTyping
+                | cons second tail₁ =>
+                    cases stackTyping with
+                    | cons secondTyping tailTyping =>
+                        cases tail₁ with
+                        | nil => cases tailTyping
+                        | cons first tail =>
+                            cases tailTyping with
+                            | cons firstTyping tailTyping =>
+                                simp [eraseAConfig, eraseProgram, eraseAtom, step] at hstep
+                                rcases hstep with ⟨rfl, rfl⟩
+                                let annotatedAfter : AConfig :=
+                                  { stack := first :: second :: tail, program := rest,
+                                    nextTag := nextTag }
+                                have hinstrumented : InstrumentedStep gamma dictionary costs
+                                    { stack := second :: first :: tail,
+                                      program := .cons .swap rest, nextTag := nextTag }
+                                    annotatedAfter := .swap
+                                exact ⟨annotatedAfter, hinstrumented, rfl,
+                                  instrumented_well_formed_preserved_of_step_ownership
+                                    hwellformed hinstrumented⟩
+        | call =>
+            cases headTyping with
+            | call =>
+                cases stack with
+                | nil => cases stackTyping
+                | cons quotation tail =>
+                    cases stackTyping with
+                    | cons quotationTyping tailTyping =>
+                        cases quotation with
+                        | literal tag literal => cases quotationTyping
+                        | world tag payload => cases quotationTyping
+                        | quotation tag body usage =>
+                            cases quotationTyping with
+                            | quotation bodyTyping =>
+                                simp [eraseAConfig, eraseProgram, eraseAtom, eraseValue, step] at hstep
+                                rcases hstep with ⟨rfl, rfl⟩
+                                let annotatedAfter : AConfig :=
+                                  { stack := tail, program := AProgram.append body rest,
+                                    nextTag := nextTag }
+                                have hinstrumented : InstrumentedStep gamma dictionary costs
+                                    { stack := .quotation tag body (programUsage (eraseProgram body)) :: tail,
+                                      program := .cons .call rest, nextTag := nextTag }
+                                    annotatedAfter := .call
+                                exact ⟨annotatedAfter, hinstrumented,
+                                  by simp [annotatedAfter, eraseAConfig, eraseProgram_append],
+                                  instrumented_well_formed_preserved_of_step_ownership
+                                    hwellformed hinstrumented⟩
+        | dip =>
+            cases headTyping with
+            | dip =>
+                cases stack with
+                | nil => cases stackTyping
+                | cons quotation tail₁ =>
+                    cases stackTyping with
+                    | cons quotationTyping tailTyping =>
+                        cases tail₁ with
+                        | nil => cases tailTyping
+                        | cons value tail =>
+                            cases tailTyping with
+                            | cons valueTyping tailTyping =>
+                                cases quotation with
+                                | literal tag literal => cases quotationTyping
+                                | world tag payload => cases quotationTyping
+                                | quotation tag body usage =>
+                                    cases quotationTyping with
+                                    | quotation bodyTyping =>
+                                        simp [eraseAConfig, eraseProgram, eraseAtom, eraseValue, step] at hstep
+                                        rcases hstep with ⟨rfl, rfl⟩
+                                        let annotatedAfter : AConfig :=
+                                          { stack := tail,
+                                            program := AProgram.append body
+                                              (.cons (.push value) rest),
+                                            nextTag := nextTag }
+                                        have hinstrumented :
+                                            InstrumentedStep gamma dictionary costs
+                                              { stack := .quotation tag body
+                                                  (programUsage (eraseProgram body)) :: value :: tail,
+                                                program := .cons .dip rest,
+                                                nextTag := nextTag }
+                                              annotatedAfter := .dip
+                                        exact ⟨annotatedAfter, hinstrumented,
+                                          by simp [annotatedAfter, eraseAConfig,
+                                            eraseProgram_append, eraseProgram, eraseAtom],
+                                          instrumented_well_formed_preserved_of_step_ownership
+                                            hwellformed hinstrumented⟩
+        | compose =>
+            cases headTyping with
+            | compose =>
+                cases stack with
+                | nil => cases stackTyping
+                | cons secondQuotation tail₁ =>
+                    cases stackTyping with
+                    | cons secondTyping tailTyping =>
+                        cases tail₁ with
+                        | nil => cases tailTyping
+                        | cons firstQuotation tail =>
+                            cases tailTyping with
+                            | cons firstTyping tailTyping =>
+                                cases secondQuotation with
+                                | literal tag literal => cases secondTyping
+                                | world tag payload => cases secondTyping
+                                | quotation tag₂ second usage₂ =>
+                                    cases secondTyping with
+                                    | quotation secondBodyTyping =>
+                                      cases firstQuotation with
+                                      | literal tag literal => cases firstTyping
+                                      | world tag payload => cases firstTyping
+                                      | quotation tag₁ first usage₁ =>
+                                        cases firstTyping with
+                                        | quotation firstBodyTyping =>
+                                          simp [eraseAConfig, eraseProgram, eraseAtom, eraseValue, step] at hstep
+                                          rcases hstep with ⟨rfl, rfl⟩
+                                          let annotatedAfter : AConfig :=
+                                            { stack := .quotation nextTag
+                                                (AProgram.append first second)
+                                                (if programUsage (eraseProgram first) == .linear ||
+                                                  programUsage (eraseProgram second) == .linear
+                                                  then .linear else .many) :: tail,
+                                              program := rest, nextTag := nextTag + 1 }
+                                          have hinstrumented :
+                                              InstrumentedStep gamma dictionary costs
+                                                { stack := .quotation tag₂ second
+                                                    (programUsage (eraseProgram second)) ::
+                                                    .quotation tag₁ first
+                                                      (programUsage (eraseProgram first)) :: tail,
+                                                  program := .cons .compose rest,
+                                                  nextTag := nextTag }
+                                                annotatedAfter := .compose
+                                          exact ⟨annotatedAfter, hinstrumented,
+                                            by simp [annotatedAfter, eraseAConfig, eraseValue,
+                                              eraseProgram_append],
+                                            instrumented_well_formed_preserved_of_step_ownership
+                                              hwellformed hinstrumented⟩
+        | quote =>
+            cases headTyping with
+            | quote =>
+                cases stack with
+                | nil => cases stackTyping
+                | cons value tail =>
+                    cases stackTyping with
+                    | cons valueTyping tailTyping =>
+                        simp [eraseAConfig, eraseProgram, eraseAtom, step] at hstep
+                        rcases hstep with ⟨rfl, rfl⟩
+                        let annotatedAfter : AConfig :=
+                          { stack := .quotation nextTag (.cons (.push value) .empty)
+                              (quotationUsage (eraseValue value)) :: tail,
+                            program := rest, nextTag := nextTag + 1 }
+                        have hinstrumented : InstrumentedStep gamma dictionary costs
+                            { stack := value :: tail, program := .cons .quote rest,
+                              nextTag := nextTag }
+                            annotatedAfter := .quote
+                        exact ⟨annotatedAfter, hinstrumented, rfl,
+                          instrumented_well_formed_preserved_of_step_ownership
+                            hwellformed hinstrumented⟩
+        | ifThenElse =>
+            cases headTyping with
+            | ifThenElse =>
+                cases stack with
+                | nil => cases stackTyping
+                | cons falseQuotation tail₁ =>
+                    cases stackTyping with
+                    | cons falseTyping tailTyping =>
+                        cases tail₁ with
+                        | nil => cases tailTyping
+                        | cons trueQuotation tail₂ =>
+                            cases tailTyping with
+                            | cons trueTyping tailTyping =>
+                                cases tail₂ with
+                                | nil => cases tailTyping
+                                | cons conditionValue tail =>
+                                    cases tailTyping with
+                                    | cons conditionTyping tailTyping =>
+                                      cases falseQuotation with
+                                      | literal tag literal => cases falseTyping
+                                      | world tag payload => cases falseTyping
+                                      | quotation falseTag falseBranch falseUsage =>
+                                        rcases valueTyping_quotation_inv falseTyping with
+                                          ⟨hfalseStored, hfalseType, falseBodyTyping⟩
+                                        have hfalseUsage : falseUsage = .many :=
+                                          hfalseStored.trans hfalseType.symm
+                                        cases hfalseUsage
+                                        cases trueQuotation with
+                                        | literal tag literal => cases trueTyping
+                                        | world tag payload => cases trueTyping
+                                        | quotation trueTag trueBranch trueUsage =>
+                                          rcases valueTyping_quotation_inv trueTyping with
+                                            ⟨htrueStored, htrueType, trueBodyTyping⟩
+                                          have htrueUsage : trueUsage = .many :=
+                                            htrueStored.trans htrueType.symm
+                                          cases htrueUsage
+                                          cases conditionValue with
+                                          | world tag payload => cases conditionTyping
+                                          | quotation tag body usage => cases conditionTyping
+                                          | literal conditionTag literal =>
+                                            cases literal with
+                                            | nat value =>
+                                                simp [eraseAConfig, eraseProgram, eraseAtom,
+                                                  eraseValue, step] at hstep
+                                            | unit =>
+                                                simp [eraseAConfig, eraseProgram, eraseAtom,
+                                                  eraseValue, step] at hstep
+                                            | bool condition =>
+                                                simp [eraseAConfig, eraseProgram, eraseAtom,
+                                                  eraseValue, step] at hstep
+                                                rcases hstep with ⟨rfl, rfl⟩
+                                                let annotatedAfter : AConfig :=
+                                                  { stack := tail,
+                                                    program := AProgram.append
+                                                      (if condition then trueBranch
+                                                        else falseBranch) rest,
+                                                    nextTag := nextTag }
+                                                have hinstrumented :
+                                                    InstrumentedStep gamma dictionary costs
+                                                      { stack := .quotation falseTag falseBranch .many ::
+                                                          .quotation trueTag trueBranch .many ::
+                                                          .literal conditionTag (.bool condition) :: tail,
+                                                        program := .cons .ifThenElse rest,
+                                                        nextTag := nextTag }
+                                                      annotatedAfter := .ifThenElse
+                                                exact ⟨annotatedAfter, hinstrumented,
+                                                  by cases condition <;>
+                                                    simp [annotatedAfter, eraseAConfig,
+                                                      eraseProgram_append],
+                                                  instrumented_well_formed_preserved_of_step_ownership
+                                                    hwellformed hinstrumented⟩
+        | word name =>
+            cases headTyping with
+            | word hword =>
+                rcases hword with ⟨entry, hentry, hinput, houtput⟩
+                simp [eraseAConfig, eraseProgram, eraseAtom, step, hentry] at hstep
+                rcases hstep with ⟨rfl, rfl⟩
+                rcases hdictionary name entry rest nextTag nextTag hentry with
+                  ⟨body, hbody, hannotation, hdisjoint⟩
+                let annotatedAfter : AConfig :=
+                  { stack := stack, program := AProgram.append body rest,
+                    nextTag := nextTag }
+                have hinstrumented : InstrumentedStep gamma dictionary costs
+                    { stack := stack, program := .cons (.word name) rest,
+                      nextTag := nextTag }
+                    annotatedAfter := .word ⟨entry, hentry, hannotation⟩
+                exact ⟨annotatedAfter, hinstrumented,
+                  by simp [annotatedAfter, eraseAConfig, eraseProgram_append,
+                    hannotation.1],
+                  instrumented_well_formed_preserved_of_step_ownership
+                    hwellformed hinstrumented⟩
+        | prim primitive =>
+            cases headTyping with
+            | prim hname =>
+                rename_i specification
+                cases hdelta : specification.delta (stack.map eraseValue) with
+                | none =>
+                    simp [eraseAConfig, eraseProgram, eraseAtom, step,
+                      hname, hdelta] at hstep
+                | some plainOutput =>
+                    simp [eraseAConfig, eraseProgram, eraseAtom, step,
+                      hname, hdelta] at hstep
+                    rcases hstep with ⟨rfl, rfl⟩
+                    rcases hprimitive primitive stack rest nextTag specification
+                        (stack.map eraseValue) plainOutput hname rfl hdelta with
+                      ⟨output, nextTag', houtput, hmonotone, hcontract, hfrontier⟩
+                    let annotatedAfter : AConfig :=
+                      { stack := output, program := rest, nextTag := nextTag' }
+                    have hinstrumented : InstrumentedStep gamma dictionary costs
+                        { stack := stack, program := .cons (.prim primitive) rest,
+                          nextTag := nextTag }
+                        annotatedAfter := .prim
+                          (specification := specification)
+                          (plainInput := stack.map eraseValue)
+                          (plainOutput := plainOutput)
+                          (rowTail := []) (retained := []) (consumed := []) (produced := [])
+                          hcontract
+                    exact ⟨annotatedAfter, hinstrumented,
+                      by simp [annotatedAfter, eraseAConfig, houtput],
+                      instrumented_well_formed_preserved_of_step_ownership
+                        hwellformed hinstrumented⟩
+
+set_option maxHeartbeats 2000000 in
+theorem trace_backward_adequacy
+    (annotatedDictionary : String → Option AProgram)
+    (hdictionary : AnnotatedDictionary dictionary annotatedDictionary)
+    (hprimitive : ∀ name, PrimitiveTagLift gamma name)
+    (hdictionaryTyped : DictionaryWellTyped gamma dictionary)
+    (hprimitivesPreserve : PrimitivesPreserve gamma dictionary)
+    {start : Config} {configs : List Config} {annotatedStart : AConfig}
+    (hwellformed : InstrumentedWellFormed annotatedStart)
+    (herases : eraseAConfig annotatedStart = start)
+    (htyped : TypedConfig gamma dictionary start)
+    (htrace : Trace gamma dictionary costs start configs) :
+    ∃ annotatedConfigs,
+      InstrumentedTrace gamma dictionary costs annotatedStart annotatedConfigs ∧
+      annotatedConfigs.map eraseAConfig = configs ∧
+      (∀ config, config ∈ annotatedConfigs → InstrumentedWellFormed config) := by
+  induction configs generalizing start annotatedStart with
+  | nil =>
+      exact ⟨[], trivial, rfl, fun _ hmem => False.elim (List.not_mem_nil hmem)⟩
+  | cons next rest ih =>
+      rcases htrace with ⟨hstep, hrest⟩
+      rcases backward_adequacy annotatedDictionary hdictionary hprimitive
+          hwellformed herases htyped hstep with
+        ⟨annotatedNext, hinstrumented, hnextErases, hnextWellFormed⟩
+      have hnextTyped : TypedConfig gamma dictionary next :=
+        preservation gamma dictionary costs hdictionaryTyped hprimitivesPreserve htyped hstep
+      rcases ih hnextWellFormed hnextErases hnextTyped hrest with
+        ⟨annotatedRest, hinstrumentedRest, hrestErases, hrestWellFormed⟩
+      exact ⟨annotatedNext :: annotatedRest,
+        ⟨hinstrumented, hinstrumentedRest⟩,
+        by simp [hnextErases, hrestErases],
+        by
+          intro config hmem
+          rcases List.mem_cons.mp hmem with rfl | hmem
+          · exact hnextWellFormed
+          · exact hrestWellFormed config hmem⟩
 
 end Firth.Interpreter

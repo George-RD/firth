@@ -4,16 +4,73 @@ import Firth.Linearity
 
 open Firth.Interpreter
 
-#print axioms finite_trace_at_most_once
-#print axioms exact_once_of_terminating_empty_residue
-#print axioms divergence_may_leave_linear_live
+#print axioms eraseProgram_append
+#print axioms usageMeet_decide
+#print axioms eraseProgram_if
+#print axioms taggedLinearTagsProgram_append
+#print axioms ownershipAbsent_of_false
+#print axioms ownershipAbsent_of_true
+#print axioms taggedLinearTagsValueList_eq_flatMap
+#print axioms taggedLinearTagsValueList_eq_foldr
+#print axioms taggedLinearTagsValue_mem_foldr
+#print axioms taggedLinearTagsValue_mem_foldr_iff
+#print axioms mem_filter_bool_iff
+#print axioms ownershipContains_eq_true_iff_mem
+#print axioms mem_produced_iff
+#print axioms nodup_filter_bool
+#print axioms filter_complement_disjoint
+#print axioms filter_partition_membership
+#print axioms filter_absent_eq_nil_of_subset
+#print axioms filter_not_contains_self
+#print axioms mem_filter_not_contains_self
+#print axioms frontier_succ
+#print axioms instrumented_frontier_preserved
+#print axioms instrumented_step_erases_lit
+#print axioms instrumented_step_erases_push
+#print axioms instrumented_step_erases_quotation
+#print axioms instrumented_step_erases_dup
+#print axioms instrumented_step_erases_drop
+#print axioms instrumented_step_erases_swap
+#print axioms instrumented_step_erases_call
+#print axioms instrumented_step_erases_dip
+#print axioms instrumented_step_erases_compose
+#print axioms instrumented_step_erases_quote
+#print axioms instrumented_step_erases_ifThenElse
+#print axioms instrumented_step_erases_word
+#print axioms instrumented_step_erases_prim
+#print axioms instrumented_step_erases
+#print axioms step_ownership_from_events
+#print axioms perm_mem_constructive
+#print axioms perm_nodup_constructive
+#print axioms nodup_append_constructive
+#print axioms nodup_reorder_three
+#print axioms step_ownership_of_tag_permutation
 #print axioms step_ownership_of_step
+#print axioms instrumented_well_formed_preserved_of_step_ownership
+#print axioms consumed_is_not_later
+#print axioms instrumented_trace_erases
 #print axioms consumed_mem_before
+#print axioms mem_consumed_of_contains_false
 #print axioms after_mem_before_or_produced
 #print axioms consumed_lt_frontier
 #print axioms tag_absent_through_trace
 #print axioms tag_never_consumed_through_trace
+#print axioms finite_trace_at_most_once
 #print axioms initial_tag_survives_or_consumed_at
+#print axioms exact_once_of_terminating_empty_residue
+#print axioms divergence_may_leave_linear_live
+#print axioms annotation_value_erases
+#print axioms annotation_value_advances
+#print axioms annotation_program_erases
+#print axioms annotation_program_advances
+#print axioms annotation_config_erases
+#print axioms annotation_config_advances
+#print axioms primitive_tag_lift_is_contract
+#print axioms many_annotated_value_has_no_linear_tags
+#print axioms many_annotated_atom_has_no_linear_tags
+#print axioms many_annotated_program_has_no_linear_tags
+#print axioms backward_adequacy
+#print axioms trace_backward_adequacy
 
 example (tag : Tag) (value : Literal) :
     taggedLinearTagsValue (.literal tag value) = [] := by
