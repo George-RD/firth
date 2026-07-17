@@ -26,9 +26,12 @@ def main : IO Unit := do
   -- S-LIT, S-DUP, S-DROP, S-SWAP.
   let structural :=
     { stack := ([] : Stack),
-      program := .cons (.lit (.nat 7)) (.cons .dup (.cons .swap (.cons .drop .empty))) }
+      program := .cons (.lit (.nat 7)) (.cons (.lit (.nat 8)) (.cons .drop .empty)) }
   runTest "structural atoms"
     (expectTerminalStack [lit 7] (run gamma d c 20 structural))
+  runTest "dup preserves both values"
+    (expectTerminalStack [lit 7, lit 7]
+      (run gamma d c 20 { stack := [], program := .cons (.lit (.nat 7)) (.cons .dup .empty) }))
   runTest "swap preserves order"
     (expectTerminalStack [lit 7, lit 8]
       (run gamma d c 20 { stack := [], program := (.cons (.lit (.nat 7))
@@ -41,6 +44,11 @@ def main : IO Unit := do
     { stack := [], program := .cons (.quotation (.cons (.lit (.nat 9)) .empty))
         (.cons .call .empty) }
   runTest "quotation call" (expectTerminalStack [lit 9] callResult)
+  let closedQuotationResult := run gamma d c 20
+    { stack := [], program := .cons (.quotation .empty) .empty }
+  runTest "S-QUOT closed usage is many" (match closedQuotationResult with
+    | .terminal { stack := [.quotation .empty .many], .. } _ _ => true
+    | _ => false)
   -- S-DIP preserves the value by administrative push.
   let dipResult := run gamma d c 20
     { stack := [], program := .cons (.lit (.nat 4))
@@ -62,6 +70,14 @@ def main : IO Unit := do
   runTest "compose usage meet" (match step gamma d c
     { stack := [.quotation .empty .linear, .quotation .empty .many], program := .cons .compose .empty } with
     | .stepped { stack := [.quotation .empty .linear], program := .empty } 1 => true
+    | _ => false)
+  runTest "compose many then linear remains linear" (match step gamma d c
+    { stack := [.quotation .empty .many, .quotation .empty .linear], program := .cons .compose .empty } with
+    | .stepped { stack := [.quotation .empty .linear], program := .empty } 1 => true
+    | _ => false)
+  runTest "compose many and many remains many" (match step gamma d c
+    { stack := [.quotation .empty .many, .quotation .empty .many], program := .cons .compose .empty } with
+    | .stepped { stack := [.quotation .empty .many], program := .empty } 1 => true
     | _ => false)
   -- S-IF-T and S-IF-F, with exact selected values.
   let ifProgram condition :=
@@ -118,6 +134,10 @@ def main : IO Unit := do
   runTest "malformed input is stuck" (match run gamma d c 2
     { stack := [], program := .cons .drop .empty } with
     | .stuck _ 0 0 => true
+    | _ => false)
+  runTest "S-PUSH has zero kappa cost" (match step gamma d { c with atom := fun _ => 99 }
+    { stack := [], program := .cons (.push (.literal (.nat 9))) .empty } with
+    | .stepped { stack := [Value.literal (.nat 9)], program := .empty } 0 => true
     | _ => false)
   runTest "one transition with one fuel" (expectTerminalStack [lit 1]
     (run gamma d c 1 { stack := [], program := .cons (.lit (.nat 1)) .empty }))
