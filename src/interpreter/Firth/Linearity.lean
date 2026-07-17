@@ -149,6 +149,10 @@ mutual
     | cons (head : AAtom) (tail : AProgram)
 end
 
+def AProgram.append : AProgram → AProgram → AProgram
+  | .empty, right => right
+  | .cons head tail, right => .cons head (AProgram.append tail right)
+
 abbrev AStack := List AValue
 
 structure AConfig where
@@ -223,6 +227,7 @@ def PrimitiveTagContract (gamma : Gamma) (name : Prim)
       specification.delta plainInput = some plainOutput ∧
       output.map eraseValue = plainOutput ∧
       nextTag ≤ nextTag' ∧
+      (taggedLinearTagsValueList input ++ taggedLinearTagsValueList output).Nodup ∧
       (∀ tag, tag ∈ taggedLinearTagsValueList output → tag < nextTag')
 
 def DictionaryTagContract (dictionary : Dictionary) : Prop :=
@@ -252,6 +257,66 @@ inductive InstrumentedStep (gamma : Gamma) (dictionary : Dictionary) (costs : Co
       : InstrumentedStep gamma dictionary costs
           (aQuotationSource stack body rest nextTag)
           (aQuotationTarget stack body rest nextTag)
+  | dup {value : AValue} {tail : AStack} {rest : AProgram} {nextTag : Tag}
+      (h : taggedLinearTagsValue value = []) :
+      InstrumentedStep gamma dictionary costs
+        { stack := value :: tail, program := .cons .dup rest, nextTag := nextTag }
+        { stack := value :: value :: tail, program := rest, nextTag := nextTag }
+  | drop {value : AValue} {tail : AStack} {rest : AProgram} {nextTag : Tag}
+      (h : taggedLinearTagsValue value = []) :
+      InstrumentedStep gamma dictionary costs
+        { stack := value :: tail, program := .cons .drop rest, nextTag := nextTag }
+        { stack := tail, program := rest, nextTag := nextTag }
+  | swap {first second : AValue} {tail : AStack} {rest : AProgram} {nextTag : Tag} :
+      InstrumentedStep gamma dictionary costs
+        { stack := second :: first :: tail, program := .cons .swap rest, nextTag := nextTag }
+        { stack := first :: second :: tail, program := rest, nextTag := nextTag }
+  | call {body : AProgram} {tail : AStack} {rest : AProgram} {usage : Usage}
+      {tag nextTag : Tag} :
+      InstrumentedStep gamma dictionary costs
+        { stack := .quotation tag body usage :: tail, program := .cons .call rest,
+          nextTag := nextTag }
+        { stack := tail, program := AProgram.append body rest, nextTag := nextTag }
+  | dip {body : AProgram} {value : AValue} {tail : AStack} {rest : AProgram}
+      {usage : Usage} {tag nextTag : Tag} :
+      InstrumentedStep gamma dictionary costs
+        { stack := .quotation tag body usage :: value :: tail,
+          program := .cons .dip rest, nextTag := nextTag }
+        { stack := tail, program := AProgram.append body (.cons (.push value) rest), nextTag := nextTag }
+  | compose {first second : AProgram} {usage₁ usage₂ : Usage} {tail : AStack}
+      {rest : AProgram} {tag₁ tag₂ tag : Tag} :
+      InstrumentedStep gamma dictionary costs
+        { stack := .quotation tag₂ second usage₂ :: .quotation tag₁ first usage₁ :: tail,
+          program := .cons .compose rest, nextTag := nextTag }
+        { stack := .quotation tag (AProgram.append first second) (usageMeet usage₁ usage₂) :: tail,
+          program := rest, nextTag := nextTag }
+  | quote {value : AValue} {tail : AStack} {rest : AProgram} {nextTag : Tag} :
+      InstrumentedStep gamma dictionary costs
+        { stack := value :: tail, program := .cons .quote rest, nextTag := nextTag }
+        { stack := .quotation nextTag (.cons (.push value) .empty) (quotationUsage (eraseValue value)) :: tail,
+          program := rest, nextTag := nextTag }
+  | ifThenElse {condition : Bool} {trueBranch falseBranch : AProgram} {tail : AStack}
+      {rest : AProgram} {falseTag trueTag conditionTag nextTag : Tag} :
+      InstrumentedStep gamma dictionary costs
+        { stack := .quotation falseTag falseBranch .many :: .quotation trueTag trueBranch .many ::
+            .literal conditionTag (.bool condition) :: tail,
+          program := .cons .ifThenElse rest, nextTag := nextTag }
+        { stack := tail, program := AProgram.append (if condition then trueBranch else falseBranch) rest,
+          nextTag := nextTag }
+  | word {name : String} {body : AProgram} {stack : AStack} {rest : AProgram}
+      {nextTag : Tag} (h : ∃ entry, dictionary name = some entry ∧ eraseProgram body = entry.body) :
+      InstrumentedStep gamma dictionary costs
+        { stack := stack, program := .cons (.word name) rest, nextTag := nextTag }
+        { stack := stack, program := AProgram.append body rest, nextTag := nextTag }
+  | prim {primitive : Prim} {input output : AStack} {rest : AProgram}
+      {nextTag nextTag' : Tag} (h : PrimitiveTagContract gamma primitive input output nextTag nextTag') :
+      InstrumentedStep gamma dictionary costs
+        { stack := input, program := .cons (.prim primitive) rest, nextTag := nextTag }
+        { stack := output, program := rest, nextTag := nextTag' }
+
+def FrontierInvariant (config : AConfig) : Prop :=
+  ∀ tag, tag ∈ taggedLinearTags config → tag < config.nextTag
+
 def InstrumentedTrace (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable) :
     AConfig → List AConfig → Prop
   | start, [] => True

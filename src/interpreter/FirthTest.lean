@@ -1,5 +1,6 @@
 import Firth.Interpreter
 import Firth.KernelMetatheory
+import Firth.Linearity
 
 open Firth.Interpreter
 
