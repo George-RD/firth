@@ -28,6 +28,19 @@ theorem quote_program_typing {value : Value} {type : ValueType} {row : String}
       (.cons (.push value) .empty) (.row row) (.snoc (.row row) type) := by
   exact push_program_typing hv
 
+theorem quotation_capture_footprint {value : Value} {type : ValueType}
+    (hv : ValueTyping gamma dictionary value type) :
+    quotationUsage value = type.usage := by
+  exact quotationUsage_of_typing hv
+
+theorem stackTyping_snoc_inv {rest : StackType} {type : ValueType} {stack : Stack}
+    (hs : StackTyping gamma dictionary stack (.snoc rest type)) :
+    ∃ value tail, stack = value :: tail ∧
+      ValueTyping gamma dictionary value type ∧
+      StackTyping gamma dictionary tail rest := by
+  cases hs with
+  | cons valueType tailType => exact ⟨_, _, rfl, valueType, tailType⟩
+
 theorem step_deterministic (gamma : Gamma) (dictionary : Dictionary)
     (costs : CostTable) (config : Config) :
     ∀ next₁ next₂,
