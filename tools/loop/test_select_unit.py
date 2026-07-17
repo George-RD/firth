@@ -80,6 +80,69 @@ class SelectorTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(report, {"schema": 1, "valid": True})
 
+    def test_requires_heading_and_bullets_fail_closed(self) -> None:
+        (self.root / "meta" / "todos" / "todo.alpha.md").write_text(
+            "---\nnode: firth.governance.loop\nstatus: open\n---\n\n"
+            "## Requires\n- `missing`\n",
+            encoding="utf-8",
+        )
+        code, report = self.run_selector("--validate")
+        self.assertEqual(code, 2)
+        self.assertTrue(any("todo.alpha.md" in error for error in report["errors"]))
+        self.assertTrue(any("inline `Requires: slug1 slug2`" in error for error in report["errors"]))
+
+        (self.root / "meta" / "todos" / "todo.beta.md").write_text(
+            "---\nnode: firth.governance.loop\nstatus: open\n---\n\n"
+            "Requires: alpha\n\n## Requires:\n- `later`\n",
+            encoding="utf-8",
+        )
+        code, report = self.run_selector()
+        self.assertEqual(code, 2)
+        self.assertTrue(any("todo.beta.md" in error for error in report["errors"]))
+
+    def test_malformed_requires_lines_fail_closed(self) -> None:
+        (self.root / "meta" / "todos" / "todo.alpha.md").write_text(
+            "---\nnode: firth.governance.loop\nstatus: open\n---\n\n"
+            "## Requires: missing\n",
+            encoding="utf-8",
+        )
+        (self.root / "meta" / "todos" / "todo.beta.md").write_text(
+            "---\nnode: firth.governance.loop\nstatus: open\n---\n\n"
+            "Requires missing\n",
+            encoding="utf-8",
+        )
+        (self.root / "meta" / "todos" / "todo.gamma.md").write_text(
+            "---\nnode: firth.governance.loop\nstatus: open\n---\n\n"
+            "Requires: alpha\nRequires: beta\n",
+            encoding="utf-8",
+        )
+        code, report = self.run_selector()
+        self.assertEqual(code, 2)
+        self.assertEqual(len(report["errors"]), 3)
+
+    def test_requires_list_continuations_fail_closed(self) -> None:
+        cases = {
+            "todo.alpha.md": "Requires:\n- `alpha`\n",
+            "todo.beta.md": "Requires: alpha\n- `beta`\n",
+            "todo.gamma.md": "- Requires: alpha\n",
+        }
+        for filename, requires_body in cases.items():
+            (self.root / "meta" / "todos" / filename).write_text(
+                "---\nnode: firth.governance.loop\nstatus: open\n---\n\n"
+                + requires_body,
+                encoding="utf-8",
+            )
+        code, report = self.run_selector()
+        self.assertEqual(code, 2)
+        self.assertEqual(len(report["errors"]), 3)
+
+    def test_inline_requires_reports_open_dependency_as_ineligible(self) -> None:
+        self.todo("todo.alpha.md")
+        self.todo("todo.beta.md", requires="alpha")
+        code, report = self.run_selector()
+        self.assertEqual(code, 0)
+        self.assertEqual(report["ineligible_open"], [{"missing": ["alpha"], "slug": "beta"}])
+
     def test_requires_accepts_commas_and_whitespace(self) -> None:
         self.todo("todo.alpha.md", status="done")
         self.todo("todo.beta.md", status="done")
