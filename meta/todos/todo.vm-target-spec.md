@@ -4,7 +4,7 @@ status: open
 created: 2026-07-16
 ---
 
-Requires: host-language-decision
+Host-language decision recorded in `dec.host-languages`; this spec-phase todo is now actionable.
 
 ## Goal
 Draft the reimplementable Forth-class VM and target specification before compiler work begins.
