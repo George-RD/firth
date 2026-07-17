@@ -4,6 +4,17 @@ import Firth.Linearity
 
 open Firth.Interpreter
 
+#print axioms finite_trace_at_most_once
+#print axioms exact_once_of_terminating_empty_residue
+#print axioms divergence_may_leave_linear_live
+#print axioms step_ownership_of_step
+#print axioms consumed_mem_before
+#print axioms after_mem_before_or_produced
+#print axioms consumed_lt_frontier
+#print axioms tag_absent_through_trace
+#print axioms tag_never_consumed_through_trace
+#print axioms initial_tag_survives_or_consumed_at
+
 example (tag : Tag) (value : Literal) :
     taggedLinearTagsValue (.literal tag value) = [] := by
   rfl
@@ -36,6 +47,19 @@ example (tag : Tag) :
     ¬ taggedLinearTagsValue (.quotation tag .empty .linear) = [] := by
   intro h
   cases h
+
+def consumedWorldBefore : AConfig :=
+  { stack := [.world 0 7], program := .cons (.prim "consumeWorld") .empty,
+    nextTag := 1 }
+
+def consumedWorldAfter : AConfig :=
+  { stack := [], program := .empty, nextTag := 1 }
+
+example : consumed consumedWorldBefore consumedWorldAfter = [0] := by
+  rfl
+
+example : (traceConsumed [consumedWorldBefore, consumedWorldAfter]).Nodup := by
+  decide
 
 example (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
     (before after : AConfig) (hbefore : FrontierInvariant before)
@@ -173,6 +197,14 @@ def main : IO Unit := do
     (run gamma d { c with primitive := fun _ => 5 } 20
       { stack := [], program := (.cons (.prim "makeWorld")
         (.cons (.prim "consumeWorld") .empty)) }))
+  let consumedBefore : AConfig :=
+    { stack := [.world 0 7], program := .cons (.prim "consumeWorld") .empty,
+      nextTag := 1 }
+  let consumedAfter : AConfig :=
+    { stack := [], program := .empty, nextTag := 1 }
+  runTest "finite consumption event" (consumed consumedBefore consumedAfter == [0])
+  runTest "finite at-most-once" (decide (traceConsumed [consumedBefore, consumedAfter]).Nodup)
+  runTest "finite exact-once event count" (traceConsumed [consumedBefore, consumedAfter] == [0])
   -- A recursive word demonstrates that execution may diverge. Fuel is a driver
   -- artefact that keeps this executable total; it is not kernel semantics, and
   -- genuine kernel divergence remains divergence.
@@ -182,6 +214,10 @@ def main : IO Unit := do
     else none
   runTest "fuel-bounded divergence"
     (expectOutOfFuel (run gamma loopWords c 12 { stack := [], program := .cons (.word "loop") .empty }))
+  let loopLive : AConfig :=
+    { stack := [.world 0 7], program := .cons (.word "loop") .empty, nextTag := 1 }
+  runTest "loop witness retains live tag"
+    (taggedLinearTags loopLive == [0] && taggedLinearTags loopLive == [0])
   let customGamma := { gamma with
     literalType := fun _ => none
     primitive := fun name => if name == "custom" then

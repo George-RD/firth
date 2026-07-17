@@ -240,20 +240,22 @@ theorem mem_filter_bool_iff {p : OwnershipId → Bool} {tag : OwnershipId}
 theorem mem_produced_iff {before after : AConfig} {tag : OwnershipId} :
     tag ∈ produced before after ↔
       tag ∈ afterTags before after ∧ tag ∉ beforeTags before after := by
-  rw [produced, mem_filter_bool_iff]
+  change tag ∈ (afterTags before after).filter
+      (fun value => !(beforeTags before after).contains value) ↔ _
+  rw [mem_filter_bool_iff]
   constructor
   · rintro ⟨hafter, hnotContains⟩
     refine ⟨hafter, ?_⟩
     intro hbefore
     have hcontains : (beforeTags before after).contains tag = true :=
-      List.contains_iff.mpr hbefore
+      List.contains_iff_mem.mpr hbefore
     rw [hcontains] at hnotContains
     cases hnotContains
   · rintro ⟨hafter, hbefore⟩
     refine ⟨hafter, ?_⟩
     cases hcontains : (beforeTags before after).contains tag with
     | false => rfl
-    | true => exact (hbefore (List.contains_iff.mp hcontains)).elim
+    | true => exact (hbefore (List.contains_iff_mem.mp hcontains)).elim
 
 theorem nodup_filter_bool {p : OwnershipId → Bool} {tags : Ownerships}
     (h : tags.Nodup) : (tags.filter p).Nodup := by
@@ -298,7 +300,7 @@ theorem filter_not_contains_self (tags : Ownerships) :
   apply List.eq_nil_iff_forall_not_mem.mpr
   intro tag htag
   have hfiltered := mem_filter_bool_iff.mp htag
-  have hcontains : tags.contains tag = true := List.contains_iff.mpr hfiltered.1
+  have hcontains : tags.contains tag = true := List.contains_iff_mem.mpr hfiltered.1
   have hnot : tags.contains tag ≠ true := by
     intro htrue
     rw [htrue] at hfiltered
@@ -849,7 +851,7 @@ theorem step_ownership_from_events
   intro tag htag hafterTag
   have hfiltered := mem_filter_bool_iff.mp htag
   have hcontains : (afterTags before after).contains tag = true :=
-    List.contains_iff.mpr hafterTag
+    List.contains_iff_mem.mpr hafterTag
   have hnot : (afterTags before after).contains tag ≠ true := by
     intro htrue
     rw [htrue] at hfiltered
@@ -858,7 +860,7 @@ theorem step_ownership_from_events
   intro tag htag hbeforeTag
   have hfiltered := mem_filter_bool_iff.mp htag
   have hcontains : (beforeTags before after).contains tag = true :=
-    List.contains_iff.mpr hbeforeTag
+    List.contains_iff_mem.mpr hbeforeTag
   have hnot : (beforeTags before after).contains tag ≠ true := by
     intro htrue
     have hfalse : (beforeTags before after).contains tag = false := by
@@ -867,12 +869,59 @@ theorem step_ownership_from_events
     cases hfalse
   exact (hnot hcontains).elim
 
+theorem perm_nodup_constructive {left right : Ownerships}
+    (h : left.Perm right) : left.Nodup ↔ right.Nodup := by
+  induction h with
+  | nil => simp
+  | cons ownership hperm ih =>
+      constructor
+      · intro hnd
+        apply List.nodup_cons.mpr
+        refine ⟨?_, ih.mp (List.nodup_cons.mp hnd).2⟩
+        intro hmem
+        exact (List.nodup_cons.mp hnd).1 (hperm.mem_iff.mpr hmem)
+      · intro hnd
+        apply List.nodup_cons.mpr
+        refine ⟨?_, ih.mpr (List.nodup_cons.mp hnd).2⟩
+        intro hmem
+        exact (List.nodup_cons.mp hnd).1 (hperm.mem_iff.mp hmem)
+  | swap first second tail =>
+      constructor
+      · intro hnd
+        rcases List.nodup_cons.mp hnd with ⟨hfirst, hrest⟩
+        rcases List.nodup_cons.mp hrest with ⟨hsecond, htail⟩
+        apply List.nodup_cons.mpr
+        refine ⟨?_, ?_⟩
+        · intro hmem
+          rcases List.mem_cons.mp hmem with heq | hmem
+          · exact hfirst (by simpa [heq] using List.mem_cons_self)
+          · exact hsecond hmem
+        · apply List.nodup_cons.mpr
+          refine ⟨?_, htail⟩
+          intro hmem
+          exact hfirst (List.mem_cons_of_mem _ hmem)
+      · intro hnd
+        rcases List.nodup_cons.mp hnd with ⟨hfirst, hrest⟩
+        rcases List.nodup_cons.mp hrest with ⟨hsecond, htail⟩
+        apply List.nodup_cons.mpr
+        refine ⟨?_, ?_⟩
+        · intro hmem
+          rcases List.mem_cons.mp hmem with heq | hmem
+          · exact hfirst (by simpa [heq] using List.mem_cons_self)
+          · exact hsecond hmem
+        · apply List.nodup_cons.mpr
+          refine ⟨?_, htail⟩
+          intro hmem
+          exact hfirst (List.mem_cons_of_mem _ hmem)
+  | trans hleft hright ihleft ihright =>
+      exact ihleft.trans ihright
+
 theorem nodup_reorder_three (left middle right : Ownerships)
     (h : (left ++ middle ++ right).Nodup) :
     (middle ++ left ++ right).Nodup := by
-  exact List.Perm.nodup
-    (List.Perm.append_right right
-      (List.perm_append_comm (l₁ := left) (l₂ := middle))) h
+  have hperm := List.Perm.append_right right
+    (List.perm_append_comm (l₁ := left) (l₂ := middle))
+  exact (perm_nodup_constructive hperm).mp h
 
 theorem step_ownership_of_tag_permutation
     {before after : AConfig}
@@ -882,11 +931,11 @@ theorem step_ownership_of_tag_permutation
     (hfrontier : before.nextTag ≤ after.nextTag) :
     StepOwnership before after hstep := by
   apply step_ownership_from_events
-  · exact htags.symm.nodup hbefore
+  · exact (perm_nodup_constructive htags.symm).mp hbefore
   · intro tag htag
     have hfiltered := mem_filter_bool_iff.mp htag
     have hmem : tag ∈ beforeTags before after := htags.mem_iff.mp hfiltered.1
-    have hcontains := List.contains_iff.mpr hmem
+    have hcontains := List.contains_iff_mem.mpr hmem
     have hnot : (beforeTags before after).contains tag ≠ true := by
       intro htrue
       rw [htrue] at hfiltered
@@ -916,7 +965,7 @@ theorem step_ownership_of_step
         have hfiltered := mem_filter_bool_iff.mp htag
         rw [htags] at hfiltered
         rcases hfiltered with ⟨hmem, hnot⟩
-        have hcontains := List.contains_iff.mpr hmem
+        have hcontains := List.contains_iff_mem.mpr hmem
         rw [hcontains] at hnot
         simp at hnot
       · exact Nat.le_add_right _ _
@@ -957,7 +1006,7 @@ theorem step_ownership_of_step
             (List.Perm.append_right restTags
               (List.perm_append_comm (l₁ := bodyTags) (l₂ := stackTags)))
         have hbaseNodup : (bodyTags ++ (stackTags ++ restTags)).Nodup :=
-          hbasePerm.symm.nodup hnodup
+          (perm_nodup_constructive hbasePerm.symm).mp hnodup
         have hfresh : nextTag ∉ bodyTags ++ (stackTags ++ restTags) := by
           intro htag
           exact Nat.lt_irrefl _ (hfrontier nextTag (hbasePerm.mem_iff.mp htag))
@@ -1014,21 +1063,115 @@ theorem step_ownership_of_step
       · change nextTag ≤ nextTag
         exact Nat.le_refl _
   | call =>
+      rename_i body tail rest usage tag nextTag
       rcases hbefore with ⟨hnodup, hfrontier⟩
-      simp only [StepOwnership, beforeTags, afterTags, preserved, consumed, produced,
-        taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
-        taggedLinearTagsValue, taggedLinearTagsProgram_append, List.foldr,
-        List.mem_append, List.append_assoc] at hnodup hfrontier ⊢
-      simp [mem_filter_bool_iff] at *
-      grind
+      let wrapper := if usage == .linear then [tag] else []
+      let bodyTags := taggedLinearTagsProgram body
+      let tailTags :=
+        List.foldr (fun value tags => taggedLinearTagsValue value ++ tags) [] tail
+      let restTags := taggedLinearTagsProgram rest
+      have hbeforeShape : taggedLinearTags
+          { stack := .quotation tag body usage :: tail,
+            program := .cons .call rest, nextTag := nextTag } =
+          wrapper ++ (bodyTags ++ (tailTags ++ restTags)) := by
+        simp only [taggedLinearTags, List.foldr, taggedLinearTagsValue,
+          taggedLinearTagsProgram, taggedLinearTagsAtom, List.nil_append,
+          wrapper, bodyTags, tailTags, restTags, List.append_assoc]
+      have hafterShape : taggedLinearTags
+          { stack := tail, program := AProgram.append body rest, nextTag := nextTag } =
+          tailTags ++ (bodyTags ++ restTags) := by
+        simp only [taggedLinearTags, taggedLinearTagsProgram_append, tailTags,
+          bodyTags, restTags, List.append_assoc]
+      rw [hbeforeShape] at hnodup
+      have hbaseNodup : (bodyTags ++ (tailTags ++ restTags)).Nodup :=
+        (List.nodup_append.mp hnodup).2.1
+      have hbasePerm : (bodyTags ++ (tailTags ++ restTags)).Perm
+          (tailTags ++ (bodyTags ++ restTags)) := by
+        simpa only [List.append_assoc] using
+          (List.Perm.append_right restTags
+            (List.perm_append_comm (l₁ := bodyTags) (l₂ := tailTags)))
+      have hafterNodup : (tailTags ++ (bodyTags ++ restTags)).Nodup :=
+        (perm_nodup_constructive hbasePerm).mp hbaseNodup
+      have hafterMemBefore : ∀ ownership,
+          ownership ∈ tailTags ++ (bodyTags ++ restTags) →
+          ownership ∈ wrapper ++ (bodyTags ++ (tailTags ++ restTags)) := by
+        intro ownership hownership
+        rcases List.mem_append.mp hownership with htail | hbodyRest
+        · exact List.mem_append.mpr (Or.inr (List.mem_append.mpr
+            (Or.inr (List.mem_append.mpr (Or.inl htail)))))
+        · rcases List.mem_append.mp hbodyRest with hbody | hrest
+          · exact List.mem_append.mpr (Or.inr (List.mem_append.mpr (Or.inl hbody)))
+          · exact List.mem_append.mpr (Or.inr (List.mem_append.mpr
+              (Or.inr (List.mem_append.mpr (Or.inr hrest)))))
+      apply step_ownership_from_events
+      · rw [afterTags, hafterShape]
+        exact hafterNodup
+      · intro ownership hownership
+        have hevent := mem_produced_iff.mp hownership
+        rw [afterTags, hafterShape, beforeTags, hbeforeShape] at hevent
+        exact (hevent.2 (hafterMemBefore ownership hevent.1)).elim
+      · exact Nat.le_refl _
   | dip =>
+      rename_i body value tail rest usage tag nextTag
       rcases hbefore with ⟨hnodup, hfrontier⟩
-      simp only [StepOwnership, beforeTags, afterTags, preserved, consumed, produced,
-        taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
-        taggedLinearTagsValue, taggedLinearTagsProgram_append, List.foldr,
-        List.mem_append, List.append_assoc] at hnodup hfrontier ⊢
-      simp [mem_filter_bool_iff] at *
-      grind
+      let wrapper := if usage == .linear then [tag] else []
+      let bodyTags := taggedLinearTagsProgram body
+      let valueTags := taggedLinearTagsValue value
+      let tailTags :=
+        List.foldr (fun item tags => taggedLinearTagsValue item ++ tags) [] tail
+      let restTags := taggedLinearTagsProgram rest
+      have hbeforeShape : taggedLinearTags
+          { stack := .quotation tag body usage :: value :: tail,
+            program := .cons .dip rest, nextTag := nextTag } =
+          wrapper ++ (bodyTags ++ (valueTags ++ (tailTags ++ restTags))) := by
+        simp only [taggedLinearTags, List.foldr, taggedLinearTagsValue,
+          taggedLinearTagsProgram, taggedLinearTagsAtom, List.nil_append,
+          wrapper, bodyTags, valueTags, tailTags, restTags, List.append_assoc]
+      have hafterShape : taggedLinearTags
+          { stack := tail,
+            program := AProgram.append body (.cons (.push value) rest),
+            nextTag := nextTag } =
+          tailTags ++ (bodyTags ++ (valueTags ++ restTags)) := by
+        simp only [taggedLinearTags, taggedLinearTagsProgram_append,
+          taggedLinearTagsProgram, taggedLinearTagsAtom, tailTags, bodyTags,
+          valueTags, restTags, List.append_assoc]
+      rw [hbeforeShape] at hnodup
+      have hbaseNodup :
+          (bodyTags ++ (valueTags ++ (tailTags ++ restTags))).Nodup :=
+        (List.nodup_append.mp hnodup).2.1
+      have hbasePerm : (bodyTags ++ (valueTags ++ (tailTags ++ restTags))).Perm
+          (tailTags ++ (bodyTags ++ (valueTags ++ restTags))) := by
+        simpa only [List.append_assoc] using
+          (List.Perm.append_right restTags
+            (List.perm_append_comm
+              (l₁ := bodyTags ++ valueTags) (l₂ := tailTags)))
+      have hafterNodup :
+          (tailTags ++ (bodyTags ++ (valueTags ++ restTags))).Nodup :=
+        (perm_nodup_constructive hbasePerm).mp hbaseNodup
+      have hafterMemBefore : ∀ ownership,
+          ownership ∈ tailTags ++ (bodyTags ++ (valueTags ++ restTags)) →
+          ownership ∈
+            wrapper ++ (bodyTags ++ (valueTags ++ (tailTags ++ restTags))) := by
+        intro ownership hownership
+        rcases List.mem_append.mp hownership with htail | hbodyValueRest
+        · simp only [List.mem_append]
+          exact Or.inr (Or.inr (Or.inr (Or.inl htail)))
+        · rcases List.mem_append.mp hbodyValueRest with hbody | hvalueRest
+          · simp only [List.mem_append]
+            exact Or.inr (Or.inl hbody)
+          · rcases List.mem_append.mp hvalueRest with hvalue | hrest
+            · simp only [List.mem_append]
+              exact Or.inr (Or.inr (Or.inl hvalue))
+            · simp only [List.mem_append]
+              exact Or.inr (Or.inr (Or.inr (Or.inr hrest)))
+      apply step_ownership_from_events
+      · rw [afterTags, hafterShape]
+        exact hafterNodup
+      · intro ownership hownership
+        have hevent := mem_produced_iff.mp hownership
+        rw [afterTags, hafterShape, beforeTags, hbeforeShape] at hevent
+        exact (hevent.2 (hafterMemBefore ownership hevent.1)).elim
+      · exact Nat.le_refl _
   | compose =>
       rename_i first second usage₁ usage₂ tail rest tag₁ tag₂ nextTag
       rcases hbefore with ⟨hnodup, hfrontier⟩
@@ -1182,15 +1325,99 @@ theorem step_ownership_of_step
             using (List.Perm.refl (valueTags ++ (tailTags ++ restTags)))
         · exact Nat.le_add_right _ _
   | ifThenElse =>
-      rename_i condition
-      cases condition <;>
-        (rcases hbefore with ⟨hnodup, hfrontier⟩
-         simp only [StepOwnership, beforeTags, afterTags, preserved, consumed, produced,
-           taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
-           taggedLinearTagsValue, taggedLinearTagsProgram_append, List.foldr,
-         List.mem_append, List.append_assoc] at hnodup hfrontier ⊢
-         simp [mem_filter_bool_iff] at *
-         grind)
+      rename_i condition trueBranch falseBranch tail rest falseTag trueTag conditionTag nextTag
+      rcases hbefore with ⟨hnodup, hfrontier⟩
+      let falseTags := taggedLinearTagsProgram falseBranch
+      let trueTags := taggedLinearTagsProgram trueBranch
+      let tailTags :=
+        List.foldr (fun value tags => taggedLinearTagsValue value ++ tags) [] tail
+      let restTags := taggedLinearTagsProgram rest
+      have hmany : (Usage.many == Usage.linear) = false := rfl
+      have hbeforeShape : taggedLinearTags
+          { stack := .quotation falseTag falseBranch .many ::
+              .quotation trueTag trueBranch .many ::
+              .literal conditionTag (.bool condition) :: tail,
+            program := .cons .ifThenElse rest, nextTag := nextTag } =
+          falseTags ++ (trueTags ++ (tailTags ++ restTags)) := by
+        simp only [taggedLinearTags, List.foldr, taggedLinearTagsValue,
+          taggedLinearTagsProgram, taggedLinearTagsAtom, List.nil_append,
+          falseTags, trueTags, tailTags, restTags, List.append_assoc, hmany,
+          Bool.false_eq_true, if_false]
+      rw [hbeforeShape] at hnodup
+      cases condition with
+      | false =>
+          simp only [Bool.false_eq_true, if_false]
+          have hafterShape : taggedLinearTags
+              { stack := tail, program := AProgram.append falseBranch rest,
+                nextTag := nextTag } =
+              tailTags ++ (falseTags ++ restTags) := by
+            simp only [taggedLinearTags, taggedLinearTagsProgram_append,
+              falseTags, tailTags, restTags, List.append_assoc]
+          have hparts := List.nodup_append.mp hnodup
+          have hrightParts := List.nodup_append.mp hparts.2.1
+          have hselectedNodup : (falseTags ++ (tailTags ++ restTags)).Nodup := by
+            apply List.nodup_append.mpr
+            refine ⟨hparts.1, hrightParts.2.1, ?_⟩
+            intro ownership hfalse other htailRest heq
+            exact hparts.2.2 ownership hfalse other
+              (List.mem_append.mpr (Or.inr htailRest)) heq
+          have hselectedPerm : (falseTags ++ (tailTags ++ restTags)).Perm
+              (tailTags ++ (falseTags ++ restTags)) := by
+            simpa only [List.append_assoc] using
+              (List.Perm.append_right restTags
+                (List.perm_append_comm (l₁ := falseTags) (l₂ := tailTags)))
+          have hafterNodup : (tailTags ++ (falseTags ++ restTags)).Nodup :=
+            (perm_nodup_constructive hselectedPerm).mp hselectedNodup
+          apply step_ownership_from_events
+          · rw [afterTags, hafterShape]
+            exact hafterNodup
+          · intro ownership hownership
+            have hevent := mem_produced_iff.mp hownership
+            rw [afterTags, hafterShape, beforeTags, hbeforeShape] at hevent
+            rcases List.mem_append.mp hevent.1 with htail | hfalseRest
+            · exact (hevent.2 (List.mem_append.mpr (Or.inr
+                (List.mem_append.mpr (Or.inr
+                  (List.mem_append.mpr (Or.inl htail))))))).elim
+            · rcases List.mem_append.mp hfalseRest with hfalse | hrest
+              · exact (hevent.2 (List.mem_append.mpr (Or.inl hfalse))).elim
+              · exact (hevent.2 (List.mem_append.mpr (Or.inr
+                  (List.mem_append.mpr (Or.inr
+                    (List.mem_append.mpr (Or.inr hrest))))))).elim
+          · exact Nat.le_refl _
+      | true =>
+          simp
+          have hafterShape : taggedLinearTags
+              { stack := tail, program := AProgram.append trueBranch rest,
+                nextTag := nextTag } =
+              tailTags ++ (trueTags ++ restTags) := by
+            simp only [taggedLinearTags, taggedLinearTagsProgram_append,
+              trueTags, tailTags, restTags, List.append_assoc]
+          have hselectedNodup : (trueTags ++ (tailTags ++ restTags)).Nodup :=
+            (List.nodup_append.mp hnodup).2.1
+          have hselectedPerm : (trueTags ++ (tailTags ++ restTags)).Perm
+              (tailTags ++ (trueTags ++ restTags)) := by
+            simpa only [List.append_assoc] using
+              (List.Perm.append_right restTags
+                (List.perm_append_comm (l₁ := trueTags) (l₂ := tailTags)))
+          have hafterNodup : (tailTags ++ (trueTags ++ restTags)).Nodup :=
+            (perm_nodup_constructive hselectedPerm).mp hselectedNodup
+          apply step_ownership_from_events
+          · rw [afterTags, hafterShape]
+            exact hafterNodup
+          · intro ownership hownership
+            have hevent := mem_produced_iff.mp hownership
+            rw [afterTags, hafterShape, beforeTags, hbeforeShape] at hevent
+            rcases List.mem_append.mp hevent.1 with htail | htrueRest
+            · exact (hevent.2 (List.mem_append.mpr (Or.inr
+                (List.mem_append.mpr (Or.inr
+                  (List.mem_append.mpr (Or.inl htail))))))).elim
+            · rcases List.mem_append.mp htrueRest with htrue | hrest
+              · exact (hevent.2 (List.mem_append.mpr (Or.inr
+                  (List.mem_append.mpr (Or.inl htrue))))).elim
+              · exact (hevent.2 (List.mem_append.mpr (Or.inr
+                  (List.mem_append.mpr (Or.inr
+                    (List.mem_append.mpr (Or.inr hrest))))))).elim
+          · exact Nat.le_refl _
   | word h =>
       rename_i name body stack rest nextTag nextTag'
       rcases h with ⟨entry, hname, hannotation⟩
@@ -1220,15 +1447,15 @@ theorem step_ownership_of_step
         rcases hfront tag hbody with ⟨hlo, _⟩
         exact Nat.not_lt_of_ge hlo (hfrontier tag hbase)
       have hafterNodup : (stackTags ++ (bodyTags ++ restTags)).Nodup := by
-        have hbaseParts := (List.nodup_append.mp hbaseNodup)
+        have hbaseParts := List.nodup_append.mp hbaseNodup
         have hbodyRest : (bodyTags ++ restTags).Nodup := by
-          apply (List.nodup_append).mpr
+          apply List.nodup_append.mpr
           refine ⟨hnd, hbaseParts.2.1, ?_⟩
           intro tag hbody other hrest heq
           exact hbodyBaseDisjoint tag (by simpa [heq] using hbody) (by
             simp only [List.mem_append]
-            exact Or.inr hrest)
-        apply (List.nodup_append).mpr
+            exact Or.inr (by simpa [heq] using hrest))
+        apply List.nodup_append.mpr
         refine ⟨hbaseParts.1, hbodyRest, ?_⟩
         intro tag hstack other hbodyRest heq
         rcases List.mem_append.mp hbodyRest with hbody | hrest
@@ -1249,18 +1476,48 @@ theorem step_ownership_of_step
           · exact (hevent.2 (by simp only [List.mem_append]; exact Or.inr hrest)).elim
       · exact hadvance
   | prim h =>
+      rename_i primitive input output rest specification₀ plainInput₀ plainOutput₀
+        rowTail₀ retained₀ consumed₀ produced₀ nextTag nextTag'
       rcases h with ⟨specification, plainInput, plainOutput, rowTail, hname,
         hin, hdelta, hout, retained, consumed', produced', hinput, houtput,
         hretainedNd, hconsumedNd, hproducedNd, hretainedExact, hconsumedExact,
         hproducedExact, hretainedUnchanged, hconsumedAbsent, hproducedFresh,
         houtputResidueNd, hmonotone, hrowTail, hauthorised⟩
       rcases hbefore with ⟨hnodup, hfrontier⟩
-      simp only [taggedLinearTagsValueList_eq_foldr] at hinput houtput hretainedExact hconsumedExact hproducedExact hretainedUnchanged hconsumedAbsent hproducedFresh houtputResidueNd hrowTail
-      simp only [StepOwnership, beforeTags, afterTags, preserved, consumed, produced,
-        taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
-        taggedLinearTagsValue, taggedLinearTagsProgram_append, List.foldr,
-        List.mem_append, List.append_assoc] at hnodup hfrontier ⊢
-      grind
+      let inputTags :=
+        List.foldr (fun value tags => taggedLinearTagsValue value ++ tags) [] input
+      let outputTags :=
+        List.foldr (fun value tags => taggedLinearTagsValue value ++ tags) [] output
+      let restTags := taggedLinearTagsProgram rest
+      have hbeforeShape : taggedLinearTags
+          { stack := input, program := .cons (.prim primitive) rest,
+            nextTag := nextTag } = inputTags ++ restTags := by
+        simp only [taggedLinearTags, taggedLinearTagsProgram,
+          taggedLinearTagsAtom, inputTags, restTags, List.nil_append]
+      have hafterShape : taggedLinearTags
+          { stack := output, program := rest, nextTag := nextTag' } =
+          outputTags ++ restTags := by
+        simp only [taggedLinearTags, outputTags, restTags]
+      have houtputResidueNodup : (outputTags ++ restTags).Nodup := by
+        rw [taggedLinearTagsValueList_eq_foldr] at houtputResidueNd
+        simpa only [outputTags, restTags] using houtputResidueNd
+      apply step_ownership_from_events
+      · rw [afterTags, hafterShape]
+        exact houtputResidueNodup
+      · intro ownership hownership
+        have hevent := mem_produced_iff.mp hownership
+        rw [afterTags, hafterShape, beforeTags, hbeforeShape] at hevent
+        rcases List.mem_append.mp hevent.1 with houtput | hrest
+        · apply hproducedFresh ownership
+          apply (hproducedExact ownership).mpr
+          refine ⟨?_, ?_⟩
+          · rw [taggedLinearTagsValueList_eq_foldr]
+            exact houtput
+          · intro hinput
+            rw [taggedLinearTagsValueList_eq_foldr] at hinput
+            exact hevent.2 (List.mem_append.mpr (Or.inl hinput))
+        · exact (hevent.2 (List.mem_append.mpr (Or.inr hrest))).elim
+      · exact hmonotone
 
 theorem instrumented_well_formed_preserved_of_step_ownership
     (hbefore : InstrumentedWellFormedAt before)
@@ -1292,51 +1549,170 @@ theorem instrumented_trace_erases
       · exact instrumented_step_erases htrace.1
       · exact ih htrace.2
 
-def TraceOwnership (configs : List AConfig) : Prop :=
-  (configs.Pairwise (fun before after =>
-    (taggedLinearTags before).Nodup ∧ (taggedLinearTags after).Nodup)) ∧
-  (traceConsumed configs).Nodup ∧
-  (∀ tag, tag ∈ traceConsumed configs →
-    ∀ later, later ∈ configs → tag ∉ taggedLinearTags later)
+theorem consumed_mem_before
+    {before after : AConfig} {tag : Tag}
+    (h : tag ∈ consumed before after) : tag ∈ beforeTags before after :=
+  (mem_filter_bool_iff.mp h).1
 
-theorem finite_trace_at_most_once_of_trace_ownership
-    {configs : List AConfig} (htrace : InstrumentedTrace gamma dictionary costs start configs)
-    (hownership : TraceOwnership (start :: configs)) :
-    (traceConsumed (start :: configs)).Nodup := hownership.2.1
+theorem after_mem_before_or_produced
+    {before after : AConfig} {tag : Tag}
+    (h : tag ∈ afterTags before after) :
+    tag ∈ beforeTags before after ∨ tag ∈ produced before after := by
+  by_cases hbefore : tag ∈ beforeTags before after
+  · exact Or.inl hbefore
+  · apply Or.inr
+    apply mem_filter_bool_iff.mpr
+    refine ⟨h, ?_⟩
+    cases hcontains : (beforeTags before after).contains tag with
+    | false => rfl
+    | true => exact (hbefore (List.contains_iff_mem.mp hcontains)).elim
 
-def InitialOwnershipCovered (start : AConfig) (configs : List AConfig) : Prop :=
-  ∀ tag, tag ∈ taggedLinearTags start → tag ∈ traceConsumed (start :: configs)
+theorem consumed_lt_frontier
+    (hbefore : InstrumentedWellFormedAt before)
+    {after : AConfig} {tag : Tag}
+    (h : tag ∈ consumed before after) : tag < before.nextTag :=
+  hbefore.2 tag (consumed_mem_before h)
 
-theorem exact_once_of_terminating_empty_residue
+theorem tag_absent_through_trace
+    {start : AConfig} {configs : List AConfig}
+    (hstart : InstrumentedWellFormedAt start)
+    (htrace : InstrumentedTrace gamma dictionary costs start configs)
+    {tag : Tag} (hlt : tag < start.nextTag)
+    (habsent : tag ∉ taggedLinearTags start) :
+    ∀ config, config ∈ configs → tag ∉ taggedLinearTags config := by
+  induction configs generalizing start with
+  | nil => intro config hconfig; cases hconfig
+  | cons after rest ih =>
+      have hownership := step_ownership_of_step hstart htrace.1
+      have hnext := instrumented_well_formed_preserved_of_step_ownership hstart htrace.1
+      have hafter : tag ∉ taggedLinearTags after := by
+        intro htag
+        rcases after_mem_before_or_produced htag with hold | hnew
+        · exact habsent hold
+        · exact (Nat.not_lt_of_ge (hownership.2.2.2.1 tag hnew).1 hlt).elim
+      intro config hconfig
+      rcases List.mem_cons.mp hconfig with rfl | hconfig
+      · exact hafter
+      · exact ih hnext htrace.2 (Nat.lt_of_lt_of_le hlt hownership.2.2.2.2) hafter config hconfig
+
+theorem tag_never_consumed_through_trace
+    {start : AConfig} {configs : List AConfig}
+    (hstart : InstrumentedWellFormedAt start)
+    (htrace : InstrumentedTrace gamma dictionary costs start configs)
+    {tag : Tag} (hlt : tag < start.nextTag)
+    (habsent : tag ∉ taggedLinearTags start) :
+    tag ∉ traceConsumed (start :: configs) := by
+  induction configs generalizing start with
+  | nil => simp [traceConsumed]
+  | cons after rest ih =>
+      have hownership := step_ownership_of_step hstart htrace.1
+      have hnext := instrumented_well_formed_preserved_of_step_ownership hstart htrace.1
+      intro htag
+      simp only [traceConsumed] at htag
+      rcases List.mem_append.mp htag with hfirst | hlater
+      · exact habsent (consumed_mem_before hfirst)
+      · have hafter : tag ∉ taggedLinearTags after := by
+          intro htagAfter
+          rcases after_mem_before_or_produced htagAfter with hold | hnew
+          · exact habsent hold
+          · exact (Nat.not_lt_of_ge (hownership.2.2.2.1 tag hnew).1 hlt).elim
+        exact ih hnext htrace.2
+          (Nat.lt_of_lt_of_le hlt hownership.2.2.2.2) hafter hlater
+
+theorem finite_trace_at_most_once
+    {start : AConfig} {configs : List AConfig}
+    (hstart : InstrumentedWellFormedAt start)
+    (htrace : InstrumentedTrace gamma dictionary costs start configs) :
+    (traceConsumed (start :: configs)).Nodup := by
+  induction configs generalizing start with
+  | nil => simp [traceConsumed]
+  | cons after rest ih =>
+      have hownership := step_ownership_of_step hstart htrace.1
+      have hnext := instrumented_well_formed_preserved_of_step_ownership hstart htrace.1
+      have hlater := ih hnext htrace.2
+      apply List.nodup_append.mpr
+      refine ⟨?_, hlater, ?_⟩
+      · exact nodup_filter_bool hstart.1
+      · intro tag htagBefore _ htagLater heq
+        have hlt := consumed_lt_frontier hstart htagBefore
+        have hafter : tag ∉ taggedLinearTags after := by
+          exact hownership.2.1 tag htagBefore
+        have hnot := tag_never_consumed_through_trace hnext htrace.2
+          (Nat.lt_of_lt_of_le hlt hownership.2.2.2.2) hafter
+        exact hnot (by simpa [heq] using htagLater)
+
+theorem initial_tag_survives_or_consumed_at
     {start terminal : AConfig} {configs : List AConfig}
     (htrace : InstrumentedTrace gamma dictionary costs start configs)
     (hlast : configs.getLast? = some terminal)
+    {tag : Tag} (hinitial : tag ∈ taggedLinearTags start) :
+    tag ∈ taggedLinearTags terminal ∨
+      tag ∈ traceConsumed (start :: configs) := by
+  induction configs generalizing start terminal with
+  | nil => simp at hlast
+  | cons after rest ih =>
+      cases rest with
+      | nil =>
+          simp at hlast
+          subst terminal
+          by_cases hafter : tag ∈ afterTags start after
+          · exact Or.inl hafter
+          · exact Or.inr (by
+              simp only [traceConsumed]
+              apply List.mem_append.mpr
+              left
+              exact mem_filter_bool_iff.mpr ⟨hinitial, by
+                cases hcontains : (afterTags start after).contains tag with
+                | false => rfl
+                | true => exact (hafter (List.contains_iff_mem.mp hcontains)).elim⟩)
+      | cons next rest =>
+          by_cases hafter : tag ∈ afterTags start after
+          · have hrest := ih htrace.2 hlast hafter
+            rcases hrest with hlive | hconsumed
+            · exact Or.inl hlive
+            · exact Or.inr (by
+                simp only [traceConsumed]
+                exact List.mem_append.mpr (Or.inr hconsumed))
+          · exact Or.inr (by
+              simp only [traceConsumed]
+              apply List.mem_append.mpr
+              left
+              exact mem_filter_bool_iff.mpr ⟨hinitial, by
+                cases hcontains : (afterTags start after).contains tag with
+                | false => rfl
+                | true => exact (hafter (List.contains_iff_mem.mp hcontains)).elim⟩)
+
+theorem exact_once_of_terminating_empty_residue
+    {start terminal : AConfig} {configs : List AConfig}
+    (hstart : InstrumentedWellFormedAt start)
+    (htrace : InstrumentedTrace gamma dictionary costs start configs)
+    (hlast : configs.getLast? = some terminal)
     (hterm : terminal.program = .empty)
-    (hempty : taggedLinearTags terminal = [])
-    (hatmost : (traceConsumed (start :: configs)).Nodup)
-    (hcovered : InitialOwnershipCovered start configs)
-    (hnofabrication : ∀ tag, tag ∈ traceConsumed (start :: configs) →
-      tag ∈ taggedLinearTags start) :
+    (hempty : taggedLinearTags terminal = []) :
     configs.getLast? = some terminal ∧ terminal.program = .empty ∧
       taggedLinearTags terminal = [] ∧
       (traceConsumed (start :: configs)).Nodup ∧
-      (∀ tag, tag ∈ taggedLinearTags start ↔
+      (∀ tag, tag ∈ taggedLinearTags start →
         tag ∈ traceConsumed (start :: configs)) := by
+  have hatmost := finite_trace_at_most_once hstart htrace
   refine ⟨hlast, hterm, hempty, hatmost, ?_⟩
-  intro tag
-  constructor
-  · exact hcovered tag
-  · intro h
-    exact hnofabrication tag h
+  intro tag hinitial
+  rcases initial_tag_survives_or_consumed_at htrace hlast hinitial with hlive | hconsumed
+  · have hterminal : taggedLinearTags (configs.getLast?.getD start) = [] := by
+      simp [hlast, hempty]
+    have : taggedLinearTags terminal = [] := hempty
+    rw [this] at hlive
+    cases hlive
+  · exact hconsumed
 
-def InfiniteInstrumentedExecution (gamma : Gamma) (dictionary : Dictionary)
+def InfiniteInstrumentedTrace (gamma : Gamma) (dictionary : Dictionary)
     (costs : CostTable) (run : Nat → AConfig) : Prop :=
   (∀ n, InstrumentedStep gamma dictionary costs (run n) (run (n + 1))) ∧
   (∃ tag, ∀ n, tag ∈ taggedLinearTags (run n))
 
 theorem divergence_may_leave_linear_live :
   ∃ (dictionary : Dictionary) (run : Nat → AConfig),
-      InfiniteInstrumentedExecution defaultGamma dictionary defaultCosts run := by
+      InfiniteInstrumentedTrace defaultGamma dictionary defaultCosts run := by
   let dictionary : Dictionary := fun _ => some
     { type := { rowVariables := ["ρ"], input := .row "ρ", output := .row "ρ" },
       body := .cons (.word "loop") .empty }
