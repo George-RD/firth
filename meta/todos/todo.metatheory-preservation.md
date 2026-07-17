@@ -10,10 +10,7 @@ created: 2026-07-17
 
 Mechanise preservation for the frozen v0.1 kernel without admitted proofs.
 
-## Requires
-
-- `kernel-spec-freeze`
-- `pin-lean-toolchain`
+Requires: kernel-spec-freeze, pin-lean-toolchain
 
 ## Acceptance criteria
 

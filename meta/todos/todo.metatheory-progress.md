@@ -10,11 +10,7 @@ created: 2026-07-17
 
 Mechanise progress for the frozen v0.1 kernel without admitted proofs.
 
-## Requires
-
-- `metatheory-preservation`
-- `kernel-spec-freeze`
-- `pin-lean-toolchain`
+Requires: metatheory-preservation, kernel-spec-freeze, pin-lean-toolchain
 
 ## Acceptance criteria
 
