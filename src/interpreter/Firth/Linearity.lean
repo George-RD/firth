@@ -206,9 +206,10 @@ theorem eraseProgram_if (condition : Bool) (trueBranch falseBranch : AProgram) :
 
 mutual
   def taggedLinearTagsValue : AValue → Ownerships
-    | .literal tag _ => [tag]
+    | .literal _ _ => []
     | .world tag _ => [tag]
-    | .quotation tag body _ => tag :: taggedLinearTagsProgram body
+    | .quotation tag body usage =>
+        (if usage == .linear then [tag] else []) ++ taggedLinearTagsProgram body
 
   def taggedLinearTagsAtom : AAtom → Ownerships
     | .push value => taggedLinearTagsValue value
@@ -418,15 +419,9 @@ theorem instrumented_frontier_preserved
   cases hstep with
   | lit h nextTag =>
       intro tag htag
-      simp [aQuotationTarget, taggedLinearTags, taggedLinearTagsValue] at htag
-      rcases htag with hfresh | hold
-      · have : tag = nextTag := by simpa [taggedLinearTagsValue] using hfresh
-        subst tag
-        exact Nat.lt_succ_self _
-      · have hold' := hbefore tag (by simpa [taggedLinearTags,
-          taggedLinearTagsProgram, taggedLinearTagsAtom, taggedLinearTagsValue,
-          or_comm, or_left_comm, or_assoc] using hold)
-        exact Nat.lt_succ_of_lt hold'
+      have hold := hbefore tag (by simpa [taggedLinearTags,
+          taggedLinearTagsProgram, taggedLinearTagsAtom, taggedLinearTagsValue] using htag)
+      exact Nat.lt_succ_of_lt hold
   | push =>
       intro tag htag
       exact hbefore tag (by simpa [taggedLinearTags, taggedLinearTagsProgram,
@@ -435,14 +430,19 @@ theorem instrumented_frontier_preserved
   | quotation =>
       rename_i body stack rest nextTag
       intro tag htag
-      simp [aQuotationTarget, taggedLinearTags, taggedLinearTagsValue] at htag
-      rcases htag with hfresh | hrest
-      · have : tag = nextTag := by simpa [taggedLinearTagsValue] using hfresh
-        subst tag
-        exact Nat.lt_succ_self _
-      · exact Nat.lt_succ_of_lt (hbefore tag (by simpa [aQuotationSource,
+      by_cases hlinear : programUsage (eraseProgram body) == Usage.linear
+      · simp [aQuotationTarget, taggedLinearTags, taggedLinearTagsValue, hlinear] at htag
+        rcases htag with hfresh | hrest
+        · have : tag = nextTag := by simpa using hfresh
+          subst tag
+          exact Nat.lt_succ_self _
+        · exact Nat.lt_succ_of_lt (hbefore tag (by simpa [aQuotationSource,
+            taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
+            taggedLinearTagsValue, hlinear, or_comm, or_left_comm, or_assoc] using hrest))
+      · simp [aQuotationTarget, taggedLinearTags, taggedLinearTagsValue, hlinear] at htag
+        exact Nat.lt_succ_of_lt (hbefore tag (by simpa [aQuotationSource,
           taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
-          taggedLinearTagsValue, or_comm, or_left_comm, or_assoc] using hrest))
+          taggedLinearTagsValue, hlinear, or_comm, or_left_comm, or_assoc] using htag))
   | dup h =>
       intro tag htag
       exact hbefore tag (by simpa [taggedLinearTags, taggedLinearTagsProgram,
@@ -500,8 +500,13 @@ theorem instrumented_frontier_preserved
           List.mem_cons] at hstack
         rcases hstack with h123 | htail
         · rcases h123 with hfresh | hbody | hbody
-          · subst tag
-            exact Nat.lt_add_one _
+          · by_cases hlinear : ((if (usage₁ == Usage.linear) = true ∨
+              (usage₂ == Usage.linear) = true then Usage.linear else Usage.many) ==
+              Usage.linear) = true
+            · simp [hlinear] at hfresh
+              rcases hfresh with ⟨_, rfl⟩
+              exact Nat.lt_succ_self _
+            · simp [hlinear] at hfresh
           · apply Nat.lt_succ_of_lt
             apply hbefore tag
             simp only [taggedLinearTags, List.mem_append, List.foldr,
@@ -528,15 +533,19 @@ theorem instrumented_frontier_preserved
   | quote =>
       rename_i value tail rest nextTag
       intro tag htag
-      simp [taggedLinearTags, taggedLinearTagsValue] at htag
-      rcases htag with hfresh | hold
-      · have : tag = nextTag := by simpa [taggedLinearTagsValue] using hfresh
-        subst tag
-        exact Nat.lt_succ_self _
-      · exact Nat.lt_succ_of_lt (hbefore tag (by simpa [taggedLinearTags,
-        taggedLinearTagsProgram,
-        taggedLinearTagsAtom, taggedLinearTagsValue, or_comm, or_left_comm,
-        or_assoc] using hold))
+      by_cases hlinear : quotationUsage (eraseValue value) == .linear
+      · simp [taggedLinearTags, taggedLinearTagsValue, hlinear] at htag
+        rcases htag with hfresh | hold
+        · have : tag = nextTag := by simpa using hfresh
+          subst tag
+          exact Nat.lt_succ_self _
+        · exact Nat.lt_succ_of_lt (hbefore tag (by simpa [taggedLinearTags,
+          taggedLinearTagsProgram, taggedLinearTagsAtom, taggedLinearTagsValue,
+          hlinear] using hold))
+      · simp [taggedLinearTags, taggedLinearTagsValue, hlinear] at htag
+        exact Nat.lt_succ_of_lt (hbefore tag (by simpa [taggedLinearTags,
+          taggedLinearTagsProgram, taggedLinearTagsAtom, taggedLinearTagsValue,
+          hlinear] using htag))
   | ifThenElse =>
       rename_i condition trueBranch falseBranch tail rest falseTag trueTag conditionTag nextTag
       intro tag htag
