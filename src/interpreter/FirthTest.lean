@@ -1,6 +1,18 @@
 import Firth.Interpreter
+import Firth.KernelMetatheory
 
 open Firth.Interpreter
+
+example (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
+    (config next₁ next₂ : Config) :
+    HasSuccessor gamma dictionary costs config next₁ →
+      HasSuccessor gamma dictionary costs config next₂ → next₁ = next₂ := by
+  exact step_deterministic gamma dictionary costs config next₁ next₂
+
+example (costs : CostTable) (left right : List Atom) :
+    sequenceCost costs.atom (left ++ right) =
+      sequenceCost costs.atom left + sequenceCost costs.atom right := by
+  exact atomSequenceCost_append costs left right
 
 def expectTerminalStack (expected : Stack) : RunResult → Bool
   | .terminal config _ _ => config.stack == expected

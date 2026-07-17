@@ -17,6 +17,7 @@ System Firth "Concatenative language elaborated through Lean 4 and compiled to a
         Module Kernel "Kernel calculus: combinator set, typing rules, small-step operational semantics, cost semantics" id "firth.language.kernel" {
             path "files"
             path "spec/kernel"
+            path "src/interpreter/Firth/KernelMetatheory.lean"
         }
 
         Module Surface "Surface syntax: point-free Forth-flavoured syntax, named locals as sugar, vocabulary layering, naming grammar" id "firth.language.surface" {
