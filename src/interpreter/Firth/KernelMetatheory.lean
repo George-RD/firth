@@ -2,16 +2,31 @@ import Firth.Interpreter
 
 namespace Firth.Interpreter
 
-/-!
-  The executable interpreter is the single definition of the v0.1 transition
-  system.  This file records the metatheory that is already meaningful for
-  that definition.  The typing and ownership judgements are deliberately not
-  reconstructed here: the current interpreter does not contain them.
--/
+/-! The executable interpreter is the single definition of the v0.1 transition
+system.  The preservation work uses the shared judgements in
+`Firth.Interpreter`; its dictionary and primitive hypotheses are exactly the
+well-formedness obligations stated by the frozen kernel specification. -/
 
 def HasSuccessor (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
     (config : Config) (next : Config) : Prop :=
   ∃ cost, step gamma dictionary costs config = .stepped next cost
+
+theorem quotationUsage_of_typing {value : Value} {type : ValueType}
+    (h : ValueTyping gamma dictionary value type) :
+    quotationUsage value = type.usage := by
+  cases h <;> rfl
+
+theorem push_program_typing {value : Value} {type : ValueType} {stack : StackType}
+    (hv : ValueTyping gamma dictionary value type) :
+    ProgramTyping gamma dictionary
+      (.cons (.push value) .empty) stack (.snoc stack type) := by
+  exact ProgramTyping.cons (AtomTyping.push hv) ProgramTyping.empty
+
+theorem quote_program_typing {value : Value} {type : ValueType} {row : String}
+    (hv : ValueTyping gamma dictionary value type) :
+    ProgramTyping gamma dictionary
+      (.cons (.push value) .empty) (.row row) (.snoc (.row row) type) := by
+  exact push_program_typing hv
 
 theorem step_deterministic (gamma : Gamma) (dictionary : Dictionary)
     (costs : CostTable) (config : Config) :
