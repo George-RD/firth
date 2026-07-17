@@ -12,6 +12,10 @@ from pathlib import Path
 STATUSES = {"open", "in_progress", "done", "blocked"}
 FILENAME = re.compile(r"^todo\.(.+)\.md$")
 REQUIRES = re.compile(r"^\s*Requires:\s*(.*?)\s*$")
+REQUIRES_HEADING = re.compile(r"^\s*#{1,6}\s+Requires\b.*$")
+REQUIRES_LABEL = re.compile(r"^\s*Requires\b")
+REQUIRES_DECL_BULLET = re.compile(r"^\s*[-*+]\s+Requires\b")
+REQUIRES_DEP_BULLET = re.compile(r"^\s*[-*+]\s+`[A-Za-z0-9][A-Za-z0-9._-]*`")
 SLUG = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
@@ -47,16 +51,63 @@ def frontmatter_and_requires(path: Path) -> tuple[dict[str, str], list[str], lis
                     fields[key] = value.strip("\"'")
     requires: list[str] = []
     fenced = False
+    requires_heading = False
+    inline_requires_seen = False
+    requires_continuation = False
     for line in lines[body_start:]:
         if line.strip().startswith(("```", "~~~")):
             fenced = not fenced
             continue
         if not fenced:
+            if REQUIRES_HEADING.match(line):
+                errors.append(
+                    f"{path}: unsupported Requires heading/list format; "
+                    "use inline `Requires: slug1 slug2`"
+                )
+                requires_heading = True
+                continue
+            if requires_heading and line.lstrip().startswith("#"):
+                requires_heading = False
+            elif requires_heading and REQUIRES_DEP_BULLET.match(line):
+                errors.append(
+                    f"{path}: unsupported Requires bullet-list format; "
+                    "use inline `Requires: slug1 slug2`"
+                )
+                continue
+            if (requires_heading or requires_continuation) and (
+                REQUIRES_DEP_BULLET.match(line) or REQUIRES_DECL_BULLET.match(line)
+            ):
+                errors.append(
+                    f"{path}: unsupported Requires bullet-list format; "
+                    "use inline `Requires: slug1 slug2`"
+                )
+                continue
+            if REQUIRES_DECL_BULLET.match(line):
+                errors.append(
+                    f"{path}: unsupported bullet Requires format; "
+                    "use inline `Requires: slug1 slug2`"
+                )
+                continue
             match = REQUIRES.match(line)
             if match:
+                if inline_requires_seen:
+                    errors.append(
+                        f"{path}: duplicate Requires declaration; "
+                        "use one inline `Requires: slug1 slug2`"
+                    )
+                    continue
                 raw = match.group(1).replace(",", " ")
                 requires = [slug for slug in raw.split() if slug]
-                break
+                inline_requires_seen = True
+                requires_continuation = True
+                continue
+            if REQUIRES_LABEL.match(line):
+                errors.append(
+                    f"{path}: unsupported Requires format; "
+                    "use inline `Requires: slug1 slug2`"
+                )
+            elif line.strip():
+                requires_continuation = False
     return fields, requires, errors
 
 
