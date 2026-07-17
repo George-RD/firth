@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.interpreter
-status: open
+status: done
 created: 2026-07-16
 ---
 

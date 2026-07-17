@@ -5,3 +5,4 @@ map.md
 
 __pycache__/
 *.pyc
+.lake/
