@@ -71,6 +71,12 @@ def traceCost {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
   | .nil _ => 0
   | .cons cost _ tail => cost + traceCost tail
 
+def traceLength {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
+    {start finish : Config} :
+    Trace gamma dictionary costs start finish → Nat
+  | .nil _ => 0
+  | .cons _ _ tail => Nat.succ (traceLength tail)
+
 theorem traceCost_eq_sequenceCost {gamma : Gamma} {dictionary : Dictionary}
     {costs : CostTable} {start finish : Config} (trace : Trace gamma dictionary costs start finish) :
     traceCost trace = sequenceCost id (traceCosts trace) := by
@@ -88,6 +94,60 @@ theorem traceCost_trans {gamma : Gamma} {dictionary : Dictionary} {costs : CostT
   | nil config => simp [Trace.trans, traceCost]
   | cons cost stepProof tail ih =>
       simp [Trace.trans, traceCost, ih, Nat.add_assoc]
+
+theorem run_agrees_with_terminal_trace
+    (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
+    {start finish : Config} (trace : Trace gamma dictionary costs start finish)
+    (terminal : finish.program = .empty) :
+    run gamma dictionary costs (traceLength trace) start =
+      .terminal finish (traceLength trace) (traceCost trace) := by
+  induction trace with
+  | nil config =>
+      cases config with
+      | mk stack program =>
+          cases program with
+          | empty => rfl
+          | cons head tail => cases terminal
+  | @cons start middle finish cost stepProof tail ih =>
+      cases start with
+      | mk stack program =>
+          cases program with
+          | empty =>
+              simp [step] at stepProof
+          | cons atom rest =>
+              simp only [traceLength, traceCost]
+              rw [run]
+              rw [stepProof]
+              simp only
+              rw [ih terminal]
+              simp [traceLength, traceCost, Nat.add_comm, Nat.add_left_comm,
+                Nat.add_assoc]
+
+def executableCostChecks : List Bool :=
+  [ chargedCost defaultCosts (.lit (.nat 1)) == 1,
+    chargedCost { defaultCosts with atom := fun _ => 7 }
+      (.quotation .empty) == 7,
+    chargedCost { defaultCosts with primitive := fun _ => 5 } (.prim "p") == 5,
+    chargedCost { defaultCosts with unfold := 4 } (.word "w") == 4,
+    chargedCost { defaultCosts with atom := fun _ => 99 }
+      (.push (.literal (.nat 1))) == 0 ]
+
+example : executableCostChecks.all id = true := by native_decide
+
+def executableTraceCostChecks : List Bool :=
+  [ match run defaultGamma emptyDictionary defaultCosts 10
+      { stack := [],
+        program := .cons (.quotation (.cons (.lit (.nat 1)) .empty))
+          (.cons .call .empty) } with
+    | .terminal _ _ cost => cost == 3
+    | _ => false,
+    match run defaultGamma emptyDictionary
+      { defaultCosts with atom := fun _ => 99 } 10
+      { stack := [], program := .cons (.push (.literal (.nat 1))) .empty } with
+    | .terminal _ _ cost => cost == 0
+    | _ => false ]
+
+example : executableTraceCostChecks.all id = true := by native_decide
 
 theorem traceStep_cost_matches_kappa {gamma : Gamma} {dictionary : Dictionary}
     {costs : CostTable} {start middle : Config} (cost : Nat)
