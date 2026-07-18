@@ -1,7 +1,7 @@
 name = "firth"
 version = "0.1.0"
-defaultTargets = ["firthTest", "firthParserTest"]
-testDriver = "firthTest"
+defaultTargets = ["firthTest", "firthParserTest", "firthErasureTest"]
+testDriver = "firthErasureTest"
 
 [[lean_lib]]
 name = "Firth"
