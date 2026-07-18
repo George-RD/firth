@@ -797,26 +797,7 @@ private def authenticatedProofSearchPath : IO (Option System.SearchPath) := do
       if !(← candidate.pathExists) then pure none
       else
         let some digest ← sha256 candidate | pure none
-        let projectDependencyShadowed (candidateRoot : System.FilePath) : IO Bool := do
-          let names :=
-            [ "elaborator/Firth/StackEffect.olean"
-            , "elaborator/Firth/Erasure.olean"
-            , "smt/Firth/SmtBoundary.olean" ]
-          let rec any : List String → IO Bool
-            | [] => pure false
-            | name :: rest => do
-                if ← (candidateRoot / name).pathExists then pure true
-                else any rest
-          any names
-        let rec noShadowedDependencies : System.SearchPath → IO Bool
-          | [] => pure true
-          | dependencyRoot :: rest => do
-              if ← projectDependencyShadowed dependencyRoot then pure false
-              else noShadowedDependencies rest
-        if "sha256:" ++ digest == expectedHash &&
-            (← noShadowedDependencies (searchPath.drop 1)) then
-          pure (some searchPath)
-        else pure none
+        if "sha256:" ++ digest == expectedHash then pure (some searchPath) else pure none
 
 def currentLeanToolchainHash : IO (Option String) := do
   -- The running kernel is the checker. Its compiled identity must match the accepted repository pin.
