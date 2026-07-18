@@ -44,6 +44,11 @@ private def arithmetic : EffectEnv :=
 private def usageEnv : EffectEnv :=
   { primitive := fun name => if name == "consume" then some { input := [.many], output := [] } else none }
 
+private def wideEnv : EffectEnv :=
+  { primitive := fun name => if name == "wide" then
+      some { input := [.many, .many, .many, .many, .many, .many], output := [.many] }
+    else none }
+
 private def expectShapes (word : WordDefinition) (expected : List String) : IO Unit :=
   match erase arithmetic word.effect word.body with
   | .ok result =>
@@ -112,6 +117,23 @@ def main : IO Unit := do
       if quotation.childSpans.length == 3 then pure () else fail "quotation child spans were lost"
   | .ok result => fail s!"unexpected inferred quotation: {repr result.program}"
   | .error error => fail s!"quotation inference failed: {repr error}"
+
+  -- The exact Except.ok shadowing probe: once the innermost `a` is consumed,
+  -- resolution must fail instead of falling through to the outer `a`.
+  let exhaustedShadow ← parsed ": exhausted-shadow ( a:Int^many -- ) locals { a } { locals { a } { a } a } ;"
+  match erase arithmetic exhaustedShadow.effect exhaustedShadow.body with
+  | .error (.unboundLocal name _) => if name == "a" then pure () else fail "wrong exhausted-shadow name"
+  | .error error => fail s!"wrong exhausted-shadow error: {repr error}"
+  | .ok result => fail s!"exhausted shadow incorrectly succeeded: {repr result}"
+
+  -- Quotation inference must widen from the body shape to the six inputs
+  -- required by this single primitive.
+  let wide ← parsed ": wide ( -- ) [ prim wide ] ;"
+  match erase wideEnv wide.effect wide.body with
+  | .ok { program := [quotation], .. } =>
+      if shapes [quotation] == ["[prim:wide]"] then pure () else fail "wide quotation shape changed"
+  | .ok result => fail s!"unexpected wide quotation: {repr result.program}"
+  | .error error => fail s!"wide quotation inference failed: {repr error}"
 
   let fixtures := [add, deepFocus, repeated, shadow, inferred]
   if !fixtures.all (fun word => sameResult (erase arithmetic word.effect word.body)
@@ -182,4 +204,14 @@ def main : IO Unit := do
   | .ok result => if result.warnings.any (fun warning => warning.code == "LOCAL_DEPTH") then pure () else fail "missing LOCAL_DEPTH warning"
   | .error error => fail s!"depth lint unexpectedly failed: {repr error}"
 
+  let nestedDepth ← parsed ": nested-depth ( -- ) [ locals { a b c d e } { a b c d e } ] ;"
+  match erase arithmetic nestedDepth.effect nestedDepth.body with
+  | .ok result =>
+      if result.warnings.any (fun warning => warning.code == "LOCAL_DEPTH") then pure ()
+      else fail "missing nested LOCAL_DEPTH warning"
+  | .error error => fail s!"nested depth lint unexpectedly failed: {repr error}"
+
   IO.println "erasure tests passed"
+
+#print axioms Firth.Elaborator.erase_sound_under
+#print axioms Firth.Elaborator.erase_sound
