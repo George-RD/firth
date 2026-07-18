@@ -155,4 +155,3 @@ fn encode_image(image: &Image) -> Vec<u8> {
     bytes.extend(&image.image_digest);
     bytes
 }
-

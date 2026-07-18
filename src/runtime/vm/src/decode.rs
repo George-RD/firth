@@ -350,4 +350,3 @@ pub fn execute_diagnostic_with_stack_budget(
         Err(error) => diagnostic_trap(error, state),
     }
 }
-

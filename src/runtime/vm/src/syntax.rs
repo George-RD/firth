@@ -279,4 +279,3 @@ pub fn smoke_image() -> Vec<u8> {
 fn is_zero_digest(digest: &[u8]) -> bool {
     digest.iter().all(|byte| *byte == 0)
 }
-

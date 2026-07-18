@@ -429,4 +429,3 @@ impl PrimitiveRegistry {
             .map(|(_, usage)| *usage)
     }
 }
-

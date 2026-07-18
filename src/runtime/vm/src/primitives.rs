@@ -126,4 +126,3 @@ pub fn decode_fixture_line(line: &str) -> Result<FixtureCase, VmError> {
         target_cost: fields[8].parse().map_err(|_| VmError::InvalidLeb128)?,
     })
 }
-
