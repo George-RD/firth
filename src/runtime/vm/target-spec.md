@@ -223,6 +223,8 @@ Image {
   image_version: u64,
   gamma_version: u64,
   words: Name -> WordEntry,
+  dictionary_digest: Digest,
+  image_digest: Digest,
 }
 WordEntry {
   name: Name,
@@ -318,6 +320,29 @@ versioned canonical observation bytes. Trace records are vectors of
 canonical_stack, canonical_frames, outcome)` records. This fixes
 cross-implementation identity while leaving Rust's in-memory layout
 unconstrained.
+
+For the bootstrap decoder, `body_digest` is SHA-256 of the canonical encoded
+`Code[]` vector, including instruction operands, nested quotation code,
+capture bitmaps, and capture values. The two evidence digests name evidence
+bytes owned by the elaborator and are not carried in this image wire format;
+the bootstrap therefore rejects all-zero evidence digests but cannot
+recompute or authenticate their external payloads. Full evidence binding is
+the responsibility of the verified patch/elaborator boundary. The bootstrap
+smoke image uses SHA-256 of the empty evidence payload for both evidence
+slots. This is an explicit scope boundary, not a placeholder digest.
+
+`dictionary_digest` is SHA-256 of the canonical word vector, including each
+word's name, erased type, canonical code, three word digests, and generation.
+`image_digest` is SHA-256 of the canonical tuple
+`(format_version,image_version,gamma_version,dictionary_digest)`. Both image
+digests follow the word vector in the wire format and are checked before an
+image is accepted or executed.
+
+The bootstrap decoder preserves `DUP` and `DROP` as canonical opcodes so
+images remain forward-compatible, but its smoke executor rejects either with
+`UnsupportedOperation`. Usage-aware values and exact linearity enforcement
+belong to the kernel-execution todo; no bootstrap test treats `DUP` or
+`DROP` as a successful linear operation.
 
 The canonical erased `WordType` string grammar is the following compact form;
 it contains no whitespace:

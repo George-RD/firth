@@ -82,6 +82,8 @@ pub struct Image {
     pub image_version: u64,
     pub gamma_version: u64,
     pub words: Vec<WordEntry>,
+    pub dictionary_digest: Vec<u8>,
+    pub image_digest: Vec<u8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -104,6 +106,7 @@ pub enum VmError {
     InvalidPrimitiveTag,
     InvalidOpcode(u8),
     InvalidDigestLength,
+    InvalidDigest,
     InvalidCaptureBitmap,
     InvalidCaptureIndex(u64),
     FuelExhausted,
@@ -139,6 +142,19 @@ pub fn decode(bytes: &[u8]) -> Result<Image, VmError> {
             });
         }
     }
+    let dictionary_digest = reader.digest()?;
+    let image_digest = reader.digest()?;
+    if dictionary_digest != sha256(&canonical_dictionary(&words))
+        || image_digest
+            != sha256(&canonical_image_identity(
+                format_version,
+                image_version,
+                gamma_version,
+                &dictionary_digest,
+            ))
+    {
+        return Err(VmError::InvalidDigest);
+    }
     if !reader.remaining().is_empty() {
         return Err(VmError::TrailingBytes);
     }
@@ -147,6 +163,8 @@ pub fn decode(bytes: &[u8]) -> Result<Image, VmError> {
         image_version,
         gamma_version,
         words,
+        dictionary_digest,
+        image_digest,
     })
 }
 
@@ -163,6 +181,12 @@ fn decode_word(reader: &mut Reader<'_>) -> Result<WordEntry, VmError> {
     let body_digest = reader.digest()?;
     let kernel_evidence_digest = reader.digest()?;
     let refinement_evidence_digest = reader.digest()?;
+    if body_digest != sha256(&canonical_code(&code))
+        || is_zero_digest(&kernel_evidence_digest)
+        || is_zero_digest(&refinement_evidence_digest)
+    {
+        return Err(VmError::InvalidDigest);
+    }
     let generation = reader.unsigned()?;
     Ok(WordEntry {
         name,
@@ -299,6 +323,7 @@ pub fn execute(image: &Image) -> Result<Vec<Value>, VmError> {
 }
 
 pub fn execute_with_fuel(image: &Image, fuel: u64) -> Result<Vec<Value>, VmError> {
+    validate_image(image)?;
     let word = image
         .words
         .iter()
@@ -307,7 +332,7 @@ pub fn execute_with_fuel(image: &Image, fuel: u64) -> Result<Vec<Value>, VmError
     let mut stack = Vec::new();
     let mut fuel = fuel;
     execute_frames(
-        vec![Frame::new(word.code.clone(), None)],
+        vec![Frame::new(word.code.clone())],
         image,
         &mut stack,
         &mut fuel,
@@ -318,16 +343,11 @@ pub fn execute_with_fuel(image: &Image, fuel: u64) -> Result<Vec<Value>, VmError
 struct Frame {
     code: Vec<Instruction>,
     position: usize,
-    captures: Option<Quotation>,
 }
 
 impl Frame {
-    fn new(code: Vec<Instruction>, captures: Option<Quotation>) -> Self {
-        Self {
-            code,
-            position: 0,
-            captures,
-        }
+    fn new(code: Vec<Instruction>) -> Self {
+        Self { code, position: 0 }
     }
 }
 
@@ -361,36 +381,26 @@ fn execute_frames(
                 _ => return Err(VmError::InvalidLiteralEncoding),
             },
             Op::PushQuote => match instruction.operand.as_ref() {
-                Some(Operand::Quote(quotation)) => stack.push(Value::Quotation(quotation.clone())),
-                _ => return Err(VmError::StackFault),
-            },
-            Op::PushCapture => match instruction.operand.as_ref() {
-                Some(Operand::Capture(index)) => {
-                    let index = usize::try_from(*index)
-                        .map_err(|_| VmError::InvalidCaptureIndex(*index))?;
-                    let quotation = frames
-                        .last_mut()
-                        .and_then(|frame| frame.captures.as_mut())
-                        .ok_or(VmError::StackFault)?;
-                    let value = quotation
-                        .captures
-                        .get(index)
-                        .ok_or(VmError::InvalidCaptureIndex(index as u64))?;
-                    if quotation.consumed.get(index).copied().unwrap_or(true) {
-                        return Err(VmError::StackFault);
-                    }
-                    stack.push(value.clone());
-                    *quotation
-                        .consumed
-                        .get_mut(index)
-                        .ok_or(VmError::StackFault)? = true;
+                Some(Operand::Quote(quotation)) if !contains_captures(quotation) => {
+                    stack.push(Value::Quotation(quotation.clone()))
+                }
+                Some(Operand::Quote(_)) => {
+                    return Err(VmError::UnsupportedOperation(Op::PushQuote));
                 }
                 _ => return Err(VmError::StackFault),
             },
-            Op::Dup => stack.push(stack.last().cloned().ok_or(VmError::StackFault)?),
-            Op::Drop => {
-                stack.pop().ok_or(VmError::StackFault)?;
-            }
+            Op::PushCapture => match instruction.operand.as_ref() {
+                Some(Operand::Capture(_)) => {
+                    return Err(VmError::UnsupportedOperation(Op::PushCapture));
+                }
+                _ => return Err(VmError::StackFault),
+            },
+            /*
+             * Capture-bearing quotations are outside the bootstrap executor:
+             * cloning them would be an implicit copy of a possibly linear
+             * value. Kernel execution will add usage-aware ownership.
+             */
+            Op::Dup | Op::Drop => return Err(VmError::UnsupportedOperation(instruction.op)),
             Op::Swap => {
                 let length = stack.len();
                 if length < 2 {
@@ -405,7 +415,7 @@ fn execute_frames(
                         .iter()
                         .find(|word| word.name == *name)
                         .ok_or_else(|| VmError::UnknownWord(name.clone()))?;
-                    frames.push(Frame::new(word.code.clone(), None));
+                    frames.push(Frame::new(word.code.clone()));
                 }
                 _ => return Err(VmError::StackFault),
             },
@@ -413,12 +423,198 @@ fn execute_frames(
                 let Value::Quotation(quotation) = stack.pop().ok_or(VmError::StackFault)? else {
                     return Err(VmError::StackFault);
                 };
-                frames.push(Frame::new(quotation.code.clone(), Some(quotation)));
+                if contains_captures(&quotation) {
+                    return Err(VmError::UnsupportedOperation(Op::Call));
+                }
+                frames.push(Frame::new(quotation.code.clone()));
             }
             operation => return Err(VmError::UnsupportedOperation(operation)),
         }
     }
     Ok(())
+}
+
+fn validate_image(image: &Image) -> Result<(), VmError> {
+    if image.format_version != FORMAT_VERSION || image.gamma_version != GAMMA_VERSION {
+        return Err(VmError::InvalidDigest);
+    }
+    if image.dictionary_digest.len() != DIGEST_BYTES || image.image_digest.len() != DIGEST_BYTES {
+        return Err(VmError::InvalidDigestLength);
+    }
+    for pair in image.words.windows(2) {
+        if pair[0].name.as_bytes() >= pair[1].name.as_bytes() {
+            return Err(if pair[0].name == pair[1].name {
+                VmError::DuplicateWord
+            } else {
+                VmError::UnsortedWords
+            });
+        }
+    }
+    for word in &image.words {
+        if !is_canonical_identifier(word.name.as_bytes())
+            || !is_canonical_word_type(&word.erased_word_type)
+        {
+            return Err(if !is_canonical_identifier(word.name.as_bytes()) {
+                VmError::InvalidIdentifier
+            } else {
+                VmError::InvalidWordType
+            });
+        }
+        validate_code_structure(&word.code, 0)?;
+        validate_bootstrap_code(&word.code, 0)?;
+        if word.body_digest.len() != DIGEST_BYTES
+            || word.kernel_evidence_digest.len() != DIGEST_BYTES
+            || word.refinement_evidence_digest.len() != DIGEST_BYTES
+        {
+            return Err(VmError::InvalidDigestLength);
+        }
+        if word.body_digest != sha256(&canonical_code(&word.code))
+            || is_zero_digest(&word.kernel_evidence_digest)
+            || is_zero_digest(&word.refinement_evidence_digest)
+        {
+            return Err(VmError::InvalidDigest);
+        }
+    }
+    if image.dictionary_digest != sha256(&canonical_dictionary(&image.words))
+        || image.image_digest
+            != sha256(&canonical_image_identity(
+                image.format_version,
+                image.image_version,
+                image.gamma_version,
+                &image.dictionary_digest,
+            ))
+    {
+        return Err(VmError::InvalidDigest);
+    }
+    Ok(())
+}
+
+fn validate_code_structure(code: &[Instruction], depth: usize) -> Result<(), VmError> {
+    if depth > MAX_NESTING {
+        return Err(VmError::NestingLimit);
+    }
+    for instruction in code {
+        match instruction.op {
+            Op::PushLiteral => match instruction.operand.as_ref() {
+                Some(Operand::Literal(value)) if is_literal(value) => {
+                    validate_value_structure(value, depth)?;
+                }
+                _ => return Err(VmError::InvalidLiteralEncoding),
+            },
+            Op::PushQuote => match instruction.operand.as_ref() {
+                Some(Operand::Quote(quotation)) => {
+                    validate_bootstrap_quotation(quotation, depth + 1)?;
+                    validate_code_structure(&quotation.code, depth + 1)?;
+                }
+                _ => return Err(VmError::StackFault),
+            },
+            Op::PushCapture => match instruction.operand.as_ref() {
+                Some(Operand::Capture(_)) => {}
+                _ => return Err(VmError::StackFault),
+            },
+            Op::CallWord => match instruction.operand.as_ref() {
+                Some(Operand::Word(name)) if is_canonical_identifier(name.as_bytes()) => {}
+                _ => return Err(VmError::InvalidIdentifier),
+            },
+            Op::Prim => match instruction.operand.as_ref() {
+                Some(Operand::Primitive(_)) => {}
+                _ => return Err(VmError::InvalidPrimitiveTag),
+            },
+            Op::Dup
+            | Op::Drop
+            | Op::Swap
+            | Op::Call
+            | Op::Dip
+            | Op::Compose
+            | Op::Quote
+            | Op::If
+                if instruction.operand.is_some() =>
+            {
+                return Err(VmError::StackFault);
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+fn validate_value_structure(value: &Value, depth: usize) -> Result<(), VmError> {
+    if let Value::Quotation(quotation) = value {
+        validate_bootstrap_quotation(quotation, depth + 1)?;
+        validate_code_structure(&quotation.code, depth + 1)?;
+    }
+    Ok(())
+}
+
+fn validate_bootstrap_code(code: &[Instruction], depth: usize) -> Result<(), VmError> {
+    if depth > MAX_NESTING {
+        return Err(VmError::NestingLimit);
+    }
+    for instruction in code {
+        match instruction.op {
+            Op::Dup | Op::Drop => {
+                return Err(VmError::UnsupportedOperation(instruction.op));
+            }
+            Op::PushCapture => {
+                return Err(VmError::UnsupportedOperation(Op::PushCapture));
+            }
+            _ => {}
+        }
+        match instruction.operand.as_ref() {
+            Some(Operand::Quote(quotation)) => {
+                validate_bootstrap_quotation(quotation, depth + 1)?;
+                if contains_captures(quotation) {
+                    return Err(VmError::UnsupportedOperation(Op::PushQuote));
+                }
+                validate_bootstrap_code(&quotation.code, depth + 1)?;
+            }
+            Some(Operand::Literal(value)) => validate_bootstrap_value(value, depth + 1)?,
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+fn validate_bootstrap_quotation(quotation: &Quotation, depth: usize) -> Result<(), VmError> {
+    if depth > MAX_NESTING {
+        return Err(VmError::NestingLimit);
+    }
+    if quotation.consumed.len() != quotation.captures.len() {
+        return Err(VmError::InvalidCaptureBitmap);
+    }
+    for capture in &quotation.captures {
+        validate_bootstrap_value(capture, depth + 1)?;
+    }
+    Ok(())
+}
+
+fn validate_bootstrap_value(value: &Value, depth: usize) -> Result<(), VmError> {
+    if let Value::Quotation(quotation) = value {
+        validate_bootstrap_quotation(quotation, depth + 1)?;
+        if contains_captures(quotation) {
+            return Err(VmError::UnsupportedOperation(Op::PushLiteral));
+        }
+        validate_bootstrap_code(&quotation.code, depth + 1)?;
+    }
+    Ok(())
+}
+
+fn contains_captures(quotation: &Quotation) -> bool {
+    !quotation.captures.is_empty()
+        || quotation.captures.iter().any(value_contains_captures)
+        || quotation.code.iter().any(instruction_contains_captures)
+}
+
+fn instruction_contains_captures(instruction: &Instruction) -> bool {
+    match instruction.operand.as_ref() {
+        Some(Operand::Quote(quotation)) => contains_captures(quotation),
+        Some(Operand::Literal(value)) => value_contains_captures(value),
+        _ => false,
+    }
+}
+
+fn value_contains_captures(value: &Value) -> bool {
+    matches!(value, Value::Quotation(quotation) if contains_captures(quotation))
 }
 
 fn is_literal(value: &Value) -> bool {
@@ -454,7 +650,7 @@ impl<'a> WordTypeParser<'a> {
         if self.consume(b"forall") {
             let mut count = 0;
             loop {
-                let row = match self.identifier() {
+                let row = match self.row_name() {
                     Some(row) => row,
                     None => return false,
                 };
@@ -491,7 +687,7 @@ impl<'a> WordTypeParser<'a> {
             if self.peek_byte() == Some(b'[') {
                 return false;
             }
-            let item = match self.identifier() {
+            let item = match self.identifier().or_else(|| self.row_name()) {
                 Some(item) => item,
                 None => return false,
             };
@@ -590,6 +786,32 @@ impl<'a> WordTypeParser<'a> {
         (self.position > start).then(|| &self.bytes[start..self.position])
     }
 
+    fn row_name(&mut self) -> Option<&'a [u8]> {
+        let start = self.position;
+        let first = *self.bytes.get(self.position)?;
+        let width = if first < 0x80 {
+            1
+        } else if first & 0xe0 == 0xc0 {
+            2
+        } else if first & 0xf0 == 0xe0 {
+            3
+        } else if first & 0xf8 == 0xf0 {
+            4
+        } else {
+            return None;
+        };
+        let end = self.position.checked_add(width)?;
+        let value = self.bytes.get(start..end)?;
+        let scalar = core::str::from_utf8(value).ok()?.chars().next()?;
+        if scalar.is_whitespace()
+            || matches!(scalar, ',' | ';' | ':' | '^' | '(' | ')' | '[' | ']' | '-')
+        {
+            return None;
+        }
+        self.position = end;
+        Some(value)
+    }
+
     fn peek_byte(&self) -> Option<u8> {
         self.bytes.get(self.position).copied()
     }
@@ -610,9 +832,13 @@ impl<'a> WordTypeParser<'a> {
 }
 
 fn is_row_name(value: &[u8]) -> bool {
-    core::str::from_utf8(value)
-        .map(|value| value.chars().count() == 1)
-        .unwrap_or(false)
+    let mut parser = WordTypeParser {
+        bytes: value,
+        position: 0,
+        rows: Vec::new(),
+        quotation_depth: 0,
+    };
+    parser.row_name().is_some() && parser.position == value.len()
 }
 
 fn is_canonical_identifier(value: &[u8]) -> bool {
@@ -638,9 +864,226 @@ pub fn smoke_image() -> Vec<u8> {
     bytes.push(0);
     bytes.push(0);
     put_unsigned(&mut bytes, 42 << 1);
-    bytes.extend([0; DIGEST_BYTES * 3]);
+    let body_digest = sha256(&canonical_code(&[Instruction {
+        op: Op::PushLiteral,
+        operand: Some(Operand::Literal(Value::Int(42))),
+    }]));
+    bytes.extend(body_digest);
+    bytes.extend(sha256(&[]));
+    bytes.extend(sha256(&[]));
     put_unsigned(&mut bytes, 1);
+    let word = WordEntry {
+        name: String::from("main"),
+        erased_word_type: String::from("(--)"),
+        code: vec![Instruction {
+            op: Op::PushLiteral,
+            operand: Some(Operand::Literal(Value::Int(42))),
+        }],
+        body_digest: sha256(&canonical_code(&[Instruction {
+            op: Op::PushLiteral,
+            operand: Some(Operand::Literal(Value::Int(42))),
+        }]))
+        .to_vec(),
+        kernel_evidence_digest: sha256(&[]).to_vec(),
+        refinement_evidence_digest: sha256(&[]).to_vec(),
+        generation: 1,
+    };
+    let dictionary_digest = sha256(&canonical_dictionary(&[word]));
+    bytes.extend(dictionary_digest);
+    bytes.extend(sha256(&canonical_image_identity(
+        FORMAT_VERSION,
+        1,
+        GAMMA_VERSION,
+        &dictionary_digest,
+    )));
     bytes
+}
+
+fn is_zero_digest(digest: &[u8]) -> bool {
+    digest.iter().all(|byte| *byte == 0)
+}
+
+fn canonical_code(code: &[Instruction]) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    put_unsigned(&mut bytes, code.len() as u64);
+    for instruction in code {
+        bytes.push(match instruction.op {
+            Op::PushLiteral => 0,
+            Op::PushQuote => 1,
+            Op::PushCapture => 2,
+            Op::Dup => 3,
+            Op::Drop => 4,
+            Op::Swap => 5,
+            Op::Call => 6,
+            Op::Dip => 7,
+            Op::Compose => 8,
+            Op::Quote => 9,
+            Op::If => 10,
+            Op::CallWord => 11,
+            Op::Prim => 12,
+        });
+        match instruction.operand.as_ref() {
+            Some(Operand::Literal(value)) => canonical_value(&mut bytes, value),
+            Some(Operand::Quote(quotation)) => {
+                bytes.extend(canonical_code(&quotation.code));
+                put_unsigned(&mut bytes, quotation.captures.len() as u64);
+                let mut bitmap = vec![0; quotation.captures.len().div_ceil(8)];
+                for (index, consumed) in quotation.consumed.iter().copied().enumerate() {
+                    if consumed {
+                        bitmap[index / 8] |= 1 << (index % 8);
+                    }
+                }
+                bytes.extend(bitmap);
+                for capture in &quotation.captures {
+                    canonical_value(&mut bytes, capture);
+                }
+            }
+            Some(Operand::Capture(index)) => put_unsigned(&mut bytes, *index),
+            Some(Operand::Word(name)) | Some(Operand::Primitive(name)) => {
+                put_string(&mut bytes, name)
+            }
+            None => {}
+        }
+    }
+    bytes
+}
+
+fn canonical_value(bytes: &mut Vec<u8>, value: &Value) {
+    match value {
+        Value::Int(value) => {
+            bytes.push(0);
+            put_unsigned(bytes, ((*value as u64) << 1) ^ ((*value >> 63) as u64));
+        }
+        Value::Bool(value) => {
+            bytes.extend([1, u8::from(*value)]);
+        }
+        Value::Bytes(value) => {
+            bytes.push(2);
+            put_string_bytes(bytes, value);
+        }
+        Value::Quotation(quotation) => {
+            bytes.push(3);
+            bytes.extend(canonical_code(&quotation.code));
+            put_unsigned(bytes, quotation.captures.len() as u64);
+            let mut bitmap = vec![0; quotation.captures.len().div_ceil(8)];
+            for (index, consumed) in quotation.consumed.iter().copied().enumerate() {
+                if consumed {
+                    bitmap[index / 8] |= 1 << (index % 8);
+                }
+            }
+            bytes.extend(bitmap);
+            for capture in &quotation.captures {
+                canonical_value(bytes, capture);
+            }
+        }
+        Value::PrimitiveValue { tag, bytes: value } => {
+            bytes.push(4);
+            put_unsigned(bytes, *tag);
+            put_string_bytes(bytes, value);
+        }
+    }
+}
+
+fn canonical_dictionary(words: &[WordEntry]) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    put_unsigned(&mut bytes, words.len() as u64);
+    for word in words {
+        put_string(&mut bytes, &word.name);
+        put_string(&mut bytes, &word.erased_word_type);
+        bytes.extend(canonical_code(&word.code));
+        bytes.extend(&word.body_digest);
+        bytes.extend(&word.kernel_evidence_digest);
+        bytes.extend(&word.refinement_evidence_digest);
+        put_unsigned(&mut bytes, word.generation);
+    }
+    bytes
+}
+
+fn canonical_image_identity(
+    format_version: u16,
+    image_version: u64,
+    gamma_version: u64,
+    dictionary_digest: &[u8],
+) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    put_unsigned(&mut bytes, u64::from(format_version));
+    put_unsigned(&mut bytes, image_version);
+    put_unsigned(&mut bytes, gamma_version);
+    bytes.extend(dictionary_digest);
+    bytes
+}
+
+fn put_string_bytes(bytes: &mut Vec<u8>, value: &[u8]) {
+    put_unsigned(bytes, value.len() as u64);
+    bytes.extend(value);
+}
+
+// SHA-256, specified by target-spec.md §7 and kept dependency-free for no_std.
+fn sha256(input: &[u8]) -> [u8; DIGEST_BYTES] {
+    const K: [u32; 64] = [
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4,
+        0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe,
+        0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f,
+        0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+        0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc,
+        0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b,
+        0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116,
+        0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7,
+        0xc67178f2,
+    ];
+    let mut h: [u32; 8] = [
+        0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab,
+        0x5be0cd19,
+    ];
+    let bit_len = (input.len() as u64).wrapping_mul(8);
+    let padded_len = (input.len() + 9).div_ceil(64) * 64;
+    let mut padded = vec![0; padded_len];
+    padded[..input.len()].copy_from_slice(input);
+    padded[input.len()] = 0x80;
+    padded[padded_len - 8..].copy_from_slice(&bit_len.to_be_bytes());
+    for chunk in padded.chunks_exact(64) {
+        let mut w = [0u32; 64];
+        for i in 0..16 {
+            w[i] = u32::from_be_bytes([
+                chunk[i * 4],
+                chunk[i * 4 + 1],
+                chunk[i * 4 + 2],
+                chunk[i * 4 + 3],
+            ]);
+        }
+        for i in 16..64 {
+            let s0 = w[i - 15].rotate_right(7) ^ w[i - 15].rotate_right(18) ^ (w[i - 15] >> 3);
+            let s1 = w[i - 2].rotate_right(17) ^ w[i - 2].rotate_right(19) ^ (w[i - 2] >> 10);
+            w[i] = w[i - 16]
+                .wrapping_add(s0)
+                .wrapping_add(w[i - 7])
+                .wrapping_add(s1);
+        }
+        let (mut a, mut b, mut c, mut d, mut e, mut f, mut g, mut hh) =
+            (h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7]);
+        for i in 0..64 {
+            let s1 = e.rotate_right(6) ^ e.rotate_right(11) ^ e.rotate_right(25);
+            let ch = (e & f) ^ ((!e) & g);
+            let t1 = hh
+                .wrapping_add(s1)
+                .wrapping_add(ch)
+                .wrapping_add(K[i])
+                .wrapping_add(w[i]);
+            let s0 = a.rotate_right(2) ^ a.rotate_right(13) ^ a.rotate_right(22);
+            let maj = (a & b) ^ (a & c) ^ (b & c);
+            let t2 = s0.wrapping_add(maj);
+            (hh, g, f, e, d, c, b, a) = (g, f, e, d.wrapping_add(t1), c, b, a, t1.wrapping_add(t2));
+        }
+        for (value, add) in h.iter_mut().zip([a, b, c, d, e, f, g, hh]) {
+            *value = (*value).wrapping_add(add);
+        }
+    }
+    let mut result = [0; DIGEST_BYTES];
+    for (i, value) in h.into_iter().enumerate() {
+        result[i * 4..i * 4 + 4].copy_from_slice(&value.to_be_bytes());
+    }
+    result
 }
 
 fn put_unsigned(bytes: &mut Vec<u8>, mut value: u64) {
@@ -807,20 +1250,104 @@ mod tests {
         put_string(&mut bytes, "main");
         put_string(&mut bytes, "(--)");
         bytes.extend(code);
-        bytes.extend([1; DIGEST_BYTES]);
-        bytes.extend([2; DIGEST_BYTES]);
-        bytes.extend([3; DIGEST_BYTES]);
+        bytes.extend(sha256(&canonical_code(&[
+            Instruction {
+                op: Op::PushLiteral,
+                operand: Some(Operand::Literal(Value::Int(i64::MAX))),
+            },
+            Instruction {
+                op: Op::PushQuote,
+                operand: Some(Operand::Quote(Quotation {
+                    code: vec![instruction(Op::PushCapture, Some(Operand::Capture(0)))],
+                    captures: vec![Value::Int(7)],
+                    consumed: vec![true],
+                })),
+            },
+            Instruction {
+                op: Op::CallWord,
+                operand: Some(Operand::Word(String::from("other"))),
+            },
+            Instruction {
+                op: Op::Prim,
+                operand: Some(Operand::Primitive(String::from("p"))),
+            },
+            instruction(Op::Dup, None),
+            instruction(Op::Drop, None),
+            instruction(Op::Swap, None),
+            instruction(Op::Call, None),
+            instruction(Op::Dip, None),
+            instruction(Op::Compose, None),
+            instruction(Op::Quote, None),
+            instruction(Op::If, None),
+        ])));
+        bytes.extend(sha256(&[]));
+        bytes.extend(sha256(&[1]));
         put_unsigned(&mut bytes, u64::MAX);
         put_string(&mut bytes, "other");
         put_string(&mut bytes, "(--)");
         put_unsigned(&mut bytes, 0);
-        bytes.extend([4; DIGEST_BYTES * 3]);
+        bytes.extend(sha256(&canonical_code(&[])));
+        bytes.extend(sha256(&[]));
+        bytes.extend(sha256(&[1]));
         put_unsigned(&mut bytes, 9);
+        let first_code = vec![
+            instruction(
+                Op::PushLiteral,
+                Some(Operand::Literal(Value::Int(i64::MAX))),
+            ),
+            instruction(
+                Op::PushQuote,
+                Some(Operand::Quote(Quotation {
+                    code: vec![instruction(Op::PushCapture, Some(Operand::Capture(0)))],
+                    captures: vec![Value::Int(7)],
+                    consumed: vec![true],
+                })),
+            ),
+            instruction(Op::CallWord, Some(Operand::Word(String::from("other")))),
+            instruction(Op::Prim, Some(Operand::Primitive(String::from("p")))),
+            instruction(Op::Dup, None),
+            instruction(Op::Drop, None),
+            instruction(Op::Swap, None),
+            instruction(Op::Call, None),
+            instruction(Op::Dip, None),
+            instruction(Op::Compose, None),
+            instruction(Op::Quote, None),
+            instruction(Op::If, None),
+        ];
+        let first = WordEntry {
+            name: String::from("main"),
+            erased_word_type: String::from("(--)"),
+            code: first_code.clone(),
+            body_digest: sha256(&canonical_code(&first_code)).to_vec(),
+            kernel_evidence_digest: sha256(&[]).to_vec(),
+            refinement_evidence_digest: sha256(&[1]).to_vec(),
+            generation: u64::MAX,
+        };
+        let second = WordEntry {
+            name: String::from("other"),
+            erased_word_type: String::from("(--)"),
+            code: vec![],
+            body_digest: sha256(&canonical_code(&[])).to_vec(),
+            kernel_evidence_digest: sha256(&[]).to_vec(),
+            refinement_evidence_digest: sha256(&[1]).to_vec(),
+            generation: 9,
+        };
+        let dictionary_digest = sha256(&canonical_dictionary(&[first, second]));
+        bytes.extend(dictionary_digest);
+        bytes.extend(sha256(&canonical_image_identity(
+            1,
+            u64::MAX,
+            GAMMA_VERSION,
+            &dictionary_digest,
+        )));
 
         let image = decode(&bytes).expect("canonical operands decode");
         assert_eq!(image.image_version, u64::MAX);
         assert_eq!(image.words[0].generation, u64::MAX);
-        assert_eq!(image.words[0].body_digest, vec![1; DIGEST_BYTES]);
+        assert_eq!(
+            image.words[0].body_digest,
+            sha256(&canonical_code(&image.words[0].code))
+        );
         assert_eq!(image.words[1].name, "other");
         assert_eq!(
             image.words[0].code[0].operand,
@@ -922,19 +1449,30 @@ mod tests {
         WordEntry {
             name: String::from(name),
             erased_word_type: String::from("(--)"),
+            body_digest: sha256(&canonical_code(&code)).to_vec(),
             code,
-            body_digest: vec![0; DIGEST_BYTES],
-            kernel_evidence_digest: vec![0; DIGEST_BYTES],
-            refinement_evidence_digest: vec![0; DIGEST_BYTES],
+            kernel_evidence_digest: sha256(&[]).to_vec(),
+            refinement_evidence_digest: sha256(&[]).to_vec(),
             generation: 0,
         }
     }
 
     fn test_image(words: Vec<WordEntry>) -> Image {
+        let mut words = words;
+        words.sort_by(|left, right| left.name.as_bytes().cmp(right.name.as_bytes()));
+        let dictionary_digest = sha256(&canonical_dictionary(&words)).to_vec();
         Image {
             format_version: FORMAT_VERSION,
             image_version: 1,
             gamma_version: GAMMA_VERSION,
+            image_digest: sha256(&canonical_image_identity(
+                FORMAT_VERSION,
+                1,
+                GAMMA_VERSION,
+                &dictionary_digest,
+            ))
+            .to_vec(),
+            dictionary_digest,
             words,
         }
     }
@@ -949,7 +1487,100 @@ mod tests {
             ],
         );
         let callee = word("drop_one", vec![instruction(Op::Drop, None)]);
-        assert_eq!(execute(&test_image(vec![main, callee])), Ok(vec![]));
+        assert_eq!(
+            execute(&test_image(vec![main, callee])),
+            Err(VmError::UnsupportedOperation(Op::Drop))
+        );
+    }
+
+    #[test]
+    fn bootstrap_rejects_dup_and_capture_copying_deterministically() {
+        let dup = word(
+            "main",
+            vec![
+                instruction(Op::PushLiteral, Some(Operand::Literal(Value::Int(1)))),
+                instruction(Op::Dup, None),
+            ],
+        );
+        assert_eq!(
+            execute(&test_image(vec![dup])),
+            Err(VmError::UnsupportedOperation(Op::Dup))
+        );
+
+        let capture = word(
+            "main",
+            vec![instruction(
+                Op::PushQuote,
+                Some(Operand::Quote(Quotation {
+                    code: vec![],
+                    captures: vec![Value::Int(1)],
+                    consumed: vec![false],
+                })),
+            )],
+        );
+        assert_eq!(
+            execute(&test_image(vec![capture])),
+            Err(VmError::UnsupportedOperation(Op::PushQuote))
+        );
+
+        let nested = word(
+            "main",
+            vec![instruction(
+                Op::PushQuote,
+                Some(Operand::Quote(Quotation {
+                    code: vec![instruction(
+                        Op::PushQuote,
+                        Some(Operand::Quote(Quotation {
+                            code: vec![],
+                            captures: vec![Value::Int(2)],
+                            consumed: vec![false],
+                        })),
+                    )],
+                    captures: vec![],
+                    consumed: vec![],
+                })),
+            )],
+        );
+        assert_eq!(
+            execute(&test_image(vec![nested])),
+            Err(VmError::UnsupportedOperation(Op::PushQuote))
+        );
+
+        let mut invalid_length = test_image(vec![word("main", vec![])]);
+        invalid_length.words[0].kernel_evidence_digest.pop();
+        assert_eq!(execute(&invalid_length), Err(VmError::InvalidDigestLength));
+
+        let literal_capture = word(
+            "main",
+            vec![instruction(
+                Op::PushLiteral,
+                Some(Operand::Literal(Value::Quotation(Quotation {
+                    code: vec![],
+                    captures: vec![Value::Int(3)],
+                    consumed: vec![false],
+                }))),
+            )],
+        );
+        assert_eq!(
+            execute(&test_image(vec![literal_capture])),
+            Err(VmError::InvalidLiteralEncoding)
+        );
+
+        let malformed_capture = word(
+            "main",
+            vec![instruction(
+                Op::PushQuote,
+                Some(Operand::Quote(Quotation {
+                    code: vec![],
+                    captures: vec![Value::Int(4)],
+                    consumed: vec![],
+                })),
+            )],
+        );
+        assert_eq!(
+            execute(&test_image(vec![malformed_capture])),
+            Err(VmError::InvalidCaptureBitmap)
+        );
     }
 
     #[test]
@@ -1099,6 +1730,53 @@ mod tests {
         assert!(decode(&encoded_call_image("_main", "callee")).is_ok());
     }
 
+    #[test]
+    fn row_names_follow_target_scalar_grammar() {
+        for valid in [
+            "(forallρ;ρ--ρ)",
+            "(forall1;1--1)",
+            "(forall!;!--!)",
+            "(forall@;@--@)",
+            "(forall😀;😀--😀)",
+        ] {
+            assert!(is_canonical_word_type(valid), "{valid}");
+        }
+        for invalid in [
+            "(forall;--)",
+            "(forall;ρ--ρ)",
+            "(forall12;12--12)",
+            "(forall ;--)",
+            "(forall\u{2003};--)",
+        ] {
+            assert!(!is_canonical_word_type(invalid), "{invalid}");
+        }
+    }
+
+    #[test]
+    fn bootstrap_rejects_zero_or_mismatched_digests() {
+        let mut bytes = smoke_image();
+        let digest_start = bytes.len() - (DIGEST_BYTES * 3 + 1);
+        bytes[digest_start] ^= 1;
+        assert_eq!(decode(&bytes), Err(VmError::InvalidDigest));
+
+        let mut bytes = smoke_image();
+        let evidence_start = bytes.len() - (DIGEST_BYTES * 2 + 1);
+        bytes[evidence_start..evidence_start + DIGEST_BYTES].fill(0);
+        assert_eq!(decode(&bytes), Err(VmError::InvalidDigest));
+    }
+
+    #[test]
+    fn sha256_matches_known_empty_vector() {
+        assert_eq!(
+            sha256(&[]),
+            [
+                0xe3, 0xb0, 0xc4, 0x42, 0x98, 0xfc, 0x1c, 0x14, 0x9a, 0xfb, 0xf4, 0xc8, 0x99, 0x6f,
+                0xb9, 0x24, 0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b, 0x93, 0x4c, 0xa4, 0x95, 0x99, 0x1b,
+                0x78, 0x52, 0xb8, 0x55,
+            ]
+        );
+    }
+
     fn encoded_call_image(word_name: &str, call_name: &str) -> Vec<u8> {
         let mut bytes = Vec::new();
         put_unsigned(&mut bytes, u64::from(FORMAT_VERSION));
@@ -1110,8 +1788,37 @@ mod tests {
         put_unsigned(&mut bytes, 1);
         bytes.push(11);
         put_string(&mut bytes, call_name);
-        bytes.extend([0; DIGEST_BYTES * 3]);
+        bytes.extend(sha256(&canonical_code(&[instruction(
+            Op::CallWord,
+            Some(Operand::Word(String::from(call_name))),
+        )])));
+        bytes.extend(sha256(&[]));
+        bytes.extend(sha256(&[1]));
         put_unsigned(&mut bytes, 0);
+        let word = WordEntry {
+            name: String::from(word_name),
+            erased_word_type: String::from("(--)"),
+            code: vec![instruction(
+                Op::CallWord,
+                Some(Operand::Word(String::from(call_name))),
+            )],
+            body_digest: sha256(&canonical_code(&[instruction(
+                Op::CallWord,
+                Some(Operand::Word(String::from(call_name))),
+            )]))
+            .to_vec(),
+            kernel_evidence_digest: sha256(&[]).to_vec(),
+            refinement_evidence_digest: sha256(&[1]).to_vec(),
+            generation: 0,
+        };
+        let dictionary_digest = sha256(&canonical_dictionary(&[word]));
+        bytes.extend(dictionary_digest);
+        bytes.extend(sha256(&canonical_image_identity(
+            FORMAT_VERSION,
+            1,
+            GAMMA_VERSION,
+            &dictionary_digest,
+        )));
         bytes
     }
 
