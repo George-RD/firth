@@ -353,15 +353,19 @@ def erase (env : EffectEnv) (effect : StackEffect) (body : List Item) : Except E
         then [{ code := "LOCAL_DEPTH", span := effect.span }] else []) ++
         (if longestStructuralRun program > 4 then [{ code := "STACK_JUGGLE", span := effect.span }] else []) })
 
-structure ErasureRun (env : EffectEnv) (effect : StackEffect) (body : List Item) where
-  result : ErasureResult
-  witness : erase env effect body = .ok result
-
 theorem erase_deterministic (env : EffectEnv) (effect : StackEffect) (body : List Item)
-    (first second : ErasureRun env effect body) :
-    first.result = second.result := by
-  have same : (Except.ok first.result : Except ErasureError ErasureResult) = .ok second.result :=
-    first.witness.symm.trans second.witness
-  injection same
+    {first second : ErasureResult}
+    (first_run : erase env effect body = .ok first)
+    (second_run : erase env effect body = .ok second) :
+    first = second := by
+  induction body with
+  | nil =>
+      have same : (Except.ok first : Except ErasureError ErasureResult) = .ok second :=
+        first_run.symm.trans second_run
+      injection same
+  | cons item rest ih =>
+      have same : (Except.ok first : Except ErasureError ErasureResult) = .ok second :=
+        first_run.symm.trans second_run
+      injection same
 
 end Firth.Elaborator
