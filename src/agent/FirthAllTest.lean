@@ -8,4 +8,5 @@ def main : IO Unit := do
   runSuite "firthParserTest"
   runSuite "firthErasureTest"
   runSuite "firthStackEffectTest"
+  runSuite "firthRefinementTest"
   runSuite "firthAgentDiagnosticTest"

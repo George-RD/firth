@@ -1,6 +1,7 @@
 import agent.Firth.Agent.ElaboratorDiagnostics
 import agent.Firth.Agent.Validation
 import agent.Firth.Agent.DiagnosticEnvelopeTest
+import elaborator.Firth.Refinement
 
 namespace Firth.Agent.Test
 
@@ -119,6 +120,42 @@ def runElaboratorDiagnosticTests : IO Unit := do
   match validate holeJson with
   | .ok envelope => expectEqual "typed-hole adapter kind" envelope.payloadKind "typed_hole"
   | .error error => fail s!"typed-hole adapter invalid: {error.code}"
+
+  let refinedStack : Firth.Elaborator.Refinement.RefinedStack := {
+    erased := intStack
+    refinements := {} }
+  let refinementContext : Firth.Elaborator.Refinement.ObligationContext := {
+    wordId := "math.increment"
+    bodyHash := "sha256:body"
+    erasedWordTypeHash := "sha256:word-type"
+    specHash := "sha256:spec"
+    normaliserVersion := "normaliser-v1"
+    vcGeneratorVersion := "vc-v1"
+    leanToolchainHash := "lean-toolchain"
+    proofModuleHash := "sha256:proof-module"
+    toolchainRevision := "firth-a"
+    source := { path := "main.fth", span := span 6 2 8 }
+    expectedStack := refinedStack
+    actualStack := refinedStack }
+  let refinementResult := Firth.Elaborator.Refinement.checkBodyRefinements
+    "request-refinement" {
+      context := refinementContext
+      precondition := {}
+      bodySemantics := {}
+      declaredPostcondition := { conjuncts := [.boolVariable "open"] } }
+  match refinementEnvelopes refinementResult with
+  | [refinementDiagnostic] =>
+      let emitted := encode refinementDiagnostic
+      expectValidCode "refinement path emission" "firth.refinement.not-decided" emitted
+      if emitted.contains "\"cause\":{\"kind\":\"refinement\"" &&
+          emitted.contains "\"obligation_id\":" &&
+          emitted.contains "\"kind\":\"body\",\"status\":\"deferred\"" &&
+          emitted.contains "\"expected_stack\":{\"encoding\":\"opaque\"" &&
+          emitted.contains "\"actual_stack\":{\"encoding\":\"opaque\"" &&
+          emitted.contains "\"group_id\":\"refinement(" then pure ()
+      else fail "refinement adapter omitted governed diagnostic fields"
+  | diagnostics =>
+      fail s!"refinement adapter fixture expected one diagnostic, got {diagnostics.length}"
 
   expectSortedFirst "diagnostic source sorting" "source-a"
     (parserEnvelope (contextWithSource "source-z" "z.fth") parseError)

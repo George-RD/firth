@@ -1,6 +1,6 @@
 name = "firth"
 version = "0.1.0"
-defaultTargets = ["firthTest", "firthParserTest", "firthErasureTest", "firthStackEffectTest", "firthAgentDiagnosticTest", "firthAllTest"]
+defaultTargets = ["firthTest", "firthParserTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthAgentDiagnosticTest", "firthAllTest"]
 testDriver = "firthAllTest"
 
 [[lean_lib]]
@@ -10,7 +10,7 @@ srcDir = "src/interpreter"
 [[lean_lib]]
 name = "FirthElaborator"
 srcDir = "src"
-roots = ["elaborator.Firth.Parser", "elaborator.Firth.Erasure", "elaborator.Firth.StackEffect", "elaborator.FirthElaborator"]
+roots = ["elaborator.Firth.Parser", "elaborator.Firth.Erasure", "elaborator.Firth.StackEffect", "smt.Firth.SmtBoundary", "elaborator.Firth.Refinement", "elaborator.FirthElaborator"]
 
 [[lean_lib]]
 name = "FirthAgent"
@@ -45,6 +45,11 @@ srcDir = "src"
 [[lean_exe]]
 name = "firthStackEffectTest"
 root = "elaborator.FirthStackEffectTest"
+srcDir = "src"
+
+[[lean_exe]]
+name = "firthRefinementTest"
+root = "elaborator.FirthRefinementTest"
 srcDir = "src"
 
 [[lean_exe]]
