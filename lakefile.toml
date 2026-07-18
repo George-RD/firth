@@ -7,7 +7,17 @@ testDriver = "firthTest"
 name = "Firth"
 srcDir = "src/interpreter"
 
+[[lean_lib]]
+name = "FirthElaborator"
+srcDir = "src"
+roots = ["elaborator.Firth.Parser", "elaborator.FirthElaborator"]
+
 [[lean_exe]]
 name = "firthTest"
 root = "FirthTest"
 srcDir = "src/interpreter"
+
+[[lean_exe]]
+name = "firthParserTest"
+root = "elaborator.FirthParserTest"
+srcDir = "src"
