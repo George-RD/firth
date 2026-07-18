@@ -2,6 +2,7 @@ import agent.Firth.Agent.DiagnosticEnvelope
 import elaborator.Firth.Parser
 import elaborator.Firth.Erasure
 import elaborator.Firth.StackEffect
+import elaborator.Firth.Refinement
 
 namespace Firth.Agent
 
@@ -180,6 +181,76 @@ def encodeStackEffectDiagnostic (context : EmissionContext)
     (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : String :=
   encode (stackEffectEnvelope context diagnostic)
 
+private def refinementPairs (values : List (String × String)) : Json :=
+  .mkObj (values.map fun (name, value) => (name, .str value))
+
+private def refinementData
+    (data : Firth.Elaborator.Refinement.OpaqueData) : Json :=
+  .mkObj [
+    ("encoding", .str data.encoding),
+    ("value", refinementPairs data.value)]
+
+private def refinementStack
+    (stack : Firth.Elaborator.Refinement.OpaqueStack) : Opaque := {
+  encoding := stack.encoding
+  value := .mkObj [("lean_repr", .str s!"{repr stack.value}")] }
+
+private def refinementStatus : Firth.Elaborator.Refinement.ObligationStatus → String
+  | .deferred => "deferred"
+  | .failed => "failed"
+
+private def refinementLocation
+    (location : Firth.Elaborator.Refinement.DiagnosticLocation) : Location :=
+  locationFromSpan (.path location.path) location.range
+
+private def refinementObligation
+    (obligation : Firth.Elaborator.Refinement.DiagnosticObligation) : Obligation := {
+  obligationId := obligation.obligationId
+  kind := obligation.kind.canonical
+  status := refinementStatus obligation.status
+  data := refinementData obligation.data }
+
+private def refinementEdit
+    (edit : Firth.Elaborator.Refinement.DiagnosticEdit) : Edit := {
+  location := refinementLocation edit.location
+  replacement := edit.replacement }
+
+private def refinementFix
+    (fix : Firth.Elaborator.Refinement.ProposedFix) : ProposedFix := {
+  fixId := fix.fixId
+  kind := fix.kind
+  titleKey := fix.titleKey
+  applicability := fix.applicability
+  edits := fix.edits.map refinementEdit }
+
+private def refinementRelated
+    (related : Firth.Elaborator.Refinement.RelatedDiagnostic) : Related := {
+  relation := related.relation
+  location := refinementLocation related.location
+  payloadId := related.payloadId }
+
+def refinementEnvelope
+    (diagnostic : Firth.Elaborator.Refinement.RefinementDiagnostic) : Envelope :=
+  .diagnostic diagnostic.payloadId diagnostic.requestId {
+    code := diagnostic.body.code
+    severity := diagnostic.body.severity
+    messageKey := diagnostic.body.messageKey
+    messageParams := refinementPairs diagnostic.body.messageParams
+    location := refinementLocation diagnostic.body.location
+    cause := {
+      kind := diagnostic.body.cause.kind
+      data := refinementData diagnostic.body.cause.data }
+    expectedStack := some (refinementStack diagnostic.body.expectedStack)
+    actualStack := some (refinementStack diagnostic.body.actualStack)
+    obligations := diagnostic.body.obligations.map refinementObligation
+    proposedFixes := diagnostic.body.proposedFixes.map refinementFix
+    related := diagnostic.body.related.map refinementRelated
+    groupId := some diagnostic.body.groupId }
+
+def encodeRefinementDiagnostic
+    (diagnostic : Firth.Elaborator.Refinement.RefinementDiagnostic) : String :=
+  encode (refinementEnvelope diagnostic)
+
 def typedHoleEnvelope (context : EmissionContext) (holeId : String)
     (hole : Firth.Elaborator.StackEffect.TypedHole) : Envelope :=
   .typedHole context.payloadId context.requestId {
@@ -220,5 +291,9 @@ private def diagnosticBefore (left right : Envelope) : Bool :=
 
 def sortDiagnosticEnvelopes (envelopes : List Envelope) : List Envelope :=
   envelopes.mergeSort diagnosticBefore
+
+def refinementEnvelopes
+    (result : Firth.Elaborator.Refinement.PipelineResult) : List Envelope :=
+  sortDiagnosticEnvelopes (result.diagnostics.map refinementEnvelope)
 
 end Firth.Agent

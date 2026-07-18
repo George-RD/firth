@@ -71,6 +71,10 @@ private def bodyTyping (ctx : ObligationContext) (pre semantics post : List Pred
     bodySemantics := { conjuncts := semantics }
     declaredPostcondition := { conjuncts := post } }
 
+private def bodyResult (requestId : String) (ctx : ObligationContext)
+    (pre semantics post : List Predicate) : PipelineResult :=
+  checkBodyRefinements requestId (bodyTyping ctx pre semantics post)
+
 private def oneBody (ctx : ObligationContext) (pre semantics post : List Predicate) : Obligation :=
   match bodyObligations (bodyTyping ctx pre semantics post) with
   | [obligation] => obligation
@@ -107,10 +111,8 @@ private def diagnosticVariant (diagnostic : RefinementDiagnostic) (payloadId cod
         related := diagnostic.body.related
         groupId := diagnostic.body.groupId } }
 
-private def expectExternalDeferred (obligation : Obligation) (outcome : ExternalOutcome)
+private def expectExternalDeferred (entry : SmtQueueEntry) (outcome : ExternalOutcome)
     (reason : LeanEscalationReason) (data : String) : IO Unit := do
-  let pending := discharge "request-a" [obligation]
-  let entry ← expectAt pending.smtQueue 0 data
   let result := recordExternalOutcome "request-a" entry outcome
   let queued ← expectOneLeanQueue result data
   expectEq queued.reason reason s!"{data}: Lean escalation reason"
@@ -123,6 +125,10 @@ private def expectExternalDeferred (obligation : Obligation) (outcome : External
 private def forgedModuleChild : IO Unit := do
   expectEq (← currentProofModuleHash) none
     "a same-name proof module with an ungoverned digest is rejected"
+
+private def shadowedDependencyChild : IO Unit := do
+  expectEq (← currentProofModuleHash) none
+    "an authentic proof module with shadowed dependencies is rejected"
 
 private def expectForgedModuleRejected : IO Unit :=
   IO.FS.withTempDir fun temporaryRoot => do
@@ -138,6 +144,37 @@ private def expectForgedModuleRejected : IO Unit :=
         args := #["--expect-forged-proof-module-rejected"]
         env := #[("LEAN_PATH", some forgedSearchPath)] }
     expectEq output.exitCode 0 "forged proof-module child rejects before import"
+
+private def expectShadowedDependencyRejected : IO Unit :=
+  IO.FS.withTempDir fun temporaryRoot => do
+    let some leanPath ← IO.getEnv "LEAN_PATH" | fail "Lean search path is unavailable"
+    let projectSearchPath := System.SearchPath.parse leanPath
+    let projectRoot ← expectAt projectSearchPath 0 "project Lean search root"
+    let copiedRoot := temporaryRoot / "copied"
+    let governedModules :=
+      [ "elaborator/Firth/Refinement.olean"
+      , "elaborator/Firth/StackEffect.olean"
+      , "elaborator/Firth/Erasure.olean"
+      , "elaborator/Firth/Parser.olean"
+      , "smt/Firth/SmtBoundary.olean"
+      , "Firth/Interpreter.olean" ]
+    for path in governedModules do
+      let destination := copiedRoot / path
+      let some destinationRoot := destination.parent |
+        fail s!"governed module has no parent: {path}"
+      IO.FS.createDirAll destinationRoot
+      IO.FS.writeBinFile destination (← IO.FS.readBinFile (projectRoot / path))
+    let shadowDirectory := copiedRoot / "smt" / "Firth"
+    IO.FS.writeBinFile (shadowDirectory / "SmtBoundary.olean")
+      "forged-transitive-dependency".toUTF8
+    let shadowedSearchPath := System.SearchPath.toString
+      (copiedRoot :: projectSearchPath.drop 1)
+    let executable ← IO.appPath
+    let output ← IO.Process.output
+      { cmd := executable.toString
+        args := #["--expect-shadowed-dependency-rejected"]
+        env := #[("LEAN_PATH", some shadowedSearchPath)] }
+    expectEq output.exitCode 0 "shadowed dependency child rejects before import"
 
 private def runTests : IO Unit := do
   let some leanToolchainHash ← currentLeanToolchainHash |
@@ -185,6 +222,19 @@ private def runTests : IO Unit := do
     { premises := oldSpec.pre.conjuncts ++ [.boolVariable "old-total"],
       conclusions := [.boolVariable "new-total"] }
     "totality implication direction"
+  let closedContract : Contract := {
+    wordType := scheme
+    specification := { pre := { conjuncts := [.truth] }, post := { conjuncts := [.truth] } } }
+  let closedSubsumption : SubsumptionTypingPremises := {
+    context := ctx
+    oldContract := closedContract
+    newContract := closedContract }
+  let closedSubsumptionResult := checkContractSubsumption "request-a" closedSubsumption
+  expectEq closedSubsumptionResult.leanRecords.length 2
+    "closed replacement refinement obligations discharge"
+  for record in closedSubsumptionResult.leanRecords do
+    expectEq (← recheckContractLeanRecord closedSubsumption record) .accepted
+      "contract recheck regenerates the replacement VCs"
   let differentScheme : Scheme :=
     { scheme with output := .snoc (.row (.rigid "ρ")) (.base "Bool" .many) }
   let mismatch := checkContractSubsumption "request-a"
@@ -210,8 +260,9 @@ private def runTests : IO Unit := do
   expectEq removedObligation.kind .totalityPromisePresence
     "totality presence rejection is not encoded as an alternate VC"
 
+  let closedTyping := bodyTyping ctx [] [] [.intLt (.literal 0) (.literal 1)]
   let closedSuccess := oneBody ctx [] [] [.intLt (.literal 0) (.literal 1)]
-  let closedResult := discharge "request-a" [closedSuccess]
+  let closedResult := checkBodyRefinements "request-a" closedTyping
   expectEq closedResult.leanRecords.length 1 "closed true refinement discharges in Lean"
   expectEq closedResult.leanQueue.length 0 "Lean success leaves no escalation"
   expectEq closedResult.smtQueue.length 0 "Lean success leaves no SMT request"
@@ -225,56 +276,67 @@ private def runTests : IO Unit := do
     "Lean proof record binds the proof module"
   expectEq closedRecord.proofTerm.formula closedSuccess.formula
     "Lean proof record stores the instantiated formula"
-  expectEq (← recheckLeanRecord closedSuccess closedRecord) .accepted
+  expectEq (← recheckBodyLeanRecord closedTyping closedRecord) .accepted
     "Lean proof record is accepted after kernel rechecking"
+  let forgedTyping := bodyTyping ctx [] [] [.truth]
+  let forgedRecord ← expectAt
+    (checkBodyRefinements "request-a" forgedTyping).leanRecords 0 "forged Lean record"
+  expectEq (← recheckBodyLeanRecord closedTyping forgedRecord) .metadataMismatch
+    "recheck regenerates the body VC instead of trusting a caller-supplied obligation"
   expectEq
-    (← recheckLeanRecord closedSuccess { closedRecord with bodyHash := "sha256:body-b" })
+    (← recheckBodyLeanRecord closedTyping { closedRecord with bodyHash := "sha256:body-b" })
     .metadataMismatch
     "mutated Lean proof metadata is rejected"
   let tamperedProof : LeanProofTerm :=
     { formula := { premises := [], conclusions := [.truth] } }
   expectEq
-    (← recheckLeanRecord closedSuccess { closedRecord with proofTerm := tamperedProof })
+    (← recheckBodyLeanRecord closedTyping { closedRecord with proofTerm := tamperedProof })
     .kernelRejected
     "tampered Lean proof term must fail kernel rechecking"
   let oversizedInteger := Int.ofNat (2 ^ 1048577)
-  let oversizedIntegerObligation :=
-    { closedSuccess with formula :=
-        { premises := [], conclusions := [.intEq (.literal oversizedInteger) (.literal 0)] } }
-  expectEq (← recheckLeanRecord oversizedIntegerObligation closedRecord) .kernelRejected
-    "integer literals over the kernel-recheck budget are rejected before canonicalisation"
-  let oversizedFormula :=
-    { closedSuccess with formula :=
-        { premises := [], conclusions := List.replicate 10001 .truth } }
-  expectEq (← recheckLeanRecord oversizedFormula closedRecord) .kernelRejected
-    "over-budget refinement structure is rejected before canonicalisation"
-  let staleIdentity :=
-    { closedSuccess with context := { closedSuccess.context with normaliserVersion := "normaliser-v2" } }
-  expectEq (← recheckLeanRecord staleIdentity closedRecord) .metadataMismatch
+  let oversizedIntegerDischarge := bodyResult "request-a" ctx [] []
+    [.intEq (.literal oversizedInteger) (.literal 0)]
+  expectEq oversizedIntegerDischarge.leanRecords.length 0
+    "integer literals over the kernel budget are rejected before direct evaluation"
+  let oversizedDischarge := checkBodyRefinements "request-a"
+    (bodyTyping ctx [] [] (List.replicate 10001 .truth))
+  expectEq oversizedDischarge.leanRecords.length 0
+    "over-budget refinement structure is rejected before direct evaluation"
+  expectEq oversizedDischarge.smtQueue.length 0
+    "over-budget refinement structure never reaches SMT classification"
+  let oversizedQueue ← expectOneLeanQueue oversizedDischarge "over-budget refinement"
+  expectEq oversizedQueue.reason .kernelBudgetExceeded
+    "over-budget refinement structure has an explicit Lean escalation reason"
+  let staleTyping := bodyTyping { ctx with normaliserVersion := "normaliser-v2" }
+    [] [] [.intLt (.literal 0) (.literal 1)]
+  expectEq (← recheckBodyLeanRecord staleTyping closedRecord) .metadataMismatch
     "semantic context mutation with a stale obligation ID is rejected"
-  let wrongToolchain := oneBody { ctx with leanToolchainHash := "forged-toolchain" }
+  let wrongToolchainTyping := bodyTyping { ctx with leanToolchainHash := "forged-toolchain" }
     [] [] [.truth]
   let wrongToolchainRecord ← expectAt
-    (discharge "request-a" [wrongToolchain]).leanRecords 0 "wrong-toolchain record"
-  expectEq (← recheckLeanRecord wrongToolchain wrongToolchainRecord) .toolchainMismatch
+    (checkBodyRefinements "request-a" wrongToolchainTyping).leanRecords 0
+    "wrong-toolchain record"
+  expectEq (← recheckBodyLeanRecord wrongToolchainTyping wrongToolchainRecord) .toolchainMismatch
     "recorded Lean toolchain identity must match the executing kernel"
-  let wrongProofModule := oneBody { ctx with proofModuleHash := "sha256:forged-module" }
+  let wrongProofModuleTyping := bodyTyping { ctx with proofModuleHash := "sha256:forged-module" }
     [] [] [.truth]
   let wrongProofModuleRecord ← expectAt
-    (discharge "request-a" [wrongProofModule]).leanRecords 0 "wrong-proof-module record"
-  expectEq (← recheckLeanRecord wrongProofModule wrongProofModuleRecord) .proofModuleMismatch
+    (checkBodyRefinements "request-a" wrongProofModuleTyping).leanRecords 0
+    "wrong-proof-module record"
+  expectEq (← recheckBodyLeanRecord wrongProofModuleTyping wrongProofModuleRecord)
+    .proofModuleMismatch
     "recorded proof-module digest must match the imported module"
 
-  let vacuous := oneBody ctx [.falsity] [] [yPositive]
-  let vacuousResult := discharge "request-a" [vacuous]
+  let vacuousTyping := bodyTyping ctx [.falsity] [] [yPositive]
+  let vacuousResult := checkBodyRefinements "request-a" vacuousTyping
   expectEq vacuousResult.leanRecords.length 1
     "a closed false premise is discharged by the proved procedure"
   let vacuousRecord ← expectAt vacuousResult.leanRecords 0 "vacuous Lean record"
-  expectEq (← recheckLeanRecord vacuous vacuousRecord) .accepted
+  expectEq (← recheckBodyLeanRecord vacuousTyping vacuousRecord) .accepted
     "a vacuous proof record passes kernel rechecking"
 
   let hostileName := "x\")\naxiom forged : False\n("
-  let constructorComplete := oneBody ctx [.falsity] []
+  let constructorPost :=
     [ .truth
     , .falsity
     , .boolVariable hostileName
@@ -288,13 +350,14 @@ private def runTests : IO Unit := do
     , .named hostileName "1\n2" [.literal (-5), .variable hostileName]
     , .nonlinear hostileName
     , .worldSensitive hostileName ]
-  let constructorResult := discharge "request-a" [constructorComplete]
+  let constructorTyping := bodyTyping ctx [.falsity] [] constructorPost
+  let constructorResult := checkBodyRefinements "request-a" constructorTyping
   let constructorRecord ← expectAt constructorResult.leanRecords 0
     "constructor-complete Lean record"
-  expectEq (← recheckLeanRecord constructorComplete constructorRecord) .accepted
+  expectEq (← recheckBodyLeanRecord constructorTyping constructorRecord) .accepted
     "every predicate and integer-expression constructor renders as safe Lean syntax"
 
-  let pending := discharge "request-a" [generated]
+  let pending := bodyResult "request-a" ctx [xPositive] [successor] [yPositive]
   expectEq pending.leanRecords.length 0 "undischargeable refinement has no proof record"
   expectEq pending.leanQueue.length 1 "undischargeable refinement must enter the Lean queue"
   expectEq pending.smtQueue.length 1 "eligible open VC enters the typed SMT queue"
@@ -316,22 +379,20 @@ private def runTests : IO Unit := do
   expectEq pendingDiagnostic.body.proposedFixes [] "diagnostics do not invent edits"
   expectEq pendingDiagnostic.body.related [] "diagnostic related list is present"
 
-  let unsupported := oneBody ctx [] [] [.named "pred.recursive" "1" [.variable "x"]]
-  let unsupportedResult := discharge "request-a" [unsupported]
+  let unsupportedResult := bodyResult "request-a" ctx [] []
+    [.named "pred.recursive" "1" [.variable "x"]]
   expectEq unsupportedResult.smtQueue.length 0 "untranslated predicates never enter SMT"
   let unsupportedQueue ← expectOneLeanQueue unsupportedResult "unsupported predicate"
   expectEq unsupportedQueue.reason (.outsideSmtFragment .untranslatedPredicate)
     "unsupported predicate escalates to Lean"
 
-  let nonlinear := oneBody ctx [] [] [.nonlinear "x*x > 0"]
-  let nonlinearResult := discharge "request-a" [nonlinear]
+  let nonlinearResult := bodyResult "request-a" ctx [] [] [.nonlinear "x*x > 0"]
   expectEq nonlinearResult.smtQueue.length 0 "non-linear predicates never enter QF_LIA"
   let nonlinearQueue ← expectOneLeanQueue nonlinearResult "non-linear predicate"
   expectEq nonlinearQueue.reason (.outsideSmtFragment .nonlinearArithmetic)
     "non-linear reasoning escalates to Lean"
 
-  let world := oneBody ctx [] [] [.worldSensitive "World transition"]
-  let worldResult := discharge "request-a" [world]
+  let worldResult := bodyResult "request-a" ctx [] [] [.worldSensitive "World transition"]
   expectEq worldResult.smtQueue.length 0
     "World refinements never enter SMT"
   let worldQueue ← expectOneLeanQueue worldResult "World refinement"
@@ -368,8 +429,6 @@ private def runTests : IO Unit := do
     "ineligible external request has an explicit escalation reason"
   for kind in [ObligationKind.erasedWordTypeEquality, .totalityPromisePresence] do
     let structural := makeObligation kind [.truth] [.boolVariable "structural-result"] ctx
-    expectEq (discharge "request-a" [structural]).smtQueue.length 0
-      "structural obligations never enter SMT"
     let forgedStructural : SmtQueueEntry :=
       { obligation := structural
         canonicalRequest := canonicalSmtRequest structural
@@ -380,18 +439,19 @@ private def runTests : IO Unit := do
     expectEq structuralQueue.reason .externalRequestIneligible
       "external outcomes cannot target structural obligations"
 
-  expectExternalDeferred generated .unknown .externalUnknown "external-unknown"
-  expectExternalDeferred generated (.timeout 250) (.externalTimeout 250) "external-timeout:250"
-  expectExternalDeferred generated .resourceExhausted .externalResourceExhausted
+  expectExternalDeferred smtEntry .unknown .externalUnknown "external-unknown"
+  expectExternalDeferred smtEntry (.timeout 250) (.externalTimeout 250) "external-timeout:250"
+  expectExternalDeferred smtEntry .resourceExhausted .externalResourceExhausted
     "external-resource-exhausted"
-  expectExternalDeferred generated (.malformed "bad sexpr") .externalMalformed "external-malformed"
-  expectExternalDeferred generated (.crashed "exit 9") .externalCrash "external-crash"
-  expectExternalDeferred generated (.uncheckedUnsat "forged") .uncheckedUnsatRejected
+  expectExternalDeferred smtEntry (.malformed "bad sexpr") .externalMalformed "external-malformed"
+  expectExternalDeferred smtEntry (.crashed "exit 9") .externalCrash "external-crash"
+  expectExternalDeferred smtEntry (.uncheckedUnsat "forged") .uncheckedUnsatRejected
     "unchecked-unsat-rejected"
 
   let falseConclusion := oneBody ctx [.intEq (.variable "x") (.literal 1)] []
     [.intLt (.variable "x") (.literal 0)]
-  let falsePending := discharge "request-a" [falseConclusion]
+  let falsePending := bodyResult "request-a" ctx
+    [.intEq (.variable "x") (.literal 1)] [] [.intLt (.variable "x") (.literal 0)]
   let falseEntry ← expectAt falsePending.smtQueue 0 "countermodel request"
   let countermodel := Valuation.mk [("x", 1)] []
   let failed := recordExternalOutcome "request-a" falseEntry (.sat countermodel)
@@ -417,8 +477,8 @@ private def runTests : IO Unit := do
   let duplicateObligation ← expectAt duplicateDiagnostic.body.obligations 0 "duplicate countermodel"
   expectEq duplicateObligation.status .deferred
     "duplicate model bindings are rejected"
-  let missingLater := oneBody ctx [.truth] [] [.falsity, .boolVariable "missing"]
-  let missingLaterPending := discharge "request-a" [missingLater]
+  let missingLaterPending := bodyResult "request-a" ctx [.truth] []
+    [.falsity, .boolVariable "missing"]
   let missingLaterEntry ← expectAt missingLaterPending.smtQueue 0 "missing later variable"
   let missingLaterResult := recordExternalOutcome "request-a" missingLaterEntry (.sat {})
   let missingLaterDiagnostic ← expectOneDiagnostic missingLaterResult "missing later variable"
@@ -465,12 +525,12 @@ private def runTests : IO Unit := do
     canonicalFormula { premises := [.boolVariable "a", .boolVariable "b"], conclusions := [] })
     "length framing resists delimiter ambiguity"
 
-  let late := discharge "request-sort" [oneBody { ctx with
+  let late := bodyResult "request-sort" { ctx with
       source := { path := "z.firth", span := span 20 24 } }
-    [xPositive] [successor] [yPositive]]
-  let early := discharge "request-sort" [oneBody { ctx with
+    [xPositive] [successor] [yPositive]
+  let early := bodyResult "request-sort" { ctx with
       source := { path := "a.firth", span := span 30 34 } }
-    [xPositive] [successor] [yPositive]]
+    [xPositive] [successor] [yPositive]
   let sorted := sortDiagnostics (late.diagnostics ++ early.diagnostics)
   let firstDiagnostic ← expectAt sorted 0 "first sorted diagnostic"
   let secondDiagnostic ← expectAt sorted 1 "second sorted diagnostic"
@@ -493,10 +553,13 @@ private def runTests : IO Unit := do
     ["stop-earlier", "code-earlier", "a-payload", "z-payload", "start-later", "path-b"]
     "diagnostics sort by path, start, stop, code, and payload ID"
 
+  expectShadowedDependencyRejected
   IO.println "all refinement discharge tests passed"
 
 def main (arguments : List String) : IO Unit := do
   if arguments == ["--expect-forged-proof-module-rejected"] then
     forgedModuleChild
+  else if arguments == ["--expect-shadowed-dependency-rejected"] then
+    shadowedDependencyChild
   else
     runTests

@@ -385,6 +385,7 @@ inductive LeanRecordRecheck where
 
 inductive LeanEscalationReason where
   | directProcedureIncomplete
+  | kernelBudgetExceeded
   | outsideSmtFragment (fragment : Fragment)
   | totalityIsLeanOnly
   | checkedSmtAdapterUnavailable
@@ -757,13 +758,27 @@ private def proofModuleManifestPath : IO (Option System.FilePath) := do
   let some projectRoot := lakeDirectory.parent | pure none
   pure (some (projectRoot / "src" / "elaborator" / "refinement-proof-module.sha256"))
 
-private def governedProofModuleHash : IO (Option String) := do
+private def governedProofModulePaths : List String :=
+  [ "elaborator/Firth/Refinement.olean"
+  , "elaborator/Firth/StackEffect.olean"
+  , "elaborator/Firth/Erasure.olean"
+  , "elaborator/Firth/Parser.olean"
+  , "smt/Firth/SmtBoundary.olean"
+  , "Firth/Interpreter.olean" ]
+
+private def governedProofModuleHashes : IO (Option (List String)) := do
   let some manifest ← proofModuleManifestPath | pure none
   if !(← manifest.pathExists) then pure none
   else
-    let digest := (← IO.FS.readFile manifest).trimAscii.copy
-    if digest.startsWith "sha256:" && digest.length == 71 then pure (some digest)
+    let hashes := (← IO.FS.readFile manifest).splitOn "\n" |>.filter (fun line => !line.isEmpty)
+    if hashes.length == governedProofModulePaths.length &&
+        hashes.all (fun digest => digest.startsWith "sha256:" && digest.length == 71) then
+      pure (some hashes)
     else pure none
+
+private def governedProofModuleHash : IO (Option String) := do
+  let some hashes ← governedProofModuleHashes | pure none
+  pure hashes.head?
 
 private def sha256 (path : System.FilePath) : IO (Option String) := do
   let rec select : List (System.FilePath × Array String) →
@@ -784,8 +799,9 @@ private def sha256 (path : System.FilePath) : IO (Option String) := do
   | .timedOut => pure none
   | .outputLimitExceeded => pure none
 
-private def authenticatedProofSearchPath : IO (Option System.SearchPath) := do
-  let some expectedHash ← governedProofModuleHash | pure none
+private def withAuthenticatedProofSearchPath
+    (action : System.SearchPath → IO α) : IO (Option α) := do
+  let some expectedHashes ← governedProofModuleHashes | pure none
   let some leanPath ← IO.getEnv "LEAN_PATH" | pure none
   let searchPath := System.SearchPath.parse leanPath
   -- The authenticated project root must be first.  Accepting a later matching
@@ -793,11 +809,27 @@ private def authenticatedProofSearchPath : IO (Option System.SearchPath) := do
   match searchPath with
   | [] => pure none
   | root :: _ =>
-      let candidate := root / "elaborator" / "Firth" / "Refinement.olean"
-      if !(← candidate.pathExists) then pure none
-      else
-        let some digest ← sha256 candidate | pure none
-        if "sha256:" ++ digest == expectedHash then pure (some searchPath) else pure none
+      try
+        IO.FS.withTempDir fun authenticatedRoot => do
+          let rec copyAndAuthenticate : List String → List String → IO Bool
+            | [], [] => pure true
+            | path :: paths, expectedHash :: hashes => do
+                let candidate := root / path
+                if !(← candidate.pathExists) then pure false
+                else
+                  let destination := authenticatedRoot / path
+                  let some destinationRoot := destination.parent | pure false
+                  IO.FS.createDirAll destinationRoot
+                  IO.FS.writeBinFile destination (← IO.FS.readBinFile candidate)
+                  let some digest ← sha256 destination | pure false
+                  if "sha256:" ++ digest == expectedHash then
+                    copyAndAuthenticate paths hashes
+                  else pure false
+            | _, _ => pure false
+          if ← copyAndAuthenticate governedProofModulePaths expectedHashes then
+            some <$> action (authenticatedRoot :: searchPath.drop 1)
+          else pure none
+      catch _ => pure none
 
 def currentLeanToolchainHash : IO (Option String) := do
   -- The running kernel is the checker. Its compiled identity must match the accepted repository pin.
@@ -805,43 +837,44 @@ def currentLeanToolchainHash : IO (Option String) := do
   else pure (some (pinnedLeanToolchain ++ "@" ++ Lean.githash))
 
 def currentProofModuleHash : IO (Option String) := do
-  let some _ ← authenticatedProofSearchPath | pure none
+  let some _ ← withAuthenticatedProofSearchPath (fun _ => pure ()) | pure none
   governedProofModuleHash
 
 private def kernelCheckProofTerm (targetFormula instantiatedFormula : Formula)
     (cancelToken : IO.CancelToken) : IO Bool := do
-  let some searchPath ← authenticatedProofSearchPath |
-    throw (IO.userError "authenticated Lean proof module is unavailable")
-  Lean.searchPathRef.set searchPath
-  let options := Lean.maxHeartbeats.set {} 1000000
-  let environment ← Lean.importModules
-    #[{ module := `elaborator.Firth.Refinement }] options 0
-  let coreContext : Lean.Core.Context :=
-    { fileName := "<refinement-recheck>"
-      fileMap := Lean.FileMap.ofString ""
-      options }
-  let coreState : Lean.Core.State := { env := environment }
-  let collect : Lean.CoreM (Array Lean.Name) :=
-    Lean.collectAxioms ``Firth.Elaborator.Refinement.leanDecide_sound
-  let axioms ← collect.toIO' coreContext coreState
-  if axioms != #[``propext] then pure false
-  else
-    -- Construct the recorded proof as a kernel expression, then require its inferred type to be
-    -- the independently reconstructed target theorem when the declaration enters the environment.
-    let targetType := Lean.mkApp (Lean.mkConst ``Firth.Elaborator.Refinement.Valid)
-      (formulaExpression targetFormula)
-    let proof := Lean.mkApp2
-      (Lean.mkConst ``Firth.Elaborator.Refinement.leanDecide_sound)
-      (formulaExpression instantiatedFormula) Lean.reflBoolTrue
-    let declaration : Lean.Declaration := .thmDecl
-      { name := `Firth.Elaborator.Refinement.RecordedProof.checked
-        levelParams := []
-        type := targetType
-        value := proof }
-    match environment.addDeclCore (Lean.Core.getMaxHeartbeats options).toUSize declaration
-        (some cancelToken) with
-    | .ok _ => pure true
-    | .error _ => pure false
+  let some accepted ← withAuthenticatedProofSearchPath fun searchPath => do
+    Lean.searchPathRef.set searchPath
+    let options := Lean.maxHeartbeats.set {} 1000000
+    let environment ← Lean.importModules
+      #[{ module := `elaborator.Firth.Refinement }] options 0
+    let coreContext : Lean.Core.Context :=
+      { fileName := "<refinement-recheck>"
+        fileMap := Lean.FileMap.ofString ""
+        options }
+    let coreState : Lean.Core.State := { env := environment }
+    let collect : Lean.CoreM (Array Lean.Name) :=
+      Lean.collectAxioms ``Firth.Elaborator.Refinement.leanDecide_sound
+    let axioms ← collect.toIO' coreContext coreState
+    if axioms != #[``propext] then pure false
+    else
+      -- Construct the recorded proof as a kernel expression, then require its inferred type to be
+      -- the independently reconstructed target theorem when the declaration enters the environment.
+      let targetType := Lean.mkApp (Lean.mkConst ``Firth.Elaborator.Refinement.Valid)
+        (formulaExpression targetFormula)
+      let proof := Lean.mkApp2
+        (Lean.mkConst ``Firth.Elaborator.Refinement.leanDecide_sound)
+        (formulaExpression instantiatedFormula) Lean.reflBoolTrue
+      let declaration : Lean.Declaration := .thmDecl
+        { name := `Firth.Elaborator.Refinement.RecordedProof.checked
+          levelParams := []
+          type := targetType
+          value := proof }
+      match environment.addDeclCore (Lean.Core.getMaxHeartbeats options).toUSize declaration
+          (some cancelToken) with
+      | .ok _ => pure true
+      | .error _ => pure false
+    | throw (IO.userError "authenticated Lean proof module is unavailable")
+  pure accepted
 
 private inductive BoundedKernelCheck where
   | completed (accepted : Bool)
@@ -866,12 +899,11 @@ private def boundedKernelCheck (targetFormula instantiatedFormula : Formula) :
   | none => do
       cancelToken.set
       IO.cancel check
-      try discard (IO.ofExcept check.get) catch _ => pure ()
       pure .timedOut
   | some none => pure .unavailable
   | some (some accepted) => pure (.completed accepted)
 
-def recheckLeanRecord (obligation : Obligation) (record : LeanProofRecord) :
+private def recheckLeanRecord (obligation : Obligation) (record : LeanProofRecord) :
     IO LeanRecordRecheck := do
   if !formulaWithinKernelBounds obligation.formula ||
       !formulaWithinKernelBounds record.proofTerm.formula then
@@ -901,6 +933,29 @@ def recheckLeanRecord (obligation : Obligation) (record : LeanProofRecord) :
             | .completed true =>
                 if record.proofTerm == expected.proofTerm then pure .accepted
                 else pure .metadataMismatch
+
+private def obligationWithId (obligationId : String) :
+    List Obligation → Option Obligation
+  | [] => none
+  | obligation :: rest =>
+      if obligation.obligationId == obligationId then some obligation
+      else obligationWithId obligationId rest
+
+private def recheckGeneratedLeanRecord (obligations : List Obligation)
+    (record : LeanProofRecord) : IO LeanRecordRecheck :=
+  match obligationWithId record.obligationId obligations with
+  | none => pure .metadataMismatch
+  | some obligation => recheckLeanRecord obligation record
+
+def recheckBodyLeanRecord (typing : BodyTypingPremises)
+    (record : LeanProofRecord) : IO LeanRecordRecheck :=
+  recheckGeneratedLeanRecord (bodyObligations typing) record
+
+def recheckContractLeanRecord (typing : SubsumptionTypingPremises)
+    (record : LeanProofRecord) : IO LeanRecordRecheck :=
+  match subsumptionObligations typing with
+  | .error _ => pure .metadataMismatch
+  | .ok obligations => recheckGeneratedLeanRecord obligations record
 
 private def isTotality : ObligationKind → Bool
   | .bodyTotality | .totalitySubsumption | .totalityPromisePresence => true
@@ -946,8 +1001,17 @@ private def queueForSmt (obligation : Obligation) : Option SmtQueueEntry :=
       requirements := checkedAdapterRequirements }
   else none
 
-def dischargeObligation (requestId : String) (obligation : Obligation) : PipelineResult :=
-  if leanDecide obligation.formula then
+private def dischargeObligation (requestId : String) (obligation : Obligation) : PipelineResult :=
+  if !formulaWithinKernelBounds obligation.formula then
+    { leanQueue := [{
+        obligationId := obligation.obligationId
+        theoremStatement := "kernel-budget-exceeded"
+        formula := obligation.formula
+        context := obligation.context
+        reason := .kernelBudgetExceeded }]
+      diagnostics := [makeDiagnostic requestId obligation .deferred
+        (reasonData "kernel-budget-exceeded")] }
+  else if leanDecide obligation.formula then
     { leanRecords := [leanRecord obligation] }
   else
     let reason := escalationReason obligation
@@ -956,7 +1020,7 @@ def dischargeObligation (requestId : String) (obligation : Obligation) : Pipelin
       diagnostics := [makeDiagnostic requestId obligation .deferred
         (reasonData (toString (repr reason)))] }
 
-def discharge (requestId : String) (obligations : List Obligation) : PipelineResult :=
+private def discharge (requestId : String) (obligations : List Obligation) : PipelineResult :=
   let accumulated := obligations.foldl (fun (result : PipelineResult) obligation =>
     let next := dischargeObligation requestId obligation
     { leanRecords := result.leanRecords ++ next.leanRecords
