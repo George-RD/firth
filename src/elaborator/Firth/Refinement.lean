@@ -628,6 +628,52 @@ private def formulaExpression (formula : Formula) : Lean.Expr :=
     (expressionList (Lean.mkConst ``Firth.Smt.Predicate)
       (formula.conclusions.map predicateExpression))
 
+private inductive RefinementNode where
+  | predicate (value : Predicate)
+  | intExpr (value : IntExpr)
+
+private def intKernelCost (value : Int) : Nat :=
+  value.natAbs.log2 + 1
+
+private def formulaWithinKernelBounds (formula : Formula) : Bool :=
+  let initial := formula.conclusions.foldl (fun work value => .predicate value :: work)
+    (formula.premises.foldl (fun work value => .predicate value :: work) [])
+  let rec visit : Nat → Nat → List RefinementNode → Bool
+    | _, _, [] => true
+    | 0, _, _ => false
+    | remaining + 1, stringBytes, node :: rest =>
+        match node with
+        | .predicate predicate =>
+            match predicate with
+            | .truth | .falsity => visit remaining stringBytes rest
+            | .boolVariable name | .nonlinear name | .worldSensitive name =>
+                let nextBytes := stringBytes + name.toUTF8.size
+                nextBytes <= 1048576 && visit remaining nextBytes rest
+            | .not body => visit remaining stringBytes (.predicate body :: rest)
+            | .and left right | .or left right =>
+                visit remaining stringBytes (.predicate left :: .predicate right :: rest)
+            | .intEq left right | .intNe left right | .intLe left right | .intLt left right =>
+                visit remaining stringBytes (.intExpr left :: .intExpr right :: rest)
+            | .named name version arguments =>
+                let nextBytes := stringBytes + name.toUTF8.size + version.toUTF8.size
+                nextBytes <= 1048576 &&
+                  visit remaining nextBytes
+                    (arguments.foldl (fun work value => .intExpr value :: work) rest)
+        | .intExpr expression =>
+            match expression with
+            | .literal value =>
+                let nextBytes := stringBytes + intKernelCost value
+                nextBytes <= 1048576 && visit remaining nextBytes rest
+            | .variable name =>
+                let nextBytes := stringBytes + name.toUTF8.size
+                nextBytes <= 1048576 && visit remaining nextBytes rest
+            | .add left right | .sub left right =>
+                visit remaining stringBytes (.intExpr left :: .intExpr right :: rest)
+            | .scale coefficient body =>
+                let nextBytes := stringBytes + intKernelCost coefficient
+                nextBytes <= 1048576 && visit remaining nextBytes (.intExpr body :: rest)
+  visit 10000 0 initial
+
 private def leanRecord (obligation : Obligation) : LeanProofRecord :=
   { obligationId := obligation.obligationId
     theoremStatement := theoremStatement obligation
@@ -704,14 +750,20 @@ private def pinnedLeanToolchain : String := "leanprover/lean4:v4.30.0"
 
 private def pinnedLeanGithash : String := "d024af099ca4bf2c86f649261ebf59565dc8c622"
 
-private def refinementProofModulePath : IO (Option System.FilePath) := do
-  let some leanPath ← IO.getEnv "LEAN_PATH" | pure none
-  let rec find : System.SearchPath → IO (Option System.FilePath)
-    | [] => pure none
-    | root :: rest => do
-        let candidate := root / "elaborator" / "Firth" / "Refinement.olean"
-        if ← candidate.pathExists then pure (some candidate) else find rest
-  find (System.SearchPath.parse leanPath)
+private def proofModuleManifestPath : IO (Option System.FilePath) := do
+  let binDirectory ← IO.appDir
+  let some buildDirectory := binDirectory.parent | pure none
+  let some lakeDirectory := buildDirectory.parent | pure none
+  let some projectRoot := lakeDirectory.parent | pure none
+  pure (some (projectRoot / "src" / "elaborator" / "refinement-proof-module.sha256"))
+
+private def governedProofModuleHash : IO (Option String) := do
+  let some manifest ← proofModuleManifestPath | pure none
+  if !(← manifest.pathExists) then pure none
+  else
+    let digest := (← IO.FS.readFile manifest).trimAscii.copy
+    if digest.startsWith "sha256:" && digest.length == 71 then pure (some digest)
+    else pure none
 
 private def sha256 (path : System.FilePath) : IO (Option String) := do
   let rec select : List (System.FilePath × Array String) →
@@ -732,20 +784,34 @@ private def sha256 (path : System.FilePath) : IO (Option String) := do
   | .timedOut => pure none
   | .outputLimitExceeded => pure none
 
+private def authenticatedProofSearchPath : IO (Option System.SearchPath) := do
+  let some expectedHash ← governedProofModuleHash | pure none
+  let some leanPath ← IO.getEnv "LEAN_PATH" | pure none
+  let searchPath := System.SearchPath.parse leanPath
+  let rec authenticate : System.SearchPath → IO Bool
+    | [] => pure false
+    | root :: rest => do
+        let candidate := root / "elaborator" / "Firth" / "Refinement.olean"
+        if !(← candidate.pathExists) then authenticate rest
+        else
+          let some digest ← sha256 candidate | pure false
+          pure ("sha256:" ++ digest == expectedHash)
+  if ← authenticate searchPath then pure (some searchPath) else pure none
+
 def currentLeanToolchainHash : IO (Option String) := do
   -- The running kernel is the checker. Its compiled identity must match the accepted repository pin.
   if Lean.githash != pinnedLeanGithash then pure none
   else pure (some (pinnedLeanToolchain ++ "@" ++ Lean.githash))
 
 def currentProofModuleHash : IO (Option String) := do
-  let some modulePath ← refinementProofModulePath | pure none
-  let some digest ← sha256 modulePath | pure none
-  pure (some ("sha256:" ++ digest))
+  let some _ ← authenticatedProofSearchPath | pure none
+  governedProofModuleHash
 
-private def kernelCheckProofTerm (targetFormula instantiatedFormula : Formula) : IO Bool := do
-  let some leanPath ← IO.getEnv "LEAN_PATH" |
-    throw (IO.userError "Lean search path is unavailable")
-  Lean.searchPathRef.set (System.SearchPath.parse leanPath)
+private def kernelCheckProofTerm (targetFormula instantiatedFormula : Formula)
+    (cancelToken : IO.CancelToken) : IO Bool := do
+  let some searchPath ← authenticatedProofSearchPath |
+    throw (IO.userError "authenticated Lean proof module is unavailable")
+  Lean.searchPathRef.set searchPath
   let options := Lean.maxHeartbeats.set {} 1000000
   let environment ← Lean.importModules
     #[{ module := `elaborator.Firth.Refinement }] options 0
@@ -760,18 +826,21 @@ private def kernelCheckProofTerm (targetFormula instantiatedFormula : Formula) :
   if axioms != #[``propext] then pure false
   else
     -- Construct the recorded proof as a kernel expression, then require its inferred type to be
-    -- definitionally equal to the independently reconstructed target theorem.
+    -- the independently reconstructed target theorem when the declaration enters the environment.
     let targetType := Lean.mkApp (Lean.mkConst ``Firth.Elaborator.Refinement.Valid)
       (formulaExpression targetFormula)
     let proof := Lean.mkApp2
       (Lean.mkConst ``Firth.Elaborator.Refinement.leanDecide_sound)
       (formulaExpression instantiatedFormula) Lean.reflBoolTrue
-    match Lean.Kernel.check environment {} proof with
+    let declaration : Lean.Declaration := .thmDecl
+      { name := `Firth.Elaborator.Refinement.RecordedProof.checked
+        levelParams := []
+        type := targetType
+        value := proof }
+    match environment.addDeclCore (Lean.Core.getMaxHeartbeats options).toUSize declaration
+        (some cancelToken) with
+    | .ok _ => pure true
     | .error _ => pure false
-    | .ok inferredType =>
-        match Lean.Kernel.isDefEq environment {} inferredType targetType with
-        | .ok true => pure true
-        | _ => pure false
 
 private inductive BoundedKernelCheck where
   | completed (accepted : Bool)
@@ -780,8 +849,9 @@ private inductive BoundedKernelCheck where
 
 private def boundedKernelCheck (targetFormula instantiatedFormula : Formula) :
     IO BoundedKernelCheck := do
+  let cancelToken ← IO.CancelToken.new
   let check ← IO.asTask
-    (try pure (some (← kernelCheckProofTerm targetFormula instantiatedFormula))
+    (try pure (some (← kernelCheckProofTerm targetFormula instantiatedFormula cancelToken))
       catch _ => pure none)
     Task.Priority.dedicated
   let rec wait : Nat → IO (Option (Option Bool))
@@ -792,36 +862,44 @@ private def boundedKernelCheck (targetFormula instantiatedFormula : Formula) :
           IO.sleep 25
           wait remaining
   match ← wait 401 with
-  | none => pure .timedOut
+  | none => do
+      cancelToken.set
+      IO.cancel check
+      try discard (IO.ofExcept check.get) catch _ => pure ()
+      pure .timedOut
   | some none => pure .unavailable
   | some (some accepted) => pure (.completed accepted)
 
 def recheckLeanRecord (obligation : Obligation) (record : LeanProofRecord) :
     IO LeanRecordRecheck := do
-  let expected := leanRecord obligation
-  let boundMetadata := { record with proofTerm := expected.proofTerm }
-  if !canonicalObligationIdentity obligation || boundMetadata != expected then
-    pure .metadataMismatch
+  if !formulaWithinKernelBounds obligation.formula ||
+      !formulaWithinKernelBounds record.proofTerm.formula then
+    pure .kernelRejected
   else
-    let some leanToolchainHash ← currentLeanToolchainHash | pure .kernelUnavailable
-    if record.leanToolchainHash != leanToolchainHash then
-      pure .toolchainMismatch
+    let expected := leanRecord obligation
+    let boundMetadata := { record with proofTerm := expected.proofTerm }
+    if !canonicalObligationIdentity obligation || boundMetadata != expected then
+      pure .metadataMismatch
     else
-      let some proofModuleHash ← currentProofModuleHash | pure .kernelUnavailable
-      if record.proofModuleHash != proofModuleHash then pure .proofModuleMismatch
+      let some leanToolchainHash ← currentLeanToolchainHash | pure .kernelUnavailable
+      if record.leanToolchainHash != leanToolchainHash then
+        pure .toolchainMismatch
       else
-        let encodedTarget := canonicalFormula obligation.formula
-        let encodedProof := canonicalFormula record.proofTerm.formula
-        if encodedTarget.toUTF8.size + encodedProof.toUTF8.size > 1048576 then
-          pure .kernelRejected
+        let some proofModuleHash ← currentProofModuleHash | pure .kernelUnavailable
+        if record.proofModuleHash != proofModuleHash then pure .proofModuleMismatch
         else
-          match ← boundedKernelCheck obligation.formula record.proofTerm.formula with
-          | .unavailable => pure .kernelUnavailable
-          | .timedOut => pure .kernelTimedOut
-          | .completed false => pure .kernelRejected
-          | .completed true =>
-              if record.proofTerm == expected.proofTerm then pure .accepted
-              else pure .metadataMismatch
+          let encodedTarget := canonicalFormula obligation.formula
+          let encodedProof := canonicalFormula record.proofTerm.formula
+          if encodedTarget.toUTF8.size + encodedProof.toUTF8.size > 1048576 then
+            pure .kernelRejected
+          else
+            match ← boundedKernelCheck obligation.formula record.proofTerm.formula with
+            | .unavailable => pure .kernelUnavailable
+            | .timedOut => pure .kernelTimedOut
+            | .completed false => pure .kernelRejected
+            | .completed true =>
+                if record.proofTerm == expected.proofTerm then pure .accepted
+                else pure .metadataMismatch
 
 private def isTotality : ObligationKind → Bool
   | .bodyTotality | .totalitySubsumption | .totalityPromisePresence => true

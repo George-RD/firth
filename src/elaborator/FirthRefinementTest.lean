@@ -120,12 +120,32 @@ private def expectExternalDeferred (obligation : Obligation) (outcome : External
   expectEq entry.status .deferred s!"{data}: deferred status"
   expectEq entry.data.value [("reason", data)] s!"{data}: diagnostic data"
 
-def main : IO Unit := do
+private def forgedModuleChild : IO Unit := do
+  expectEq (← currentProofModuleHash) none
+    "a same-name proof module with an ungoverned digest is rejected"
+
+private def expectForgedModuleRejected : IO Unit :=
+  IO.FS.withTempDir fun temporaryRoot => do
+    let forgedDirectory := temporaryRoot / "elaborator" / "Firth"
+    IO.FS.createDirAll forgedDirectory
+    IO.FS.writeBinFile (forgedDirectory / "Refinement.olean") "forged-proof-module".toUTF8
+    let some leanPath ← IO.getEnv "LEAN_PATH" | fail "Lean search path is unavailable"
+    let forgedSearchPath := System.SearchPath.toString
+      (temporaryRoot :: System.SearchPath.parse leanPath)
+    let executable ← IO.appPath
+    let output ← IO.Process.output
+      { cmd := executable.toString
+        args := #["--expect-forged-proof-module-rejected"]
+        env := #[("LEAN_PATH", some forgedSearchPath)] }
+    expectEq output.exitCode 0 "forged proof-module child rejects before import"
+
+private def runTests : IO Unit := do
   let some leanToolchainHash ← currentLeanToolchainHash |
     fail "pinned Lean kernel identity is unavailable"
   expectEq leanToolchainHash
     "leanprover/lean4:v4.30.0@d024af099ca4bf2c86f649261ebf59565dc8c622"
     "Lean recheck uses the governed in-process kernel pin"
+  expectForgedModuleRejected
   let some proofModuleHash ← currentProofModuleHash |
     fail "refinement proof-module hash is unavailable"
   let ctx := context leanToolchainHash proofModuleHash
@@ -217,6 +237,17 @@ def main : IO Unit := do
     (← recheckLeanRecord closedSuccess { closedRecord with proofTerm := tamperedProof })
     .kernelRejected
     "tampered Lean proof term must fail kernel rechecking"
+  let oversizedInteger := Int.ofNat (2 ^ 1048577)
+  let oversizedIntegerObligation :=
+    { closedSuccess with formula :=
+        { premises := [], conclusions := [.intEq (.literal oversizedInteger) (.literal 0)] } }
+  expectEq (← recheckLeanRecord oversizedIntegerObligation closedRecord) .kernelRejected
+    "integer literals over the kernel-recheck budget are rejected before canonicalisation"
+  let oversizedFormula :=
+    { closedSuccess with formula :=
+        { premises := [], conclusions := List.replicate 10001 .truth } }
+  expectEq (← recheckLeanRecord oversizedFormula closedRecord) .kernelRejected
+    "over-budget refinement structure is rejected before canonicalisation"
   let staleIdentity :=
     { closedSuccess with context := { closedSuccess.context with normaliserVersion := "normaliser-v2" } }
   expectEq (← recheckLeanRecord staleIdentity closedRecord) .metadataMismatch
@@ -463,3 +494,9 @@ def main : IO Unit := do
     "diagnostics sort by path, start, stop, code, and payload ID"
 
   IO.println "all refinement discharge tests passed"
+
+def main (arguments : List String) : IO Unit := do
+  if arguments == ["--expect-forged-proof-module-rejected"] then
+    forgedModuleChild
+  else
+    runTests
