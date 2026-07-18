@@ -1,0 +1,119 @@
+import agent.Firth.Agent.ElaboratorDiagnostics
+import agent.Firth.Agent.Validation
+import agent.Firth.Agent.DiagnosticEnvelopeTest
+
+namespace Firth.Agent.Test
+
+open Firth.Agent
+open Firth.Elaborator
+
+private def point (line column : Nat) : Firth.Elaborator.Position :=
+  { offset := column - 1, line, column }
+
+private def span (line start stop : Nat) : Span :=
+  { start := point line start, stop := point line stop }
+
+private def location : Location := .path "main.fth" {
+  start := { line := 1, column := 1 }
+  stop := { line := 1, column := 2 } }
+
+private def fix : ProposedFix := {
+  fixId := "fix-1"
+  kind := "replace"
+  titleKey := "fix.replace"
+  applicability := "needs-review"
+  edits := [{ location, replacement := "dup" }] }
+
+private def context (payloadId : String) : EmissionContext := {
+  payloadId
+  requestId := "request-1"
+  source := .path "main.fth"
+  proposedFixes := [fix]
+  related := [{ relation := "origin", location }] }
+
+private def expectValidCode (name expectedCode source : String) : IO Unit := do
+  match validate source with
+  | .error error => fail s!"{name}: invalid emitted envelope {error.code}"
+  | .ok _ =>
+      match Lean.Json.parse source with
+      | .error parseError => fail s!"{name}: emitted invalid JSON {parseError}"
+      | .ok json =>
+          match json.getObjVal? "body" >>= (·.getObjVal? "code") >>= (·.getStr?) with
+          | .ok code => expectEqual name code expectedCode
+          | .error jsonError => fail s!"{name}: missing code {jsonError}"
+
+def runElaboratorDiagnosticTests : IO Unit := do
+  let parseError : ParseError := {
+    code := "firth.syntax.unterminated-string"
+    primary := span 2 3 7
+    expected := some "closing quote"
+    actual := some "end of input"
+    cause := .delimiter }
+  let parserJson := encodeParseError (context "parser-1") parseError
+  expectValidCode "parser adapter" "firth.syntax.unterminated-string" parserJson
+  if parserJson.contains "\"cause\":{\"kind\":\"delimiter\"" &&
+      parserJson.contains "\"proposed_fixes\":[{\"fix_id\":\"fix-1\"" &&
+      parserJson.contains "\"related\":[{\"relation\":\"origin\"" then pure ()
+  else fail "parser adapter omitted cause, fix, or related information"
+
+  let erasureJson := encodeErasureError (context "erasure-1")
+    (.linearUnused "handle" (span 3 1 7))
+  expectValidCode "erasure adapter" "firth.linearity.unconsumed-resource" erasureJson
+  if erasureJson.contains "\"message_params\":{\"name\":\"handle\"}" then pure ()
+  else fail "erasure adapter omitted the local name"
+
+  let stackDiagnostic : Firth.Elaborator.StackEffect.Diagnostic := {
+    code := "firth.type.stack-mismatch"
+    primary := span 4 2 5
+    state := .snoc .empty (.base "Int" .many)
+    expected := some (.snoc .empty (.base "Bool" .many))
+    actual := some (.snoc .empty (.base "Int" .many)) }
+  let stackJson := encodeStackEffectDiagnostic (context "stack-1") stackDiagnostic
+  expectValidCode "stack-effect adapter" "firth.type.stack-mismatch" stackJson
+  if stackJson.contains "\"expected_stack\":{\"encoding\":\"opaque\",\"value\":" &&
+      stackJson.contains "\"actual_stack\":{\"encoding\":\"opaque\",\"value\":" then pure ()
+  else fail "stack-effect adapter omitted expected or actual state"
+
+  let hole : Firth.Elaborator.StackEffect.TypedHole := {
+    span := span 5 6 7
+    state := .snoc (.row (.rigid "rho")) (.base "Int" .many) }
+  let holeJson := encodeTypedHole (context "hole-1") "h-1" hole
+  match validate holeJson with
+  | .ok envelope => expectEqual "typed-hole adapter kind" envelope.payloadKind "typed_hole"
+  | .error error => fail s!"typed-hole adapter invalid: {error.code}"
+
+  let first := parserEnvelope (context "z") { parseError with primary := span 9 1 2 }
+  let second := parserEnvelope (context "a") { parseError with primary := span 1 1 2 }
+  match sortDiagnosticEnvelopes [first, second] with
+  | sortedFirst :: _ => expectEqual "diagnostic location sorting" sortedFirst.payloadId "a"
+  | [] => fail "diagnostic sorting dropped both envelopes"
+
+  match parse "\"unterminated" with
+  | .success _ => fail "parser integration fixture unexpectedly succeeded"
+  | .failure (error :: _) =>
+      expectValidCode "parser path emission" error.code
+        (encodeParseError (context "parser-path") error)
+  | .failure [] => fail "parser integration fixture produced no diagnostic"
+
+  match parse ": unbound ( a:Int^many -- ) locals { a } { missing } ;" with
+  | .success { declarations := [.word word], .. } =>
+      match erase {} word.effect word.body with
+      | .ok _ => fail "erasure integration fixture unexpectedly succeeded"
+      | .error error =>
+          let emitted := encodeErasureError (context "erasure-path") error
+          match validate emitted with
+          | .ok _ => pure ()
+          | .error validation => fail s!"erasure path emitted invalid JSON: {validation.code}"
+  | .success _ => fail "erasure integration fixture parsed the wrong declaration shape"
+  | .failure errors => fail s!"erasure integration fixture did not parse: {repr errors}"
+
+  let located : Firth.Elaborator.LocatedKernel := {
+    span := span 6 1 8
+    atom := .word "missing" }
+  match Firth.Elaborator.StackEffect.infer {} [located] with
+  | .ok _ => fail "stack-effect integration fixture unexpectedly succeeded"
+  | .error diagnostic =>
+      expectValidCode "stack-effect path emission" diagnostic.code
+        (encodeStackEffectDiagnostic (context "stack-path") diagnostic)
+
+end Firth.Agent.Test
