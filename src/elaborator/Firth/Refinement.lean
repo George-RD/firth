@@ -2,6 +2,7 @@ import elaborator.Firth.StackEffect
 import smt.Firth.SmtBoundary
 import Lean.CoreM
 import Lean.Util.CollectAxioms
+import Std.Sync.Mutex
 
 namespace Firth.Elaborator.Refinement
 
@@ -81,6 +82,74 @@ structure Obligation where
   context : ObligationContext
   deriving Repr, BEq
 
+private inductive RefinementNode where
+  | predicate (value : Predicate)
+  | predicates (values : List Predicate)
+  | predicateGroups (values : List (List Predicate))
+  | intExpr (value : IntExpr)
+  | intExprs (values : List IntExpr)
+
+private def intKernelCost (value : Int) : Nat :=
+  value.natAbs.log2 + 1
+
+/- Traverse caller-supplied predicate roots incrementally.  In particular, do not first fold or
+copy the complete top-level lists, because the budget is the resource boundary for those lists. -/
+private def predicateGroupsWithinKernelBounds (groups : List (List Predicate)) : Bool :=
+  let rec visit : Nat → Nat → Nat → List RefinementNode → Bool
+    | _, _, _, [] => true
+    | _, 0, _, .predicates _ :: _ => false
+    | remaining, links + 1, stringBytes, .predicates [] :: rest =>
+        visit remaining links stringBytes rest
+    | remaining, links + 1, stringBytes, .predicates (value :: values) :: rest =>
+        visit remaining links stringBytes (.predicate value :: .predicates values :: rest)
+    | _, 0, _, .predicateGroups _ :: _ => false
+    | remaining, links + 1, stringBytes, .predicateGroups [] :: rest =>
+        visit remaining links stringBytes rest
+    | remaining, links + 1, stringBytes, .predicateGroups (values :: groups) :: rest =>
+        visit remaining links stringBytes (.predicates values :: .predicateGroups groups :: rest)
+    | _, 0, _, .intExprs _ :: _ => false
+    | remaining, links + 1, stringBytes, .intExprs [] :: rest =>
+        visit remaining links stringBytes rest
+    | remaining, links + 1, stringBytes, .intExprs (value :: values) :: rest =>
+        visit remaining links stringBytes (.intExpr value :: .intExprs values :: rest)
+    | 0, _, _, _ => false
+    | remaining + 1, links, stringBytes, node :: rest =>
+        match node with
+        | .predicate predicate =>
+            match predicate with
+            | .truth | .falsity => visit remaining links stringBytes rest
+            | .boolVariable name | .nonlinear name | .worldSensitive name =>
+                let nextBytes := stringBytes + name.utf8ByteSize
+                nextBytes <= 1048576 && visit remaining links nextBytes rest
+            | .not body => visit remaining links stringBytes (.predicate body :: rest)
+            | .and left right | .or left right =>
+                visit remaining links stringBytes (.predicate left :: .predicate right :: rest)
+            | .intEq left right | .intNe left right | .intLe left right | .intLt left right =>
+                visit remaining links stringBytes (.intExpr left :: .intExpr right :: rest)
+            | .named name version arguments =>
+                let nextBytes := stringBytes + name.utf8ByteSize + version.utf8ByteSize
+                nextBytes <= 1048576 &&
+                  visit remaining links nextBytes (.intExprs arguments :: rest)
+        | .intExpr expression =>
+            match expression with
+            | .literal value =>
+                let nextBytes := stringBytes + intKernelCost value
+                nextBytes <= 1048576 && visit remaining links nextBytes rest
+            | .variable name =>
+                let nextBytes := stringBytes + name.utf8ByteSize
+                nextBytes <= 1048576 && visit remaining links nextBytes rest
+            | .add left right | .sub left right =>
+                visit remaining links stringBytes (.intExpr left :: .intExpr right :: rest)
+            | .scale coefficient body =>
+                let nextBytes := stringBytes + intKernelCost coefficient
+                nextBytes <= 1048576 &&
+                  visit remaining links nextBytes (.intExpr body :: rest)
+        | .predicates _ | .predicateGroups _ | .intExprs _ => false
+  visit 10000 10010 0 [.predicateGroups groups]
+
+private def formulaWithinKernelBounds (formula : Formula) : Bool :=
+  predicateGroupsWithinKernelBounds [formula.premises, formula.conclusions]
+
 private def frame (value : String) : String := s!"{value.toUTF8.size}:{value}"
 
 private def encodeStrings (values : List String) : String :=
@@ -96,10 +165,24 @@ private def obligationIdentity (kind : ObligationKind) (formula : Formula)
     frame context.toolchainRevision ++
     frame kind.canonical ++ frame (canonicalFormula formula) ++ ")"
 
+private def budgetObligationIdentity (kind : ObligationKind) (context : ObligationContext) : String :=
+  "kernel-budget-exceeded(" ++ frame context.wordId ++ frame context.bodyHash ++
+    frame context.erasedWordTypeHash ++ frame context.specHash ++ frame kind.canonical ++ ")"
+
+private def makeBudgetExceededObligation (kind : ObligationKind)
+    (context : ObligationContext) : Obligation :=
+  { obligationId := budgetObligationIdentity kind context
+    kind
+    formula := { premises := [], conclusions := [.nonlinear "kernel-budget-exceeded"] }
+    context }
+
 def makeObligation (kind : ObligationKind) (premises conclusions : List Predicate)
     (context : ObligationContext) : Obligation :=
   let formula := { premises, conclusions }
-  { obligationId := obligationIdentity kind formula context, kind, formula, context }
+  if formulaWithinKernelBounds formula then
+    { obligationId := obligationIdentity kind formula context, kind, formula, context }
+  else
+    makeBudgetExceededObligation kind context
 
 structure TotalityTypingPremises where
   premises : RefinementSet
@@ -114,21 +197,59 @@ structure BodyTypingPremises where
   totality : Option TotalityTypingPremises := none
   deriving Repr, BEq
 
+private def bodyTypingBudgetExceeded (typing : BodyTypingPremises) : Option ObligationKind :=
+  if !predicateGroupsWithinKernelBounds
+      [ typing.precondition.conjuncts
+      , typing.bodySemantics.conjuncts
+      , typing.declaredPostcondition.conjuncts ] then
+    some .body
+  else
+    match typing.totality with
+    | some totality =>
+        if predicateGroupsWithinKernelBounds
+            [totality.premises.conjuncts, totality.conclusion.conjuncts] then
+          none
+        else
+          some .bodyTotality
+    | none => none
+
 def bodyObligations (typing : BodyTypingPremises) : List Obligation :=
-  let safety := makeObligation .body
-    (typing.precondition.conjuncts ++ typing.bodySemantics.conjuncts)
-    typing.declaredPostcondition.conjuncts typing.context
-  match typing.totality with
-  | some totality =>
-      [safety, makeObligation .bodyTotality totality.premises.conjuncts
-        totality.conclusion.conjuncts typing.context]
-  | none => [safety]
+  match bodyTypingBudgetExceeded typing with
+  | some kind => [makeBudgetExceededObligation kind typing.context]
+  | none =>
+      let safety := makeObligation .body
+        (typing.precondition.conjuncts ++ typing.bodySemantics.conjuncts)
+        typing.declaredPostcondition.conjuncts typing.context
+      match typing.totality with
+      | some totality =>
+          [safety, makeObligation .bodyTotality totality.premises.conjuncts
+            totality.conclusion.conjuncts typing.context]
+      | none => [safety]
 
 structure SubsumptionTypingPremises where
   context : ObligationContext
   oldContract : Contract
   newContract : Contract
   deriving Repr, BEq
+
+private def subsumptionBudgetExceeded
+    (typing : SubsumptionTypingPremises) : Option ObligationKind :=
+  let oldSpec := typing.oldContract.specification
+  let newSpec := typing.newContract.specification
+  if !predicateGroupsWithinKernelBounds [oldSpec.pre.conjuncts, newSpec.pre.conjuncts] then
+    some .preSubsumption
+  else if !predicateGroupsWithinKernelBounds
+      [oldSpec.pre.conjuncts, newSpec.post.conjuncts, oldSpec.post.conjuncts] then
+    some .postSubsumption
+  else
+    match oldSpec.totality, newSpec.totality with
+    | some oldTotality, some newTotality =>
+        if predicateGroupsWithinKernelBounds
+            [oldSpec.pre.conjuncts, oldTotality.conjuncts, newTotality.conjuncts] then
+          none
+        else
+          some .totalitySubsumption
+    | _, _ => none
 
 private def refinementSubsumptionObligations (typing : SubsumptionTypingPremises)
     (totalityPair : Option (RefinementSet × RefinementSet)) : List Obligation :=
@@ -153,7 +274,9 @@ inductive SubsumptionError where
 
 def subsumptionObligations (typing : SubsumptionTypingPremises) :
     Except SubsumptionError (List Obligation) :=
-  if typing.oldContract.wordType != typing.newContract.wordType then
+  if let some kind := subsumptionBudgetExceeded typing then
+    .ok [makeBudgetExceededObligation kind typing.context]
+  else if typing.oldContract.wordType != typing.newContract.wordType then
     .error .erasedWordTypeMismatch
   else
     match typing.oldContract.specification.totality, typing.newContract.specification.totality with
@@ -629,52 +752,6 @@ private def formulaExpression (formula : Formula) : Lean.Expr :=
     (expressionList (Lean.mkConst ``Firth.Smt.Predicate)
       (formula.conclusions.map predicateExpression))
 
-private inductive RefinementNode where
-  | predicate (value : Predicate)
-  | intExpr (value : IntExpr)
-
-private def intKernelCost (value : Int) : Nat :=
-  value.natAbs.log2 + 1
-
-private def formulaWithinKernelBounds (formula : Formula) : Bool :=
-  let initial := formula.conclusions.foldl (fun work value => .predicate value :: work)
-    (formula.premises.foldl (fun work value => .predicate value :: work) [])
-  let rec visit : Nat → Nat → List RefinementNode → Bool
-    | _, _, [] => true
-    | 0, _, _ => false
-    | remaining + 1, stringBytes, node :: rest =>
-        match node with
-        | .predicate predicate =>
-            match predicate with
-            | .truth | .falsity => visit remaining stringBytes rest
-            | .boolVariable name | .nonlinear name | .worldSensitive name =>
-                let nextBytes := stringBytes + name.toUTF8.size
-                nextBytes <= 1048576 && visit remaining nextBytes rest
-            | .not body => visit remaining stringBytes (.predicate body :: rest)
-            | .and left right | .or left right =>
-                visit remaining stringBytes (.predicate left :: .predicate right :: rest)
-            | .intEq left right | .intNe left right | .intLe left right | .intLt left right =>
-                visit remaining stringBytes (.intExpr left :: .intExpr right :: rest)
-            | .named name version arguments =>
-                let nextBytes := stringBytes + name.toUTF8.size + version.toUTF8.size
-                nextBytes <= 1048576 &&
-                  visit remaining nextBytes
-                    (arguments.foldl (fun work value => .intExpr value :: work) rest)
-        | .intExpr expression =>
-            match expression with
-            | .literal value =>
-                let nextBytes := stringBytes + intKernelCost value
-                nextBytes <= 1048576 && visit remaining nextBytes rest
-            | .variable name =>
-                let nextBytes := stringBytes + name.toUTF8.size
-                nextBytes <= 1048576 && visit remaining nextBytes rest
-            | .add left right | .sub left right =>
-                visit remaining stringBytes (.intExpr left :: .intExpr right :: rest)
-            | .scale coefficient body =>
-                let nextBytes := stringBytes + intKernelCost coefficient
-                nextBytes <= 1048576 && visit remaining nextBytes (.intExpr body :: rest)
-  visit 10000 0 initial
-
 private def leanRecord (obligation : Obligation) : LeanProofRecord :=
   { obligationId := obligation.obligationId
     theoremStatement := theoremStatement obligation
@@ -690,6 +767,9 @@ private def leanRecord (obligation : Obligation) : LeanProofRecord :=
 
 private def canonicalObligationIdentity (obligation : Obligation) : Bool :=
   obligation.obligationId == obligationIdentity obligation.kind obligation.formula obligation.context
+
+private def isBudgetExceededObligation (obligation : Obligation) : Bool :=
+  obligation.obligationId == budgetObligationIdentity obligation.kind obligation.context
 
 private inductive BoundedProcessOutput where
   | completed (output : IO.Process.Output)
@@ -840,41 +920,49 @@ def currentProofModuleHash : IO (Option String) := do
   let some _ ← withAuthenticatedProofSearchPath (fun _ => pure ()) | pure none
   governedProofModuleHash
 
+private initialize kernelCheckMutex : Std.Mutex Unit ← Std.Mutex.new ()
+
 private def kernelCheckProofTerm (targetFormula instantiatedFormula : Formula)
     (cancelToken : IO.CancelToken) : IO Bool := do
-  let some accepted ← withAuthenticatedProofSearchPath fun searchPath => do
-    Lean.searchPathRef.set searchPath
-    let options := Lean.maxHeartbeats.set {} 1000000
-    let environment ← Lean.importModules
-      #[{ module := `elaborator.Firth.Refinement }] options 0
-    let coreContext : Lean.Core.Context :=
-      { fileName := "<refinement-recheck>"
-        fileMap := Lean.FileMap.ofString ""
-        options }
-    let coreState : Lean.Core.State := { env := environment }
-    let collect : Lean.CoreM (Array Lean.Name) :=
-      Lean.collectAxioms ``Firth.Elaborator.Refinement.leanDecide_sound
-    let axioms ← collect.toIO' coreContext coreState
-    if axioms != #[``propext] then pure false
-    else
-      -- Construct the recorded proof as a kernel expression, then require its inferred type to be
-      -- the independently reconstructed target theorem when the declaration enters the environment.
-      let targetType := Lean.mkApp (Lean.mkConst ``Firth.Elaborator.Refinement.Valid)
-        (formulaExpression targetFormula)
-      let proof := Lean.mkApp2
-        (Lean.mkConst ``Firth.Elaborator.Refinement.leanDecide_sound)
-        (formulaExpression instantiatedFormula) Lean.reflBoolTrue
-      let declaration : Lean.Declaration := .thmDecl
-        { name := `Firth.Elaborator.Refinement.RecordedProof.checked
-          levelParams := []
-          type := targetType
-          value := proof }
-      match environment.addDeclCore (Lean.Core.getMaxHeartbeats options).toUSize declaration
-          (some cancelToken) with
-      | .ok _ => pure true
-      | .error _ => pure false
-    | throw (IO.userError "authenticated Lean proof module is unavailable")
-  pure accepted
+  kernelCheckMutex.atomically do
+    let some accepted ← withAuthenticatedProofSearchPath fun searchPath => do
+      let previousSearchPath ← Lean.searchPathRef.get
+      try
+        Lean.searchPathRef.set searchPath
+        let options := Lean.maxHeartbeats.set {} 1000000
+        let environment ← Lean.importModules
+          #[{ module := `elaborator.Firth.Refinement }] options 0
+        let coreContext : Lean.Core.Context :=
+          { fileName := "<refinement-recheck>"
+            fileMap := Lean.FileMap.ofString ""
+            options }
+        let coreState : Lean.Core.State := { env := environment }
+        let collect : Lean.CoreM (Array Lean.Name) :=
+          Lean.collectAxioms ``Firth.Elaborator.Refinement.leanDecide_sound
+        let axioms ← collect.toIO' coreContext coreState
+        if axioms != #[``propext] then pure false
+        else
+          -- Construct the recorded proof as a kernel expression, then require its inferred type to
+          -- be the independently reconstructed target theorem when the declaration enters the
+          -- environment.
+          let targetType := Lean.mkApp (Lean.mkConst ``Firth.Elaborator.Refinement.Valid)
+            (formulaExpression targetFormula)
+          let proof := Lean.mkApp2
+            (Lean.mkConst ``Firth.Elaborator.Refinement.leanDecide_sound)
+            (formulaExpression instantiatedFormula) Lean.reflBoolTrue
+          let declaration : Lean.Declaration := .thmDecl
+            { name := `Firth.Elaborator.Refinement.RecordedProof.checked
+              levelParams := []
+              type := targetType
+              value := proof }
+          match environment.addDeclCore (Lean.Core.getMaxHeartbeats options).toUSize declaration
+              (some cancelToken) with
+          | .ok _ => pure true
+          | .error _ => pure false
+      finally
+        Lean.searchPathRef.set previousSearchPath
+      | throw (IO.userError "authenticated Lean proof module is unavailable")
+    pure accepted
 
 private inductive BoundedKernelCheck where
   | completed (accepted : Bool)
@@ -905,7 +993,8 @@ private def boundedKernelCheck (targetFormula instantiatedFormula : Formula) :
 
 private def recheckLeanRecord (obligation : Obligation) (record : LeanProofRecord) :
     IO LeanRecordRecheck := do
-  if !formulaWithinKernelBounds obligation.formula ||
+  if isBudgetExceededObligation obligation ||
+      !formulaWithinKernelBounds obligation.formula ||
       !formulaWithinKernelBounds record.proofTerm.formula then
     pure .kernelRejected
   else
@@ -949,13 +1038,18 @@ private def recheckGeneratedLeanRecord (obligations : List Obligation)
 
 def recheckBodyLeanRecord (typing : BodyTypingPremises)
     (record : LeanProofRecord) : IO LeanRecordRecheck :=
-  recheckGeneratedLeanRecord (bodyObligations typing) record
+  match bodyTypingBudgetExceeded typing with
+  | some _ => pure .kernelRejected
+  | none => recheckGeneratedLeanRecord (bodyObligations typing) record
 
 def recheckContractLeanRecord (typing : SubsumptionTypingPremises)
     (record : LeanProofRecord) : IO LeanRecordRecheck :=
-  match subsumptionObligations typing with
-  | .error _ => pure .metadataMismatch
-  | .ok obligations => recheckGeneratedLeanRecord obligations record
+  match subsumptionBudgetExceeded typing with
+  | some _ => pure .kernelRejected
+  | none =>
+      match subsumptionObligations typing with
+      | .error _ => pure .metadataMismatch
+      | .ok obligations => recheckGeneratedLeanRecord obligations record
 
 private def isTotality : ObligationKind → Bool
   | .bodyTotality | .totalitySubsumption | .totalityPromisePresence => true
@@ -992,6 +1086,16 @@ private def leanObligation (obligation : Obligation)
     context := obligation.context
     reason }
 
+private def kernelBudgetResult (requestId : String) (obligation : Obligation) : PipelineResult :=
+  { leanQueue := [{
+      obligationId := obligation.obligationId
+      theoremStatement := "kernel-budget-exceeded"
+      formula := obligation.formula
+      context := obligation.context
+      reason := .kernelBudgetExceeded }]
+    diagnostics := [makeDiagnostic requestId obligation .deferred
+      (reasonData "kernel-budget-exceeded")] }
+
 private def queueForSmt (obligation : Obligation) : Option SmtQueueEntry :=
   if !isSmtEligibleKind obligation.kind then none
   else if classify obligation.formula == .qfLia then
@@ -1002,15 +1106,9 @@ private def queueForSmt (obligation : Obligation) : Option SmtQueueEntry :=
   else none
 
 private def dischargeObligation (requestId : String) (obligation : Obligation) : PipelineResult :=
-  if !formulaWithinKernelBounds obligation.formula then
-    { leanQueue := [{
-        obligationId := obligation.obligationId
-        theoremStatement := "kernel-budget-exceeded"
-        formula := obligation.formula
-        context := obligation.context
-        reason := .kernelBudgetExceeded }]
-      diagnostics := [makeDiagnostic requestId obligation .deferred
-        (reasonData "kernel-budget-exceeded")] }
+  if isBudgetExceededObligation obligation || !formulaWithinKernelBounds obligation.formula then
+    kernelBudgetResult requestId
+      (makeBudgetExceededObligation obligation.kind obligation.context)
   else if leanDecide obligation.formula then
     { leanRecords := [leanRecord obligation] }
   else
@@ -1095,7 +1193,8 @@ def renderCountermodel (model : Valuation) : String :=
   encodeStrings rendered
 
 def validSmtQueueEntry (entry : SmtQueueEntry) : Bool :=
-  isSmtEligibleKind entry.obligation.kind &&
+  formulaWithinKernelBounds entry.obligation.formula &&
+    isSmtEligibleKind entry.obligation.kind &&
     classify entry.obligation.formula == .qfLia &&
     entry.obligation.obligationId == obligationIdentity entry.obligation.kind
       entry.obligation.formula entry.obligation.context &&
@@ -1105,7 +1204,10 @@ def validSmtQueueEntry (entry : SmtQueueEntry) : Bool :=
 def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
     (outcome : ExternalOutcome) : PipelineResult :=
   let obligation := entry.obligation
-  if !validSmtQueueEntry entry then
+  if !formulaWithinKernelBounds obligation.formula then
+    kernelBudgetResult requestId
+      (makeBudgetExceededObligation obligation.kind obligation.context)
+  else if !validSmtQueueEntry entry then
     { leanQueue := [leanObligation obligation .externalRequestIneligible]
       diagnostics := [makeDiagnostic requestId obligation .deferred
         (reasonData "external-request-ineligible")] }

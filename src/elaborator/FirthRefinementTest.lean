@@ -176,6 +176,22 @@ private def expectShadowedDependencyRejected : IO Unit :=
         env := #[("LEAN_PATH", some shadowedSearchPath)] }
     expectEq output.exitCode 0 "shadowed dependency child rejects before import"
 
+private def expectKernelSearchPathScoped (typing : BodyTypingPremises)
+    (record : LeanProofRecord) : IO Unit := do
+  let before := System.SearchPath.toString (← Lean.searchPathRef.get)
+  expectEq (← recheckBodyLeanRecord typing record) .accepted
+    "sequential kernel recheck is accepted"
+  expectEq (System.SearchPath.toString (← Lean.searchPathRef.get)) before
+    "kernel recheck restores the process-wide Lean search path"
+  let first ← IO.asTask (recheckBodyLeanRecord typing record) Task.Priority.dedicated
+  let second ← IO.asTask (recheckBodyLeanRecord typing record) Task.Priority.dedicated
+  expectEq (← IO.ofExcept first.get) .accepted
+    "first concurrent kernel recheck is accepted"
+  expectEq (← IO.ofExcept second.get) .accepted
+    "second concurrent kernel recheck is accepted"
+  expectEq (System.SearchPath.toString (← Lean.searchPathRef.get)) before
+    "concurrent kernel rechecks restore the process-wide Lean search path"
+
 private def runTests : IO Unit := do
   let some leanToolchainHash ← currentLeanToolchainHash |
     fail "pinned Lean kernel identity is unavailable"
@@ -278,6 +294,7 @@ private def runTests : IO Unit := do
     "Lean proof record stores the instantiated formula"
   expectEq (← recheckBodyLeanRecord closedTyping closedRecord) .accepted
     "Lean proof record is accepted after kernel rechecking"
+  expectKernelSearchPathScoped closedTyping closedRecord
   let forgedTyping := bodyTyping ctx [] [] [.truth]
   let forgedRecord ← expectAt
     (checkBodyRefinements "request-a" forgedTyping).leanRecords 0 "forged Lean record"
@@ -307,6 +324,14 @@ private def runTests : IO Unit := do
   let oversizedQueue ← expectOneLeanQueue oversizedDischarge "over-budget refinement"
   expectEq oversizedQueue.reason .kernelBudgetExceeded
     "over-budget refinement structure has an explicit Lean escalation reason"
+  let deeplyNested := (List.replicate 10001 ()).foldl
+    (fun predicate _ => Predicate.not predicate) .truth
+  let deeplyNestedDischarge := bodyResult "request-a" ctx [] [] [deeplyNested]
+  expectEq deeplyNestedDischarge.leanRecords.length 0
+    "deeply nested refinements are budgeted before obligation identity canonicalisation"
+  let deeplyNestedQueue ← expectOneLeanQueue deeplyNestedDischarge "deeply nested refinement"
+  expectEq deeplyNestedQueue.reason .kernelBudgetExceeded
+    "deeply nested refinements have an explicit Lean escalation reason"
   let staleTyping := bodyTyping { ctx with normaliserVersion := "normaliser-v2" }
     [] [] [.intLt (.literal 0) (.literal 1)]
   expectEq (← recheckBodyLeanRecord staleTyping closedRecord) .metadataMismatch
@@ -370,6 +395,16 @@ private def runTests : IO Unit := do
     "SMT boundary requires a pinned solver"
   expectTrue smtEntry.requirements.serialiserProofRequired
     "SMT boundary requires a checked serialiser"
+  let oversizedExternalObligation : Obligation :=
+    { smtEntry.obligation with
+      obligationId := "attacker-supplied-over-budget-obligation"
+      formula := { premises := [], conclusions := List.replicate 10001 .truth } }
+  let oversizedExternal := recordExternalOutcome "request-a"
+    { smtEntry with obligation := oversizedExternalObligation } .unknown
+  let oversizedExternalQueue ← expectOneLeanQueue oversizedExternal
+    "over-budget external queue entry"
+  expectEq oversizedExternalQueue.reason .kernelBudgetExceeded
+    "external outcomes enforce formula bounds before queue identity and fragment checks"
   let pendingDiagnostic ← expectOneDiagnostic pending "undischargeable refinement"
   expectEq pendingDiagnostic.schemaVersion "1.0" "diagnostic schema version"
   expectEq pendingDiagnostic.payloadKind "diagnostic" "diagnostic payload kind"
