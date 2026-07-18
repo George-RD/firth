@@ -1,6 +1,6 @@
 name = "firth"
 version = "0.1.0"
-defaultTargets = ["firthTest", "firthParserTest"]
+defaultTargets = ["firthTest", "firthParserTest", "firthErasureTest"]
 testDriver = "firthTest"
 
 [[lean_lib]]
@@ -10,7 +10,7 @@ srcDir = "src/interpreter"
 [[lean_lib]]
 name = "FirthElaborator"
 srcDir = "src"
-roots = ["elaborator.Firth.Parser", "elaborator.FirthElaborator"]
+roots = ["elaborator.Firth.Parser", "elaborator.Firth.Erasure", "elaborator.FirthElaborator"]
 
 [[lean_exe]]
 name = "firthTest"
@@ -26,3 +26,8 @@ srcDir = "src"
 name = "firthVmFixtures"
 root = "FirthVmFixtures"
 srcDir = "src/interpreter"
+
+[[lean_exe]]
+name = "firthErasureTest"
+root = "elaborator.FirthErasureTest"
+srcDir = "src"

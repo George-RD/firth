@@ -153,7 +153,8 @@ empty when `x` is top; it is `swap` when `x` is immediately below top; and when
 the top is a protected value `v` above `x`, it emits `[focus(x,S_without_v)] dip
 swap`. The recursive quotation is constructed first, then pushed above `v`;
 `dip` runs the recursive focus below `v`, and the final `swap` moves the focused
-slot above `v`. For example, focusing the bottom of `[a,b,c]` emits
+slot above `v`. No additional `swap` is emitted before this recursive quotation.
+For example, focusing the bottom of `[a,b,c]` emits
 `[swap] dip swap`, which is a sequence of valid kernel steps and
 leaves `[b,c,a]`. Focus never copies or discards a value.
 
