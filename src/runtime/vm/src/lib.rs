@@ -11,6 +11,7 @@ use alloc::{string::String, vec, vec::Vec};
 const MAX_INSTRUCTIONS: u64 = 4096;
 const MAX_BYTES: usize = 1 << 20;
 const MAX_NESTING: usize = 32;
+const MAX_WORD_TYPE_NESTING: usize = 32;
 const DIGEST_BYTES: usize = 32;
 pub const DEFAULT_FUEL: u64 = MAX_INSTRUCTIONS;
 pub const FORMAT_VERSION: u16 = 1;
@@ -95,6 +96,7 @@ pub enum VmError {
     UnsupportedFormat(u16),
     UnsupportedGamma(u64),
     InvalidUtf8,
+    InvalidIdentifier,
     InvalidWordType,
     InvalidValueTag(u8),
     InvalidLiteralEncoding,
@@ -150,6 +152,9 @@ pub fn decode(bytes: &[u8]) -> Result<Image, VmError> {
 
 fn decode_word(reader: &mut Reader<'_>) -> Result<WordEntry, VmError> {
     let name = reader.string()?;
+    if !is_canonical_identifier(name.as_bytes()) {
+        return Err(VmError::InvalidIdentifier);
+    }
     let erased_word_type = reader.string()?;
     if !is_canonical_word_type(&erased_word_type) {
         return Err(VmError::InvalidWordType);
@@ -202,7 +207,13 @@ fn decode_instruction(reader: &mut Reader<'_>, depth: usize) -> Result<Instructi
         8 => (Op::Compose, None),
         9 => (Op::Quote, None),
         10 => (Op::If, None),
-        11 => (Op::CallWord, Some(Operand::Word(reader.string()?))),
+        11 => {
+            let name = reader.string()?;
+            if !is_canonical_identifier(name.as_bytes()) {
+                return Err(VmError::InvalidIdentifier);
+            }
+            (Op::CallWord, Some(Operand::Word(name)))
+        }
         12 => (Op::Prim, Some(Operand::Primitive(reader.string()?))),
         other => return Err(VmError::InvalidOpcode(other)),
     };
@@ -426,6 +437,7 @@ fn is_canonical_word_type(value: &str) -> bool {
         bytes,
         position: 1,
         rows: Vec::new(),
+        quotation_depth: 0,
     };
     parser.parse()
 }
@@ -434,6 +446,7 @@ struct WordTypeParser<'a> {
     bytes: &'a [u8],
     position: usize,
     rows: Vec<&'a [u8]>,
+    quotation_depth: usize,
 }
 
 impl<'a> WordTypeParser<'a> {
@@ -470,27 +483,20 @@ impl<'a> WordTypeParser<'a> {
     fn stack_items(&mut self) -> bool {
         let mut count = 0;
         if self.bytes[self.position..].starts_with(b"--")
-            || self.bytes.get(self.position) == Some(&b')')
+            || matches!(self.bytes.get(self.position), Some(b')' | b']'))
         {
             return true;
         }
         loop {
+            if self.peek_byte() == Some(b'[') {
+                return false;
+            }
             let item = match self.identifier() {
                 Some(item) => item,
                 None => return false,
             };
             if self.consume_byte(b':') {
-                if item.iter().any(|byte| !byte.is_ascii()) {
-                    return false;
-                }
-                let type_name = match self.identifier() {
-                    Some(type_name) => type_name,
-                    None => return false,
-                };
-                if type_name.iter().any(|byte| !byte.is_ascii()) {
-                    return false;
-                }
-                if self.consume_byte(b'^') && !self.consume(b"many") && !self.consume(b"linear") {
+                if !is_canonical_identifier(item) || !self.value_type() {
                     return false;
                 }
             } else if !is_row_name(item) || self.rows.is_empty() || !self.rows.contains(&item) {
@@ -498,7 +504,7 @@ impl<'a> WordTypeParser<'a> {
             }
             count += 1;
             if self.bytes[self.position..].starts_with(b"--")
-                || self.bytes.get(self.position) == Some(&b')')
+                || matches!(self.bytes.get(self.position), Some(b')' | b']'))
             {
                 break;
             }
@@ -506,12 +512,40 @@ impl<'a> WordTypeParser<'a> {
                 return false;
             }
             if self.bytes[self.position..].starts_with(b"--")
-                || self.bytes.get(self.position) == Some(&b')')
+                || matches!(self.bytes.get(self.position), Some(b')' | b']'))
             {
                 return false;
             }
         }
         count > 0
+    }
+
+    fn value_type(&mut self) -> bool {
+        if self.consume_byte(b'[') {
+            if self.quotation_depth >= MAX_WORD_TYPE_NESTING {
+                return false;
+            }
+            self.quotation_depth += 1;
+            if !self.stack_items() || !self.consume(b"--") || !self.stack_items() {
+                return false;
+            }
+            if !self.consume_byte(b']') {
+                return false;
+            }
+            self.quotation_depth -= 1;
+        } else {
+            let type_name = match self.identifier() {
+                Some(type_name) => type_name,
+                None => return false,
+            };
+            if !is_canonical_identifier(type_name) {
+                return false;
+            }
+        }
+        if self.consume_byte(b'^') && !self.consume(b"many") && !self.consume(b"linear") {
+            return false;
+        }
+        true
     }
 
     fn identifier(&mut self) -> Option<&'a [u8]> {
@@ -531,25 +565,33 @@ impl<'a> WordTypeParser<'a> {
             } else {
                 return None;
             };
-            if self.position.checked_add(width)? > self.bytes.len()
-                || !self.bytes[self.position + 1..self.position + width]
+            let end = self.position.checked_add(width)?;
+            if end > self.bytes.len()
+                || !self.bytes[self.position + 1..end]
                     .iter()
                     .all(|byte| *byte & 0xc0 == 0x80)
+                || core::str::from_utf8(&self.bytes[self.position..end])
+                    .ok()?
+                    .chars()
+                    .count()
+                    != 1
             {
                 return None;
             }
-            self.position = self.position.checked_add(width)?;
-            return Some(&self.bytes[start..self.position]);
+            self.position = end;
+            return Some(&self.bytes[start..end]);
         }
-        while self.position < self.bytes.len() {
-            let byte = self.bytes[self.position];
-            if byte.is_ascii_alphanumeric() || byte == b'_' || byte >= 0x80 {
-                self.position += 1;
-            } else {
-                break;
-            }
+        while self.position < self.bytes.len()
+            && (self.bytes[self.position].is_ascii_alphanumeric()
+                || self.bytes[self.position] == b'_')
+        {
+            self.position += 1;
         }
         (self.position > start).then(|| &self.bytes[start..self.position])
+    }
+
+    fn peek_byte(&self) -> Option<u8> {
+        self.bytes.get(self.position).copied()
     }
 
     fn consume(&mut self, text: &[u8]) -> bool {
@@ -571,6 +613,16 @@ fn is_row_name(value: &[u8]) -> bool {
     core::str::from_utf8(value)
         .map(|value| value.chars().count() == 1)
         .unwrap_or(false)
+}
+
+fn is_canonical_identifier(value: &[u8]) -> bool {
+    let Some((&first, rest)) = value.split_first() else {
+        return false;
+    };
+    (first.is_ascii_alphabetic() || first == b'_')
+        && rest
+            .iter()
+            .all(|byte| byte.is_ascii_alphanumeric() || *byte == b'_')
 }
 
 /// Canonical minimal image used by the CLI smoke test: a `main` word pushing 42.
@@ -972,6 +1024,8 @@ mod tests {
             "(forallρ,σ;ρ--σ)",
             "(forallρ;ρ--ρ,x:Int^many)",
             "(forallρ;ρ--ρ,x:Bytes^linear)",
+            "(forallρ;ρ--q:[ρ--ρ]^many)",
+            "(forallρ,σ;ρ--q:[ρ--x:[ρ--σ]^linear]^many)",
         ] {
             assert!(is_canonical_word_type(valid), "{valid}");
         }
@@ -986,9 +1040,79 @@ mod tests {
             "(forallρ; ρ--ρ)",
             "(forall\u{00a0};--)",
             "(forallρ;ρ-ρ)",
+            "(forallρ;ρ--q:[ρ-ρ]^many)",
+            "(forallρ;ρ--q:[ρ--ρ]^bogus)",
+            "(forallρ;ρ--q:[ρ--ρ]^many{positive q})",
+            "(forallρ;ρ--q:[ρ--ρ]^manytail)",
+            "(forallρ;ρ--q:[ρ--ρ]^many)trailing",
+            "(forallρ;ρ--q:[ρ--ρ]^many,)",
         ] {
             assert!(!is_canonical_word_type(invalid), "{invalid}");
         }
+    }
+
+    #[test]
+    fn canonical_identifiers_have_ascii_boundaries() {
+        for valid in [b"a".as_slice(), b"A9".as_slice(), b"_name".as_slice()] {
+            assert!(is_canonical_identifier(valid));
+        }
+        for invalid in [
+            b"".as_slice(),
+            b"9name".as_slice(),
+            b"name-name".as_slice(),
+            "é".as_bytes(),
+        ] {
+            assert!(!is_canonical_identifier(invalid));
+        }
+    }
+
+    #[test]
+    fn quotation_word_type_nesting_is_bounded() {
+        let mut value = String::from("Int");
+        for _ in 0..MAX_WORD_TYPE_NESTING {
+            value = alloc::format!("[ρ--q:{value}]^many");
+        }
+        assert!(is_canonical_word_type(&alloc::format!(
+            "(forallρ;ρ--q:{value})"
+        )));
+        value = alloc::format!("[ρ--q:{value}]^many");
+        assert!(!is_canonical_word_type(&alloc::format!(
+            "(forallρ;ρ--q:{value})"
+        )));
+    }
+
+    #[test]
+    fn image_and_call_word_identifiers_are_validated() {
+        for (word_name, call_name) in [
+            ("", "callee"),
+            ("9main", "callee"),
+            ("é", "callee"),
+            ("main", ""),
+            ("main", "9callee"),
+            ("main", "é"),
+        ] {
+            assert_eq!(
+                decode(&encoded_call_image(word_name, call_name)),
+                Err(VmError::InvalidIdentifier)
+            );
+        }
+        assert!(decode(&encoded_call_image("_main", "callee")).is_ok());
+    }
+
+    fn encoded_call_image(word_name: &str, call_name: &str) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        put_unsigned(&mut bytes, u64::from(FORMAT_VERSION));
+        put_unsigned(&mut bytes, 1);
+        put_unsigned(&mut bytes, GAMMA_VERSION);
+        put_unsigned(&mut bytes, 1);
+        put_string(&mut bytes, word_name);
+        put_string(&mut bytes, "(--)");
+        put_unsigned(&mut bytes, 1);
+        bytes.push(11);
+        put_string(&mut bytes, call_name);
+        bytes.extend([0; DIGEST_BYTES * 3]);
+        put_unsigned(&mut bytes, 0);
+        bytes
     }
 
     #[test]

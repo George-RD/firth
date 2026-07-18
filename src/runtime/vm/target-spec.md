@@ -325,7 +325,9 @@ it contains no whitespace:
 ```text
 WordType ::= "(" [ "forall" RowName { "," RowName } ";" ] Stack "--" Stack ")"
 Stack    ::= [ Item { "," Item } ]
-Item     ::= RowName | Name ":" Name [ "^many" | "^linear" ]
+Item     ::= RowName | Name ":" ValueType
+ValueType ::= Name [ "^many" | "^linear" ]
+            | "[" Stack "--" Stack "]" [ "^many" | "^linear" ]
 ```
 
 An unannotated stack item is a row variable, and every row variable must occur
@@ -338,6 +340,11 @@ unbound rows, malformed delimiters, unknown usage annotations, all Unicode
 whitespace, and non-UTF-8 strings. `forall` is a reserved canonical keyword
 prefix, so an unbound name cannot begin with `forall`; a binder is recognised
 only when its comma-delimited row list ends with `;`.
+
+For this bounded VM decoder, recursive quotation `ValueType` nesting is limited
+to 32 levels, with level 32 accepted and level 33 rejected as an invalid word
+type. The canonical `Name` lexical form is exactly
+`[A-Za-z_][A-Za-z0-9_]*`; names are case-sensitive and all bytes must be ASCII.
 
 The trusted implementation should therefore remain dependency-minimal and
 reviewable: bounded LEB128 decoding, explicit bounds checks, no dynamic code
