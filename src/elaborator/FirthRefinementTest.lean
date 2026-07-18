@@ -122,7 +122,10 @@ private def expectExternalDeferred (obligation : Obligation) (outcome : External
 
 def main : IO Unit := do
   let some leanToolchainHash ← currentLeanToolchainHash |
-    fail "pinned Lean executable hash is unavailable"
+    fail "pinned Lean kernel identity is unavailable"
+  expectEq leanToolchainHash
+    "leanprover/lean4:v4.30.0@d024af099ca4bf2c86f649261ebf59565dc8c622"
+    "Lean recheck uses the governed in-process kernel pin"
   let some proofModuleHash ← currentProofModuleHash |
     fail "refinement proof-module hash is unavailable"
   let ctx := context leanToolchainHash proofModuleHash

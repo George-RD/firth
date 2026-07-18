@@ -1,5 +1,7 @@
 import elaborator.Firth.StackEffect
 import smt.Firth.SmtBoundary
+import Lean.CoreM
+import Lean.Util.CollectAxioms
 
 namespace Firth.Elaborator.Refinement
 
@@ -561,66 +563,70 @@ structure PipelineResult where
 private def theoremStatement (obligation : Obligation) : String :=
   "closed-refinement(" ++ frame (canonicalFormula obligation.formula) ++ ")"
 
-private def leanStringLiteral (value : String) : String :=
-  toString (repr value)
-
-private def leanList (render : α → String) (values : List α) : String :=
-  "[" ++ String.intercalate ", " (values.map render) ++ "]"
+private def expressionList (elementType : Lean.Expr) (values : List Lean.Expr) : Lean.Expr :=
+  values.foldr
+    (fun value rest =>
+      Lean.mkApp3 (Lean.mkConst ``List.cons [Lean.Level.zero]) elementType value rest)
+    (Lean.mkApp (Lean.mkConst ``List.nil [Lean.Level.zero]) elementType)
 
 mutual
-  private def leanIntExpr : IntExpr → String
-    | .literal value => s!"Firth.Smt.IntExpr.literal ({value})"
-    | .variable name => s!"Firth.Smt.IntExpr.variable {leanStringLiteral name}"
+  private def intExprExpression : IntExpr → Lean.Expr
+    | .literal value =>
+        Lean.mkApp (Lean.mkConst ``Firth.Smt.IntExpr.literal) (Lean.mkIntLit value)
+    | .variable name =>
+        Lean.mkApp (Lean.mkConst ``Firth.Smt.IntExpr.variable) (Lean.mkStrLit name)
     | .add left right =>
-        s!"Firth.Smt.IntExpr.add ({leanIntExpr left}) ({leanIntExpr right})"
+        Lean.mkApp2 (Lean.mkConst ``Firth.Smt.IntExpr.add)
+          (intExprExpression left) (intExprExpression right)
     | .sub left right =>
-        s!"Firth.Smt.IntExpr.sub ({leanIntExpr left}) ({leanIntExpr right})"
+        Lean.mkApp2 (Lean.mkConst ``Firth.Smt.IntExpr.sub)
+          (intExprExpression left) (intExprExpression right)
     | .scale coefficient body =>
-        s!"Firth.Smt.IntExpr.scale ({coefficient}) ({leanIntExpr body})"
+        Lean.mkApp2 (Lean.mkConst ``Firth.Smt.IntExpr.scale)
+          (Lean.mkIntLit coefficient) (intExprExpression body)
 
-  private def leanPredicate : Predicate → String
-    | .truth => "Firth.Smt.Predicate.truth"
-    | .falsity => "Firth.Smt.Predicate.falsity"
+  private def predicateExpression : Predicate → Lean.Expr
+    | .truth => Lean.mkConst ``Firth.Smt.Predicate.truth
+    | .falsity => Lean.mkConst ``Firth.Smt.Predicate.falsity
     | .boolVariable name =>
-        s!"Firth.Smt.Predicate.boolVariable {leanStringLiteral name}"
-    | .not body => s!"Firth.Smt.Predicate.not ({leanPredicate body})"
+        Lean.mkApp (Lean.mkConst ``Firth.Smt.Predicate.boolVariable) (Lean.mkStrLit name)
+    | .not body =>
+        Lean.mkApp (Lean.mkConst ``Firth.Smt.Predicate.not) (predicateExpression body)
     | .and left right =>
-        s!"Firth.Smt.Predicate.and ({leanPredicate left}) ({leanPredicate right})"
+        Lean.mkApp2 (Lean.mkConst ``Firth.Smt.Predicate.and)
+          (predicateExpression left) (predicateExpression right)
     | .or left right =>
-        s!"Firth.Smt.Predicate.or ({leanPredicate left}) ({leanPredicate right})"
+        Lean.mkApp2 (Lean.mkConst ``Firth.Smt.Predicate.or)
+          (predicateExpression left) (predicateExpression right)
     | .intEq left right =>
-        s!"Firth.Smt.Predicate.intEq ({leanIntExpr left}) ({leanIntExpr right})"
+        Lean.mkApp2 (Lean.mkConst ``Firth.Smt.Predicate.intEq)
+          (intExprExpression left) (intExprExpression right)
     | .intNe left right =>
-        s!"Firth.Smt.Predicate.intNe ({leanIntExpr left}) ({leanIntExpr right})"
+        Lean.mkApp2 (Lean.mkConst ``Firth.Smt.Predicate.intNe)
+          (intExprExpression left) (intExprExpression right)
     | .intLe left right =>
-        s!"Firth.Smt.Predicate.intLe ({leanIntExpr left}) ({leanIntExpr right})"
+        Lean.mkApp2 (Lean.mkConst ``Firth.Smt.Predicate.intLe)
+          (intExprExpression left) (intExprExpression right)
     | .intLt left right =>
-        s!"Firth.Smt.Predicate.intLt ({leanIntExpr left}) ({leanIntExpr right})"
+        Lean.mkApp2 (Lean.mkConst ``Firth.Smt.Predicate.intLt)
+          (intExprExpression left) (intExprExpression right)
     | .named name version arguments =>
-        s!"Firth.Smt.Predicate.named {leanStringLiteral name} {leanStringLiteral version} " ++
-          leanList (fun argument => s!"({leanIntExpr argument})") arguments
+        Lean.mkApp3 (Lean.mkConst ``Firth.Smt.Predicate.named)
+          (Lean.mkStrLit name) (Lean.mkStrLit version)
+          (expressionList (Lean.mkConst ``Firth.Smt.IntExpr)
+            (arguments.map intExprExpression))
     | .nonlinear description =>
-        s!"Firth.Smt.Predicate.nonlinear {leanStringLiteral description}"
+        Lean.mkApp (Lean.mkConst ``Firth.Smt.Predicate.nonlinear) (Lean.mkStrLit description)
     | .worldSensitive description =>
-        s!"Firth.Smt.Predicate.worldSensitive {leanStringLiteral description}"
+        Lean.mkApp (Lean.mkConst ``Firth.Smt.Predicate.worldSensitive) (Lean.mkStrLit description)
 end
 
-private def leanFormula (formula : Formula) : String :=
-  "{ premises := " ++ leanList (fun predicate => s!"({leanPredicate predicate})")
-    formula.premises ++ ", conclusions := " ++
-    leanList (fun predicate => s!"({leanPredicate predicate})") formula.conclusions ++ " }"
-
-private def leanProofModule (obligation : Obligation) (proofTerm : LeanProofTerm) : String :=
-  "import elaborator.Firth.Refinement\n\n" ++
-    "namespace Firth.Elaborator.Refinement.RecordedProof\n\n" ++
-    "private def targetFormula : Firth.Smt.Formula :=\n  " ++
-      leanFormula obligation.formula ++ "\n\n" ++
-    "private def instantiatedFormula : Firth.Smt.Formula :=\n  " ++
-      leanFormula proofTerm.formula ++ "\n\n" ++
-    "theorem checked : Firth.Elaborator.Refinement.Valid targetFormula := by\n" ++
-    "  exact Firth.Elaborator.Refinement.leanDecide_sound instantiatedFormula (by rfl)\n\n" ++
-    "#print axioms checked\n\n" ++
-    "end Firth.Elaborator.Refinement.RecordedProof\n"
+private def formulaExpression (formula : Formula) : Lean.Expr :=
+  Lean.mkApp2 (Lean.mkConst ``Firth.Smt.Formula.mk)
+    (expressionList (Lean.mkConst ``Firth.Smt.Predicate)
+      (formula.premises.map predicateExpression))
+    (expressionList (Lean.mkConst ``Firth.Smt.Predicate)
+      (formula.conclusions.map predicateExpression))
 
 private def leanRecord (obligation : Obligation) : LeanProofRecord :=
   { obligationId := obligation.obligationId
@@ -641,22 +647,32 @@ private def canonicalObligationIdentity (obligation : Obligation) : Bool :=
 private inductive BoundedProcessOutput where
   | completed (output : IO.Process.Output)
   | timedOut
+  | outputLimitExceeded
+
+private inductive BoundedText where
+  | value (text : String)
+  | limitExceeded
+  | invalidUtf8
+
+private partial def readBoundedText (handle : IO.FS.Handle) (limit : Nat) : IO BoundedText := do
+  let rec read (bytes : ByteArray) : IO BoundedText := do
+    let chunk ← handle.read 4096
+    if chunk.isEmpty then
+      match String.fromUTF8? bytes with
+      | some text => pure (.value text)
+      | none => pure .invalidUtf8
+    else if bytes.size + chunk.size > limit then
+      pure .limitExceeded
+    else
+      read (bytes ++ chunk)
+  read ByteArray.empty
 
 private def boundedProcessOutput (timeoutMilliseconds : Nat) (arguments : IO.Process.SpawnArgs)
-    (input : Option String := none) : IO BoundedProcessOutput := do
-  let child ← match input with
-    | none => do
-        IO.Process.spawn
-          { arguments with stdout := .piped, stderr := .piped, stdin := .null, setsid := true }
-    | some source => do
-        let child ← IO.Process.spawn
-          { arguments with stdout := .piped, stderr := .piped, stdin := .piped, setsid := true }
-        let (stdin, child) ← child.takeStdin
-        stdin.putStr source
-        stdin.flush
-        pure child
-  let stdout ← IO.asTask child.stdout.readToEnd Task.Priority.dedicated
-  let stderr ← IO.asTask child.stderr.readToEnd Task.Priority.dedicated
+    (outputLimit : Nat := 4096) : IO BoundedProcessOutput := do
+  let child ← IO.Process.spawn
+    { arguments with stdout := .piped, stderr := .piped, stdin := .null, setsid := true }
+  let stdout ← IO.asTask (readBoundedText child.stdout outputLimit) Task.Priority.dedicated
+  let stderr ← IO.asTask (readBoundedText child.stderr outputLimit) Task.Priority.dedicated
   let rec wait : Nat → IO (Option UInt32)
     | 0 => do
         try child.kill catch _ => pure ()
@@ -673,30 +689,20 @@ private def boundedProcessOutput (timeoutMilliseconds : Nat) (arguments : IO.Pro
   | some exitCode =>
       let stdout ← IO.ofExcept stdout.get
       let stderr ← IO.ofExcept stderr.get
-      pure (.completed { exitCode, stdout, stderr })
+      match stdout, stderr with
+      | .value stdout, .value stderr =>
+          pure (.completed { exitCode, stdout, stderr })
+      | _, _ => pure .outputLimitExceeded
 
-private def elanRoot : IO (Option System.FilePath) := do
-  let root ← match ← IO.getEnv "ELAN_HOME" with
-    | some path => pure (some (System.FilePath.mk path))
-    | none =>
-        match ← IO.getEnv "HOME" with
-        | some home => pure (some (System.FilePath.mk home / ".elan"))
-        | none => pure none
-  pure root
-
-private def selectedLeanExecutable : IO (Option System.FilePath) := do
-  let some root ← elanRoot | pure none
-  let name := if System.Platform.isWindows then "elan.exe" else "elan"
-  let elan := root / "bin" / name
-  if !(← elan.pathExists) then pure none
+private def sha256Digest (output : IO.Process.Output) : Option String :=
+  if output.exitCode != 0 then none
   else
-    match ← boundedProcessOutput 5000 { cmd := elan.toString, args := #["which", "lean"] } with
-    | .timedOut => pure none
-    | .completed output =>
-        if output.exitCode != 0 then pure none
-        else
-          let executable := System.FilePath.mk output.stdout.trimAscii.copy
-          if ← executable.pathExists then pure (some executable) else pure none
+    let digest := output.stdout.takeWhile (fun character => !character.isWhitespace) |>.copy
+    if digest.isEmpty then none else some digest
+
+private def pinnedLeanToolchain : String := "leanprover/lean4:v4.30.0"
+
+private def pinnedLeanGithash : String := "d024af099ca4bf2c86f649261ebf59565dc8c622"
 
 private def refinementProofModulePath : IO (Option System.FilePath) := do
   let some leanPath ← IO.getEnv "LEAN_PATH" | pure none
@@ -707,41 +713,88 @@ private def refinementProofModulePath : IO (Option System.FilePath) := do
         if ← candidate.pathExists then pure (some candidate) else find rest
   find (System.SearchPath.parse leanPath)
 
-private def sha256With (commands : List (System.FilePath × Array String))
-    (path : System.FilePath) : IO (Option String) := do
-  match commands with
-  | [] => pure none
-  | (executable, arguments) :: rest =>
-      if !(← executable.pathExists) then sha256With rest path
-      else
-        let output ← try
-          pure (some (← IO.Process.output
-            { cmd := executable.toString, args := arguments.push path.toString }))
-        catch _ => pure none
-        match output with
-        | none => sha256With rest path
-        | some output =>
-            if output.exitCode != 0 then sha256With rest path
-            else
-              let digest :=
-                output.stdout.takeWhile (fun character => !character.isWhitespace) |>.copy
-              if digest.isEmpty then sha256With rest path else pure (some digest)
-
-private def sha256 (path : System.FilePath) : IO (Option String) :=
-  sha256With
+private def sha256 (path : System.FilePath) : IO (Option String) := do
+  let rec select : List (System.FilePath × Array String) →
+      IO (Option (System.FilePath × Array String))
+    | [] => pure none
+    | candidate@(executable, _) :: rest => do
+        if ← executable.pathExists then pure (some candidate) else select rest
+  let some (executable, arguments) ← select
     [ (System.FilePath.mk "/usr/bin/shasum", #["-a", "256"])
     , (System.FilePath.mk "/usr/bin/sha256sum", #[])
-    , (System.FilePath.mk "/bin/sha256sum", #[]) ] path
+    , (System.FilePath.mk "/bin/sha256sum", #[]) ] | pure none
+  let some output ← (try
+    pure (some (← boundedProcessOutput 5000
+      { cmd := executable.toString, args := arguments.push path.toString }))
+    catch _ => pure none) | pure none
+  match output with
+  | .completed processOutput => pure (sha256Digest processOutput)
+  | .timedOut => pure none
+  | .outputLimitExceeded => pure none
 
 def currentLeanToolchainHash : IO (Option String) := do
-  let some executable ← selectedLeanExecutable | pure none
-  let some digest ← sha256 executable | pure none
-  pure (some ("sha256:" ++ digest))
+  -- The running kernel is the checker. Its compiled identity must match the accepted repository pin.
+  if Lean.githash != pinnedLeanGithash then pure none
+  else pure (some (pinnedLeanToolchain ++ "@" ++ Lean.githash))
 
 def currentProofModuleHash : IO (Option String) := do
   let some modulePath ← refinementProofModulePath | pure none
   let some digest ← sha256 modulePath | pure none
   pure (some ("sha256:" ++ digest))
+
+private def kernelCheckProofTerm (targetFormula instantiatedFormula : Formula) : IO Bool := do
+  let some leanPath ← IO.getEnv "LEAN_PATH" |
+    throw (IO.userError "Lean search path is unavailable")
+  Lean.searchPathRef.set (System.SearchPath.parse leanPath)
+  let options := Lean.maxHeartbeats.set {} 1000000
+  let environment ← Lean.importModules
+    #[{ module := `elaborator.Firth.Refinement }] options 0
+  let coreContext : Lean.Core.Context :=
+    { fileName := "<refinement-recheck>"
+      fileMap := Lean.FileMap.ofString ""
+      options }
+  let coreState : Lean.Core.State := { env := environment }
+  let collect : Lean.CoreM (Array Lean.Name) :=
+    Lean.collectAxioms ``Firth.Elaborator.Refinement.leanDecide_sound
+  let axioms ← collect.toIO' coreContext coreState
+  if axioms != #[``propext] then pure false
+  else
+    -- Construct the recorded proof as a kernel expression, then require its inferred type to be
+    -- definitionally equal to the independently reconstructed target theorem.
+    let targetType := Lean.mkApp (Lean.mkConst ``Firth.Elaborator.Refinement.Valid)
+      (formulaExpression targetFormula)
+    let proof := Lean.mkApp2
+      (Lean.mkConst ``Firth.Elaborator.Refinement.leanDecide_sound)
+      (formulaExpression instantiatedFormula) Lean.reflBoolTrue
+    match Lean.Kernel.check environment {} proof with
+    | .error _ => pure false
+    | .ok inferredType =>
+        match Lean.Kernel.isDefEq environment {} inferredType targetType with
+        | .ok true => pure true
+        | _ => pure false
+
+private inductive BoundedKernelCheck where
+  | completed (accepted : Bool)
+  | timedOut
+  | unavailable
+
+private def boundedKernelCheck (targetFormula instantiatedFormula : Formula) :
+    IO BoundedKernelCheck := do
+  let check ← IO.asTask
+    (try pure (some (← kernelCheckProofTerm targetFormula instantiatedFormula))
+      catch _ => pure none)
+    Task.Priority.dedicated
+  let rec wait : Nat → IO (Option (Option Bool))
+    | 0 => pure none
+    | remaining + 1 => do
+        if ← IO.hasFinished check then pure (some (← IO.ofExcept check.get))
+        else
+          IO.sleep 25
+          wait remaining
+  match ← wait 401 with
+  | none => pure .timedOut
+  | some none => pure .unavailable
+  | some (some accepted) => pure (.completed accepted)
 
 def recheckLeanRecord (obligation : Obligation) (record : LeanProofRecord) :
     IO LeanRecordRecheck := do
@@ -750,42 +803,25 @@ def recheckLeanRecord (obligation : Obligation) (record : LeanProofRecord) :
   if !canonicalObligationIdentity obligation || boundMetadata != expected then
     pure .metadataMismatch
   else
-    let some leanExecutable ← selectedLeanExecutable | pure .kernelUnavailable
-    let some toolchainDigest ← sha256 leanExecutable | pure .kernelUnavailable
-    if record.leanToolchainHash != "sha256:" ++ toolchainDigest then
+    let some leanToolchainHash ← currentLeanToolchainHash | pure .kernelUnavailable
+    if record.leanToolchainHash != leanToolchainHash then
       pure .toolchainMismatch
     else
-      let toolchain ← try
-        pure (some (← boundedProcessOutput 5000
-          { cmd := leanExecutable.toString, args := #["--githash"] }))
-      catch _ => pure none
-      let some (.completed toolchain) := toolchain | pure .kernelUnavailable
-      if toolchain.exitCode != 0 || toolchain.stdout.trimAscii.copy != Lean.githash then
-        pure .toolchainMismatch
+      let some proofModuleHash ← currentProofModuleHash | pure .kernelUnavailable
+      if record.proofModuleHash != proofModuleHash then pure .proofModuleMismatch
       else
-        let some proofModuleHash ← currentProofModuleHash | pure .kernelUnavailable
-        if record.proofModuleHash != proofModuleHash then pure .proofModuleMismatch
+        let encodedTarget := canonicalFormula obligation.formula
+        let encodedProof := canonicalFormula record.proofTerm.formula
+        if encodedTarget.toUTF8.size + encodedProof.toUTF8.size > 1048576 then
+          pure .kernelRejected
         else
-          let source := leanProofModule obligation record.proofTerm
-          if source.toUTF8.size > 1048576 then pure .kernelRejected
-          else
-            let checked ← try
-              pure (some (← boundedProcessOutput 10000
-                { cmd := leanExecutable.toString
-                  args := #["--stdin", "-t", "0", "-T", "1000000", "-M", "1024"] }
-                (some source)))
-            catch _ => pure none
-            match checked with
-            | none => pure .kernelUnavailable
-            | some .timedOut => pure .kernelTimedOut
-            | some (.completed output) =>
-                let axiomReport :=
-                  "'Firth.Elaborator.Refinement.RecordedProof.checked' depends on axioms: [propext]"
-                if output.exitCode != 0 ||
-                    !(output.stdout ++ output.stderr).contains axiomReport then
-                  pure .kernelRejected
-                else if record.proofTerm == expected.proofTerm then pure .accepted
-                else pure .metadataMismatch
+          match ← boundedKernelCheck obligation.formula record.proofTerm.formula with
+          | .unavailable => pure .kernelUnavailable
+          | .timedOut => pure .kernelTimedOut
+          | .completed false => pure .kernelRejected
+          | .completed true =>
+              if record.proofTerm == expected.proofTerm then pure .accepted
+              else pure .metadataMismatch
 
 private def isTotality : ObligationKind → Bool
   | .bodyTotality | .totalitySubsumption | .totalityPromisePresence => true
