@@ -1051,4 +1051,6 @@ def main : IO Unit := do
     (match run gamma d c 0 { stack := [], program := .empty } with
      | .terminal _ 0 0 => true
      | _ => false)
+  let erasureResult ← IO.Process.output { cmd := "lake", args := #["exe", "firthErasureTest"] }
+  if erasureResult.exitCode != 0 then throw <| IO.userError erasureResult.stderr
   IO.println "all interpreter tests passed"

@@ -41,6 +41,9 @@ private def shapes (program : KernelProgram) : List String :=
 private def arithmetic : EffectEnv :=
   { primitive := fun name => if name == "+" then some { input := [.many, .many], output := [.many] } else none }
 
+private def usageEnv : EffectEnv :=
+  { primitive := fun name => if name == "consume" then some { input := [.many], output := [] } else none }
+
 private def expectShapes (word : WordDefinition) (expected : List String) : IO Unit :=
   match erase arithmetic word.effect word.body with
   | .ok result =>
@@ -56,7 +59,7 @@ private def expectErrorAt (word : WordDefinition) (expected : ErasureError → B
           | .duplicateLocal _ actual | .unboundLocal _ actual | .unsupportedCapture _ actual
           | .missingStackValue actual | .linearCopy _ actual | .linearUnused _ actual
           | .unresolvedEffect _ actual | .effectUnderflow _ actual | .unsupportedLiteral actual
-          | .unsupportedAtom _ actual => actual
+          | .unsupportedAtom _ actual | .usageMismatch _ actual => actual
         if actual == span then pure () else fail s!"span mismatch for {repr error}: {repr actual} != {repr span}"
       else fail s!"wrong error: {repr error}"
   | .ok _ => fail "expected erasure failure"
@@ -79,8 +82,15 @@ def main : IO Unit := do
 
   -- The inner a shadows the outer a, and the outer identity is restored after
   -- the inner scope. The remaining outer b is then cleaned up canonically.
-  let shadow ← parsed ": shadow ( a:Int^many b:Int^many -- ) locals { a b } { locals { a } { a } a } ;"
-  expectShapes shadow ["swap"]
+  let shadow ← parsed ": shadow ( a:Int^many b:Int^many -- ) locals { a b } { locals { a } { } a } ;"
+  expectShapes shadow ["drop"]
+
+  let inferred ← parsed ": inferred ( -- ) [ 1 2 prim + ] ;"
+  match erase arithmetic inferred.effect inferred.body with
+  | .ok { program := [quotation], .. } =>
+      if quotation.childSpans.length == 3 then pure () else fail "quotation child spans were lost"
+  | .ok result => fail s!"unexpected inferred quotation: {repr result.program}"
+  | .error error => fail s!"quotation inference failed: {repr error}"
 
   -- Capture is checked recursively and the diagnostic retains the child use span.
   let capture ← parsed ": capture ( a:Int^many -- ) locals { a } { [ [ a ] ] } ;"
@@ -130,6 +140,16 @@ def main : IO Unit := do
   expectErrorAt explicitDrop (fun error => match error with
     | .linearUnused name _ => name == "h"
     | _ => false) dropSpan
+
+  let usage ← parsed ": usage ( h:Handle^linear -- ) locals { h } { h prim consume } ;"
+  let usageSpan := match usage.body with
+    | [.locals _ [.word _ _, .primitive _ span] _] => span
+    | _ => panic! "usage fixture changed"
+  match erase usageEnv usage.effect usage.body with
+  | .error (.usageMismatch name span) =>
+      if name == "consume" && span == usageSpan then pure () else fail "usage mismatch span was incorrect"
+  | .error error => fail s!"wrong usage error: {repr error}"
+  | .ok _ => fail "linear value was accepted by many input"
 
   let deep ← parsed ": deep ( a:Int^many b:Int^many c:Int^many d:Int^many e:Int^many -- ) locals { a b c d e } { } ;"
   match erase arithmetic deep.effect deep.body with

@@ -8,6 +8,7 @@ open Firth.Interpreter
 structure LocatedKernel where
   span : Span
   atom : Atom
+  childSpans : List Span := []
   deriving Repr, BEq
 
 abbrev KernelProgram := List LocatedKernel
@@ -30,6 +31,7 @@ inductive ErasureError where
   | linearUnused (name : String) (span : Span)
   | unresolvedEffect (name : String) (span : Span)
   | effectUnderflow (name : String) (span : Span)
+  | usageMismatch (name : String) (span : Span)
   | unsupportedLiteral (span : Span)
   | unsupportedAtom (name : String) (span : Span)
   deriving Repr, BEq
@@ -72,6 +74,9 @@ private def emptySpan : Span :=
 private def toProgram : KernelProgram → Program
   | [] => .empty
   | x :: xs => .cons x.atom (toProgram xs)
+
+private def locatedQuotation (span : Span) (program : KernelProgram) : LocatedKernel :=
+  { span, atom := .quotation (toProgram program), childSpans := program.map (·.span) }
 
 private def atomList (atom : Atom) (span : Span) : KernelProgram := [located span atom]
 
@@ -142,6 +147,9 @@ private def literalAtom : Firth.Elaborator.Literal → Option Firth.Interpreter.
 
 private def applySignature (name : String) (span : Span) (signature : Signature) (state : State) : Except ErasureError State :=
   if state.stack.length < signature.input.length then .error (.effectUnderflow name span)
+  else if (signature.input.zip (state.stack.take signature.input.length)).any
+      (fun (expected, actual) => expected == .many && actual.usage == .linear) then
+    .error (.usageMismatch name span)
   else
     let remaining := state.stack.drop signature.input.length
     let produced := signature.output.map (fun usage => { usage })
@@ -210,16 +218,36 @@ private def demandSpans (name : String) : List Item → List Span
   | .quotation _ _ :: xs => demandSpans name xs
   | _ :: xs => demandSpans name xs
 
-private def captureIn (visible : List String) : List Item → Option (String × Span)
+private def captureScan (bound visible : List String) : List Item → Option (String × Span)
   | [] => none
-  | .word name span :: xs => if visible.contains name then some (name, span) else captureIn visible xs
-  | .quotation body _ :: xs => match captureIn visible body with | some result => some result | none => captureIn visible xs
+  | .word name span :: xs =>
+      if bound.contains name then captureScan bound visible xs
+      else if visible.contains name then some (name, span) else captureScan bound visible xs
+  | .quotation body _ :: xs =>
+      match captureScan [] (bound ++ visible) body with
+      | some result => some result
+      | none => captureScan bound visible xs
   | .locals names body _ :: xs =>
-      let extended := names.map (·.name) ++ visible
-      match captureIn extended body with | some result => some result | none => captureIn visible xs
-  | _ :: xs => captureIn visible xs
+      match captureScan (names.map (·.name) ++ bound) visible body with
+      | some result => some result
+      | none => captureScan bound visible xs
+  | _ :: xs => captureScan bound visible xs
+
+private def captureIn (visible : List String) : List Item → Option (String × Span) :=
+  captureScan [] visible
 
 mutual
+  partial def eraseQuotation (env : EffectEnv) (body : List Item) (visible : List String) (span : Span) :
+      Except ErasureError KernelProgram :=
+    let rec attempt (fuel : Nat) (seed : List StackEntry) : Except ErasureError KernelProgram :=
+      match fuel with
+      | 0 => .error (.effectUnderflow "quotation" span)
+      | fuel + 1 => match eraseItems env body { stack := seed } visible with
+        | .ok (program, _) => .ok program
+        | .error (.effectUnderflow _ _) => attempt fuel ({ usage := .many } :: seed)
+        | .error error => .error error
+    attempt (body.length + 1) []
+
   partial def eraseItems (env : EffectEnv) (items : List Item) (state : State) (visible : List String) : Except ErasureError (KernelProgram × State) :=
     match items with
     | [] => .ok ([], state)
@@ -257,8 +285,8 @@ mutual
       | _ => .error (.unsupportedAtom name span)
     | .quotation body _ => match captureIn visible body with
       | some (name, localSpan) => .error (.unsupportedCapture name localSpan)
-      | none => eraseItems env body { stack := [] } visible |>.map (fun (program, _) =>
-          (atomList (.quotation (toProgram program)) span, { state with stack := { usage := .many } :: state.stack }))
+      | none => eraseQuotation env body visible span |>.map (fun program =>
+          ([locatedQuotation span program], { state with stack := { usage := .many } :: state.stack }))
     | .locals names body _ => match duplicateName names with
       | some duplicate => .error (.duplicateLocal duplicate.name duplicate.span)
       | none => localStack names state >>= fun (entered, slots) =>
@@ -271,7 +299,7 @@ mutual
         .ok (program, { cleaned with stack := restoreParents slots cleaned.stack })
     | item :: rest => match item with
       | .word name localSpan =>
-        if slots.any (fun slot => slot.name == name) then
+        if slots.any (fun slot => slot.name == name) || visible.contains name then
           let count := demandCount name items
           match findSlot name state.stack with
           | none => .error (.unboundLocal name localSpan)
