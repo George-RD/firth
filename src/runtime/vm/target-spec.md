@@ -1,3 +1,7 @@
+---
+node: firth.runtime.vm
+---
+
 # Firth v0.1 VM target specification
 
 Status: target contract for v0.1. This document is normative for the target

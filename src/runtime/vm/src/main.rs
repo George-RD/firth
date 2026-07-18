@@ -44,4 +44,12 @@ mod tests {
     fn missing_command_is_usage_error() {
         assert_eq!(run([].into_iter()), std::process::ExitCode::from(2));
     }
+
+    #[test]
+    fn extra_command_is_usage_error() {
+        assert_eq!(
+            run([String::from("--smoke"), String::from("extra")].into_iter()),
+            std::process::ExitCode::from(2)
+        );
+    }
 }

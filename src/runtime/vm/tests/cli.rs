@@ -19,3 +19,13 @@ fn usage_cli_contract() {
     assert_eq!(output.status.code(), Some(2));
     assert_eq!(output.stderr, b"usage: firth-vm --smoke\n");
 }
+
+#[test]
+fn extra_cli_argument_is_usage_error() {
+    let output = Command::new(env!("CARGO_BIN_EXE_firth-vm"))
+        .args(["--smoke", "extra"])
+        .output()
+        .expect("CLI starts");
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(output.stderr, b"usage: firth-vm --smoke\n");
+}
