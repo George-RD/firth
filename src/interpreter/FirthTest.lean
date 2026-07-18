@@ -345,7 +345,7 @@ def makeWorldLiftContractWitness : ∃ output nextTag',
       authorised := by simp [testPolicy] }
   exact ⟨[.world 5 0], 6, contract⟩
 
-theorem examplePrimitiveTagLift :
+theorem examplePrimitiveTagLift_core :
     ∀ name, PrimitiveTagLift examplePolicy exampleGamma name := by
   have filterContainsEqSelf : ∀ (source candidates : Ownerships),
       (∀ tag, tag ∈ candidates → tag ∈ source) →
@@ -433,24 +433,35 @@ theorem examplePrimitiveTagLift :
                       consumed_exact := ?_
                       produced_exact := ?_
                       retained_unchanged := ?_
-                      consumed_absent := by simp
-                      produced_fresh := by simp
+                      consumed_absent := by
+                        intro tag htag
+                        cases htag
+                      produced_fresh := by
+                        intro tag htag
+                        cases htag
                       output_residue_nodup := ?_
                       frontier_monotone := Nat.le_refl _
-                      row_tail_retained := by simp
+                      row_tail_retained := by
+                        intro tag htag
+                        exact htag
                       stack_contract := .addNat
                       authorised := by
                         change ("addNat" == "addNat" ∧ [] = [] ∧ [] = []) ∨ _
                         exact Or.inl ⟨rfl, rfl, rfl⟩ }
-                  · simp [taggedLinearTagsValueList, taggedLinearTagsValue, tailTags]
-                  · simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                  · intro tag
+                    simp [taggedLinearTagsValueList, taggedLinearTagsValue, tailTags]
+                  · intro tag
+                    simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
                       tailTags]
                   · exact (nodup_append_constructive.mp hwellformed.1).1
-                  · simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                  · intro tag
+                    simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
                       tailTags]
-                  · simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                  · intro tag
+                    simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
                       tailTags]
-                  · simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                  · intro tag
+                    simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
                       tailTags]
                   · exact (filterContainsEqSelf _ tailTags (by
                       intro tag htag
@@ -514,17 +525,23 @@ theorem examplePrimitiveTagLift :
             consumed_exact := ?_
             produced_exact := ?_
             retained_unchanged := ?_
-            consumed_absent := by simp
+            consumed_absent := by
+              intro tag htag
+              cases htag
             produced_fresh := ?_
             output_residue_nodup := ?_
             frontier_monotone := Nat.le_succ _
-            row_tail_retained := by simp
+            row_tail_retained := by
+              intro tag htag
+              exact htag
             stack_contract := .makeWorld
             authorised := by
               change _ ∨ ("makeWorld" == "makeWorld" ∧ [] = [] ∧ [nextTag].length = 1) ∨ _
               exact Or.inr (Or.inl ⟨rfl, rfl, rfl⟩) }
-        · simp [inputTags]
-        · simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+        · intro tag
+          simp [inputTags]
+        · intro tag
+          simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
             inputTags, or_comm]
         · exact (nodup_append_constructive.mp hwellformed.1).1
         · intro tag
@@ -635,17 +652,22 @@ theorem examplePrimitiveTagLift :
                   produced_exact := ?_
                   retained_unchanged := ?_
                   consumed_absent := ?_
-                  produced_fresh := by simp
+                  produced_fresh := by
+                    intro tag htag
+                    cases htag
                   output_residue_nodup := by simpa [output, tailTags, residueTags]
                     using htailResidueNodup
                   frontier_monotone := Nat.le_refl _
-                  row_tail_retained := by simp
+                  row_tail_retained := by
+                    intro tag htag
+                    exact htag
                   stack_contract := .consumeWorld
                   authorised := by
                     change _ ∨ _ ∨
                       ("consumeWorld" == "consumeWorld" ∧ [worldTag].length = 1 ∧ [] = [])
                     exact Or.inr (Or.inr ⟨rfl, rfl, rfl⟩) }
-              · simp [taggedLinearTagsValueList, taggedLinearTagsValue,
+              · intro tag
+                simp [taggedLinearTagsValueList, taggedLinearTagsValue,
                   tailTags, or_comm]
               · intro tag
                 change tag ∈ tailTags ↔ tag ∈ tailTags ∨ tag ∈ ([] : Ownerships)
@@ -705,6 +727,49 @@ theorem examplePrimitiveTagLift :
         rw [hnone] at hname
         cases hname
 
+theorem examplePrimitiveTagLift_addNat :
+    PrimitiveTagLift examplePolicy exampleGamma "addNat" := by
+  exact examplePrimitiveTagLift_core "addNat"
+
+theorem examplePrimitiveTagLift_makeWorld :
+    PrimitiveTagLift examplePolicy exampleGamma "makeWorld" := by
+  exact examplePrimitiveTagLift_core "makeWorld"
+
+theorem examplePrimitiveTagLift_consumeWorld :
+    PrimitiveTagLift examplePolicy exampleGamma "consumeWorld" := by
+  exact examplePrimitiveTagLift_core "consumeWorld"
+
+theorem examplePrimitiveTagLift_unknown (name : Prim)
+    (haddNat : name ≠ "addNat")
+    (hmakeWorld : name ≠ "makeWorld")
+    (hconsumeWorld : name ≠ "consumeWorld") :
+    PrimitiveTagLift examplePolicy exampleGamma name := by
+  intro input residue nextTag specification plainInput plainOutput hname
+    hinput hdelta hwellformed
+  have hnone : exampleGamma.primitive name = none := by
+    simp only [exampleGamma, defaultGamma, haddNat, hmakeWorld, hconsumeWorld]
+  rw [hnone] at hname
+  cases hname
+
+theorem examplePrimitiveTagLift :
+    ∀ name, PrimitiveTagLift examplePolicy exampleGamma name := by
+  intro name
+  by_cases haddNat : name = "addNat"
+  · subst name
+    exact examplePrimitiveTagLift_addNat
+  · by_cases hmakeWorld : name = "makeWorld"
+    · subst name
+      exact examplePrimitiveTagLift_makeWorld
+    · by_cases hconsumeWorld : name = "consumeWorld"
+      · subst name
+        exact examplePrimitiveTagLift_consumeWorld
+      · exact examplePrimitiveTagLift_unknown name haddNat hmakeWorld hconsumeWorld
+
+#print axioms examplePrimitiveTagLift_core
+#print axioms examplePrimitiveTagLift_addNat
+#print axioms examplePrimitiveTagLift_makeWorld
+#print axioms examplePrimitiveTagLift_consumeWorld
+#print axioms examplePrimitiveTagLift_unknown
 #print axioms examplePrimitiveTagLift
 
 theorem example_backward_adequacy_primitive_step :
@@ -728,8 +793,8 @@ theorem example_backward_adequacy_primitive_step :
     intro name entry frontier hentry
     simp [emptyDictionary] at hentry
   have hwellformed : InstrumentedWellFormed annotatedBefore := by
-    simp [annotatedBefore, InstrumentedWellFormed, taggedLinearTags,
-      taggedLinearTagsValue, taggedLinearTagsProgram, taggedLinearTagsAtom]
+    change [].Nodup ∧ ∀ tag, tag ∈ [] → tag < 2
+    exact ⟨List.nodup_nil, fun _ htag => (List.not_mem_nil htag).elim⟩
   have herases : eraseAConfig annotatedBefore = before := by
     rfl
   have htyped : TypedConfig exampleGamma emptyDictionary before := by
@@ -749,11 +814,15 @@ theorem example_backward_adequacy_primitive_step :
     refine ⟨defaultCosts.primitive "addNat", ?_⟩
     simp only [before, after, exampleGamma, defaultGamma, defaultCosts, step,
       addNatDelta]
-  simpa [annotatedBefore, before, after] using
-    (backward_adequacy (dictionary := emptyDictionary)
+  change ∃ annotatedAfter,
+    InstrumentedStep examplePolicy exampleGamma emptyDictionary defaultCosts
+      annotatedBefore annotatedAfter ∧
+    eraseAConfig annotatedAfter = after ∧
+    InstrumentedWellFormed annotatedAfter
+  exact backward_adequacy (dictionary := emptyDictionary)
       (policy := examplePolicy) (gamma := exampleGamma)
       (costs := defaultCosts) (fun _ => none) hdictionary
-      examplePrimitiveTagLift hwellformed herases htyped hstep)
+      examplePrimitiveTagLift hwellformed herases htyped hstep
 
 #print axioms example_backward_adequacy_primitive_step
 
