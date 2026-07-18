@@ -323,27 +323,76 @@ def makeWorldLiftContractWitness : ∃ output nextTag',
       delta := makeWorldDelta }
   let contract : PrimitiveTagContract testPolicy defaultGamma "makeWorld" [] [.world 5 0] .empty
       specification [] [.world 0] [] [] [] [5] 0 6 :=
-    { name_resolves := by simp [specification, defaultGamma]
+    { name_resolves := by rfl
       input_erases := rfl
       delta := rfl
       output_erases := rfl
-      input_partition := by simp [taggedLinearTagsValueList]
-      output_partition := by intro tag; simp [taggedLinearTagsValueList, taggedLinearTagsValue]
-      retained_nodup := by simp
-      consumed_nodup := by simp
-      produced_nodup := by simp
-      retained_exact := by simp [taggedLinearTagsValueList]
-      consumed_exact := by simp [taggedLinearTagsValueList]
-      produced_exact := by intro tag; simp [taggedLinearTagsValueList, taggedLinearTagsValue]
-      retained_unchanged := by simp [taggedLinearTagsValueList]
-      consumed_absent := by simp [taggedLinearTagsValueList, taggedLinearTagsProgram]
-      produced_fresh := by intro tag htag; simp at htag; subst tag; exact ⟨by decide, by decide⟩
-      output_residue_nodup := by simp [taggedLinearTagsValueList, taggedLinearTagsValue, taggedLinearTagsProgram]
+      input_partition := by
+        intro tag
+        change tag ∈ [] ↔ tag ∈ [] ∨ tag ∈ []
+        constructor
+        · intro htag; cases htag
+        · intro htag; cases htag with
+          | inl htag => cases htag
+          | inr htag => cases htag
+      output_partition := by
+        intro tag
+        change tag ∈ [5] ↔ tag ∈ [] ∨ tag ∈ [5]
+        constructor
+        · intro htag; exact Or.inr htag
+        · intro htag
+          cases htag with
+          | inl htag => cases htag
+          | inr htag => exact htag
+      retained_nodup := List.nodup_nil
+      consumed_nodup := List.nodup_nil
+      produced_nodup := List.nodup_cons.mpr
+        ⟨(by intro htag; cases htag), List.nodup_nil⟩
+      retained_exact := by
+        intro tag
+        change tag ∈ [] ↔ tag ∈ [] ∧ tag ∈ [5]
+        constructor
+        · intro htag; cases htag
+        · intro htag; cases htag.1
+      consumed_exact := by
+        intro tag
+        change tag ∈ [] ↔ tag ∈ [] ∧ tag ∉ [5]
+        constructor
+        · intro htag; cases htag
+        · intro htag; cases htag.1
+      produced_exact := by
+        intro tag
+        change tag ∈ [5] ↔ tag ∈ [5] ∧ tag ∉ []
+        constructor
+        · intro htag
+          exact ⟨htag, fun h => (List.not_mem_nil h).elim⟩
+        · intro htag; exact htag.1
+      retained_unchanged := by
+        change [] = List.filter (fun tag => ownershipContains [5] tag) []
+        rfl
+      consumed_absent := by
+        intro tag htag
+        cases htag
+      produced_fresh := by
+        intro tag htag
+        have htag' : tag = 5 := List.mem_singleton.mp htag
+        subst tag
+        exact ⟨by decide, by decide⟩
+      output_residue_nodup := by
+        change ([5] ++ []).Nodup
+        exact List.nodup_cons.mpr
+          ⟨(by intro htag; cases htag), List.nodup_nil⟩
       frontier_monotone := by decide
-      row_tail_retained := by simp
+      row_tail_retained := by
+        intro tag htag
+        cases htag
       stack_contract := .makeWorld
-      authorised := by simp [testPolicy] }
+      authorised := by
+        change _ ∨ ("makeWorld" == "makeWorld" ∧ [] = [] ∧ [5].length = 1) ∨ _
+        exact Or.inr (Or.inl ⟨rfl, rfl, rfl⟩) }
   exact ⟨[.world 5 0], 6, contract⟩
+
+#print axioms makeWorldLiftContractWitness
 
 theorem filterContainsEqSelf_explicit : ∀ (source candidates : Ownerships),
       (∀ tag, tag ∈ candidates → tag ∈ source) →
