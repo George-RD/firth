@@ -353,6 +353,10 @@ theorem leanDecide_sound (formula : Formula) :
     have evaluated := closedConclusionsTrue_sound formula.conclusions decided predicate member
     exact evalPredicate_stable predicate valuation true evaluated
 
+structure LeanProofTerm where
+  formula : Formula
+  deriving Repr, BEq
+
 structure LeanProofRecord where
   obligationId : String
   theoremStatement : String
@@ -364,6 +368,14 @@ structure LeanProofRecord where
   specHash : String
   toolchainRevision : String
   source : SourceLocation
+  proofTerm : LeanProofTerm
+  deriving Repr, BEq
+
+inductive LeanRecordRecheck where
+  | accepted
+  | metadataMismatch
+  | kernelRejected
+  | kernelUnavailable
   deriving Repr, BEq
 
 inductive LeanEscalationReason where
@@ -546,6 +558,66 @@ structure PipelineResult where
 private def theoremStatement (obligation : Obligation) : String :=
   "closed-refinement(" ++ frame (canonicalFormula obligation.formula) ++ ")"
 
+private def leanStringLiteral (value : String) : String :=
+  toString (repr value)
+
+private def leanList (render : α → String) (values : List α) : String :=
+  "[" ++ String.intercalate ", " (values.map render) ++ "]"
+
+mutual
+  private def leanIntExpr : IntExpr → String
+    | .literal value => s!"Firth.Smt.IntExpr.literal {value}"
+    | .variable name => s!"Firth.Smt.IntExpr.variable {leanStringLiteral name}"
+    | .add left right =>
+        s!"Firth.Smt.IntExpr.add ({leanIntExpr left}) ({leanIntExpr right})"
+    | .sub left right =>
+        s!"Firth.Smt.IntExpr.sub ({leanIntExpr left}) ({leanIntExpr right})"
+    | .scale coefficient body =>
+        s!"Firth.Smt.IntExpr.scale {coefficient} ({leanIntExpr body})"
+
+  private def leanPredicate : Predicate → String
+    | .truth => "Firth.Smt.Predicate.truth"
+    | .falsity => "Firth.Smt.Predicate.falsity"
+    | .boolVariable name =>
+        s!"Firth.Smt.Predicate.boolVariable {leanStringLiteral name}"
+    | .not body => s!"Firth.Smt.Predicate.not ({leanPredicate body})"
+    | .and left right =>
+        s!"Firth.Smt.Predicate.and ({leanPredicate left}) ({leanPredicate right})"
+    | .or left right =>
+        s!"Firth.Smt.Predicate.or ({leanPredicate left}) ({leanPredicate right})"
+    | .intEq left right =>
+        s!"Firth.Smt.Predicate.intEq ({leanIntExpr left}) ({leanIntExpr right})"
+    | .intNe left right =>
+        s!"Firth.Smt.Predicate.intNe ({leanIntExpr left}) ({leanIntExpr right})"
+    | .intLe left right =>
+        s!"Firth.Smt.Predicate.intLe ({leanIntExpr left}) ({leanIntExpr right})"
+    | .intLt left right =>
+        s!"Firth.Smt.Predicate.intLt ({leanIntExpr left}) ({leanIntExpr right})"
+    | .named name version arguments =>
+        s!"Firth.Smt.Predicate.named {leanStringLiteral name} {leanStringLiteral version} " ++
+          leanList (fun argument => s!"({leanIntExpr argument})") arguments
+    | .nonlinear description =>
+        s!"Firth.Smt.Predicate.nonlinear {leanStringLiteral description}"
+    | .worldSensitive description =>
+        s!"Firth.Smt.Predicate.worldSensitive {leanStringLiteral description}"
+end
+
+private def leanFormula (formula : Formula) : String :=
+  "{ premises := " ++ leanList (fun predicate => s!"({leanPredicate predicate})")
+    formula.premises ++ ", conclusions := " ++
+    leanList (fun predicate => s!"({leanPredicate predicate})") formula.conclusions ++ " }"
+
+private def leanProofModule (obligation : Obligation) (proofTerm : LeanProofTerm) : String :=
+  "import elaborator.Firth.Refinement\n\n" ++
+    "namespace Firth.Elaborator.Refinement.RecordedProof\n\n" ++
+    "private def targetFormula : Firth.Smt.Formula :=\n  " ++
+      leanFormula obligation.formula ++ "\n\n" ++
+    "private def instantiatedFormula : Firth.Smt.Formula :=\n  " ++
+      leanFormula proofTerm.formula ++ "\n\n" ++
+    "theorem checked : Firth.Elaborator.Refinement.Valid targetFormula := by\n" ++
+    "  exact Firth.Elaborator.Refinement.leanDecide_sound instantiatedFormula (by rfl)\n\n" ++
+    "end Firth.Elaborator.Refinement.RecordedProof\n"
+
 private def leanRecord (obligation : Obligation) : LeanProofRecord :=
   { obligationId := obligation.obligationId
     theoremStatement := theoremStatement obligation
@@ -556,10 +628,24 @@ private def leanRecord (obligation : Obligation) : LeanProofRecord :=
     erasedWordTypeHash := obligation.context.erasedWordTypeHash
     specHash := obligation.context.specHash
     toolchainRevision := obligation.context.toolchainRevision
-    source := obligation.context.source }
+    source := obligation.context.source
+    proofTerm := { formula := obligation.formula } }
 
-def recheckLeanRecord (obligation : Obligation) (record : LeanProofRecord) : Bool :=
-  leanDecide obligation.formula && record == leanRecord obligation
+def recheckLeanRecord (obligation : Obligation) (record : LeanProofRecord) :
+    IO LeanRecordRecheck := do
+  let source := leanProofModule obligation record.proofTerm
+  let checked ← try
+    let output ← IO.Process.output
+      { cmd := "lake", args := #["env", "lean", "--stdin", "-t", "0"] }
+      (some source)
+    pure (some (output.exitCode == 0))
+  catch _ => pure none
+  match checked with
+  | none => pure .kernelUnavailable
+  | some false => pure .kernelRejected
+  | some true =>
+      if record == leanRecord obligation then pure .accepted
+      else pure .metadataMismatch
 
 private def isTotality : ObligationKind → Bool
   | .bodyTotality | .totalitySubsumption | .totalityPromisePresence => true

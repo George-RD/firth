@@ -194,10 +194,20 @@ def main : IO Unit := do
     "Lean proof record binds predicate definitions"
   expectEq closedRecord.proofModuleHash "sha256:refinement-module-a"
     "Lean proof record binds the proof module"
-  expectTrue (recheckLeanRecord closedSuccess closedRecord)
-    "Lean proof record rechecks against the proved decision procedure"
-  expectTrue (!(recheckLeanRecord closedSuccess { closedRecord with bodyHash := "sha256:body-b" }))
-    "mutated Lean proof record is rejected"
+  expectEq closedRecord.proofTerm.formula closedSuccess.formula
+    "Lean proof record stores the instantiated formula"
+  expectEq (← recheckLeanRecord closedSuccess closedRecord) .accepted
+    "Lean proof record is accepted after kernel rechecking"
+  expectEq
+    (← recheckLeanRecord closedSuccess { closedRecord with bodyHash := "sha256:body-b" })
+    .metadataMismatch
+    "mutated Lean proof metadata is rejected"
+  let tamperedProof : LeanProofTerm :=
+    { formula := { premises := [], conclusions := [.falsity] } }
+  expectEq
+    (← recheckLeanRecord closedSuccess { closedRecord with proofTerm := tamperedProof })
+    .kernelRejected
+    "tampered Lean proof term must fail kernel rechecking"
 
   let vacuous := oneBody context [.falsity] [] [yPositive]
   expectEq (discharge "request-a" [vacuous]).leanRecords.length 1
