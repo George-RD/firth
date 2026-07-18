@@ -259,10 +259,11 @@ private def requireMany (span : Span) (current : AStack) (type : AType) : InferM
 
 private def push (stack : AStack) (type : AType) : AStack := .snoc stack type
 
-private def pop (code : String) (span : Span) (current : AStack) : InferM (AStack × AType) := do
+private def pop (code : String) (span : Span) (diagnosticState source : AStack) :
+    InferM (AStack × AType) := do
   let rest ← freshRow
   let value ← freshType
-  unifyStack code span current (.snoc rest value) current
+  unifyStack code span diagnosticState (.snoc rest value) source
   let state ← get
   pure (resolveStack state rest, resolveType state value)
 
@@ -339,6 +340,7 @@ private partial def valueType (env : Env) (span : Span) (current : AStack)
 private partial def inferAtom (env : Env) (located : LocatedKernel)
     (current : AStack) : InferM AStack := do
   let span := located.span
+  let diagnosticState := current
   match located.atom with
   | .lit literal => pure (push current (← literalType env span current literal))
   | .push value => pure (push current (← valueType env span current value))
@@ -351,19 +353,19 @@ private partial def inferAtom (env : Env) (located : LocatedKernel)
       let (_, output) ← inferSequence env children input
       pure (push current (.quotation input output (algorithmicUsage (programUsage body))))
   | .dup =>
-      let (rest, value) ← pop "firth.type.stack-underflow" span current
+      let (rest, value) ← pop "firth.type.stack-underflow" span diagnosticState current
       requireMany span current value
       pure (push (push rest value) value)
   | .drop =>
-      let (rest, value) ← pop "firth.type.stack-underflow" span current
+      let (rest, value) ← pop "firth.type.stack-underflow" span diagnosticState current
       requireMany span current value
       pure rest
   | .swap =>
-      let (rest, second) ← pop "firth.type.stack-underflow" span current
-      let (rest, first) ← pop "firth.type.stack-underflow" span rest
+      let (rest, second) ← pop "firth.type.stack-underflow" span diagnosticState current
+      let (rest, first) ← pop "firth.type.stack-underflow" span diagnosticState rest
       pure (push (push rest second) first)
   | .call =>
-      let (rest, quotation) ← pop "firth.type.stack-underflow" span current
+      let (rest, quotation) ← pop "firth.type.stack-underflow" span diagnosticState current
       let input ← freshRow
       let output ← freshRow
       let usage ← freshUsage
@@ -373,8 +375,8 @@ private partial def inferAtom (env : Env) (located : LocatedKernel)
       let state ← get
       pure (resolveStack state output)
   | .dip =>
-      let (rest, quotation) ← pop "firth.type.stack-underflow" span current
-      let (rest, preserved) ← pop "firth.type.stack-underflow" span rest
+      let (rest, quotation) ← pop "firth.type.stack-underflow" span diagnosticState current
+      let (rest, preserved) ← pop "firth.type.stack-underflow" span diagnosticState rest
       let input ← freshRow
       let output ← freshRow
       let usage ← freshUsage
@@ -384,8 +386,8 @@ private partial def inferAtom (env : Env) (located : LocatedKernel)
       let state ← get
       pure (push (resolveStack state output) (resolveType state preserved))
   | .compose =>
-      let (rest, second) ← pop "firth.type.stack-underflow" span current
-      let (rest, first) ← pop "firth.type.stack-underflow" span rest
+      let (rest, second) ← pop "firth.type.stack-underflow" span diagnosticState current
+      let (rest, first) ← pop "firth.type.stack-underflow" span diagnosticState rest
       let input ← freshRow
       let middle ← freshRow
       let output ← freshRow
@@ -400,13 +402,13 @@ private partial def inferAtom (env : Env) (located : LocatedKernel)
         (.quotation (resolveStack state input) (resolveStack state output)
           (.meet (resolveUsage state firstUsage) (resolveUsage state secondUsage))))
   | .quote =>
-      let (rest, value) ← pop "firth.type.stack-underflow" span current
+      let (rest, value) ← pop "firth.type.stack-underflow" span diagnosticState current
       let row ← freshRow
       pure (push rest (.quotation row (push row value) (usageOf value)))
   | .ifThenElse =>
-      let (rest, falseBranch) ← pop "firth.type.stack-underflow" span current
-      let (rest, trueBranch) ← pop "firth.type.stack-underflow" span rest
-      let (rest, condition) ← pop "firth.type.stack-underflow" span rest
+      let (rest, falseBranch) ← pop "firth.type.stack-underflow" span diagnosticState current
+      let (rest, trueBranch) ← pop "firth.type.stack-underflow" span diagnosticState rest
+      let (rest, condition) ← pop "firth.type.stack-underflow" span diagnosticState rest
       unifyType "firth.type.expected-bool" span current (.base "Bool" .many) condition
       let output ← freshRow
       unifyType "firth.type.branch-mismatch" span current

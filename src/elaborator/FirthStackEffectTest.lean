@@ -56,6 +56,23 @@ private def expectFailure (name code : String) (expectedOffset : Nat)
       expectEq diagnostic.code code s!"{name}: code"
       expectEq diagnostic.primary.start.offset expectedOffset s!"{name}: primary span"
 
+private def expectFailureState (name code : String) (expectedOffset : Nat)
+    (expectedState : AStack) (result : Except Diagnostic α) : IO Unit :=
+  match result with
+  | .ok _ => fail s!"{name}: expected {code}"
+  | .error diagnostic => do
+      expectEq diagnostic.code code s!"{name}: code"
+      expectEq diagnostic.primary.start.offset expectedOffset s!"{name}: primary span"
+      expectEq diagnostic.state expectedState s!"{name}: pre-atom stack"
+
+private def expectTopQuotationUsage (name : String) (program : KernelProgram)
+    (expected : AUsage) : IO Unit :=
+  match infer env program with
+  | .ok { output := .snoc _ (.quotation _ _ actual), .. } =>
+      expectEq actual expected name
+  | .ok effect => fail s!"{name}: expected a quotation output, got {repr effect}"
+  | .error diagnostic => fail s!"{name}: unexpected diagnostic {repr diagnostic}"
+
 private def expectCheckSuccess (name : String) (declared : Scheme)
     (program : KernelProgram) : IO Unit :=
   match check env declared program (span 90 91) with
@@ -140,6 +157,18 @@ def runStackEffectTests : IO Unit := do
     (infer env [located 0 (.lit (.nat 1)), located 4 .call])
   expectFailure "occurs check" "firth.type.occurs-check" 5
     (infer env [located 0 .dup, located 5 .call])
+
+  let oneIntState := stack .empty [intType]
+  let oneIntInput := exactScheme [intType] []
+  expectFailureState "swap underflow keeps pre-atom stack" "firth.type.stack-underflow" 7
+    oneIntState (check env oneIntInput [located 7 .swap] (span 70 71))
+  expectFailureState "dip underflow keeps pre-atom stack" "firth.type.stack-underflow" 8
+    oneIntState (check env oneIntInput [located 8 .dip] (span 70 71))
+  expectFailureState "compose underflow keeps pre-atom stack" "firth.type.stack-underflow" 9
+    oneIntState (check env oneIntInput [located 9 .compose] (span 70 71))
+  expectFailureState "if underflow keeps pre-atom stack" "firth.type.stack-underflow" 10
+    oneIntState (check env oneIntInput [located 10 .ifThenElse] (span 70 71))
+
   let badNested := .cons (.lit (.nat 1)) (.cons .call .empty)
   expectFailure "nested quotation span" "firth.type.expected-quotation" 22
     (infer env [located 20 (.quotation badNested) [span 21 22, span 22 23]])
@@ -182,6 +211,23 @@ def runStackEffectTests : IO Unit := do
   let capturedLinear := .cons (.push (.world 1)) .empty
   expectFailure "quotation capture is linear" "firth.linearity.usage-mismatch" 7
     (infer env [located 0 (.quotation capturedLinear) [span 1 2], located 7 .drop])
+
+  let manyQuotation := Program.empty
+  expectTopQuotationUsage "compose usage linear meet many"
+    [located 50 (.quotation capturedLinear), located 51 (.quotation manyQuotation),
+      located 52 .compose]
+    .linear
+  expectTopQuotationUsage "compose usage many meet linear"
+    [located 53 (.quotation manyQuotation), located 54 (.quotation capturedLinear),
+      located 55 .compose]
+    .linear
+  expectTopQuotationUsage "compose usage linear meet linear"
+    [located 56 (.quotation capturedLinear), located 57 (.quotation capturedLinear),
+      located 58 .compose]
+    .linear
+  expectFailure "compose usage meet remains linear" "firth.linearity.usage-mismatch" 62
+    (infer env [located 59 (.quotation capturedLinear), located 60 (.quotation manyQuotation),
+      located 61 .compose, located 62 .drop])
 
   let trueLinear := [located 0 .quote, located 2 (.quotation .empty), located 4 .ifThenElse]
   expectFailure "if rejects linear branch" "firth.linearity.usage-mismatch" 4
