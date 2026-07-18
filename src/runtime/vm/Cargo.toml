@@ -11,6 +11,10 @@ license = "MIT OR Apache-2.0"
 description = "Deterministic bootstrap decoder and smoke executor for the Firth VM target"
 publish = false
 
+[features]
+default = ["std"]
+std = []
+
 [lib]
 path = "src/lib.rs"
 
