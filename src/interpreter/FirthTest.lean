@@ -354,7 +354,7 @@ theorem filterContainsEqSelf_explicit : ∀ (source candidates : Ownerships),
     | cons head tail ih =>
       have hhead : ownershipContains source head = true :=
         ownershipContains_eq_true_iff_mem.mpr (hsubset head List.mem_cons_self)
-      simp only [List.filter, hhead]
+      simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.filter, hhead]
       exact congrArg (List.cons head) (ih (by
         intro tag htag
         exact hsubset tag (List.mem_cons_of_mem head htag)))
@@ -370,28 +370,29 @@ theorem examplePrimitiveTagLift_addNat :
   subst specification
   subst plainInput
   cases input with
-  | nil => simp [addNatDelta] at hdelta
+  | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
   | cons rightValue inputTail =>
     cases rightValue with
-    | quotation rightTag body usage => simp [eraseValue, addNatDelta] at hdelta
-    | world rightTag payload => simp [eraseValue, addNatDelta] at hdelta
+    | quotation rightTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
+    | world rightTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
     | literal rightTag rightLiteral =>
       cases rightLiteral with
-      | bool right => simp [eraseValue, addNatDelta] at hdelta
-      | unit => simp [eraseValue, addNatDelta] at hdelta
+      | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
+      | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
       | nat right =>
         cases inputTail with
-        | nil => simp [eraseValue, addNatDelta] at hdelta
+        | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
         | cons leftValue tail =>
           cases leftValue with
-          | quotation leftTag body usage => simp [eraseValue, addNatDelta] at hdelta
-          | world leftTag payload => simp [eraseValue, addNatDelta] at hdelta
+          | quotation leftTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
+          | world leftTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
           | literal leftTag leftLiteral =>
             cases leftLiteral with
-            | bool left => simp [eraseValue, addNatDelta] at hdelta
-            | unit => simp [eraseValue, addNatDelta] at hdelta
+            | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
+            | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
             | nat left =>
-              simp [eraseValue, addNatDelta] at hdelta
+              simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta
+              have hplainOutput := Option.some.inj hdelta
               subst plainOutput
               let tailTags := taggedLinearTagsValueList tail
               have htags :
@@ -401,7 +402,7 @@ theorem examplePrimitiveTagLift_addNat :
                       program := .cons (.prim "addNat") residue,
                       nextTag := nextTag } =
                     tailTags ++ taggedLinearTagsProgram residue := by
-                simp [taggedLinearTags, taggedLinearTagsValueList,
+                simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTags, taggedLinearTagsValueList,
                   taggedLinearTagsValue, taggedLinearTagsProgram,
                   taggedLinearTagsAtom, tailTags,
                   taggedLinearTagsValueList_eq_foldr]
@@ -409,7 +410,7 @@ theorem examplePrimitiveTagLift_addNat :
               rw [htags] at hwellformed
               let output : AStack := .literal rightTag (.nat (left + right)) :: tail
               refine ⟨output, nextTag, ?_, Nat.le_refl _, ?_, ?_⟩
-              · simp [output, eraseValue]
+              · simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
               · refine ⟨
                   { input := .snoc (.snoc (.row "ρ") (.base .nat .many))
                       (.base .nat .many),
@@ -420,14 +421,14 @@ theorem examplePrimitiveTagLift_addNat :
                   tailTags, tailTags, [], [], ?_⟩
                 refine
                   { name_resolves := hname
-                    input_erases := by simp [eraseValue]
-                    delta := by simp [addNatDelta, eraseValue]
-                    output_erases := by simp [output, eraseValue]
+                    input_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, eraseValue]
+                    delta := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, addNatDelta, eraseValue]
+                    output_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
                     input_partition := ?_
                     output_partition := ?_
                     retained_nodup := ?_
-                    consumed_nodup := by simp
-                    produced_nodup := by simp
+                    consumed_nodup := List.nodup_nil
+                    produced_nodup := List.nodup_nil
                     retained_exact := ?_
                     consumed_exact := ?_
                     produced_exact := ?_
@@ -448,29 +449,38 @@ theorem examplePrimitiveTagLift_addNat :
                       change ("addNat" == "addNat" ∧ [] = [] ∧ [] = []) ∨ _
                       exact Or.inl ⟨rfl, rfl, rfl⟩ }
                 · intro tag
-                  simp [taggedLinearTagsValueList, taggedLinearTagsValue, tailTags]
+                  simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTagsValueList, taggedLinearTagsValue, tailTags]
                 · intro tag
-                  simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                  simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
                     tailTags]
                 · exact (nodup_append_constructive.mp hwellformed.1).1
                 · intro tag
-                  simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
-                    tailTags]
+                  constructor
+                  · intro htag
+                    exact ⟨htag, htag⟩
+                  · rintro ⟨htag, _⟩
+                    exact htag
                 · intro tag
-                  simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
-                    tailTags]
+                  constructor
+                  · intro htag
+                    cases htag
+                  · rintro ⟨htag, hnot⟩
+                    exact (hnot htag).elim
                 · intro tag
-                  simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
-                    tailTags]
+                  constructor
+                  · intro htag
+                    cases htag
+                  · rintro ⟨htag, hnot⟩
+                    exact (hnot htag).elim
                 · exact (filterContainsEqSelf_explicit _ tailTags (by
                     intro tag htag
-                    simpa [output, taggedLinearTagsValueList,
+                    simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList,
                       taggedLinearTagsValue, tailTags] using htag)).symm
-                · simpa [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                · simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
                     tailTags] using hwellformed.1
               · intro tag htag
                 apply hwellformed.2 tag
-                simpa [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
                   tailTags] using List.mem_append_left
                     (taggedLinearTagsProgram residue) htag
 
@@ -486,7 +496,8 @@ theorem examplePrimitiveTagLift_makeWorld :
     (Option.some.inj hname).symm
   subst specification
   subst plainInput
-  simp [makeWorldDelta] at hdelta
+  simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, makeWorldDelta] at hdelta
+  have hplainOutput := Option.some.inj hdelta
   subst plainOutput
   let inputTags := taggedLinearTagsValueList input
   have htags :
@@ -494,7 +505,7 @@ theorem examplePrimitiveTagLift_makeWorld :
         { stack := input, program := .cons (.prim "makeWorld") residue,
           nextTag := nextTag } =
         inputTags ++ taggedLinearTagsProgram residue := by
-    simp [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
+    simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
       inputTags, taggedLinearTagsValueList_eq_foldr]
   unfold InstrumentedWellFormed at hwellformed
   rw [htags] at hwellformed
@@ -507,7 +518,7 @@ theorem examplePrimitiveTagLift_makeWorld :
     exact hnextAbsent (List.mem_append_left _ hmem)
   let output : AStack := .world nextTag 0 :: input
   refine ⟨output, nextTag + 1, ?_, Nat.le_succ _, ?_, ?_⟩
-  · simp [output, eraseValue]
+  · simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
   · refine ⟨
       { input := .row "ρ",
         output := .snoc (.row "ρ") (.base .world .linear),
@@ -516,14 +527,15 @@ theorem examplePrimitiveTagLift_makeWorld :
       inputTags, inputTags, [], [nextTag], ?_⟩
     refine
       { name_resolves := hname
-        input_erases := by simp [eraseValue]
-        delta := by simp [makeWorldDelta]
-        output_erases := by simp [output, eraseValue]
+        input_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, eraseValue]
+        delta := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, makeWorldDelta]
+        output_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
         input_partition := ?_
         output_partition := ?_
         retained_nodup := ?_
-        consumed_nodup := by simp
-        produced_nodup := by simp
+        consumed_nodup := List.nodup_nil
+        produced_nodup := List.nodup_cons.mpr
+          ⟨fun hmem => List.not_mem_nil hmem, List.nodup_nil⟩
         retained_exact := ?_
         consumed_exact := ?_
         produced_exact := ?_
@@ -542,15 +554,15 @@ theorem examplePrimitiveTagLift_makeWorld :
           change _ ∨ ("makeWorld" == "makeWorld" ∧ [] = [] ∧ [nextTag].length = 1) ∨ _
           exact Or.inr (Or.inl ⟨rfl, rfl, rfl⟩) }
     · intro tag
-      simp [inputTags]
+      simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, inputTags]
     · intro tag
-      simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+      simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
         inputTags, or_comm]
     · exact (nodup_append_constructive.mp hwellformed.1).1
     · intro tag
       constructor
       · intro htag
-        exact ⟨htag, by simp [output, taggedLinearTagsValueList,
+        exact ⟨htag, by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList,
             taggedLinearTagsValue, inputTags, htag]⟩
       · intro htag
         exact htag.1
@@ -559,33 +571,33 @@ theorem examplePrimitiveTagLift_makeWorld :
       · intro htag
         cases htag
       · rintro ⟨hin, hnot⟩
-        exact (hnot (by simp [output, taggedLinearTagsValueList,
+        exact (hnot (by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList,
           taggedLinearTagsValue, inputTags, hin])).elim
     · intro tag
       constructor
       · intro htag
-        simp at htag
+        have htag' : tag = nextTag := List.mem_singleton.mp htag
         subst tag
-        exact ⟨by simp [output, taggedLinearTagsValueList,
+        exact ⟨by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList,
           taggedLinearTagsValue, inputTags], hnextInputAbsent⟩
       · rintro ⟨hout, hnot⟩
-        simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+        simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
           inputTags] at hout
         rcases hout with rfl | hin
-        · simp
+        · exact List.mem_cons_self
         · exact (hnot hin).elim
     · exact (filterContainsEqSelf_explicit _ inputTags (by
         intro tag htag
-        simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+        simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
           inputTags, htag])).symm
     · intro tag htag
-      simp at htag
+      have htag' : tag = nextTag := List.mem_singleton.mp htag
       subst tag
       exact ⟨Nat.le_refl _, Nat.lt_succ_self _⟩
-    · simpa [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+    · simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
         inputTags] using List.nodup_cons.2 ⟨hnextAbsent, hwellformed.1⟩
   · intro tag htag
-    simp [output, taggedLinearTagsValueList, taggedLinearTagsValue,
+    simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
       inputTags] at htag
     rcases htag with rfl | htag
     · exact Nat.lt_succ_self _
@@ -604,13 +616,14 @@ theorem examplePrimitiveTagLift_consumeWorld :
   subst specification
   subst plainInput
   cases input with
-  | nil => simp [consumeWorldDelta] at hdelta
+  | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, consumeWorldDelta] at hdelta; cases hdelta
   | cons first tail =>
     cases first with
-    | literal tag literal => simp [eraseValue, consumeWorldDelta] at hdelta
-    | quotation tag body usage => simp [eraseValue, consumeWorldDelta] at hdelta
+    | literal tag literal => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, consumeWorldDelta] at hdelta; cases hdelta
+    | quotation tag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, consumeWorldDelta] at hdelta; cases hdelta
     | world worldTag payload =>
-      simp [eraseValue, consumeWorldDelta] at hdelta
+      simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, consumeWorldDelta] at hdelta
+      have hplainOutput := Option.some.inj hdelta
       subst plainOutput
       let tailTags := taggedLinearTagsValueList tail
       let residueTags := taggedLinearTagsProgram residue
@@ -620,7 +633,7 @@ theorem examplePrimitiveTagLift_consumeWorld :
               program := .cons (.prim "consumeWorld") residue,
               nextTag := nextTag } =
             worldTag :: (tailTags ++ residueTags) := by
-        simp [taggedLinearTags, taggedLinearTagsValueList,
+        simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTags, taggedLinearTagsValueList,
           taggedLinearTagsValue, taggedLinearTagsProgram,
           taggedLinearTagsAtom, tailTags, residueTags,
           taggedLinearTagsValueList_eq_foldr]
@@ -638,7 +651,7 @@ theorem examplePrimitiveTagLift_consumeWorld :
         (List.nodup_cons.mp hwellformed.1).2
       let output : AStack := tail
       refine ⟨output, nextTag, ?_, Nat.le_refl _, ?_, ?_⟩
-      · simp [output]
+      · simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output]
       · refine ⟨
           { input := .snoc (.row "ρ") (.base .world .linear),
             output := .row "ρ", delta := consumeWorldDelta },
@@ -646,14 +659,15 @@ theorem examplePrimitiveTagLift_consumeWorld :
           tailTags, tailTags, [worldTag], [], ?_⟩
         refine
           { name_resolves := hname
-            input_erases := by simp [eraseValue]
-            delta := by simp [consumeWorldDelta, eraseValue]
-            output_erases := by simp [output]
+            input_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, eraseValue]
+            delta := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, consumeWorldDelta, eraseValue]
+            output_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output]
             input_partition := ?_
             output_partition := ?_
             retained_nodup := ?_
-            consumed_nodup := by simp
-            produced_nodup := by simp
+            consumed_nodup := List.nodup_cons.mpr
+              ⟨fun hmem => List.not_mem_nil hmem, List.nodup_nil⟩
+            produced_nodup := List.nodup_nil
             retained_exact := ?_
             consumed_exact := ?_
             produced_exact := ?_
@@ -662,7 +676,7 @@ theorem examplePrimitiveTagLift_consumeWorld :
             produced_fresh := by
               intro tag htag
               cases htag
-            output_residue_nodup := by simpa [output, tailTags, residueTags]
+            output_residue_nodup := by simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, tailTags, residueTags]
               using htailResidueNodup
             frontier_monotone := Nat.le_refl _
             row_tail_retained := by
@@ -674,33 +688,39 @@ theorem examplePrimitiveTagLift_consumeWorld :
                 ("consumeWorld" == "consumeWorld" ∧ [worldTag].length = 1 ∧ [] = [])
               exact Or.inr (Or.inr ⟨rfl, rfl, rfl⟩) }
         · intro tag
-          simp [taggedLinearTagsValueList, taggedLinearTagsValue,
+          simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTagsValueList, taggedLinearTagsValue,
             tailTags, or_comm]
         · intro tag
           change tag ∈ tailTags ↔ tag ∈ tailTags ∨ tag ∈ ([] : Ownerships)
-          simp
+          constructor
+          · intro htag
+            exact Or.inl htag
+          · intro htag
+            cases htag with
+            | inl htag => exact htag
+            | inr htag => cases htag
         · exact (nodup_append_constructive.mp htailResidueNodup).1
         · intro tag
           constructor
           · intro htag
             refine ⟨?_, htag⟩
-            simpa [taggedLinearTagsValueList, taggedLinearTagsValue,
+            simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTagsValueList, taggedLinearTagsValue,
               tailTags] using Or.inr htag
           · intro htag
             exact htag.2
         · intro tag
           constructor
           · intro htag
-            have heq : tag = worldTag := by simpa using htag
+            have heq : tag = worldTag := List.mem_singleton.mp htag
             subst tag
             refine ⟨?_, hworldTailAbsent⟩
-            simp [taggedLinearTagsValueList, taggedLinearTagsValue]
+            simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTagsValueList, taggedLinearTagsValue]
           · rintro ⟨hinputTag, houtputAbsent⟩
             have hinputCases : tag = worldTag ∨ tag ∈ tailTags := by
-              simpa [taggedLinearTagsValueList, taggedLinearTagsValue,
+              simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTagsValueList, taggedLinearTagsValue,
                 tailTags] using hinputTag
             rcases hinputCases with heq | htail
-            · simpa using heq
+            · exact List.mem_singleton.mpr heq
             · exact (houtputAbsent htail).elim
         · intro tag
           constructor
@@ -708,7 +728,7 @@ theorem examplePrimitiveTagLift_consumeWorld :
             cases htag
           · rintro ⟨houtputTag, hinputAbsent⟩
             exact (hinputAbsent (by
-              simpa [output, taggedLinearTagsValueList,
+              simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList,
                 taggedLinearTagsValue, tailTags] using Or.inr houtputTag)).elim
         · have hfilter : List.filter
               (fun tag => ownershipContains tailTags tag) tailTags = tailTags :=
@@ -721,14 +741,14 @@ theorem examplePrimitiveTagLift_consumeWorld :
                 (ownershipContains_eq_true_iff_mem.mp hcontains)).elim
           change tailTags = List.filter
             (fun tag => ownershipContains tailTags tag) (worldTag :: tailTags)
-          simp [hworldContainsFalse, hfilter]
+          rw [List.filter, hworldContainsFalse, hfilter]
         · intro tag htag
-          simp at htag
+          have htag' : tag = worldTag := List.mem_singleton.mp htag
           subst tag
           exact ⟨hworldTailAbsent, hworldResidueAbsent⟩
       · intro tag htag
         exact hwellformed.2 tag (List.mem_cons_of_mem _
-          (List.mem_append_left residueTags (by simpa [output, tailTags] using htag)))
+          (List.mem_append_left residueTags (by simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, tailTags] using htag)))
 
 
 theorem examplePrimitiveTagLift_unknown (name : Prim)
@@ -739,7 +759,7 @@ theorem examplePrimitiveTagLift_unknown (name : Prim)
   intro input residue nextTag specification plainInput plainOutput hname
     hinput hdelta hwellformed
   have hnone : exampleGamma.primitive name = none := by
-    simp only [exampleGamma, defaultGamma, haddNat, hmakeWorld, hconsumeWorld]
+    simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, exampleGamma, defaultGamma, haddNat, hmakeWorld, hconsumeWorld]
   rw [hnone] at hname
   cases hname
 
