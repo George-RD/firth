@@ -55,8 +55,8 @@ private def context (wordId : String := "math.inc") (bodyHash : String := "sha25
     predicateDefinitionHashes := ["sha256:predicate-a"]
     normaliserVersion := "normaliser-v1"
     vcGeneratorVersion := "vc-v1"
-    leanToolchainHash := "sha256:lean-4.30"
-    proofModuleHash := "sha256:refinement-module-a"
+    leanToolchainHash := Lean.githash
+    proofModuleHash := "sha256:321a86867ee8f16429ec305ceaacaef51032671d8233e9114ee023d51a8da38f"
     toolchainRevision := "firth-a"
     source := { path, span := span start (start + 4) }
     expectedStack := integerStack [.intLt (.literal 0) (.variable "y")]
@@ -192,7 +192,8 @@ def main : IO Unit := do
     "Lean proof record binds the body"
   expectEq closedRecord.predicateDefinitionHashes ["sha256:predicate-a"]
     "Lean proof record binds predicate definitions"
-  expectEq closedRecord.proofModuleHash "sha256:refinement-module-a"
+  expectEq closedRecord.proofModuleHash
+    "sha256:321a86867ee8f16429ec305ceaacaef51032671d8233e9114ee023d51a8da38f"
     "Lean proof record binds the proof module"
   expectEq closedRecord.proofTerm.formula closedSuccess.formula
     "Lean proof record stores the instantiated formula"
@@ -208,10 +209,51 @@ def main : IO Unit := do
     (← recheckLeanRecord closedSuccess { closedRecord with proofTerm := tamperedProof })
     .kernelRejected
     "tampered Lean proof term must fail kernel rechecking"
+  let staleIdentity :=
+    { closedSuccess with context := { closedSuccess.context with normaliserVersion := "normaliser-v2" } }
+  expectEq (← recheckLeanRecord staleIdentity closedRecord) .metadataMismatch
+    "semantic context mutation with a stale obligation ID is rejected"
+  let wrongToolchain := oneBody { context with leanToolchainHash := "forged-toolchain" }
+    [] [] [.truth]
+  let wrongToolchainRecord ← expectAt
+    (discharge "request-a" [wrongToolchain]).leanRecords 0 "wrong-toolchain record"
+  expectEq (← recheckLeanRecord wrongToolchain wrongToolchainRecord) .toolchainMismatch
+    "recorded Lean toolchain identity must match the executing kernel"
+  let wrongProofModule := oneBody { context with proofModuleHash := "sha256:forged-module" }
+    [] [] [.truth]
+  let wrongProofModuleRecord ← expectAt
+    (discharge "request-a" [wrongProofModule]).leanRecords 0 "wrong-proof-module record"
+  expectEq (← recheckLeanRecord wrongProofModule wrongProofModuleRecord) .proofModuleMismatch
+    "recorded proof-module digest must match the imported module"
 
   let vacuous := oneBody context [.falsity] [] [yPositive]
-  expectEq (discharge "request-a" [vacuous]).leanRecords.length 1
+  let vacuousResult := discharge "request-a" [vacuous]
+  expectEq vacuousResult.leanRecords.length 1
     "a closed false premise is discharged by the proved procedure"
+  let vacuousRecord ← expectAt vacuousResult.leanRecords 0 "vacuous Lean record"
+  expectEq (← recheckLeanRecord vacuous vacuousRecord) .accepted
+    "a vacuous proof record passes kernel rechecking"
+
+  let hostileName := "x\")\naxiom forged : False\n("
+  let constructorComplete := oneBody context [.falsity] []
+    [ .truth
+    , .falsity
+    , .boolVariable hostileName
+    , .not (.boolVariable hostileName)
+    , .and .truth .falsity
+    , .or .falsity .truth
+    , .intEq (.literal (-3)) (.scale (-7) (.variable hostileName))
+    , .intNe (.add (.literal (-4)) (.literal 1)) (.literal (-2))
+    , .intLe (.sub (.literal (-4)) (.literal (-1))) (.literal 0)
+    , .intLt (.literal (-1)) (.literal 0)
+    , .named hostileName "1\n2" [.literal (-5), .variable hostileName]
+    , .nonlinear hostileName
+    , .worldSensitive hostileName ]
+  let constructorResult := discharge "request-a" [constructorComplete]
+  let constructorRecord ← expectAt constructorResult.leanRecords 0
+    "constructor-complete Lean record"
+  expectEq (← recheckLeanRecord constructorComplete constructorRecord) .accepted
+    "every predicate and integer-expression constructor renders as safe Lean syntax"
 
   let pending := discharge "request-a" [generated]
   expectEq pending.leanRecords.length 0 "undischargeable refinement has no proof record"

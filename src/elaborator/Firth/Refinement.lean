@@ -374,6 +374,8 @@ structure LeanProofRecord where
 inductive LeanRecordRecheck where
   | accepted
   | metadataMismatch
+  | toolchainMismatch
+  | proofModuleMismatch
   | kernelRejected
   | kernelUnavailable
   deriving Repr, BEq
@@ -566,14 +568,14 @@ private def leanList (render : α → String) (values : List α) : String :=
 
 mutual
   private def leanIntExpr : IntExpr → String
-    | .literal value => s!"Firth.Smt.IntExpr.literal {value}"
+    | .literal value => s!"Firth.Smt.IntExpr.literal ({value})"
     | .variable name => s!"Firth.Smt.IntExpr.variable {leanStringLiteral name}"
     | .add left right =>
         s!"Firth.Smt.IntExpr.add ({leanIntExpr left}) ({leanIntExpr right})"
     | .sub left right =>
         s!"Firth.Smt.IntExpr.sub ({leanIntExpr left}) ({leanIntExpr right})"
     | .scale coefficient body =>
-        s!"Firth.Smt.IntExpr.scale {coefficient} ({leanIntExpr body})"
+        s!"Firth.Smt.IntExpr.scale ({coefficient}) ({leanIntExpr body})"
 
   private def leanPredicate : Predicate → String
     | .truth => "Firth.Smt.Predicate.truth"
@@ -616,6 +618,7 @@ private def leanProofModule (obligation : Obligation) (proofTerm : LeanProofTerm
       leanFormula proofTerm.formula ++ "\n\n" ++
     "theorem checked : Firth.Elaborator.Refinement.Valid targetFormula := by\n" ++
     "  exact Firth.Elaborator.Refinement.leanDecide_sound instantiatedFormula (by rfl)\n\n" ++
+    "#print axioms checked\n\n" ++
     "end Firth.Elaborator.Refinement.RecordedProof\n"
 
 private def leanRecord (obligation : Obligation) : LeanProofRecord :=
@@ -631,21 +634,94 @@ private def leanRecord (obligation : Obligation) : LeanProofRecord :=
     source := obligation.context.source
     proofTerm := { formula := obligation.formula } }
 
+private def canonicalObligationIdentity (obligation : Obligation) : Bool :=
+  obligation.obligationId == obligationIdentity obligation.kind obligation.formula obligation.context
+
+private def elanLeanExecutable : IO (Option System.FilePath) := do
+  let root ← match ← IO.getEnv "ELAN_HOME" with
+    | some path => pure (some (System.FilePath.mk path))
+    | none =>
+        match ← IO.getEnv "HOME" with
+        | some home => pure (some (System.FilePath.mk home / ".elan"))
+        | none => pure none
+  let some root := root | pure none
+  let name := if System.Platform.isWindows then "lean.exe" else "lean"
+  let executable := root / "bin" / name
+  if ← executable.pathExists then pure (some executable) else pure none
+
+private def refinementProofModulePath : IO (Option System.FilePath) := do
+  let some leanPath ← IO.getEnv "LEAN_PATH" | pure none
+  let rec find : System.SearchPath → IO (Option System.FilePath)
+    | [] => pure none
+    | root :: rest => do
+        let candidate := root / "elaborator" / "Firth" / "Refinement.olean"
+        if ← candidate.pathExists then pure (some candidate) else find rest
+  find (System.SearchPath.parse leanPath)
+
+private def sha256With (commands : List (System.FilePath × Array String))
+    (path : System.FilePath) : IO (Option String) := do
+  match commands with
+  | [] => pure none
+  | (executable, arguments) :: rest =>
+      if !(← executable.pathExists) then sha256With rest path
+      else
+        let output ← try
+          pure (some (← IO.Process.output
+            { cmd := executable.toString, args := arguments.push path.toString }))
+        catch _ => pure none
+        match output with
+        | none => sha256With rest path
+        | some output =>
+            if output.exitCode != 0 then sha256With rest path
+            else
+              let digest :=
+                output.stdout.takeWhile (fun character => !character.isWhitespace) |>.copy
+              if digest.isEmpty then sha256With rest path else pure (some digest)
+
+private def sha256 (path : System.FilePath) : IO (Option String) :=
+  sha256With
+    [ (System.FilePath.mk "/usr/bin/shasum", #["-a", "256"])
+    , (System.FilePath.mk "/usr/bin/sha256sum", #[])
+    , (System.FilePath.mk "/bin/sha256sum", #[]) ] path
+
 def recheckLeanRecord (obligation : Obligation) (record : LeanProofRecord) :
     IO LeanRecordRecheck := do
-  let source := leanProofModule obligation record.proofTerm
-  let checked ← try
-    let output ← IO.Process.output
-      { cmd := "lake", args := #["env", "lean", "--stdin", "-t", "0"] }
-      (some source)
-    pure (some (output.exitCode == 0))
-  catch _ => pure none
-  match checked with
-  | none => pure .kernelUnavailable
-  | some false => pure .kernelRejected
-  | some true =>
-      if record == leanRecord obligation then pure .accepted
-      else pure .metadataMismatch
+  let expected := leanRecord obligation
+  let boundMetadata := { record with proofTerm := expected.proofTerm }
+  if !canonicalObligationIdentity obligation || boundMetadata != expected then
+    pure .metadataMismatch
+  else
+    let some leanExecutable ← elanLeanExecutable | pure .kernelUnavailable
+    let some toolchain ← (try
+      pure (some (← IO.Process.output
+        { cmd := leanExecutable.toString, args := #["--githash"] }))
+    catch _ => pure none) | pure .kernelUnavailable
+    if toolchain.exitCode != 0 || toolchain.stdout.trimAscii.copy != Lean.githash ||
+        record.leanToolchainHash != Lean.githash then
+      pure .toolchainMismatch
+    else
+      let some modulePath ← refinementProofModulePath | pure .kernelUnavailable
+      let some moduleDigest ← sha256 modulePath | pure .kernelUnavailable
+      if record.proofModuleHash != "sha256:" ++ moduleDigest then
+        pure .proofModuleMismatch
+      else
+        let source := leanProofModule obligation record.proofTerm
+        let checked ← try
+          let output ← IO.Process.output
+            { cmd := leanExecutable.toString
+              args := #["--stdin", "-t", "0", "-T", "1000000", "-M", "1024"] }
+            (some source)
+          let axiomReport :=
+            "'Firth.Elaborator.Refinement.RecordedProof.checked' depends on axioms: [propext]"
+          pure (some (output.exitCode == 0 &&
+            (output.stdout ++ output.stderr).contains axiomReport))
+        catch _ => pure none
+        match checked with
+        | none => pure .kernelUnavailable
+        | some false => pure .kernelRejected
+        | some true =>
+            if record.proofTerm == expected.proofTerm then pure .accepted
+            else pure .metadataMismatch
 
 private def isTotality : ObligationKind → Bool
   | .bodyTotality | .totalitySubsumption | .totalityPromisePresence => true
