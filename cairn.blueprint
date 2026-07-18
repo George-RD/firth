@@ -64,6 +64,7 @@ System Firth "Concatenative language elaborated through Lean 4 and compiled to a
 
         Module Vm "Minimal permissively-licensed VM implementing the Forth-class target semantics" id "firth.runtime.vm" {
             path "src/runtime/vm"
+            contract "src/runtime/vm/target-spec.md"
         }
 
         Module Image "Image model with word-level hot redefinition" id "firth.runtime.image" {
