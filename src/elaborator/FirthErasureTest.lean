@@ -121,7 +121,8 @@ def main : IO Unit := do
   let inferred ← parsed ": inferred ( -- ) [ 1 2 prim + ] ;"
   match erase arithmetic inferred.effect inferred.body with
   | .ok { program := [quotation], .. } =>
-      if quotation.childSpans.length == 3 then pure () else fail "quotation child spans were lost"
+      if quotation.childSpans.length == 3 && quotation.children.length == 3 then pure ()
+      else fail "quotation child provenance was lost"
   | .ok result => fail s!"unexpected inferred quotation: {repr result.program}"
   | .error error => fail s!"quotation inference failed: {repr error}"
 

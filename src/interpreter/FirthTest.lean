@@ -1053,4 +1053,6 @@ def main : IO Unit := do
      | _ => false)
   let erasureResult ← IO.Process.output { cmd := "lake", args := #["exe", "firthErasureTest"] }
   if erasureResult.exitCode != 0 then throw <| IO.userError erasureResult.stderr
+  let stackEffectResult ← IO.Process.output { cmd := "lake", args := #["exe", "firthStackEffectTest"] }
+  if stackEffectResult.exitCode != 0 then throw <| IO.userError stackEffectResult.stderr
   IO.println "all interpreter tests passed"
