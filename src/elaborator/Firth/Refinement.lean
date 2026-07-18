@@ -838,20 +838,20 @@ private def proofModuleManifestPath : IO (Option System.FilePath) := do
   let some projectRoot := lakeDirectory.parent | pure none
   pure (some (projectRoot / "src" / "elaborator" / "refinement-proof-module.sha256"))
 
-private def governedProofModulePaths : List String :=
-  [ "elaborator/Firth/Refinement.olean"
-  , "elaborator/Firth/StackEffect.olean"
-  , "elaborator/Firth/Erasure.olean"
-  , "elaborator/Firth/Parser.olean"
-  , "smt/Firth/SmtBoundary.olean"
-  , "Firth/Interpreter.olean" ]
+private def governedProofModules : List (Lean.Name × String) :=
+  [ (`elaborator.Firth.Refinement, "elaborator/Firth/Refinement.olean")
+  , (`elaborator.Firth.StackEffect, "elaborator/Firth/StackEffect.olean")
+  , (`elaborator.Firth.Erasure, "elaborator/Firth/Erasure.olean")
+  , (`elaborator.Firth.Parser, "elaborator/Firth/Parser.olean")
+  , (`smt.Firth.SmtBoundary, "smt/Firth/SmtBoundary.olean")
+  , (`Firth.Interpreter, "Firth/Interpreter.olean") ]
 
 private def governedProofModuleHashes : IO (Option (List String)) := do
   let some manifest ← proofModuleManifestPath | pure none
   if !(← manifest.pathExists) then pure none
   else
     let hashes := (← IO.FS.readFile manifest).splitOn "\n" |>.filter (fun line => !line.isEmpty)
-    if hashes.length == governedProofModulePaths.length &&
+    if hashes.length == governedProofModules.length &&
         hashes.all (fun digest => digest.startsWith "sha256:" && digest.length == 71) then
       pure (some hashes)
     else pure none
@@ -879,8 +879,8 @@ private def sha256 (path : System.FilePath) : IO (Option String) := do
   | .timedOut => pure none
   | .outputLimitExceeded => pure none
 
-private def withAuthenticatedProofSearchPath
-    (action : System.SearchPath → IO α) : IO (Option α) := do
+private def withAuthenticatedProofArtifacts
+    (action : Lean.NameMap Lean.ImportArtifacts → IO α) : IO (Option α) := do
   let some expectedHashes ← governedProofModuleHashes | pure none
   let some leanPath ← IO.getEnv "LEAN_PATH" | pure none
   let searchPath := System.SearchPath.parse leanPath
@@ -891,9 +891,9 @@ private def withAuthenticatedProofSearchPath
   | root :: _ =>
       try
         IO.FS.withTempDir fun authenticatedRoot => do
-          let rec copyAndAuthenticate : List String → List String → IO Bool
+          let rec copyAndAuthenticate : List (Lean.Name × String) → List String → IO Bool
             | [], [] => pure true
-            | path :: paths, expectedHash :: hashes => do
+            | (_, path) :: modules, expectedHash :: hashes => do
                 let candidate := root / path
                 if !(← candidate.pathExists) then pure false
                 else
@@ -903,11 +903,13 @@ private def withAuthenticatedProofSearchPath
                   IO.FS.writeBinFile destination (← IO.FS.readBinFile candidate)
                   let some digest ← sha256 destination | pure false
                   if "sha256:" ++ digest == expectedHash then
-                    copyAndAuthenticate paths hashes
+                    copyAndAuthenticate modules hashes
                   else pure false
             | _, _ => pure false
-          if ← copyAndAuthenticate governedProofModulePaths expectedHashes then
-            some <$> action (authenticatedRoot :: searchPath.drop 1)
+          if ← copyAndAuthenticate governedProofModules expectedHashes then
+            let artifacts := governedProofModules.foldl (fun artifacts module =>
+              artifacts.insert module.1 (.ofArray #[authenticatedRoot / module.2])) {}
+            some <$> action artifacts
           else pure none
       catch _ => pure none
 
@@ -917,7 +919,7 @@ def currentLeanToolchainHash : IO (Option String) := do
   else pure (some (pinnedLeanToolchain ++ "@" ++ Lean.githash))
 
 def currentProofModuleHash : IO (Option String) := do
-  let some _ ← withAuthenticatedProofSearchPath (fun _ => pure ()) | pure none
+  let some _ ← withAuthenticatedProofArtifacts (fun _ => pure ()) | pure none
   governedProofModuleHash
 
 private initialize kernelCheckMutex : Std.Mutex Unit ← Std.Mutex.new ()
@@ -925,13 +927,16 @@ private initialize kernelCheckMutex : Std.Mutex Unit ← Std.Mutex.new ()
 private def kernelCheckProofTerm (targetFormula instantiatedFormula : Formula)
     (cancelToken : IO.CancelToken) : IO Bool := do
   kernelCheckMutex.atomically do
-    let some accepted ← withAuthenticatedProofSearchPath fun searchPath => do
+    let some accepted ← withAuthenticatedProofArtifacts fun artifacts => do
       let previousSearchPath ← Lean.searchPathRef.get
+      let builtinSearchPath ← Lean.getBuiltinSearchPath (← Lean.findSysroot)
       try
-        Lean.searchPathRef.set searchPath
+        -- Project modules are supplied through authenticated artifacts.  The ambient search path
+        -- is reduced to the pinned toolchain library for their Lean/Std dependencies.
+        Lean.searchPathRef.set builtinSearchPath
         let options := Lean.maxHeartbeats.set {} 1000000
         let environment ← Lean.importModules
-          #[{ module := `elaborator.Firth.Refinement }] options 0
+          #[{ module := `elaborator.Firth.Refinement }] options 0 (arts := artifacts)
         let coreContext : Lean.Core.Context :=
           { fileName := "<refinement-recheck>"
             fileMap := Lean.FileMap.ofString ""
@@ -987,6 +992,9 @@ private def boundedKernelCheck (targetFormula instantiatedFormula : Formula) :
   | none => do
       cancelToken.set
       IO.cancel check
+      -- Cancellation is cooperative.  Do not report the timeout while the task could still be
+      -- importing modules or holding the import mutex; wait until all scoped cleanup has run.
+      discard <| IO.ofExcept check.get
       pure .timedOut
   | some none => pure .unavailable
   | some (some accepted) => pure (.completed accepted)
