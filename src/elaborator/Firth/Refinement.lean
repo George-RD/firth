@@ -377,6 +377,7 @@ inductive LeanRecordRecheck where
   | toolchainMismatch
   | proofModuleMismatch
   | kernelRejected
+  | kernelTimedOut
   | kernelUnavailable
   deriving Repr, BEq
 
@@ -637,17 +638,65 @@ private def leanRecord (obligation : Obligation) : LeanProofRecord :=
 private def canonicalObligationIdentity (obligation : Obligation) : Bool :=
   obligation.obligationId == obligationIdentity obligation.kind obligation.formula obligation.context
 
-private def elanLeanExecutable : IO (Option System.FilePath) := do
+private inductive BoundedProcessOutput where
+  | completed (output : IO.Process.Output)
+  | timedOut
+
+private def boundedProcessOutput (timeoutMilliseconds : Nat) (arguments : IO.Process.SpawnArgs)
+    (input : Option String := none) : IO BoundedProcessOutput := do
+  let child ← match input with
+    | none => do
+        IO.Process.spawn
+          { arguments with stdout := .piped, stderr := .piped, stdin := .null, setsid := true }
+    | some source => do
+        let child ← IO.Process.spawn
+          { arguments with stdout := .piped, stderr := .piped, stdin := .piped, setsid := true }
+        let (stdin, child) ← child.takeStdin
+        stdin.putStr source
+        stdin.flush
+        pure child
+  let stdout ← IO.asTask child.stdout.readToEnd Task.Priority.dedicated
+  let stderr ← IO.asTask child.stderr.readToEnd Task.Priority.dedicated
+  let rec wait : Nat → IO (Option UInt32)
+    | 0 => do
+        try child.kill catch _ => pure ()
+        try discard child.wait catch _ => pure ()
+        pure none
+    | remaining + 1 => do
+        match ← child.tryWait with
+        | some exitCode => pure (some exitCode)
+        | none =>
+            IO.sleep 25
+            wait remaining
+  match ← wait (timeoutMilliseconds / 25 + 1) with
+  | none => pure .timedOut
+  | some exitCode =>
+      let stdout ← IO.ofExcept stdout.get
+      let stderr ← IO.ofExcept stderr.get
+      pure (.completed { exitCode, stdout, stderr })
+
+private def elanRoot : IO (Option System.FilePath) := do
   let root ← match ← IO.getEnv "ELAN_HOME" with
     | some path => pure (some (System.FilePath.mk path))
     | none =>
         match ← IO.getEnv "HOME" with
         | some home => pure (some (System.FilePath.mk home / ".elan"))
         | none => pure none
-  let some root := root | pure none
-  let name := if System.Platform.isWindows then "lean.exe" else "lean"
-  let executable := root / "bin" / name
-  if ← executable.pathExists then pure (some executable) else pure none
+  pure root
+
+private def selectedLeanExecutable : IO (Option System.FilePath) := do
+  let some root ← elanRoot | pure none
+  let name := if System.Platform.isWindows then "elan.exe" else "elan"
+  let elan := root / "bin" / name
+  if !(← elan.pathExists) then pure none
+  else
+    match ← boundedProcessOutput 5000 { cmd := elan.toString, args := #["which", "lean"] } with
+    | .timedOut => pure none
+    | .completed output =>
+        if output.exitCode != 0 then pure none
+        else
+          let executable := System.FilePath.mk output.stdout.trimAscii.copy
+          if ← executable.pathExists then pure (some executable) else pure none
 
 private def refinementProofModulePath : IO (Option System.FilePath) := do
   let some leanPath ← IO.getEnv "LEAN_PATH" | pure none
@@ -684,6 +733,16 @@ private def sha256 (path : System.FilePath) : IO (Option String) :=
     , (System.FilePath.mk "/usr/bin/sha256sum", #[])
     , (System.FilePath.mk "/bin/sha256sum", #[]) ] path
 
+def currentLeanToolchainHash : IO (Option String) := do
+  let some executable ← selectedLeanExecutable | pure none
+  let some digest ← sha256 executable | pure none
+  pure (some ("sha256:" ++ digest))
+
+def currentProofModuleHash : IO (Option String) := do
+  let some modulePath ← refinementProofModulePath | pure none
+  let some digest ← sha256 modulePath | pure none
+  pure (some ("sha256:" ++ digest))
+
 def recheckLeanRecord (obligation : Obligation) (record : LeanProofRecord) :
     IO LeanRecordRecheck := do
   let expected := leanRecord obligation
@@ -691,37 +750,42 @@ def recheckLeanRecord (obligation : Obligation) (record : LeanProofRecord) :
   if !canonicalObligationIdentity obligation || boundMetadata != expected then
     pure .metadataMismatch
   else
-    let some leanExecutable ← elanLeanExecutable | pure .kernelUnavailable
-    let some toolchain ← (try
-      pure (some (← IO.Process.output
-        { cmd := leanExecutable.toString, args := #["--githash"] }))
-    catch _ => pure none) | pure .kernelUnavailable
-    if toolchain.exitCode != 0 || toolchain.stdout.trimAscii.copy != Lean.githash ||
-        record.leanToolchainHash != Lean.githash then
+    let some leanExecutable ← selectedLeanExecutable | pure .kernelUnavailable
+    let some toolchainDigest ← sha256 leanExecutable | pure .kernelUnavailable
+    if record.leanToolchainHash != "sha256:" ++ toolchainDigest then
       pure .toolchainMismatch
     else
-      let some modulePath ← refinementProofModulePath | pure .kernelUnavailable
-      let some moduleDigest ← sha256 modulePath | pure .kernelUnavailable
-      if record.proofModuleHash != "sha256:" ++ moduleDigest then
-        pure .proofModuleMismatch
+      let toolchain ← try
+        pure (some (← boundedProcessOutput 5000
+          { cmd := leanExecutable.toString, args := #["--githash"] }))
+      catch _ => pure none
+      let some (.completed toolchain) := toolchain | pure .kernelUnavailable
+      if toolchain.exitCode != 0 || toolchain.stdout.trimAscii.copy != Lean.githash then
+        pure .toolchainMismatch
       else
-        let source := leanProofModule obligation record.proofTerm
-        let checked ← try
-          let output ← IO.Process.output
-            { cmd := leanExecutable.toString
-              args := #["--stdin", "-t", "0", "-T", "1000000", "-M", "1024"] }
-            (some source)
-          let axiomReport :=
-            "'Firth.Elaborator.Refinement.RecordedProof.checked' depends on axioms: [propext]"
-          pure (some (output.exitCode == 0 &&
-            (output.stdout ++ output.stderr).contains axiomReport))
-        catch _ => pure none
-        match checked with
-        | none => pure .kernelUnavailable
-        | some false => pure .kernelRejected
-        | some true =>
-            if record.proofTerm == expected.proofTerm then pure .accepted
-            else pure .metadataMismatch
+        let some proofModuleHash ← currentProofModuleHash | pure .kernelUnavailable
+        if record.proofModuleHash != proofModuleHash then pure .proofModuleMismatch
+        else
+          let source := leanProofModule obligation record.proofTerm
+          if source.toUTF8.size > 1048576 then pure .kernelRejected
+          else
+            let checked ← try
+              pure (some (← boundedProcessOutput 10000
+                { cmd := leanExecutable.toString
+                  args := #["--stdin", "-t", "0", "-T", "1000000", "-M", "1024"] }
+                (some source)))
+            catch _ => pure none
+            match checked with
+            | none => pure .kernelUnavailable
+            | some .timedOut => pure .kernelTimedOut
+            | some (.completed output) =>
+                let axiomReport :=
+                  "'Firth.Elaborator.Refinement.RecordedProof.checked' depends on axioms: [propext]"
+                if output.exitCode != 0 ||
+                    !(output.stdout ++ output.stderr).contains axiomReport then
+                  pure .kernelRejected
+                else if record.proofTerm == expected.proofTerm then pure .accepted
+                else pure .metadataMismatch
 
 private def isTotality : ObligationKind → Bool
   | .bodyTotality | .totalitySubsumption | .totalityPromisePresence => true

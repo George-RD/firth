@@ -44,7 +44,8 @@ private def scheme : Scheme :=
     input := .snoc (.row (.rigid "ρ")) (.base "Int" .many)
     output := .snoc (.row (.rigid "ρ")) (.base "Int" .many) }
 
-private def context (wordId : String := "math.inc") (bodyHash : String := "sha256:body-a")
+private def context (leanToolchainHash proofModuleHash : String)
+    (wordId : String := "math.inc") (bodyHash : String := "sha256:body-a")
     (specHash : String := "sha256:spec-a") (path : String := "inc.firth")
     (start : Nat := 10) : ObligationContext :=
   { wordId
@@ -55,8 +56,8 @@ private def context (wordId : String := "math.inc") (bodyHash : String := "sha25
     predicateDefinitionHashes := ["sha256:predicate-a"]
     normaliserVersion := "normaliser-v1"
     vcGeneratorVersion := "vc-v1"
-    leanToolchainHash := Lean.githash
-    proofModuleHash := "sha256:321a86867ee8f16429ec305ceaacaef51032671d8233e9114ee023d51a8da38f"
+    leanToolchainHash
+    proofModuleHash
     toolchainRevision := "firth-a"
     source := { path, span := span start (start + 4) }
     expectedStack := integerStack [.intLt (.literal 0) (.variable "y")]
@@ -120,11 +121,16 @@ private def expectExternalDeferred (obligation : Obligation) (outcome : External
   expectEq entry.data.value [("reason", data)] s!"{data}: diagnostic data"
 
 def main : IO Unit := do
+  let some leanToolchainHash ← currentLeanToolchainHash |
+    fail "pinned Lean executable hash is unavailable"
+  let some proofModuleHash ← currentProofModuleHash |
+    fail "refinement proof-module hash is unavailable"
+  let ctx := context leanToolchainHash proofModuleHash
   let xPositive := Predicate.intLt (.literal 0) (.variable "x")
   let successor := Predicate.intEq (.variable "y") (.add (.variable "x") (.literal 1))
   let yPositive := Predicate.intLt (.literal 0) (.variable "y")
 
-  let generated := oneBody context [xPositive] [successor] [yPositive]
+  let generated := oneBody ctx [xPositive] [successor] [yPositive]
   expectEq generated.formula.premises [xPositive, successor]
     "body VC is Pre and Sem implies Post"
   expectEq generated.formula.conclusions [yPositive] "body VC conclusion"
@@ -140,7 +146,7 @@ def main : IO Unit := do
   let oldContract : Contract := { wordType := scheme, specification := oldSpec }
   let newContract : Contract := { wordType := scheme, specification := newSpec }
   let substitutions ← expectOk
-    (subsumptionObligations { context, oldContract, newContract }) "subsumption obligations"
+    (subsumptionObligations { context := ctx, oldContract, newContract }) "subsumption obligations"
   expectEq substitutions.length 3 "subsumption generates pre, post, and totality VCs"
   let preSubsumption ← expectAt substitutions 0 "precondition VC"
   let postSubsumption ← expectAt substitutions 1 "postcondition VC"
@@ -159,7 +165,7 @@ def main : IO Unit := do
   let differentScheme : Scheme :=
     { scheme with output := .snoc (.row (.rigid "ρ")) (.base "Bool" .many) }
   let mismatch := checkContractSubsumption "request-a"
-    { context
+    { context := ctx
       oldContract
       newContract := { newContract with wordType := differentScheme } }
   expectEq mismatch.leanRecords.length 0 "word-type mismatch has no proof record"
@@ -172,7 +178,7 @@ def main : IO Unit := do
   let newWithoutTotality : Contract :=
     { newContract with specification := { newSpec with totality := none } }
   let removedTotality := checkContractSubsumption "request-a"
-    { context, oldContract, newContract := newWithoutTotality }
+    { context := ctx, oldContract, newContract := newWithoutTotality }
   expectEq removedTotality.leanRecords.length 0 "removed totality promise has no proof record"
   let removedDiagnostic ← expectOneDiagnostic removedTotality "removed totality promise"
   expectEq removedDiagnostic.body.code "firth.refinement.totality-promise-removed"
@@ -181,7 +187,7 @@ def main : IO Unit := do
   expectEq removedObligation.kind .totalityPromisePresence
     "totality presence rejection is not encoded as an alternate VC"
 
-  let closedSuccess := oneBody context [] [] [.intLt (.literal 0) (.literal 1)]
+  let closedSuccess := oneBody ctx [] [] [.intLt (.literal 0) (.literal 1)]
   let closedResult := discharge "request-a" [closedSuccess]
   expectEq closedResult.leanRecords.length 1 "closed true refinement discharges in Lean"
   expectEq closedResult.leanQueue.length 0 "Lean success leaves no escalation"
@@ -192,8 +198,7 @@ def main : IO Unit := do
     "Lean proof record binds the body"
   expectEq closedRecord.predicateDefinitionHashes ["sha256:predicate-a"]
     "Lean proof record binds predicate definitions"
-  expectEq closedRecord.proofModuleHash
-    "sha256:321a86867ee8f16429ec305ceaacaef51032671d8233e9114ee023d51a8da38f"
+  expectEq closedRecord.proofModuleHash proofModuleHash
     "Lean proof record binds the proof module"
   expectEq closedRecord.proofTerm.formula closedSuccess.formula
     "Lean proof record stores the instantiated formula"
@@ -204,7 +209,7 @@ def main : IO Unit := do
     .metadataMismatch
     "mutated Lean proof metadata is rejected"
   let tamperedProof : LeanProofTerm :=
-    { formula := { premises := [], conclusions := [.falsity] } }
+    { formula := { premises := [], conclusions := [.truth] } }
   expectEq
     (← recheckLeanRecord closedSuccess { closedRecord with proofTerm := tamperedProof })
     .kernelRejected
@@ -213,20 +218,20 @@ def main : IO Unit := do
     { closedSuccess with context := { closedSuccess.context with normaliserVersion := "normaliser-v2" } }
   expectEq (← recheckLeanRecord staleIdentity closedRecord) .metadataMismatch
     "semantic context mutation with a stale obligation ID is rejected"
-  let wrongToolchain := oneBody { context with leanToolchainHash := "forged-toolchain" }
+  let wrongToolchain := oneBody { ctx with leanToolchainHash := "forged-toolchain" }
     [] [] [.truth]
   let wrongToolchainRecord ← expectAt
     (discharge "request-a" [wrongToolchain]).leanRecords 0 "wrong-toolchain record"
   expectEq (← recheckLeanRecord wrongToolchain wrongToolchainRecord) .toolchainMismatch
     "recorded Lean toolchain identity must match the executing kernel"
-  let wrongProofModule := oneBody { context with proofModuleHash := "sha256:forged-module" }
+  let wrongProofModule := oneBody { ctx with proofModuleHash := "sha256:forged-module" }
     [] [] [.truth]
   let wrongProofModuleRecord ← expectAt
     (discharge "request-a" [wrongProofModule]).leanRecords 0 "wrong-proof-module record"
   expectEq (← recheckLeanRecord wrongProofModule wrongProofModuleRecord) .proofModuleMismatch
     "recorded proof-module digest must match the imported module"
 
-  let vacuous := oneBody context [.falsity] [] [yPositive]
+  let vacuous := oneBody ctx [.falsity] [] [yPositive]
   let vacuousResult := discharge "request-a" [vacuous]
   expectEq vacuousResult.leanRecords.length 1
     "a closed false premise is discharged by the proved procedure"
@@ -235,7 +240,7 @@ def main : IO Unit := do
     "a vacuous proof record passes kernel rechecking"
 
   let hostileName := "x\")\naxiom forged : False\n("
-  let constructorComplete := oneBody context [.falsity] []
+  let constructorComplete := oneBody ctx [.falsity] []
     [ .truth
     , .falsity
     , .boolVariable hostileName
@@ -277,21 +282,21 @@ def main : IO Unit := do
   expectEq pendingDiagnostic.body.proposedFixes [] "diagnostics do not invent edits"
   expectEq pendingDiagnostic.body.related [] "diagnostic related list is present"
 
-  let unsupported := oneBody context [] [] [.named "pred.recursive" "1" [.variable "x"]]
+  let unsupported := oneBody ctx [] [] [.named "pred.recursive" "1" [.variable "x"]]
   let unsupportedResult := discharge "request-a" [unsupported]
   expectEq unsupportedResult.smtQueue.length 0 "untranslated predicates never enter SMT"
   let unsupportedQueue ← expectOneLeanQueue unsupportedResult "unsupported predicate"
   expectEq unsupportedQueue.reason (.outsideSmtFragment .untranslatedPredicate)
     "unsupported predicate escalates to Lean"
 
-  let nonlinear := oneBody context [] [] [.nonlinear "x*x > 0"]
+  let nonlinear := oneBody ctx [] [] [.nonlinear "x*x > 0"]
   let nonlinearResult := discharge "request-a" [nonlinear]
   expectEq nonlinearResult.smtQueue.length 0 "non-linear predicates never enter QF_LIA"
   let nonlinearQueue ← expectOneLeanQueue nonlinearResult "non-linear predicate"
   expectEq nonlinearQueue.reason (.outsideSmtFragment .nonlinearArithmetic)
     "non-linear reasoning escalates to Lean"
 
-  let world := oneBody context [] [] [.worldSensitive "World transition"]
+  let world := oneBody ctx [] [] [.worldSensitive "World transition"]
   let worldResult := discharge "request-a" [world]
   expectEq worldResult.smtQueue.length 0
     "World refinements never enter SMT"
@@ -300,7 +305,7 @@ def main : IO Unit := do
     "World refinements explicitly escalate to Lean"
 
   let totalityTyping :=
-    { bodyTyping context [] [] [.truth] with
+    { bodyTyping ctx [] [] [.truth] with
       totality := some
         { premises := { conjuncts := [.boolVariable "old-total"] }
           conclusion := { conjuncts := [.boolVariable "new-total"] } } }
@@ -328,7 +333,7 @@ def main : IO Unit := do
   expectEq externalTotalityQueue.reason .externalRequestIneligible
     "ineligible external request has an explicit escalation reason"
   for kind in [ObligationKind.erasedWordTypeEquality, .totalityPromisePresence] do
-    let structural := makeObligation kind [.truth] [.boolVariable "structural-result"] context
+    let structural := makeObligation kind [.truth] [.boolVariable "structural-result"] ctx
     expectEq (discharge "request-a" [structural]).smtQueue.length 0
       "structural obligations never enter SMT"
     let forgedStructural : SmtQueueEntry :=
@@ -350,7 +355,7 @@ def main : IO Unit := do
   expectExternalDeferred generated (.uncheckedUnsat "forged") .uncheckedUnsatRejected
     "unchecked-unsat-rejected"
 
-  let falseConclusion := oneBody context [.intEq (.variable "x") (.literal 1)] []
+  let falseConclusion := oneBody ctx [.intEq (.variable "x") (.literal 1)] []
     [.intLt (.variable "x") (.literal 0)]
   let falsePending := discharge "request-a" [falseConclusion]
   let falseEntry ← expectAt falsePending.smtQueue 0 "countermodel request"
@@ -378,7 +383,7 @@ def main : IO Unit := do
   let duplicateObligation ← expectAt duplicateDiagnostic.body.obligations 0 "duplicate countermodel"
   expectEq duplicateObligation.status .deferred
     "duplicate model bindings are rejected"
-  let missingLater := oneBody context [.truth] [] [.falsity, .boolVariable "missing"]
+  let missingLater := oneBody ctx [.truth] [] [.falsity, .boolVariable "missing"]
   let missingLaterPending := discharge "request-a" [missingLater]
   let missingLaterEntry ← expectAt missingLaterPending.smtQueue 0 "missing later variable"
   let missingLaterResult := recordExternalOutcome "request-a" missingLaterEntry (.sat {})
@@ -397,24 +402,24 @@ def main : IO Unit := do
   expectEq forgedQueue.reason .externalRequestIneligible
     "queue eligibility recomputes the obligation identity"
 
-  let bodyMutation := oneBody (context (bodyHash := "sha256:body-b")) [xPositive] [successor]
+  let bodyMutation := oneBody { ctx with bodyHash := "sha256:body-b" } [xPositive] [successor]
     [yPositive]
-  let specMutation := oneBody (context (specHash := "sha256:spec-b")) [xPositive] [successor]
+  let specMutation := oneBody { ctx with specHash := "sha256:spec-b" } [xPositive] [successor]
     [yPositive]
   expectTrue (generated.obligationId != bodyMutation.obligationId)
     "body identity mutation invalidates the obligation"
   expectTrue (generated.obligationId != specMutation.obligationId)
     "specification identity mutation invalidates the obligation"
-  let calleeMutation := oneBody { context with calleeContractHashes := ["sha256:callee-b"] }
+  let calleeMutation := oneBody { ctx with calleeContractHashes := ["sha256:callee-b"] }
     [xPositive] [successor] [yPositive]
   let predicateMutation := oneBody
-    { context with predicateDefinitionHashes := ["sha256:predicate-b"] }
+    { ctx with predicateDefinitionHashes := ["sha256:predicate-b"] }
     [xPositive] [successor] [yPositive]
-  let normaliserMutation := oneBody { context with normaliserVersion := "normaliser-v2" }
+  let normaliserMutation := oneBody { ctx with normaliserVersion := "normaliser-v2" }
     [xPositive] [successor] [yPositive]
-  let vcMutation := oneBody { context with vcGeneratorVersion := "vc-v2" }
+  let vcMutation := oneBody { ctx with vcGeneratorVersion := "vc-v2" }
     [xPositive] [successor] [yPositive]
-  let toolchainMutation := oneBody { context with toolchainRevision := "firth-b" }
+  let toolchainMutation := oneBody { ctx with toolchainRevision := "firth-b" }
     [xPositive] [successor] [yPositive]
   for mutation in [calleeMutation, predicateMutation, normaliserMutation, vcMutation,
       toolchainMutation] do
@@ -426,9 +431,11 @@ def main : IO Unit := do
     canonicalFormula { premises := [.boolVariable "a", .boolVariable "b"], conclusions := [] })
     "length framing resists delimiter ambiguity"
 
-  let late := discharge "request-sort" [oneBody (context (path := "z.firth") (start := 20))
+  let late := discharge "request-sort" [oneBody { ctx with
+      source := { path := "z.firth", span := span 20 24 } }
     [xPositive] [successor] [yPositive]]
-  let early := discharge "request-sort" [oneBody (context (path := "a.firth") (start := 30))
+  let early := discharge "request-sort" [oneBody { ctx with
+      source := { path := "a.firth", span := span 30 34 } }
     [xPositive] [successor] [yPositive]]
   let sorted := sortDiagnostics (late.diagnostics ++ early.diagnostics)
   let firstDiagnostic ← expectAt sorted 0 "first sorted diagnostic"
