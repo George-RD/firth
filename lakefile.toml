@@ -1,7 +1,7 @@
 name = "firth"
 version = "0.1.0"
-defaultTargets = ["firthTest", "firthParserTest", "firthErasureTest", "firthStackEffectTest"]
-testDriver = "firthTest"
+defaultTargets = ["firthTest", "firthParserTest", "firthErasureTest", "firthStackEffectTest", "firthAgentDiagnosticTest", "firthAllTest"]
+testDriver = "firthAllTest"
 
 [[lean_lib]]
 name = "Firth"
@@ -11,6 +11,16 @@ srcDir = "src/interpreter"
 name = "FirthElaborator"
 srcDir = "src"
 roots = ["elaborator.Firth.Parser", "elaborator.Firth.Erasure", "elaborator.Firth.StackEffect", "elaborator.FirthElaborator"]
+
+[[lean_lib]]
+name = "FirthAgent"
+srcDir = "src"
+roots = ["agent.Firth.Agent.DiagnosticEnvelope", "agent.Firth.Agent.JsonMembers", "agent.Firth.Agent.Validation", "agent.Firth.Agent.ElaboratorDiagnostics"]
+
+[[lean_lib]]
+name = "FirthAgentTests"
+srcDir = "src"
+roots = ["agent.Firth.Agent.DiagnosticEnvelopeTest", "agent.Firth.Agent.ValidationTest", "agent.Firth.Agent.ElaboratorDiagnosticsTest"]
 
 [[lean_exe]]
 name = "firthTest"
@@ -35,4 +45,14 @@ srcDir = "src"
 [[lean_exe]]
 name = "firthStackEffectTest"
 root = "elaborator.FirthStackEffectTest"
+srcDir = "src"
+
+[[lean_exe]]
+name = "firthAgentDiagnosticTest"
+root = "agent.FirthDiagnosticEnvelopeTest"
+srcDir = "src"
+
+[[lean_exe]]
+name = "firthAllTest"
+root = "agent.FirthAllTest"
 srcDir = "src"
