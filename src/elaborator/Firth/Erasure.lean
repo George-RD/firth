@@ -9,6 +9,7 @@ structure LocatedKernel where
   span : Span
   atom : Atom
   childSpans : List Span := []
+  children : List LocatedKernel := []
   deriving Repr, BEq
 
 abbrev KernelProgram := List LocatedKernel
@@ -79,7 +80,7 @@ private def toProgram : KernelProgram → Program
   | x :: xs => .cons x.atom (toProgram xs)
 
 private def locatedQuotation (span : Span) (program : KernelProgram) : LocatedKernel :=
-  { span, atom := .quotation (toProgram program), childSpans := program.map (·.span) }
+  { span, atom := .quotation (toProgram program), childSpans := program.map (·.span), children := program }
 
 private def atomList (atom : Atom) (span : Span) : KernelProgram := [located span atom]
 

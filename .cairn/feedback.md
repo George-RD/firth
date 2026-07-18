@@ -10,3 +10,10 @@ Cairn 0.3.0 reports CAIRN_PATH_GITIGNORED for .claude even though git check-igno
 ## 2026-07-17T05:00:55Z (cairn 0.5.0)
 
 select_unit.py silently drops Requires edges written as a ## Requires heading with bullets and fails open (dependents become eligible); parser only accepts inline Requires: lines
+
+## 2026-07-18T10:10:03Z (cairn 0.7.0)
+
+change accept elaborator-stack-effect-inference ran cargo build/clippy/fmt/test at the repository root even though the declared Rust crate is src/runtime/vm; all equivalent crate-local gates pass, but acceptance failed with no root Cargo.toml. Its cairn lint --strict elaborator-stack-effect-inference step also returned only validation failed.
+
+area: acceptance
+severity: major
