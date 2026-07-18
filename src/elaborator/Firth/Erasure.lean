@@ -353,19 +353,40 @@ def erase (env : EffectEnv) (effect : StackEffect) (body : List Item) : Except E
         then [{ code := "LOCAL_DEPTH", span := effect.span }] else []) ++
         (if longestStructuralRun program > 4 then [{ code := "STACK_JUGGLE", span := effect.span }] else []) })
 
+private theorem erase_successes_unique (env : EffectEnv) (effect : StackEffect)
+    (body : List Item) (first : ErasureResult)
+    (first_run : erase env effect body = .ok first) :
+    ∀ (runs : List ErasureResult),
+      (∀ result, result ∈ runs → erase env effect body = .ok result) →
+      ∀ result, result ∈ runs → first = result := by
+  intro runs
+  induction runs with
+  | nil =>
+      intro valid result membership
+      simp at membership
+  | cons head tail ih =>
+      intro valid result membership
+      have head_run := valid head (by simp)
+      have same : (Except.ok first : Except ErasureError ErasureResult) = .ok head :=
+        first_run.symm.trans head_run
+      have first_head : first = head := by injection same
+      have result_cases : result = head ∨ result ∈ tail := by simpa using membership
+      cases result_cases with
+      | inl result_same => exact first_head.trans result_same.symm
+      | inr result_tail =>
+          have tail_valid : ∀ result, result ∈ tail → erase env effect body = .ok result :=
+            fun result membership => valid result (by simp [membership])
+          exact ih tail_valid result result_tail
+
 theorem erase_deterministic (env : EffectEnv) (effect : StackEffect) (body : List Item)
     {first second : ErasureResult}
     (first_run : erase env effect body = .ok first)
     (second_run : erase env effect body = .ok second) :
     first = second := by
-  induction body with
-  | nil =>
-      have same : (Except.ok first : Except ErasureError ErasureResult) = .ok second :=
-        first_run.symm.trans second_run
-      injection same
-  | cons item rest ih =>
-      have same : (Except.ok first : Except ErasureError ErasureResult) = .ok second :=
-        first_run.symm.trans second_run
-      injection same
+  have unique := erase_successes_unique env effect body first first_run [second]
+    (fun result membership => by
+      have result_same : result = second := by simpa using membership
+      exact result_same ▸ second_run) second (by simp)
+  exact unique
 
 end Firth.Elaborator
