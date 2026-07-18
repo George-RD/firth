@@ -17,13 +17,35 @@ pub const DEFAULT_FUEL: u64 = MAX_INSTRUCTIONS;
 pub const FORMAT_VERSION: u16 = 1;
 pub const GAMMA_VERSION: u64 = 1;
 
+/// The ownership class assigned by the kernel type system.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Usage {
+    Many,
+    Linear,
+}
+
+impl Usage {
+    fn meet(self, other: Self) -> Self {
+        if matches!(self, Self::Linear) || matches!(other, Self::Linear) {
+            Self::Linear
+        } else {
+            Self::Many
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     Int(i64),
     Bool(bool),
     Bytes(Vec<u8>),
     Quotation(Quotation),
-    PrimitiveValue { tag: u64, bytes: Vec<u8> },
+    PrimitiveValue {
+        tag: u64,
+        bytes: Vec<u8>,
+    },
+    /// Administrative World capture. It is never reported as a language value.
+    World,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -31,6 +53,27 @@ pub struct Quotation {
     pub code: Vec<Instruction>,
     pub captures: Vec<Value>,
     pub consumed: Vec<bool>,
+}
+
+impl Quotation {
+    /// A quotation owns a capture exactly when one of its captures is linear.
+    pub fn usage(&self, registry: &PrimitiveRegistry) -> Usage {
+        self.captures.iter().fold(Usage::Many, |usage, value| {
+            usage.meet(value.usage(registry))
+        })
+    }
+}
+
+impl Value {
+    /// Returns the encoded value's declared ownership class.
+    pub fn usage(&self, registry: &PrimitiveRegistry) -> Usage {
+        match self {
+            Self::Quotation(quotation) => quotation.usage(registry),
+            Self::PrimitiveValue { tag, .. } => registry.value_usage(*tag).unwrap_or(Usage::Linear),
+            Self::World => Usage::Linear,
+            Self::Int(_) | Self::Bool(_) | Self::Bytes(_) => Usage::Many,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -118,8 +161,83 @@ pub enum VmError {
     UnknownPrimitive(String),
     TypeFault,
     ResourceFault,
+    AllocationFailure,
     PrimitiveFault,
     StackFault,
+    WorldFault,
+}
+
+impl VmError {
+    pub fn stable_code(&self) -> &'static str {
+        match self {
+            Self::Truncated
+            | Self::InvalidLeb128
+            | Self::NonCanonicalLeb128
+            | Self::InputTooLarge
+            | Self::InstructionLimit
+            | Self::NestingLimit
+            | Self::LengthLimit
+            | Self::UnsupportedFormat(_)
+            | Self::UnsupportedGamma(_)
+            | Self::InvalidUtf8
+            | Self::InvalidIdentifier
+            | Self::InvalidWordType
+            | Self::InvalidValueTag(_)
+            | Self::InvalidLiteralEncoding
+            | Self::InvalidBoolean(_)
+            | Self::InvalidPrimitiveTag
+            | Self::InvalidOpcode(_)
+            | Self::InvalidDigestLength
+            | Self::InvalidDigest
+            | Self::InvalidCaptureBitmap
+            | Self::InvalidCaptureIndex(_)
+            | Self::TrailingBytes => "malformed-instruction",
+            Self::FuelExhausted => "fuel-exhausted",
+            Self::UnknownWord(_) => "unknown-word",
+            Self::UnknownPrimitive(_) => "unknown-primitive",
+            Self::TypeFault => "type-fault",
+            Self::ResourceFault => "resource-fault",
+            Self::AllocationFailure => "resource-fault",
+            Self::PrimitiveFault | Self::WorldFault => "primitive-fault",
+            Self::StackFault => "stack-fault",
+            Self::DuplicateWord | Self::UnsortedWords | Self::UnsupportedOperation(_) => {
+                "malformed-instruction"
+            }
+        }
+    }
+
+    pub fn stable_subcode(&self) -> &'static str {
+        if matches!(self, Self::AllocationFailure) {
+            "allocation-failure"
+        } else {
+            ""
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TrapLocation {
+    pub word: String,
+    pub pc: usize,
+    pub image_version: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Trap {
+    pub code: &'static str,
+    pub error: VmError,
+    pub location: Option<TrapLocation>,
+    pub stack: Vec<Value>,
+    pub world: WorldState,
+    pub cost: CostReport,
+    pub trace: Vec<TraceEvent>,
+    pub frames: Vec<FrameTrace>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ExecutionOutcome {
+    Complete(ExecutionReport),
+    Trap(Trap),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -128,16 +246,86 @@ pub struct CostReport {
     pub instructions: u64,
     pub word_entries: u64,
     pub primitives: u64,
+    pub steps: Vec<CostStep>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CostStep {
+    pub cost: u64,
+    pub word: String,
+    pub pc: usize,
+    pub image_version: u64,
+    pub primitive: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutionReport {
     pub stack: Vec<Value>,
     pub cost: CostReport,
+    pub trace: Vec<TraceEvent>,
+    pub world: WorldState,
+    pub frames: Vec<FrameTrace>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorldState {
+    observation: Vec<u8>,
+    active: bool,
+}
+
+impl WorldState {
+    pub fn new() -> Self {
+        Self {
+            observation: vec![0],
+            active: false,
+        }
+    }
+
+    pub fn observation(&self) -> &[u8] {
+        &self.observation
+    }
+}
+
+impl Default for WorldState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TraceEvent {
+    pub word: String,
+    pub pc: usize,
+    pub image_version: u64,
+    pub stack: Vec<Value>,
+    pub cost: u64,
+    pub format_version: u16,
+    pub gamma_version: u64,
+    pub world_observation: Vec<u8>,
+    pub frames: Vec<FrameTrace>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FrameTrace {
+    pub word: String,
+    pub pc: usize,
+    pub code_digest: Vec<u8>,
+    pub captures: Vec<bool>,
+    pub capture_values: Vec<Value>,
+    pub saved: Vec<Value>,
+    pub continuation: Continuation,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Continuation {
+    Halt,
+    Return,
+    RestoreDip,
 }
 
 pub struct PrimitiveContext<'a> {
     stack: &'a mut Vec<Slot>,
+    world: &'a mut WorldState,
 }
 
 impl PrimitiveContext<'_> {
@@ -145,17 +333,33 @@ impl PrimitiveContext<'_> {
         pop_int_from(self.stack)
     }
 
-    pub fn push_int(&mut self, value: i64) {
+    pub fn push_int(&mut self, value: i64) -> Result<(), VmError> {
+        reserve(self.stack, 1)?;
         self.stack.push(Slot::Value(Value::Int(value)));
+        Ok(())
     }
 
-    pub fn make_world(&mut self) {
+    pub fn make_world(&mut self) -> Result<(), VmError> {
+        if self.world.active {
+            return Ok(());
+        }
+        reserve(self.stack, 1)?;
+        self.world.active = true;
         self.stack.push(Slot::WorldMarker);
+        Ok(())
     }
 
     pub fn consume_world(&mut self) -> Result<(), VmError> {
         match self.stack.pop().ok_or(VmError::StackFault)? {
-            Slot::WorldMarker => Ok(()),
+            Slot::WorldMarker => {
+                if !self.world.active {
+                    return Err(VmError::WorldFault);
+                }
+                reserve(&mut self.world.observation, 1)?;
+                self.world.active = false;
+                self.world.observation.push(1);
+                Ok(())
+            }
             Slot::Value(_) => Err(VmError::TypeFault),
         }
     }
@@ -163,11 +367,54 @@ impl PrimitiveContext<'_> {
 
 pub type PrimitiveHandler = for<'a> fn(&mut PrimitiveContext<'a>) -> Result<(), VmError>;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PrimitiveType {
+    Int,
+    Bool,
+    Bytes,
+    Quotation,
+    World,
+    Any,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PrimitiveSignature {
+    pub input: &'static [PrimitiveType],
+    pub output: &'static [PrimitiveType],
+}
+
 #[derive(Clone, Copy)]
 pub struct PrimitiveDefinition {
     pub name: &'static str,
     pub cost: u64,
     pub handler: PrimitiveHandler,
+    pub input: &'static [Usage],
+    pub output: &'static [Usage],
+    pub world: bool,
+    pub value_tags: &'static [(u64, Usage)],
+}
+
+impl PrimitiveDefinition {
+    pub fn signature(&self) -> PrimitiveSignature {
+        match self.name {
+            "addNat" => PrimitiveSignature {
+                input: &[PrimitiveType::Int, PrimitiveType::Int],
+                output: &[PrimitiveType::Int],
+            },
+            "makeWorld" => PrimitiveSignature {
+                input: &[],
+                output: &[PrimitiveType::World],
+            },
+            "consumeWorld" => PrimitiveSignature {
+                input: &[PrimitiveType::World],
+                output: &[],
+            },
+            _ => PrimitiveSignature {
+                input: &[],
+                output: &[],
+            },
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -176,15 +423,26 @@ pub struct PrimitiveRegistry {
     pub definitions: Vec<PrimitiveDefinition>,
 }
 
+impl PrimitiveRegistry {
+    fn value_usage(&self, tag: u64) -> Option<Usage> {
+        self.definitions
+            .iter()
+            .flat_map(|definition| definition.value_tags)
+            .find(|(value_tag, _)| *value_tag == tag)
+            .map(|(_, usage)| *usage)
+    }
+}
+
 fn add_nat(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     let right = context.pop_int()?;
     let left = context.pop_int()?;
-    context.push_int(left.checked_add(right).ok_or(VmError::PrimitiveFault)?);
-    Ok(())
+    context.push_int(left.checked_add(right).ok_or(VmError::PrimitiveFault)?)
 }
 
 fn make_world(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
-    context.make_world();
+    context.make_world()?;
+    reserve(&mut context.world.observation, 1)?;
+    context.world.observation.push(0);
     Ok(())
 }
 
@@ -200,16 +458,28 @@ pub fn default_registry() -> PrimitiveRegistry {
                 name: "addNat",
                 cost: 1,
                 handler: add_nat,
+                input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
             },
             PrimitiveDefinition {
                 name: "makeWorld",
                 cost: 1,
                 handler: make_world,
+                input: &[],
+                output: &[Usage::Linear],
+                world: true,
+                value_tags: &[(1, Usage::Linear)],
             },
             PrimitiveDefinition {
                 name: "consumeWorld",
                 cost: 1,
                 handler: consume_world,
+                input: &[Usage::Linear],
+                output: &[],
+                world: true,
+                value_tags: &[],
             },
         ],
     }
@@ -403,6 +673,7 @@ fn decode_value(reader: &mut Reader<'_>, depth: usize) -> Result<Value, VmError>
             tag: reader.unsigned()?,
             bytes: reader.bytes()?.to_vec(),
         }),
+        5 => Ok(Value::World),
         tag => Err(VmError::InvalidValueTag(tag)),
     }
 }
@@ -438,6 +709,17 @@ pub fn execute_report_with_registry(
     fuel: u64,
     registry: &PrimitiveRegistry,
 ) -> Result<ExecutionReport, VmError> {
+    execute_report_with_stack(image, Vec::new(), fuel, registry)
+}
+
+/// Executes a checked image with an explicit bottom-to-top initial value stack.
+/// This is the boundary used by the Lean differential fixture corpus.
+pub fn execute_report_with_stack(
+    image: &Image,
+    initial_stack: Vec<Value>,
+    fuel: u64,
+    registry: &PrimitiveRegistry,
+) -> Result<ExecutionReport, VmError> {
     validate_image(image)?;
     if registry.version != image.gamma_version {
         return Err(VmError::UnsupportedGamma(registry.version));
@@ -447,27 +729,213 @@ pub fn execute_report_with_registry(
         .iter()
         .find(|word| word.name == "main")
         .ok_or_else(|| VmError::UnknownWord(String::from("main")))?;
+    for value in &initial_stack {
+        validate_value_structure(value, 0)?;
+    }
+    if initial_stack
+        .iter()
+        .filter(|value| matches!(value, Value::World))
+        .count()
+        > 1
+    {
+        return Err(VmError::WorldFault);
+    }
+    let world_active = initial_stack
+        .iter()
+        .any(|value| matches!(value, Value::World));
     let mut state = Machine {
-        stack: Vec::new(),
+        stack: initial_stack
+            .into_iter()
+            .map(|value| {
+                if matches!(value, Value::World) {
+                    Slot::WorldMarker
+                } else {
+                    Slot::Value(value)
+                }
+            })
+            .collect(),
+        world: WorldState {
+            observation: vec![0],
+            active: world_active,
+        },
         fuel,
         cost: CostReport {
             total: 0,
             instructions: 0,
             word_entries: 0,
             primitives: 0,
+            steps: Vec::new(),
         },
+        trace: Vec::new(),
+        location: None,
+        linear_quotes: Vec::new(),
+        frames: Vec::new(),
+        allocation_budget: None,
     };
-    run_code(&word.code, &mut [], &mut [], image, registry, &mut state)?;
+    run_code(
+        &word.code,
+        &mut [],
+        &mut [],
+        image,
+        registry,
+        &mut state,
+        "main",
+    )?;
     Ok(ExecutionReport {
-        stack: state
-            .stack
+        stack: terminal_stack(state.stack, registry)?,
+        cost: state.cost,
+        trace: state.trace,
+        world: state.world,
+        frames: Vec::new(),
+    })
+}
+
+/// Executes while retaining deterministic state and location information on a trap.
+pub fn execute_diagnostic(
+    image: &Image,
+    fuel: u64,
+    registry: &PrimitiveRegistry,
+) -> ExecutionOutcome {
+    execute_diagnostic_with_stack(image, Vec::new(), fuel, registry)
+}
+
+pub fn execute_diagnostic_with_stack(
+    image: &Image,
+    initial_stack: Vec<Value>,
+    fuel: u64,
+    registry: &PrimitiveRegistry,
+) -> ExecutionOutcome {
+    execute_diagnostic_with_stack_budget(image, initial_stack, fuel, registry, None)
+}
+
+pub fn execute_diagnostic_with_stack_budget(
+    image: &Image,
+    initial_stack: Vec<Value>,
+    fuel: u64,
+    registry: &PrimitiveRegistry,
+    allocation_budget: Option<usize>,
+) -> ExecutionOutcome {
+    if let Err(error) = validate_image(image) {
+        return diagnostic_trap(error, empty_machine());
+    }
+    if registry.version != image.gamma_version {
+        return diagnostic_trap(VmError::UnsupportedGamma(registry.version), empty_machine());
+    }
+    let Some(word) = image.words.iter().find(|word| word.name == "main") else {
+        return diagnostic_trap(VmError::UnknownWord(String::from("main")), empty_machine());
+    };
+    for value in &initial_stack {
+        if let Err(error) = validate_value_structure(value, 0) {
+            return diagnostic_trap(error, empty_machine());
+        }
+    }
+    let world_active = initial_stack
+        .iter()
+        .any(|value| matches!(value, Value::World));
+    let mut state = Machine {
+        stack: initial_stack
             .into_iter()
-            .filter_map(|slot| match slot {
-                Slot::Value(value) => Some(value),
-                Slot::WorldMarker => None,
+            .map(|value| {
+                if matches!(value, Value::World) {
+                    Slot::WorldMarker
+                } else {
+                    Slot::Value(value)
+                }
             })
             .collect(),
+        world: WorldState {
+            observation: vec![0],
+            active: world_active,
+        },
+        fuel,
+        cost: empty_cost(),
+        trace: Vec::new(),
+        location: None,
+        linear_quotes: Vec::new(),
+        frames: Vec::new(),
+        allocation_budget,
+    };
+    match run_code(
+        &word.code,
+        &mut [],
+        &mut [],
+        image,
+        registry,
+        &mut state,
+        "main",
+    ) {
+        Ok(()) => match terminal_stack(state.stack.clone(), registry) {
+            Ok(stack) => ExecutionOutcome::Complete(ExecutionReport {
+                stack,
+                cost: state.cost,
+                trace: state.trace,
+                world: state.world,
+                frames: state.frames,
+            }),
+            Err(error) => diagnostic_trap(error, state),
+        },
+        Err(error) => diagnostic_trap(error, state),
+    }
+}
+
+fn empty_cost() -> CostReport {
+    CostReport {
+        total: 0,
+        instructions: 0,
+        word_entries: 0,
+        primitives: 0,
+        steps: Vec::new(),
+    }
+}
+
+fn reserve<T>(values: &mut Vec<T>, additional: usize) -> Result<(), VmError> {
+    values
+        .try_reserve(additional)
+        .map_err(|_| VmError::AllocationFailure)
+}
+
+fn reserve_stack(machine: &mut Machine, additional: usize) -> Result<(), VmError> {
+    if let Some(budget) = machine.allocation_budget.as_mut() {
+        if *budget == 0 {
+            return Err(VmError::AllocationFailure);
+        }
+        *budget -= 1;
+    }
+    reserve(&mut machine.stack, additional)
+}
+
+fn empty_machine() -> Machine {
+    Machine {
+        stack: Vec::new(),
+        world: WorldState::new(),
+        fuel: 0,
+        cost: empty_cost(),
+        trace: Vec::new(),
+        location: None,
+        linear_quotes: Vec::new(),
+        frames: Vec::new(),
+        allocation_budget: None,
+    }
+}
+
+fn diagnostic_trap(error: VmError, state: Machine) -> ExecutionOutcome {
+    let stack = state
+        .stack
+        .into_iter()
+        .filter_map(|slot| match slot {
+            Slot::Value(value) => Some(value),
+            Slot::WorldMarker => None,
+        })
+        .collect();
+    ExecutionOutcome::Trap(Trap {
+        code: error.stable_code(),
+        error,
+        location: state.location,
+        stack,
+        world: state.world,
         cost: state.cost,
+        trace: state.trace,
+        frames: state.frames,
     })
 }
 
@@ -477,18 +945,44 @@ enum Slot {
     WorldMarker,
 }
 
+#[derive(Clone)]
 struct Machine {
     stack: Vec<Slot>,
+    world: WorldState,
     fuel: u64,
     cost: CostReport,
+    trace: Vec<TraceEvent>,
+    location: Option<TrapLocation>,
+    linear_quotes: Vec<(String, usize, Vec<u8>)>,
+    frames: Vec<FrameTrace>,
+    allocation_budget: Option<usize>,
 }
 
-fn charge(machine: &mut Machine, primitive: bool, word: bool) -> Result<(), VmError> {
+#[allow(clippy::too_many_arguments)]
+fn charge(
+    machine: &mut Machine,
+    primitive: bool,
+    word: bool,
+    instruction: &Instruction,
+    current_word: &str,
+    pc: usize,
+    image: &Image,
+    primitive_name: Option<&str>,
+    primitive_cost: u64,
+) -> Result<(), VmError> {
+    machine.location = Some(TrapLocation {
+        word: String::from(current_word),
+        pc,
+        image_version: image.image_version,
+    });
     if machine.fuel == 0 {
         return Err(VmError::FuelExhausted);
     }
+    reserve(&mut machine.cost.steps, 1)?;
+    reserve(&mut machine.trace, 1)?;
     machine.fuel -= 1;
-    machine.cost.total += 1;
+    let cost = if primitive { primitive_cost } else { 1 };
+    machine.cost.total = machine.cost.total.saturating_add(cost);
     machine.cost.instructions += 1;
     if primitive {
         machine.cost.primitives += 1;
@@ -496,6 +990,32 @@ fn charge(machine: &mut Machine, primitive: bool, word: bool) -> Result<(), VmEr
     if word {
         machine.cost.word_entries += 1;
     }
+    machine.cost.steps.push(CostStep {
+        cost,
+        word: String::from(current_word),
+        pc,
+        image_version: image.image_version,
+        primitive: primitive_name.map(String::from),
+    });
+    machine.trace.push(TraceEvent {
+        word: String::from(current_word),
+        pc,
+        image_version: image.image_version,
+        stack: machine
+            .stack
+            .iter()
+            .filter_map(|slot| match slot {
+                Slot::Value(value) => Some(value.clone()),
+                Slot::WorldMarker => None,
+            })
+            .collect(),
+        cost: machine.cost.total,
+        format_version: image.format_version,
+        gamma_version: image.gamma_version,
+        world_observation: machine.world.observation.clone(),
+        frames: machine.frames.clone(),
+    });
+    let _ = instruction;
     Ok(())
 }
 
@@ -506,158 +1026,457 @@ fn run_code(
     image: &Image,
     registry: &PrimitiveRegistry,
     machine: &mut Machine,
+    current_word: &str,
 ) -> Result<(), VmError> {
-    for instruction in code {
-        charge(machine, matches!(instruction.op, Op::Prim), false)?;
-        match instruction.op {
-            Op::PushLiteral => match instruction.operand.as_ref() {
-                Some(Operand::Literal(value)) if is_literal(value) => {
-                    machine.stack.push(Slot::Value(value.clone()))
-                }
-                _ => return Err(VmError::InvalidLiteralEncoding),
-            },
-            Op::PushQuote => match instruction.operand.as_ref() {
-                Some(Operand::Quote(quotation)) => machine
-                    .stack
-                    .push(Slot::Value(Value::Quotation(quotation.clone()))),
-                _ => return Err(VmError::StackFault),
-            },
-            Op::PushCapture => {
-                let Some(Operand::Capture(index)) = instruction.operand.as_ref() else {
-                    return Err(VmError::StackFault);
-                };
-                let index =
-                    usize::try_from(*index).map_err(|_| VmError::InvalidCaptureIndex(*index))?;
-                let Some(value) = captures.get_mut(index) else {
-                    return Err(VmError::InvalidCaptureIndex(index as u64));
-                };
-                let Some(used) = consumed.get_mut(index) else {
-                    return Err(VmError::InvalidCaptureIndex(index as u64));
-                };
-                if *used {
-                    return Err(VmError::ResourceFault);
-                }
-                if value_is_linear(value) {
-                    *used = true;
-                }
-                machine.stack.push(Slot::Value(value.clone()));
+    let frame_depth = machine.frames.len();
+    reserve(&mut machine.frames, 1)?;
+    machine.frames.push(FrameTrace {
+        word: String::from(current_word),
+        pc: 0,
+        code_digest: sha256(&canonical_code(code)).to_vec(),
+        captures: consumed.to_vec(),
+        capture_values: captures.to_vec(),
+        saved: Vec::new(),
+        continuation: if frame_depth == 0 {
+            Continuation::Halt
+        } else {
+            Continuation::Return
+        },
+    });
+    let result = (|| {
+        for (pc, instruction) in code.iter().enumerate() {
+            if let Some(frame) = machine.frames.last_mut() {
+                frame.pc = pc;
+                frame.captures = consumed.to_vec();
+                frame.capture_values = captures.to_vec();
             }
-            Op::Dup => {
-                let value = machine.stack.last().ok_or(VmError::StackFault)?;
-                let Slot::Value(value) = value else {
-                    return Err(VmError::ResourceFault);
+            let captures_checkpoint = captures.to_vec();
+            let consumed_checkpoint = consumed.to_vec();
+            let checkpoint = machine.clone();
+            let instruction_result = (|| {
+                let primitive_cost = match instruction.operand.as_ref() {
+                    Some(Operand::Primitive(name)) => registry
+                        .definitions
+                        .iter()
+                        .find(|definition| definition.name == name)
+                        .map_or(1, |definition| definition.cost),
+                    _ => 1,
                 };
-                if value_is_linear(value) {
-                    return Err(VmError::ResourceFault);
-                }
-                machine.stack.push(Slot::Value(value.clone()));
-            }
-            Op::Drop => match machine.stack.pop().ok_or(VmError::StackFault)? {
-                Slot::Value(value) if !value_is_linear(&value) => {}
-                Slot::Value(_) | Slot::WorldMarker => return Err(VmError::ResourceFault),
-            },
-            Op::Swap => {
-                let n = machine.stack.len();
-                if n < 2 {
-                    return Err(VmError::StackFault);
-                }
-                machine.stack.swap(n - 1, n - 2);
-            }
-            Op::Call => {
-                let mut quotation = pop_quotation(machine)?;
-                run_code(
-                    &quotation.code,
-                    &mut quotation.captures,
-                    &mut quotation.consumed,
-                    image,
-                    registry,
+                validate_before_charge(
+                    instruction,
                     machine,
-                )?;
-            }
-            Op::Dip => {
-                let mut quotation = pop_quotation(machine)?;
-                let protected = machine.stack.pop().ok_or(VmError::StackFault)?;
-                run_code(
-                    &quotation.code,
-                    &mut quotation.captures,
-                    &mut quotation.consumed,
-                    image,
-                    registry,
-                    machine,
-                )?;
-                machine.stack.push(protected);
-            }
-            Op::Compose => {
-                let right = pop_quotation(machine)?;
-                let left = pop_quotation(machine)?;
-                let right_capture_count = right.captures.len();
-                let mut captures = left.captures;
-                captures.extend(right.captures);
-                let offset = captures.len() - right_capture_count;
-                let mut code = left.code;
-                code.extend(rebase_captures(&right.code, offset)?);
-                let capture_count = captures.len();
-                machine.stack.push(Slot::Value(Value::Quotation(Quotation {
-                    code,
                     captures,
-                    consumed: vec![false; capture_count],
-                })));
-            }
-            Op::Quote => {
-                let value = machine.stack.pop().ok_or(VmError::StackFault)?;
-                let value = match value {
-                    Slot::Value(value) => value,
-                    Slot::WorldMarker => return Err(VmError::ResourceFault),
-                };
-                machine.stack.push(Slot::Value(Value::Quotation(Quotation {
-                    code: vec![Instruction {
-                        op: Op::PushCapture,
-                        operand: Some(Operand::Capture(0)),
-                    }],
-                    captures: vec![value],
-                    consumed: vec![false],
-                })));
-            }
-            Op::If => {
-                let false_branch = pop_quotation(machine)?;
-                let true_branch = pop_quotation(machine)?;
-                let condition = match machine.stack.pop().ok_or(VmError::StackFault)? {
-                    Slot::Value(Value::Bool(value)) => value,
-                    _ => return Err(VmError::TypeFault),
-                };
-                let branch = if condition { true_branch } else { false_branch };
-                let mut branch = branch;
-                run_code(
-                    &branch.code,
-                    &mut branch.captures,
-                    &mut branch.consumed,
+                    consumed,
                     image,
                     registry,
-                    machine,
+                    current_word,
+                    pc,
                 )?;
+                charge(
+                    machine,
+                    matches!(instruction.op, Op::Prim),
+                    false,
+                    instruction,
+                    current_word,
+                    pc,
+                    image,
+                    match instruction.operand.as_ref() {
+                        Some(Operand::Primitive(name)) => Some(name.as_str()),
+                        _ => None,
+                    },
+                    primitive_cost,
+                )?;
+                match instruction.op {
+                    Op::PushLiteral => match instruction.operand.as_ref() {
+                        Some(Operand::Literal(value)) if is_literal(value) => {
+                            reserve_stack(machine, 1)?;
+                            machine.stack.push(Slot::Value(value.clone()))
+                        }
+                        _ => return Err(VmError::InvalidLiteralEncoding),
+                    },
+                    Op::PushQuote => match instruction.operand.as_ref() {
+                        Some(Operand::Quote(quotation)) => {
+                            reserve_stack(machine, 1)?;
+                            if quotation.usage(registry) == Usage::Linear {
+                                let origin = (
+                                    String::from(current_word),
+                                    pc,
+                                    canonical_code(&quotation.code),
+                                );
+                                if machine.linear_quotes.contains(&origin) {
+                                    return Err(VmError::ResourceFault);
+                                }
+                                reserve(&mut machine.linear_quotes, 1)?;
+                                machine.linear_quotes.push(origin);
+                            }
+                            machine
+                                .stack
+                                .push(Slot::Value(Value::Quotation(quotation.clone())))
+                        }
+                        _ => return Err(VmError::StackFault),
+                    },
+                    Op::PushCapture => {
+                        let Some(Operand::Capture(index)) = instruction.operand.as_ref() else {
+                            return Err(VmError::StackFault);
+                        };
+                        let index = usize::try_from(*index)
+                            .map_err(|_| VmError::InvalidCaptureIndex(*index))?;
+                        let Some(value) = captures.get_mut(index) else {
+                            return Err(VmError::InvalidCaptureIndex(index as u64));
+                        };
+                        let Some(used) = consumed.get_mut(index) else {
+                            return Err(VmError::InvalidCaptureIndex(index as u64));
+                        };
+                        if *used {
+                            return Err(VmError::ResourceFault);
+                        }
+                        if value.usage(registry) == Usage::Linear {
+                            reserve_stack(machine, 1)?;
+                            *used = true;
+                            let moved = core::mem::replace(value, Value::Bytes(Vec::new()));
+                            machine.stack.push(if matches!(moved, Value::World) {
+                                Slot::WorldMarker
+                            } else {
+                                Slot::Value(moved)
+                            });
+                        } else {
+                            reserve_stack(machine, 1)?;
+                            machine.stack.push(Slot::Value(value.clone()));
+                        }
+                    }
+                    Op::Dup => {
+                        let value = machine.stack.last().ok_or(VmError::StackFault)?;
+                        let Slot::Value(value) = value else {
+                            return Err(VmError::ResourceFault);
+                        };
+                        if value.usage(registry) == Usage::Linear {
+                            return Err(VmError::ResourceFault);
+                        }
+                        let copy = value.clone();
+                        reserve_stack(machine, 1)?;
+                        machine.stack.push(Slot::Value(copy));
+                    }
+                    Op::Drop => match machine.stack.pop().ok_or(VmError::StackFault)? {
+                        Slot::Value(value) if value.usage(registry) == Usage::Many => {}
+                        Slot::Value(_) | Slot::WorldMarker => return Err(VmError::ResourceFault),
+                    },
+                    Op::Swap => {
+                        let n = machine.stack.len();
+                        if n < 2 {
+                            return Err(VmError::StackFault);
+                        }
+                        machine.stack.swap(n - 1, n - 2);
+                    }
+                    Op::Call => {
+                        let mut quotation = pop_quotation(machine)?;
+                        run_code(
+                            &quotation.code,
+                            &mut quotation.captures,
+                            &mut quotation.consumed,
+                            image,
+                            registry,
+                            machine,
+                            current_word,
+                        )?;
+                        ensure_captures_consumed(&quotation, registry)?;
+                    }
+                    Op::Dip => {
+                        reserve_stack(machine, 1)?;
+                        let mut quotation = pop_quotation(machine)?;
+                        let protected = machine.stack.pop().ok_or(VmError::StackFault)?;
+                        if let Some(frame) = machine.frames.last_mut() {
+                            frame.continuation = Continuation::RestoreDip;
+                            frame.saved.clear();
+                            reserve(&mut frame.saved, 1)?;
+                            frame.saved.push(match &protected {
+                                Slot::Value(value) => value.clone(),
+                                Slot::WorldMarker => Value::World,
+                            });
+                        }
+                        run_code(
+                            &quotation.code,
+                            &mut quotation.captures,
+                            &mut quotation.consumed,
+                            image,
+                            registry,
+                            machine,
+                            current_word,
+                        )?;
+                        ensure_captures_consumed(&quotation, registry)?;
+                        if let Some(frame) = machine.frames.last_mut() {
+                            frame.saved.clear();
+                            frame.continuation = Continuation::Return;
+                        }
+                        reserve_stack(machine, 1)?;
+                        machine.stack.push(protected);
+                    }
+                    Op::Compose => {
+                        reserve_stack(machine, 1)?;
+                        let right = pop_quotation(machine)?;
+                        let left = pop_quotation(machine)?;
+                        let right_capture_count = right.captures.len();
+                        let mut consumed = left.consumed;
+                        consumed.extend(right.consumed.iter().copied());
+                        let mut captures = left.captures;
+                        captures.extend(right.captures);
+                        let offset = captures.len() - right_capture_count;
+                        let mut code = left.code;
+                        code.extend(rebase_captures(&right.code, offset)?);
+                        machine.stack.push(Slot::Value(Value::Quotation(Quotation {
+                            code,
+                            captures,
+                            consumed,
+                        })));
+                    }
+                    Op::Quote => {
+                        reserve_stack(machine, 1)?;
+                        let value = machine.stack.pop().ok_or(VmError::StackFault)?;
+                        let value = match value {
+                            Slot::Value(value) => value,
+                            Slot::WorldMarker => Value::World,
+                        };
+                        machine.stack.push(Slot::Value(Value::Quotation(Quotation {
+                            code: vec![Instruction {
+                                op: Op::PushCapture,
+                                operand: Some(Operand::Capture(0)),
+                            }],
+                            captures: vec![value],
+                            consumed: vec![false],
+                        })));
+                    }
+                    Op::If => {
+                        let false_branch = pop_quotation(machine)?;
+                        let true_branch = pop_quotation(machine)?;
+                        let condition = match machine.stack.pop().ok_or(VmError::StackFault)? {
+                            Slot::Value(Value::Bool(value)) => value,
+                            _ => return Err(VmError::TypeFault),
+                        };
+                        if true_branch.usage(registry) == Usage::Linear
+                            || false_branch.usage(registry) == Usage::Linear
+                        {
+                            return Err(VmError::ResourceFault);
+                        }
+                        let branch = if condition { true_branch } else { false_branch };
+                        let mut branch = branch;
+                        run_code(
+                            &branch.code,
+                            &mut branch.captures,
+                            &mut branch.consumed,
+                            image,
+                            registry,
+                            machine,
+                            current_word,
+                        )?;
+                    }
+                    Op::CallWord => {
+                        let Some(Operand::Word(name)) = instruction.operand.as_ref() else {
+                            return Err(VmError::StackFault);
+                        };
+                        let word = image
+                            .words
+                            .iter()
+                            .find(|word| word.name == *name)
+                            .ok_or_else(|| VmError::UnknownWord(name.clone()))?;
+                        reserve(&mut machine.cost.steps, 1)?;
+                        machine.cost.total = machine.cost.total.saturating_add(1);
+                        machine.cost.word_entries += 1;
+                        machine.cost.steps.push(CostStep {
+                            cost: 1,
+                            word: word.name.clone(),
+                            pc: 0,
+                            image_version: image.image_version,
+                            primitive: None,
+                        });
+                        run_code(
+                            &word.code,
+                            &mut [],
+                            &mut [],
+                            image,
+                            registry,
+                            machine,
+                            &word.name,
+                        )?;
+                    }
+                    Op::Prim => {
+                        let Some(Operand::Primitive(name)) = instruction.operand.as_ref() else {
+                            return Err(VmError::InvalidPrimitiveTag);
+                        };
+                        run_primitive(name, registry, machine)?;
+                    }
+                }
+                Ok::<(), VmError>(())
+            })();
+            if matches!(instruction_result, Err(VmError::AllocationFailure)) {
+                *machine = checkpoint;
+                captures.clone_from_slice(&captures_checkpoint);
+                consumed.copy_from_slice(&consumed_checkpoint);
             }
-            Op::CallWord => {
-                let Some(Operand::Word(name)) = instruction.operand.as_ref() else {
-                    return Err(VmError::StackFault);
-                };
-                let word = image
-                    .words
-                    .iter()
-                    .find(|word| word.name == *name)
-                    .ok_or_else(|| VmError::UnknownWord(name.clone()))?;
-                machine.cost.total += 1;
-                machine.cost.word_entries += 1;
-                run_code(&word.code, &mut [], &mut [], image, registry, machine)?;
+            instruction_result?;
+        }
+        Ok(())
+    })();
+    if result.is_ok() {
+        machine.frames.truncate(frame_depth);
+    }
+    result
+}
+
+#[allow(clippy::too_many_arguments)]
+fn validate_before_charge(
+    instruction: &Instruction,
+    machine: &Machine,
+    captures: &[Value],
+    consumed: &[bool],
+    image: &Image,
+    registry: &PrimitiveRegistry,
+    current_word: &str,
+    pc: usize,
+) -> Result<(), VmError> {
+    let top = || machine.stack.last().ok_or(VmError::StackFault);
+    match instruction.op {
+        Op::PushLiteral => match instruction.operand.as_ref() {
+            Some(Operand::Literal(value)) if is_literal(value) => Ok(()),
+            _ => Err(VmError::InvalidLiteralEncoding),
+        },
+        Op::PushQuote => match instruction.operand.as_ref() {
+            Some(Operand::Quote(quotation)) => {
+                if quotation.usage(registry) == Usage::Linear {
+                    let code = canonical_code(&quotation.code);
+                    if machine
+                        .linear_quotes
+                        .iter()
+                        .any(|(word, origin_pc, origin_code)| {
+                            word == current_word && *origin_pc == pc && *origin_code == code
+                        })
+                    {
+                        return Err(VmError::ResourceFault);
+                    }
+                }
+                Ok(())
             }
-            Op::Prim => {
-                let Some(Operand::Primitive(name)) = instruction.operand.as_ref() else {
-                    return Err(VmError::InvalidPrimitiveTag);
-                };
-                run_primitive(name, registry, machine)?;
+            _ => Err(VmError::StackFault),
+        },
+        Op::PushCapture => {
+            let Some(Operand::Capture(index)) = instruction.operand.as_ref() else {
+                return Err(VmError::StackFault);
+            };
+            let index =
+                usize::try_from(*index).map_err(|_| VmError::InvalidCaptureIndex(*index))?;
+            if index >= captures.len() || index >= consumed.len() {
+                return Err(VmError::InvalidCaptureIndex(index as u64));
+            }
+            if consumed[index] {
+                Err(VmError::ResourceFault)
+            } else {
+                Ok(())
             }
         }
+        Op::Dup | Op::Drop => match top()? {
+            Slot::Value(value) if value.usage(registry) == Usage::Many => Ok(()),
+            Slot::Value(_) | Slot::WorldMarker => Err(VmError::ResourceFault),
+        },
+        Op::Swap => {
+            if machine.stack.len() < 2 {
+                Err(VmError::StackFault)
+            } else {
+                Ok(())
+            }
+        }
+        Op::Call => match top()? {
+            Slot::Value(Value::Quotation(_)) => Ok(()),
+            Slot::Value(_) => Err(VmError::TypeFault),
+            Slot::WorldMarker => Err(VmError::ResourceFault),
+        },
+        Op::Dip => {
+            if machine.stack.len() < 2 {
+                return Err(VmError::StackFault);
+            }
+            match &machine.stack[machine.stack.len() - 1] {
+                Slot::Value(Value::Quotation(_)) => Ok(()),
+                Slot::Value(_) => Err(VmError::TypeFault),
+                Slot::WorldMarker => Err(VmError::ResourceFault),
+            }
+        }
+        Op::Compose => {
+            if machine.stack.len() < 2 {
+                return Err(VmError::StackFault);
+            }
+            for slot in &machine.stack[machine.stack.len() - 2..] {
+                if !matches!(slot, Slot::Value(Value::Quotation(_))) {
+                    return Err(VmError::TypeFault);
+                }
+            }
+            Ok(())
+        }
+        Op::Quote => match top()? {
+            Slot::Value(_) => Ok(()),
+            Slot::WorldMarker => Ok(()),
+        },
+        Op::If => {
+            if machine.stack.len() < 3 {
+                return Err(VmError::StackFault);
+            }
+            let len = machine.stack.len();
+            if !matches!(&machine.stack[len - 3], Slot::Value(Value::Bool(_))) {
+                return Err(VmError::TypeFault);
+            }
+            if !matches!(&machine.stack[len - 2], Slot::Value(Value::Quotation(_)))
+                || !matches!(&machine.stack[len - 1], Slot::Value(Value::Quotation(_)))
+            {
+                return Err(VmError::TypeFault);
+            }
+            Ok(())
+        }
+        Op::CallWord => {
+            let Some(Operand::Word(name)) = instruction.operand.as_ref() else {
+                return Err(VmError::StackFault);
+            };
+            if image.words.iter().any(|word| word.name == *name) {
+                Ok(())
+            } else {
+                Err(VmError::UnknownWord(name.clone()))
+            }
+        }
+        Op::Prim => {
+            let Some(Operand::Primitive(name)) = instruction.operand.as_ref() else {
+                return Err(VmError::InvalidPrimitiveTag);
+            };
+            let definition = registry
+                .definitions
+                .iter()
+                .find(|definition| definition.name == name)
+                .ok_or_else(|| VmError::UnknownPrimitive(name.clone()))?;
+            validate_primitive_inputs(machine, definition, registry)
+        }
     }
-    Ok(())
+}
+
+fn terminal_stack(stack: Vec<Slot>, registry: &PrimitiveRegistry) -> Result<Vec<Value>, VmError> {
+    let mut result = Vec::with_capacity(stack.len());
+    for slot in stack {
+        match slot {
+            Slot::WorldMarker => {}
+            Slot::Value(value) if value.usage(registry) == Usage::Many => result.push(value),
+            Slot::Value(_) => return Err(VmError::ResourceFault),
+        }
+    }
+    Ok(result)
+}
+
+fn ensure_captures_consumed(
+    quotation: &Quotation,
+    registry: &PrimitiveRegistry,
+) -> Result<(), VmError> {
+    if quotation
+        .captures
+        .iter()
+        .zip(&quotation.consumed)
+        .any(|(value, consumed)| value.usage(registry) == Usage::Linear && !consumed)
+    {
+        Err(VmError::ResourceFault)
+    } else {
+        Ok(())
+    }
 }
 
 fn pop_quotation(machine: &mut Machine) -> Result<Quotation, VmError> {
@@ -682,14 +1501,6 @@ fn rebase_captures(code: &[Instruction], offset: usize) -> Result<Vec<Instructio
         .collect()
 }
 
-fn value_is_linear(value: &Value) -> bool {
-    match value {
-        Value::Quotation(quotation) => quotation.captures.iter().any(value_is_linear),
-        Value::PrimitiveValue { .. } => true,
-        _ => false,
-    }
-}
-
 fn run_primitive(
     name: &str,
     registry: &PrimitiveRegistry,
@@ -700,14 +1511,105 @@ fn run_primitive(
         .iter()
         .find(|definition| definition.name == name)
         .ok_or_else(|| VmError::UnknownPrimitive(String::from(name)))?;
-    machine.cost.total += definition.cost.saturating_sub(1);
+    validate_primitive_inputs(machine, definition, registry)?;
+    let old_len = machine.stack.len();
+    let old_stack = machine.stack.clone();
+    let old_world = machine.world.clone();
     let mut context = PrimitiveContext {
         stack: &mut machine.stack,
+        world: &mut machine.world,
     };
-    (definition.handler)(&mut context).map_err(|error| match error {
-        VmError::StackFault | VmError::TypeFault | VmError::ResourceFault => error,
+    let result = (definition.handler)(&mut context).map_err(|error| match error {
+        VmError::StackFault
+        | VmError::TypeFault
+        | VmError::ResourceFault
+        | VmError::AllocationFailure => error,
         _ => VmError::PrimitiveFault,
-    })
+    });
+    if let Err(error) = result {
+        machine.stack = old_stack;
+        machine.world = old_world;
+        return Err(error);
+    }
+    if let Err(error) = validate_primitive_outputs(machine, definition, registry, old_len) {
+        machine.stack = old_stack;
+        machine.world = old_world;
+        return Err(error);
+    }
+    Ok(())
+}
+
+fn validate_primitive_inputs(
+    machine: &Machine,
+    definition: &PrimitiveDefinition,
+    registry: &PrimitiveRegistry,
+) -> Result<(), VmError> {
+    if machine.stack.len() < definition.input.len() {
+        return Err(VmError::StackFault);
+    }
+    let start = machine.stack.len() - definition.input.len();
+    for (slot, usage) in machine.stack[start..].iter().zip(definition.input) {
+        match slot {
+            Slot::WorldMarker if *usage != Usage::Linear => return Err(VmError::TypeFault),
+            Slot::WorldMarker => {}
+            Slot::Value(value) if value.usage(registry) != *usage => {
+                return Err(VmError::TypeFault);
+            }
+            Slot::Value(_) => {}
+        }
+    }
+    for (slot, kind) in machine.stack[start..]
+        .iter()
+        .zip(definition.signature().input)
+    {
+        if !slot_matches_type(slot, *kind) {
+            return Err(VmError::TypeFault);
+        }
+    }
+    Ok(())
+}
+
+fn validate_primitive_outputs(
+    machine: &Machine,
+    definition: &PrimitiveDefinition,
+    registry: &PrimitiveRegistry,
+    old_len: usize,
+) -> Result<(), VmError> {
+    let expected_len = old_len
+        .checked_sub(definition.input.len())
+        .and_then(|len| len.checked_add(definition.output.len()))
+        .ok_or(VmError::PrimitiveFault)?;
+    if machine.stack.len() != expected_len {
+        return Err(VmError::PrimitiveFault);
+    }
+    let start = machine.stack.len() - definition.output.len();
+    for (slot, usage) in machine.stack[start..].iter().zip(definition.output) {
+        match (slot, usage) {
+            (Slot::WorldMarker, Usage::Linear) => {}
+            (Slot::Value(value), expected) if value.usage(registry) == *expected => {}
+            _ => return Err(VmError::PrimitiveFault),
+        }
+    }
+    for (slot, kind) in machine.stack[start..]
+        .iter()
+        .zip(definition.signature().output)
+    {
+        if !slot_matches_type(slot, *kind) {
+            return Err(VmError::PrimitiveFault);
+        }
+    }
+    Ok(())
+}
+
+fn slot_matches_type(slot: &Slot, kind: PrimitiveType) -> bool {
+    match kind {
+        PrimitiveType::Int => matches!(slot, Slot::Value(Value::Int(_))),
+        PrimitiveType::Bool => matches!(slot, Slot::Value(Value::Bool(_))),
+        PrimitiveType::Bytes => matches!(slot, Slot::Value(Value::Bytes(_))),
+        PrimitiveType::Quotation => matches!(slot, Slot::Value(Value::Quotation(_))),
+        PrimitiveType::World => matches!(slot, Slot::WorldMarker),
+        PrimitiveType::Any => true,
+    }
 }
 
 fn pop_int_from(stack: &mut Vec<Slot>) -> Result<i64, VmError> {
@@ -822,9 +1724,16 @@ fn validate_code_structure(code: &[Instruction], depth: usize) -> Result<(), VmE
 }
 
 fn validate_value_structure(value: &Value, depth: usize) -> Result<(), VmError> {
-    if let Value::Quotation(quotation) = value {
-        validate_quotation_structure(quotation, depth + 1)?;
-        validate_code_structure(&quotation.code, depth + 1)?;
+    match value {
+        Value::Quotation(quotation) => {
+            validate_quotation_structure(quotation, depth + 1)?;
+            validate_code_structure(&quotation.code, depth + 1)?;
+        }
+        Value::PrimitiveValue { tag, .. } if default_registry().value_usage(*tag).is_none() => {
+            return Err(VmError::InvalidPrimitiveTag);
+        }
+        Value::PrimitiveValue { .. } => {}
+        Value::Int(_) | Value::Bool(_) | Value::Bytes(_) | Value::World => {}
     }
     Ok(())
 }
@@ -1208,6 +2117,7 @@ fn canonical_value(bytes: &mut Vec<u8>, value: &Value) {
             put_unsigned(bytes, *tag);
             put_string_bytes(bytes, value);
         }
+        Value::World => bytes.push(5),
     }
 }
 
@@ -1435,6 +2345,8 @@ impl<'a> Reader<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::format;
+    use alloc::string::ToString;
     use alloc::vec;
 
     #[test]
@@ -2151,6 +3063,343 @@ mod tests {
             execute_report_with_registry(&test_image(vec![word("main", vec![])]), 1, &registry),
             Err(VmError::UnsupportedGamma(GAMMA_VERSION + 1))
         );
+    }
+
+    #[test]
+    fn usage_is_encoded_by_registry_and_linear_residue_is_not_terminal() {
+        let linear = Value::PrimitiveValue {
+            tag: 1,
+            bytes: vec![],
+        };
+        for op in [Op::Dup, Op::Drop] {
+            let image = test_image(vec![word(
+                "main",
+                vec![
+                    instruction(
+                        Op::PushQuote,
+                        Some(Operand::Quote(Quotation {
+                            code: vec![instruction(Op::PushCapture, Some(Operand::Capture(0)))],
+                            captures: vec![linear.clone()],
+                            consumed: vec![false],
+                        })),
+                    ),
+                    instruction(Op::Call, None),
+                    instruction(op, None),
+                ],
+            )]);
+            assert_eq!(execute(&image), Err(VmError::ResourceFault));
+        }
+        let residue = test_image(vec![word(
+            "main",
+            vec![instruction(
+                Op::PushQuote,
+                Some(Operand::Quote(Quotation {
+                    code: vec![],
+                    captures: vec![linear],
+                    consumed: vec![false],
+                })),
+            )],
+        )]);
+        assert_eq!(execute(&residue), Err(VmError::ResourceFault));
+    }
+
+    #[test]
+    fn if_requires_many_branches_even_when_the_linear_one_is_not_selected() {
+        let linear_quote = || {
+            instruction(
+                Op::PushQuote,
+                Some(Operand::Quote(Quotation {
+                    code: vec![],
+                    captures: vec![Value::PrimitiveValue {
+                        tag: 1,
+                        bytes: vec![],
+                    }],
+                    consumed: vec![false],
+                })),
+            )
+        };
+        let image = test_image(vec![word(
+            "main",
+            vec![
+                instruction(Op::PushLiteral, Some(Operand::Literal(Value::Bool(true)))),
+                linear_quote(),
+                linear_quote(),
+                instruction(Op::If, None),
+            ],
+        )]);
+        assert_eq!(execute(&image), Err(VmError::ResourceFault));
+    }
+
+    #[test]
+    fn diagnostic_outcome_contains_stable_location_trace_cost_and_world() {
+        let image = test_image(vec![word(
+            "main",
+            vec![
+                instruction(
+                    Op::Prim,
+                    Some(Operand::Primitive(String::from("makeWorld"))),
+                ),
+                instruction(
+                    Op::Prim,
+                    Some(Operand::Primitive(String::from("consumeWorld"))),
+                ),
+            ],
+        )]);
+        let complete = execute_diagnostic(&image, 2, &default_registry());
+        let ExecutionOutcome::Complete(report) = complete else {
+            panic!("expected completion")
+        };
+        assert_eq!(report.world.observation(), &[0, 0, 1]);
+        assert_eq!(report.cost.steps.len(), 2);
+        assert_eq!(report.trace.len(), 2);
+
+        let trapped = execute_diagnostic(&image, 0, &default_registry());
+        let ExecutionOutcome::Trap(trap) = trapped else {
+            panic!("expected fuel trap")
+        };
+        assert_eq!(trap.code, "fuel-exhausted");
+        assert_eq!(
+            trap.location,
+            Some(TrapLocation {
+                word: String::from("main"),
+                pc: 0,
+                image_version: 1,
+            })
+        );
+
+        let dip_image = test_image(vec![word(
+            "main",
+            vec![
+                instruction(Op::PushLiteral, Some(Operand::Literal(Value::Int(4)))),
+                instruction(
+                    Op::PushQuote,
+                    Some(Operand::Quote(Quotation {
+                        code: vec![instruction(
+                            Op::PushLiteral,
+                            Some(Operand::Literal(Value::Int(5))),
+                        )],
+                        captures: vec![],
+                        consumed: vec![],
+                    })),
+                ),
+                instruction(Op::Dip, None),
+            ],
+        )]);
+        let ExecutionOutcome::Trap(dip_trap) =
+            execute_diagnostic(&dip_image, 3, &default_registry())
+        else {
+            panic!("expected nested fuel trap")
+        };
+        assert_eq!(dip_trap.code, "fuel-exhausted");
+        assert_eq!(dip_trap.frames.len(), 2);
+        assert_eq!(dip_trap.frames[0].continuation, Continuation::RestoreDip);
+        assert_eq!(dip_trap.frames[0].saved, vec![Value::Int(4)]);
+        assert_eq!(dip_trap.frames[1].continuation, Continuation::Return);
+    }
+
+    #[test]
+    fn target_quotation_allocations_are_recoverable() {
+        let quotation = Quotation {
+            code: vec![instruction(
+                Op::PushLiteral,
+                Some(Operand::Literal(Value::Int(1))),
+            )],
+            captures: vec![],
+            consumed: vec![],
+        };
+        let cases = [
+            (
+                vec![instruction(
+                    Op::PushQuote,
+                    Some(Operand::Quote(quotation.clone())),
+                )],
+                vec![],
+            ),
+            (vec![instruction(Op::Quote, None)], vec![Value::Int(7)]),
+            (
+                vec![instruction(Op::Compose, None)],
+                vec![
+                    Value::Quotation(quotation.clone()),
+                    Value::Quotation(quotation),
+                ],
+            ),
+        ];
+        for (code, initial) in cases {
+            let image = test_image(vec![word("main", code)]);
+            let ExecutionOutcome::Trap(trap) = execute_diagnostic_with_stack_budget(
+                &image,
+                initial,
+                64,
+                &default_registry(),
+                Some(0),
+            ) else {
+                panic!("expected allocation trap")
+            };
+            assert_eq!(trap.error, VmError::AllocationFailure);
+            assert_eq!(trap.cost.total, 0);
+            assert!(trap.trace.is_empty());
+        }
+    }
+
+    #[test]
+    fn lean_reference_fixture_vectors_execute_in_rust() {
+        let fixture = include_str!("../fixtures/kernel.tsv");
+        for line in fixture
+            .lines()
+            .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        {
+            let fields: Vec<&str> = line.split('|').collect();
+            assert_eq!(fields.len(), 9, "malformed fixture vector: {line}");
+            let initial = parse_fixture_stack(fields[1]);
+            let mut words = parse_fixture_dictionary(fields[2]);
+            let code = parse_fixture_code(fields[3]);
+            words.push(word("main", code));
+            let image = test_image(words);
+            let expected_outcome = fields[4];
+            let (stack, cost, frames) = match expected_outcome {
+                "terminal" => {
+                    let report =
+                        execute_report_with_stack(&image, initial, 64, &default_registry())
+                            .expect(fields[0]);
+                    (report.stack, report.cost, report.frames)
+                }
+                "stuck" => {
+                    let ExecutionOutcome::Trap(trap) =
+                        execute_diagnostic_with_stack(&image, initial, 64, &default_registry())
+                    else {
+                        panic!("expected trap: {}", fields[0])
+                    };
+                    assert_eq!(trap.code, "stack-fault", "{}", fields[0]);
+                    (trap.stack, trap.cost, trap.frames)
+                }
+                other => panic!("unsupported fixture outcome {other}: {}", fields[0]),
+            };
+            assert_eq!(render_fixture_stack(&stack), fields[5], "{}", fields[0]);
+            let lean_cost: u64 = fields[6].parse().expect("fixture cost");
+            assert_eq!(
+                cost.total.saturating_sub(cost.word_entries),
+                lean_cost,
+                "Lean cost: {}",
+                fields[0]
+            );
+            assert_eq!(render_fixture_frames(&frames), fields[7], "{}", fields[0]);
+            let target_cost: u64 = fields[8].parse().expect("target cost");
+            assert_eq!(cost.total, target_cost, "target cost: {}", fields[0]);
+        }
+    }
+
+    fn parse_fixture_stack(encoded: &str) -> Vec<Value> {
+        if encoded == "-" || encoded.is_empty() {
+            return vec![];
+        }
+        encoded
+            .split(',')
+            .map(|item| {
+                let value = item.strip_prefix("i:").expect("fixture stack value");
+                Value::Int(value.parse().expect("fixture integer"))
+            })
+            .collect()
+    }
+
+    fn parse_fixture_dictionary(encoded: &str) -> Vec<WordEntry> {
+        if encoded == "-" || encoded.is_empty() {
+            return vec![];
+        }
+        encoded
+            .split(';')
+            .map(|entry| {
+                let (name, code) = entry.split_once('=').expect("fixture dictionary entry");
+                word(name, parse_fixture_code(code))
+            })
+            .collect()
+    }
+
+    fn parse_fixture_code(encoded: &str) -> Vec<Instruction> {
+        encoded
+            .split(',')
+            .filter(|token| !token.is_empty() && *token != "-")
+            .map(|token| match token {
+                "dup" => instruction(Op::Dup, None),
+                "drop" => instruction(Op::Drop, None),
+                "swap" => instruction(Op::Swap, None),
+                "call" => instruction(Op::Call, None),
+                "dip" => instruction(Op::Dip, None),
+                "compose" => instruction(Op::Compose, None),
+                "quote" => instruction(Op::Quote, None),
+                "if" => instruction(Op::If, None),
+                "word:one" => {
+                    instruction_with_operand(Op::CallWord, Operand::Word(String::from("one")))
+                }
+                token if token.starts_with("word:") => {
+                    instruction_with_operand(Op::CallWord, Operand::Word(String::from(&token[5..])))
+                }
+                token if token.starts_with("prim:") => instruction_with_operand(
+                    Op::Prim,
+                    Operand::Primitive(String::from(&token[5..])),
+                ),
+                token if token.starts_with("pushi:") => instruction_with_operand(
+                    Op::PushLiteral,
+                    Operand::Literal(Value::Int(token[6..].parse().expect("fixture integer"))),
+                ),
+                token if token.starts_with("pushb:") => instruction_with_operand(
+                    Op::PushLiteral,
+                    Operand::Literal(Value::Bool(&token[6..] == "true")),
+                ),
+                token if token.starts_with("pushq:") => instruction_with_operand(
+                    Op::PushQuote,
+                    Operand::Quote(Quotation {
+                        code: vec![instruction_with_operand(
+                            Op::PushLiteral,
+                            Operand::Literal(Value::Int(
+                                token[6..].parse().expect("fixture integer"),
+                            )),
+                        )],
+                        captures: vec![],
+                        consumed: vec![],
+                    }),
+                ),
+                other => panic!("unhandled fixture instruction {other}"),
+            })
+            .collect()
+    }
+
+    fn instruction_with_operand(op: Op, operand: Operand) -> Instruction {
+        Instruction {
+            op,
+            operand: Some(operand),
+        }
+    }
+
+    fn render_fixture_stack(stack: &[Value]) -> String {
+        stack
+            .iter()
+            .map(|value| match value {
+                Value::Int(value) => value.to_string(),
+                Value::Bool(value) => value.to_string(),
+                Value::Quotation(quotation) => {
+                    if quotation.usage(&default_registry()) == Usage::Many {
+                        String::from("quotation-many")
+                    } else {
+                        String::from("quotation-linear")
+                    }
+                }
+                Value::Bytes(_) => String::from("bytes"),
+                Value::PrimitiveValue { .. } => String::from("primitive"),
+                Value::World => String::from("world"),
+            })
+            .collect::<Vec<_>>()
+            .join(",")
+    }
+
+    fn render_fixture_frames(frames: &[FrameTrace]) -> String {
+        if frames.is_empty() {
+            return String::from("-");
+        }
+        frames
+            .iter()
+            .map(|frame| format!("{}@{}", frame.word, frame.pc))
+            .collect::<Vec<_>>()
+            .join(";")
     }
 
     fn encoded_call_image(word_name: &str, call_name: &str) -> Vec<u8> {
