@@ -6,3 +6,4 @@ map.md
 __pycache__/
 *.pyc
 .lake/
+src/runtime/vm/target/

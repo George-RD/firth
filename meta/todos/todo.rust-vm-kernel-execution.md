@@ -1,6 +1,6 @@
 ---
 node: firth.runtime.vm
-status: open
+status: done
 created: 2026-07-18
 ---
 
@@ -30,3 +30,10 @@ Implement the frozen VM target encoding and deterministic execution core in Rust
 
 - Do not implement hot redefinition, image lifecycle, verified patches, compiler code generation, or new target instructions.
 - Do not claim formal VM verification or replace the Lean reference interpreter as the semantic authority.
+## Adjudicated allocation boundary
+
+For the hosted reference VM, allocation-failure conformance covers
+target-visible operations and their rollback paths. Host allocations used by
+diagnostic snapshots, formatting, cloning, and collection growth are trusted
+infrastructure and are intentionally out of scope. A bare-metal or
+`no_std`-allocator port must add full host-allocation interception.

@@ -192,6 +192,14 @@ The VM must not turn a trap into a normal value or silently continue. Trap
 payloads contain a stable code, instruction/word location, and relevant image
 version, but never host addresses or secrets.
 
+Hosted reference VM scope: allocation-failure semantics apply to
+target-visible allocation operations and their rollback boundaries. The hosted
+reference implementation treats host allocator operations used for diagnostic
+cloning, formatting, and collection growth as infallible trusted
+infrastructure, consistent with the VM's trusted-but-unverified TCB position.
+A bare-metal or `no_std`-allocator port owns interception and rollback of those
+host allocation operations as part of its platform contract.
+
 ## 5. Cost accounting
 
 The target supplies a concrete total table `kappa_vm` for every instruction,
@@ -329,7 +337,7 @@ the bootstrap therefore rejects all-zero evidence digests but cannot
 recompute or authenticate their external payloads. Full evidence binding is
 the responsibility of the verified patch/elaborator boundary. The bootstrap
 smoke image uses SHA-256 of the empty evidence payload for both evidence
-slots. This is an explicit scope boundary, not a placeholder digest.
+slots. This is an explicit scope boundary, not a stand-in digest.
 
 `dictionary_digest` is SHA-256 of the canonical word vector, including each
 word's name, erased type, canonical code, three word digests, and generation.
@@ -338,11 +346,9 @@ word's name, erased type, canonical code, three word digests, and generation.
 digests follow the word vector in the wire format and are checked before an
 image is accepted or executed.
 
-The bootstrap decoder preserves `DUP` and `DROP` as canonical opcodes so
-images remain forward-compatible, but its smoke executor rejects either with
-`UnsupportedOperation`. Usage-aware values and exact linearity enforcement
-belong to the kernel-execution todo; no bootstrap test treats `DUP` or
-`DROP` as a successful linear operation.
+The executor implements `DUP` and `DROP` using the encoded value usage. They
+succeed only for `many` values and return `resource-fault` for linear values;
+the decoder preserves both opcodes as canonical instructions.
 
 The canonical erased `WordType` string grammar is the following compact form;
 it contains no whitespace:

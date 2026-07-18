@@ -21,3 +21,8 @@ srcDir = "src/interpreter"
 name = "firthParserTest"
 root = "elaborator.FirthParserTest"
 srcDir = "src"
+
+[[lean_exe]]
+name = "firthVmFixtures"
+root = "FirthVmFixtures"
+srcDir = "src/interpreter"

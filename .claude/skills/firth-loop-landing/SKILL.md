@@ -133,6 +133,7 @@ if [ -f lakefile.toml ] || [ -f lakefile.lean ]; then
     lake test
   fi
 fi
+tools/loop/check_kernel_fixtures.sh
 # Firth's selector and coverage tests and validation are part of the gate.
 python3 tools/loop/test_select_unit.py
 python3 tools/loop/test_coverage.py

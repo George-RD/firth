@@ -30,6 +30,10 @@ for path, namespace in files:
         match = declaration.match(line)
         if match:
             name = match.group(1)
+            # The executable `def main : IO Unit` in FirthTest is a test
+            # entrypoint, not a theorem or library definition to audit.
+            if name == "main":
+                continue
             names.append(f"{namespace}.{name}" if namespace else name)
 
 if len(names) != len(set(names)):

@@ -1,0 +1,13 @@
+dup|7|-|dup|terminal|7,7|1|-|1
+drop|7|-|drop|terminal||1|-|1
+drop-fault||-|drop|stuck||0|main@0|0
+swap|1,2|-|swap|terminal|2,1|1|-|1
+dip||-|pushi:4,pushq:[pushi:5],dip|terminal|5,4|4|-|4
+call||-|pushq:[pushi:9],call|terminal|9|3|-|3
+compose||-|pushq:[pushi:1],pushq:[pushi:2],compose,call|terminal|1,2|6|-|6
+quote|7|-|quote|terminal|quotation-many|1|-|1
+if-true||-|pushb:true,pushq:[pushi:1],pushq:[pushi:2],if|terminal|1|5|-|5
+if-false||-|pushb:false,pushq:[pushi:1],pushq:[pushi:2],if|terminal|2|5|-|5
+word||one=pushi:1|word:one|terminal|1|2|-|3
+addNat||-|pushi:3,pushi:4,prim:"addNat"|terminal|7|3|-|3
+world||-|prim:"makeWorld",prim:"consumeWorld"|terminal||2|-|2
