@@ -115,7 +115,104 @@ pub enum VmError {
     TrailingBytes,
     UnsupportedOperation(Op),
     UnknownWord(String),
+    UnknownPrimitive(String),
+    TypeFault,
+    ResourceFault,
+    PrimitiveFault,
     StackFault,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CostReport {
+    pub total: u64,
+    pub instructions: u64,
+    pub word_entries: u64,
+    pub primitives: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExecutionReport {
+    pub stack: Vec<Value>,
+    pub cost: CostReport,
+}
+
+pub struct PrimitiveContext<'a> {
+    stack: &'a mut Vec<Slot>,
+}
+
+impl PrimitiveContext<'_> {
+    pub fn pop_int(&mut self) -> Result<i64, VmError> {
+        pop_int_from(self.stack)
+    }
+
+    pub fn push_int(&mut self, value: i64) {
+        self.stack.push(Slot::Value(Value::Int(value)));
+    }
+
+    pub fn make_world(&mut self) {
+        self.stack.push(Slot::WorldMarker);
+    }
+
+    pub fn consume_world(&mut self) -> Result<(), VmError> {
+        match self.stack.pop().ok_or(VmError::StackFault)? {
+            Slot::WorldMarker => Ok(()),
+            Slot::Value(_) => Err(VmError::TypeFault),
+        }
+    }
+}
+
+pub type PrimitiveHandler = for<'a> fn(&mut PrimitiveContext<'a>) -> Result<(), VmError>;
+
+#[derive(Clone, Copy)]
+pub struct PrimitiveDefinition {
+    pub name: &'static str,
+    pub cost: u64,
+    pub handler: PrimitiveHandler,
+}
+
+#[derive(Clone)]
+pub struct PrimitiveRegistry {
+    pub version: u64,
+    pub definitions: Vec<PrimitiveDefinition>,
+}
+
+fn add_nat(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let right = context.pop_int()?;
+    let left = context.pop_int()?;
+    context.push_int(left.checked_add(right).ok_or(VmError::PrimitiveFault)?);
+    Ok(())
+}
+
+fn make_world(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    context.make_world();
+    Ok(())
+}
+
+fn consume_world(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    context.consume_world()
+}
+
+pub fn default_registry() -> PrimitiveRegistry {
+    PrimitiveRegistry {
+        version: GAMMA_VERSION,
+        definitions: vec![
+            PrimitiveDefinition {
+                name: "addNat",
+                cost: 1,
+                handler: add_nat,
+            },
+            PrimitiveDefinition {
+                name: "makeWorld",
+                cost: 1,
+                handler: make_world,
+            },
+            PrimitiveDefinition {
+                name: "consumeWorld",
+                cost: 1,
+                handler: consume_world,
+            },
+        ],
+    }
 }
 
 pub fn decode(bytes: &[u8]) -> Result<Image, VmError> {
@@ -238,7 +335,13 @@ fn decode_instruction(reader: &mut Reader<'_>, depth: usize) -> Result<Instructi
             }
             (Op::CallWord, Some(Operand::Word(name)))
         }
-        12 => (Op::Prim, Some(Operand::Primitive(reader.string()?))),
+        12 => {
+            let name = reader.string()?;
+            if !is_canonical_identifier(name.as_bytes()) {
+                return Err(VmError::InvalidIdentifier);
+            }
+            (Op::Prim, Some(Operand::Primitive(name)))
+        }
         other => return Err(VmError::InvalidOpcode(other)),
     };
     Ok(Instruction { op, operand })
@@ -319,119 +422,300 @@ fn decode_literal(reader: &mut Reader<'_>) -> Result<Value, VmError> {
 }
 
 pub fn execute(image: &Image) -> Result<Vec<Value>, VmError> {
-    execute_with_fuel(image, DEFAULT_FUEL)
+    Ok(execute_report(image, DEFAULT_FUEL)?.stack)
 }
 
 pub fn execute_with_fuel(image: &Image, fuel: u64) -> Result<Vec<Value>, VmError> {
+    Ok(execute_report(image, fuel)?.stack)
+}
+
+pub fn execute_report(image: &Image, fuel: u64) -> Result<ExecutionReport, VmError> {
+    execute_report_with_registry(image, fuel, &default_registry())
+}
+
+pub fn execute_report_with_registry(
+    image: &Image,
+    fuel: u64,
+    registry: &PrimitiveRegistry,
+) -> Result<ExecutionReport, VmError> {
     validate_image(image)?;
+    if registry.version != image.gamma_version {
+        return Err(VmError::UnsupportedGamma(registry.version));
+    }
     let word = image
         .words
         .iter()
         .find(|word| word.name == "main")
         .ok_or_else(|| VmError::UnknownWord(String::from("main")))?;
-    let mut stack = Vec::new();
-    let mut fuel = fuel;
-    execute_frames(
-        vec![Frame::new(word.code.clone())],
-        image,
-        &mut stack,
-        &mut fuel,
-    )?;
-    Ok(stack)
+    let mut state = Machine {
+        stack: Vec::new(),
+        fuel,
+        cost: CostReport {
+            total: 0,
+            instructions: 0,
+            word_entries: 0,
+            primitives: 0,
+        },
+    };
+    run_code(&word.code, &mut [], &mut [], image, registry, &mut state)?;
+    Ok(ExecutionReport {
+        stack: state
+            .stack
+            .into_iter()
+            .filter_map(|slot| match slot {
+                Slot::Value(value) => Some(value),
+                Slot::WorldMarker => None,
+            })
+            .collect(),
+        cost: state.cost,
+    })
 }
 
-struct Frame {
-    code: Vec<Instruction>,
-    position: usize,
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Slot {
+    Value(Value),
+    WorldMarker,
 }
 
-impl Frame {
-    fn new(code: Vec<Instruction>) -> Self {
-        Self { code, position: 0 }
+struct Machine {
+    stack: Vec<Slot>,
+    fuel: u64,
+    cost: CostReport,
+}
+
+fn charge(machine: &mut Machine, primitive: bool, word: bool) -> Result<(), VmError> {
+    if machine.fuel == 0 {
+        return Err(VmError::FuelExhausted);
     }
+    machine.fuel -= 1;
+    machine.cost.total += 1;
+    machine.cost.instructions += 1;
+    if primitive {
+        machine.cost.primitives += 1;
+    }
+    if word {
+        machine.cost.word_entries += 1;
+    }
+    Ok(())
 }
 
-fn execute_frames(
-    mut frames: Vec<Frame>,
+fn run_code(
+    code: &[Instruction],
+    captures: &mut [Value],
+    consumed: &mut [bool],
     image: &Image,
-    stack: &mut Vec<Value>,
-    fuel: &mut u64,
+    registry: &PrimitiveRegistry,
+    machine: &mut Machine,
 ) -> Result<(), VmError> {
-    while !frames.is_empty() {
-        if frames
-            .last()
-            .is_some_and(|frame| frame.position == frame.code.len())
-        {
-            frames.pop();
-            continue;
-        }
-        if *fuel == 0 {
-            return Err(VmError::FuelExhausted);
-        }
-        *fuel -= 1;
-        let instruction = {
-            let frame = frames.last_mut().ok_or(VmError::StackFault)?;
-            let instruction = frame.code[frame.position].clone();
-            frame.position += 1;
-            instruction
-        };
+    for instruction in code {
+        charge(machine, matches!(instruction.op, Op::Prim), false)?;
         match instruction.op {
             Op::PushLiteral => match instruction.operand.as_ref() {
-                Some(Operand::Literal(value)) if is_literal(value) => stack.push(value.clone()),
+                Some(Operand::Literal(value)) if is_literal(value) => {
+                    machine.stack.push(Slot::Value(value.clone()))
+                }
                 _ => return Err(VmError::InvalidLiteralEncoding),
             },
             Op::PushQuote => match instruction.operand.as_ref() {
-                Some(Operand::Quote(quotation)) if !contains_captures(quotation) => {
-                    stack.push(Value::Quotation(quotation.clone()))
-                }
-                Some(Operand::Quote(_)) => {
-                    return Err(VmError::UnsupportedOperation(Op::PushQuote));
-                }
+                Some(Operand::Quote(quotation)) => machine
+                    .stack
+                    .push(Slot::Value(Value::Quotation(quotation.clone()))),
                 _ => return Err(VmError::StackFault),
             },
-            Op::PushCapture => match instruction.operand.as_ref() {
-                Some(Operand::Capture(_)) => {
-                    return Err(VmError::UnsupportedOperation(Op::PushCapture));
-                }
-                _ => return Err(VmError::StackFault),
-            },
-            /*
-             * Capture-bearing quotations are outside the bootstrap executor:
-             * cloning them would be an implicit copy of a possibly linear
-             * value. Kernel execution will add usage-aware ownership.
-             */
-            Op::Dup | Op::Drop => return Err(VmError::UnsupportedOperation(instruction.op)),
-            Op::Swap => {
-                let length = stack.len();
-                if length < 2 {
-                    return Err(VmError::StackFault);
-                }
-                stack.swap(length - 1, length - 2);
-            }
-            Op::CallWord => match instruction.operand.as_ref() {
-                Some(Operand::Word(name)) => {
-                    let word = image
-                        .words
-                        .iter()
-                        .find(|word| word.name == *name)
-                        .ok_or_else(|| VmError::UnknownWord(name.clone()))?;
-                    frames.push(Frame::new(word.code.clone()));
-                }
-                _ => return Err(VmError::StackFault),
-            },
-            Op::Call => {
-                let Value::Quotation(quotation) = stack.pop().ok_or(VmError::StackFault)? else {
+            Op::PushCapture => {
+                let Some(Operand::Capture(index)) = instruction.operand.as_ref() else {
                     return Err(VmError::StackFault);
                 };
-                if contains_captures(&quotation) {
-                    return Err(VmError::UnsupportedOperation(Op::Call));
+                let index =
+                    usize::try_from(*index).map_err(|_| VmError::InvalidCaptureIndex(*index))?;
+                let Some(value) = captures.get_mut(index) else {
+                    return Err(VmError::InvalidCaptureIndex(index as u64));
+                };
+                let Some(used) = consumed.get_mut(index) else {
+                    return Err(VmError::InvalidCaptureIndex(index as u64));
+                };
+                if *used {
+                    return Err(VmError::ResourceFault);
                 }
-                frames.push(Frame::new(quotation.code.clone()));
+                if value_is_linear(value) {
+                    *used = true;
+                }
+                machine.stack.push(Slot::Value(value.clone()));
             }
-            operation => return Err(VmError::UnsupportedOperation(operation)),
+            Op::Dup => {
+                let value = machine.stack.last().ok_or(VmError::StackFault)?;
+                let Slot::Value(value) = value else {
+                    return Err(VmError::ResourceFault);
+                };
+                if value_is_linear(value) {
+                    return Err(VmError::ResourceFault);
+                }
+                machine.stack.push(Slot::Value(value.clone()));
+            }
+            Op::Drop => match machine.stack.pop().ok_or(VmError::StackFault)? {
+                Slot::Value(value) if !value_is_linear(&value) => {}
+                Slot::Value(_) | Slot::WorldMarker => return Err(VmError::ResourceFault),
+            },
+            Op::Swap => {
+                let n = machine.stack.len();
+                if n < 2 {
+                    return Err(VmError::StackFault);
+                }
+                machine.stack.swap(n - 1, n - 2);
+            }
+            Op::Call => {
+                let mut quotation = pop_quotation(machine)?;
+                run_code(
+                    &quotation.code,
+                    &mut quotation.captures,
+                    &mut quotation.consumed,
+                    image,
+                    registry,
+                    machine,
+                )?;
+            }
+            Op::Dip => {
+                let mut quotation = pop_quotation(machine)?;
+                let protected = machine.stack.pop().ok_or(VmError::StackFault)?;
+                run_code(
+                    &quotation.code,
+                    &mut quotation.captures,
+                    &mut quotation.consumed,
+                    image,
+                    registry,
+                    machine,
+                )?;
+                machine.stack.push(protected);
+            }
+            Op::Compose => {
+                let right = pop_quotation(machine)?;
+                let left = pop_quotation(machine)?;
+                let right_capture_count = right.captures.len();
+                let mut captures = left.captures;
+                captures.extend(right.captures);
+                let offset = captures.len() - right_capture_count;
+                let mut code = left.code;
+                code.extend(rebase_captures(&right.code, offset)?);
+                let capture_count = captures.len();
+                machine.stack.push(Slot::Value(Value::Quotation(Quotation {
+                    code,
+                    captures,
+                    consumed: vec![false; capture_count],
+                })));
+            }
+            Op::Quote => {
+                let value = machine.stack.pop().ok_or(VmError::StackFault)?;
+                let value = match value {
+                    Slot::Value(value) => value,
+                    Slot::WorldMarker => return Err(VmError::ResourceFault),
+                };
+                machine.stack.push(Slot::Value(Value::Quotation(Quotation {
+                    code: vec![Instruction {
+                        op: Op::PushCapture,
+                        operand: Some(Operand::Capture(0)),
+                    }],
+                    captures: vec![value],
+                    consumed: vec![false],
+                })));
+            }
+            Op::If => {
+                let false_branch = pop_quotation(machine)?;
+                let true_branch = pop_quotation(machine)?;
+                let condition = match machine.stack.pop().ok_or(VmError::StackFault)? {
+                    Slot::Value(Value::Bool(value)) => value,
+                    _ => return Err(VmError::TypeFault),
+                };
+                let branch = if condition { true_branch } else { false_branch };
+                let mut branch = branch;
+                run_code(
+                    &branch.code,
+                    &mut branch.captures,
+                    &mut branch.consumed,
+                    image,
+                    registry,
+                    machine,
+                )?;
+            }
+            Op::CallWord => {
+                let Some(Operand::Word(name)) = instruction.operand.as_ref() else {
+                    return Err(VmError::StackFault);
+                };
+                let word = image
+                    .words
+                    .iter()
+                    .find(|word| word.name == *name)
+                    .ok_or_else(|| VmError::UnknownWord(name.clone()))?;
+                machine.cost.total += 1;
+                machine.cost.word_entries += 1;
+                run_code(&word.code, &mut [], &mut [], image, registry, machine)?;
+            }
+            Op::Prim => {
+                let Some(Operand::Primitive(name)) = instruction.operand.as_ref() else {
+                    return Err(VmError::InvalidPrimitiveTag);
+                };
+                run_primitive(name, registry, machine)?;
+            }
         }
     }
     Ok(())
+}
+
+fn pop_quotation(machine: &mut Machine) -> Result<Quotation, VmError> {
+    match machine.stack.pop().ok_or(VmError::StackFault)? {
+        Slot::Value(Value::Quotation(value)) => Ok(value),
+        Slot::Value(_) => Err(VmError::TypeFault),
+        Slot::WorldMarker => Err(VmError::ResourceFault),
+    }
+}
+
+fn rebase_captures(code: &[Instruction], offset: usize) -> Result<Vec<Instruction>, VmError> {
+    code.iter()
+        .map(|instruction| {
+            let mut instruction = instruction.clone();
+            if let Some(Operand::Capture(index)) = instruction.operand.as_mut() {
+                *index = index
+                    .checked_add(offset as u64)
+                    .ok_or(VmError::LengthLimit)?;
+            }
+            Ok(instruction)
+        })
+        .collect()
+}
+
+fn value_is_linear(value: &Value) -> bool {
+    match value {
+        Value::Quotation(quotation) => quotation.captures.iter().any(value_is_linear),
+        Value::PrimitiveValue { .. } => true,
+        _ => false,
+    }
+}
+
+fn run_primitive(
+    name: &str,
+    registry: &PrimitiveRegistry,
+    machine: &mut Machine,
+) -> Result<(), VmError> {
+    let definition = registry
+        .definitions
+        .iter()
+        .find(|definition| definition.name == name)
+        .ok_or_else(|| VmError::UnknownPrimitive(String::from(name)))?;
+    machine.cost.total += definition.cost.saturating_sub(1);
+    let mut context = PrimitiveContext {
+        stack: &mut machine.stack,
+    };
+    (definition.handler)(&mut context).map_err(|error| match error {
+        VmError::StackFault | VmError::TypeFault | VmError::ResourceFault => error,
+        _ => VmError::PrimitiveFault,
+    })
+}
+
+fn pop_int_from(stack: &mut Vec<Slot>) -> Result<i64, VmError> {
+    match stack.pop().ok_or(VmError::StackFault)? {
+        Slot::Value(Value::Int(value)) => Ok(value),
+        Slot::Value(_) => Err(VmError::TypeFault),
+        Slot::WorldMarker => Err(VmError::ResourceFault),
+    }
 }
 
 fn validate_image(image: &Image) -> Result<(), VmError> {
@@ -461,7 +745,6 @@ fn validate_image(image: &Image) -> Result<(), VmError> {
             });
         }
         validate_code_structure(&word.code, 0)?;
-        validate_bootstrap_code(&word.code, 0)?;
         if word.body_digest.len() != DIGEST_BYTES
             || word.kernel_evidence_digest.len() != DIGEST_BYTES
             || word.refinement_evidence_digest.len() != DIGEST_BYTES
@@ -503,7 +786,7 @@ fn validate_code_structure(code: &[Instruction], depth: usize) -> Result<(), VmE
             },
             Op::PushQuote => match instruction.operand.as_ref() {
                 Some(Operand::Quote(quotation)) => {
-                    validate_bootstrap_quotation(quotation, depth + 1)?;
+                    validate_quotation_structure(quotation, depth + 1)?;
                     validate_code_structure(&quotation.code, depth + 1)?;
                 }
                 _ => return Err(VmError::StackFault),
@@ -517,7 +800,7 @@ fn validate_code_structure(code: &[Instruction], depth: usize) -> Result<(), VmE
                 _ => return Err(VmError::InvalidIdentifier),
             },
             Op::Prim => match instruction.operand.as_ref() {
-                Some(Operand::Primitive(_)) => {}
+                Some(Operand::Primitive(name)) if is_canonical_identifier(name.as_bytes()) => {}
                 _ => return Err(VmError::InvalidPrimitiveTag),
             },
             Op::Dup
@@ -540,81 +823,25 @@ fn validate_code_structure(code: &[Instruction], depth: usize) -> Result<(), VmE
 
 fn validate_value_structure(value: &Value, depth: usize) -> Result<(), VmError> {
     if let Value::Quotation(quotation) = value {
-        validate_bootstrap_quotation(quotation, depth + 1)?;
+        validate_quotation_structure(quotation, depth + 1)?;
         validate_code_structure(&quotation.code, depth + 1)?;
     }
     Ok(())
 }
 
-fn validate_bootstrap_code(code: &[Instruction], depth: usize) -> Result<(), VmError> {
-    if depth > MAX_NESTING {
-        return Err(VmError::NestingLimit);
+fn validate_quotation_structure(quotation: &Quotation, depth: usize) -> Result<(), VmError> {
+    if depth > MAX_NESTING || quotation.consumed.len() != quotation.captures.len() {
+        return Err(if depth > MAX_NESTING {
+            VmError::NestingLimit
+        } else {
+            VmError::InvalidCaptureBitmap
+        });
     }
-    for instruction in code {
-        match instruction.op {
-            Op::Dup | Op::Drop => {
-                return Err(VmError::UnsupportedOperation(instruction.op));
-            }
-            Op::PushCapture => {
-                return Err(VmError::UnsupportedOperation(Op::PushCapture));
-            }
-            _ => {}
-        }
-        match instruction.operand.as_ref() {
-            Some(Operand::Quote(quotation)) => {
-                validate_bootstrap_quotation(quotation, depth + 1)?;
-                if contains_captures(quotation) {
-                    return Err(VmError::UnsupportedOperation(Op::PushQuote));
-                }
-                validate_bootstrap_code(&quotation.code, depth + 1)?;
-            }
-            Some(Operand::Literal(value)) => validate_bootstrap_value(value, depth + 1)?,
-            _ => {}
-        }
-    }
-    Ok(())
-}
-
-fn validate_bootstrap_quotation(quotation: &Quotation, depth: usize) -> Result<(), VmError> {
-    if depth > MAX_NESTING {
-        return Err(VmError::NestingLimit);
-    }
-    if quotation.consumed.len() != quotation.captures.len() {
-        return Err(VmError::InvalidCaptureBitmap);
-    }
+    validate_code_structure(&quotation.code, depth)?;
     for capture in &quotation.captures {
-        validate_bootstrap_value(capture, depth + 1)?;
+        validate_value_structure(capture, depth + 1)?;
     }
     Ok(())
-}
-
-fn validate_bootstrap_value(value: &Value, depth: usize) -> Result<(), VmError> {
-    if let Value::Quotation(quotation) = value {
-        validate_bootstrap_quotation(quotation, depth + 1)?;
-        if contains_captures(quotation) {
-            return Err(VmError::UnsupportedOperation(Op::PushLiteral));
-        }
-        validate_bootstrap_code(&quotation.code, depth + 1)?;
-    }
-    Ok(())
-}
-
-fn contains_captures(quotation: &Quotation) -> bool {
-    !quotation.captures.is_empty()
-        || quotation.captures.iter().any(value_contains_captures)
-        || quotation.code.iter().any(instruction_contains_captures)
-}
-
-fn instruction_contains_captures(instruction: &Instruction) -> bool {
-    match instruction.operand.as_ref() {
-        Some(Operand::Quote(quotation)) => contains_captures(quotation),
-        Some(Operand::Literal(value)) => value_contains_captures(value),
-        _ => false,
-    }
-}
-
-fn value_contains_captures(value: &Value) -> bool {
-    matches!(value, Value::Quotation(quotation) if contains_captures(quotation))
 }
 
 fn is_literal(value: &Value) -> bool {
@@ -1487,14 +1714,11 @@ mod tests {
             ],
         );
         let callee = word("drop_one", vec![instruction(Op::Drop, None)]);
-        assert_eq!(
-            execute(&test_image(vec![main, callee])),
-            Err(VmError::UnsupportedOperation(Op::Drop))
-        );
+        assert_eq!(execute(&test_image(vec![main, callee])), Ok(vec![]));
     }
 
     #[test]
-    fn bootstrap_rejects_dup_and_capture_copying_deterministically() {
+    fn kernel_execution_accepts_many_dup_and_quotations() {
         let dup = word(
             "main",
             vec![
@@ -1504,7 +1728,7 @@ mod tests {
         );
         assert_eq!(
             execute(&test_image(vec![dup])),
-            Err(VmError::UnsupportedOperation(Op::Dup))
+            Ok(vec![Value::Int(1), Value::Int(1)])
         );
 
         let capture = word(
@@ -1520,7 +1744,11 @@ mod tests {
         );
         assert_eq!(
             execute(&test_image(vec![capture])),
-            Err(VmError::UnsupportedOperation(Op::PushQuote))
+            Ok(vec![Value::Quotation(Quotation {
+                code: vec![],
+                captures: vec![Value::Int(1)],
+                consumed: vec![false]
+            })])
         );
 
         let nested = word(
@@ -1543,7 +1771,18 @@ mod tests {
         );
         assert_eq!(
             execute(&test_image(vec![nested])),
-            Err(VmError::UnsupportedOperation(Op::PushQuote))
+            Ok(vec![Value::Quotation(Quotation {
+                code: vec![instruction(
+                    Op::PushQuote,
+                    Some(Operand::Quote(Quotation {
+                        code: vec![],
+                        captures: vec![Value::Int(2)],
+                        consumed: vec![false]
+                    }))
+                )],
+                captures: vec![],
+                consumed: vec![]
+            })])
         );
 
         let mut invalid_length = test_image(vec![word("main", vec![])]);
@@ -1774,6 +2013,143 @@ mod tests {
                 0xb9, 0x24, 0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b, 0x93, 0x4c, 0xa4, 0x95, 0x99, 0x1b,
                 0x78, 0x52, 0xb8, 0x55,
             ]
+        );
+    }
+
+    #[test]
+    fn every_kernel_control_rule_and_default_primitive_has_a_witness() {
+        let quote = |value| {
+            instruction(
+                Op::PushQuote,
+                Some(Operand::Quote(Quotation {
+                    code: vec![instruction(
+                        Op::PushLiteral,
+                        Some(Operand::Literal(Value::Int(value))),
+                    )],
+                    captures: vec![],
+                    consumed: vec![],
+                })),
+            )
+        };
+        let compose = word(
+            "main",
+            vec![
+                quote(1),
+                quote(2),
+                instruction(Op::Compose, None),
+                instruction(Op::Call, None),
+                instruction(Op::PushLiteral, Some(Operand::Literal(Value::Int(9)))),
+                instruction(Op::Swap, None),
+                instruction(Op::Drop, None),
+            ],
+        );
+        assert_eq!(
+            execute(&test_image(vec![compose])),
+            Ok(vec![Value::Int(1), Value::Int(9)])
+        );
+
+        let dip = word(
+            "main",
+            vec![
+                instruction(Op::PushLiteral, Some(Operand::Literal(Value::Int(1)))),
+                quote(2),
+                instruction(Op::Dip, None),
+            ],
+        );
+        assert_eq!(
+            execute(&test_image(vec![dip])),
+            Ok(vec![Value::Int(2), Value::Int(1)])
+        );
+
+        let conditional = word(
+            "main",
+            vec![
+                instruction(Op::PushLiteral, Some(Operand::Literal(Value::Bool(true)))),
+                quote(3),
+                quote(4),
+                instruction(Op::If, None),
+            ],
+        );
+        assert_eq!(
+            execute(&test_image(vec![conditional])),
+            Ok(vec![Value::Int(3)])
+        );
+
+        let primitives = word(
+            "main",
+            vec![
+                instruction(Op::PushLiteral, Some(Operand::Literal(Value::Int(2)))),
+                instruction(Op::PushLiteral, Some(Operand::Literal(Value::Int(40)))),
+                instruction(Op::Prim, Some(Operand::Primitive(String::from("addNat")))),
+                instruction(
+                    Op::Prim,
+                    Some(Operand::Primitive(String::from("makeWorld"))),
+                ),
+                instruction(
+                    Op::Prim,
+                    Some(Operand::Primitive(String::from("consumeWorld"))),
+                ),
+            ],
+        );
+        let report = execute_report(&test_image(vec![primitives]), 10).expect("primitive witness");
+        assert_eq!(report.stack, vec![Value::Int(42)]);
+        assert_eq!(report.cost.primitives, 3);
+        assert_eq!(report.cost.total, 5);
+
+        let linear = word(
+            "main",
+            vec![
+                instruction(
+                    Op::PushQuote,
+                    Some(Operand::Quote(Quotation {
+                        code: vec![instruction(Op::PushCapture, Some(Operand::Capture(0)))],
+                        captures: vec![Value::PrimitiveValue {
+                            tag: 1,
+                            bytes: vec![],
+                        }],
+                        consumed: vec![false],
+                    })),
+                ),
+                instruction(Op::Call, None),
+                instruction(Op::Dup, None),
+            ],
+        );
+        assert_eq!(
+            execute(&test_image(vec![linear])),
+            Err(VmError::ResourceFault)
+        );
+    }
+
+    #[test]
+    fn primitive_registry_and_fuel_errors_are_stable() {
+        let unknown = word(
+            "main",
+            vec![instruction(
+                Op::Prim,
+                Some(Operand::Primitive(String::from("missing"))),
+            )],
+        );
+        assert_eq!(
+            execute(&test_image(vec![unknown])),
+            Err(VmError::UnknownPrimitive(String::from("missing")))
+        );
+        let infinite = word(
+            "main",
+            vec![instruction(
+                Op::CallWord,
+                Some(Operand::Word(String::from("main"))),
+            )],
+        );
+        assert_eq!(
+            execute_with_fuel(&test_image(vec![infinite]), 2),
+            Err(VmError::FuelExhausted)
+        );
+
+        let mut registry = default_registry();
+        registry.version = GAMMA_VERSION + 1;
+        assert_eq!(
+            execute_report_with_registry(&test_image(vec![word("main", vec![])]), 1, &registry),
+            Err(VmError::UnsupportedGamma(GAMMA_VERSION + 1))
         );
     }
 
