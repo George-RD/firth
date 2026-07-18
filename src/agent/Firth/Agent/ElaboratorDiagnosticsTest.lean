@@ -50,6 +50,22 @@ private def expectValidCode (name expectedCode source : String) : IO Unit := do
           | .ok code => expectEqual name code expectedCode
           | .error jsonError => fail s!"{name}: missing code {jsonError}"
 
+private def expectedStackState (stack : Firth.Elaborator.StackEffect.AStack) : Lean.Json :=
+  .mkObj [
+    ("encoding", .str "opaque"),
+    ("value", .mkObj [("lean_repr", .str s!"{repr stack}")])]
+
+private def expectCauseState (name source : String)
+    (expected : Firth.Elaborator.StackEffect.AStack) : IO Unit :=
+  match Lean.Json.parse source with
+  | .error parseError => fail s!"{name}: emitted invalid JSON {parseError}"
+  | .ok json =>
+      match json.getObjVal? "body" >>= (·.getObjVal? "cause") >>=
+          (·.getObjVal? "data") >>= (·.getObjVal? "state") with
+      | .ok state =>
+          expectEqual name state.compress (expectedStackState expected).compress
+      | .error jsonError => fail s!"{name}: missing cause.data.state {jsonError}"
+
 private def warningByCode (code : String) : List Firth.Elaborator.LintWarning →
     Option Firth.Elaborator.LintWarning
   | [] => none
@@ -81,14 +97,17 @@ def runElaboratorDiagnosticTests : IO Unit := do
   if warningJson.contains "\"severity\":\"warning\"" then pure ()
   else fail "erasure warning adapter did not preserve warning severity"
 
+  let intStack : Firth.Elaborator.StackEffect.AStack :=
+    .snoc .empty (.base "Int" .many)
   let stackDiagnostic : Firth.Elaborator.StackEffect.Diagnostic := {
     code := "firth.type.stack-mismatch"
     primary := span 4 2 5
-    state := .snoc .empty (.base "Int" .many)
+    state := intStack
     expected := some (.snoc .empty (.base "Bool" .many))
     actual := some (.snoc .empty (.base "Int" .many)) }
   let stackJson := encodeStackEffectDiagnostic (context "stack-1") stackDiagnostic
   expectValidCode "stack-effect adapter" "firth.type.stack-mismatch" stackJson
+  expectCauseState "stack-effect adapter pre-atom state" stackJson intStack
   if stackJson.contains "\"expected_stack\":{\"encoding\":\"opaque\",\"value\":" &&
       stackJson.contains "\"actual_stack\":{\"encoding\":\"opaque\",\"value\":" then pure ()
   else fail "stack-effect adapter omitted expected or actual state"
@@ -149,13 +168,23 @@ def runElaboratorDiagnosticTests : IO Unit := do
   | .success _ => fail "erasure warning fixture parsed the wrong declaration shape"
   | .failure errors => fail s!"erasure warning fixture did not parse: {repr errors}"
 
-  let located : Firth.Elaborator.LocatedKernel := {
-    span := span 6 1 8
+  let seed : Firth.Elaborator.LocatedKernel := {
+    span := span 6 1 5
+    atom := .prim "seed" }
+  let missing : Firth.Elaborator.LocatedKernel := {
+    span := span 6 6 13
     atom := .word "missing" }
-  match Firth.Elaborator.StackEffect.infer {} [located] with
+  let seedScheme : Firth.Elaborator.StackEffect.Scheme := {
+    rowVariables := []
+    input := .empty
+    output := intStack }
+  let stackEnv : Firth.Elaborator.StackEffect.Env := {
+    primitive := fun name => if name == "seed" then some seedScheme else none }
+  match Firth.Elaborator.StackEffect.infer stackEnv [seed, missing] with
   | .ok _ => fail "stack-effect integration fixture unexpectedly succeeded"
   | .error diagnostic =>
-      expectValidCode "stack-effect path emission" diagnostic.code
-        (encodeStackEffectDiagnostic (context "stack-path") diagnostic)
+      let emitted := encodeStackEffectDiagnostic (context "stack-path") diagnostic
+      expectValidCode "stack-effect path emission" diagnostic.code emitted
+      expectCauseState "stack-effect path pre-atom state" emitted intStack
 
 end Firth.Agent.Test
