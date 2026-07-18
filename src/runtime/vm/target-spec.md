@@ -319,6 +319,26 @@ canonical_stack, canonical_frames, outcome)` records. This fixes
 cross-implementation identity while leaving Rust's in-memory layout
 unconstrained.
 
+The canonical erased `WordType` string grammar is the following compact form;
+it contains no whitespace:
+
+```text
+WordType ::= "(" [ "forall" RowName { "," RowName } ";" ] Stack "--" Stack ")"
+Stack    ::= [ Item { "," Item } ]
+Item     ::= RowName | Name ":" Name [ "^many" | "^linear" ]
+```
+
+An unannotated stack item is a row variable, and every row variable must occur
+in the preceding `forall` binder. `Name` is a non-empty ASCII identifier;
+`RowName` is exactly one Unicode scalar (the canonical example is `ρ`), while
+`Name` is an ASCII identifier. Commas are required between adjacent stack items. Empty
+stacks are written `--` inside the parentheses, namely `(--)`. Refinements and
+whitespace are not part of the erased target string. Decoders must reject
+unbound rows, malformed delimiters, unknown usage annotations, all Unicode
+whitespace, and non-UTF-8 strings. `forall` is a reserved canonical keyword
+prefix, so an unbound name cannot begin with `forall`; a binder is recognised
+only when its comma-delimited row list ends with `;`.
+
 The trusted implementation should therefore remain dependency-minimal and
 reviewable: bounded LEB128 decoding, explicit bounds checks, no dynamic code
 generation, no implicit host I/O, and no unsafe code unless a separately

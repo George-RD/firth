@@ -6,12 +6,13 @@
 
 extern crate alloc;
 
-use alloc::{string::String, vec::Vec};
+use alloc::{string::String, vec, vec::Vec};
 
 const MAX_INSTRUCTIONS: u64 = 4096;
 const MAX_BYTES: usize = 1 << 20;
 const MAX_NESTING: usize = 32;
 const DIGEST_BYTES: usize = 32;
+pub const DEFAULT_FUEL: u64 = MAX_INSTRUCTIONS;
 pub const FORMAT_VERSION: u16 = 1;
 pub const GAMMA_VERSION: u64 = 1;
 
@@ -94,13 +95,16 @@ pub enum VmError {
     UnsupportedFormat(u16),
     UnsupportedGamma(u64),
     InvalidUtf8,
+    InvalidWordType,
     InvalidValueTag(u8),
+    InvalidLiteralEncoding,
     InvalidBoolean(u8),
     InvalidPrimitiveTag,
     InvalidOpcode(u8),
     InvalidDigestLength,
     InvalidCaptureBitmap,
     InvalidCaptureIndex(u64),
+    FuelExhausted,
     DuplicateWord,
     UnsortedWords,
     TrailingBytes,
@@ -147,6 +151,9 @@ pub fn decode(bytes: &[u8]) -> Result<Image, VmError> {
 fn decode_word(reader: &mut Reader<'_>) -> Result<WordEntry, VmError> {
     let name = reader.string()?;
     let erased_word_type = reader.string()?;
+    if !is_canonical_word_type(&erased_word_type) {
+        return Err(VmError::InvalidWordType);
+    }
     let code = decode_code(reader, 0)?;
     let body_digest = reader.digest()?;
     let kernel_evidence_digest = reader.digest()?;
@@ -180,7 +187,7 @@ fn decode_instruction(reader: &mut Reader<'_>, depth: usize) -> Result<Instructi
     let (op, operand) = match opcode {
         0 => (
             Op::PushLiteral,
-            Some(Operand::Literal(decode_value(reader, depth)?)),
+            Some(Operand::Literal(decode_literal(reader)?)),
         ),
         1 => (
             Op::PushQuote,
@@ -262,21 +269,111 @@ fn decode_value(reader: &mut Reader<'_>, depth: usize) -> Result<Value, VmError>
     }
 }
 
+fn decode_literal(reader: &mut Reader<'_>) -> Result<Value, VmError> {
+    match reader.byte()? {
+        0 => Ok(Value::Int(reader.signed()?)),
+        1 => match reader.byte()? {
+            0 => Ok(Value::Bool(false)),
+            1 => Ok(Value::Bool(true)),
+            value => Err(VmError::InvalidBoolean(value)),
+        },
+        2 => Ok(Value::Bytes(reader.bytes()?.to_vec())),
+        3 | 4 => Err(VmError::InvalidLiteralEncoding),
+        tag => Err(VmError::InvalidValueTag(tag)),
+    }
+}
+
 pub fn execute(image: &Image) -> Result<Vec<Value>, VmError> {
+    execute_with_fuel(image, DEFAULT_FUEL)
+}
+
+pub fn execute_with_fuel(image: &Image, fuel: u64) -> Result<Vec<Value>, VmError> {
     let word = image
         .words
         .iter()
         .find(|word| word.name == "main")
         .ok_or_else(|| VmError::UnknownWord(String::from("main")))?;
-    execute_code(&word.code, image)
+    let mut stack = Vec::new();
+    let mut fuel = fuel;
+    execute_frames(
+        vec![Frame::new(word.code.clone(), None)],
+        image,
+        &mut stack,
+        &mut fuel,
+    )?;
+    Ok(stack)
 }
 
-fn execute_code(code: &[Instruction], image: &Image) -> Result<Vec<Value>, VmError> {
-    let mut stack = Vec::new();
-    for instruction in code {
+struct Frame {
+    code: Vec<Instruction>,
+    position: usize,
+    captures: Option<Quotation>,
+}
+
+impl Frame {
+    fn new(code: Vec<Instruction>, captures: Option<Quotation>) -> Self {
+        Self {
+            code,
+            position: 0,
+            captures,
+        }
+    }
+}
+
+fn execute_frames(
+    mut frames: Vec<Frame>,
+    image: &Image,
+    stack: &mut Vec<Value>,
+    fuel: &mut u64,
+) -> Result<(), VmError> {
+    while !frames.is_empty() {
+        if frames
+            .last()
+            .is_some_and(|frame| frame.position == frame.code.len())
+        {
+            frames.pop();
+            continue;
+        }
+        if *fuel == 0 {
+            return Err(VmError::FuelExhausted);
+        }
+        *fuel -= 1;
+        let instruction = {
+            let frame = frames.last_mut().ok_or(VmError::StackFault)?;
+            let instruction = frame.code[frame.position].clone();
+            frame.position += 1;
+            instruction
+        };
         match instruction.op {
             Op::PushLiteral => match instruction.operand.as_ref() {
-                Some(Operand::Literal(value)) => stack.push(value.clone()),
+                Some(Operand::Literal(value)) if is_literal(value) => stack.push(value.clone()),
+                _ => return Err(VmError::InvalidLiteralEncoding),
+            },
+            Op::PushQuote => match instruction.operand.as_ref() {
+                Some(Operand::Quote(quotation)) => stack.push(Value::Quotation(quotation.clone())),
+                _ => return Err(VmError::StackFault),
+            },
+            Op::PushCapture => match instruction.operand.as_ref() {
+                Some(Operand::Capture(index)) => {
+                    let index = usize::try_from(*index)
+                        .map_err(|_| VmError::InvalidCaptureIndex(*index))?;
+                    let quotation = frames
+                        .last_mut()
+                        .and_then(|frame| frame.captures.as_mut())
+                        .ok_or(VmError::StackFault)?;
+                    let value = quotation
+                        .captures
+                        .get(index)
+                        .ok_or(VmError::InvalidCaptureIndex(index as u64))?;
+                    if quotation.consumed.get(index).copied().unwrap_or(true) {
+                        return Err(VmError::StackFault);
+                    }
+                    stack.push(value.clone());
+                    *quotation
+                        .consumed
+                        .get_mut(index)
+                        .ok_or(VmError::StackFault)? = true;
+                }
                 _ => return Err(VmError::StackFault),
             },
             Op::Dup => stack.push(stack.last().cloned().ok_or(VmError::StackFault)?),
@@ -297,14 +394,183 @@ fn execute_code(code: &[Instruction], image: &Image) -> Result<Vec<Value>, VmErr
                         .iter()
                         .find(|word| word.name == *name)
                         .ok_or_else(|| VmError::UnknownWord(name.clone()))?;
-                    stack.extend(execute_code(&word.code, image)?);
+                    frames.push(Frame::new(word.code.clone(), None));
                 }
                 _ => return Err(VmError::StackFault),
             },
+            Op::Call => {
+                let Value::Quotation(quotation) = stack.pop().ok_or(VmError::StackFault)? else {
+                    return Err(VmError::StackFault);
+                };
+                frames.push(Frame::new(quotation.code.clone(), Some(quotation)));
+            }
             operation => return Err(VmError::UnsupportedOperation(operation)),
         }
     }
-    Ok(stack)
+    Ok(())
+}
+
+fn is_literal(value: &Value) -> bool {
+    matches!(value, Value::Int(_) | Value::Bool(_) | Value::Bytes(_))
+}
+
+fn is_canonical_word_type(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    if bytes.first() != Some(&b'(')
+        || bytes.last() != Some(&b')')
+        || value.chars().any(char::is_whitespace)
+    {
+        return false;
+    }
+    let mut parser = WordTypeParser {
+        bytes,
+        position: 1,
+        rows: Vec::new(),
+    };
+    parser.parse()
+}
+
+struct WordTypeParser<'a> {
+    bytes: &'a [u8],
+    position: usize,
+    rows: Vec<&'a [u8]>,
+}
+
+impl<'a> WordTypeParser<'a> {
+    fn parse(&mut self) -> bool {
+        if self.consume(b"forall") {
+            let mut count = 0;
+            loop {
+                let row = match self.identifier() {
+                    Some(row) => row,
+                    None => return false,
+                };
+                if !is_row_name(row) {
+                    return false;
+                }
+                self.rows.push(row);
+                count += 1;
+                if self.consume_byte(b';') {
+                    break;
+                }
+                if !self.consume_byte(b',') {
+                    return false;
+                }
+            }
+            if count == 0 {
+                return false;
+            }
+        }
+        if !self.stack_items() || !self.consume(b"--") || !self.stack_items() {
+            return false;
+        }
+        self.position + 1 == self.bytes.len()
+    }
+
+    fn stack_items(&mut self) -> bool {
+        let mut count = 0;
+        if self.bytes[self.position..].starts_with(b"--")
+            || self.bytes.get(self.position) == Some(&b')')
+        {
+            return true;
+        }
+        loop {
+            let item = match self.identifier() {
+                Some(item) => item,
+                None => return false,
+            };
+            if self.consume_byte(b':') {
+                if item.iter().any(|byte| !byte.is_ascii()) {
+                    return false;
+                }
+                let type_name = match self.identifier() {
+                    Some(type_name) => type_name,
+                    None => return false,
+                };
+                if type_name.iter().any(|byte| !byte.is_ascii()) {
+                    return false;
+                }
+                if self.consume_byte(b'^') && !self.consume(b"many") && !self.consume(b"linear") {
+                    return false;
+                }
+            } else if !is_row_name(item) || self.rows.is_empty() || !self.rows.contains(&item) {
+                return false;
+            }
+            count += 1;
+            if self.bytes[self.position..].starts_with(b"--")
+                || self.bytes.get(self.position) == Some(&b')')
+            {
+                break;
+            }
+            if !self.consume_byte(b',') {
+                return false;
+            }
+            if self.bytes[self.position..].starts_with(b"--")
+                || self.bytes.get(self.position) == Some(&b')')
+            {
+                return false;
+            }
+        }
+        count > 0
+    }
+
+    fn identifier(&mut self) -> Option<&'a [u8]> {
+        let start = self.position;
+        if self
+            .bytes
+            .get(self.position)
+            .is_some_and(|byte| *byte >= 0x80)
+        {
+            let first = self.bytes[self.position];
+            let width = if first & 0xe0 == 0xc0 {
+                2
+            } else if first & 0xf0 == 0xe0 {
+                3
+            } else if first & 0xf8 == 0xf0 {
+                4
+            } else {
+                return None;
+            };
+            if self.position.checked_add(width)? > self.bytes.len()
+                || !self.bytes[self.position + 1..self.position + width]
+                    .iter()
+                    .all(|byte| *byte & 0xc0 == 0x80)
+            {
+                return None;
+            }
+            self.position = self.position.checked_add(width)?;
+            return Some(&self.bytes[start..self.position]);
+        }
+        while self.position < self.bytes.len() {
+            let byte = self.bytes[self.position];
+            if byte.is_ascii_alphanumeric() || byte == b'_' || byte >= 0x80 {
+                self.position += 1;
+            } else {
+                break;
+            }
+        }
+        (self.position > start).then(|| &self.bytes[start..self.position])
+    }
+
+    fn consume(&mut self, text: &[u8]) -> bool {
+        self.bytes.get(self.position..self.position + text.len()) == Some(text) && {
+            self.position += text.len();
+            true
+        }
+    }
+
+    fn consume_byte(&mut self, byte: u8) -> bool {
+        self.bytes.get(self.position) == Some(&byte) && {
+            self.position += 1;
+            true
+        }
+    }
+}
+
+fn is_row_name(value: &[u8]) -> bool {
+    core::str::from_utf8(value)
+        .map(|value| value.chars().count() == 1)
+        .unwrap_or(false)
 }
 
 /// Canonical minimal image used by the CLI smoke test: a `main` word pushing 42.
@@ -315,7 +581,7 @@ pub fn smoke_image() -> Vec<u8> {
     put_unsigned(&mut bytes, GAMMA_VERSION);
     put_unsigned(&mut bytes, 1);
     put_string(&mut bytes, "main");
-    put_string(&mut bytes, "--");
+    put_string(&mut bytes, "(--)");
     put_unsigned(&mut bytes, 1);
     bytes.push(0);
     bytes.push(0);
@@ -487,14 +753,14 @@ mod tests {
         put_unsigned(&mut bytes, GAMMA_VERSION);
         put_unsigned(&mut bytes, 2);
         put_string(&mut bytes, "main");
-        put_string(&mut bytes, "--");
+        put_string(&mut bytes, "(--)");
         bytes.extend(code);
         bytes.extend([1; DIGEST_BYTES]);
         bytes.extend([2; DIGEST_BYTES]);
         bytes.extend([3; DIGEST_BYTES]);
         put_unsigned(&mut bytes, u64::MAX);
         put_string(&mut bytes, "other");
-        put_string(&mut bytes, "--");
+        put_string(&mut bytes, "(--)");
         put_unsigned(&mut bytes, 0);
         bytes.extend([4; DIGEST_BYTES * 3]);
         put_unsigned(&mut bytes, 9);
@@ -563,7 +829,12 @@ mod tests {
             nested = wrapped;
         }
         let mut image = Vec::new();
-        image.extend([1, 1, 1, 1, 4, b'm', b'a', b'i', b'n', 2, b'-', b'-']);
+        put_unsigned(&mut image, 1);
+        put_unsigned(&mut image, 1);
+        put_unsigned(&mut image, GAMMA_VERSION);
+        put_unsigned(&mut image, 1);
+        put_string(&mut image, "main");
+        put_string(&mut image, "(--)");
         image.extend(nested);
         image.extend([0; DIGEST_BYTES * 3]);
         image.push(0);
@@ -589,5 +860,177 @@ mod tests {
             let mut reader = Reader::new(&encoded);
             assert_eq!(decode_value(&mut reader, 0), Ok(Value::Int(value)));
         }
+    }
+
+    fn instruction(op: Op, operand: Option<Operand>) -> Instruction {
+        Instruction { op, operand }
+    }
+
+    fn word(name: &str, code: Vec<Instruction>) -> WordEntry {
+        WordEntry {
+            name: String::from(name),
+            erased_word_type: String::from("(--)"),
+            code,
+            body_digest: vec![0; DIGEST_BYTES],
+            kernel_evidence_digest: vec![0; DIGEST_BYTES],
+            refinement_evidence_digest: vec![0; DIGEST_BYTES],
+            generation: 0,
+        }
+    }
+
+    fn test_image(words: Vec<WordEntry>) -> Image {
+        Image {
+            format_version: FORMAT_VERSION,
+            image_version: 1,
+            gamma_version: GAMMA_VERSION,
+            words,
+        }
+    }
+
+    #[test]
+    fn call_word_uses_the_callers_operand_stack() {
+        let main = word(
+            "main",
+            vec![
+                instruction(Op::PushLiteral, Some(Operand::Literal(Value::Int(1)))),
+                instruction(Op::CallWord, Some(Operand::Word(String::from("drop_one")))),
+            ],
+        );
+        let callee = word("drop_one", vec![instruction(Op::Drop, None)]);
+        assert_eq!(execute(&test_image(vec![main, callee])), Ok(vec![]));
+    }
+
+    #[test]
+    fn nested_word_and_quotation_calls_share_stack_and_fuel() {
+        let main = word(
+            "main",
+            vec![
+                instruction(Op::CallWord, Some(Operand::Word(String::from("outer")))),
+                instruction(
+                    Op::PushQuote,
+                    Some(Operand::Quote(Quotation {
+                        code: vec![instruction(
+                            Op::PushLiteral,
+                            Some(Operand::Literal(Value::Int(9))),
+                        )],
+                        captures: vec![],
+                        consumed: vec![],
+                    })),
+                ),
+                instruction(Op::Call, None),
+            ],
+        );
+        let outer = word(
+            "outer",
+            vec![instruction(
+                Op::CallWord,
+                Some(Operand::Word(String::from("inner"))),
+            )],
+        );
+        let inner = word(
+            "inner",
+            vec![instruction(
+                Op::PushLiteral,
+                Some(Operand::Literal(Value::Int(7))),
+            )],
+        );
+        let image = test_image(vec![main, outer, inner]);
+        assert_eq!(
+            execute_with_fuel(&image, 6),
+            Ok(vec![Value::Int(7), Value::Int(9)])
+        );
+        assert_eq!(execute_with_fuel(&image, 5), Err(VmError::FuelExhausted));
+    }
+
+    #[test]
+    fn recursive_calls_exhaust_one_shared_fuel_counter() {
+        let main = word(
+            "main",
+            vec![instruction(
+                Op::CallWord,
+                Some(Operand::Word(String::from("loop"))),
+            )],
+        );
+        let loop_word = word(
+            "loop",
+            vec![instruction(
+                Op::CallWord,
+                Some(Operand::Word(String::from("loop"))),
+            )],
+        );
+        assert_eq!(
+            execute_with_fuel(&test_image(vec![main, loop_word]), 4),
+            Err(VmError::FuelExhausted)
+        );
+    }
+
+    #[test]
+    fn canonical_word_type_parser_accepts_and_rejects_structural_forms() {
+        for valid in [
+            "(--)",
+            "(forallρ;ρ--ρ)",
+            "(forallρ,σ;ρ--σ)",
+            "(forallρ;ρ--ρ,x:Int^many)",
+            "(forallρ;ρ--ρ,x:Bytes^linear)",
+        ] {
+            assert!(is_canonical_word_type(valid), "{valid}");
+        }
+        for invalid in [
+            "--",
+            "(ρ--ρ)",
+            "(forallρ;ρ--σ)",
+            "(forallρ;ρ--ρ,x:Int^bogus)",
+            "(forallρσ;ρ--σ)",
+            "(forallrow;row--row)",
+            "(forallx:Int--)",
+            "(forallρ; ρ--ρ)",
+            "(forall\u{00a0};--)",
+            "(forallρ;ρ-ρ)",
+        ] {
+            assert!(!is_canonical_word_type(invalid), "{invalid}");
+        }
+    }
+
+    #[test]
+    fn push_literal_rejects_quotation_and_primitive_values() {
+        let image = test_image(vec![word(
+            "main",
+            vec![instruction(
+                Op::PushLiteral,
+                Some(Operand::Literal(Value::Quotation(Quotation {
+                    code: vec![],
+                    captures: vec![],
+                    consumed: vec![],
+                }))),
+            )],
+        )]);
+        assert_eq!(execute(&image), Err(VmError::InvalidLiteralEncoding));
+
+        let mut bytes = smoke_image();
+        let literal_tag = bytes
+            .iter()
+            .position(|byte| *byte == 0)
+            .expect("literal opcode");
+        bytes[literal_tag + 1] = 4;
+        assert_eq!(decode(&bytes), Err(VmError::InvalidLiteralEncoding));
+    }
+
+    #[test]
+    fn malformed_and_noncanonical_encodings_are_rejected() {
+        let mut bytes = smoke_image();
+        let type_start = bytes
+            .windows(4)
+            .position(|window| window == b"(--)")
+            .expect("type");
+        bytes[type_start + 3] = b' ';
+        assert_eq!(decode(&bytes), Err(VmError::InvalidWordType));
+
+        let mut bytes = smoke_image();
+        let literal = bytes
+            .iter()
+            .position(|byte| *byte == 0)
+            .expect("literal opcode");
+        bytes.splice(literal + 2..literal + 3, [0x80, 0x00]);
+        assert_eq!(decode(&bytes), Err(VmError::NonCanonicalLeb128));
     }
 }
