@@ -35,13 +35,21 @@ inductive Literal where
   | string (value : String)
   deriving Repr, BEq
 
+inductive TokenKind where
+  | identifier (text : String)
+  | integer (text : String)
+  | character (value : Char)
+  | string (value : String)
+  | symbol (text : String)
+  deriving Repr, BEq, Inhabited
+
 inductive Usage where
   | many | linear
   deriving Repr, BEq
 
 structure Refinement where
   span : Span
-  tokens : List String
+  tokens : List TokenKind
   deriving Repr, BEq
 
 structure TypeExpr where
@@ -102,14 +110,6 @@ structure SourceFile where
   span : Span
   deriving Repr, BEq
 
-inductive TokenKind where
-  | identifier (text : String)
-  | integer (text : String)
-  | character (value : Char)
-  | string (value : String)
-  | symbol (text : String)
-  deriving Repr, BEq, Inhabited
-
 structure Token where
   kind : TokenKind
   span : Span
@@ -150,7 +150,8 @@ private def isAsciiLetter (c : Char) : Bool :=
   ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
 private def isLetter (c : Char) : Bool := isAsciiLetter c
 private def isDigit (c : Char) : Bool := '0' <= c && c <= '9'
-private def isNameChar (c : Char) : Bool := isAsciiLetter c || c = 'ρ' || isDigit c || c = '-' || c = '?' || c = '!' || c = '.'
+private def isNameChar (c : Char) : Bool :=
+  isAsciiLetter c || c = 'ρ' || c = 'π' || isDigit c || c = '-' || c = '?' || c = '!' || c = '.'
 private def isWordName (s : String) : Bool :=
   let cs := s.toList
   match cs with
@@ -173,36 +174,53 @@ private partial def readWhile (pred : Char → Bool) (st : LexState) (acc : List
   | c :: rest => if pred c then readWhile pred { chars := rest, position := advance st.position c } (c :: acc) else (acc, st)
   | [] => (acc, st)
 
-private partial def readString (st : LexState) (acc : List Char) : Except ParseError (String × LexState) :=
+private partial def readString (opening : Position) (st : LexState) (acc : List Char) : Except ParseError (String × LexState) :=
   match st.chars with
-  | [] => .error (err "firth.syntax.unterminated-string" (eofSpan st.position) .delimiter)
+  | [] => .error (err "firth.syntax.unterminated-string" (mkSpan opening st.position) .delimiter)
   | '"' :: rest => .ok (charsToString acc, { chars := rest, position := advance st.position '"' })
   | '\\' :: rest =>
       match rest with
-      | [] => .error (err "firth.syntax.unterminated-string" (eofSpan st.position) .delimiter)
+      | [] => .error (err "firth.syntax.unterminated-string" (mkSpan opening (advance st.position '\\')) .delimiter)
       | c :: more =>
           if !['\\', '"', 'n', 'r', 't'].contains c then
             .error (err "firth.syntax.invalid-escape" (mkSpan st.position (advance (advance st.position '\\') c)) .validation)
           else
             let value := match c with | '\\' => '\\' | '"' => '"' | 'n' => '\n' | 'r' => '\r' | 't' => '\t' | _ => c
-            readString { chars := more, position := advance (advance st.position '\\') c } (value :: acc)
+            readString opening { chars := more, position := advance (advance st.position '\\') c } (value :: acc)
   | c :: rest =>
       if c = '\n' || c = '\r' || c.toNat < 32 || (c.toNat >= 127 && c.toNat <= 159) then
         .error (err "firth.syntax.invalid-character" (mkSpan st.position (advance st.position c)) .validation)
-      else readString { chars := rest, position := advance st.position c } (c :: acc)
+      else readString opening { chars := rest, position := advance st.position c } (c :: acc)
 
-private def readChar (st : LexState) : Except ParseError (Char × LexState) :=
+private partial def literalStop (p : Position) : List Char → Position
+  | [] => p
+  | '\'' :: _ => advance p '\''
+  | c :: rest => literalStop (advance p c) rest
+
+private def readChar (opening : Position) (st : LexState) : Except ParseError (Char × LexState) :=
   match st.chars with
-  | '\\' :: c :: '\'' :: rest =>
-      if !['\\', 'n', 'r', 't'].contains c then .error (err "firth.syntax.invalid-escape" (eofSpan st.position) .validation)
-      else
-        let value := match c with | '\\' => '\\' | 'n' => '\n' | 'r' => '\r' | 't' => '\t' | _ => c
-        .ok (value, { chars := rest, position := advance (advance (advance st.position '\\') c) '\'' })
+  | '\\' :: '\'' :: rest =>
+      .ok ('\\', { chars := rest, position := advance (advance st.position '\\') '\'' })
+  | '\\' :: c :: '\'' :: _ =>
+      .error (err "firth.syntax.invalid-escape"
+        (mkSpan opening (advance (advance (advance st.position '\\') c) '\'')) .validation)
+  | '\\' :: c :: rest =>
+      .error (err "firth.syntax.invalid-escape"
+        (mkSpan opening (literalStop st.position ('\\' :: c :: rest))) .validation)
   | c :: '\'' :: rest =>
       if c = '\n' || c = '\r' || c.toNat < 32 || (c.toNat >= 127 && c.toNat <= 159) then
-        .error (err "firth.syntax.invalid-character" (mkSpan st.position (advance st.position c)) .validation)
+        .error (err "firth.syntax.invalid-character"
+          (mkSpan opening (advance (advance st.position c) '\'')) .validation)
       else .ok (c, { chars := rest, position := advance (advance st.position c) '\'' })
-  | _ => .error (err "firth.syntax.unterminated-character" (eofSpan st.position) .delimiter)
+  | c :: d :: '\'' :: _ =>
+      .error (err "firth.syntax.overlong-character"
+        (mkSpan opening (literalStop st.position (c :: d :: '\'' :: []))) .validation)
+  | c :: d :: rest =>
+      .error (err "firth.syntax.overlong-character"
+        (mkSpan opening (literalStop st.position (c :: d :: rest))) .validation)
+  | _ =>
+      let stop := if st.chars.isEmpty then advance opening '\'' else literalStop st.position st.chars
+      .error (err "firth.syntax.unterminated-character" (mkSpan opening stop) .delimiter)
 
 private partial def lex (st : LexState) (acc : List Token) : Except ParseError LexResult :=
   match st.chars with
@@ -220,26 +238,27 @@ private partial def lex (st : LexState) (acc : List Token) : Except ParseError L
           | x :: tail => block tail (advance p x)
         match rest with
         | _ :: tail => match block tail (advance (advance st.position '(') '*') with | .error e => .error e | .ok next => lex next acc
-        | [] => .error (err "firth.syntax.unterminated-comment" (eofSpan st.position) .delimiter)
+        | [] => .error (err "firth.syntax.unterminated-comment"
+            (mkSpan st.position (advance (advance st.position '(') '*')) .delimiter)
       else if c = '"' then
-        match readString { chars := rest, position := advance st.position c } [] with
+        match readString st.position { chars := rest, position := advance st.position c } [] with
         | .error e => .error e
         | .ok (v, next) => lex next ({ kind := .string v, span := mkSpan st.position next.position } :: acc)
       else if c = '\'' then
-        match readChar { chars := rest, position := advance st.position c } with
+        match readChar st.position { chars := rest, position := advance st.position c } with
         | .error e => .error e
         | .ok (v, next) => lex next ({ kind := .character v, span := mkSpan st.position next.position } :: acc)
       else if isDigit c || (c = '-' && rest.head?.any isDigit) then
         let (cs, next) := readWhile isDigit { chars := if c = '-' then rest else c :: rest, position := if c = '-' then advance st.position c else st.position } []
         let text := (if c = '-' then "-" else "") ++ charsToString cs
         lex next ({ kind := .integer text, span := mkSpan st.position next.position } :: acc)
-      else if isAsciiLetter c || c = 'ρ' then
+      else if isAsciiLetter c || c = 'ρ' || c = 'π' then
         let (cs, next) := readWhile isNameChar st []
         lex next ({ kind := .identifier (charsToString cs), span := mkSpan st.position next.position } :: acc)
       else if c = '-' && rest.head? = some '-' then
         lex { chars := rest.drop 1, position := advance (advance st.position '-') '-' }
           ({ kind := .symbol "--", span := mkSpan st.position (advance (advance st.position '-') '-') } :: acc)
-      else if "{}[]();,:^-".contains c then
+      else if "{}[]();,:^+-*/%=<>_&|~".contains c then
         let next := { chars := rest, position := advance st.position c }
         lex next ({ kind := .symbol (String.singleton c), span := mkSpan st.position next.position } :: acc)
       else .error (err "firth.syntax.invalid-token" (mkSpan st.position (advance st.position c)) .lexical)
@@ -278,6 +297,20 @@ private def literalOf : TokenKind → Option Literal
   | .identifier "false" => some (.boolean false)
   | _ => none
 
+private def parsePrimitiveName (p : Parser) : Except ParseError (String × Span × Parser) :=
+  match current p with
+  | some t =>
+      match t.kind with
+      | .identifier s =>
+          if validQualifiedName s || s == "π" then .ok (s, t.span, bump p)
+          else .error (err "firth.syntax.invalid-name" t.span .validation (some "primitive name") (some s))
+      | .symbol s =>
+          if s ∈ ["+", "-", "*", "/", "%", "=", "<", ">", "_", "&", "|", "~"] then
+            .ok (s, t.span, bump p)
+          else .error (err "firth.syntax.invalid-name" t.span .validation (some "primitive name") (some s))
+      | _ => .error (err "firth.syntax.expected-name" t.span .grammar (some "primitive name") (some (kindText t.kind)))
+  | none => expected p "primitive name"
+
 private def parseName (p : Parser) (qualified : Bool) : Except ParseError (String × Span × Parser) :=
   match takeIdent p with
   | .error e => .error e
@@ -286,7 +319,7 @@ private def parseName (p : Parser) (qualified : Bool) : Except ParseError (Strin
       else .error (err "firth.syntax.invalid-name" s .validation (some (if qualified then "qualified name" else "word name")) (some n))
 
 private def parseRefinement (p : Parser) (opening : Token) : Except ParseError (Refinement × Parser) :=
-  let rec go (fuel : Nat) (q : Parser) (acc : List String) : Except ParseError (List String × Parser × Position) :=
+  let rec go (fuel : Nat) (q : Parser) (acc : List TokenKind) : Except ParseError (List TokenKind × Parser × Position) :=
     if fuel = 0 then .error (err "firth.syntax.unterminated-refinement" (eofSpan opening.span.stop) .delimiter (some "}") none) else
     match current q with
     | none => .error (err "firth.syntax.unterminated-refinement" (mkSpan opening.span.start opening.span.stop) .delimiter (some "}") none)
@@ -294,13 +327,13 @@ private def parseRefinement (p : Parser) (opening : Token) : Except ParseError (
         if acc.isEmpty then .error (err "firth.syntax.empty-refinement" t.span .validation)
         else .ok (acc.reverse, bump q, t.span.stop)
       else if isSymbol "{" t then .error (err "firth.syntax.invalid-refinement" t.span .validation)
-      else go (fuel - 1) (bump q) (kindText t.kind :: acc)
+      else go (fuel - 1) (bump q) (t.kind :: acc)
   match go (remaining p + 1) (bump p) [] with
   | .error e => .error e
   | .ok (tokens, q, stop) =>
-      let rec badCommas (seenToken afterComma : Bool) : List String → Bool
+      let rec badCommas (seenToken afterComma : Bool) : List TokenKind → Bool
         | [] => afterComma
-        | x :: rest => if x == "," then !seenToken || afterComma || badCommas true true rest else badCommas true false rest
+        | x :: rest => if x == TokenKind.symbol "," then !seenToken || afterComma || badCommas true true rest else badCommas true false rest
       let badComma := badCommas false false tokens
       if badComma then .error (err "firth.syntax.invalid-refinement" (eofSpan stop) .validation)
       else .ok ({ span := mkSpan opening.span.start stop, tokens }, q)
@@ -420,7 +453,7 @@ private partial def parseItem (p : Parser) : Except ParseError (Item × Parser) 
     | some lit => .ok ((.literal { span := t.span, value := lit } t.span), bump p)
     | none => match t.kind with
       | .symbol "[" => parseItems (bump p) "]" |>.map (fun (xs, after, close) => (.quotation xs (mkSpan t.span.start close.stop), after))
-      | .identifier "prim" => parseName (bump p) true |>.map (fun (n, s, after) => (.primitive n (mkSpan t.span.start s.stop), after))
+      | .identifier "prim" => parsePrimitiveName (bump p) |>.map (fun (n, s, after) => (.primitive n (mkSpan t.span.start s.stop), after))
       | .identifier "locals" => parseLocals p t
       | .identifier name => if name ∈ ["dup", "drop", "swap", "dip", "call", "compose", "quote", "if"] then .ok ((.atom name t.span), bump p) else
           parseName p true |>.map (fun (n, s, after) => (.word n s, after))
