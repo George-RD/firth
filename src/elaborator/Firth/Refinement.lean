@@ -788,15 +788,16 @@ private def authenticatedProofSearchPath : IO (Option System.SearchPath) := do
   let some expectedHash ← governedProofModuleHash | pure none
   let some leanPath ← IO.getEnv "LEAN_PATH" | pure none
   let searchPath := System.SearchPath.parse leanPath
-  let rec authenticate : System.SearchPath → IO Bool
-    | [] => pure false
-    | root :: rest => do
-        let candidate := root / "elaborator" / "Firth" / "Refinement.olean"
-        if !(← candidate.pathExists) then authenticate rest
-        else
-          let some digest ← sha256 candidate | pure false
-          pure ("sha256:" ++ digest == expectedHash)
-  if ← authenticate searchPath then pure (some searchPath) else pure none
+  -- The authenticated project root must be first.  Accepting a later matching
+  -- root would let an earlier root shadow any transitive project dependency.
+  match searchPath with
+  | [] => pure none
+  | root :: _ =>
+      let candidate := root / "elaborator" / "Firth" / "Refinement.olean"
+      if !(← candidate.pathExists) then pure none
+      else
+        let some digest ← sha256 candidate | pure none
+        if "sha256:" ++ digest == expectedHash then pure (some searchPath) else pure none
 
 def currentLeanToolchainHash : IO (Option String) := do
   -- The running kernel is the checker. Its compiled identity must match the accepted repository pin.
