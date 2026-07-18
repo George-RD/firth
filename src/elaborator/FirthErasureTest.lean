@@ -38,6 +38,10 @@ end
 private def shapes (program : KernelProgram) : List String :=
   program.map (fun item => atomShape item.atom)
 
+private def atomProgram : List Atom → Program
+  | [] => .empty
+  | atom :: rest => .cons atom (atomProgram rest)
+
 private def arithmetic : EffectEnv :=
   { primitive := fun name => if name == "+" then some { input := [.many, .many], output := [.many] } else none }
 
@@ -56,6 +60,14 @@ private def expectShapes (word : WordDefinition) (expected : List String) : IO U
       if actual != expected then fail s!"kernel mismatch: {repr actual} != {repr expected}" else pure ()
   | .error error => fail s!"unexpected erasure error: {repr error}"
 
+private def expectKernelAtoms (word : WordDefinition) (expected : List Atom) : IO Unit :=
+  match erase arithmetic word.effect word.body with
+  | .ok result =>
+      let actual := result.program.map (·.atom)
+      if actual != expected then fail s!"kernel golden mismatch: {repr actual} != {repr expected}"
+      else pure ()
+  | .error error => fail s!"unexpected golden erasure error: {repr error}"
+
 private def expectErrorAt (word : WordDefinition) (expected : ErasureError → Bool) (span : Span) : IO Unit :=
   match erase arithmetic word.effect word.body with
   | .error error =>
@@ -68,11 +80,6 @@ private def expectErrorAt (word : WordDefinition) (expected : ErasureError → B
         if actual == span then pure () else fail s!"span mismatch for {repr error}: {repr actual} != {repr span}"
       else fail s!"wrong error: {repr error}"
   | .ok _ => fail "expected erasure failure"
-
-private def sameResult : Except ErasureError ErasureResult → Except ErasureError ErasureResult → Bool
-  | .ok left, .ok right => left == right
-  | .error left, .error right => left == right
-  | _, _ => false
 
 def main : IO Unit := do
   -- The first two swaps are the canonical bottom-to-top selections. A mutation
@@ -135,10 +142,16 @@ def main : IO Unit := do
   | .ok result => fail s!"unexpected wide quotation: {repr result.program}"
   | .error error => fail s!"wide quotation inference failed: {repr error}"
 
-  let fixtures := [add, deepFocus, repeated, shadow, inferred]
-  if !fixtures.all (fun word => sameResult (erase arithmetic word.effect word.body)
-      (erase arithmetic word.effect word.body)) then
-    fail "repeated erasure produced different structural results"
+  -- Fixed kernel goldens transcribed from the normative focus, demand, cleanup,
+  -- and quotation rules. None of these expected programs is produced by `erase`.
+  expectKernelAtoms add [.swap, .swap, .prim "+"]
+  expectKernelAtoms deepFocus
+    [.quotation (atomProgram [.swap]), .dip, .swap, .swap, .drop, .swap, .drop]
+  expectKernelAtoms repeated
+    [.dup, .dup, .swap, .quotation (atomProgram [.swap]), .dip, .swap]
+  expectKernelAtoms shadow [.drop]
+  expectKernelAtoms inferred
+    [.quotation (atomProgram [.lit (.nat 1), .lit (.nat 2), .prim "+"])]
 
   -- Capture is checked recursively and the diagnostic retains the child use span.
   let capture ← parsed ": capture ( a:Int^many -- ) locals { a } { [ [ a ] ] } ;"

@@ -138,29 +138,70 @@ private def markExpanded (id : Nat) : List StackEntry → List StackEntry
                    else x :: markExpanded id xs
     | none => x :: markExpanded id xs
 
-private def focusAtoms (id : Nat) (span : Span) : List StackEntry → Except ErasureError (KernelProgram × List StackEntry)
+private def isFocusTarget (id : Nat) (entry : StackEntry) : Bool :=
+  match entry.slot with
+  | some slot => slot.id == id
+  | none => false
+
+inductive FocusRel (id : Nat) (span : Span) :
+    List StackEntry → KernelProgram → List StackEntry → Prop where
+  | top {target : StackEntry} {rest : List StackEntry}
+      (targeted : isFocusTarget id target = true) :
+      FocusRel id span (target :: rest) [] (target :: rest)
+  | adjacent {guard target : StackEntry} {rest : List StackEntry}
+      (guarded : isFocusTarget id guard = false)
+      (targeted : isFocusTarget id target = true) :
+      FocusRel id span (guard :: target :: rest) (atomList .swap span)
+        (target :: guard :: rest)
+  | protect {guard next focusedTarget : StackEntry} {rest after : List StackEntry}
+      {inner : KernelProgram}
+      (guarded : isFocusTarget id guard = false)
+      (notNext : isFocusTarget id next = false)
+      (innerFocus : FocusRel id span (next :: rest) inner (focusedTarget :: after)) :
+      FocusRel id span (guard :: next :: rest)
+        ([locatedQuotation span inner] ++ atomList .dip span ++ atomList .swap span)
+        (focusedTarget :: guard :: after)
+
+private theorem FocusRel.focused_ne_nil {id : Nat} {span : Span}
+    {stack : List StackEntry} {program : KernelProgram} {focused : List StackEntry}
+    (relation : FocusRel id span stack program focused) : focused ≠ [] := by
+  cases relation with
+  | top | adjacent | protect =>
+      intro impossible
+      cases impossible
+
+private structure FocusRun (id : Nat) (span : Span) (stack : List StackEntry) where
+  program : KernelProgram
+  focused : List StackEntry
+  evidence : FocusRel id span stack program focused
+
+private def focusAtomsWithProof (id : Nat) (span : Span) :
+    (stack : List StackEntry) → Except ErasureError (FocusRun id span stack)
   | [] => .error (.missingStackValue span)
-  | target :: rest => match target.slot with
-    | some slot => if slot.id == id then .ok ([], target :: rest) else descend target rest
-    | none => descend target rest
-  where
-    descend (guard : StackEntry) : List StackEntry → Except ErasureError (KernelProgram × List StackEntry)
-      | [] => .error (.missingStackValue span)
-      | next :: tail => match next.slot with
-        | some slot => if slot.id == id then
-            .ok (atomList .swap span, next :: guard :: tail)
-          else focusAtoms id span (next :: tail) |>.map (fun (inner, focused) =>
-            match focused with
-            | focusedTarget :: after =>
-                ([locatedQuotation span inner] ++ atomList .dip span ++ atomList .swap span,
-                 focusedTarget :: guard :: after)
-            | [] => (inner, guard :: next :: tail))
-        | none => focusAtoms id span (next :: tail) |>.map (fun (inner, focused) =>
-            match focused with
-            | focusedTarget :: after =>
-                ([locatedQuotation span inner] ++ atomList .dip span ++ atomList .swap span,
-                 focusedTarget :: guard :: after)
-            | [] => (inner, guard :: next :: tail))
+  | target :: rest =>
+      match targetEq : isFocusTarget id target with
+      | true => .ok { program := [], focused := target :: rest, evidence := .top targetEq }
+      | false => match rest with
+        | [] => .error (.missingStackValue span)
+        | next :: tail => match nextEq : isFocusTarget id next with
+          | true => .ok {
+              program := atomList .swap span
+              focused := next :: target :: tail
+              evidence := .adjacent targetEq nextEq }
+          | false => match focusAtomsWithProof id span (next :: tail) with
+            | .error error => .error error
+            | .ok inner => match focusedEq : inner.focused with
+              | [] => False.elim (inner.evidence.focused_ne_nil focusedEq)
+              | focusedTarget :: after => .ok {
+                  program := [locatedQuotation span inner.program] ++ atomList .dip span ++
+                    atomList .swap span
+                  focused := focusedTarget :: target :: after
+                  evidence := .protect targetEq nextEq (focusedEq ▸ inner.evidence) }
+
+private def focusAtoms (id : Nat) (span : Span) (stack : List StackEntry) :
+    Except ErasureError (KernelProgram × List StackEntry) :=
+  focusAtomsWithProof id span stack |>.map (fun run => (run.program, run.focused))
+
 private def literalAtom : Firth.Elaborator.Literal → Option Firth.Interpreter.Literal
   | .integer value => if value < 0 then none else some (.nat value.toNat)
   | .boolean value => some (.bool value)
@@ -229,50 +270,87 @@ private def cleanup (slots : List Slot) (state : State) : Except ErasureError (K
                 loop fuel { current with stack := focused.drop 1 } (out ++ focus ++ atomList .drop candidate.origin)
   loop (state.stack.length + 1) state []
 
-private def demandCount (name : String) : List Item → Nat
-  | [] => 0
-  | .word n _ :: xs => (if n == name then 1 else 0) + demandCount name xs
-  | .locals names body _ :: xs =>
-      (if names.any (fun binding => binding.name == name) then 0 else demandCount name body) + demandCount name xs
-  | .quotation _ _ :: xs => demandCount name xs
-  | _ :: xs => demandCount name xs
+mutual
+  private def itemFuel : Item → Nat
+    | .quotation body _ | .locals _ body _ => itemsFuel body + 1
+    | _ => 1
 
-private def demandSpans (name : String) : List Item → List Span
-  | [] => []
-  | .word n span :: xs => (if n == name then [span] else []) ++ demandSpans name xs
-  | .locals names body _ :: xs =>
-      (if names.any (fun binding => binding.name == name) then [] else demandSpans name body) ++ demandSpans name xs
-  | .quotation _ _ :: xs => demandSpans name xs
-  | _ :: xs => demandSpans name xs
+  private def itemsFuel : List Item → Nat
+    | [] => 1
+    | item :: rest => itemFuel item + itemsFuel rest + 1
+end
 
-private def captureScan (bound visible : List String) : List Item → Option (String × Span)
-  | [] => none
-  | .word name span :: xs =>
-      if bound.contains name then captureScan bound visible xs
-      else if visible.contains name then some (name, span) else captureScan bound visible xs
-  | .quotation body _ :: xs =>
-      match captureScan [] (bound ++ visible) body with
-      | some result => some result
-      | none => captureScan bound visible xs
-  | .locals names body _ :: xs =>
-      match captureScan (names.map (·.name) ++ bound) visible body with
-      | some result => some result
-      | none => captureScan bound visible xs
-  | _ :: xs => captureScan bound visible xs
+private def demandCountWithFuel (fuel : Nat) (name : String) (items : List Item) : Nat :=
+  match fuel with
+  | 0 => 0
+  | fuel + 1 => match items with
+    | [] => 0
+    | .word n _ :: xs => (if n == name then 1 else 0) + demandCountWithFuel fuel name xs
+    | .locals names body _ :: xs =>
+        (if names.any (fun binding => binding.name == name) then 0
+          else demandCountWithFuel fuel name body) + demandCountWithFuel fuel name xs
+    | .quotation _ _ :: xs => demandCountWithFuel fuel name xs
+    | _ :: xs => demandCountWithFuel fuel name xs
 
-private def captureIn (visible : List String) : List Item → Option (String × Span) :=
-  captureScan [] visible
+private def demandCount (name : String) (items : List Item) : Nat :=
+  demandCountWithFuel (itemsFuel items) name items
 
-private def quotationInferenceFuel (env : EffectEnv) : List Item → Nat
-  | [] => 1
-  | item :: rest =>
+private def demandSpansWithFuel (fuel : Nat) (name : String) (items : List Item) : List Span :=
+  match fuel with
+  | 0 => []
+  | fuel + 1 => match items with
+    | [] => []
+    | .word n span :: xs =>
+        (if n == name then [span] else []) ++ demandSpansWithFuel fuel name xs
+    | .locals names body _ :: xs =>
+        (if names.any (fun binding => binding.name == name) then []
+          else demandSpansWithFuel fuel name body) ++ demandSpansWithFuel fuel name xs
+    | .quotation _ _ :: xs => demandSpansWithFuel fuel name xs
+    | _ :: xs => demandSpansWithFuel fuel name xs
+
+private def demandSpans (name : String) (items : List Item) : List Span :=
+  demandSpansWithFuel (itemsFuel items) name items
+
+private def captureScanWithFuel (fuel : Nat) (bound visible : List String)
+    (items : List Item) : Option (String × Span) :=
+  match fuel with
+  | 0 => none
+  | fuel + 1 => match items with
+    | [] => none
+    | .word name span :: xs =>
+        if bound.contains name then captureScanWithFuel fuel bound visible xs
+        else if visible.contains name then some (name, span)
+        else captureScanWithFuel fuel bound visible xs
+    | .quotation body _ :: xs =>
+        match captureScanWithFuel fuel [] (bound ++ visible) body with
+        | some result => some result
+        | none => captureScanWithFuel fuel bound visible xs
+    | .locals names body _ :: xs =>
+        match captureScanWithFuel fuel (names.map (·.name) ++ bound) visible body with
+        | some result => some result
+        | none => captureScanWithFuel fuel bound visible xs
+    | _ :: xs => captureScanWithFuel fuel bound visible xs
+
+private def captureIn (visible : List String) (items : List Item) : Option (String × Span) :=
+  captureScanWithFuel (itemsFuel items) [] visible items
+
+private def quotationInferenceFuelWithFuel (fuel : Nat) (env : EffectEnv)
+    (items : List Item) : Nat :=
+  match fuel with
+  | 0 => 1
+  | fuel + 1 => match items with
+    | [] => 1
+    | item :: rest =>
       let itemWidth := match item with
         | .word name _ => (env.word name).map (·.input.length) |>.getD 0
         | .primitive name _ => (env.primitive name).map (·.input.length) |>.getD 0
-        | .quotation body _ => quotationInferenceFuel env body
-        | .locals names body _ => names.length + quotationInferenceFuel env body + 1
+        | .quotation body _ => quotationInferenceFuelWithFuel fuel env body
+        | .locals names body _ => names.length + quotationInferenceFuelWithFuel fuel env body + 1
         | _ => 0
-      itemWidth + quotationInferenceFuel env rest
+      itemWidth + quotationInferenceFuelWithFuel fuel env rest
+
+private def quotationInferenceFuel (env : EffectEnv) (items : List Item) : Nat :=
+  quotationInferenceFuelWithFuel (itemsFuel items) env items
 
 /- Relational erasure is indexed by the symbolic stack before and after each
    source fragment.  In particular, a local source item relates to a whole
@@ -313,7 +391,7 @@ inductive CleansLocals (slots : List Slot) : State → KernelProgram → State �
       (nearest : state.stack.find? (cleanupCandidate slots) = some entry)
       (isCandidate : entry.slot = some candidate)
       (many : candidate.usage = .many)
-      (focusedBy : focusAtoms candidate.id candidate.origin state.stack = .ok (focus, focused))
+      (focusedBy : FocusRel candidate.id candidate.origin state.stack focus focused)
       (rest : CleansLocals slots { state with stack := focused.drop 1 } tail final) :
       CleansLocals slots state (focus ++ atomList .drop candidate.origin ++ tail) final
 
@@ -333,13 +411,35 @@ private def demandState (slot : Slot) (state : State) (focused : List StackEntry
     nextId := state.nextId + copies.length
     stack := markUnavailable selected (copied ++ markExpanded slot.id focused) }
 
+inductive DemandCopiesRel (slot : Slot) (name : String) (count : Nat) (state : State) :
+    List Slot → Prop where
+  | generate :
+      DemandCopiesRel slot name count state
+        (List.range (if slot.expanded then 0 else count - 1) |>.map (fun index =>
+          Slot.mk (state.nextId + index) name slot.usage slot.origin none slot.family true true))
+
+inductive DemandProgramRel (span : Span) (focus : KernelProgram) (copies : List Slot) :
+    KernelProgram → Prop where
+  | emit : DemandProgramRel span focus copies
+      (focus ++ List.replicate copies.length (located span .dup))
+
+inductive DemandStateRel (slot : Slot) (state : State) (focused : List StackEntry)
+    (copies : List Slot) : State → Prop where
+  | advance : DemandStateRel slot state focused copies
+      { state with
+        nextId := state.nextId + copies.length
+        stack := markUnavailable ((copies.getLast?).map (·.id) |>.getD slot.id)
+          (copies.reverse.map (fun fresh => { slot := some fresh, usage := fresh.usage }) ++
+            markExpanded slot.id focused) }
+
 inductive ExpandsDemand (slot : Slot) (name : String) (span : Span) (count : Nat)
     (state : State) (focus : KernelProgram) (focused : List StackEntry) :
     KernelProgram → State → Prop where
-  | expand :
-      ExpandsDemand slot name span count state focus focused
-        (demandProgram span focus (demandCopies slot name count state))
-        (demandState slot state focused (demandCopies slot name count state))
+  | expand {copies : List Slot} {program : KernelProgram} {next : State}
+      (copiesRule : DemandCopiesRel slot name count state copies)
+      (programRule : DemandProgramRel span focus copies program)
+      (stateRule : DemandStateRel slot state focused copies next) :
+      ExpandsDemand slot name span count state focus focused program next
 
 inductive ErasesAtomTo : String → Span → State → KernelProgram → State → Prop where
   | swap {span : Span} {state : State} {a b : StackEntry} {rest : List StackEntry}
@@ -374,85 +474,97 @@ private def NonWord : Item → Prop
 abbrev ScopeState := State
 abbrev SurfaceItem := Item
 
-mutual
-inductive ErasesToState (env : EffectEnv) :
-    List SurfaceItem → ScopeState → List String → KernelProgram → ScopeState → Prop where
+inductive ErasureSubject where
+  | items (items : List SurfaceItem) (visible : List String)
+  | item (item : SurfaceItem) (visible : List String)
+  | localBody (items : List SurfaceItem) (slots : List Slot) (visible : List String)
+
+inductive ErasureRel (env : EffectEnv) :
+    ErasureSubject → ScopeState → KernelProgram → ScopeState → Prop where
   | nil {state : ScopeState} {visible : List String} :
-      ErasesToState env [] state visible [] state
+      ErasureRel env (.items [] visible) state [] state
   | cons {item : Item} {rest : List Item} {state next final : State}
       {visible : List String} {head tail : KernelProgram}
-      (itemRun : ErasesItemTo env item state visible head next)
-      (restRun : ErasesToState env rest next visible tail final) :
-      ErasesToState env (item :: rest) state visible (head ++ tail) final
-
-inductive ErasesItemTo (env : EffectEnv) :
-    Item → State → List String → KernelProgram → State → Prop where
+      (itemRun : ErasureRel env (.item item visible) state head next)
+      (restRun : ErasureRel env (.items rest visible) next tail final) :
+      ErasureRel env (.items (item :: rest) visible) state (head ++ tail) final
   | literal {literal : Located Literal} {span : Span} {value : Firth.Interpreter.Literal}
       {state : State} {visible : List String}
       (translated : literalAtom literal.value = some value) :
-      ErasesItemTo env (.literal literal span) state visible (atomList (.lit value) span)
+      ErasureRel env (.item (.literal literal span) visible) state (atomList (.lit value) span)
         { state with stack := { usage := .many } :: state.stack }
   | word {name : String} {span : Span} {signature : Signature} {state next : State}
       {visible : List String}
       (resolved : env.word name = some signature)
       (applied : AppliesSignature signature state next) :
-      ErasesItemTo env (.word name span) state visible (atomList (.word name) span) next
+      ErasureRel env (.item (.word name span) visible) state (atomList (.word name) span) next
   | primitive {name : String} {span : Span} {signature : Signature} {state next : State}
       {visible : List String}
       (resolved : env.primitive name = some signature)
       (applied : AppliesSignature signature state next) :
-      ErasesItemTo env (.primitive name span) state visible (atomList (.prim name) span) next
+      ErasureRel env (.item (.primitive name span) visible) state (atomList (.prim name) span) next
   | atom {name : String} {span : Span} {state next : State} {visible : List String}
       {program : KernelProgram}
       (step : ErasesAtomTo name span state program next) :
-      ErasesItemTo env (.atom name span) state visible program next
+      ErasureRel env (.item (.atom name span) visible) state program next
   | quotation {body : List Item} {span : Span} {state bodyFinal : State}
       {visible : List String} {program : KernelProgram} {seedCount : Nat}
       (closed : captureIn visible body = none)
-      (bodyRun : ErasesToState env body
-        { stack := List.replicate seedCount { usage := .many } } visible program bodyFinal) :
-      ErasesItemTo env (.quotation body span) state visible [locatedQuotation span program]
+      (bodyRun : ErasureRel env (.items body visible)
+        { stack := List.replicate seedCount { usage := .many } } program bodyFinal) :
+      ErasureRel env (.item (.quotation body span) visible) state [locatedQuotation span program]
         { state with stack := { usage := .many } :: state.stack }
   | locals {names : List LocatedName} {body : List Item} {span : Span}
       {state entered final : State} {visible : List String} {slots : List Slot}
       {program : KernelProgram}
       (unique : duplicateName names = none)
       (binding : BindsLocals names state entered slots)
-      (bodyRun : ErasesLocalBodyTo env body entered slots
-        (names.map (·.name) ++ visible) program final) :
-      ErasesItemTo env (.locals names body span) state visible program final
-
-inductive ErasesLocalBodyTo (env : EffectEnv) :
-    List Item → State → List Slot → List String → KernelProgram → State → Prop where
-  | done {state cleaned : State} {slots : List Slot} {visible : List String}
+      (bodyRun : ErasureRel env
+        (.localBody body slots (names.map (·.name) ++ visible)) entered program final) :
+      ErasureRel env (.item (.locals names body span) visible) state program final
+  | localDone {state cleaned : State} {slots : List Slot} {visible : List String}
       {program : KernelProgram}
       (cleanup : CleansLocals slots state program cleaned) :
-      ErasesLocalBodyTo env [] state slots visible program
+      ErasureRel env (.localBody [] slots visible) state program
         { cleaned with stack := restoreParents slots cleaned.stack }
   | select {name : String} {span : Span} {rest : List Item} {state next final : State}
       {slots : List Slot} {visible : List String} {slot : Slot}
       {focus head tail : KernelProgram} {focused : List StackEntry}
       (active : (slots.any (fun declared => declared.name == name) || visible.contains name) = true)
       (resolved : ResolvesSlot name state.stack slot)
-      (linearOnce : slot.usage = .linear → demandCount name (.word name span :: rest) = 1)
-      (focusedBy : focusAtoms slot.id span state.stack = .ok (focus, focused))
-      (expanded : ExpandsDemand slot name span (demandCount name (.word name span :: rest))
+      (linearOnce : slot.usage = .linear → 1 + demandCount name rest = 1)
+      (focusedBy : FocusRel slot.id span state.stack focus focused)
+      (expanded : ExpandsDemand slot name span (1 + demandCount name rest)
         state focus focused head next)
-      (restRun : ErasesLocalBodyTo env rest next slots visible tail final) :
-      ErasesLocalBodyTo env (.word name span :: rest) state slots visible (head ++ tail) final
+      (restRun : ErasureRel env (.localBody rest slots visible) next tail final) :
+      ErasureRel env (.localBody (.word name span :: rest) slots visible)
+        state (head ++ tail) final
   | globalWord {name : String} {span : Span} {rest : List Item} {state next final : State}
       {slots : List Slot} {visible : List String} {head tail : KernelProgram}
       (inactive : (slots.any (fun declared => declared.name == name) || visible.contains name) = false)
-      (itemRun : ErasesItemTo env (.word name span) state visible head next)
-      (restRun : ErasesLocalBodyTo env rest next slots visible tail final) :
-      ErasesLocalBodyTo env (.word name span :: rest) state slots visible (head ++ tail) final
+      (itemRun : ErasureRel env (.item (.word name span) visible) state head next)
+      (restRun : ErasureRel env (.localBody rest slots visible) next tail final) :
+      ErasureRel env (.localBody (.word name span :: rest) slots visible)
+        state (head ++ tail) final
   | ordinary {item : Item} {rest : List Item} {state next final : State}
       {slots : List Slot} {visible : List String} {head tail : KernelProgram}
       (nonWord : NonWord item)
-      (itemRun : ErasesItemTo env item state visible head next)
-      (restRun : ErasesLocalBodyTo env rest next slots visible tail final) :
-      ErasesLocalBodyTo env (item :: rest) state slots visible (head ++ tail) final
-end
+      (itemRun : ErasureRel env (.item item visible) state head next)
+      (restRun : ErasureRel env (.localBody rest slots visible) next tail final) :
+      ErasureRel env (.localBody (item :: rest) slots visible) state (head ++ tail) final
+
+abbrev ErasesToState (env : EffectEnv) (items : List SurfaceItem) (state : ScopeState)
+    (visible : List String) (program : KernelProgram) (final : ScopeState) : Prop :=
+  ErasureRel env (.items items visible) state program final
+
+abbrev ErasesItemTo (env : EffectEnv) (item : SurfaceItem) (state : ScopeState)
+    (visible : List String) (program : KernelProgram) (final : ScopeState) : Prop :=
+  ErasureRel env (.item item visible) state program final
+
+abbrev ErasesLocalBodyTo (env : EffectEnv) (items : List SurfaceItem) (state : ScopeState)
+    (slots : List Slot) (visible : List String) (program : KernelProgram)
+    (final : ScopeState) : Prop :=
+  ErasureRel env (.localBody items slots visible) state program final
 
 inductive ErasesToUnder (env : EffectEnv) (effect : StackEffect) :
     List Item → KernelProgram → Prop where
@@ -463,23 +575,21 @@ inductive ErasesToUnder (env : EffectEnv) (effect : StackEffect) :
 def ErasesTo (body : List SurfaceItem) (program : KernelProgram) : Prop :=
   ∃ env effect, ErasesToUnder env effect body program
 
-private structure ItemsRun (env : EffectEnv) (items : List Item) (initial : State)
-    (visible : List String) where
+private structure ErasureRun (env : EffectEnv) (subject : ErasureSubject)
+    (initial : State) where
   program : KernelProgram
   final : State
-  evidence : ErasesToState env items initial visible program final
+  evidence : ErasureRel env subject initial program final
 
-private structure ItemRun (env : EffectEnv) (item : Item) (initial : State)
-    (visible : List String) where
-  program : KernelProgram
-  final : State
-  evidence : ErasesItemTo env item initial visible program final
+private abbrev ItemsRun (env : EffectEnv) (items : List Item) (initial : State)
+    (visible : List String) := ErasureRun env (.items items visible) initial
 
-private structure LocalRun (env : EffectEnv) (items : List Item) (initial : State)
-    (slots : List Slot) (visible : List String) where
-  program : KernelProgram
-  final : State
-  evidence : ErasesLocalBodyTo env items initial slots visible program final
+private abbrev ItemRun (env : EffectEnv) (item : Item) (initial : State)
+    (visible : List String) := ErasureRun env (.item item visible) initial
+
+private abbrev LocalRun (env : EffectEnv) (items : List Item) (initial : State)
+    (slots : List Slot) (visible : List String) :=
+  ErasureRun env (.localBody items slots visible) initial
 
 private structure CleanupRun (slots : List Slot) (initial : State) where
   program : KernelProgram
@@ -507,6 +617,46 @@ private theorem bool_eq_false_of_not_true {value : Bool} (notTrue : ¬value = tr
   cases value with
   | false => rfl
   | true => exact False.elim (notTrue rfl)
+
+private theorem focusAtoms_correct (id : Nat) (span : Span) (stack : List StackEntry)
+    {program : KernelProgram} {focused : List StackEntry}
+    (success : focusAtoms id span stack = .ok (program, focused)) :
+    FocusRel id span stack program focused := by
+  cases runEq : focusAtomsWithProof id span stack with
+  | error error =>
+      simp only [focusAtoms, runEq, Except.map] at success
+      cases success
+  | ok run =>
+      simp only [focusAtoms, runEq, Except.map] at success
+      cases success
+      exact run.evidence
+
+private theorem demandCopies_correct (slot : Slot) (name : String) (count : Nat)
+    (state : State) :
+    DemandCopiesRel slot name count state (demandCopies slot name count state) := by
+  rw [demandCopies]
+  exact .generate
+
+private theorem demandProgram_correct (span : Span) (focus : KernelProgram)
+    (copies : List Slot) :
+    DemandProgramRel span focus copies (demandProgram span focus copies) := by
+  rw [demandProgram]
+  exact .emit
+
+private theorem demandState_correct (slot : Slot) (state : State)
+    (focused : List StackEntry) (copies : List Slot) :
+    DemandStateRel slot state focused copies (demandState slot state focused copies) := by
+  rw [demandState]
+  exact .advance
+
+private theorem demandExpansion_correct (slot : Slot) (name : String) (span : Span)
+    (count : Nat) (state : State) (focus : KernelProgram) (focused : List StackEntry) :
+    ExpandsDemand slot name span count state focus focused
+      (demandProgram span focus (demandCopies slot name count state))
+      (demandState slot state focused (demandCopies slot name count state)) := by
+  exact .expand (demandCopies_correct slot name count state)
+    (demandProgram_correct span focus (demandCopies slot name count state))
+    (demandState_correct slot state focused (demandCopies slot name count state))
 
 private def applySignatureWithProof (name : String) (span : Span) (signature : Signature)
     (state : State) : Except ErasureError { next : State // AppliesSignature signature state next } :=
@@ -560,48 +710,56 @@ private def cleanupWithProof (slots : List Slot) (state : State) :
               | .ok tail => .ok {
                   program := focus ++ atomList .drop candidate.origin ++ tail.program
                   final := tail.final
-                  evidence := .discard nearestEq slotEq usageEq focusEq tail.evidence }
+                  evidence := .discard nearestEq slotEq usageEq
+                    (focusAtoms_correct _ _ _ focusEq) tail.evidence }
   termination_by fuel
   loop (state.stack.length + 1) state
+
+private def quotationAttemptsWithProof (seedCounts : List Nat) (env : EffectEnv)
+    (body : List Item) (visible : List String) (span : Span)
+    (run : (count : Nat) → Except ErasureError (ItemsRun env body
+      { stack := List.replicate count { usage := .many } } visible)) :
+    Except ErasureError (QuotationRun env body visible) :=
+  match seedCounts with
+  | [] => .error (.effectUnderflow "quotation" span)
+  | seedCount :: rest => match run seedCount with
+    | .ok bodyRun => .ok {
+        seedCount
+        program := bodyRun.program
+        final := bodyRun.final
+        evidence := bodyRun.evidence }
+    | .error (.effectUnderflow _ _) =>
+        quotationAttemptsWithProof rest env body visible span run
+    | .error (.missingStackValue _) =>
+        quotationAttemptsWithProof rest env body visible span run
+    | .error error => .error error
 
 private def quotationWithProof (fuel seedCount : Nat) (env : EffectEnv)
     (body : List Item) (visible : List String) (span : Span)
     (run : (count : Nat) → Except ErasureError (ItemsRun env body
       { stack := List.replicate count { usage := .many } } visible)) :
     Except ErasureError (QuotationRun env body visible) :=
-  match fuel with
-  | 0 => .error (.effectUnderflow "quotation" span)
-  | fuel + 1 => match run seedCount with
-    | .ok bodyRun => .ok {
-        seedCount
-        program := bodyRun.program
-        final := bodyRun.final
-        evidence := bodyRun.evidence }
-    | .error (.effectUnderflow _ _) | .error (.missingStackValue _) =>
-        quotationWithProof fuel (seedCount + 1) env body visible span run
-    | .error error => .error error
+  let seedCounts := List.range fuel |>.map (seedCount + ·)
+  quotationAttemptsWithProof seedCounts env body visible span run
 
-mutual
-  private def eraseItemsWithProof (depth : Nat) (env : EffectEnv) (items : List Item)
-      (state : State) (visible : List String) : Except ErasureError (ItemsRun env items state visible) :=
-    match depth with
-    | 0 => .error (.effectUnderflow "erasure-depth" emptySpan)
-    | depth + 1 => match items with
+private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
+    (subject : ErasureSubject) (state : State) :
+    Except ErasureError (ErasureRun env subject state) :=
+  match depth with
+  | 0 => .error (.effectUnderflow "erasure-depth" emptySpan)
+  | depth + 1 => match subject with
+    | .items items visible => match items with
       | [] => .ok { program := [], final := state, evidence := .nil }
-      | item :: rest => match eraseItemWithProof depth env item state visible with
+      | item :: rest => match eraseSubjectWithProof depth env (.item item visible) state with
         | .error error => .error error
-        | .ok head => match eraseItemsWithProof depth env rest head.final visible with
+        | .ok head => match eraseSubjectWithProof depth env (.items rest visible) head.final with
           | .error error => .error error
           | .ok tail => .ok {
               program := head.program ++ tail.program
               final := tail.final
               evidence := .cons head.evidence tail.evidence }
 
-  private def eraseItemWithProof (depth : Nat) (env : EffectEnv) (item : Item)
-      (state : State) (visible : List String) : Except ErasureError (ItemRun env item state visible) :=
-    match depth with
-    | 0 => .error (.effectUnderflow "erasure-depth" emptySpan)
-    | depth + 1 => match item with
+    | .item item visible => match item with
       | .literal literal span => match translatedEq : literalAtom literal.value with
         | none => .error (.unsupportedLiteral span)
         | some value => .ok {
@@ -672,8 +830,8 @@ mutual
         | some (name, localSpan) => .error (.unsupportedCapture name localSpan)
         | none =>
           match quotationWithProof (quotationInferenceFuel env body) 0 env body visible
-              quotationSpan (fun seedCount => eraseItemsWithProof depth env body
-                { stack := List.replicate seedCount { usage := .many } } visible) with
+              quotationSpan (fun seedCount => eraseSubjectWithProof depth env (.items body visible)
+                { stack := List.replicate seedCount { usage := .many } }) with
           | .error error => .error error
           | .ok bodyRun => .ok {
               program := [locatedQuotation quotationSpan bodyRun.program]
@@ -685,29 +843,25 @@ mutual
           | .error error => .error error
           | .ok binding =>
             let nestedVisible := names.map (·.name) ++ visible
-            match eraseLocalBodyWithProof depth env body binding.entered binding.slots nestedVisible with
+            match eraseSubjectWithProof depth env (.localBody body binding.slots nestedVisible)
+                binding.entered with
             | .error error => .error error
             | .ok bodyRun => .ok {
                 program := bodyRun.program
                 final := bodyRun.final
                 evidence := .locals uniqueEq binding.evidence bodyRun.evidence }
 
-  private def eraseLocalBodyWithProof (depth : Nat) (env : EffectEnv) (items : List Item)
-      (state : State) (slots : List Slot) (visible : List String) :
-      Except ErasureError (LocalRun env items state slots visible) :=
-    match depth with
-    | 0 => .error (.effectUnderflow "erasure-depth" emptySpan)
-    | depth + 1 => match items with
+    | .localBody items slots visible => match items with
       | [] => match cleanupWithProof slots state with
         | .error error => .error error
         | .ok cleaned => .ok {
             program := cleaned.program
             final := { cleaned.final with stack := restoreParents slots cleaned.final.stack }
-            evidence := .done cleaned.evidence }
+            evidence := .localDone cleaned.evidence }
       | item :: rest => match item with
         | .word name localSpan =>
           if activeEq : slots.any (fun slot => slot.name == name) || visible.contains name then
-            let count := demandCount name (.word name localSpan :: rest)
+            let count := 1 + demandCount name rest
             match resolveSlotWithProof name localSpan state.stack with
             | .error error => .error error
             | .ok selected =>
@@ -717,13 +871,15 @@ mutual
                 | .ok (focus, focused) =>
                   let copies := demandCopies selected.slot name count state
                   let next := demandState selected.slot state focused copies
-                  match eraseLocalBodyWithProof depth env rest next slots visible with
+                  match eraseSubjectWithProof depth env (.localBody rest slots visible) next with
                   | .error error => .error error
                   | .ok tail => .ok {
                       program := demandProgram localSpan focus copies ++ tail.program
                       final := tail.final
-                      evidence := .select activeEq selected.evidence linearOnce focusEq
-                        .expand tail.evidence }
+                      evidence := .select activeEq selected.evidence linearOnce
+                        (focusAtoms_correct _ _ _ focusEq)
+                        (demandExpansion_correct selected.slot name localSpan count state focus focused)
+                        tail.evidence }
               match usageEq : selected.slot.usage with
               | .many => proceed (by
                   intro linear
@@ -731,7 +887,7 @@ mutual
                   cases impossible)
               | .linear =>
                 if copied : count > 1 then
-                  let useSpan := match (demandSpans name items).drop 1 with
+                  let useSpan := match demandSpans name rest with
                     | span :: _ => span
                     | [] => localSpan
                   .error (.linearCopy name useSpan)
@@ -739,14 +895,15 @@ mutual
                   intro _
                   have positive : 0 < count := by
                     dsimp [count]
-                    simp only [demandCount, beq_self_eq_true, if_true]
-                    exact Nat.add_pos_left (by decide) _
-                  omega)
+                    exact Nat.add_pos_left (Nat.zero_lt_succ 0) _
+                  exact Nat.le_antisymm (Nat.le_of_not_gt copied) positive)
           else match resolvedEq : env.word name with
             | none => .error (.unboundLocal name localSpan)
-            | some _ => match eraseItemWithProof depth env (.word name localSpan) state visible with
+            | some _ => match eraseSubjectWithProof depth env (.item (.word name localSpan) visible)
+                state with
               | .error error => .error error
-              | .ok head => match eraseLocalBodyWithProof depth env rest head.final slots visible with
+              | .ok head => match eraseSubjectWithProof depth env (.localBody rest slots visible)
+                  head.final with
                 | .error error => .error error
                 | .ok tail => .ok {
                     program := head.program ++ tail.program
@@ -759,78 +916,93 @@ mutual
                         | true => exact False.elim (activeEq value)
                       exact inactive) head.evidence tail.evidence }
         | .literal literal span =>
-          match eraseItemWithProof depth env (.literal literal span) state visible with
+          match eraseSubjectWithProof depth env (.item (.literal literal span) visible) state with
           | .error error => .error error
-          | .ok head => match eraseLocalBodyWithProof depth env rest head.final slots visible with
+          | .ok head => match eraseSubjectWithProof depth env (.localBody rest slots visible)
+              head.final with
             | .error error => .error error
             | .ok tail => .ok {
                 program := head.program ++ tail.program
                 final := tail.final
                 evidence := .ordinary trivial head.evidence tail.evidence }
         | .atom name span =>
-          match eraseItemWithProof depth env (.atom name span) state visible with
+          match eraseSubjectWithProof depth env (.item (.atom name span) visible) state with
           | .error error => .error error
-          | .ok head => match eraseLocalBodyWithProof depth env rest head.final slots visible with
+          | .ok head => match eraseSubjectWithProof depth env (.localBody rest slots visible)
+              head.final with
             | .error error => .error error
             | .ok tail => .ok {
                 program := head.program ++ tail.program
                 final := tail.final
                 evidence := .ordinary trivial head.evidence tail.evidence }
         | .primitive name span =>
-          match eraseItemWithProof depth env (.primitive name span) state visible with
+          match eraseSubjectWithProof depth env (.item (.primitive name span) visible) state with
           | .error error => .error error
-          | .ok head => match eraseLocalBodyWithProof depth env rest head.final slots visible with
+          | .ok head => match eraseSubjectWithProof depth env (.localBody rest slots visible)
+              head.final with
             | .error error => .error error
             | .ok tail => .ok {
                 program := head.program ++ tail.program
                 final := tail.final
                 evidence := .ordinary trivial head.evidence tail.evidence }
         | .quotation body span =>
-          match eraseItemWithProof depth env (.quotation body span) state visible with
+          match eraseSubjectWithProof depth env (.item (.quotation body span) visible) state with
           | .error error => .error error
-          | .ok head => match eraseLocalBodyWithProof depth env rest head.final slots visible with
+          | .ok head => match eraseSubjectWithProof depth env (.localBody rest slots visible)
+              head.final with
             | .error error => .error error
             | .ok tail => .ok {
                 program := head.program ++ tail.program
                 final := tail.final
                 evidence := .ordinary trivial head.evidence tail.evidence }
         | .locals names body span =>
-          match eraseItemWithProof depth env (.locals names body span) state visible with
+          match eraseSubjectWithProof depth env (.item (.locals names body span) visible) state with
           | .error error => .error error
-          | .ok head => match eraseLocalBodyWithProof depth env rest head.final slots visible with
+          | .ok head => match eraseSubjectWithProof depth env (.localBody rest slots visible)
+              head.final with
             | .error error => .error error
-            | .ok tail => .ok {
-                program := head.program ++ tail.program
-                final := tail.final
-                evidence := .ordinary trivial head.evidence tail.evidence }
+              | .ok tail => .ok {
+                  program := head.program ++ tail.program
+                  final := tail.final
+                  evidence := .ordinary trivial head.evidence tail.evidence }
+  termination_by structural depth
 
-end
+private def eraseItemsWithProof (depth : Nat) (env : EffectEnv) (items : List Item)
+    (state : State) (visible : List String) : Except ErasureError (ItemsRun env items state visible) :=
+  eraseSubjectWithProof depth env (.items items visible) state
 
-private def erasureDepth : List Item → Nat
-  | [] => 1
-  | item :: rest =>
-      let nested := match item with
-        | .quotation body _ | .locals _ body _ => erasureDepth body
-        | _ => 0
-      nested + erasureDepth rest + 1
+private def eraseItemWithProof (depth : Nat) (env : EffectEnv) (item : Item)
+    (state : State) (visible : List String) : Except ErasureError (ItemRun env item state visible) :=
+  eraseSubjectWithProof depth env (.item item visible) state
+
+private def eraseLocalBodyWithProof (depth : Nat) (env : EffectEnv) (items : List Item)
+    (state : State) (slots : List Slot) (visible : List String) :
+    Except ErasureError (LocalRun env items state slots visible) :=
+  eraseSubjectWithProof depth env (.localBody items slots visible) state
 
 private def eraseItems (env : EffectEnv) (items : List Item) (state : State)
     (visible : List String) : Except ErasureError (KernelProgram × State) :=
-  eraseItemsWithProof (erasureDepth items) env items state visible |>.map
+  eraseItemsWithProof (itemsFuel items) env items state visible |>.map
     (fun run => (run.program, run.final))
 
-private def localDepthWarnings : List Item → List LintWarning
-  | [] => []
-  | item :: rest =>
+private def localDepthWarningsWithFuel (fuel : Nat) (items : List Item) : List LintWarning :=
+  match fuel with
+  | 0 => []
+  | fuel + 1 => match items with
+    | [] => []
+    | item :: rest =>
       let nested := match item with
-        | .quotation body _ => localDepthWarnings body
-        | .locals _ body _ => localDepthWarnings body
+        | .quotation body _ => localDepthWarningsWithFuel fuel body
+        | .locals _ body _ => localDepthWarningsWithFuel fuel body
         | _ => []
       let current := match item with
         | .locals names _ span => if names.length > 4 then
             [{ code := "LOCAL_DEPTH", span }] else []
         | _ => []
-      current ++ nested ++ localDepthWarnings rest
+      current ++ nested ++ localDepthWarningsWithFuel fuel rest
+
+private def localDepthWarnings (items : List Item) : List LintWarning :=
+  localDepthWarningsWithFuel (itemsFuel items) items
 
 def erase (env : EffectEnv) (effect : StackEffect) (body : List Item) : Except ErasureError ErasureResult :=
   eraseItems env body (initialState effect) [] |>.map (fun (program, _) =>
@@ -841,17 +1013,13 @@ def erase (env : EffectEnv) (effect : StackEffect) (body : List Item) : Except E
 theorem erase_sound_under (env : EffectEnv) (effect : StackEffect) (body : List Item)
     {result : ErasureResult} (success : erase env effect body = .ok result) :
     ErasesToUnder env effect body result.program := by
-  cases runEq : eraseItemsWithProof (erasureDepth body) env body (initialState effect) [] with
+  cases runEq : eraseItemsWithProof (itemsFuel body) env body (initialState effect) [] with
   | error error =>
-      simp [erase, eraseItems, runEq, Except.map] at success
+      simp only [erase, eraseItems, runEq, Except.map] at success
+      cases success
   | ok run =>
-      have resultEq : result = {
-          program := run.program
-          warnings := localDepthWarnings body ++
-            (if longestStructuralRun run.program > 4 then
-              [{ code := "STACK_JUGGLE", span := effect.span }] else []) } := by
-        simpa [erase, eraseItems, runEq, Except.map] using success.symm
-      subst result
+      simp only [erase, eraseItems, runEq, Except.map] at success
+      cases success
       exact .run run.evidence
 
 theorem erase_sound (env : EffectEnv) (effect : StackEffect) (body : List Item)
