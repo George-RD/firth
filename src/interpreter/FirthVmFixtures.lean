@@ -20,7 +20,7 @@ def renderAtom : Atom → String
   | .lit (.bool value) => s!"pushb:{value}"
   | .lit .unit => "pushu"
   | .push value => s!"pushv:{renderValue value}"
-  | .quotation body => s!"pushq:{renderProgram body}"
+  | .quotation body => s!"pushq:[{renderProgram body}]"
   | .dup => "dup"
   | .drop => "drop"
   | .swap => "swap"

@@ -284,6 +284,10 @@ to the remaining cairn gates. Always: `$CAIRN scan` (zero Errors;
 expected and non-blocking) and `$CAIRN hook all` (exit 0). Fix the cause of
 any failure. Never bypass hooks.
 
+When the VM fixture corpus exists, run
+`tools/loop/check_kernel_fixtures.sh` after the Lean gate. It must compare the
+committed corpus byte-for-byte with `lake exe firthVmFixtures` output.
+
 **Record.** If structure changed or a non-obvious tradeoff was made, write a
 decision artefact in `meta/decisions/` per Firth policy §ii. If the
 blueprint's shape changed, the decision is not optional: §i makes it a Verify

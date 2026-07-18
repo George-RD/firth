@@ -129,6 +129,19 @@ pub struct Image {
     pub image_digest: Vec<u8>,
 }
 
+/// One row from the Lean reference interpreter's differential corpus.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FixtureCase {
+    pub name: String,
+    pub initial_stack: Vec<Value>,
+    pub image: Image,
+    pub outcome: String,
+    pub final_stack: String,
+    pub lean_cost: u64,
+    pub residual_frames: String,
+    pub target_cost: u64,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VmError {
     Truncated,
@@ -341,7 +354,7 @@ impl PrimitiveContext<'_> {
 
     pub fn make_world(&mut self) -> Result<(), VmError> {
         if self.world.active {
-            return Ok(());
+            return Err(VmError::WorldFault);
         }
         reserve(self.stack, 1)?;
         self.world.active = true;
@@ -525,14 +538,199 @@ pub fn decode(bytes: &[u8]) -> Result<Image, VmError> {
     if !reader.remaining().is_empty() {
         return Err(VmError::TrailingBytes);
     }
-    Ok(Image {
+    let image = Image {
         format_version,
         image_version,
         gamma_version,
         words,
         dictionary_digest,
         image_digest,
+    };
+    validate_image(&image)?;
+    Ok(image)
+}
+
+/// Decode a generated Lean fixture row through the same binary image decoder
+/// used for real VM images. This is production support for the differential
+/// harness, not a test-only alternate image representation.
+pub fn decode_fixture_line(line: &str) -> Result<FixtureCase, VmError> {
+    let fields: Vec<&str> = line.split('|').collect();
+    if fields.len() != 9 {
+        return Err(VmError::Truncated);
+    }
+    let initial_stack = fixture_stack(fields[1])?;
+    let mut words = fixture_dictionary(fields[2])?;
+    words.push(fixture_word("main", fixture_code(fields[3])?));
+    let image = fixture_image(words);
+    let image = decode(&encode_image(&image))?;
+    Ok(FixtureCase {
+        name: String::from(fields[0]),
+        initial_stack,
+        image,
+        outcome: String::from(fields[4]),
+        final_stack: String::from(fields[5]),
+        lean_cost: fields[6].parse().map_err(|_| VmError::InvalidLeb128)?,
+        residual_frames: String::from(fields[7]),
+        target_cost: fields[8].parse().map_err(|_| VmError::InvalidLeb128)?,
     })
+}
+
+fn fixture_stack(encoded: &str) -> Result<Vec<Value>, VmError> {
+    if encoded == "-" || encoded.is_empty() {
+        return Ok(Vec::new());
+    }
+    encoded
+        .split(',')
+        .map(|item| {
+            if let Some(value) = item.strip_prefix("i:") {
+                value
+                    .parse()
+                    .map(Value::Int)
+                    .map_err(|_| VmError::InvalidLeb128)
+            } else if item == "true" {
+                Ok(Value::Bool(true))
+            } else if item == "false" {
+                Ok(Value::Bool(false))
+            } else {
+                item.parse()
+                    .map(Value::Int)
+                    .map_err(|_| VmError::InvalidLeb128)
+            }
+        })
+        .collect()
+}
+
+fn fixture_dictionary(encoded: &str) -> Result<Vec<WordEntry>, VmError> {
+    if encoded == "-" || encoded.is_empty() {
+        return Ok(Vec::new());
+    }
+    encoded
+        .split(';')
+        .map(|entry| {
+            let (name, code) = entry.split_once('=').ok_or(VmError::Truncated)?;
+            Ok(fixture_word(name, fixture_code(code)?))
+        })
+        .collect()
+}
+
+fn fixture_code(encoded: &str) -> Result<Vec<Instruction>, VmError> {
+    fixture_tokens(encoded)
+        .into_iter()
+        .filter(|token| !token.is_empty() && token != "-")
+        .map(|token| fixture_instruction(&token))
+        .collect()
+}
+
+fn fixture_tokens(encoded: &str) -> Vec<String> {
+    let mut tokens = Vec::new();
+    let mut start = 0;
+    let mut depth = 0;
+    for (index, byte) in encoded.bytes().enumerate() {
+        match byte {
+            b'[' => depth += 1,
+            b']' => depth -= 1,
+            b',' if depth == 0 => {
+                tokens.push(String::from(&encoded[start..index]));
+                start = index + 1;
+            }
+            _ => {}
+        }
+    }
+    tokens.push(String::from(&encoded[start..]));
+    tokens
+}
+
+fn fixture_instruction(token: &str) -> Result<Instruction, VmError> {
+    let bare = token.trim_matches('"');
+    let instruction = |op| Instruction { op, operand: None };
+    match bare {
+        "dup" => Ok(instruction(Op::Dup)),
+        "drop" => Ok(instruction(Op::Drop)),
+        "swap" => Ok(instruction(Op::Swap)),
+        "call" => Ok(instruction(Op::Call)),
+        "dip" => Ok(instruction(Op::Dip)),
+        "compose" => Ok(instruction(Op::Compose)),
+        "quote" => Ok(instruction(Op::Quote)),
+        "if" => Ok(instruction(Op::If)),
+        token if token.starts_with("word:") => Ok(Instruction {
+            op: Op::CallWord,
+            operand: Some(Operand::Word(String::from(&token[5..]))),
+        }),
+        token if token.starts_with("prim:") => Ok(Instruction {
+            op: Op::Prim,
+            operand: Some(Operand::Primitive(token[5..].trim_matches('"').into())),
+        }),
+        token if token.starts_with("pushi:") => Ok(Instruction {
+            op: Op::PushLiteral,
+            operand: Some(Operand::Literal(Value::Int(
+                token[6..].parse().map_err(|_| VmError::InvalidLeb128)?,
+            ))),
+        }),
+        token if token.starts_with("pushb:") => Ok(Instruction {
+            op: Op::PushLiteral,
+            operand: Some(Operand::Literal(Value::Bool(&token[6..] == "true"))),
+        }),
+        token if token.starts_with("pushq:[") && token.ends_with(']') => Ok(Instruction {
+            op: Op::PushQuote,
+            operand: Some(Operand::Quote(Quotation {
+                code: fixture_code(&token[7..token.len() - 1])?,
+                captures: Vec::new(),
+                consumed: Vec::new(),
+            })),
+        }),
+        _ => Err(VmError::InvalidOpcode(255)),
+    }
+}
+
+fn fixture_word(name: &str, code: Vec<Instruction>) -> WordEntry {
+    WordEntry {
+        name: String::from(name),
+        erased_word_type: String::from("(--)"),
+        body_digest: sha256(&canonical_code(&code)).to_vec(),
+        code,
+        kernel_evidence_digest: sha256(&[]).to_vec(),
+        refinement_evidence_digest: sha256(&[]).to_vec(),
+        generation: 0,
+    }
+}
+
+fn fixture_image(mut words: Vec<WordEntry>) -> Image {
+    words.sort_by(|left, right| left.name.as_bytes().cmp(right.name.as_bytes()));
+    let dictionary_digest = sha256(&canonical_dictionary(&words)).to_vec();
+    Image {
+        format_version: FORMAT_VERSION,
+        image_version: 1,
+        gamma_version: GAMMA_VERSION,
+        image_digest: sha256(&canonical_image_identity(
+            FORMAT_VERSION,
+            1,
+            GAMMA_VERSION,
+            &dictionary_digest,
+        ))
+        .to_vec(),
+        dictionary_digest,
+        words,
+    }
+}
+
+fn encode_image(image: &Image) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    put_unsigned(&mut bytes, u64::from(image.format_version));
+    put_unsigned(&mut bytes, image.image_version);
+    put_unsigned(&mut bytes, image.gamma_version);
+    put_unsigned(&mut bytes, image.words.len() as u64);
+    for word in &image.words {
+        put_string(&mut bytes, &word.name);
+        put_string(&mut bytes, &word.erased_word_type);
+        bytes.extend(canonical_code(&word.code));
+        bytes.extend(&word.body_digest);
+        bytes.extend(&word.kernel_evidence_digest);
+        bytes.extend(&word.refinement_evidence_digest);
+        put_unsigned(&mut bytes, word.generation);
+    }
+    bytes.extend(&image.dictionary_digest);
+    bytes.extend(&image.image_digest);
+    bytes
 }
 
 fn decode_word(reader: &mut Reader<'_>) -> Result<WordEntry, VmError> {
@@ -734,15 +932,14 @@ pub fn execute_report_with_stack(
     }
     if initial_stack
         .iter()
-        .filter(|value| matches!(value, Value::World))
-        .count()
-        > 1
+        .any(|value| !matches!(value, Value::World) && value_contains_world(value))
     {
         return Err(VmError::WorldFault);
     }
-    let world_active = initial_stack
-        .iter()
-        .any(|value| matches!(value, Value::World));
+    if world_count(&initial_stack)? > 1 {
+        return Err(VmError::WorldFault);
+    }
+    let world_active = world_count(&initial_stack)? != 0;
     let mut state = Machine {
         stack: initial_stack
             .into_iter()
@@ -829,9 +1026,20 @@ pub fn execute_diagnostic_with_stack_budget(
             return diagnostic_trap(error, empty_machine());
         }
     }
-    let world_active = initial_stack
+    if initial_stack
         .iter()
-        .any(|value| matches!(value, Value::World));
+        .any(|value| !matches!(value, Value::World) && value_contains_world(value))
+    {
+        return diagnostic_trap(VmError::WorldFault, empty_machine());
+    }
+    match world_count(&initial_stack) {
+        Ok(_) => {}
+        Err(error) => return diagnostic_trap(error, empty_machine()),
+    }
+    let world_active = match world_count(&initial_stack) {
+        Ok(count) => count != 0,
+        Err(error) => return diagnostic_trap(error, empty_machine()),
+    };
     let mut state = Machine {
         stack: initial_stack
             .into_iter()
@@ -902,6 +1110,25 @@ fn reserve_stack(machine: &mut Machine, additional: usize) -> Result<(), VmError
         *budget -= 1;
     }
     reserve(&mut machine.stack, additional)
+}
+
+fn reserve_target<T>(
+    machine: &mut Machine,
+    values: &mut Vec<T>,
+    additional: usize,
+) -> Result<(), VmError> {
+    consume_allocation_budget(machine)?;
+    reserve(values, additional)
+}
+
+fn consume_allocation_budget(machine: &mut Machine) -> Result<(), VmError> {
+    if let Some(budget) = machine.allocation_budget.as_mut() {
+        if *budget == 0 {
+            return Err(VmError::AllocationFailure);
+        }
+        *budget -= 1;
+    }
+    Ok(())
 }
 
 fn empty_machine() -> Machine {
@@ -1062,16 +1289,6 @@ fn run_code(
                         .map_or(1, |definition| definition.cost),
                     _ => 1,
                 };
-                validate_before_charge(
-                    instruction,
-                    machine,
-                    captures,
-                    consumed,
-                    image,
-                    registry,
-                    current_word,
-                    pc,
-                )?;
                 charge(
                     machine,
                     matches!(instruction.op, Op::Prim),
@@ -1086,6 +1303,21 @@ fn run_code(
                     },
                     primitive_cost,
                 )?;
+                if let Err(error) = validate_before_charge(
+                    instruction,
+                    machine,
+                    captures,
+                    consumed,
+                    image,
+                    registry,
+                    current_word,
+                    pc,
+                ) {
+                    let location = machine.location.clone();
+                    *machine = checkpoint.clone();
+                    machine.location = location;
+                    return Err(error);
+                }
                 match instruction.op {
                     Op::PushLiteral => match instruction.operand.as_ref() {
                         Some(Operand::Literal(value)) if is_literal(value) => {
@@ -1106,6 +1338,7 @@ fn run_code(
                                 if machine.linear_quotes.contains(&origin) {
                                     return Err(VmError::ResourceFault);
                                 }
+                                consume_allocation_budget(machine)?;
                                 reserve(&mut machine.linear_quotes, 1)?;
                                 machine.linear_quotes.push(origin);
                             }
@@ -1216,11 +1449,14 @@ fn run_code(
                         let left = pop_quotation(machine)?;
                         let right_capture_count = right.captures.len();
                         let mut consumed = left.consumed;
+                        reserve_target(machine, &mut consumed, right.consumed.len())?;
                         consumed.extend(right.consumed.iter().copied());
                         let mut captures = left.captures;
+                        reserve_target(machine, &mut captures, right.captures.len())?;
                         captures.extend(right.captures);
                         let offset = captures.len() - right_capture_count;
                         let mut code = left.code;
+                        reserve_target(machine, &mut code, right.code.len())?;
                         code.extend(rebase_captures(&right.code, offset)?);
                         machine.stack.push(Slot::Value(Value::Quotation(Quotation {
                             code,
@@ -1647,6 +1883,9 @@ fn validate_image(image: &Image) -> Result<(), VmError> {
             });
         }
         validate_code_structure(&word.code, 0)?;
+        if code_contains_world(&word.code) {
+            return Err(VmError::WorldFault);
+        }
         if word.body_digest.len() != DIGEST_BYTES
             || word.kernel_evidence_digest.len() != DIGEST_BYTES
             || word.refinement_evidence_digest.len() != DIGEST_BYTES
@@ -1736,6 +1975,45 @@ fn validate_value_structure(value: &Value, depth: usize) -> Result<(), VmError> 
         Value::Int(_) | Value::Bool(_) | Value::Bytes(_) | Value::World => {}
     }
     Ok(())
+}
+
+fn world_count(values: &[Value]) -> Result<usize, VmError> {
+    fn count(value: &Value) -> usize {
+        match value {
+            Value::World => 1,
+            Value::Quotation(quotation) => quotation.captures.iter().map(count).sum(),
+            Value::Int(_) | Value::Bool(_) | Value::Bytes(_) | Value::PrimitiveValue { .. } => 0,
+        }
+    }
+    let total: usize = values.iter().map(count).sum();
+    if total > 1 {
+        Err(VmError::WorldFault)
+    } else {
+        Ok(total)
+    }
+}
+
+fn code_contains_world(code: &[Instruction]) -> bool {
+    code.iter()
+        .any(|instruction| match instruction.operand.as_ref() {
+            Some(Operand::Literal(value)) => value_contains_world(value),
+            Some(Operand::Quote(quotation)) => {
+                quotation.captures.iter().any(value_contains_world)
+                    || code_contains_world(&quotation.code)
+            }
+            _ => false,
+        })
+}
+
+fn value_contains_world(value: &Value) -> bool {
+    match value {
+        Value::World => true,
+        Value::Quotation(quotation) => {
+            quotation.captures.iter().any(value_contains_world)
+                || code_contains_world(&quotation.code)
+        }
+        Value::Int(_) | Value::Bool(_) | Value::Bytes(_) | Value::PrimitiveValue { .. } => false,
+    }
 }
 
 fn validate_quotation_structure(quotation: &Quotation, depth: usize) -> Result<(), VmError> {
@@ -3207,38 +3485,117 @@ mod tests {
             captures: vec![],
             consumed: vec![],
         };
-        let cases = [
-            (
-                vec![instruction(
-                    Op::PushQuote,
-                    Some(Operand::Quote(quotation.clone())),
-                )],
-                vec![],
-            ),
-            (vec![instruction(Op::Quote, None)], vec![Value::Int(7)]),
-            (
-                vec![instruction(Op::Compose, None)],
-                vec![
-                    Value::Quotation(quotation.clone()),
-                    Value::Quotation(quotation),
-                ],
-            ),
+        let initial = vec![
+            Value::Quotation(quotation.clone()),
+            Value::Quotation(quotation),
         ];
-        for (code, initial) in cases {
-            let image = test_image(vec![word("main", code)]);
-            let ExecutionOutcome::Trap(trap) = execute_diagnostic_with_stack_budget(
-                &image,
-                initial,
-                64,
-                &default_registry(),
-                Some(0),
-            ) else {
-                panic!("expected allocation trap")
-            };
-            assert_eq!(trap.error, VmError::AllocationFailure);
-            assert_eq!(trap.cost.total, 0);
-            assert!(trap.trace.is_empty());
-        }
+        let image = test_image(vec![word("main", vec![instruction(Op::Compose, None)])]);
+        let ExecutionOutcome::Trap(trap) = execute_diagnostic_with_stack_budget(
+            &image,
+            initial.clone(),
+            64,
+            &default_registry(),
+            Some(1),
+        ) else {
+            panic!("expected mid-operation allocation trap")
+        };
+        assert_eq!(trap.error, VmError::AllocationFailure);
+        assert_eq!(trap.stack, initial);
+        assert_eq!(trap.world, WorldState::new());
+        assert!(trap.trace.is_empty());
+        assert_eq!(trap.cost.total, 0);
+    }
+
+    #[test]
+    fn invalid_multiple_world_states_are_rejected_at_diagnostic_boundary() {
+        let image = test_image(vec![word("main", vec![])]);
+        let worlds = vec![Value::World, Value::World];
+        let ExecutionOutcome::Trap(trap) =
+            execute_diagnostic_with_stack(&image, worlds, 64, &default_registry())
+        else {
+            panic!("expected invalid world state trap")
+        };
+        assert_eq!(trap.error, VmError::WorldFault);
+
+        let nested = Value::Quotation(Quotation {
+            code: vec![],
+            captures: vec![Value::World, Value::World],
+            consumed: vec![false, false],
+        });
+        let ExecutionOutcome::Trap(trap) =
+            execute_diagnostic_with_stack(&image, vec![nested], 64, &default_registry())
+        else {
+            panic!("expected nested invalid world state trap")
+        };
+        assert_eq!(trap.error, VmError::WorldFault);
+
+        let encoded_image_world = fixture_image(vec![word(
+            "main",
+            vec![instruction(
+                Op::PushQuote,
+                Some(Operand::Quote(Quotation {
+                    code: vec![],
+                    captures: vec![Value::World],
+                    consumed: vec![false],
+                })),
+            )],
+        )]);
+        assert_eq!(
+            decode(&encode_image(&encoded_image_world)),
+            Err(VmError::WorldFault)
+        );
+
+        let nested_single = Value::Quotation(Quotation {
+            code: vec![],
+            captures: vec![Value::World],
+            consumed: vec![false],
+        });
+        let ExecutionOutcome::Trap(trap) =
+            execute_diagnostic_with_stack(&image, vec![nested_single], 64, &default_registry())
+        else {
+            panic!("expected nested single world trap")
+        };
+        assert_eq!(trap.error, VmError::WorldFault);
+
+        let image_world = test_image(vec![word(
+            "main",
+            vec![instruction(
+                Op::PushQuote,
+                Some(Operand::Quote(Quotation {
+                    code: vec![],
+                    captures: vec![Value::World],
+                    consumed: vec![false],
+                })),
+            )],
+        )]);
+        let ExecutionOutcome::Trap(trap) =
+            execute_diagnostic(&image_world, 64, &default_registry())
+        else {
+            panic!("expected image world trap")
+        };
+        assert_eq!(trap.error, VmError::WorldFault);
+    }
+
+    #[test]
+    fn fuel_precedes_instruction_validation() {
+        let image = test_image(vec![word("main", vec![instruction(Op::Drop, None)])]);
+        let ExecutionOutcome::Trap(trap) = execute_diagnostic(&image, 0, &default_registry())
+        else {
+            panic!("expected fuel trap")
+        };
+        assert_eq!(trap.error, VmError::FuelExhausted);
+        assert_eq!(trap.location.as_ref().map(|location| location.pc), Some(0));
+        assert_eq!(trap.cost.total, 0);
+        assert_eq!(trap.trace.len(), 0);
+
+        let ExecutionOutcome::Trap(trap) = execute_diagnostic(&image, 1, &default_registry())
+        else {
+            panic!("expected validation trap")
+        };
+        assert_eq!(trap.error, VmError::StackFault);
+        assert_eq!(trap.location.as_ref().map(|location| location.pc), Some(0));
+        assert_eq!(trap.cost.total, 0);
+        assert!(trap.trace.is_empty());
     }
 
     #[test]
@@ -3248,125 +3605,56 @@ mod tests {
             .lines()
             .filter(|line| !line.is_empty() && !line.starts_with('#'))
         {
-            let fields: Vec<&str> = line.split('|').collect();
-            assert_eq!(fields.len(), 9, "malformed fixture vector: {line}");
-            let initial = parse_fixture_stack(fields[1]);
-            let mut words = parse_fixture_dictionary(fields[2]);
-            let code = parse_fixture_code(fields[3]);
-            words.push(word("main", code));
-            let image = test_image(words);
-            let expected_outcome = fields[4];
+            let fixture = decode_fixture_line(line).expect("valid fixture row");
+            let expected_outcome = fixture.outcome.as_str();
             let (stack, cost, frames) = match expected_outcome {
                 "terminal" => {
-                    let report =
-                        execute_report_with_stack(&image, initial, 64, &default_registry())
-                            .expect(fields[0]);
+                    let report = execute_report_with_stack(
+                        &fixture.image,
+                        fixture.initial_stack.clone(),
+                        64,
+                        &default_registry(),
+                    )
+                    .expect(&fixture.name);
                     (report.stack, report.cost, report.frames)
                 }
                 "stuck" => {
-                    let ExecutionOutcome::Trap(trap) =
-                        execute_diagnostic_with_stack(&image, initial, 64, &default_registry())
-                    else {
-                        panic!("expected trap: {}", fields[0])
+                    let ExecutionOutcome::Trap(trap) = execute_diagnostic_with_stack(
+                        &fixture.image,
+                        fixture.initial_stack,
+                        64,
+                        &default_registry(),
+                    ) else {
+                        panic!("expected trap: {}", fixture.name)
                     };
-                    assert_eq!(trap.code, "stack-fault", "{}", fields[0]);
+                    assert_eq!(trap.code, "stack-fault", "{}", fixture.name);
                     (trap.stack, trap.cost, trap.frames)
                 }
-                other => panic!("unsupported fixture outcome {other}: {}", fields[0]),
+                other => panic!("unsupported fixture outcome {other}: {}", fixture.name),
             };
-            assert_eq!(render_fixture_stack(&stack), fields[5], "{}", fields[0]);
-            let lean_cost: u64 = fields[6].parse().expect("fixture cost");
+            assert_eq!(
+                render_fixture_stack(&stack),
+                fixture.final_stack,
+                "{}",
+                fixture.name
+            );
             assert_eq!(
                 cost.total.saturating_sub(cost.word_entries),
-                lean_cost,
+                fixture.lean_cost,
                 "Lean cost: {}",
-                fields[0]
+                fixture.name
             );
-            assert_eq!(render_fixture_frames(&frames), fields[7], "{}", fields[0]);
-            let target_cost: u64 = fields[8].parse().expect("target cost");
-            assert_eq!(cost.total, target_cost, "target cost: {}", fields[0]);
-        }
-    }
-
-    fn parse_fixture_stack(encoded: &str) -> Vec<Value> {
-        if encoded == "-" || encoded.is_empty() {
-            return vec![];
-        }
-        encoded
-            .split(',')
-            .map(|item| {
-                let value = item.strip_prefix("i:").expect("fixture stack value");
-                Value::Int(value.parse().expect("fixture integer"))
-            })
-            .collect()
-    }
-
-    fn parse_fixture_dictionary(encoded: &str) -> Vec<WordEntry> {
-        if encoded == "-" || encoded.is_empty() {
-            return vec![];
-        }
-        encoded
-            .split(';')
-            .map(|entry| {
-                let (name, code) = entry.split_once('=').expect("fixture dictionary entry");
-                word(name, parse_fixture_code(code))
-            })
-            .collect()
-    }
-
-    fn parse_fixture_code(encoded: &str) -> Vec<Instruction> {
-        encoded
-            .split(',')
-            .filter(|token| !token.is_empty() && *token != "-")
-            .map(|token| match token {
-                "dup" => instruction(Op::Dup, None),
-                "drop" => instruction(Op::Drop, None),
-                "swap" => instruction(Op::Swap, None),
-                "call" => instruction(Op::Call, None),
-                "dip" => instruction(Op::Dip, None),
-                "compose" => instruction(Op::Compose, None),
-                "quote" => instruction(Op::Quote, None),
-                "if" => instruction(Op::If, None),
-                "word:one" => {
-                    instruction_with_operand(Op::CallWord, Operand::Word(String::from("one")))
-                }
-                token if token.starts_with("word:") => {
-                    instruction_with_operand(Op::CallWord, Operand::Word(String::from(&token[5..])))
-                }
-                token if token.starts_with("prim:") => instruction_with_operand(
-                    Op::Prim,
-                    Operand::Primitive(String::from(&token[5..])),
-                ),
-                token if token.starts_with("pushi:") => instruction_with_operand(
-                    Op::PushLiteral,
-                    Operand::Literal(Value::Int(token[6..].parse().expect("fixture integer"))),
-                ),
-                token if token.starts_with("pushb:") => instruction_with_operand(
-                    Op::PushLiteral,
-                    Operand::Literal(Value::Bool(&token[6..] == "true")),
-                ),
-                token if token.starts_with("pushq:") => instruction_with_operand(
-                    Op::PushQuote,
-                    Operand::Quote(Quotation {
-                        code: vec![instruction_with_operand(
-                            Op::PushLiteral,
-                            Operand::Literal(Value::Int(
-                                token[6..].parse().expect("fixture integer"),
-                            )),
-                        )],
-                        captures: vec![],
-                        consumed: vec![],
-                    }),
-                ),
-                other => panic!("unhandled fixture instruction {other}"),
-            })
-            .collect()
-    }
-
-    fn instruction_with_operand(op: Op, operand: Operand) -> Instruction {
-        Instruction {
-            op,
-            operand: Some(operand),
+            assert_eq!(
+                render_fixture_frames(&frames),
+                fixture.residual_frames,
+                "{}",
+                fixture.name
+            );
+            assert_eq!(
+                cost.total, fixture.target_cost,
+                "target cost: {}",
+                fixture.name
+            );
         }
     }
 
