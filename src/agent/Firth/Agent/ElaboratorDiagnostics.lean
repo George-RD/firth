@@ -129,6 +129,31 @@ def encodeErasureError (context : EmissionContext)
     (error : Firth.Elaborator.ErasureError) : String :=
   encode (erasureEnvelope context error)
 
+private def stableWarningCode (code : String) : String :=
+  match code with
+  | "LOCAL_DEPTH" => "firth.elaboration.local-depth"
+  | "STACK_JUGGLE" => "firth.elaboration.stack-juggle"
+  | _ => "firth.elaboration.warning"
+
+def erasureWarningEnvelope (context : EmissionContext)
+    (warning : Firth.Elaborator.LintWarning) : Envelope :=
+  let code := stableWarningCode warning.code
+  envelope context {
+    code
+    severity := "warning"
+    messageKey := messageKey code
+    messageParams := if code == "firth.elaboration.warning" then
+      .mkObj [("producer_code", .str warning.code)]
+    else .mkObj []
+    location := locationFromSpan context.source warning.span
+    cause := { kind := "elaboration" }
+    expectedStack := none
+    actualStack := none }
+
+def encodeErasureWarning (context : EmissionContext)
+    (warning : Firth.Elaborator.LintWarning) : String :=
+  encode (erasureWarningEnvelope context warning)
+
 private def causeForCode (code : String) : String :=
   match code.splitOn "." with
   | "firth" :: "type" :: _ => "type-checking"

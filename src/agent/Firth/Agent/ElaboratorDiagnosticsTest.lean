@@ -31,6 +31,14 @@ private def context (payloadId : String) : EmissionContext := {
   proposedFixes := [fix]
   related := [{ relation := "origin", location }] }
 
+private def contextWithSource (payloadId path : String) : EmissionContext :=
+  { context payloadId with source := .path path }
+
+private def expectSortedFirst (name expected : String) (left right : Envelope) : IO Unit :=
+  match sortDiagnosticEnvelopes [left, right] with
+  | first :: _ => expectEqual name first.payloadId expected
+  | [] => fail s!"{name}: diagnostic sorting dropped both envelopes"
+
 private def expectValidCode (name expectedCode source : String) : IO Unit := do
   match validate source with
   | .error error => fail s!"{name}: invalid emitted envelope {error.code}"
@@ -41,6 +49,11 @@ private def expectValidCode (name expectedCode source : String) : IO Unit := do
           match json.getObjVal? "body" >>= (·.getObjVal? "code") >>= (·.getStr?) with
           | .ok code => expectEqual name code expectedCode
           | .error jsonError => fail s!"{name}: missing code {jsonError}"
+
+private def warningByCode (code : String) : List Firth.Elaborator.LintWarning →
+    Option Firth.Elaborator.LintWarning
+  | [] => none
+  | warning :: rest => if warning.code == code then some warning else warningByCode code rest
 
 def runElaboratorDiagnosticTests : IO Unit := do
   let parseError : ParseError := {
@@ -62,6 +75,12 @@ def runElaboratorDiagnosticTests : IO Unit := do
   if erasureJson.contains "\"message_params\":{\"name\":\"handle\"}" then pure ()
   else fail "erasure adapter omitted the local name"
 
+  let warningJson := encodeErasureWarning (context "warning-1") {
+    code := "LOCAL_DEPTH", span := span 3 2 4 }
+  expectValidCode "erasure warning adapter" "firth.elaboration.local-depth" warningJson
+  if warningJson.contains "\"severity\":\"warning\"" then pure ()
+  else fail "erasure warning adapter did not preserve warning severity"
+
   let stackDiagnostic : Firth.Elaborator.StackEffect.Diagnostic := {
     code := "firth.type.stack-mismatch"
     primary := span 4 2 5
@@ -82,11 +101,21 @@ def runElaboratorDiagnosticTests : IO Unit := do
   | .ok envelope => expectEqual "typed-hole adapter kind" envelope.payloadKind "typed_hole"
   | .error error => fail s!"typed-hole adapter invalid: {error.code}"
 
-  let first := parserEnvelope (context "z") { parseError with primary := span 9 1 2 }
-  let second := parserEnvelope (context "a") { parseError with primary := span 1 1 2 }
-  match sortDiagnosticEnvelopes [first, second] with
-  | sortedFirst :: _ => expectEqual "diagnostic location sorting" sortedFirst.payloadId "a"
-  | [] => fail "diagnostic sorting dropped both envelopes"
+  expectSortedFirst "diagnostic source sorting" "source-a"
+    (parserEnvelope (contextWithSource "source-z" "z.fth") parseError)
+    (parserEnvelope (contextWithSource "source-a" "a.fth") parseError)
+  expectSortedFirst "diagnostic start sorting" "start-a"
+    (parserEnvelope (context "start-z") { parseError with primary := span 9 1 2 })
+    (parserEnvelope (context "start-a") { parseError with primary := span 1 1 2 })
+  expectSortedFirst "diagnostic end sorting" "end-a"
+    (parserEnvelope (context "end-z") { parseError with primary := span 1 1 4 })
+    (parserEnvelope (context "end-a") { parseError with primary := span 1 1 2 })
+  expectSortedFirst "diagnostic code sorting" "code-a"
+    (parserEnvelope (context "code-z") { parseError with code := "firth.syntax.z" })
+    (parserEnvelope (context "code-a") { parseError with code := "firth.syntax.a" })
+  expectSortedFirst "diagnostic payload sorting" "payload-a"
+    (parserEnvelope (context "payload-z") parseError)
+    (parserEnvelope (context "payload-a") parseError)
 
   match parse "\"unterminated" with
   | .success _ => fail "parser integration fixture unexpectedly succeeded"
@@ -106,6 +135,19 @@ def runElaboratorDiagnosticTests : IO Unit := do
           | .error validation => fail s!"erasure path emitted invalid JSON: {validation.code}"
   | .success _ => fail "erasure integration fixture parsed the wrong declaration shape"
   | .failure errors => fail s!"erasure integration fixture did not parse: {repr errors}"
+
+  match parse ": deep ( a:Int^many b:Int^many c:Int^many d:Int^many e:Int^many -- ) locals { a b c d e } { } ;" with
+  | .success { declarations := [.word word], .. } =>
+      match erase {} word.effect word.body with
+      | .error error => fail s!"erasure warning fixture failed: {repr error}"
+      | .ok result =>
+          match warningByCode "LOCAL_DEPTH" result.warnings with
+          | none => fail "erasure warning path produced no LOCAL_DEPTH warning"
+          | some warning =>
+              expectValidCode "erasure warning path emission" "firth.elaboration.local-depth"
+                (encodeErasureWarning (context "erasure-warning-path") warning)
+  | .success _ => fail "erasure warning fixture parsed the wrong declaration shape"
+  | .failure errors => fail s!"erasure warning fixture did not parse: {repr errors}"
 
   let located : Firth.Elaborator.LocatedKernel := {
     span := span 6 1 8

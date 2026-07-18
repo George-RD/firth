@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.agent
-status: in_progress
+status: done
 created: 2026-07-18
 ---
 

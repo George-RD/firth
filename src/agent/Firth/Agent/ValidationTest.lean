@@ -22,6 +22,12 @@ def runValidationTests : IO Unit := do
   | .error error => fail s!"extensible enum failed: {error.code}"
 
   expectInvalid "malformed JSON" "firth.protocol.malformed-json" "{"
+  expectInvalid "duplicate envelope member" "firth.protocol.duplicate-member"
+    "{\"schema_version\":\"2.0\",\"schema_version\":\"1.0\",\"payload_kind\":\"typed_hole\",\"payload_id\":\"h1\",\"request_id\":\"r1\",\"body\":{\"hole_id\":\"h\",\"location\":{\"path\":\"x\",\"range\":{\"start\":{\"line\":1,\"column\":1},\"end\":{\"line\":1,\"column\":2}}},\"inferred_stack_state\":{\"encoding\":\"opaque\",\"value\":{}},\"obligations\":[]}}"
+  expectInvalid "duplicate nested member" "firth.protocol.duplicate-member"
+    "{\"schema_version\":\"1.0\",\"payload_kind\":\"signature_search_request\",\"payload_id\":\"s1\",\"request_id\":\"r1\",\"body\":{\"query\":{\"stack_effect\":{\"encoding\":\"opaque\",\"value\":{},\"value\":[]}},\"page_size\":10,\"page\":0}}"
+  expectInvalid "escaped duplicate member" "firth.protocol.duplicate-member"
+    "{\"schema_version\":\"1.0\",\"payload_kind\":\"signature_search_request\",\"payload_id\":\"s1\",\"request_id\":\"r1\",\"body\":{\"query\":{\"stack_effect\":{\"encoding\":\"opaque\",\"value\":{},\"\\u0076alue\":[]}},\"page_size\":10,\"page\":0}}"
   expectInvalid "missing body" "firth.protocol.missing-field"
     "{\"schema_version\":\"1.0\",\"payload_kind\":\"typed_hole\",\"payload_id\":\"h1\",\"request_id\":\"r1\"}"
   expectInvalid "unsupported major" "firth.protocol.unsupported-version"

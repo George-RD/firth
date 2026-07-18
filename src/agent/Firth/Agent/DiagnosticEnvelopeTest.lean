@@ -17,6 +17,9 @@ private def location (line start stop : Nat) : Location :=
     start := { line, column := start }
     stop := { line, column := stop } }
 
+private def markerOffset (source marker : String) : Nat :=
+  source.splitOn marker |>.head?.map String.length |>.getD source.length
+
 def runEnvelopeTests : IO Unit := do
   let diagnostic := Envelope.diagnostic "d1" "r1" {
     code := "firth.type.stack-mismatch"
@@ -88,9 +91,31 @@ def runEnvelopeTests : IO Unit := do
       { wordId := "b", signature := opaqueValue, refinements := none, matchKind := "exact", rank := 1 },
       { wordId := "a", signature := opaqueValue, refinements := none, matchKind := "exact", rank := 1 }] }
   let encoded := encode sorted
-  let a := encoded.splitOn "\"word_id\":\"a\"" |>.head!.length
-  let b := encoded.splitOn "\"word_id\":\"b\"" |>.head!.length
-  let z := encoded.splitOn "\"word_id\":\"z\"" |>.head!.length
+  let a := markerOffset encoded "\"word_id\":\"a\""
+  let b := markerOffset encoded "\"word_id\":\"b\""
+  let z := markerOffset encoded "\"word_id\":\"z\""
   if a < b && b < z then pure () else fail "search matches were not sorted by rank and word_id"
+
+  let internallySorted := Envelope.diagnostic "d-sorted" "r4" {
+    code := "firth.type.stack-mismatch"
+    severity := "error"
+    messageKey := "diagnostic.stack_mismatch"
+    messageParams := .mkObj []
+    location := location 1 1 2
+    cause := { kind := "type-checking" }
+    expectedStack := none
+    actualStack := none
+    obligations := [
+      { obligationId := "z", kind := "type", status := "open", data := .mkObj [] },
+      { obligationId := "a", kind := "type", status := "open", data := .mkObj [] }]
+    proposedFixes := [
+      { fixId := "z", kind := "replace", titleKey := "fix.z", applicability := "safe", edits := [] },
+      { fixId := "a", kind := "replace", titleKey := "fix.a", applicability := "safe", edits := [] }] }
+  let sortedJson := encode internallySorted
+  if markerOffset sortedJson "\"obligation_id\":\"a\"" <
+      markerOffset sortedJson "\"obligation_id\":\"z\"" &&
+      markerOffset sortedJson "\"fix_id\":\"a\"" < markerOffset sortedJson "\"fix_id\":\"z\"" then
+    pure ()
+  else fail "obligations or proposed fixes were not sorted by stable ID"
 
 end Firth.Agent.Test

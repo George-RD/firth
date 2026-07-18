@@ -1,4 +1,5 @@
 import agent.Firth.Agent.DiagnosticEnvelope
+import agent.Firth.Agent.JsonMembers
 
 namespace Firth.Agent
 
@@ -278,6 +279,10 @@ private def validateBody (kind : String) (body : Json) : ValidateM Unit :=
   | _ => invalid "firth.protocol.unknown-payload-kind" "payload_kind"
 
 def validate (source : String) : ValidateM ValidatedEnvelope := do
+  match rejectDuplicateMembers source with
+  | .ok _ => pure ()
+  | .error .duplicate => invalid "firth.protocol.duplicate-member" "envelope"
+  | .error .malformed => invalid "firth.protocol.malformed-json" "envelope"
   let json ← match Json.parse source with
     | .ok value => pure value
     | .error _ => invalid "firth.protocol.malformed-json" "envelope"
