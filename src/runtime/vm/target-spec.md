@@ -337,7 +337,7 @@ the bootstrap therefore rejects all-zero evidence digests but cannot
 recompute or authenticate their external payloads. Full evidence binding is
 the responsibility of the verified patch/elaborator boundary. The bootstrap
 smoke image uses SHA-256 of the empty evidence payload for both evidence
-slots. This is an explicit scope boundary, not a placeholder digest.
+slots. This is an explicit scope boundary, not a stand-in digest.
 
 `dictionary_digest` is SHA-256 of the canonical word vector, including each
 word's name, erased type, canonical code, three word digests, and generation.
