@@ -52,6 +52,7 @@ structure Slot where
   usage : Usage
   origin : Span
   restoredId : Option Nat := none
+  family : Nat := 0
   available : Bool := true
   expanded : Bool := false
   deriving Repr, BEq
@@ -97,11 +98,21 @@ private def duplicateName : List LocatedName → Option LocatedName
     | some duplicate => some duplicate
     | none => duplicateName xs
 
-private def findSlot (name : String) : List StackEntry → Option Slot
-  | [] => none
+private def findSlotFrom (name : String) (span : Span) (family : Option Nat) : List StackEntry → Except ErasureError Slot
+  | [] => .error (.unboundLocal name span)
   | x :: xs => match x.slot with
-    | some slot => if slot.name == name && slot.available then some slot else findSlot name xs
-    | none => findSlot name xs
+    | some slot => if slot.name == name then
+        match family with
+        | some owner => if slot.family == owner then
+            if slot.available then .ok slot else findSlotFrom name span family xs
+          else if slot.usage == .linear then .error (.linearUnused name span)
+          else .error (.unboundLocal name span)
+        | none => if slot.available then .ok slot else findSlotFrom name span (some slot.family) xs
+      else findSlotFrom name span family xs
+    | none => findSlotFrom name span family xs
+
+private def findSlot (name : String) (span : Span) (stack : List StackEntry) : Except ErasureError Slot :=
+  findSlotFrom name span none stack
 
 private def markUnavailable (id : Nat) : List StackEntry → List StackEntry
   | [] => []
@@ -131,13 +142,13 @@ private def focusAtoms (id : Nat) (span : Span) : List StackEntry → Except Era
           else focusAtoms id span (next :: tail) |>.map (fun (inner, focused) =>
             match focused with
             | focusedTarget :: after =>
-                (atomList (.quotation (toProgram inner)) span ++ atomList .dip span ++ atomList .swap span,
+                ([locatedQuotation span inner] ++ atomList .dip span ++ atomList .swap span,
                  focusedTarget :: guard :: after)
             | [] => (inner, guard :: next :: tail))
         | none => focusAtoms id span (next :: tail) |>.map (fun (inner, focused) =>
             match focused with
             | focusedTarget :: after =>
-                (atomList (.quotation (toProgram inner)) span ++ atomList .dip span ++ atomList .swap span,
+                ([locatedQuotation span inner] ++ atomList .dip span ++ atomList .swap span,
                  focusedTarget :: guard :: after)
             | [] => (inner, guard :: next :: tail))
 private def literalAtom : Firth.Elaborator.Literal → Option Firth.Interpreter.Literal
@@ -167,6 +178,7 @@ private def localStack (names : List LocatedName) (state : State) : Except Erasu
     let top := state.stack.take names.length
     let slots : List Slot := (names.zip top.reverse).map (fun (name, entry) =>
       { id := 0, name := name.name, usage := entry.usage, origin := name.span,
+        family := state.nextId,
         restoredId := entry.slot.map (·.id) })
     let slots := slots.zip (List.range slots.length) |>.map (fun (slot, index) =>
       { slot with id := state.nextId + index })
@@ -301,9 +313,9 @@ mutual
       | .word name localSpan =>
         if slots.any (fun slot => slot.name == name) || visible.contains name then
           let count := demandCount name items
-          match findSlot name state.stack with
-          | none => .error (.unboundLocal name localSpan)
-          | some slot =>
+          match findSlot name localSpan state.stack with
+          | .error error => .error error
+          | .ok slot =>
             if slot.usage == .linear && count > 1 then
               let useSpan := match (demandSpans name items).drop 1 with
                 | span :: _ => span
@@ -313,7 +325,7 @@ mutual
               focusAtoms slot.id localSpan state.stack >>= fun (focus, focused) =>
                 let copiesNeeded := count - 1
                 let fresh : List Slot := List.range (if slot.expanded then 0 else copiesNeeded) |>.map (fun index =>
-                  Slot.mk (state.nextId + index) name slot.usage slot.origin none true true)
+                  Slot.mk (state.nextId + index) name slot.usage slot.origin none slot.family true true)
                 let copied : List StackEntry := fresh.reverse.map (fun freshSlot => { slot := some freshSlot, usage := freshSlot.usage })
                 let selected := (fresh.getLast?).map (·.id) |>.getD slot.id
                 let expandedStack := markExpanded slot.id focused
@@ -337,10 +349,12 @@ def erase (env : EffectEnv) (effect : StackEffect) (body : List Item) : Except E
         (if longestStructuralRun program > 4 then [{ code := "STACK_JUGGLE", span := effect.span }] else []) })
 
 theorem erase_deterministic (env : EffectEnv) (effect : StackEffect) (body : List Item)
-    {first second : Except ErasureError ErasureResult}
-    (first_run : first = erase env effect body)
-    (second_run : second = erase env effect body) :
+    {first second : ErasureResult}
+    (first_run : erase env effect body = .ok first)
+    (second_run : erase env effect body = .ok second) :
     first = second := by
-  rw [first_run, second_run]
+  have same : (Except.ok first : Except ErasureError ErasureResult) = .ok second :=
+    first_run.symm.trans second_run
+  injection same
 
 end Firth.Elaborator

@@ -72,6 +72,14 @@ def main : IO Unit := do
 
   let deepFocus ← parsed ": deep-focus ( a:Int^many b:Int^many c:Int^many -- ) locals { a b c } { a } ;"
   expectShapes deepFocus ["[swap]", "dip", "swap", "swap", "drop", "swap", "drop"]
+  let focusSpan := match deepFocus.body with
+    | [.locals _ [.word _ span] _] => span
+    | _ => panic! "focus fixture changed"
+  match erase arithmetic deepFocus.effect deepFocus.body with
+  | .ok { program := first :: _, .. } =>
+      if first.childSpans == [focusSpan] then pure () else fail "focus quotation lost source provenance"
+  | .ok _ => fail "focus fixture emitted no kernel"
+  | .error error => fail s!"focus provenance failed: {repr error}"
 
   -- Every demand selects the most recently produced remaining identity.
   let repeated ← parsed ": repeated ( a:Int^many -- ) locals { a } { a a a } ;"
@@ -85,12 +93,24 @@ def main : IO Unit := do
   let shadow ← parsed ": shadow ( a:Int^many b:Int^many -- ) locals { a b } { locals { a } { } a } ;"
   expectShapes shadow ["drop"]
 
+  let shadowLinear ← parsed ": shadow-linear ( a:Handle^linear b:Handle^linear -- ) locals { a b } { locals { a } { a } a } ;"
+  let shadowLinearSpan := match shadowLinear.body with
+    | [.locals _ [.locals _ _ _, .word _ span] _] => span
+    | _ => panic! "shadow-linear fixture changed"
+  expectErrorAt shadowLinear (fun error => match error with
+    | .linearUnused name _ => name == "a"
+    | _ => false) shadowLinearSpan
+
   let inferred ← parsed ": inferred ( -- ) [ 1 2 prim + ] ;"
   match erase arithmetic inferred.effect inferred.body with
   | .ok { program := [quotation], .. } =>
       if quotation.childSpans.length == 3 then pure () else fail "quotation child spans were lost"
   | .ok result => fail s!"unexpected inferred quotation: {repr result.program}"
   | .error error => fail s!"quotation inference failed: {repr error}"
+
+  let first := erase arithmetic add.effect add.body
+  let second := erase arithmetic add.effect add.body
+  if toString (repr first) != toString (repr second) then fail "repeated erasure produced different results"
 
   -- Capture is checked recursively and the diagnostic retains the child use span.
   let capture ← parsed ": capture ( a:Int^many -- ) locals { a } { [ [ a ] ] } ;"
