@@ -4,7 +4,6 @@ fn validate_before_charge(
     machine: &Machine,
     captures: &[Value],
     consumed: &[bool],
-    image: &Image,
     registry: &PrimitiveRegistry,
     current_word: &str,
     pc: usize,
@@ -105,14 +104,10 @@ fn validate_before_charge(
             Ok(())
         }
         Op::CallWord => {
-            let Some(Operand::Word(name)) = instruction.operand.as_ref() else {
+            let Some(Operand::Word(_)) = instruction.operand.as_ref() else {
                 return Err(VmError::StackFault);
             };
-            if image.words.iter().any(|word| word.name == *name) {
-                Ok(())
-            } else {
-                Err(VmError::UnknownWord(name.clone()))
-            }
+            Ok(())
         }
         Op::Prim => {
             let Some(Operand::Primitive(name)) = instruction.operand.as_ref() else {

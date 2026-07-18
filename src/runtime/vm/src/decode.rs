@@ -183,15 +183,23 @@ pub fn execute_report_with_stack(
     fuel: u64,
     registry: &PrimitiveRegistry,
 ) -> Result<ExecutionReport, VmError> {
+    let resolver = StaticWordResolver { image };
+    let word = resolver.resolve("main")?;
+    execute_report_resolved(word, &resolver, initial_stack, fuel, registry)
+}
+
+fn execute_report_resolved(
+    resolved: ResolvedWord<'_>,
+    resolver: &dyn WordResolver,
+    initial_stack: Vec<Value>,
+    fuel: u64,
+    registry: &PrimitiveRegistry,
+) -> Result<ExecutionReport, VmError> {
+    let (image, word) = resolved.parts();
     validate_image(image)?;
     if registry.version != image.gamma_version {
         return Err(VmError::UnsupportedGamma(registry.version));
     }
-    let word = image
-        .words
-        .iter()
-        .find(|word| word.name == "main")
-        .ok_or_else(|| VmError::UnknownWord(String::from("main")))?;
     for value in &initial_stack {
         validate_value_structure(value, 0)?;
     }
@@ -234,12 +242,13 @@ pub fn execute_report_with_stack(
         frames: Vec::new(),
         allocation_budget: None,
     };
+    let environment = ExecutionEnvironment { resolver, registry };
     run_code(
         &word.code,
         &mut [],
         &mut [],
         image,
-        registry,
+        &environment,
         &mut state,
         "main",
     )?;
@@ -283,9 +292,11 @@ pub fn execute_diagnostic_with_stack_budget(
     if registry.version != image.gamma_version {
         return diagnostic_trap(VmError::UnsupportedGamma(registry.version), empty_machine());
     }
-    let Some(word) = image.words.iter().find(|word| word.name == "main") else {
+    let resolver = StaticWordResolver { image };
+    let Ok(resolved) = resolver.resolve("main") else {
         return diagnostic_trap(VmError::UnknownWord(String::from("main")), empty_machine());
     };
+    let (_, word) = resolved.parts();
     for value in &initial_stack {
         if let Err(error) = validate_value_structure(value, 0) {
             return diagnostic_trap(error, empty_machine());
@@ -328,12 +339,16 @@ pub fn execute_diagnostic_with_stack_budget(
         frames: Vec::new(),
         allocation_budget,
     };
+    let environment = ExecutionEnvironment {
+        resolver: &resolver,
+        registry,
+    };
     match run_code(
         &word.code,
         &mut [],
         &mut [],
         image,
-        registry,
+        &environment,
         &mut state,
         "main",
     ) {

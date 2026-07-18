@@ -163,7 +163,7 @@ fn run_code(
     captures: &mut [Value],
     consumed: &mut [bool],
     image: &Image,
-    registry: &PrimitiveRegistry,
+    environment: &ExecutionEnvironment<'_>,
     machine: &mut Machine,
     current_word: &str,
 ) -> Result<(), VmError> {
@@ -194,7 +194,8 @@ fn run_code(
             let checkpoint = machine.clone();
             let instruction_result = (|| {
                 let primitive_cost = match instruction.operand.as_ref() {
-                    Some(Operand::Primitive(name)) => registry
+                    Some(Operand::Primitive(name)) => environment
+                        .registry
                         .definitions
                         .iter()
                         .find(|definition| definition.name == name)
@@ -220,8 +221,7 @@ fn run_code(
                     machine,
                     captures,
                     consumed,
-                    image,
-                    registry,
+                    environment.registry,
                     current_word,
                     pc,
                 ) {
@@ -241,7 +241,7 @@ fn run_code(
                     Op::PushQuote => match instruction.operand.as_ref() {
                         Some(Operand::Quote(quotation)) => {
                             reserve_stack(machine, 1)?;
-                            if quotation.usage(registry) == Usage::Linear {
+                            if quotation.usage(environment.registry) == Usage::Linear {
                                 let origin = (
                                     String::from(current_word),
                                     pc,
@@ -275,7 +275,7 @@ fn run_code(
                         if *used {
                             return Err(VmError::ResourceFault);
                         }
-                        if value.usage(registry) == Usage::Linear {
+                        if value.usage(environment.registry) == Usage::Linear {
                             reserve_stack(machine, 1)?;
                             *used = true;
                             let moved = core::mem::replace(value, Value::Bytes(Vec::new()));
@@ -294,7 +294,7 @@ fn run_code(
                         let Slot::Value(value) = value else {
                             return Err(VmError::ResourceFault);
                         };
-                        if value.usage(registry) == Usage::Linear {
+                        if value.usage(environment.registry) == Usage::Linear {
                             return Err(VmError::ResourceFault);
                         }
                         let copy = value.clone();
@@ -302,7 +302,7 @@ fn run_code(
                         machine.stack.push(Slot::Value(copy));
                     }
                     Op::Drop => match machine.stack.pop().ok_or(VmError::StackFault)? {
-                        Slot::Value(value) if value.usage(registry) == Usage::Many => {}
+                        Slot::Value(value) if value.usage(environment.registry) == Usage::Many => {}
                         Slot::Value(_) | Slot::WorldMarker => return Err(VmError::ResourceFault),
                     },
                     Op::Swap => {
@@ -319,11 +319,11 @@ fn run_code(
                             &mut quotation.captures,
                             &mut quotation.consumed,
                             image,
-                            registry,
+                            environment,
                             machine,
                             current_word,
                         )?;
-                        ensure_captures_consumed(&quotation, registry)?;
+                        ensure_captures_consumed(&quotation, environment.registry)?;
                     }
                     Op::Dip => {
                         reserve_stack(machine, 1)?;
@@ -343,11 +343,11 @@ fn run_code(
                             &mut quotation.captures,
                             &mut quotation.consumed,
                             image,
-                            registry,
+                            environment,
                             machine,
                             current_word,
                         )?;
-                        ensure_captures_consumed(&quotation, registry)?;
+                        ensure_captures_consumed(&quotation, environment.registry)?;
                         if let Some(frame) = machine.frames.last_mut() {
                             frame.saved.clear();
                             frame.continuation = Continuation::Return;
@@ -399,8 +399,8 @@ fn run_code(
                             Slot::Value(Value::Bool(value)) => value,
                             _ => return Err(VmError::TypeFault),
                         };
-                        if true_branch.usage(registry) == Usage::Linear
-                            || false_branch.usage(registry) == Usage::Linear
+                        if true_branch.usage(environment.registry) == Usage::Linear
+                            || false_branch.usage(environment.registry) == Usage::Linear
                         {
                             return Err(VmError::ResourceFault);
                         }
@@ -411,7 +411,7 @@ fn run_code(
                             &mut branch.captures,
                             &mut branch.consumed,
                             image,
-                            registry,
+                            environment,
                             machine,
                             current_word,
                         )?;
@@ -420,11 +420,8 @@ fn run_code(
                         let Some(Operand::Word(name)) = instruction.operand.as_ref() else {
                             return Err(VmError::StackFault);
                         };
-                        let word = image
-                            .words
-                            .iter()
-                            .find(|word| word.name == *name)
-                            .ok_or_else(|| VmError::UnknownWord(name.clone()))?;
+                        let resolved = environment.resolver.resolve(name)?;
+                        let (word_image, word) = resolved.parts();
                         reserve(&mut machine.cost.steps, 1)?;
                         machine.cost.total = machine.cost.total.saturating_add(1);
                         machine.cost.word_entries += 1;
@@ -432,15 +429,15 @@ fn run_code(
                             cost: 1,
                             word: word.name.clone(),
                             pc: 0,
-                            image_version: image.image_version,
+                            image_version: word_image.image_version,
                             primitive: None,
                         });
                         run_code(
                             &word.code,
                             &mut [],
                             &mut [],
-                            image,
-                            registry,
+                            word_image,
+                            environment,
                             machine,
                             &word.name,
                         )?;
@@ -449,7 +446,7 @@ fn run_code(
                         let Some(Operand::Primitive(name)) = instruction.operand.as_ref() else {
                             return Err(VmError::InvalidPrimitiveTag);
                         };
-                        run_primitive(name, registry, machine)?;
+                        run_primitive(name, environment.registry, machine)?;
                     }
                 }
                 Ok::<(), VmError>(())

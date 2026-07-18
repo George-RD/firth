@@ -58,6 +58,11 @@ def wordDictionary : Dictionary := fun name =>
     some { type := { rowVariables := ["ρ"], input := .row "ρ", output := .snoc (.row "ρ") (.base .nat .many) }, body := one (.lit (.nat 1)) }
   else none
 
+def imageDictionary (value : Nat) : Dictionary := fun name =>
+  if name == "value" then
+    some { type := { rowVariables := ["ρ"], input := .row "ρ", output := .snoc (.row "ρ") (.base .nat .many) }, body := one (.lit (.nat value)) }
+  else none
+
 def main : IO Unit := do
   emit "dup" "-" "1" emptyDictionary
     { stack := [.literal (.nat 7)], program := one .dup }
@@ -88,6 +93,10 @@ def main : IO Unit := do
           (.cons (.quotation (one (.lit (.nat 2)))) (one .ifThenElse))) }
   emit "word" "one=pushi:1" "3" wordDictionary
     { stack := [], program := one (.word "one") }
+  emit "dictionary-before-redefinition" "value=pushi:1" "3" (imageDictionary 1)
+    { stack := [], program := one (.word "value") }
+  emit "dictionary-after-redefinition" "value=pushi:2" "3" (imageDictionary 2)
+    { stack := [], program := one (.word "value") }
   emit "addNat" "-" "3" emptyDictionary
     { stack := [], program := .cons (.lit (.nat 3))
         (.cons (.lit (.nat 4)) (one (.prim "addNat"))) }

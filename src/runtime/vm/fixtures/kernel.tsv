@@ -9,5 +9,7 @@ quote|7|-|quote|terminal|quotation-many|1|-|1
 if-true||-|pushb:true,pushq:[pushi:1],pushq:[pushi:2],if|terminal|1|5|-|5
 if-false||-|pushb:false,pushq:[pushi:1],pushq:[pushi:2],if|terminal|2|5|-|5
 word||one=pushi:1|word:one|terminal|1|2|-|3
+dictionary-before-redefinition||value=pushi:1|word:value|terminal|1|2|-|3
+dictionary-after-redefinition||value=pushi:2|word:value|terminal|2|2|-|3
 addNat||-|pushi:3,pushi:4,prim:"addNat"|terminal|7|3|-|3
 world||-|prim:"makeWorld",prim:"consumeWorld"|terminal||2|-|2
