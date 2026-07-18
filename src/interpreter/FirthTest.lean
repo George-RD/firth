@@ -905,7 +905,7 @@ def runTest (name : String) (condition : Bool) : IO Unit :=
 
 def main : IO Unit := do
   let parserResult ← IO.Process.output { cmd := "lake", args := #["exe", "firthParserTest"] }
-  if parserResult.exitCode != 0 then panic! parserResult.stderr
+  if parserResult.exitCode != 0 then throw <| IO.userError parserResult.stderr
   let gamma := defaultGamma
   let d := emptyDictionary
   let c := defaultCosts

@@ -130,8 +130,9 @@ private structure LexResult where
   deriving Nonempty
 
 private def advance (p : Position) (c : Char) : Position :=
-  if c = '\n' then { offset := p.offset + 1, line := p.line + 1, column := 1 }
-  else { offset := p.offset + 1, line := p.line, column := p.column + 1 }
+  let byteWidth := (String.singleton c).toUTF8.size
+  if c = '\n' then { offset := p.offset + byteWidth, line := p.line + 1, column := 1 }
+  else { offset := p.offset + byteWidth, line := p.line, column := p.column + 1 }
 
 private def mkSpan (a b : Position) : Span := { start := a, stop := b }
 private def startPos : Position := { offset := 0, line := 1, column := 1 }
@@ -145,24 +146,27 @@ private def err (code : String) (s : Span) (cause := ParseCause.grammar)
   { code, primary := s, expected, actual, cause }
 
 private def charsToString (cs : List Char) : String := String.ofList cs.reverse
-private def isLetter (c : Char) : Bool := c.isAlpha || c = 'ρ'
-private def isDigit (c : Char) : Bool := c.isDigit
-private def isNameChar (c : Char) : Bool := isLetter c || isDigit c || c = '-' || c = '?' || c = '!' || c = '.'
+private def isAsciiLetter (c : Char) : Bool :=
+  ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
+private def isLetter (c : Char) : Bool := isAsciiLetter c
+private def isDigit (c : Char) : Bool := '0' <= c && c <= '9'
+private def isNameChar (c : Char) : Bool := isAsciiLetter c || c = 'ρ' || isDigit c || c = '-' || c = '?' || c = '!' || c = '.'
 private def isWordName (s : String) : Bool :=
   let cs := s.toList
   match cs with
   | [] => false
   | c :: rest => isLetter c && rest.all (fun x => isLetter x || isDigit x || x = '-' || x = '?' || x = '!')
-private def isQualifiedName (s : String) : Bool :=
-  s.splitOn "." |>.all isWordName
 private def isRowName (s : String) : Bool :=
   match s.toList with
-  | 'ρ' :: rest => rest.all (fun c => isLetter c || isDigit c || c = '-')
+  | 'ρ' :: rest => rest.all (fun c => isAsciiLetter c || isDigit c || c = '-')
   | _ => false
 private def reserved (s : String) : Bool :=
-  ["true", "false", "many", "linear", "forall", "vocab", "use", "export", "locals", "prim",
+  ["true", "false", "many", "linear", "forall", "vocab", "use", "as", "export", "locals", "prim",
    "dup", "drop", "swap", "dip", "call", "compose", "quote", "if"].contains s
 private def validWordName (s : String) : Bool := isWordName s && !reserved s
+
+private def validQualifiedName (s : String) : Bool :=
+  s.splitOn "." |>.all validWordName
 
 private partial def readWhile (pred : Char → Bool) (st : LexState) (acc : List Char) : List Char × LexState :=
   match st.chars with
@@ -182,7 +186,10 @@ private partial def readString (st : LexState) (acc : List Char) : Except ParseE
           else
             let value := match c with | '\\' => '\\' | '"' => '"' | 'n' => '\n' | 'r' => '\r' | 't' => '\t' | _ => c
             readString { chars := more, position := advance (advance st.position '\\') c } (value :: acc)
-  | c :: rest => readString { chars := rest, position := advance st.position c } (c :: acc)
+  | c :: rest =>
+      if c = '\n' || c = '\r' || c.toNat < 32 || (c.toNat >= 127 && c.toNat <= 159) then
+        .error (err "firth.syntax.invalid-character" (mkSpan st.position (advance st.position c)) .validation)
+      else readString { chars := rest, position := advance st.position c } (c :: acc)
 
 private def readChar (st : LexState) : Except ParseError (Char × LexState) :=
   match st.chars with
@@ -191,7 +198,10 @@ private def readChar (st : LexState) : Except ParseError (Char × LexState) :=
       else
         let value := match c with | '\\' => '\\' | 'n' => '\n' | 'r' => '\r' | 't' => '\t' | _ => c
         .ok (value, { chars := rest, position := advance (advance (advance st.position '\\') c) '\'' })
-  | c :: '\'' :: rest => .ok (c, { chars := rest, position := advance (advance st.position c) '\'' })
+  | c :: '\'' :: rest =>
+      if c = '\n' || c = '\r' || c.toNat < 32 || (c.toNat >= 127 && c.toNat <= 159) then
+        .error (err "firth.syntax.invalid-character" (mkSpan st.position (advance st.position c)) .validation)
+      else .ok (c, { chars := rest, position := advance (advance st.position c) '\'' })
   | _ => .error (err "firth.syntax.unterminated-character" (eofSpan st.position) .delimiter)
 
 private partial def lex (st : LexState) (acc : List Token) : Except ParseError LexResult :=
@@ -223,7 +233,7 @@ private partial def lex (st : LexState) (acc : List Token) : Except ParseError L
         let (cs, next) := readWhile isDigit { chars := if c = '-' then rest else c :: rest, position := if c = '-' then advance st.position c else st.position } []
         let text := (if c = '-' then "-" else "") ++ charsToString cs
         lex next ({ kind := .integer text, span := mkSpan st.position next.position } :: acc)
-      else if isLetter c then
+      else if isAsciiLetter c || c = 'ρ' then
         let (cs, next) := readWhile isNameChar st []
         lex next ({ kind := .identifier (charsToString cs), span := mkSpan st.position next.position } :: acc)
       else if c = '-' && rest.head? = some '-' then
@@ -237,6 +247,7 @@ private partial def lex (st : LexState) (acc : List Token) : Except ParseError L
 private structure Parser where
   tokens : Array Token
   index : Nat
+  eofPosition : Position
   deriving Nonempty
 
 private def current (p : Parser) : Option Token := p.tokens[p.index]?
@@ -252,7 +263,7 @@ private def isSymbol (s : String) (t : Token) : Bool := t.kind == .symbol s
 private def expected {α : Type} (p : Parser) (what : String) : Except ParseError α :=
   match current p with
   | some t => .error (err "firth.syntax.unexpected-token" t.span .grammar (some what) (some (kindText t.kind)))
-  | none => .error (err "firth.syntax.unexpected-eof" (eofSpan (((p.tokens[p.tokens.size - 1]? ).map (·.span.stop)).getD startPos)) .delimiter (some what) none)
+  | none => .error (err "firth.syntax.unexpected-eof" (eofSpan p.eofPosition) .delimiter (some what) none)
 private def takeSymbol (p : Parser) (s : String) : Except ParseError Parser :=
   match current p with | some t => if isSymbol s t then .ok (bump p) else expected p s | none => expected p s
 private def takeIdent (p : Parser) : Except ParseError (String × Span × Parser) :=
@@ -271,7 +282,7 @@ private def parseName (p : Parser) (qualified : Bool) : Except ParseError (Strin
   match takeIdent p with
   | .error e => .error e
   | .ok (n, s, q) =>
-      if (if qualified then isQualifiedName n else validWordName n) then .ok (n, s, q)
+      if (if qualified then validQualifiedName n else validWordName n) then .ok (n, s, q)
       else .error (err "firth.syntax.invalid-name" s .validation (some (if qualified then "qualified name" else "word name")) (some n))
 
 private def parseRefinement (p : Parser) (opening : Token) : Except ParseError (Refinement × Parser) :=
@@ -287,13 +298,10 @@ private def parseRefinement (p : Parser) (opening : Token) : Except ParseError (
   match go (remaining p + 1) (bump p) [] with
   | .error e => .error e
   | .ok (tokens, q, stop) =>
-      let rec badCommas : List String → Bool
-        | [] => true
-        | [","] => true
-        | "," :: _ => true
-        | x :: y :: rest => (x == "," && y == ",") || badCommas (y :: rest)
-        | [_] => false
-      let badComma := badCommas tokens
+      let rec badCommas (seenToken afterComma : Bool) : List String → Bool
+        | [] => afterComma
+        | x :: rest => if x == "," then !seenToken || afterComma || badCommas true true rest else badCommas true false rest
+      let badComma := badCommas false false tokens
       if badComma then .error (err "firth.syntax.invalid-refinement" (eofSpan stop) .validation)
       else .ok ({ span := mkSpan opening.span.start stop, tokens }, q)
 
@@ -312,15 +320,16 @@ private def parseType (p : Parser) (name : String) (nameSpan : Span) : Except Pa
   match parseUsage p with
   | .error e => .error e
   | .ok (usage, q, usageStop) =>
-      let rec refs (fuel : Nat) (r : Parser) (acc : List Refinement) (stop : Position) : Except ParseError (List Refinement × Parser × Position) :=
-        if fuel = 0 then .error (err "firth.syntax.invalid-refinement" (eofSpan nameSpan.stop) .validation) else
-        match current r with
-        | some t => if isSymbol "{" t then match parseRefinement r t with | .error e => .error e | .ok (x, after) => refs (fuel - 1) after (x :: acc) x.span.stop
-                    else .ok (acc.reverse, r, stop)
-        | none => .ok (acc.reverse, r, stop)
-      match refs (remaining q + 1) q [] usageStop with
-      | .error e => .error e
-      | .ok (rs, after, stop) => .ok ({ name, usage, refinements := rs, span := mkSpan nameSpan.start stop }, after)
+      match current q with
+      | some opening => if isSymbol "{" opening then
+          match parseRefinement q opening with
+          | .error e => .error e
+          | .ok (refinement, after) =>
+              if (current after).any (isSymbol "{") then
+                .error (err "firth.syntax.multiple-refinements" (current after |>.get!).span .validation)
+              else .ok ({ name, usage, refinements := [refinement], span := mkSpan nameSpan.start refinement.span.stop }, after)
+        else .ok ({ name, usage, refinements := [], span := mkSpan nameSpan.start usageStop }, q)
+      | none => .ok ({ name, usage, refinements := [], span := mkSpan nameSpan.start usageStop }, q)
 
 private def parseStackItem (p : Parser) (bound : List String) : Except ParseError (StackItem × Parser) :=
   match takeIdent p with
@@ -349,39 +358,55 @@ private def parseStackEffect (p : Parser) : Except ParseError (StackEffect × Pa
       match collect (remaining p + 1) (bump p) [] with
       | .error e => .error e
       | .ok (ts, after, closing) =>
-          let sub : Parser := { tokens := ts.toArray, index := 0 }
-          let rec binder (fuel : Nat) (q : Parser) (acc : List LocatedName) : Except ParseError (List LocatedName × Parser) :=
-            if fuel = 0 then .error (err "firth.syntax.invalid-stack-effect" (eofSpan opening.span.stop) .validation) else
-            match current q with
-            | some t => if t.kind == .identifier "forall" then
-                match takeIdent (bump q) with
-                | .error e => .error e
-                | .ok (n, s, next) => if isRowName n then if acc.any (fun binder => binder.name == n) then .error (err "firth.syntax.duplicate-row" s .validation) else binder (fuel - 1) next ({ name := n, span := s } :: acc) else .error (err "firth.syntax.invalid-row" s .validation)
-              else .ok (acc.reverse, q)
-            | none => .ok (acc.reverse, q)
-          match binder (ts.length + 1) sub [] with
-          | .error e => .error e
-          | .ok (binders, q0) =>
-              let q1 := if (current q0).any (fun t => t.kind == .symbol ";") then bump q0 else q0
-              if (current q0).isSome && !(current q0).any (fun t => t.kind == .symbol ";") && binders.length > 0 then
-                .error (err "firth.syntax.missing-forall-separator" (current q0 |>.get!).span .delimiter (some ";") none)
+          let sub : Parser := { tokens := ts.toArray, index := 0, eofPosition := p.eofPosition }
+          let parseBinderName (q : Parser) (acc : List LocatedName) : Except ParseError (LocatedName × Parser) :=
+            takeIdent q >>= fun (n, s, next) =>
+              if !isRowName n then .error (err "firth.syntax.invalid-row" s .validation)
+              else if acc.any (fun binder => binder.name == n) then .error (err "firth.syntax.duplicate-row" s .validation)
+              else .ok ({ name := n, span := s }, next)
+          let parseForall (q : Parser) : Except ParseError (List LocatedName × Parser) :=
+            let rec more (fuel : Nat) (r : Parser) (acc : List LocatedName) : Except ParseError (List LocatedName × Parser) :=
+              if fuel = 0 then .error (err "firth.syntax.invalid-stack-effect" (eofSpan opening.span.stop) .validation)
+              else match current r with
+                | some t => if isSymbol ";" t then
+                    if acc.isEmpty then .error (err "firth.syntax.missing-row-binder" t.span .validation)
+                    else .ok (acc.reverse, bump r)
+                  else if t.kind == .identifier "forall" then
+                    .error (err "firth.syntax.repeated-forall" t.span .validation)
+                  else if t.kind == .identifier (kindText t.kind) && isRowName (kindText t.kind) then
+                    parseBinderName r acc >>= fun (binder, next) => more (fuel - 1) next (binder :: acc)
+                  else .error (err "firth.syntax.missing-forall-separator" t.span .delimiter (some ";") none)
+                | none => expected r ";"
+            more (ts.length + 1) q []
+          let bindersResult : Except ParseError (List LocatedName × Parser) := match current sub with
+            | some t => if t.kind == TokenKind.identifier "forall" then
+                parseForall (bump sub) >>= fun result =>
+                  if (current result.2).any (fun next => next.kind == TokenKind.identifier "forall") then
+                    .error (err "firth.syntax.repeated-forall" (current result.2 |>.get!).span .validation)
+                  else .ok result
               else
+                if isRowName (kindText t.kind) then .error (err "firth.syntax.unbound-row" t.span .validation)
+                else .ok ([], sub)
+            | none => .ok ([], sub)
+          match bindersResult with
+          | .error e => .error e
+          | .ok (binders, q1) =>
                 let rec items (fuel : Nat) (q : Parser) (bound : List String) (acc : List StackItem) : Except ParseError (List StackItem × Parser) :=
                   if fuel = 0 then .error (err "firth.syntax.invalid-stack-effect" (eofSpan opening.span.stop) .validation) else
                   match current q with
                   | none => .ok (acc.reverse, q)
                   | some t => if isSymbol "--" t then .ok (acc.reverse, bump q) else parseStackItem q bound >>= fun (item, next) => items (fuel - 1) next bound (item :: acc)
-                match items (ts.length + 1) q1 (binders.map (·.name)) [] with
+                match items (ts.length + 1) q1 (binders.map (fun binder => binder.name)) [] with
                 | .error e => .error e
                 | .ok (input, q2) =>
                     let sepCount := ts.countP (fun t => isSymbol "--" t)
                     if sepCount = 0 then .error (err "firth.syntax.missing-separator" opening.span .validation (some "--") none)
                     else if sepCount > 1 then .error (err "firth.syntax.multiple-separators" (ts.find? (isSymbol "--") |>.get!).span .validation)
                     else
-                      match items (ts.length + 1) q2 (binders.map (·.name)) [] with
+                      match items (ts.length + 1) q2 (binders.map (fun binder => binder.name)) [] with
                       | .error e => .error e
                       | .ok (output, q3) => if (current q3).isSome then .error (err "firth.syntax.invalid-stack-effect" (current q3 |>.get!).span .validation)
-                        else .ok ({ rowBinders := binders, rows := (input ++ output).filterMap (fun x => match x with | .row n _ => some n | _ => none), input, output, span := mkSpan opening.span.start closing.span.stop }, after)
+                        else .ok ({ rowBinders := binders, rows := (input ++ output).filterMap (fun x => match x with | StackItem.row n _ => some n | _ => none), input, output, span := mkSpan opening.span.start closing.span.stop }, after)
 
 mutual
 private partial def parseItems (p : Parser) (closing : String) : Except ParseError (List Item × Parser × Span) :=
@@ -397,7 +422,8 @@ private partial def parseItem (p : Parser) : Except ParseError (Item × Parser) 
       | .symbol "[" => parseItems (bump p) "]" |>.map (fun (xs, after, close) => (.quotation xs (mkSpan t.span.start close.stop), after))
       | .identifier "prim" => parseName (bump p) true |>.map (fun (n, s, after) => (.primitive n (mkSpan t.span.start s.stop), after))
       | .identifier "locals" => parseLocals p t
-      | .identifier name => if name ∈ ["dup", "drop", "swap", "dip", "call", "compose", "quote", "if"] then .ok ((.atom name t.span), bump p) else if reserved name then .error (err "firth.syntax.invalid-item" t.span .validation) else .ok ((.word name t.span), bump p)
+      | .identifier name => if name ∈ ["dup", "drop", "swap", "dip", "call", "compose", "quote", "if"] then .ok ((.atom name t.span), bump p) else
+          parseName p true |>.map (fun (n, s, after) => (.word n s, after))
       | _ => .error (err "firth.syntax.invalid-item" t.span .grammar)
 private partial def parseLocals (p : Parser) (start : Token) : Except ParseError (Item × Parser) :=
   takeSymbol (bump p) "{" >>= fun q =>
@@ -430,10 +456,13 @@ def parse (source : String) : ParseOutput :=
   match lex { chars := source.toList, position := initial } [] with
   | .error e => .failure [e]
   | .ok result =>
-      let p : Parser := { tokens := result.tokens.toArray, index := 0 }
+      let p : Parser := { tokens := result.tokens.toArray, index := 0, eofPosition := result.endPosition }
       match parseDeclarations p none with
       | .error e => .failure [e]
       | .ok (declarations, rest, _) => if current rest |>.isSome then .failure [err "firth.syntax.trailing-input" (current rest |>.get!).span .grammar]
-        else .success { declarations, span := mkSpan initial result.endPosition }
+        else
+          let scannedEnd := source.toList.foldl advance initial
+          let sourceEnd := { scannedEnd with offset := source.toUTF8.size }
+          .success { declarations, span := mkSpan initial sourceEnd }
 
 end Firth.Elaborator
