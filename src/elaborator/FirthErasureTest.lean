@@ -64,6 +64,11 @@ private def expectErrorAt (word : WordDefinition) (expected : ErasureError → B
       else fail s!"wrong error: {repr error}"
   | .ok _ => fail "expected erasure failure"
 
+private def sameResult : Except ErasureError ErasureResult → Except ErasureError ErasureResult → Bool
+  | .ok left, .ok right => left == right
+  | .error left, .error right => left == right
+  | _, _ => false
+
 def main : IO Unit := do
   -- The first two swaps are the canonical bottom-to-top selections. A mutation
   -- that adds the old leading swap or chooses an older copy changes this list.
@@ -93,7 +98,7 @@ def main : IO Unit := do
   let shadow ← parsed ": shadow ( a:Int^many b:Int^many -- ) locals { a b } { locals { a } { } a } ;"
   expectShapes shadow ["drop"]
 
-  let shadowLinear ← parsed ": shadow-linear ( a:Handle^linear b:Handle^linear -- ) locals { a b } { locals { a } { a } a } ;"
+  let shadowLinear ← parsed ": shadow-linear ( a:Int^many b:Handle^linear -- ) locals { a b } { locals { a } { a } a } ;"
   let shadowLinearSpan := match shadowLinear.body with
     | [.locals _ [.locals _ _ _, .word _ span] _] => span
     | _ => panic! "shadow-linear fixture changed"
@@ -108,9 +113,10 @@ def main : IO Unit := do
   | .ok result => fail s!"unexpected inferred quotation: {repr result.program}"
   | .error error => fail s!"quotation inference failed: {repr error}"
 
-  let first := erase arithmetic add.effect add.body
-  let second := erase arithmetic add.effect add.body
-  if toString (repr first) != toString (repr second) then fail "repeated erasure produced different results"
+  let fixtures := [add, deepFocus, repeated, shadow, inferred]
+  if !fixtures.all (fun word => sameResult (erase arithmetic word.effect word.body)
+      (erase arithmetic word.effect word.body)) then
+    fail "repeated erasure produced different structural results"
 
   -- Capture is checked recursively and the diagnostic retains the child use span.
   let capture ← parsed ": capture ( a:Int^many -- ) locals { a } { [ [ a ] ] } ;"

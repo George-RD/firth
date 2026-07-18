@@ -98,21 +98,26 @@ private def duplicateName : List LocatedName → Option LocatedName
     | some duplicate => some duplicate
     | none => duplicateName xs
 
-private def findSlotFrom (name : String) (span : Span) (family : Option Nat) : List StackEntry → Except ErasureError Slot
-  | [] => .error (.unboundLocal name span)
+private def findSlotFrom (name : String) (span : Span) (family : Option Nat)
+    (blockedUsage : Option Usage) : List StackEntry → Except ErasureError Slot
+  | [] => match blockedUsage with
+    | some .linear => .error (.linearUnused name span)
+    | _ => .error (.unboundLocal name span)
   | x :: xs => match x.slot with
     | some slot => if slot.name == name then
         match family with
         | some owner => if slot.family == owner then
-            if slot.available then .ok slot else findSlotFrom name span family xs
-          else if slot.usage == .linear then .error (.linearUnused name span)
-          else .error (.unboundLocal name span)
-        | none => if slot.available then .ok slot else findSlotFrom name span (some slot.family) xs
-      else findSlotFrom name span family xs
-    | none => findSlotFrom name span family xs
+            if slot.available then .ok slot else findSlotFrom name span family blockedUsage xs
+          else match blockedUsage with
+            | some .linear => .error (.linearUnused name span)
+            | _ => .error (.unboundLocal name span)
+        | none => if slot.available then .ok slot
+            else findSlotFrom name span (some slot.family) (some slot.usage) xs
+      else findSlotFrom name span family blockedUsage xs
+    | none => findSlotFrom name span family blockedUsage xs
 
 private def findSlot (name : String) (span : Span) (stack : List StackEntry) : Except ErasureError Slot :=
-  findSlotFrom name span none stack
+  findSlotFrom name span none none stack
 
 private def markUnavailable (id : Nat) : List StackEntry → List StackEntry
   | [] => []
@@ -348,13 +353,15 @@ def erase (env : EffectEnv) (effect : StackEffect) (body : List Item) : Except E
         then [{ code := "LOCAL_DEPTH", span := effect.span }] else []) ++
         (if longestStructuralRun program > 4 then [{ code := "STACK_JUGGLE", span := effect.span }] else []) })
 
+structure ErasureRun (env : EffectEnv) (effect : StackEffect) (body : List Item) where
+  result : ErasureResult
+  witness : erase env effect body = .ok result
+
 theorem erase_deterministic (env : EffectEnv) (effect : StackEffect) (body : List Item)
-    {first second : ErasureResult}
-    (first_run : erase env effect body = .ok first)
-    (second_run : erase env effect body = .ok second) :
-    first = second := by
-  have same : (Except.ok first : Except ErasureError ErasureResult) = .ok second :=
-    first_run.symm.trans second_run
+    (first second : ErasureRun env effect body) :
+    first.result = second.result := by
+  have same : (Except.ok first.result : Except ErasureError ErasureResult) = .ok second.result :=
+    first.witness.symm.trans second.witness
   injection same
 
 end Firth.Elaborator
