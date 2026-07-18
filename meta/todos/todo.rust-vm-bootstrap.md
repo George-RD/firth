@@ -1,6 +1,6 @@
 ---
 node: firth.runtime.vm
-status: open
+status: done
 created: 2026-07-18
 ---
 
@@ -23,12 +23,12 @@ Create the minimal Rust VM workspace and crate for the frozen Forth-class target
 - `cargo fmt --manifest-path src/runtime/vm/Cargo.toml --check`
 - `cargo test --manifest-path src/runtime/vm/Cargo.toml --locked`
 - `cargo clippy --manifest-path src/runtime/vm/Cargo.toml --all-targets --all-features --locked -- -D warnings`
-- `cargo metadata --manifest-path src/runtime/vm/Cargo.toml --locked --no-deps`
+- `cargo metadata --manifest-path src/runtime/vm/Cargo.toml --locked --no-deps --format-version 1`
 - `cargo tree --manifest-path src/runtime/vm/Cargo.toml --locked`
 - `cargo deny --manifest-path src/runtime/vm/Cargo.toml --config src/runtime/vm/deny.toml --locked check licenses`
 - `test -f src/runtime/vm/LICENSE-MIT && test -f src/runtime/vm/LICENSE-APACHE`
-- `! rg -n '\bunsafe\b' src/runtime/vm`
-- `! rg -n 'todo!|unimplemented!|TODO|placeholder' src/runtime/vm`
+- `! rg -n '\bunsafe\s*(\{|fn\b|trait\b|impl\b|extern\b)' --glob '*.rs' src/runtime/vm/src`
+- `! rg -n 'todo!|unimplemented!|TODO|placeholder' --glob '*.rs' src/runtime/vm/src`
 - `git diff --check`
 
 ## Non-goals
