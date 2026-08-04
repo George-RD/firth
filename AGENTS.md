@@ -94,7 +94,7 @@ lake test
 git diff --check
 ```
 
-For the autonomous Codex loop launch contract and maintainer preflight, read
+For the autonomous loop launch contract and maintainer preflight, read
 [`docs/loop-runbook.md`](docs/loop-runbook.md). It defines the required
 `origin/main` publication, invocation, terminal tokens, and smoke checks.
 

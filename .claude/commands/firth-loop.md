@@ -1,19 +1,19 @@
 ---
 name: "Firth Dev Loop"
-description: Run one iteration of firth development, one unit landed as one squash commit, designed for unattended harness loop mode on the Codex CLI harness
+description: Run one iteration of firth development, one unit landed as one squash commit, designed for unattended harness loop mode
 category: Workflow
-tags: [workflow, cairn, firth, codex]
+tags: [workflow, cairn, firth, loop]
 ---
 
 Run ONE iteration of the Firth Dev Loop: a workflow that develops firth using
 cairn governance. You are a fresh session inside a harness loop; the harness
 re-injects this same message each iteration, so do exactly one unit of work,
 land it as one commit on main, and end. Never select a second unit. This
-file (plus the reading it names) is the sole normative orchestrator; anything
+file (plus the reading it names) is the sole normative procedure; anything
 in `docs/` or `AGENTS.md` that overlaps is descriptive only, never normative.
 
-**Required reading.** This harness (Codex) has no Skill tool: there is no
-mechanism to "load" a skill by name. Instead, read the file at the exact
+**Required reading.** Do not assume a mechanism to "load" a skill by name:
+some harnesses have no Skill tool. Read the file at the exact
 path below IN FULL before the step that needs it. A required file that is
 missing or fails to read in full is LOOP HALTED: touch nothing, report which
 file failed and why, and end. Never improvise a procedure that lives in one

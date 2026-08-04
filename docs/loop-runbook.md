@@ -1,9 +1,9 @@
 # Firth autonomous loop runbook
 
-This is the Codex-facing launch contract for one-unit Firth loop sessions. The
-normative prompt is the full contents of `.claude/commands/firth-loop.md`.
-This runbook is descriptive and does not replace that prompt or either named
-skill.
+This is the launch contract for one-unit Firth loop sessions, for any agent
+harness that can re-inject one fixed prompt per iteration. The normative
+prompt is the full contents of `.claude/commands/firth-loop.md`. This runbook
+is descriptive and does not replace that prompt or either named skill.
 
 ## Maintainer prerequisites
 
@@ -24,27 +24,30 @@ Complete these checks before launching the loop:
   `cairn 0.3.x`.
 - [ ] Python 3.11 or newer with TOML support is available:
   `python3 -c 'import sys, tomllib; assert sys.version_info >= (3, 11)'`.
-- [ ] Codex is available: `codex --help` and `codex exec --help`.
+- [ ] The chosen harness meets the loop's capability requirements: it runs a
+  session non-interactively, re-injects one fixed prompt per iteration, starts
+  each iteration with a fresh context, may write the workspace, and may reach
+  the network for the loop's required `git push` and `gh` operations.
 
 Do not push from this runbook until the maintainer has reviewed the local
 commits. The required first publication is specifically `git push -u origin
 main`, before the first loop iteration.
 
-## Launch from Codex CLI
+## Launch
 
-Run from the repository root. The prompt passed to Codex is the complete file,
-optionally followed by one immutable `MISSION` line. Do not summarise or
-reconstruct the command file.
+Run from the repository root. The prompt passed to the harness is the complete
+command file, optionally followed by one immutable `MISSION` line. Do not
+summarise or reconstruct the command file.
 
-The installed Codex CLI 0.144.5 accepts `codex exec`, but its help does not list
-`--full-auto`. The following uses this installation's verified non-interactive approval and
-workspace settings. It is not asserted to be semantically identical to a
-`--full-auto` flag. Ensure the selected sandbox and network policy allow the
-loop's required `git push` and `gh` operations, and confirm the flags again after
-upgrading Codex:
+Set `AGENT` to the harness invocation that runs one non-interactive session
+with the prompt as its final argument. It is left unquoted below so that
+`AGENT` may carry the harness flags that select non-interactive approval and
+workspace-write sandboxing; confirm those flags against the harness's own help
+output rather than assuming a spelling, and re-confirm them after upgrading it.
 
 ```sh
 N=10
+AGENT=${AGENT:?set AGENT to a non-interactive harness invocation}
 MISSION='' # for example: MISSION='MISSION: toolchain only'
 for i in $(seq 1 "$N"); do
   log="/tmp/firth-loop-${i}.log"
@@ -53,7 +56,7 @@ for i in $(seq 1 "$N"); do
     prompt="$prompt
 $MISSION"
   fi
-  codex exec -a never -s workspace-write "$prompt" 2>&1 | tee "$log"
+  $AGENT "$prompt" 2>&1 | tee "$log"
   token=$(awk 'NF { last=$0 } END { print last }' "$log")
   case "$token" in
     "LOOP HALTED"|"LOOP EXHAUSTED")
@@ -71,15 +74,9 @@ $MISSION"
 done
 ```
 
-If a different Codex installation advertises `--full-auto` in
-`codex exec --help`, its indicative form is:
-
-```sh
-codex exec --full-auto "$(cat .claude/commands/firth-loop.md)"
-```
-
-Confirm the option with `codex --help` and `codex exec --help` rather than
-assuming this alias exists.
+One iteration is one session. A harness that carries context between
+iterations, or that cannot re-inject the prompt unchanged, breaks the
+one-unit contract in the command file and must not drive this loop.
 
 ## Terminal tokens and health
 
