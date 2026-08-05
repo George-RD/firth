@@ -69,26 +69,21 @@ Precedence:
    branch belongs to the table's generic surviving-branch row.
 5. No MISSION: default selection.
 
-**Isolation.** Work only in the persistent worktree `../firth-loop`. After the
-preflight fetch, before creating it, require the source ref to contain the
-blueprint:
-
-```bash
-if ! git cat-file -e origin/main:cairn.blueprint; then
-  echo "push main first (git push -u origin main)"
-  echo "LOOP HALTED"
-  exit 1
-fi
-```
-
-If this check fails, touch nothing else and halt. Create the worktree once if
-absent: `git worktree add --detach ../firth-loop origin/main`; never remove it. Every branch you create is prefixed `loop/`. Never touch the main
+**Isolation.** Work only in the persistent worktree `../firth-loop`; never
+remove it. The bootstrap sequence that creates it, including the
+origin/main blueprint check and the occupied-path guard, is the single
+fenced block at the top of Preflight; it runs before any observation and
+is never duplicated elsewhere. Every branch you create is prefixed `loop/`. Never touch the main
 checkout, non-loop branches, other sessions' dirty files, or PRs from
 non-loop heads. Branch names are derived, never invented: `loop/todo.<slug>`
 for a todo, `loop/<finding-code>.<node>` for a lint finding,
 `loop/split.<slug>` for a decomposition, and `loop/backlog.<module-id>` for
 backlog generation (the exact dotted Module id, lowercased as written in the
 blueprint).
+Executable blocks never inherit another block's working directory, for
+the same reason shell variables never survive between tool calls: any
+block that touches the repository begins with its own guarded entry into
+`../firth-loop` where the procedure requires it.
 
 **Repo bindings.** One seam; everything else in this file is generic.
 `$CAIRN` is a textual placeholder, not a live shell variable: substitute the
@@ -187,11 +182,54 @@ origin/main. Then resolve the `CAIRN` binding per Repo bindings above
 touch nothing, report, output LOOP HALTED.
 
 **Preflight: observe read-only, then act on the FIRST matching row.**
+Observation runs INSIDE the persistent worktree `../firth-loop`; the
+launch checkout's own branch and cleanliness are never preflight states
+(the loop never touches it, and a clean checkout sitting on `main` is the
+normal bootstrap condition, not an unclassifiable one). `loop/*` branches
+and PRs are repository-global and observed regardless of worktree.
+Bootstrap from the launch checkout, fail closed on an occupied path, and
+enter the worktree before every observation:
+
+```bash
+if [ ! -e ../firth-loop ]; then
+  if ! git fetch origin main; then
+    echo "cannot fetch origin/main; state unobserved"
+    echo "LOOP HALTED"; exit 1
+  fi
+  if ! git cat-file -e origin/main:cairn.blueprint; then
+    echo "push main first (git push -u origin main)"
+    echo "LOOP HALTED"; exit 1
+  fi
+  if ! git worktree add --detach ../firth-loop origin/main; then
+    echo "cannot create ../firth-loop"
+    echo "LOOP HALTED"; exit 1
+  fi
+else
+  wt_actual=$(cd ../firth-loop 2>/dev/null && pwd -P)
+  main_actual=$(pwd -P)
+  if [ -z "$wt_actual" ] || [ "$wt_actual" = "$main_actual" ]; then
+    echo "../firth-loop is unreadable or aliases the launch checkout; refusing to touch it"
+    echo "LOOP HALTED"; exit 1
+  fi
+  if ! git worktree list --porcelain | awk '/^worktree /{print substr($0,10)}' \
+       | while read -r p; do (cd "$p" 2>/dev/null && pwd -P); done | grep -Fxq "$wt_actual"; then
+    echo "../firth-loop exists but is not a registered worktree of this repository; refusing to touch it"
+    echo "LOOP HALTED"; exit 1
+  fi
+  if [ "$(git -C ../firth-loop rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" \
+       != "$(git rev-parse --path-format=absolute --git-common-dir)" ]; then
+    echo "../firth-loop exists but is not a functioning worktree of this repository; refusing to touch it"
+    echo "LOOP HALTED"; exit 1
+  fi
+fi
+```
+
 No checkout, stash, clean, add, or commit during observation. Recovery
 procedures live in `.claude/skills/firth-loop-recovery/SKILL.md`; the table
 classifies and points. Fail-closed backstops stay here and never move.
 
 ```bash
+cd ../firth-loop || { echo "missing ../firth-loop; bootstrap did not run"; echo "LOOP HALTED"; exit 1; }
 git fetch origin main
 git status --porcelain                                    # dirty?
 git branch --show-current                                 # branch, or empty = detached
