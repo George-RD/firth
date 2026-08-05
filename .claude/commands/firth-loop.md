@@ -114,8 +114,6 @@ the next. Two bindings:
     resolution, not on code, and generic skill gate lists naming root
     cargo commands (e.g. cairn-apply, cairn-archive) never override this
     binding.
-  - Where neither manifest exists at the touched paths: cairn gates only,
-    `$CAIRN scan` (zero Errors) and `$CAIRN hook all` (exit 0).
   - `$CAIRN scan` "zero Errors" is deliberately not "zero findings":
     `CAIRN_RECONCILE_LANGUAGE_UNKNOWN` warnings on declared-but-empty
     module paths are the expected baseline until those paths hold real
@@ -293,10 +291,11 @@ exists, write the test first, red then green. Substantial work goes through
 `python3 tools/loop/test_coverage.py`, then `python3 tools/loop/select_unit.py
 --validate` and `python3 tools/loop/coverage.py --validate`; a non-zero exit or malformed
 JSON is a gate failure. Then run the staged
-language gates from Repo bindings: if `lakefile.toml`/`lakefile.lean` exists
-at the repo root, `lake build` (and `lake test` when the same lakefile-or-CI
-test-driver rule is configured); before the Lean project exists, skip straight
-to the remaining cairn gates. Always: `$CAIRN scan` (zero Errors;
+language gates from Repo bindings: `lake build` and `lake test` (the root
+lakefile configures `testDriver`); if the unit touches a path holding a
+`Cargo.toml` (today `src/runtime/vm`), also run `cargo fmt --check`,
+`cargo clippy`, and `cargo test --locked` from that crate directory.
+Always: `$CAIRN scan` (zero Errors;
 `CAIRN_RECONCILE_LANGUAGE_UNKNOWN` warnings on declared-but-empty paths are
 expected and non-blocking) and `$CAIRN hook all` (exit 0). Fix the cause of
 any failure. Never bypass hooks.
@@ -382,9 +381,10 @@ The token is the FINAL line of output, alone, verbatim; the summary comes
 before it. Tooling and the maintainer read loop health from that line.
 
 Decisions are typed, per `meta/decisions/loop-autonomy.md`
-(dec.loop-autonomy). Goal-layer content (PRD goals, requirements, and
-success criteria, obligation scope in `tools/loop/obligations.toml`,
-licensing posture) is never amended by the loop: if evidence says it is
+(dec.loop-autonomy). Goal-layer content (PRD goals, non-goals, scope,
+requirements, and success criteria; obligation scope in
+`tools/loop/obligations.toml`; licensing posture) is never amended by the
+loop: if evidence says it is
 wrong, author a decision left at `status: proposed` plus a cairn gap for
 the record, and keep discharging the obligation as written under its
 strongest machine-checkable interpretation. Frozen-spec amendments follow

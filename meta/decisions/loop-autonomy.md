@@ -37,8 +37,9 @@ generic cairn pack's `/cairn-loop` never drives this repository.
 
 2. **Typed decision authority.** Decisions are tiered by what ratifies them:
 
-   - **(a) Goal layer: immutable to the loop.** PRD goals, requirements, and
-     success criteria (`files/firth-prd.md` sections 2, 5, 6), the scope of
+   - **(a) Goal layer: immutable to the loop.** PRD goals, non-goals,
+     scope, requirements, and success criteria (`files/firth-prd.md`
+     sections 2 through 6), the scope of
      the obligations matrix (removing obligations or thinning
      `satisfied_by`), and the licensing posture are never amended by an
      autonomous iteration. The goal layer also never blocks work: if

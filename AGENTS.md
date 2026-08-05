@@ -85,11 +85,9 @@ python3 tools/loop/test_coverage.py
 python3 tools/loop/select_unit.py --validate
 python3 tools/loop/coverage.py --validate
 
-# Once Lean source targets exist:
 lake build
-# When a Lake lint/test driver is configured:
-lake lint
-lake test
+lake test            # driver: firthAllTest
+( cd src/runtime/vm && cargo fmt --check && cargo clippy && cargo test --locked )
 ! rg -n '\b(sorry|admit)\b' src
 git diff --check
 ```

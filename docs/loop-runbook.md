@@ -61,7 +61,9 @@ N=${N:-500} # fuse only, never a target; reaching it is not completion
 AGENT=${AGENT:?set AGENT to a non-interactive harness invocation}
 MISSION='' # for example: MISSION='MISSION: toolchain only'
 rc=4 # 0 exhausted, 2 halted, 3 unknown token or harness failure, 4 fuse
-for i in $(seq 1 "$N"); do
+i=0
+while [ "$i" -lt "$N" ]; do
+  i=$((i + 1))
   log="/tmp/firth-loop-${i}.log"
   prompt=$(cat .claude/commands/firth-loop.md)
   if [ -n "$MISSION" ]; then
@@ -71,7 +73,7 @@ $MISSION"
   $AGENT "$prompt" > "$log" 2>&1
   agent_rc=$?
   cat "$log"
-  token=$(awk 'NF { last=$0 } END { print last }' "$log")
+  token=$(awk '{ sub(/\r$/, "") } NF { last=$0 } END { print last }' "$log")
   if [ "$agent_rc" -ne 0 ]; then
     printf 'stopping: harness exited %s on iteration %s (any token line ignored) in %s\n' "$agent_rc" "$i" "$log" >&2
     rc=3; break
