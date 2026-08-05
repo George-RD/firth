@@ -125,13 +125,19 @@ if [ -f lakefile.toml ] || [ -f lakefile.lean ]; then
   # Run lake test when the lakefile declares a driver or CI invokes it.
   test_driver_configured=false
   for config in lakefile.toml lakefile.lean .github/workflows/* .gitlab-ci.yml .circleci/config.yml; do
-    if [ -f "$config" ] && grep -Eq 'test_driver|lean_test|lake[[:space:]]+test' "$config"; then
+    if [ -f "$config" ] && grep -Eq 'testDriver|test_driver|lean_test|lake[[:space:]]+test' "$config"; then
       test_driver_configured=true
     fi
   done
   if [ "$test_driver_configured" = true ]; then
     lake test
   fi
+fi
+# VM crate gates whenever the crate exists: post-merge re-verification
+# protects main, not only the unit's diff. A second crate updates this
+# guard in the same unit that adds it (blueprint extension rule).
+if [ -f src/runtime/vm/Cargo.toml ]; then
+  ( cd src/runtime/vm && cargo fmt --check && cargo clippy && cargo test --locked )
 fi
 tools/loop/check_kernel_fixtures.sh
 # Firth's selector and coverage tests and validation are part of the gate.
