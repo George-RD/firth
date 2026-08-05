@@ -200,6 +200,12 @@ gh pr list --state open --json number,headRefName \
   --jq '.[] | select(.headRefName | startswith("loop/"))' # open loop PRs only
 ```
 
+Observation failures halt. If any command above exits non-zero (fetch
+failure, gh auth or network error), the state is UNOBSERVED, not empty:
+touch nothing, report the failing command and its output, and output LOOP
+HALTED. An empty PR list is trustworthy only from a zero-exit `gh pr
+list`; never read a failed observation as an absence.
+
 | State | Action |
 |---|---|
 | Dirty tree, on a `loop/*` branch whose slug maps to a known unit (todo or finding) | Finishing that unit IS this iteration. Read `firth-loop-recovery` §1 (recover in place). No checkout of any kind until the tree is clean. On `RECOVERED`, continue at Verify. |
