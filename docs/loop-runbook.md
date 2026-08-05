@@ -56,6 +56,20 @@ with the prompt as its final argument. It is left unquoted below so that
 workspace-write sandboxing; confirm those flags against the harness's own help
 output rather than assuming a spelling, and re-confirm them after upgrading it.
 
+Run the driver as a saved script under non-interactive `sh`; never paste
+it into an interactive shell. The pre-start guards are parameter-expansion
+aborts (`${...:?}`), which stop a non-interactive script outright with
+exit 1 but, pasted interactively, abort only their own line and let the
+loop run with the invalid value. Extract and launch the block verbatim:
+
+```text
+awk '/^```sh$/{f=1;next} f&&/^```$/{exit} f' docs/loop-runbook.md > /tmp/firth-driver.sh
+AGENT='<non-interactive harness invocation>' sh /tmp/firth-driver.sh
+```
+
+(That extracts the FIRST fenced sh block in this file, which is the driver
+below; run it from the repository root.)
+
 ```sh
 W=${W:-10} # max consecutive completions landing nothing; wedge guard, not a cap
 case "$W" in ''|*[!0-9]*|0*) W= ;; esac
@@ -125,10 +139,12 @@ one-unit contract in the command file and must not drive this loop.
 
 ### Launch with omp
 
-Verified against omp 17.2.9:
+Verified against omp 17.2.9; the complete launch, from the repository
+root:
 
-```sh
-AGENT='omp -p --approval-mode yolo --no-skills --max-time 2h'
+```text
+awk '/^```sh$/{f=1;next} f&&/^```$/{exit} f' docs/loop-runbook.md > /tmp/firth-driver.sh
+AGENT='omp -p --approval-mode yolo --no-skills --max-time 2h' sh /tmp/firth-driver.sh
 ```
 
 - `-p` runs one non-interactive session and prints the final message to
