@@ -57,12 +57,15 @@ workspace-write sandboxing; confirm those flags against the harness's own help
 output rather than assuming a spelling, and re-confirm them after upgrading it.
 
 ```sh
-N=${N:-500} # fuse only, never a target; reaching it is not completion
+W=${W:-10} # max consecutive completions landing nothing; wedge guard, not a cap
 AGENT=${AGENT:?set AGENT to a non-interactive harness invocation}
 MISSION='' # for example: MISSION='MISSION: toolchain only'
-rc=4 # 0 exhausted, 2 halted, 3 unknown token or harness failure, 4 fuse
+rc=4 # 0 exhausted, 2 halted, 3 unknown token or harness failure, 4 wedged
 i=0
-while [ "$i" -lt "$N" ]; do
+window=0
+mark=$(git ls-remote origin refs/heads/main | awk '{print $1}')
+: "${mark:?cannot observe origin/main; fix connectivity before launching}"
+while :; do
   i=$((i + 1))
   log="/tmp/firth-loop-${i}.log"
   prompt=$(cat .claude/commands/firth-loop.md)
@@ -86,15 +89,30 @@ $MISSION"
       printf 'stopping after iteration %s: %s\n' "$i" "$token"
       rc=0; break ;;
     "ITERATION COMPLETE")
+      tip=$(git ls-remote origin refs/heads/main | awk '{print $1}')
+      if [ -z "$tip" ]; then
+        sleep 10
+        tip=$(git ls-remote origin refs/heads/main | awk '{print $1}')
+      fi
+      if [ -z "$tip" ]; then
+        printf 'stopping: cannot observe origin/main after iteration %s (retried once); observation failure, not a wedge\n' "$i" >&2
+        rc=3; break
+      fi
+      if [ "$tip" != "$mark" ]; then
+        mark=$tip; window=0
+      else
+        window=$((window + 1))
+        if [ "$window" -ge "$W" ]; then
+          printf 'wedged: %s consecutive ITERATION COMPLETE without a landed commit on origin/main\n' "$window" >&2
+          rc=4; break
+        fi
+      fi
       continue ;;
     *)
       printf 'stopping: missing or unknown terminal token (harness exit %s) in %s\n' "$agent_rc" "$log" >&2
       rc=3; break ;;
   esac
 done
-if [ "$rc" -eq 4 ]; then
-  printf 'fuse reached: %s iterations without a terminal stop; NOT completion, relaunch to continue\n' "$N" >&2
-fi
 printf 'driver result: rc=%s (0 only for LOOP EXHAUSTED)\n' "$rc"
 ( exit "$rc" )
 ```
@@ -135,13 +153,19 @@ repository's selector, obligations matrix, and decision authority
 loop here.
 
 For a run to project completion, leave `MISSION` empty: default selection
-plus backlog generation walk the obligations matrix. The fuse `N` (default
-500 above) is never a target; reaching it prints an explicit fuse message
-and means only that the run should be relaunched. The run ends itself with
-`LOOP EXHAUSTED` at project completion, or with `LOOP HALTED` whose report
-opens `implementation complete; external success criteria outstanding`
-when everything machine-reachable is done and only external evidence (PRD
-S6) remains, or earlier on any other halt.
+plus backlog generation walk the obligations matrix, and the driver keeps
+going for as long as work lands. There is no iteration cap: every honest
+`ITERATION COMPLETE` lands exactly one commit on `origin/main` (the
+command's artefact rule), so the driver instead stops `rc=4` after `W`
+(default 10) consecutive completions that land nothing, which is the wedge
+signature, never a checkpoint to relaunch. A failed read of `origin/main`
+is retried once, then stops `rc=3` as a labelled observation failure
+within the same iteration; it is never absorbed into the window or
+mislabelled as a wedge. The run
+ends itself with `LOOP EXHAUSTED` at project completion, or with
+`LOOP HALTED` whose report opens `implementation complete; external
+success criteria outstanding` when everything machine-reachable is done
+and only external evidence (PRD S6) remains, or earlier on any other halt.
 
 ## Terminal tokens and health
 
