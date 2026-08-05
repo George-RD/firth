@@ -1,19 +1,19 @@
 ---
 name: "Firth Dev Loop"
-description: Run one iteration of firth development, one unit landed as one squash commit, designed for unattended harness loop mode on the Codex CLI harness
+description: Run one iteration of firth development, one unit landed as one squash commit, designed for unattended harness loop mode
 category: Workflow
-tags: [workflow, cairn, firth, codex]
+tags: [workflow, cairn, firth, loop]
 ---
 
 Run ONE iteration of the Firth Dev Loop: a workflow that develops firth using
 cairn governance. You are a fresh session inside a harness loop; the harness
 re-injects this same message each iteration, so do exactly one unit of work,
 land it as one commit on main, and end. Never select a second unit. This
-file (plus the reading it names) is the sole normative orchestrator; anything
+file (plus the reading it names) is the sole normative procedure; anything
 in `docs/` or `AGENTS.md` that overlaps is descriptive only, never normative.
 
-**Required reading.** This harness (Codex) has no Skill tool: there is no
-mechanism to "load" a skill by name. Instead, read the file at the exact
+**Required reading.** Do not assume a mechanism to "load" a skill by name:
+some harnesses have no Skill tool. Read the file at the exact
 path below IN FULL before the step that needs it. A required file that is
 missing or fails to read in full is LOOP HALTED: touch nothing, report which
 file failed and why, and end. Never improvise a procedure that lives in one
@@ -100,19 +100,24 @@ the next. Two bindings:
   `[ -x "$CAIRN" ]` (POSIX-portable; the -x test rules out alias and
   function resolution), then verify `"$CAIRN" --version` succeeds; absent or
   failing at any step: touch nothing, report, output LOOP HALTED.
-- Language gates - staged on repo state, since the Lean project has not
-  landed yet:
+- Language gates - staged on repo state, resolved per unit against the
+  paths that exist:
   - If `lakefile.toml` or `lakefile.lean` exists at the repo root: `lake
-    build`, and `lake test` when a test driver is configured by a `test_driver` or
-    `lean_test` stanza in either lakefile, or when repository CI config
-    invokes `lake test`; plus `$CAIRN scan` (zero Errors) and `$CAIRN hook all` (exit 0).
-  - Before the Lean project exists (no lakefile at repo root): cairn gates
-    only, `$CAIRN scan` (zero Errors) and `$CAIRN hook all` (exit 0).
+    build`, and `lake test` when a test driver is configured (a
+    `testDriver`, `test_driver`, or `lean_test` stanza in either lakefile,
+    or repository CI invoking `lake test`); plus `$CAIRN scan` (zero
+    Errors) and `$CAIRN hook all` (exit 0).
+  - If the unit touches a path holding a `Cargo.toml` (today
+    `src/runtime/vm`): from that crate directory, `cargo fmt --check`,
+    `cargo clippy`, and `cargo test --locked`. There is no root Cargo
+    manifest; a cargo command run from the repository root fails on
+    resolution, not on code, and generic skill gate lists naming root
+    cargo commands (e.g. cairn-apply, cairn-archive) never override this
+    binding.
   - `$CAIRN scan` "zero Errors" is deliberately not "zero findings":
-    `CAIRN_RECONCILE_LANGUAGE_UNKNOWN` warnings on the blueprint's
-    declared-but-empty module paths (`src/*`, `spec/*`, `stdlib`, `specs`)
-    are the expected baseline until those paths hold real source; a Warning
-    never blocks, an Error always does.
+    `CAIRN_RECONCILE_LANGUAGE_UNKNOWN` warnings on declared-but-empty
+    module paths are the expected baseline until those paths hold real
+    source; a Warning never blocks, an Error always does.
 
 **Firth policy.** Constitutional constraints this repo layers on top of the
 generic loop; read before Scope and Implement, referenced by name below.
@@ -164,6 +169,14 @@ selector.
 <id>`. British spelling throughout (artefact, colour, neighbourhood,
 reconcile); no em-dashes in any user-facing copy this loop writes.
 
+(vi) Acceptance-gate substitution. While the installed cairn's `change
+accept` battery is unreachable in this repository (recorded in
+`.cairn/feedback.md`; dec.loop-autonomy clause 5), a change under
+`meta/changes/` is accepted when all its tasks are complete AND the Verify
+gates pass; archive it with `$CAIRN change apply <id>` (or `change
+archive`). This substitutes only the unreachable battery; `$CAIRN scan`,
+`$CAIRN hook all`, and the control-plane tests are never substituted.
+
 **Setup.** Runs AFTER the preflight verdict and before the first `$CAIRN`
 command (preflight needs only git and gh; on a fail-closed verdict nothing
 is touched at all). If the verdict adopted a surviving `loop/*` branch,
@@ -212,9 +225,11 @@ The tool's rule is deterministic: an `in_progress` todo is surfaced first as
 Otherwise `next` is the first eligible open slug sorted lexicographically.
 Eligible means status open and every Requires slug done. The JSON also lists
 `ineligible_open` with sorted missing slugs, plus sorted `blocked` and
-`in_progress` lists. A blocked todo with no Requires line is
-maintainer-blocked and is never auto-unblocked; a blocked todo with
-"blocked on sub-todos: <ids>" follows the split rule. The tool validates
+`in_progress` lists. A blocked todo with no Requires line is never
+auto-unblocked by the selector; dec.loop-autonomy (clauses 3 and 4) governs
+why such a todo may exist and why a starved selection over remaining
+blockers fails closed. A blocked todo
+with "blocked on sub-todos: <ids>" follows the split rule. The tool validates
 unknown slugs, cycles, filename/slug mismatches, duplicate slugs, and invalid
 status before selection. The tool's stable ordering is the contract.
 
@@ -276,10 +291,11 @@ exists, write the test first, red then green. Substantial work goes through
 `python3 tools/loop/test_coverage.py`, then `python3 tools/loop/select_unit.py
 --validate` and `python3 tools/loop/coverage.py --validate`; a non-zero exit or malformed
 JSON is a gate failure. Then run the staged
-language gates from Repo bindings: if `lakefile.toml`/`lakefile.lean` exists
-at the repo root, `lake build` (and `lake test` when the same lakefile-or-CI
-test-driver rule is configured); before the Lean project exists, skip straight
-to the remaining cairn gates. Always: `$CAIRN scan` (zero Errors;
+language gates from Repo bindings: `lake build` and `lake test` (the root
+lakefile configures `testDriver`); if the unit touches a path holding a
+`Cargo.toml` (today `src/runtime/vm`), also run `cargo fmt --check`,
+`cargo clippy`, and `cargo test --locked` from that crate directory.
+Always: `$CAIRN scan` (zero Errors;
 `CAIRN_RECONCILE_LANGUAGE_UNKNOWN` warnings on declared-but-empty paths are
 expected and non-blocking) and `$CAIRN hook all` (exit 0). Fix the cause of
 any failure. Never bypass hooks.
@@ -308,6 +324,20 @@ complete or in-flight in the matrix. Keep the matrix current whenever the loop
 authors a todo. Only when no ungenerated obligation remains and all todos are
 done is `LOOP EXHAUSTED` valid. An obligation classified `blocked` is neither
 complete nor ungenerated and also prevents exhaustion.
+If no ungenerated obligation remains but blocked obligations or blocked
+todos exist, apply dec.loop-autonomy clause 4: touch nothing and classify
+every slug in the selector's and coverage's sorted `blocked` lists. An
+environment or authority blocker whose named check still reproduces is an
+environment incident; a blocker whose todo carries an `External-evidence:`
+line is a legitimate external dependency; anything else is a clause 3
+defect left by a prior iteration. Output LOOP HALTED with that
+classification report. When every remaining blocker is external-evidence
+class and nothing else is incomplete, the report's FIRST line is
+"implementation complete; external success criteria outstanding" followed
+by the outstanding evidence; the token is still LOOP HALTED, because LOOP
+EXHAUSTED belongs to the coverage boolean alone. Blocked todos are never
+selected or unblocked here. LOOP EXHAUSTED requires `loop_exhausted_valid`
+true in the coverage JSON.
 
 **Cairn gaps.** An unresolved design question discovered during a unit that
 does not block its success criterion is registered with
@@ -340,18 +370,36 @@ final scan finding count, PR and merge status. Output exactly one token
 required file's declared tokens):
 
 - ITERATION COMPLETE: unit landed, or safely deferred with a blocked todo.
-- LOOP EXHAUSTED: no eligible todo exists and Backlog generation found no
-  uncovered-ready Module, or the immutable MISSION can never progress in this
-  run (named unit done or blocked, scope empty).
+- LOOP EXHAUSTED: no eligible todo exists, Backlog generation found no next
+  obligation, and coverage reports `loop_exhausted_valid` true (with no
+  MISSION this is project completion, per dec.loop-autonomy); or the
+  immutable MISSION can never progress in this run (named unit done or
+  blocked, scope empty).
 - LOOP HALTED: fail-closed state needs the maintainer; do not continue.
 
 The token is the FINAL line of output, alone, verbatim; the summary comes
 before it. Tooling and the maintainer read loop health from that line.
 
-If blocked on a decision only the maintainer can make: author the researched
-recommendation as a `meta/` artefact plus a blocked todo, land them through
-the Land path (`firth-loop-landing`) as this iteration's single commit,
-report, output ITERATION COMPLETE. Never wait for an answer mid-loop.
+Decisions are typed, per `meta/decisions/loop-autonomy.md`
+(dec.loop-autonomy). Goal-layer content (PRD goals, non-goals, scope,
+requirements, and success criteria; obligation scope in
+`tools/loop/obligations.toml`; licensing posture) is never amended by the
+loop: if evidence says it is
+wrong, author a decision left at `status: proposed` plus a cairn gap for
+the record, and keep discharging the obligation as written under its
+strongest machine-checkable interpretation. Frozen-spec amendments follow
+Firth policy (iii); the re-run binding gates are the ratifying authority.
+Every other design question is resolved in THIS iteration: author the
+research and a decision artefact with `status: accepted` whose Context
+carries `Autonomous author: loop/<branch>`, choose the most conservative
+PRD-satisfying option when alternatives are otherwise equivalent, and
+proceed under it, landing the artefacts with the unit through the Land
+path. Blocking a todo on the maintainer is reserved for environment,
+authority, and external-evidence dependencies (credentials, remote
+infrastructure, licensing posture, evidence only an independent external
+actor can produce), with the failing check or an `External-evidence:` line
+in the todo body. Never wait for an answer
+mid-loop.
 
 **Guardrails.**
 

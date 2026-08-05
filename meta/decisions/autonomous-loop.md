@@ -11,7 +11,7 @@ Place Firth's autonomous development loop in a dedicated Governance container,
 outside the four product layers (Language, Toolchain, Runtime, and Ecosystem).
 The Governance Loop module owns the injected command, recovery and landing
 procedures, deterministic todo selector, and its stdlib tests under `.claude/`,
-`tools/loop`, and the Codex-facing runbook under `docs/`.
+`tools/loop`, and the harness-neutral launch runbook under `docs/`.
 
 ## Rationale
 
@@ -21,7 +21,7 @@ module gives Cairn an explicit path claim while keeping the four product layers
 focused on the language and its implementation. The command trio preserves
 one-unit sessions, persistent isolation, fail-closed recovery, explicit
 artefact staging, and one squash commit. The selector makes Requires
-validation and eligibility reproducible across fresh unattended Codex
+validation and eligibility reproducible across fresh unattended loop
 sessions instead of relying on prose interpretation.
 
 This decision and the loop artefacts are the governance change proposed in

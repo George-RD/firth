@@ -10,13 +10,13 @@ design constraint: concatenative programs compose by concatenation, word-level
 granularity keeps changes small and independent, and a mechanical checker
 (rather than human review) is the arbiter of correctness.
 
-The repo is currently in a **spec/design phase, with no source code yet.**
-The authoritative material lives in `files/` as markdown specs, and the
+Implementation is under way and machine-checked from the start. The
+authoritative design material lives in `files/` as markdown specs, product
+source lives under `src/` (Lean components plus the Rust VM crate), and the
 architecture is governed by [cairn](https://github.com/cairn-framework/cairn).
 `cairn.blueprint` declares the real 22-node architecture: four product
 containers (Language, Toolchain, Runtime, Ecosystem) plus the Governance
-container for loop machinery. The repository remains in the no-`src/`
-spec/design phase.
+container for loop machinery.
 
 ## Architecture & Data Flow
 
@@ -63,13 +63,13 @@ combinator. Effects are modelled by a linear `World` base type in the signature
 | `meta/` | Cairn artefacts. `todos/` and `contracts/` exist; `decisions/`, `research/`, `sources/`, `changes/` are created on demand. |
 | `.cairn/` | Cairn state plus its authoritative guide `.cairn/AGENTS.md`. |
 | `.claude/skills/` | Cairn dev-loop skills (see below). |
-| `src/` | Referenced by the blueprint but **does not exist yet.** |
+| `src/` | Lean components (`interpreter`, `elaborator`, `agent`, `smt`) and the Rust VM crate at `src/runtime/vm`. |
 
 ## Development Commands
 
-There is no product source yet, but the root Lake package and Lean toolchain pin
-are now declared. The control-plane tooling remains operational, and product
-Lean gates stay meaningful only once source targets and a test driver exist:
+The root Lake package builds the Lean components (`testDriver` is
+`firthAllTest`), the Rust VM crate lives at `src/runtime/vm`, and the
+control-plane tooling is operational:
 
 ```sh
 cairn status          # project summary: nodes, findings, backlog. Start here.
@@ -85,24 +85,27 @@ python3 tools/loop/test_coverage.py
 python3 tools/loop/select_unit.py --validate
 python3 tools/loop/coverage.py --validate
 
-# Once Lean source targets exist:
 lake build
-# When a Lake lint/test driver is configured:
-lake lint
-lake test
+lake test            # driver: firthAllTest
+( cd src/runtime/vm && cargo fmt --check && cargo clippy && cargo test --locked )
 ! rg -n '\b(sorry|admit)\b' src
 git diff --check
 ```
 
-For the autonomous Codex loop launch contract and maintainer preflight, read
+For the autonomous loop launch contract and maintainer preflight, read
 [`docs/loop-runbook.md`](docs/loop-runbook.md). It defines the required
 `origin/main` publication, invocation, terminal tokens, and smoke checks.
+Unattended operation and in-loop decision authority are governed by
+`meta/decisions/loop-autonomy.md` (dec.loop-autonomy): decisions are typed,
+the goal layer is immutable to the loop, and `LOOP EXHAUSTED` with
+`tools/loop/coverage.py` reporting `loop_exhausted_valid: true` is project
+completion.
 
-`--json` is accepted by every command for machine-readable output. The Lean CI
-gate is formatting, compilation, tests when a test driver is configured, and a
-zero-admit scan once source targets exist, alongside Cairn scan and hook checks.
-The current root package has no Lean targets yet, so these commands are a
-declared CI contract rather than an implementation claim.
+`--json` is accepted by every command for machine-readable output. The
+product gates are live: `lake build` and `lake test` at the root, and the
+VM crate gates (`cargo fmt --check`, `cargo clippy`, `cargo test --locked`)
+from `src/runtime/vm` (no root Cargo manifest exists), alongside Cairn scan
+and hook checks.
 
 ## Code Conventions & Common Patterns
 
@@ -140,21 +143,24 @@ declared CI contract rather than an implementation claim.
 
 ## Runtime / Tooling Preferences
 
-- **Intended stack:** Lean 4 (metatheory plus elaborator, "zero admits"), plus a
-  minimal, permissively-licensed Forth-class VM. Not yet implemented.
+- **Stack:** Lean 4 (metatheory plus elaborator, "zero admits") and a
+  minimal, permissively-licensed Rust Forth-class VM at `src/runtime/vm`.
 - **cairn** is the required governance layer for all architecture changes;
   install its dev-loop skills with `cairn init` if absent.
-- No package manager or runtime is pinned yet. Set this once code lands.
+- Toolchain pins: `lean-toolchain` (`leanprover/lean4:v4.30.0`,
+  elan-managed) and `rust-toolchain.toml` (rustup-managed).
 
 ## Testing & QA
 
 - Control-plane tests live in `tools/loop/test_select_unit.py` and
   `tools/loop/test_coverage.py`; both use temporary synthetic todo trees and
   never read the real tracker in fixtures.
-- Product source is not present yet. The kernel spec calls for a **differential test
-  harness** (fuzzed programs checked for compiler-vs-interpreter agreement) and
-  **Lean metatheory obligations** (determinism, preservation, progress,
-  linearity soundness, cost invariance) mechanised with zero admits.
+- Product gates are live: `lake build` / `lake test` (driver
+  `firthAllTest`) and the VM crate gates from `src/runtime/vm`. The kernel
+  metatheory (determinism, preservation, progress, linearity soundness,
+  cost invariance) is mechanised with zero admits; the **differential test
+  harness** (fuzzed compiler-vs-interpreter agreement) is specified and not
+  yet implemented.
 - **Before committing:** run `cairn scan` (target: zero findings) and
   `cairn hook all` (strict gate; exit 0 means safe). New/moved files must be
   reachable from a blueprint module `path` or cairn will flag them.
