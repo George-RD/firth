@@ -58,7 +58,7 @@ output rather than assuming a spelling, and re-confirm them after upgrading it.
 
 ```sh
 W=${W:-10} # max consecutive completions landing nothing; wedge guard, not a cap
-case "$W" in ''|0|*[!0-9]*) W= ;; esac
+case "$W" in ''|*[!0-9]*|0*) W= ;; esac
 : "${W:?W must be a positive integer}"
 AGENT=${AGENT:?set AGENT to a non-interactive harness invocation}
 MISSION='' # for example: MISSION='MISSION: toolchain only'
