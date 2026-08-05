@@ -172,23 +172,15 @@ gates pass; archive it with `$CAIRN change apply <id>` (or `change
 archive`). This substitutes only the unreachable battery; `$CAIRN scan`,
 `$CAIRN hook all`, and the control-plane tests are never substituted.
 
-**Setup.** Runs AFTER the preflight verdict and before the first `$CAIRN`
-command (preflight needs only git and gh; on a fail-closed verdict nothing
-is touched at all). If the verdict adopted a surviving `loop/*` branch,
-check it out NOW (`git checkout loop/<slug>`; clean tree, pure ref move) so
-Scope and everything after run against the recovered state, not
-origin/main. Then resolve the `CAIRN` binding per Repo bindings above
-(`command -v cairn`, the `-x` test, then `--version`); failing at any step:
-touch nothing, report, output LOOP HALTED.
-
 **Preflight: observe read-only, then act on the FIRST matching row.**
 Observation runs INSIDE the persistent worktree `../firth-loop`; the
 launch checkout's own branch and cleanliness are never preflight states
 (the loop never touches it, and a clean checkout sitting on `main` is the
 normal bootstrap condition, not an unclassifiable one). `loop/*` branches
 and PRs are repository-global and observed regardless of worktree.
-Bootstrap from the launch checkout, fail closed on an occupied path, and
-enter the worktree before every observation:
+Bootstrap from the launch checkout, fail closed on an occupied path, then
+enter and observe in the SAME fence, so no swap window exists between
+validation and observation:
 
 ```bash
 if [ ! -e ../firth-loop ]; then
@@ -222,21 +214,30 @@ else
     echo "LOOP HALTED"; exit 1
   fi
 fi
+cd ../firth-loop || { echo "cannot enter ../firth-loop"; echo "LOOP HALTED"; exit 1; }
+if ! git fetch origin main; then
+  echo "OBSERVATION FAILED: git fetch origin main"; echo "LOOP HALTED"; exit 1
+fi
+if ! git status --porcelain; then                         # dirty?
+  echo "OBSERVATION FAILED: git status"; echo "LOOP HALTED"; exit 1
+fi
+if ! git branch --show-current; then                      # branch, or empty = detached
+  echo "OBSERVATION FAILED: git branch"; echo "LOOP HALTED"; exit 1
+fi
+if ! git for-each-ref 'refs/heads/loop/*' --format='%(refname:short) %(objectname)'; then
+  echo "OBSERVATION FAILED: git for-each-ref"; echo "LOOP HALTED"; exit 1
+fi
+if ! prs=$(gh pr list --state open --json number,headRefName \
+  --jq '.[] | select(.headRefName | startswith("loop/"))'); then # open loop PRs only
+  echo "OBSERVATION FAILED: gh pr list; an empty list from a failed call is not an absence"
+  echo "LOOP HALTED"; exit 1
+fi
+printf 'OPEN LOOP PRS:\n%s\n' "$prs"
 ```
 
 No checkout, stash, clean, add, or commit during observation. Recovery
 procedures live in `.claude/skills/firth-loop-recovery/SKILL.md`; the table
 classifies and points. Fail-closed backstops stay here and never move.
-
-```bash
-cd ../firth-loop || { echo "missing ../firth-loop; bootstrap did not run"; echo "LOOP HALTED"; exit 1; }
-git fetch origin main
-git status --porcelain                                    # dirty?
-git branch --show-current                                 # branch, or empty = detached
-git for-each-ref 'refs/heads/loop/*' --format='%(refname:short) %(objectname)'
-gh pr list --state open --json number,headRefName \
-  --jq '.[] | select(.headRefName | startswith("loop/"))' # open loop PRs only
-```
 
 Observation failures halt. If any command above exits non-zero (fetch
 failure, gh auth or network error), the state is UNOBSERVED, not empty:
@@ -254,6 +255,15 @@ list`; never read a failed observation as an absence.
 | Clean; a `loop/*` branch covered by an existing `todo.recover-<slug>` on main | Read `firth-loop-recovery` §4 (status-branched: discard-authorised cleanup, ambiguous, or quarantined). Never delete or commit to a quarantined branch; if the worktree has it checked out, park off it (clean tree, pure ref move). On `RECOVERED`, continue preflight as if the branch were absent. |
 | Clean; any other surviving `loop/*` branch (closed PR, no PR, or tip differs from merged PR) | Read `firth-loop-recovery` §5. Adopt (open todo/finding → `RECOVERED`, continue at Scope) or quarantine (author `todo.recover-<slug>`, hand off to `firth-loop-landing`; landing emits the terminal token). A local branch ref is the only thing keeping those commits alive: never delete without a MERGED PR at the same tip or an explicit maintainer discard note in the todo. |
 | Clean, parked detached, no unquarantined `loop/*` branches or PRs | Select fresh work (below). |
+
+**Setup.** Runs AFTER the preflight verdict and before the first `$CAIRN`
+command (preflight needs only git and gh; on a fail-closed verdict nothing
+is touched at all). If the verdict adopted a surviving `loop/*` branch,
+check it out NOW (`git checkout loop/<slug>`; clean tree, pure ref move) so
+Scope and everything after run against the recovered state, not
+origin/main. Then resolve the `CAIRN` binding per Repo bindings above
+(`command -v cairn`, the `-x` test, then `--version`); failing at any step:
+touch nothing, report, output LOOP HALTED.
 
 **Select ONE unit** (after MISSION precedence): the first lint Error from `$CAIRN lint --json`; sort Errors by file path,
 line, then code. If there is no lint Error, run
