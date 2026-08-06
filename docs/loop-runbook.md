@@ -98,10 +98,11 @@ while :; do
     printf 'stopping: cannot fetch origin/main for prompt refresh on iteration %s\n' "$i" >&2
     rc=3; break
   fi
-  if ! prompt=$(git show FETCH_HEAD:.claude/commands/firth-loop.md); then
+  if ! prompt=$(git show FETCH_HEAD:.claude/commands/firth-loop.md && printf x); then
     printf 'stopping: cannot read the loop command from origin/main\n' >&2
     rc=3; break
   fi
+  prompt=${prompt%x} # printf-x idiom: command substitution strips trailing newlines; this restores the file's exact terminator bytes
   if [ -n "$MISSION" ]; then
     prompt="$prompt
 $MISSION"
