@@ -94,7 +94,14 @@ mark=$(git ls-remote origin refs/heads/main | awk '{print $1}')
 while :; do
   i=$((i + 1))
   log="/tmp/firth-loop-${i}.log"
-  prompt=$(cat .claude/commands/firth-loop.md)
+  if ! git fetch origin main; then
+    printf 'stopping: cannot fetch origin/main for prompt refresh on iteration %s\n' "$i" >&2
+    rc=3; break
+  fi
+  if ! prompt=$(git show FETCH_HEAD:.claude/commands/firth-loop.md); then
+    printf 'stopping: cannot read the loop command from origin/main\n' >&2
+    rc=3; break
+  fi
   if [ -n "$MISSION" ]; then
     prompt="$prompt
 $MISSION"
