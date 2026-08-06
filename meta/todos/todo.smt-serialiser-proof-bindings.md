@@ -10,12 +10,12 @@ Requires: smt-encoder-translation-proofs
 
 ## Goal
 Prove final SMT-LIB serialisation semantics and bind proof identities to
-requests and future discharge records.
+requests and solver results.
 
 ## Acceptance criteria
 - Serialisation preserves the encoded formula for every supported construct.
-- Translation-rule and soundness-proof hashes are checked on requests,
-  results, and discharge records.
+- Translation-rule and soundness-proof hashes are checked on requests and
+  solver results.
 - Mutation of either identity defers the obligation without accepting solver
   evidence.
 
