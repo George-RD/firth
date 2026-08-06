@@ -111,9 +111,14 @@ private def diagnosticVariant (diagnostic : RefinementDiagnostic) (payloadId cod
         related := diagnostic.body.related
         groupId := diagnostic.body.groupId } }
 
+private def recordExternal (entry : SmtQueueEntry) (outcome : ExternalOutcome) : PipelineResult :=
+  recordExternalOutcome "request-a" entry { profile := entry.profile, outcome }
+
+
 private def expectExternalDeferred (entry : SmtQueueEntry) (outcome : ExternalOutcome)
     (reason : LeanEscalationReason) (data : String) : IO Unit := do
-  let result := recordExternalOutcome "request-a" entry outcome
+  let result := recordExternal entry outcome
+
   let queued ← expectOneLeanQueue result data
   expectEq queued.reason reason s!"{data}: Lean escalation reason"
   expectEq result.leanRecords.length 0 s!"{data}: no proof record"
@@ -395,11 +400,22 @@ private def runTests : IO Unit := do
     "SMT boundary requires a pinned solver"
   expectTrue smtEntry.requirements.serialiserProofRequired
     "SMT boundary requires a checked serialiser"
+  expectEq smtEntry.profile defaultSolverProfile
+    "SMT request carries the canonical solver profile"
+  expectTrue (validSolverProfile smtEntry.profile)
+    "SMT request profile is pinned and valid"
+  let mismatchedProfile := { defaultSolverProfile with version := "5.0.1" }
+  let mismatchedResult := recordExternalOutcome "request-a" smtEntry
+    { profile := mismatchedProfile, outcome := .unknown }
+  let mismatchQueue ← expectOneLeanQueue mismatchedResult "profile mismatch"
+  expectEq mismatchQueue.reason .externalProfileMismatch
+    "profile mismatch is deferred before interpreting the external outcome"
   let oversizedExternalObligation : Obligation :=
     { smtEntry.obligation with
       obligationId := "attacker-supplied-over-budget-obligation"
       formula := { premises := [], conclusions := List.replicate 10001 .truth } }
-  let oversizedExternal := recordExternalOutcome "request-a"
+  let oversizedExternal := recordExternal
+
     { smtEntry with obligation := oversizedExternalObligation } .unknown
   let oversizedExternalQueue ← expectOneLeanQueue oversizedExternal
     "over-budget external queue entry"
@@ -452,7 +468,8 @@ private def runTests : IO Unit := do
     { obligation := totalityObligation
       canonicalRequest := canonicalSmtRequest totalityObligation
       requirements := checkedAdapterRequirements }
-  let externalTotality := recordExternalOutcome "request-a" forgedTotalityEntry
+  let externalTotality := recordExternal forgedTotalityEntry
+
     (.sat { booleans := [("old-total", true), ("new-total", false)] })
   let externalTotalityDiagnostic ← expectOneDiagnostic externalTotality "external totality"
   let externalTotalityStatus ← expectAt externalTotalityDiagnostic.body.obligations 0
@@ -468,7 +485,8 @@ private def runTests : IO Unit := do
       { obligation := structural
         canonicalRequest := canonicalSmtRequest structural
         requirements := checkedAdapterRequirements }
-    let structuralOutcome := recordExternalOutcome "request-a" forgedStructural
+    let structuralOutcome := recordExternal forgedStructural
+
       (.sat { booleans := [("structural-result", false)] })
     let structuralQueue ← expectOneLeanQueue structuralOutcome "structural external outcome"
     expectEq structuralQueue.reason .externalRequestIneligible
@@ -489,7 +507,8 @@ private def runTests : IO Unit := do
     [.intEq (.variable "x") (.literal 1)] [] [.intLt (.variable "x") (.literal 0)]
   let falseEntry ← expectAt falsePending.smtQueue 0 "countermodel request"
   let countermodel := Valuation.mk [("x", 1)] []
-  let failed := recordExternalOutcome "request-a" falseEntry (.sat countermodel)
+  let failed := recordExternal falseEntry (.sat countermodel)
+
   expectEq failed.leanRecords.length 0 "countermodel never creates proof evidence"
   let failedDiagnostic ← expectOneDiagnostic failed "valid countermodel"
   let failedObligation ← expectAt failedDiagnostic.body.obligations 0 "valid countermodel"
@@ -501,12 +520,14 @@ private def runTests : IO Unit := do
   expectEq failedObligation.data.value
     [("backend", "smt"), ("result", "sat"), ("model", renderCountermodel countermodel)]
     "counterexample is retained in opaque obligation data"
-  let invalidModel := recordExternalOutcome "request-a" falseEntry (.sat {})
+  let invalidModel := recordExternal falseEntry (.sat {})
+
   let invalidDiagnostic ← expectOneDiagnostic invalidModel "invalid countermodel"
   let invalidObligation ← expectAt invalidDiagnostic.body.obligations 0 "invalid countermodel"
   expectEq invalidObligation.status .deferred
     "incomplete countermodel is non-success"
-  let duplicateModel := recordExternalOutcome "request-a" falseEntry
+  let duplicateModel := recordExternal falseEntry
+
     (.sat { integers := [("x", 1), ("x", 1)] })
   let duplicateDiagnostic ← expectOneDiagnostic duplicateModel "duplicate countermodel"
   let duplicateObligation ← expectAt duplicateDiagnostic.body.obligations 0 "duplicate countermodel"
@@ -515,7 +536,8 @@ private def runTests : IO Unit := do
   let missingLaterPending := bodyResult "request-a" ctx [.truth] []
     [.falsity, .boolVariable "missing"]
   let missingLaterEntry ← expectAt missingLaterPending.smtQueue 0 "missing later variable"
-  let missingLaterResult := recordExternalOutcome "request-a" missingLaterEntry (.sat {})
+  let missingLaterResult := recordExternal missingLaterEntry (.sat {})
+
   let missingLaterDiagnostic ← expectOneDiagnostic missingLaterResult "missing later variable"
   let missingLaterObligation ← expectAt missingLaterDiagnostic.body.obligations 0
     "missing later variable"
@@ -526,7 +548,7 @@ private def runTests : IO Unit := do
     { obligation := forgedObligation
       canonicalRequest := canonicalSmtRequest forgedObligation
       requirements := checkedAdapterRequirements }
-  let forgedResult := recordExternalOutcome "request-a" forgedEntry (.sat countermodel)
+  let forgedResult := recordExternal forgedEntry (.sat countermodel)
   let forgedQueue ← expectOneLeanQueue forgedResult "forged obligation identity"
   expectEq forgedQueue.reason .externalRequestIneligible
     "queue eligibility recomputes the obligation identity"

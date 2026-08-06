@@ -110,6 +110,37 @@ inductive Fragment where
   | nonlinearArithmetic
   | worldEffect
   deriving Repr, BEq, DecidableEq
+structure SolverProfile where
+  solverId : String
+  version : String
+  licence : String
+  platform : String
+  executableDigest : String
+  acquisitionSource : String
+  logic : String
+  invocationOptions : List String
+  wallTimeMilliseconds : Nat
+  memoryBytes : Nat
+  supportedFragments : List Fragment
+  deriving Repr, BEq
+
+def defaultSolverProfile : SolverProfile :=
+  { solverId := "z3"
+    version := "5.0.0"
+    licence := "MIT"
+    platform := "linux-arm64-glibc-2.38"
+    executableDigest := "sha256:6457d93236741071c91bfa2927744372e15fdb236d0116bf487aa9930a38972e"
+    acquisitionSource :=
+      "https://github.com/Z3Prover/z3/releases/download/z3-5.0.0/z3-5.0.0-arm64-glibc-2.38.zip"
+    logic := "QF_LIA"
+    invocationOptions := ["-in", "-smt2", "-T:5", "-memory:256"]
+    wallTimeMilliseconds := 5000
+    memoryBytes := 268435456
+    supportedFragments := [.qfLia] }
+
+def validSolverProfile (profile : SolverProfile) : Bool :=
+  profile == defaultSolverProfile
+
 
 private def predicateFragment : Predicate → Fragment
   | .truth | .falsity | .boolVariable _ => .qfLia
@@ -147,6 +178,11 @@ inductive ExternalOutcome where
   | crashed (detail : String)
   | uncheckedUnsat (evidence : String)
   | sat (model : Valuation)
+  deriving Repr, BEq
+
+structure SmtResult where
+  profile : SolverProfile
+  outcome : ExternalOutcome
   deriving Repr, BEq
 
 private def allTrue (valuation : Valuation) : List Predicate → Bool
