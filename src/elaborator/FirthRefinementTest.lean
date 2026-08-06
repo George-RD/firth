@@ -404,6 +404,60 @@ private def runTests : IO Unit := do
     "SMT request carries the canonical solver profile"
   expectTrue (validSolverProfile smtEntry.profile)
     "SMT request profile is pinned and valid"
+  let some checkedRequest := smtEntry.request | fail "eligible queue lacks checked request"
+  expectTrue (validSmtRequest checkedRequest)
+    "eligible queue stores a self-validating SMT request"
+  expectEq checkedRequest.bindings
+    [ { sourceName := "x", symbol := "i0", sort := .integer }
+      , { sourceName := "y", symbol := "i1", sort := .integer } ]
+    "request symbols are stable and sorted by source name"
+  expectEq checkedRequest.smtLib
+    ( "(set-logic QF_LIA)\n" ++
+      "(declare-fun i0 () Int)\n" ++
+      "(declare-fun i1 () Int)\n" ++
+      "(assert (and (< 0 i0) (= i1 (+ i0 1))))\n" ++
+      "(assert (not (< 0 i1)))\n" ++
+      "(check-sat)\n" ++
+      "(exit)" )
+    "QF_LIA request serialises deterministically"
+  expectTrue (!validSmtRequest { checkedRequest with smtLib := "(check-sat)" })
+    "mutated SMT-LIB is rejected by request validation"
+  match checkedSmtRequest { defaultSolverProfile with version := "5.0.1" }
+      generated.formula with
+  | .error .invalidSolverProfile => pure ()
+  | result => fail s!"profile mutation was accepted: {repr result}"
+  match checkedSmtRequest defaultSolverProfile
+      { premises := [], conclusions := [.named "pred.recursive" "1" []] } with
+  | .error (.unsupportedFragment .untranslatedPredicate) => pure ()
+  | result => fail s!"untranslated predicate was accepted: {repr result}"
+  let hostileFormula : Formula :=
+    { premises := [.intEq (.variable "x|) (declare-fun forged () Int)") (.literal 0)]
+      conclusions := [.boolVariable "b|) (declare-fun forged-b () Bool)"] }
+  let hostileRequest ← expectOk (checkedSmtRequest defaultSolverProfile hostileFormula)
+    "hostile variable names"
+  expectEq hostileRequest.smtLib
+    ( "(set-logic QF_LIA)\n" ++
+      "(declare-fun i0 () Int)\n" ++
+      "(declare-fun b0 () Bool)\n" ++
+      "(assert (= i0 0))\n" ++
+      "(assert (not b0))\n" ++
+      "(check-sat)\n" ++
+      "(exit)" )
+    "source names never enter SMT-LIB symbols"
+  let negativeFormula : Formula :=
+    { premises := []
+      conclusions := [.intEq (.scale (-7) (.variable "x")) (.literal (-3))] }
+  let negativeRequest ← expectOk
+    (checkedSmtRequest defaultSolverProfile negativeFormula)
+    "negative SMT numerals"
+  expectEq negativeRequest.smtLib
+    ( "(set-logic QF_LIA)\n" ++
+      "(declare-fun i0 () Int)\n" ++
+      "(assert true)\n" ++
+      "(assert (not (= (* (- 7) i0) (- 3))))\n" ++
+      "(check-sat)\n" ++
+      "(exit)" )
+    "negative literals and coefficients use SMT-LIB numeral syntax"
   let mismatchedProfile := { defaultSolverProfile with version := "5.0.1" }
   let mismatchedResult := recordExternalOutcome "request-a" smtEntry
     { profile := mismatchedProfile, outcome := .unknown }

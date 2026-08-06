@@ -229,4 +229,166 @@ def validatesCounterexample (formula : Formula) (model : Valuation) : Bool :=
     allBound integerVariables model.integers && allBound booleanVariables model.booleans &&
     allTrue model formula.premises && anyFalse model formula.conclusions
 
+inductive SmtSort where
+  | integer
+  | boolean
+  deriving Repr, BEq, DecidableEq
+
+structure SmtBinding where
+  sourceName : String
+  symbol : String
+  sort : SmtSort
+  deriving Repr, BEq, DecidableEq
+
+inductive SmtTranslationError where
+  | invalidSolverProfile
+  | unsupportedFragment (fragment : Fragment)
+  | unboundVariable (sort : SmtSort) (name : String)
+  deriving Repr, BEq, DecidableEq
+
+structure SmtRequest where
+  profile : SolverProfile
+  formula : Formula
+  bindings : List SmtBinding
+  smtLib : String
+  deriving Repr, BEq
+
+private def insertSortedUnique (name : String) : List String → List String
+  | [] => [name]
+  | head :: tail =>
+      if name == head then head :: tail
+      else if name < head then name :: head :: tail
+      else head :: insertSortedUnique name tail
+
+private def uniqueSorted (names : List String) : List String :=
+  names.foldl (fun result name => insertSortedUnique name result) []
+
+private def indexedBindings (sort : SmtSort) (tag : String) :
+    Nat → List String → List SmtBinding
+  | _, [] => []
+  | index, name :: rest =>
+      { sourceName := name
+        symbol := tag ++ toString index
+        sort } :: indexedBindings sort tag (index + 1) rest
+
+private def formulaBindings (formula : Formula) : List SmtBinding :=
+  let predicates := formula.premises ++ formula.conclusions
+  let integerNames := uniqueSorted (predicates.flatMap Predicate.integerVariables)
+  let booleanNames := uniqueSorted (predicates.flatMap Predicate.booleanVariables)
+  indexedBindings .integer "i" 0 integerNames ++
+    indexedBindings .boolean "b" 0 booleanNames
+
+private def findBinding (sort : SmtSort) (name : String) :
+    List SmtBinding → Except SmtTranslationError String
+  | [] => .error (.unboundVariable sort name)
+  | binding :: rest =>
+      if binding.sort == sort && binding.sourceName == name then
+        .ok binding.symbol
+      else
+        findBinding sort name rest
+
+private def renderIntLiteral (value : Int) : String :=
+  if value < 0 then
+    s!"(- {toString (-value)})"
+  else
+    toString value
+
+private def renderIntExpr (bindings : List SmtBinding) : IntExpr → Except SmtTranslationError String
+  | .literal value => .ok (renderIntLiteral value)
+  | .variable name => findBinding .integer name bindings
+  | .add left right => do
+      let left ← renderIntExpr bindings left
+      let right ← renderIntExpr bindings right
+      pure s!"(+ {left} {right})"
+  | .sub left right => do
+      let left ← renderIntExpr bindings left
+      let right ← renderIntExpr bindings right
+      pure s!"(- {left} {right})"
+  | .scale coefficient body => do
+      let body ← renderIntExpr bindings body
+      pure s!"(* {renderIntLiteral coefficient} {body})"
+
+private def renderPredicate (bindings : List SmtBinding) :
+    Predicate → Except SmtTranslationError String
+  | .truth => .ok "true"
+  | .falsity => .ok "false"
+  | .boolVariable name => findBinding .boolean name bindings
+  | .not body => do
+      let body ← renderPredicate bindings body
+      pure s!"(not {body})"
+  | .and left right => do
+      let left ← renderPredicate bindings left
+      let right ← renderPredicate bindings right
+      pure s!"(and {left} {right})"
+  | .or left right => do
+      let left ← renderPredicate bindings left
+      let right ← renderPredicate bindings right
+      pure s!"(or {left} {right})"
+  | .intEq left right => do
+      let left ← renderIntExpr bindings left
+      let right ← renderIntExpr bindings right
+      pure s!"(= {left} {right})"
+  | .intNe left right => do
+      let left ← renderIntExpr bindings left
+      let right ← renderIntExpr bindings right
+      pure s!"(distinct {left} {right})"
+  | .intLe left right => do
+      let left ← renderIntExpr bindings left
+      let right ← renderIntExpr bindings right
+      pure s!"(<= {left} {right})"
+  | .intLt left right => do
+      let left ← renderIntExpr bindings left
+      let right ← renderIntExpr bindings right
+      pure s!"(< {left} {right})"
+  | .named _ _ _ => .error (.unsupportedFragment .untranslatedPredicate)
+  | .nonlinear _ => .error (.unsupportedFragment .nonlinearArithmetic)
+  | .worldSensitive _ => .error (.unsupportedFragment .worldEffect)
+
+private def renderConjunction : List String → String
+  | [] => "true"
+  | [value] => value
+  | values => s!"(and {String.intercalate " " values})"
+
+private def renderBinding (binding : SmtBinding) : String :=
+  match binding.sort with
+  | .integer => s!"(declare-fun {binding.symbol} () Int)"
+  | .boolean => s!"(declare-fun {binding.symbol} () Bool)"
+
+private def renderSmtLib (formula : Formula) (bindings : List SmtBinding) :
+    Except SmtTranslationError String := do
+  let premises ← formula.premises.mapM (renderPredicate bindings)
+  let conclusions ← formula.conclusions.mapM (renderPredicate bindings)
+  let declarations := bindings.map renderBinding
+  let lines :=
+    ["(set-logic QF_LIA)"] ++
+    declarations ++
+    ["(assert " ++ renderConjunction premises ++ ")",
+      "(assert (not " ++ renderConjunction conclusions ++ "))",
+      "(check-sat)",
+      "(exit)"]
+  pure (String.intercalate "\n" lines)
+
+def checkedSmtRequest (profile : SolverProfile) (formula : Formula) :
+    Except SmtTranslationError SmtRequest :=
+  if !validSolverProfile profile then
+    .error .invalidSolverProfile
+  else
+    match classify formula with
+    | .qfLia =>
+        let bindings := formulaBindings formula
+        match renderSmtLib formula bindings with
+        | .ok smtLib => .ok { profile, formula, bindings, smtLib }
+        | .error error => .error error
+    | fragment => .error (.unsupportedFragment fragment)
+
+def serialiseQfLia (formula : Formula) : Except SmtTranslationError String :=
+  match checkedSmtRequest defaultSolverProfile formula with
+  | .ok request => .ok request.smtLib
+  | .error error => .error error
+
+def validSmtRequest (request : SmtRequest) : Bool :=
+  match checkedSmtRequest request.profile request.formula with
+  | .ok expected => expected == request
+  | .error _ => false
+
 end Firth.Smt

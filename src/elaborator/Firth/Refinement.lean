@@ -537,11 +537,13 @@ inductive SmtQueueStatus where
 
 structure SmtQueueEntry where
   profile : SolverProfile := defaultSolverProfile
+  request : Option SmtRequest := none
   obligation : Obligation
   canonicalRequest : String
   requirements : CheckedAdapterRequirements
   status : SmtQueueStatus := .awaitingCheckedAdapter
   deriving Repr, BEq
+
 
 
 inductive ObligationStatus where
@@ -1109,13 +1111,16 @@ private def kernelBudgetResult (requestId : String) (obligation : Obligation) : 
 
 private def queueForSmt (obligation : Obligation) : Option SmtQueueEntry :=
   if !isSmtEligibleKind obligation.kind then none
-  else if classify obligation.formula == .qfLia then
-    some {
-      profile := defaultSolverProfile
-      obligation
-      canonicalRequest := canonicalSmtRequest obligation
-      requirements := checkedAdapterRequirements }
-  else none
+  else
+    match checkedSmtRequest defaultSolverProfile obligation.formula with
+    | .ok request =>
+        some {
+          profile := defaultSolverProfile
+          request := some request
+          obligation
+          canonicalRequest := canonicalSmtRequest obligation
+          requirements := checkedAdapterRequirements }
+    | .error _ => none
 
 private def dischargeObligation (requestId : String) (obligation : Obligation) : PipelineResult :=
   if isBudgetExceededObligation obligation || !formulaWithinKernelBounds obligation.formula then
@@ -1212,7 +1217,13 @@ def validSmtQueueEntry (entry : SmtQueueEntry) : Bool :=
     entry.obligation.obligationId == obligationIdentity entry.obligation.kind
       entry.obligation.formula entry.obligation.context &&
     entry.canonicalRequest == canonicalSmtRequest entry.obligation &&
-    entry.requirements == checkedAdapterRequirements
+    entry.requirements == checkedAdapterRequirements &&
+    match entry.request with
+    | none => false
+    | some request =>
+        validSmtRequest request &&
+          request.profile == entry.profile &&
+          request.formula == entry.obligation.formula
 
 def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
     (result : SmtResult) : PipelineResult :=
