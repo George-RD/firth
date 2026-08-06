@@ -520,6 +520,7 @@ inductive LeanEscalationReason where
   | uncheckedUnsatRejected
   | invalidCountermodel
   | externalRequestIneligible
+  | externalProfileMismatch
   deriving Repr, BEq
 
 structure LeanProofObligation where
@@ -535,11 +536,13 @@ inductive SmtQueueStatus where
   deriving Repr, BEq
 
 structure SmtQueueEntry where
+  profile : SolverProfile := defaultSolverProfile
   obligation : Obligation
   canonicalRequest : String
   requirements : CheckedAdapterRequirements
   status : SmtQueueStatus := .awaitingCheckedAdapter
   deriving Repr, BEq
+
 
 inductive ObligationStatus where
   | deferred
@@ -1108,6 +1111,7 @@ private def queueForSmt (obligation : Obligation) : Option SmtQueueEntry :=
   if !isSmtEligibleKind obligation.kind then none
   else if classify obligation.formula == .qfLia then
     some {
+      profile := defaultSolverProfile
       obligation
       canonicalRequest := canonicalSmtRequest obligation
       requirements := checkedAdapterRequirements }
@@ -1201,7 +1205,8 @@ def renderCountermodel (model : Valuation) : String :=
   encodeStrings rendered
 
 def validSmtQueueEntry (entry : SmtQueueEntry) : Bool :=
-  formulaWithinKernelBounds entry.obligation.formula &&
+  validSolverProfile entry.profile &&
+    formulaWithinKernelBounds entry.obligation.formula &&
     isSmtEligibleKind entry.obligation.kind &&
     classify entry.obligation.formula == .qfLia &&
     entry.obligation.obligationId == obligationIdentity entry.obligation.kind
@@ -1210,7 +1215,7 @@ def validSmtQueueEntry (entry : SmtQueueEntry) : Bool :=
     entry.requirements == checkedAdapterRequirements
 
 def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
-    (outcome : ExternalOutcome) : PipelineResult :=
+    (result : SmtResult) : PipelineResult :=
   let obligation := entry.obligation
   if !formulaWithinKernelBounds obligation.formula then
     kernelBudgetResult requestId
@@ -1219,8 +1224,12 @@ def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
     { leanQueue := [leanObligation obligation .externalRequestIneligible]
       diagnostics := [makeDiagnostic requestId obligation .deferred
         (reasonData "external-request-ineligible")] }
+  else if !validSolverProfile result.profile || result.profile != entry.profile then
+    { leanQueue := [leanObligation obligation .externalProfileMismatch]
+      diagnostics := [makeDiagnostic requestId obligation .deferred
+        (reasonData "external-profile-mismatch")] }
   else
-    match outcome with
+    match result.outcome with
     | .sat model =>
         if validatesCounterexample obligation.formula model then
           let rendered := renderCountermodel model
@@ -1235,5 +1244,6 @@ def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
         let reason := externalReason outcome
         { leanQueue := [leanObligation obligation reason]
           diagnostics := [makeDiagnostic requestId obligation .deferred (externalData outcome)] }
+
 
 end Firth.Elaborator.Refinement
