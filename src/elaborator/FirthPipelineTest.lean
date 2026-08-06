@@ -2,6 +2,48 @@ import elaborator.Firth.Pipeline
 
 open Firth.Elaborator
 open Firth.Elaborator.StackEffect
+open Firth.Elaborator.Refinement
+open Firth.Smt
+
+private def refinementPremises (sourcePath : String) (word : WordDefinition)
+    (scheme : Scheme) (declaredPostcondition : RefinementSet)
+    (totality : Option TotalityTypingPremises) : BodyTypingPremises :=
+  let stack : RefinedStack :=
+    { erased := scheme.input, refinements := {} }
+  let context : ObligationContext :=
+    { wordId := word.name
+      bodyHash := "pipeline-test-body"
+      erasedWordTypeHash := "pipeline-test-type"
+      specHash := "pipeline-test-spec"
+      normaliserVersion := "pipeline-test-v1"
+      vcGeneratorVersion := "pipeline-test-v1"
+      leanToolchainHash := "pipeline-test-lean"
+      proofModuleHash := "pipeline-test-proof"
+      toolchainRevision := "pipeline-test-revision"
+      source := { path := sourcePath, span := word.span }
+      expectedStack := stack
+      actualStack := { stack with erased := scheme.output } }
+  { context
+    precondition := {}
+    bodySemantics := {}
+    declaredPostcondition
+    totality }
+
+private def refinementConfig (bodyPredicate : Predicate) : PipelineConfig :=
+  { requestId := "pipeline-test"
+    sourcePath := "configured-pipeline.firth"
+    refinementBuilder := fun _ sourcePath word _ scheme =>
+      refinementPremises sourcePath word scheme { conjuncts := [bodyPredicate] } none }
+
+private def totalityEscalationConfig : PipelineConfig :=
+  { requestId := "pipeline-test"
+    sourcePath := "configured-pipeline.firth"
+    refinementBuilder := fun _ sourcePath word _ scheme =>
+      refinementPremises sourcePath word scheme {}
+        (some
+          { premises := {}
+            conclusion := { conjuncts := [.nonlinear "terminates"] } }) }
+
 private def mixedUsageConfig : PipelineConfig :=
   let signature : Signature := { input := [.linear], output := [] }
   let scheme : Scheme :=
@@ -85,6 +127,62 @@ def runPipelineTests : IO Unit := do
   | .failure [.parse error] =>
       expectTrue (error.code.startsWith "firth.syntax") "parse diagnostic retains its syntax code"
   | result => fail s!"expected a parse diagnostic, got {repr result}"
+  match elaborate ": one ( -- x:Int ) 1 ;" with
+  | .success { words := [word] } =>
+      expectEq (word.program.map (·.atom)) [.lit (.nat 1)]
+        "literal source lowers to the expected kernel atom"
+  | result => fail s!"checked kernel output failed: {repr result}"
+
+  match elaborate ": recursive ( -- ) recursive ;" with
+  | .success { words := [word] } =>
+      expectEq word.name "recursive" "recursive dictionary word is checked"
+      expectEq (word.program.map (·.atom)) [.word "recursive"]
+        "recursive reference lowers to the dictionary word atom"
+  | result => fail s!"recursive dictionary failed: {repr result}"
+  match elaborate ": recursive ( -- ) recursive 1 ;" with
+  | .failure [.stackEffect diagnostic] =>
+      expectEq diagnostic.code "firth.type.declared-effect-mismatch"
+        "invalid recursive body retains its stack-effect diagnostic"
+  | result => fail s!"invalid recursive dictionary accepted: {repr result}"
+
+  match elaborateWith (refinementConfig .falsity) ": guarded ( -- ) ;" with
+  | .failure [.refinement "guarded" diagnostic] =>
+      expectEq diagnostic.requestId "pipeline-test" "refinement request id is retained"
+      expectEq diagnostic.body.code "firth.refinement.not-decided"
+        "refinement escalation retains its diagnostic code"
+      expectEq diagnostic.body.location.path "configured-pipeline.firth"
+        "refinement diagnostic source path is retained"
+      expectEq diagnostic.body.location.range.start.offset 0
+        "refinement diagnostic starts at the word span"
+      expectEq diagnostic.body.location.range.stop.offset 18
+        "refinement diagnostic preserves the complete word span"
+  | result => fail s!"refinement diagnostic failed: {repr result}"
+
+  match elaborateWith totalityEscalationConfig ": total ( -- ) ;" with
+  | .failure [.refinement "total" diagnostic] =>
+      match diagnostic.body.obligations with
+      | [obligation] =>
+          expectEq obligation.kind .bodyTotality
+            "totality refinement escalation retains obligation kind"
+          expectEq obligation.status .deferred
+            "totality escalation remains deferred for Lean"
+          expectEq diagnostic.body.code "firth.refinement.not-decided"
+            "totality escalation retains its diagnostic code"
+          expectEq diagnostic.body.location.path "configured-pipeline.firth"
+            "totality escalation retains source path"
+          expectEq diagnostic.body.location.range.start.offset 0
+            "totality escalation starts at the word span"
+          expectEq diagnostic.body.location.range.stop.offset 16
+            "totality escalation preserves the complete word span"
+      | obligations => fail s!"unexpected totality obligations: {repr obligations}"
+  | result => fail s!"totality escalation failed: {repr result}"
+
+  let deterministicSource := ": stable ( -- x:Int ) 1 ;"
+  expectEq (elaborate deterministicSource) (elaborate deterministicSource)
+    "repeated elaboration is deterministic"
+  expectEq (elaborateWith externalWordConfig deterministicSource)
+    (elaborateWith externalWordConfig deterministicSource)
+    "repeated configured elaboration is deterministic"
 
   IO.println "pipeline tests passed"
 
