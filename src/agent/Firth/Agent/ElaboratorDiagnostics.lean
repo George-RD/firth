@@ -3,6 +3,7 @@ import elaborator.Firth.Parser
 import elaborator.Firth.Erasure
 import elaborator.Firth.StackEffect
 import elaborator.Firth.Refinement
+import elaborator.Firth.Pipeline
 
 namespace Firth.Agent
 
@@ -295,5 +296,55 @@ def sortDiagnosticEnvelopes (envelopes : List Envelope) : List Envelope :=
 def refinementEnvelopes
     (result : Firth.Elaborator.Refinement.PipelineResult) : List Envelope :=
   sortDiagnosticEnvelopes (result.diagnostics.map refinementEnvelope)
+
+
+inductive StructuredElaborationResult where
+  | success (program : Firth.Elaborator.CheckedProgram)
+  | failure (diagnostics : List Envelope)
+
+private def sourcePath : LocationSource → String
+  | .uri uri => uri
+  | .path path => path
+  | .uriAndPath uri path => if path.isEmpty then uri else path
+
+private def internalEnvelope (context : EmissionContext) (span : Firth.Elaborator.Span) :
+    Envelope :=
+  envelope context {
+    code := "firth.elaboration.internal"
+    severity := "error"
+    messageKey := messageKey "firth.elaboration.internal"
+    messageParams := .mkObj []
+    location := locationFromSpan context.source span
+    cause := { kind := "elaboration" }
+    expectedStack := none
+    actualStack := none }
+
+private def withContextSource (context : EmissionContext) (envelope : Envelope) :
+    Envelope :=
+  { envelope with
+    body := match envelope.body with
+    | .diagnostic diagnostic =>
+        .diagnostic { diagnostic with
+          location := { diagnostic.location with source := context.source } }
+    | body => body }
+
+private def pipelineDiagnosticEnvelope (context : EmissionContext) :
+    Firth.Elaborator.PipelineDiagnostic → Envelope
+  | .parse error => parserEnvelope context error
+  | .erasure _ error => erasureEnvelope context error
+  | .stackEffect diagnostic => stackEffectEnvelope context diagnostic
+  | .refinement _ diagnostic => withContextSource context (refinementEnvelope diagnostic)
+  | .internal span => internalEnvelope context span
+
+def elaboratePipeline (context : EmissionContext) (source : String)
+    (config : Firth.Elaborator.PipelineConfig := {}) : StructuredElaborationResult :=
+  let config := { config with
+    requestId := context.requestId
+    sourcePath := sourcePath context.source }
+  match Firth.Elaborator.elaborateWith config source with
+  | .success program => .success program
+  | .failure diagnostics =>
+      .failure (sortDiagnosticEnvelopes
+        (diagnostics.map (pipelineDiagnosticEnvelope context)))
 
 end Firth.Agent
