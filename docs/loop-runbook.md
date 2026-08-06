@@ -35,6 +35,10 @@ Complete these checks before launching the loop:
   (rustup-managed; cargo 1.93.0 verified). VM gates run from
   `src/runtime/vm`, never the repository root, which has no Cargo
   manifest.
+- [ ] A process-level watchdog exists: `command -v timeout || command -v
+  gtimeout` (GNU coreutils; stock on Linux, `brew install coreutils` on
+  macOS; coreutils 9.10 verified). The driver bounds every iteration with
+  it; harness-internal deadline flags are not relied on.
 - [ ] The chosen harness meets the loop's capability requirements: it runs a
   session non-interactively, re-injects one fixed prompt per iteration, starts
   each iteration with a fresh context, may write the workspace, and may reach
@@ -74,11 +78,17 @@ below; run it from the repository root.)
 W=${W:-10} # max consecutive completions landing nothing; wedge guard, not a cap
 case "$W" in ''|*[!0-9]*|0*) W= ;; esac
 : "${W:?W must be a positive integer}"
+MAXTIME=${MAXTIME:-7200} # per-iteration watchdog in seconds; driver-owned, process-level
+case "$MAXTIME" in ''|*[!0-9]*|0*) MAXTIME= ;; esac
+: "${MAXTIME:?MAXTIME must be a positive integer of seconds}"
+TMO=$(command -v timeout || command -v gtimeout)
+: "${TMO:?need coreutils timeout or gtimeout for the per-iteration watchdog}"
 AGENT=${AGENT:?set AGENT to a non-interactive harness invocation}
 MISSION='' # for example: MISSION='MISSION: toolchain only'
 rc=4 # 0 exhausted, 2 halted, 3 unknown token/harness/observation failure, 4 wedged; pre-start config aborts exit 1
 i=0
 window=0
+tfail=0
 mark=$(git ls-remote origin refs/heads/main | awk '{print $1}')
 : "${mark:?cannot observe origin/main; fix connectivity before launching}"
 while :; do
@@ -89,14 +99,24 @@ while :; do
     prompt="$prompt
 $MISSION"
   fi
-  $AGENT "$prompt" > "$log" 2>&1
+  "$TMO" -k 60 "$MAXTIME" $AGENT "$prompt" > "$log" 2>&1
   agent_rc=$?
   cat "$log"
   token=$(awk '{ sub(/\r$/, "") } NF { last=$0 } END { print last }' "$log")
+  if [ "$agent_rc" -eq 124 ] || [ "$agent_rc" -eq 137 ]; then
+    tfail=$((tfail + 1))
+    printf 'watchdog killed iteration %s after %ss (exit %s); consecutive timeouts: %s; the next iteration recovers the partial state\n' "$i" "$MAXTIME" "$agent_rc" "$tfail" >&2
+    if [ "$tfail" -ge 2 ]; then
+      printf 'stopping: two consecutive watchdog timeouts\n' >&2
+      rc=3; break
+    fi
+    continue
+  fi
   if [ "$agent_rc" -ne 0 ]; then
     printf 'stopping: harness exited %s on iteration %s (any token line ignored) in %s\n' "$agent_rc" "$i" "$log" >&2
     rc=3; break
   fi
+  tfail=0
   case "$token" in
     "LOOP HALTED")
       printf 'stopping after iteration %s: %s\n' "$i" "$token"
@@ -144,7 +164,7 @@ root:
 
 ```text
 awk '/^```sh$/{f=1;next} f&&/^```$/{exit} f' docs/loop-runbook.md > /tmp/firth-driver.sh
-AGENT='omp -p --approval-mode yolo --no-skills --max-time 2h' sh /tmp/firth-driver.sh
+AGENT='omp -p --profile <profile> --approval-mode yolo --no-skills' sh /tmp/firth-driver.sh
 ```
 
 - `-p` runs one non-interactive session and prints the final message to
@@ -157,11 +177,28 @@ AGENT='omp -p --approval-mode yolo --no-skills --max-time 2h' sh /tmp/firth-driv
   pack's skills, and their different ratification contract, out of the
   session. The loop reads its normative files by exact path and needs no
   skill mechanism.
-- `--max-time 2h` bounds a wedged iteration. A session killed mid-iteration
-  leaves exactly the states the preflight recovery rows classify; the next
-  iteration recovers, so the bound is safe.
+- The per-iteration bound is the driver's watchdog (`MAXTIME`, default
+  7200 seconds), not a harness flag: `timeout` kills a wedged session with
+  a known exit (124 or 137), the driver tolerates one such kill and stops
+  on two in a row, and the killed iteration's partial state is exactly
+  what the next iteration's preflight recovery rows classify. omp's own
+  `--max-time` is an in-process deadline with unreliable exit semantics
+  and is deliberately not used.
 - Each `omp -p` invocation is a fresh session, satisfying the
   fresh-context-per-iteration requirement.
+- For unattended runs, a memory-off overlay is recommended so that
+  long-term memory recall cannot leak prior-session context into an
+  iteration; the tracker and graph must stay the only cross-iteration
+  channel, and a bank can hold stale workflow facts that contradict the
+  loop's procedure. Keep every other profile setting as configured:
+
+  ```text
+  printf 'memory:\n  backend: off\n' > ~/.omp/firth-loop-overlay.yml
+  AGENT='omp -p --profile <profile> --config ~/.omp/firth-loop-overlay.yml --approval-mode yolo --no-skills' sh /tmp/firth-driver.sh
+  ```
+
+  Verified against omp 17.2.9: with the overlay a print-mode session
+  reports no injected memory block; without it, injection occurs.
 
 Do not drive this repository with the generic `/cairn-loop` pack command
 installed under `.omp/`: it resolves to cairn's generic loop mode and
