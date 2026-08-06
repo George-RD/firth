@@ -172,7 +172,7 @@ root:
 
 ```text
 awk '/^```sh$/{f=1;next} f&&/^```$/{exit} f' docs/loop-runbook.md > /tmp/firth-driver.sh
-AGENT='omp -p --profile <profile> --approval-mode yolo --no-skills' sh /tmp/firth-driver.sh
+AGENT='omp -p --profile <profile> --approval-mode yolo --no-skills --' sh /tmp/firth-driver.sh
 ```
 
 - `-p` runs one non-interactive session and prints the final message to
@@ -185,6 +185,11 @@ AGENT='omp -p --profile <profile> --approval-mode yolo --no-skills' sh /tmp/firt
   pack's skills, and their different ratification contract, out of the
   session. The loop reads its normative files by exact path and needs no
   skill mechanism.
+- The trailing `--` ends option parsing before the prompt argument. The
+  command file opens with YAML frontmatter, so without the terminator the
+  harness parses the prompt's leading dashes as a flag (`unknown flag:
+  ---`) and exits 2 on iteration 1 (observed on the first containerised
+  launch, 2026-08-06; reproduced and fix verified in the runtime image).
 - The per-iteration bound is the driver's watchdog (`MAXTIME`, default
   7200 seconds), not a harness flag: `timeout` kills a wedged session with
   a known exit (124 or 137), the driver tolerates one such kill and stops
@@ -202,7 +207,7 @@ AGENT='omp -p --profile <profile> --approval-mode yolo --no-skills' sh /tmp/firt
 
   ```text
   printf 'memory:\n  backend: off\n' > ~/.omp/firth-loop-overlay.yml
-  AGENT='omp -p --profile <profile> --config ~/.omp/firth-loop-overlay.yml --approval-mode yolo --no-skills' sh /tmp/firth-driver.sh
+  AGENT='omp -p --profile <profile> --config ~/.omp/firth-loop-overlay.yml --approval-mode yolo --no-skills --' sh /tmp/firth-driver.sh
   ```
 
   Verified against omp 17.2.9: with the overlay a print-mode session
