@@ -543,7 +543,10 @@ def checkDictionary (gamma : Env) (definitions : List Definition) :
   let schemes ← collectSchemes definitions
   let env : Env := {
     literal := gamma.literal
-    word := fun name => (schemes.find? (fun entry => entry.1 == name)).map (·.2)
+    word := fun name =>
+      match schemes.find? (fun entry => entry.1 == name) with
+      | some entry => some entry.2
+      | none => gamma.word name
     primitive := gamma.primitive }
   let rec checkAll : List Definition → Except Diagnostic (List CheckedDefinition)
     | [] => .ok []
