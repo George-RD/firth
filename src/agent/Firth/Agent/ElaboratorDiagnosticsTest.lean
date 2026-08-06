@@ -224,4 +224,33 @@ def runElaboratorDiagnosticTests : IO Unit := do
       expectValidCode "stack-effect path emission" diagnostic.code emitted
       expectCauseState "stack-effect path pre-atom state" emitted intStack
 
+  let pipelineContext := contextWithSource "pipeline-1" "main.fth"
+  match elaboratePipeline pipelineContext ": id ( -- ) ;" with
+  | .success program =>
+      match program.words with
+      | [word] => expectEqual "pipeline success word" word.name "id"
+      | _ => fail "pipeline success returned the wrong word count"
+  | .failure _ => fail "pipeline success returned diagnostics"
+
+  match elaboratePipeline pipelineContext ":" with
+  | .failure [envelope] =>
+      expectValidCode "pipeline parser path" "firth.syntax.unexpected-eof" (encode envelope)
+      match envelope.body with
+      | .diagnostic diagnostic =>
+          expectEqual "pipeline parser source" diagnostic.location.source (.path "main.fth")
+          expectEqual "pipeline parser line" diagnostic.location.range.start.line 1
+      | _ => fail "pipeline parser result was not a diagnostic payload"
+  | _ => fail "pipeline parser result was not singular"
+
+  match elaboratePipeline pipelineContext ": bad ( -- ) missing ;" with
+  | .failure [envelope] =>
+      expectValidCode "pipeline erasure path" "firth.name.unresolved-effect" (encode envelope)
+  | _ => fail "pipeline erasure result was not singular"
+
+  match elaboratePipeline pipelineContext ": bad ( -- ) 1 ;" with
+  | .failure [envelope] =>
+      expectValidCode "pipeline stack-effect path"
+        "firth.type.declared-effect-mismatch" (encode envelope)
+  | _ => fail "pipeline stack-effect result was not singular"
+
 end Firth.Agent.Test
