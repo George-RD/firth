@@ -1,8 +1,9 @@
 ---
 node: firth.toolchain.smt
-status: open
+status: blocked
 created: 2026-08-06
 ---
+blocked on sub-todos: todo.smt-normaliser-vc-proofs, todo.smt-encoder-translation-proofs, todo.smt-serialiser-proof-bindings
 
 # Smt Lean Adapter Proofs
 
