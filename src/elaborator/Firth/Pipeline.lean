@@ -73,14 +73,15 @@ def collectWords : List Declaration → List WordDefinition
   | .word word :: rest => word :: collectWords rest
   | .vocabulary _ declarations _ :: rest => collectWords declarations ++ collectWords rest
 
-private def usageOfItem : StackItem → Usage
-  | .row _ _ => .many
-  | .value _ type _ => type.usage
+private def signatureUsages : List StackItem → List Usage
+  | [] => []
+  | .row _ _ :: rest => signatureUsages rest
+  | .value _ type _ :: rest => type.usage :: signatureUsages rest
 
 private def signatureOfEffect (effect : StackEffect) : Signature :=
   -- Surface effects are bottom-to-top; erasure states and signatures are top-first.
-  { input := effect.input.reverse.map usageOfItem
-    output := effect.output.reverse.map usageOfItem }
+  { input := signatureUsages effect.input.reverse
+    output := signatureUsages effect.output.reverse }
 
 private def lookupSignature (name : String) : List (String × Signature) → Option Signature
   | [] => none

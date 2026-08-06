@@ -51,6 +51,13 @@ def runPipelineTests : IO Unit := do
       | _ => fail "checked word is absent"
   | .failure diagnostics => fail s!"valid source failed: {repr diagnostics}"
 
+  match elaborate
+      ": id ( forall ρ; ρ -- ρ ) ; : caller ( h:Handle^linear -- h:Handle^linear ) id ;" with
+  | .success program =>
+      expectEq (program.words.map (·.name)) ["id", "caller"]
+        "row-polymorphic words remain usable at concrete linear stacks"
+  | .failure diagnostics => fail s!"row-polymorphic word failed: {repr diagnostics}"
+
   match elaborateWith externalWordConfig ": caller ( -- ) helper ;" with
   | .success program =>
       expectEq (program.words.map (·.name)) ["caller"]
