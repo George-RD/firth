@@ -107,6 +107,9 @@ def main() -> int:
             errors.append(f"{oid}: unknown node {node!r}")
         if row.get("milestone", "mvp") not in ("mvp", "post-mvp"):
             errors.append(f"{oid}: milestone must be 'mvp' or 'post-mvp'")
+        gate = row.get("gate")
+        if gate is not None and (not isinstance(gate, str) or not gate or gate.startswith("/")):
+            errors.append(f"{oid}: gate must be a repo-relative path")
         for slug in row.get("satisfied_by", []):  # type: ignore[union-attr]
             if slug not in statuses:
                 errors.append(f"{oid}: unknown satisfied_by slug {slug!r}")
@@ -158,7 +161,17 @@ def main() -> int:
         if slug not in refs or any(refs[slug])
     }
     all_todos_done = bool(gated) and all(status == "done" for status in gated.values())
-    loop_exhausted_valid = not ungenerated and all_todos_done
+    # A row may pin an executable acceptance gate (dec.mvp-completion
+    # clause 4). Its presence is machine-checked here; its execution
+    # belongs to the Verify battery and the pre-exhaustion preflight.
+    # Absence holds exhaustion false, so done todos alone can never
+    # discharge the endpoint without the gate existing on disk.
+    missing_gates = sorted(
+        str(row["gate"])
+        for row in active.values()
+        if isinstance(row.get("gate"), str) and not (root / str(row["gate"])).is_file()
+    )
+    loop_exhausted_valid = not ungenerated and all_todos_done and not missing_gates
     print(
         json.dumps(
             {
@@ -171,6 +184,7 @@ def main() -> int:
                 "outside_profile": sorted(oid for oid in obligations if oid not in active),
                 "first_incomplete": first_incomplete,
                 "next_obligation": next_obligation,
+                "missing_gates": missing_gates,
                 "loop_exhausted_valid": loop_exhausted_valid,
             },
             sort_keys=True,

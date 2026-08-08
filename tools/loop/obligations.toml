@@ -254,8 +254,11 @@ satisfied_by = []
 # guide plus basic example applications authored by a code model given only
 # the guide and the agent interface, each elaborated, checked, compiled, run
 # on the VM with interpreter agreement, wired into a repeatable executable
-# gate. Discharged like every other row: by the done todos listed here.
+# gate. Discharged by done todos like every row, with one extra machine
+# check: coverage.py holds loop_exhausted_valid false while the pinned gate
+# script is absent, so prose can never stand in for the executable gate.
 [obligation.mvp-agent-authoring]
 node = "firth.toolchain.agent"
 source = "dec.mvp-completion clause 4 (MVP reading of PRD S5/S7)"
+gate = "tools/loop/mvp_agent_gate.py"
 satisfied_by = []
