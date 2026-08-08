@@ -442,6 +442,8 @@ private def runTests : IO Unit := do
   let some checkedRequest := smtEntry.request | fail "eligible queue lacks checked request"
   expectTrue (validSmtRequest checkedRequest)
     "eligible queue stores a self-validating SMT request"
+  expectEq checkedRequest.proofBindings defaultSmtProofBindings
+    "request binds the canonical translation and soundness proof identities"
   expectEq checkedRequest.bindings
     [ { sourceName := "x", symbol := "i0", sort := .integer }
       , { sourceName := "y", symbol := "i1", sort := .integer } ]
@@ -499,6 +501,22 @@ private def runTests : IO Unit := do
   let mismatchQueue ← expectOneLeanQueue mismatchedResult "profile mismatch"
   expectEq mismatchQueue.reason .externalProfileMismatch
     "profile mismatch is deferred before interpreting the external outcome"
+  let staleProofBindings := { defaultSmtProofBindings with
+    translationRuleHashes := ["sha256:stale-translation"] }
+  let mutatedRequest := recordExternalOutcome "request-a"
+    { smtEntry with
+      request := some { checkedRequest with proofBindings := staleProofBindings } }
+    { profile := defaultSolverProfile, outcome := .unknown }
+  let mutatedRequestQueue ← expectOneLeanQueue mutatedRequest
+    "proof-binding mutation in the request"
+  expectEq mutatedRequestQueue.reason .externalRequestIneligible
+    "mutated request proof bindings are rejected"
+  let mutatedResult := recordExternalOutcome "request-a" smtEntry
+    { profile := defaultSolverProfile, proofBindings := staleProofBindings, outcome := .unknown }
+  let mutatedResultQueue ← expectOneLeanQueue mutatedResult
+    "proof-binding mutation in the result"
+  expectEq mutatedResultQueue.reason .externalProofMismatch
+    "mutated result proof bindings are deferred before outcome interpretation"
   let oversizedExternalObligation : Obligation :=
     { smtEntry.obligation with
       obligationId := "attacker-supplied-over-budget-obligation"
