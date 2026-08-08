@@ -108,6 +108,9 @@ class DriverTokenTests(unittest.TestCase):
             STUB_DIR=str(self.dir),
             AGENT="agent",
             TMPDIR=str(self.dir),
+            # Never the live /tmp: the Verify gate runs this suite inside
+            # the loop container beside a running driver's own logs.
+            FIRTH_LOOP_LOG_DIR=str(self.dir),
             W="10",
             MAXTIME="60",
         )
@@ -193,18 +196,15 @@ class DriverTokenTests(unittest.TestCase):
     def test_log_retention_keeps_last_twenty(self) -> None:
         # The driver deletes log i-20 at each iteration top, so a long run
         # holds at most 20 iteration logs. 26 iterations: logs 1-6 pruned.
+        # All inside this test's own directory, never the live /tmp.
         for n in range(1, 26):
             self.iteration(n, "did work\nITERATION COMPLETE\n")
-        for n in range(1, 27):
-            Path(f"/tmp/firth-loop-{n}.log").unlink(missing_ok=True)
         done = self.run_driver()
         self.assertEqual(done.returncode, 2)  # iteration 26 is the stub halt
-        gone = [n for n in range(1, 7) if Path(f"/tmp/firth-loop-{n}.log").exists()]
-        kept = [n for n in range(7, 27) if not Path(f"/tmp/firth-loop-{n}.log").exists()]
+        gone = [n for n in range(1, 7) if (self.dir / f"firth-loop-{n}.log").exists()]
+        kept = [n for n in range(7, 27) if not (self.dir / f"firth-loop-{n}.log").exists()]
         self.assertEqual(gone, [], f"logs not pruned: {gone}")
         self.assertEqual(kept, [], f"logs missing from retention window: {kept}")
-        for n in range(7, 27):
-            Path(f"/tmp/firth-loop-{n}.log").unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

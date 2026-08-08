@@ -89,16 +89,19 @@ rc=4 # 0 exhausted, 2 halted, 3 unknown token/harness/observation failure, 4 wed
 i=0
 window=0
 tfail=0
+# Injectable so the driver test suite never touches a live run's logs;
+# production leaves the default, which the launcher's summary reads.
+LOGDIR=${FIRTH_LOOP_LOG_DIR:-/tmp}
 mark=$(git ls-remote origin refs/heads/main | awk '{print $1}')
 : "${mark:?cannot observe origin/main; fix connectivity before launching}"
 while :; do
   i=$((i + 1))
-  log="/tmp/firth-loop-${i}.log"
+  log="$LOGDIR/firth-loop-${i}.log"
   # Bounded log retention: keep the last 20 iteration logs. A long healthy
   # run otherwise accumulates one file per iteration for its whole life;
   # the launcher-side cleanup runs only between runs.
   if [ "$i" -gt 20 ]; then
-    rm -f "/tmp/firth-loop-$((i - 20)).log"
+    rm -f "$LOGDIR/firth-loop-$((i - 20)).log"
   fi
   if ! git fetch origin main; then
     printf 'stopping: cannot fetch origin/main for prompt refresh on iteration %s\n' "$i" >&2
