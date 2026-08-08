@@ -177,7 +177,7 @@ satisfied_by = ["kernel-cost-semantics-claims"]
 [obligation.req-r11]
 node = "firth.language.kernel"
 source = "PRD R11"
-satisfied_by = []
+satisfied_by = ["req-r11"]
 
 [obligation.req-r12]
 node = "firth.toolchain.agent"
