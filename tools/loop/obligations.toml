@@ -167,7 +167,7 @@ satisfied_by = ["req-r8"]
 [obligation.req-r9]
 node = "firth.language.kernel"
 source = "PRD R9"
-satisfied_by = []
+satisfied_by = ["req-r9"]
 
 [obligation.req-r10]
 node = "firth.language.kernel"
