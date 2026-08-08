@@ -10,6 +10,12 @@ open Firth.Smt
 #print axioms Firth.Elaborator.Refinement.leanDecide_sound
 #print axioms Firth.Elaborator.Refinement.evalInt_stable
 #print axioms Firth.Elaborator.Refinement.evalPredicate_stable
+#print axioms Firth.Elaborator.Refinement.evalPredicate_normaliseConjunction
+#print axioms Firth.Elaborator.Refinement.evalPredicate_normaliseRefinementSet
+#print axioms Firth.Elaborator.Refinement.evalConjunction_true_iff
+#print axioms Firth.Elaborator.Refinement.valid_normaliseFormula_iff
+#print axioms Firth.Elaborator.Refinement.generateVc_formula
+#print axioms Firth.Elaborator.Refinement.generateVc_identity
 
 private def fail (message : String) : IO α := throw <| IO.userError message
 
@@ -210,6 +216,35 @@ private def runTests : IO Unit := do
   let xPositive := Predicate.intLt (.literal 0) (.variable "x")
   let successor := Predicate.intEq (.variable "y") (.add (.variable "x") (.literal 1))
   let yPositive := Predicate.intLt (.literal 0) (.variable "y")
+  let valuation : Valuation :=
+    { integers := [("x", 1)]
+      booleans := [("flag", true)] }
+  let refinement : RefinementSet :=
+    { conjuncts := [xPositive, .boolVariable "flag"] }
+  expectEq (refinement.satisfies valuation) (some true)
+    "refinement conjunction semantics accepts true source predicates"
+  expectEq (evalPredicate valuation refinement.normalise) (some true)
+    "normalised predicate preserves refinement semantics"
+  let unknownRefinement : RefinementSet :=
+    { conjuncts := [xPositive, .boolVariable "missing"] }
+  expectEq (evalPredicate valuation unknownRefinement.normalise) none
+    "normalised predicate preserves unknown source semantics"
+  let simpleFormula : Formula :=
+    { premises := [.truth, .boolVariable "flag"]
+      conclusions := [.truth, .falsity] }
+  let normalisedSimple := normaliseFormula simpleFormula
+  expectEq normalisedSimple.premises
+    [.and .truth (.and (.boolVariable "flag") .truth)]
+    "formula normalisation retains all premises in right-associated form"
+  expectEq normalisedSimple.conclusions
+    [.and .truth (.and .falsity .truth)]
+    "formula normalisation retains all conclusions in right-associated form"
+  have simpleFormulaProof := generateVc_formula .body simpleFormula ctx (by native_decide)
+  have simpleIdentityProof := generateVc_identity .body simpleFormula ctx (by native_decide)
+  have simpleValidityProof := valid_normaliseFormula_iff simpleFormula
+  let _ := simpleFormulaProof
+  let _ := simpleIdentityProof
+  let _ := simpleValidityProof
 
   let generated := oneBody ctx [xPositive] [successor] [yPositive]
   expectEq generated.formula.premises [xPositive, successor]

@@ -58,9 +58,20 @@ def classify(slugs: list[str], statuses: dict[str, str | None]) -> str:
     return "blocked"
 
 
-def node_status(node: str, obligations: dict[str, dict[str, object]], classification: dict[str, str]) -> str:
-    rows = [oid for oid, row in obligations.items() if row.get("node") == node]
+def node_status(
+    node: str,
+    active: dict[str, dict[str, object]],
+    obligations: dict[str, dict[str, object]],
+    classification: dict[str, str],
+) -> str:
+    """Gate on the active profile's rows. A node whose matrix rows are all
+    outside the active profile is gate-neutral (complete): the inactive
+    horizon must not deadlock active dependants. A node with no matrix rows
+    at all stays ungenerated, as before."""
+    rows = [oid for oid in active if active[oid].get("node") == node]
     if not rows:
+        if any(row.get("node") == node for row in obligations.values()):
+            return "complete"
         return "ungenerated"
     states = {classification[oid] for oid in rows}
     if "ungenerated" in states:
@@ -83,14 +94,19 @@ def main() -> int:
     with obligations_path.open("rb") as handle:
         data = tomllib.load(handle)
     obligations: dict[str, dict[str, object]] = data.get("obligation", {})
+    profile = (data.get("completion") or {}).get("profile", "full")
 
     nodes, edges = load_blueprint(root)
     statuses, errors = load_todo_statuses(root)
 
+    if profile not in ("mvp", "full"):
+        errors.append(f"completion.profile must be 'mvp' or 'full', not {profile!r}")
     for oid, row in sorted(obligations.items()):
         node = row.get("node")
         if node not in nodes:
             errors.append(f"{oid}: unknown node {node!r}")
+        if row.get("milestone", "mvp") not in ("mvp", "post-mvp"):
+            errors.append(f"{oid}: milestone must be 'mvp' or 'post-mvp'")
         for slug in row.get("satisfied_by", []):  # type: ignore[union-attr]
             if slug not in statuses:
                 errors.append(f"{oid}: unknown satisfied_by slug {slug!r}")
@@ -105,35 +121,54 @@ def main() -> int:
         oid: classify(row.get("satisfied_by", []), statuses)  # type: ignore[arg-type]
         for oid, row in obligations.items()
     }
+    active = {
+        oid: row
+        for oid, row in obligations.items()
+        if profile == "full" or row.get("milestone", "mvp") == "mvp"
+    }
 
     def deps_ready(node: str) -> bool:
         return all(
-            node_status(dep, obligations, classification) in ("complete", "in-flight")
+            node_status(dep, active, obligations, classification) in ("complete", "in-flight")
             for dep in edges.get(node, ())
         )
 
-    complete = sorted(oid for oid, state in classification.items() if state == "complete")
-    in_flight = sorted(oid for oid, state in classification.items() if state == "in-flight")
-    blocked = sorted(oid for oid, state in classification.items() if state == "blocked")
-    ungenerated = sorted(oid for oid, state in classification.items() if state == "ungenerated")
+    complete = sorted(oid for oid in active if classification[oid] == "complete")
+    in_flight = sorted(oid for oid in active if classification[oid] == "in-flight")
+    blocked = sorted(oid for oid in active if classification[oid] == "blocked")
+    ungenerated = sorted(oid for oid in active if classification[oid] == "ungenerated")
     first_incomplete = next(
-        (oid for oid in sorted(classification) if classification[oid] != "complete"),
+        (oid for oid in sorted(active) if classification[oid] != "complete"),
         None,
     )
     next_obligation = next(
-        (oid for oid in ungenerated if deps_ready(obligations[oid]["node"])),  # type: ignore[arg-type]
+        (oid for oid in ungenerated if deps_ready(active[oid]["node"])),  # type: ignore[arg-type]
         None,
     )
-    all_todos_done = bool(statuses) and all(status == "done" for status in statuses.values())
+    # The todo gate honours the profile: a todo whose every matrix reference
+    # is outside the active profile is roadmap, not outstanding work. Unmapped
+    # todos still gate, conservatively: the loop finishes what it opened.
+    refs: dict[str, list[bool]] = {}
+    for oid, row in obligations.items():
+        for slug in row.get("satisfied_by", []):  # type: ignore[union-attr]
+            refs.setdefault(slug, []).append(oid in active)
+    gated = {
+        slug: status
+        for slug, status in statuses.items()
+        if slug not in refs or any(refs[slug])
+    }
+    all_todos_done = bool(gated) and all(status == "done" for status in gated.values())
     loop_exhausted_valid = not ungenerated and all_todos_done
     print(
         json.dumps(
             {
                 "schema": 1,
+                "profile": profile,
                 "complete": complete,
                 "in_flight": in_flight,
                 "blocked": blocked,
                 "ungenerated": ungenerated,
+                "outside_profile": sorted(oid for oid in obligations if oid not in active),
                 "first_incomplete": first_incomplete,
                 "next_obligation": next_obligation,
                 "loop_exhausted_valid": loop_exhausted_valid,

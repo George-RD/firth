@@ -82,6 +82,7 @@ cairn scan            # run before committing; zero findings is the target
 cairn hook all        # strict gate; exit 0 means the commit is safe
 python3 tools/loop/test_select_unit.py
 python3 tools/loop/test_coverage.py
+python3 tools/loop/test_driver_tokens.py
 python3 tools/loop/select_unit.py --validate
 python3 tools/loop/coverage.py --validate
 
@@ -98,8 +99,10 @@ For the autonomous loop launch contract and maintainer preflight, read
 Unattended operation and in-loop decision authority are governed by
 `meta/decisions/loop-autonomy.md` (dec.loop-autonomy): decisions are typed,
 the goal layer is immutable to the loop, and `LOOP EXHAUSTED` with
-`tools/loop/coverage.py` reporting `loop_exhausted_valid: true` is project
-completion.
+`tools/loop/coverage.py` reporting `loop_exhausted_valid: true` is completion
+of the active profile in `tools/loop/obligations.toml` (dec.mvp-completion:
+`mvp` = a working language an AI can use, via the agent guide, to build and
+run basic applications; post-mvp rows stay visible as roadmap).
 
 `--json` is accepted by every command for machine-readable output. The
 product gates are live: `lake build` and `lake test` at the root, and the

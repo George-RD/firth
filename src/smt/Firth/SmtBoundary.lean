@@ -157,6 +157,7 @@ def classify (formula : Formula) : Fragment :=
   predicates.foldl (fun result predicate =>
     if result == .qfLia then predicateFragment predicate else result) .qfLia
 
+
 structure CheckedAdapterRequirements where
   logic : String := "QF_LIA"
   pinnedSolverRequired : Bool := true
@@ -248,6 +249,390 @@ inductive SmtSort where
   | integer
   | boolean
   deriving Repr, BEq, DecidableEq
+
+inductive QfLiaSort where
+  | integer
+  | boolean
+  deriving Repr, BEq, DecidableEq
+
+def encodeSort : SmtSort → QfLiaSort
+  | .integer => .integer
+  | .boolean => .boolean
+
+inductive QfLiaIntExpr where
+  | literal (value : Int)
+  | variable (symbol : String)
+  | add (left right : QfLiaIntExpr)
+  | sub (left right : QfLiaIntExpr)
+  | scale (coefficient : Int) (body : QfLiaIntExpr)
+  deriving Repr, BEq, DecidableEq
+
+inductive QfLiaPredicate where
+  | truth
+  | falsity
+  | boolVariable (symbol : String)
+  | not (body : QfLiaPredicate)
+  | and (left right : QfLiaPredicate)
+  | or (left right : QfLiaPredicate)
+  | intEq (left right : QfLiaIntExpr)
+  | intNe (left right : QfLiaIntExpr)
+  | intLe (left right : QfLiaIntExpr)
+  | intLt (left right : QfLiaIntExpr)
+  deriving Repr, BEq, DecidableEq
+
+def encodeIntExpr : IntExpr → QfLiaIntExpr
+  | .literal value => .literal value
+  | .variable name => .variable name
+  | .add left right => .add (encodeIntExpr left) (encodeIntExpr right)
+  | .sub left right => .sub (encodeIntExpr left) (encodeIntExpr right)
+  | .scale coefficient body => .scale coefficient (encodeIntExpr body)
+
+def encodePredicate : Predicate → Option QfLiaPredicate
+  | .truth => some .truth
+  | .falsity => some .falsity
+  | .boolVariable name => some (.boolVariable name)
+  | .not body =>
+      match encodePredicate body with
+      | some body => some (.not body)
+      | none => none
+  | .and left right =>
+      match encodePredicate left, encodePredicate right with
+      | some left, some right => some (.and left right)
+      | _, _ => none
+  | .or left right =>
+      match encodePredicate left, encodePredicate right with
+      | some left, some right => some (.or left right)
+      | _, _ => none
+  | .intEq left right => some (.intEq (encodeIntExpr left) (encodeIntExpr right))
+  | .intNe left right => some (.intNe (encodeIntExpr left) (encodeIntExpr right))
+  | .intLe left right => some (.intLe (encodeIntExpr left) (encodeIntExpr right))
+  | .intLt left right => some (.intLt (encodeIntExpr left) (encodeIntExpr right))
+  | .named _ _ _ | .nonlinear _ | .worldSensitive _ => none
+
+structure QfLiaFormula where
+  premises : List QfLiaPredicate
+  conclusions : List QfLiaPredicate
+  deriving Repr, BEq, DecidableEq
+
+def encodePredicates : List Predicate → Option (List QfLiaPredicate)
+  | [] => some []
+  | predicate :: rest =>
+      match encodePredicate predicate, encodePredicates rest with
+      | some encoded, some encodedRest => some (encoded :: encodedRest)
+      | _, _ => none
+
+def encodeFormula (formula : Formula) : Option QfLiaFormula :=
+  match encodePredicates formula.premises, encodePredicates formula.conclusions with
+  | some premises, some conclusions => some { premises, conclusions }
+  | _, _ => none
+
+
+def evalQfLiaInt (valuation : Valuation) : QfLiaIntExpr → Option Int
+  | .literal value => some value
+  | .variable symbol => lookup symbol valuation.integers
+  | .add left right => return (← evalQfLiaInt valuation left) +
+      (← evalQfLiaInt valuation right)
+  | .sub left right => return (← evalQfLiaInt valuation left) -
+      (← evalQfLiaInt valuation right)
+  | .scale coefficient body => return coefficient * (← evalQfLiaInt valuation body)
+
+def evalQfLiaPredicate (valuation : Valuation) : QfLiaPredicate → Option Bool
+  | .truth => some true
+  | .falsity => some false
+  | .boolVariable symbol => lookup symbol valuation.booleans
+  | .not body => return !(← evalQfLiaPredicate valuation body)
+  | .and left right => return (← evalQfLiaPredicate valuation left) &&
+      (← evalQfLiaPredicate valuation right)
+  | .or left right => return (← evalQfLiaPredicate valuation left) ||
+      (← evalQfLiaPredicate valuation right)
+  | .intEq left right => return (← evalQfLiaInt valuation left) ==
+      (← evalQfLiaInt valuation right)
+  | .intNe left right => return (← evalQfLiaInt valuation left) !=
+      (← evalQfLiaInt valuation right)
+  | .intLe left right => return (← evalQfLiaInt valuation left) <=
+      (← evalQfLiaInt valuation right)
+  | .intLt left right => return (← evalQfLiaInt valuation left) <
+      (← evalQfLiaInt valuation right)
+def evalConjunction : (valuation : Valuation) → List Predicate → Option Bool
+  | _, [] => some true
+  | valuation, predicate :: rest =>
+      return (← evalPredicate valuation predicate) &&
+        (← evalConjunction valuation rest)
+
+def evalAnyFalse : (valuation : Valuation) → List Predicate → Option Bool
+  | _, [] => some false
+  | valuation, predicate :: rest =>
+      match evalPredicate valuation predicate with
+      | some false =>
+          match evalAnyFalse valuation rest with
+          | none => none
+          | some _ => some true
+      | some true => evalAnyFalse valuation rest
+      | none => none
+
+def evalQfLiaConjunction :
+    (valuation : Valuation) → List QfLiaPredicate → Option Bool
+  | _, [] => some true
+  | valuation, predicate :: rest =>
+      return (← evalQfLiaPredicate valuation predicate) &&
+        (← evalQfLiaConjunction valuation rest)
+
+def evalQfLiaAnyFalse :
+    (valuation : Valuation) → List QfLiaPredicate → Option Bool
+  | _, [] => some false
+  | valuation, predicate :: rest =>
+      match evalQfLiaPredicate valuation predicate with
+      | some false =>
+          match evalQfLiaAnyFalse valuation rest with
+          | none => none
+          | some _ => some true
+      | some true => evalQfLiaAnyFalse valuation rest
+      | none => none
+
+def evalFormula (valuation : Valuation) (formula : Formula) : Option Bool :=
+  return (← evalConjunction valuation formula.premises) &&
+    (← evalAnyFalse valuation formula.conclusions)
+
+
+def evalEncodedPredicates (valuation : Valuation) :
+    Option (List QfLiaPredicate) → Option Bool
+  | none => none
+  | some predicates => evalQfLiaConjunction valuation predicates
+
+def evalEncodedAnyFalse (valuation : Valuation) :
+    Option (List QfLiaPredicate) → Option Bool
+  | none => none
+  | some predicates => evalQfLiaAnyFalse valuation predicates
+
+
+
+
+theorem encodeSort_preserves (sort : SmtSort) :
+    encodeSort sort == (match sort with
+      | .integer => QfLiaSort.integer
+      | .boolean => QfLiaSort.boolean) := by
+  cases sort <;> rfl
+
+theorem encodeIntExpr_sound (valuation : Valuation) (expression : IntExpr) :
+    evalQfLiaInt valuation (encodeIntExpr expression) =
+      evalInt valuation expression := by
+  induction expression with
+  | literal => rfl
+  | «variable» name => rfl
+  | add left right ihLeft ihRight =>
+      simp [encodeIntExpr, evalQfLiaInt, evalInt, ihLeft, ihRight]
+  | sub left right ihLeft ihRight =>
+      simp [encodeIntExpr, evalQfLiaInt, evalInt, ihLeft, ihRight]
+  | scale coefficient body ih =>
+      simp [encodeIntExpr, evalQfLiaInt, evalInt, ih]
+
+def evalEncodedPredicate (valuation : Valuation) :
+    Option QfLiaPredicate → Option Bool
+  | none => none
+  | some predicate => evalQfLiaPredicate valuation predicate
+
+theorem encodePredicate_semantics (valuation : Valuation) (predicate : Predicate) :
+    evalEncodedPredicate valuation (encodePredicate predicate) =
+      evalPredicate valuation predicate := by
+  induction predicate with
+  | truth => rfl
+  | falsity => rfl
+  | boolVariable => rfl
+  | not body ih =>
+      simp only [encodePredicate, evalEncodedPredicate, evalPredicate]
+      cases result : encodePredicate body with
+      | none =>
+          rw [← ih]
+          simp [result, evalEncodedPredicate]
+      | some encoded =>
+          rw [← ih]
+          simp [result, evalEncodedPredicate, evalQfLiaPredicate]
+  | and left right ihLeft ihRight =>
+      simp only [encodePredicate, evalEncodedPredicate, evalPredicate]
+      cases leftResult : encodePredicate left with
+      | none =>
+          rw [← ihLeft]
+          simp [leftResult, evalEncodedPredicate]
+      | some leftEncoded =>
+          cases rightResult : encodePredicate right with
+          | none =>
+              rw [← ihRight]
+              simp [leftResult, rightResult, evalEncodedPredicate]
+          | some rightEncoded =>
+              rw [← ihLeft, ← ihRight]
+              simp [leftResult, rightResult, evalEncodedPredicate,
+                evalQfLiaPredicate]
+  | or left right ihLeft ihRight =>
+      simp only [encodePredicate, evalEncodedPredicate, evalPredicate]
+      cases leftResult : encodePredicate left with
+      | none =>
+          rw [← ihLeft]
+          simp [leftResult, evalEncodedPredicate]
+      | some leftEncoded =>
+          cases rightResult : encodePredicate right with
+          | none =>
+              rw [← ihRight]
+              simp [leftResult, rightResult, evalEncodedPredicate]
+          | some rightEncoded =>
+              rw [← ihLeft, ← ihRight]
+              simp [leftResult, rightResult, evalEncodedPredicate,
+                evalQfLiaPredicate]
+  | intEq left right =>
+      simp [encodePredicate, evalEncodedPredicate, evalQfLiaPredicate,
+        evalPredicate, encodeIntExpr_sound]
+  | intNe left right =>
+      simp [encodePredicate, evalEncodedPredicate, evalQfLiaPredicate,
+        evalPredicate, encodeIntExpr_sound]
+  | intLe left right =>
+      simp [encodePredicate, evalEncodedPredicate, evalQfLiaPredicate,
+        evalPredicate, encodeIntExpr_sound]
+  | intLt left right =>
+      simp [encodePredicate, evalEncodedPredicate, evalQfLiaPredicate,
+        evalPredicate, encodeIntExpr_sound]
+  | named => rfl
+  | nonlinear => rfl
+  | worldSensitive => rfl
+theorem encodePredicates_conjunction_sound (valuation : Valuation)
+    (predicates : List Predicate) :
+    evalEncodedPredicates valuation (encodePredicates predicates) =
+      evalConjunction valuation predicates := by
+  induction predicates with
+  | nil => rfl
+  | cons predicate rest ih =>
+      cases predicateResult : encodePredicate predicate with
+      | none =>
+          have predicateSemantics := encodePredicate_semantics valuation predicate
+          rw [predicateResult] at predicateSemantics
+          have predicateNone : evalPredicate valuation predicate = none := by
+            simpa [evalEncodedPredicate] using predicateSemantics.symm
+          simp [encodePredicates, predicateResult, evalEncodedPredicates,
+            evalConjunction, predicateNone]
+      | some encodedPredicate =>
+          have predicateSemantics := encodePredicate_semantics valuation predicate
+          rw [predicateResult] at predicateSemantics
+          have predicateSound :
+              evalQfLiaPredicate valuation encodedPredicate =
+                evalPredicate valuation predicate := by
+            simpa [evalEncodedPredicate] using predicateSemantics
+          cases restResult : encodePredicates rest with
+          | none =>
+              rw [restResult] at ih
+              have restNone : evalConjunction valuation rest = none := by
+                simpa [evalEncodedPredicates] using ih.symm
+              simp [encodePredicates, predicateResult, restResult,
+                evalEncodedPredicates, evalQfLiaConjunction, evalConjunction,
+                predicateSound, restNone]
+          | some restEncoded =>
+              rw [restResult] at ih
+              have restSound :
+                  evalQfLiaConjunction valuation restEncoded =
+                    evalConjunction valuation rest := by
+                simpa [evalEncodedPredicates] using ih
+              simp [encodePredicates, predicateResult, restResult,
+                evalEncodedPredicates, evalQfLiaConjunction, evalConjunction,
+                predicateSound, restSound]
+theorem encodePredicates_anyFalse_sound (valuation : Valuation)
+    (predicates : List Predicate) :
+    evalEncodedAnyFalse valuation (encodePredicates predicates) =
+      evalAnyFalse valuation predicates := by
+  induction predicates with
+  | nil => rfl
+  | cons predicate rest ih =>
+      cases predicateResult : encodePredicate predicate with
+      | none =>
+          have predicateSemantics := encodePredicate_semantics valuation predicate
+          rw [predicateResult] at predicateSemantics
+          have predicateNone : evalPredicate valuation predicate = none := by
+            simpa [evalEncodedPredicate] using predicateSemantics.symm
+          simp [encodePredicates, predicateResult, evalEncodedAnyFalse,
+            evalAnyFalse, predicateNone]
+      | some encodedPredicate =>
+          have predicateSemantics := encodePredicate_semantics valuation predicate
+          rw [predicateResult] at predicateSemantics
+          have predicateSound :
+              evalQfLiaPredicate valuation encodedPredicate =
+                evalPredicate valuation predicate := by
+            simpa [evalEncodedPredicate] using predicateSemantics
+          cases restResult : encodePredicates rest with
+          | none =>
+              rw [restResult] at ih
+              have restNone : evalAnyFalse valuation rest = none := by
+                simpa [evalEncodedAnyFalse] using ih.symm
+              cases predicateValue : evalPredicate valuation predicate with
+              | none =>
+                  simp [encodePredicates, predicateResult, restResult,
+                    evalEncodedAnyFalse, evalQfLiaAnyFalse, evalAnyFalse,
+                    predicateValue, predicateSound, restNone]
+              | some value =>
+                  cases value <;>
+                    simp [encodePredicates, predicateResult, restResult,
+                      evalEncodedAnyFalse, evalQfLiaAnyFalse, evalAnyFalse,
+                      predicateValue, predicateSound, restNone]
+          | some restEncoded =>
+              rw [restResult] at ih
+              have restSound :
+                  evalQfLiaAnyFalse valuation restEncoded =
+                    evalAnyFalse valuation rest := by
+                simpa [evalEncodedAnyFalse] using ih
+              cases predicateValue : evalPredicate valuation predicate with
+              | none =>
+                  simp [encodePredicates, predicateResult, restResult,
+                    evalEncodedAnyFalse, evalQfLiaAnyFalse, evalAnyFalse,
+                    predicateValue, predicateSound, restSound]
+              | some value =>
+                  cases value <;>
+                    simp [encodePredicates, predicateResult, restResult,
+                      evalEncodedAnyFalse, evalQfLiaAnyFalse, evalAnyFalse,
+                      predicateValue, predicateSound, restSound]
+def evalEncodedFormula (valuation : Valuation) :
+    Option QfLiaFormula → Option Bool
+  | none => none
+  | some formula =>
+      return (← evalEncodedPredicates valuation (some formula.premises)) &&
+        (← evalEncodedAnyFalse valuation (some formula.conclusions))
+
+theorem encodeFormula_semantics (valuation : Valuation) (formula : Formula) :
+    evalEncodedFormula valuation (encodeFormula formula) =
+      evalFormula valuation formula := by
+  cases formula with
+  | mk premises conclusions =>
+      cases premiseResult : encodePredicates premises with
+      | none =>
+          have premiseSemantics :=
+            encodePredicates_conjunction_sound valuation premises
+          rw [premiseResult] at premiseSemantics
+          have premiseNone : evalConjunction valuation premises = none := by
+            simpa [evalEncodedPredicates] using premiseSemantics.symm
+          simp [encodeFormula, premiseResult, evalEncodedFormula, evalFormula,
+            premiseNone]
+      | some encodedPremises =>
+          have premiseSemantics :=
+            encodePredicates_conjunction_sound valuation premises
+          rw [premiseResult] at premiseSemantics
+          have premiseSound :
+              evalQfLiaConjunction valuation encodedPremises =
+                evalConjunction valuation premises := by
+            simpa [evalEncodedPredicates] using premiseSemantics
+          cases conclusionResult : encodePredicates conclusions with
+          | none =>
+              have conclusionSemantics :=
+                encodePredicates_anyFalse_sound valuation conclusions
+              rw [conclusionResult] at conclusionSemantics
+              have conclusionNone : evalAnyFalse valuation conclusions = none := by
+                simpa [evalEncodedAnyFalse] using conclusionSemantics.symm
+              simp [encodeFormula, premiseResult, conclusionResult,
+                evalEncodedFormula, evalFormula, premiseSound, conclusionNone]
+          | some encodedConclusions =>
+              have conclusionSemantics :=
+                encodePredicates_anyFalse_sound valuation conclusions
+              rw [conclusionResult] at conclusionSemantics
+              have conclusionSound :
+                  evalQfLiaAnyFalse valuation encodedConclusions =
+                    evalAnyFalse valuation conclusions := by
+                simpa [evalEncodedAnyFalse] using conclusionSemantics
+              simp [encodeFormula, premiseResult, conclusionResult,
+                evalEncodedFormula, evalEncodedPredicates, evalEncodedAnyFalse,
+                evalFormula, premiseSound, conclusionSound]
 
 structure SmtBinding where
   sourceName : String
@@ -365,10 +750,12 @@ private def renderConjunction : List String → String
   | [value] => value
   | values => s!"(and {String.intercalate " " values})"
 
+private def renderQfLiaSort : QfLiaSort → String
+  | .integer => "Int"
+  | .boolean => "Bool"
+
 private def renderBinding (binding : SmtBinding) : String :=
-  match binding.sort with
-  | .integer => s!"(declare-fun {binding.symbol} () Int)"
-  | .boolean => s!"(declare-fun {binding.symbol} () Bool)"
+  s!"(declare-fun {binding.symbol} () {renderQfLiaSort (encodeSort binding.sort)})"
 
 private def renderSmtLib (formula : Formula) (bindings : List SmtBinding) :
     Except SmtTranslationError String := do

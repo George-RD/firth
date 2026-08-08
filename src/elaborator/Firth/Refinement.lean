@@ -23,6 +23,72 @@ structure Spec where
   post : RefinementSet
   totality : Option RefinementSet := none
   deriving Repr, BEq, DecidableEq
+def evalConjunction (valuation : Valuation) : List Predicate → Option Bool
+  | [] => some true
+  | predicate :: rest => do
+      let predicateValue ← evalPredicate valuation predicate
+      let restValue ← evalConjunction valuation rest
+      pure (predicateValue && restValue)
+
+def normaliseConjunction : List Predicate → Predicate
+  | [] => .truth
+  | predicate :: rest => .and predicate (normaliseConjunction rest)
+
+def RefinementSet.normalise (refinement : RefinementSet) : Predicate :=
+  normaliseConjunction refinement.conjuncts
+
+def RefinementSet.satisfies (valuation : Valuation) (refinement : RefinementSet) :
+    Option Bool :=
+  evalConjunction valuation refinement.conjuncts
+
+theorem evalPredicate_normaliseConjunction (valuation : Valuation)
+    (predicates : List Predicate) :
+    evalPredicate valuation (normaliseConjunction predicates) =
+      evalConjunction valuation predicates := by
+  induction predicates with
+  | nil => rfl
+  | cons predicate rest ih =>
+      simp [normaliseConjunction, evalConjunction, evalPredicate, ih]
+
+theorem evalPredicate_normaliseRefinementSet (valuation : Valuation)
+    (refinement : RefinementSet) :
+    evalPredicate valuation refinement.normalise =
+      refinement.satisfies valuation := by
+  exact evalPredicate_normaliseConjunction valuation refinement.conjuncts
+
+theorem evalConjunction_true_iff (valuation : Valuation) (predicates : List Predicate) :
+    evalConjunction valuation predicates = some true ↔
+      ∀ predicate, predicate ∈ predicates →
+        evalPredicate valuation predicate = some true := by
+  induction predicates with
+  | nil =>
+      simp [evalConjunction]
+  | cons predicate rest ih =>
+      cases predicateResult : evalPredicate valuation predicate with
+      | none =>
+          simp [evalConjunction, predicateResult]
+      | some predicateValue =>
+          cases restResult : evalConjunction valuation rest with
+          | none =>
+              constructor
+              · intro evaluated
+                simp [evalConjunction, predicateResult, restResult] at evaluated
+              · intro allTrue
+                have restTrue := ih.mpr (fun candidate member =>
+                  allTrue candidate (.tail predicate member))
+                rw [restResult] at restTrue
+                cases restTrue
+          | some restValue =>
+              cases predicateValue with
+              | false =>
+                  simp [evalConjunction, predicateResult, restResult]
+              | true =>
+                  simpa [evalConjunction, predicateResult, restResult] using ih
+
+def normaliseFormula (formula : Formula) : Formula :=
+  { premises := [normaliseConjunction formula.premises]
+    conclusions := [normaliseConjunction formula.conclusions] }
+
 
 structure Contract where
   wordType : Scheme
@@ -149,13 +215,15 @@ private def predicateGroupsWithinKernelBounds (groups : List (List Predicate)) :
 
 private def formulaWithinKernelBounds (formula : Formula) : Bool :=
   predicateGroupsWithinKernelBounds [formula.premises, formula.conclusions]
+def withinKernelBounds (formula : Formula) : Bool :=
+  formulaWithinKernelBounds formula
 
 private def frame (value : String) : String := s!"{value.toUTF8.size}:{value}"
 
 private def encodeStrings (values : List String) : String :=
   s!"{values.length}[{String.intercalate "" (values.map frame)}]"
 
-private def obligationIdentity (kind : ObligationKind) (formula : Formula)
+def obligationIdentity (kind : ObligationKind) (formula : Formula)
     (context : ObligationContext) : String :=
   "obligation(" ++ frame context.wordId ++ frame context.bodyHash ++
     frame context.erasedWordTypeHash ++ frame context.specHash ++
@@ -183,6 +251,25 @@ def makeObligation (kind : ObligationKind) (premises conclusions : List Predicat
     { obligationId := obligationIdentity kind formula context, kind, formula, context }
   else
     makeBudgetExceededObligation kind context
+def generateVc (kind : ObligationKind) (formula : Formula)
+    (context : ObligationContext) : Obligation :=
+  makeObligation kind formula.premises formula.conclusions context
+
+theorem generateVc_formula (kind : ObligationKind) (formula : Formula)
+    (context : ObligationContext) (withinBounds : withinKernelBounds formula = true) :
+    (generateVc kind formula context).formula = formula := by
+  have bounds : formulaWithinKernelBounds formula = true := by
+    simpa [withinKernelBounds] using withinBounds
+  simp [generateVc, makeObligation, bounds]
+
+theorem generateVc_identity (kind : ObligationKind) (formula : Formula)
+    (context : ObligationContext) (withinBounds : withinKernelBounds formula = true) :
+    (generateVc kind formula context).obligationId =
+      obligationIdentity kind formula context := by
+  have bounds : formulaWithinKernelBounds formula = true := by
+    simpa [withinKernelBounds] using withinBounds
+  simp [generateVc, makeObligation, bounds]
+
 
 structure TotalityTypingPremises where
   premises : RefinementSet
@@ -208,22 +295,40 @@ private def bodyTypingBudgetExceeded (typing : BodyTypingPremises) : Option Obli
     | some totality =>
         if predicateGroupsWithinKernelBounds
             [totality.premises.conjuncts, totality.conclusion.conjuncts] then
+
           none
         else
           some .bodyTotality
     | none => none
+private def bodySafetyFormula (typing : BodyTypingPremises) : Formula :=
+  { premises := typing.precondition.conjuncts ++ typing.bodySemantics.conjuncts
+    conclusions := typing.declaredPostcondition.conjuncts }
+
+private def bodyTotalityFormula (typing : TotalityTypingPremises) : Formula :=
+  { premises := typing.premises.conjuncts
+    conclusions := typing.conclusion.conjuncts }
+
+private def preSubsumptionFormula (oldSpec newSpec : Spec) : Formula :=
+  { premises := oldSpec.pre.conjuncts
+    conclusions := newSpec.pre.conjuncts }
+
+private def postSubsumptionFormula (oldSpec newSpec : Spec) : Formula :=
+  { premises := oldSpec.pre.conjuncts ++ newSpec.post.conjuncts
+    conclusions := oldSpec.post.conjuncts }
+
+private def totalitySubsumptionFormula (oldSpec : Spec)
+    (oldTotality newTotality : RefinementSet) : Formula :=
+  { premises := oldSpec.pre.conjuncts ++ oldTotality.conjuncts
+    conclusions := newTotality.conjuncts }
 
 def bodyObligations (typing : BodyTypingPremises) : List Obligation :=
   match bodyTypingBudgetExceeded typing with
   | some kind => [makeBudgetExceededObligation kind typing.context]
   | none =>
-      let safety := makeObligation .body
-        (typing.precondition.conjuncts ++ typing.bodySemantics.conjuncts)
-        typing.declaredPostcondition.conjuncts typing.context
+      let safety := generateVc .body (bodySafetyFormula typing) typing.context
       match typing.totality with
       | some totality =>
-          [safety, makeObligation .bodyTotality totality.premises.conjuncts
-            totality.conclusion.conjuncts typing.context]
+          [safety, generateVc .bodyTotality (bodyTotalityFormula totality) typing.context]
       | none => [safety]
 
 structure SubsumptionTypingPremises where
@@ -255,16 +360,14 @@ private def refinementSubsumptionObligations (typing : SubsumptionTypingPremises
     (totalityPair : Option (RefinementSet × RefinementSet)) : List Obligation :=
   let oldSpec := typing.oldContract.specification
   let newSpec := typing.newContract.specification
-  let pre := makeObligation .preSubsumption
-    oldSpec.pre.conjuncts newSpec.pre.conjuncts typing.context
-  let post := makeObligation .postSubsumption
-    (oldSpec.pre.conjuncts ++ newSpec.post.conjuncts)
-    oldSpec.post.conjuncts typing.context
+  let pre := generateVc .preSubsumption
+    (preSubsumptionFormula oldSpec newSpec) typing.context
+  let post := generateVc .postSubsumption
+    (postSubsumptionFormula oldSpec newSpec) typing.context
   match totalityPair with
   | some (oldTotality, newTotality) =>
-      [pre, post, makeObligation .totalitySubsumption
-        (oldSpec.pre.conjuncts ++ oldTotality.conjuncts)
-        newTotality.conjuncts typing.context]
+      [pre, post, generateVc .totalitySubsumption
+        (totalitySubsumptionFormula oldSpec oldTotality newTotality) typing.context]
   | none => [pre, post]
 
 inductive SubsumptionError where
@@ -309,6 +412,58 @@ def Valid (formula : Formula) : Prop :=
     (∀ predicate, predicate ∈ formula.premises → evalPredicate valuation predicate = some true) →
       ∀ predicate, predicate ∈ formula.conclusions →
         evalPredicate valuation predicate = some true
+theorem valid_normaliseFormula_iff (formula : Formula) :
+    Valid (normaliseFormula formula) ↔ Valid formula := by
+  constructor
+  · intro normalised valuation premisesTrue
+    have premisesConjunction :=
+      (evalConjunction_true_iff valuation formula.premises).mpr premisesTrue
+    have normalisedPremises :
+        evalPredicate valuation (normaliseConjunction formula.premises) = some true := by
+      rw [evalPredicate_normaliseConjunction]
+      exact premisesConjunction
+    have normalisedConclusions := normalised valuation (by
+      intro predicate member
+      have predicateEq : predicate = normaliseConjunction formula.premises := by
+        simpa [normaliseFormula] using member
+      subst predicate
+      exact normalisedPremises)
+    intro conclusion member
+    have normalisedConclusion := normalisedConclusions
+      (normaliseConjunction formula.conclusions)
+      (show normaliseConjunction formula.conclusions ∈
+        (normaliseFormula formula).conclusions from by
+          exact List.mem_cons_self
+          )
+    have conclusionsConjunction :
+        evalConjunction valuation formula.conclusions = some true := by
+      rw [← evalPredicate_normaliseConjunction]
+      exact normalisedConclusion
+    exact (evalConjunction_true_iff valuation formula.conclusions).mp
+      conclusionsConjunction conclusion member
+  · intro original valuation premisesTrue predicate member
+    have normalisedPremises := premisesTrue
+      (normaliseConjunction formula.premises)
+      (show normaliseConjunction formula.premises ∈
+        (normaliseFormula formula).premises from by
+          exact List.mem_cons_self
+          )
+    have premisesConjunction :
+        evalConjunction valuation formula.premises = some true := by
+      rw [← evalPredicate_normaliseConjunction]
+      exact normalisedPremises
+    have originalPremises := (evalConjunction_true_iff valuation formula.premises).mp
+      premisesConjunction
+    have predicateEq : predicate = normaliseConjunction formula.conclusions := by
+      simpa [normaliseFormula] using member
+    subst predicate
+    have conclusionsTrue : ∀ conclusion, conclusion ∈ formula.conclusions →
+        evalPredicate valuation conclusion = some true := by
+      intro conclusion conclusionMember
+      exact original valuation originalPremises conclusion conclusionMember
+    rw [evalPredicate_normaliseConjunction]
+    exact (evalConjunction_true_iff valuation formula.conclusions).mpr conclusionsTrue
+
 
 theorem evalInt_stable (expression : IntExpr) (valuation : Valuation) (result : Int) :
     evalInt {} expression = some result → evalInt valuation expression = some result := by

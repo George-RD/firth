@@ -110,7 +110,29 @@ $MISSION"
   "$TMO" -k 60 "$MAXTIME" $AGENT "$prompt" > "$log" 2>&1
   agent_rc=$?
   cat "$log"
-  token=$(awk '{ sub(/\r$/, "") } NF { last=$0 } END { print last }' "$log")
+  # Token acceptance (dec.driver-token-tail): exactly one distinct terminal
+  # token among the last 15 non-empty lines, matched as a whole line after
+  # CR strip. A token followed by its own report is accepted for
+  # ITERATION COMPLETE and LOOP HALTED. LOOP EXHAUSTED is the completion
+  # claim and stays strict: it counts only as the final non-empty line.
+  # Zero tokens, conflicting tokens, a buried token, or a non-final
+  # LOOP EXHAUSTED fail closed.
+  token=$(awk '
+    { sub(/\r$/, "") }
+    NF { n += 1; tail[n % 15] = $0 }
+    END {
+      start = n - 14; if (start < 1) start = 1
+      for (i = start; i <= n; i++) {
+        line = tail[i % 15]
+        if (line == "ITERATION COMPLETE" || line == "LOOP HALTED" || line == "LOOP EXHAUSTED") {
+          if (seen != "" && seen != line) { print "AMBIGUOUS TOKENS"; exit }
+          seen = line
+        }
+      }
+      if (seen == "") exit
+      if (seen == "LOOP EXHAUSTED" && tail[n % 15] != "LOOP EXHAUSTED") exit
+      print seen
+    }' "$log")
   if [ "$agent_rc" -eq 124 ] || [ "$agent_rc" -eq 137 ]; then
     tfail=$((tfail + 1))
     printf 'watchdog killed iteration %s after %ss (exit %s); consecutive timeouts: %s; the next iteration recovers the partial state\n' "$i" "$MAXTIME" "$agent_rc" "$tfail" >&2
@@ -237,13 +259,22 @@ and only external evidence (PRD S6) remains, or earlier on any other halt.
 
 ## Terminal tokens and health
 
-The final non-empty output line is the loop control token.
+The loop reports its control token as the final non-empty output line
+(that authoring contract in the command file is unchanged). The driver
+accepts `ITERATION COMPLETE` or `LOOP HALTED` when exactly one distinct
+token appears as a whole line among the last 15 non-empty lines, so a
+token followed by its own report still counts. `LOOP EXHAUSTED` is the
+completion claim and stays strict: it counts only as the final non-empty
+line. Zero tokens, conflicting tokens, a buried token, or a non-final
+`LOOP EXHAUSTED` stop the run rc 3, fail closed (dec.driver-token-tail;
+twice a landed or safely-deferred iteration was discarded by
+last-line-only reading: 2026-08-06, and 2026-08-08 after PR #60 landed).
 
 | Token | Meaning | Action |
 | --- | --- | --- |
 | `ITERATION COMPLETE` | One unit landed, or was safely deferred with a blocked todo. | Continue to the next iteration. |
-| `LOOP EXHAUSTED` | Project completion: `coverage.py` reports `loop_exhausted_valid` true (dec.loop-autonomy). With a MISSION, it can also mean the immutable mission cannot progress. | Stop. Confirm with the dry-run preflight and the session report. |
-| `LOOP HALTED` | A fail-closed state needs attention. A report opening `implementation complete; external success criteria outstanding` means everything machine-reachable is done and only the listed external evidence (e.g. PRD S6) remains; any other report is an incident or defect. | Stop and investigate. Repeating halts are the durable signal, not noise. |
+| `LOOP EXHAUSTED` | Completion of the active profile: `coverage.py` reports `loop_exhausted_valid` true (dec.loop-autonomy as amended by dec.mvp-completion). With a MISSION, it can also mean the immutable mission cannot progress. | Stop. Confirm with the dry-run preflight and the session report. |
+| `LOOP HALTED` | A fail-closed state needs attention. A report opening `implementation complete; external success criteria outstanding` means everything machine-reachable is done and only the listed external evidence remains (e.g. PRD S6 under the `full` profile; no external-evidence row is inside the current `mvp` profile); any other report is an incident or defect. | Stop and investigate. Repeating halts are the durable signal, not noise. |
 
 Review loop health in several places: merged and open PR history, todo
 statuses under `meta/todos/`, `cairn status`, and the JSON emitted by
@@ -257,6 +288,7 @@ Run this once before launch, from the repository root:
 ```sh
 python3 tools/loop/select_unit.py --validate && python3 tools/loop/select_unit.py
 python3 tools/loop/coverage.py --validate && python3 tools/loop/coverage.py
+python3 tools/loop/test_driver_tokens.py
 cairn scan
 cairn hook all
 lake build && lake test
@@ -274,9 +306,13 @@ Expected results for the current spec-phase repository:
   concrete slugs as a snapshot; the JSON contract is the requirement.
 - Coverage validation exits 0. Coverage reports `first_incomplete`,
   obligation classifications, a dependency-gated `next_obligation`, and
-  `loop_exhausted_valid` (false until every obligation is generated,
-  unblocked, and discharged); ungenerated obligations remain visible rather
-  than being mistaken for exhaustion.
+  `loop_exhausted_valid`, all evaluated over the active completion profile
+  named in `tools/loop/obligations.toml` `[completion]` (dec.mvp-completion;
+  currently `mvp`). Rows outside the profile appear as `outside_profile`:
+  visible roadmap that never drives generation and never blocks exhaustion.
+  `loop_exhausted_valid` stays false until every profile obligation is
+  generated, unblocked, and discharged; ungenerated profile obligations
+  remain visible rather than being mistaken for exhaustion.
 - `lake build` and `lake test` exit 0; the root lakefile's `testDriver` is
   `firthAllTest`.
 - The VM crate gates exit 0 from `src/runtime/vm`.

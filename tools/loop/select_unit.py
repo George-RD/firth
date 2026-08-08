@@ -7,6 +7,7 @@ import argparse
 import json
 import re
 import sys
+import tomllib
 from pathlib import Path
 
 STATUSES = {"open", "in_progress", "done", "blocked"}
@@ -116,6 +117,31 @@ def report(errors: list[str]) -> int:
     return 2
 
 
+def outside_profile_slugs(root: Path, errors: list[str]) -> set[str]:
+    """Slugs whose every obligations-matrix reference is outside the active
+    completion profile (dec.mvp-completion). Such todos are roadmap, never
+    selected. A missing matrix means no profile filtering; a malformed one
+    is a validation error, fail closed. Unmapped todos are never filtered."""
+    path = root / "tools" / "loop" / "obligations.toml"
+    if not path.is_file():
+        return set()
+    try:
+        with path.open("rb") as handle:
+            data = tomllib.load(handle)
+    except (tomllib.TOMLDecodeError, OSError) as error:
+        errors.append(f"unreadable obligations matrix: {error}")
+        return set()
+    profile = (data.get("completion") or {}).get("profile", "full")
+    if profile == "full":
+        return set()
+    refs: dict[str, list[bool]] = {}
+    for row in data.get("obligation", {}).values():
+        active = row.get("milestone", "mvp") == "mvp"
+        for slug in row.get("satisfied_by", []):
+            refs.setdefault(slug, []).append(active)
+    return {slug for slug, flags in refs.items() if not any(flags)}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="select eligible Firth todos")
     parser.add_argument("--validate", action="store_true", help="validate only")
@@ -160,6 +186,15 @@ def main() -> int:
         for required in record["requires"]:  # type: ignore[index]
             if required not in slugs:
                 errors.append(f"{slug}: unknown Requires slug {required}")
+    outside = outside_profile_slugs(root, errors)
+    for slug, record in sorted(records.items()):
+        if slug in outside or record["status"] == "done":
+            continue
+        for required in record["requires"]:  # type: ignore[index]
+            if required in outside:
+                errors.append(
+                    f"{slug}: requires {required}, which is outside the active completion profile"
+                )
     visiting: set[str] = set()
     visited: set[str] = set()
 
@@ -191,16 +226,16 @@ def main() -> int:
     }
     in_progress = sorted(
         slug for slug, r in records.items()
-        if slug in selected and r["status"] == "in_progress"
+        if slug in selected and slug not in outside and r["status"] == "in_progress"
     )
     eligible: list[str] = []
     ineligible: list[dict[str, object]] = []
     blocked = sorted(
         slug for slug, r in records.items()
-        if slug in selected and r["status"] == "blocked"
+        if slug in selected and slug not in outside and r["status"] == "blocked"
     )
     for slug in sorted(records):
-        if slug not in selected:
+        if slug not in selected or slug in outside:
             continue
         record = records[slug]
         if record["status"] != "open":
@@ -218,6 +253,7 @@ def main() -> int:
         "eligible": eligible,
         "next": next_slug,
         "ineligible_open": ineligible,
+        "outside_profile": sorted(slug for slug in outside if slug in selected),
         "blocked": blocked,
         "in_progress": in_progress,
     }, sort_keys=True))
