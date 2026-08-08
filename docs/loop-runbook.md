@@ -242,8 +242,8 @@ The final non-empty output line is the loop control token.
 | Token | Meaning | Action |
 | --- | --- | --- |
 | `ITERATION COMPLETE` | One unit landed, or was safely deferred with a blocked todo. | Continue to the next iteration. |
-| `LOOP EXHAUSTED` | Project completion: `coverage.py` reports `loop_exhausted_valid` true (dec.loop-autonomy). With a MISSION, it can also mean the immutable mission cannot progress. | Stop. Confirm with the dry-run preflight and the session report. |
-| `LOOP HALTED` | A fail-closed state needs attention. A report opening `implementation complete; external success criteria outstanding` means everything machine-reachable is done and only the listed external evidence (e.g. PRD S6) remains; any other report is an incident or defect. | Stop and investigate. Repeating halts are the durable signal, not noise. |
+| `LOOP EXHAUSTED` | Completion of the active profile: `coverage.py` reports `loop_exhausted_valid` true (dec.loop-autonomy as amended by dec.mvp-completion). With a MISSION, it can also mean the immutable mission cannot progress. | Stop. Confirm with the dry-run preflight and the session report. |
+| `LOOP HALTED` | A fail-closed state needs attention. A report opening `implementation complete; external success criteria outstanding` means everything machine-reachable is done and only the listed external evidence remains (e.g. PRD S6 under the `full` profile; no external-evidence row is inside the current `mvp` profile); any other report is an incident or defect. | Stop and investigate. Repeating halts are the durable signal, not noise. |
 
 Review loop health in several places: merged and open PR history, todo
 statuses under `meta/todos/`, `cairn status`, and the JSON emitted by
@@ -274,9 +274,13 @@ Expected results for the current spec-phase repository:
   concrete slugs as a snapshot; the JSON contract is the requirement.
 - Coverage validation exits 0. Coverage reports `first_incomplete`,
   obligation classifications, a dependency-gated `next_obligation`, and
-  `loop_exhausted_valid` (false until every obligation is generated,
-  unblocked, and discharged); ungenerated obligations remain visible rather
-  than being mistaken for exhaustion.
+  `loop_exhausted_valid`, all evaluated over the active completion profile
+  named in `tools/loop/obligations.toml` `[completion]` (dec.mvp-completion;
+  currently `mvp`). Rows outside the profile appear as `outside_profile`:
+  visible roadmap that never drives generation and never blocks exhaustion.
+  `loop_exhausted_valid` stays false until every profile obligation is
+  generated, unblocked, and discharged; ungenerated profile obligations
+  remain visible rather than being mistaken for exhaustion.
 - `lake build` and `lake test` exit 0; the root lakefile's `testDriver` is
   `firthAllTest`.
 - The VM crate gates exit 0 from `src/runtime/vm`.

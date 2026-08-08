@@ -375,9 +375,14 @@ Goal, Acceptance, Traceability, and Requires format, and keep the todo set
 small enough for one reviewable PR. Dependency gating uses the blueprint's
 depends-on edges: a candidate node is ready only when each dependency node is
 complete or in-flight in the matrix. Keep the matrix current whenever the loop
-authors a todo. Only when no ungenerated obligation remains and all todos are
-done is `LOOP EXHAUSTED` valid. An obligation classified `blocked` is neither
-complete nor ungenerated and also prevents exhaustion.
+authors a todo. Coverage evaluates the active completion profile named in
+`obligations.toml` `[completion]` (dec.mvp-completion): rows reported as
+`outside_profile` are roadmap, never chosen as `next_obligation`, and never
+block exhaustion; milestone tags and the profile are goal layer, immutable to
+the loop. Only when no ungenerated obligation remains in the active profile
+and all todos gating it are done is `LOOP EXHAUSTED` valid. An obligation
+classified `blocked` is neither complete nor ungenerated and also prevents
+exhaustion.
 If no ungenerated obligation remains but blocked obligations or blocked
 todos exist, apply dec.loop-autonomy clause 4: touch nothing and classify
 every slug in the selector's and coverage's sorted `blocked` lists. An

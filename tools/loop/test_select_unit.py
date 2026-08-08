@@ -30,6 +30,9 @@ class SelectorTests(unittest.TestCase):
         body += f"Requires: {requires}\n"
         (self.root / "meta" / "todos" / filename).write_text(body, encoding="utf-8")
 
+    def obligations(self, text: str) -> None:
+        (self.root / "tools" / "loop" / "obligations.toml").write_text(text, encoding="utf-8")
+
     def run_selector(self, *args: str) -> tuple[int, dict[str, object]]:
         result = subprocess.run(
             ["python3", str(self.root / "tools" / "loop" / "select_unit.py"), *args],
@@ -207,6 +210,52 @@ class SelectorTests(unittest.TestCase):
         code, report = self.run_selector("--validate")
         self.assertEqual(code, 2)
         self.assertTrue(any("filename must match" in error for error in report["errors"]))
+
+    def test_outside_profile_todo_is_never_selected(self) -> None:
+        self.todo("todo.core.md")
+        self.todo("todo.roadmap.md")
+        self.obligations(
+            '[completion]\nprofile = "mvp"\n'
+            '[obligation.a]\nnode = "n"\nsource = "PRD R1"\nsatisfied_by = ["core"]\n'
+            '[obligation.b]\nnode = "n"\nsource = "PRD S3"\n'
+            'milestone = "post-mvp"\nsatisfied_by = ["roadmap"]\n'
+        )
+        code, report = self.run_selector()
+        self.assertEqual(code, 0)
+        self.assertEqual(report["eligible"], ["core"])
+        self.assertEqual(report["next"], "core")
+        self.assertEqual(report["outside_profile"], ["roadmap"])
+
+    def test_requires_into_outside_profile_fails_closed(self) -> None:
+        self.todo("todo.core.md", requires="roadmap")
+        self.todo("todo.roadmap.md")
+        self.obligations(
+            '[completion]\nprofile = "mvp"\n'
+            '[obligation.a]\nnode = "n"\nsource = "PRD R1"\nsatisfied_by = ["core"]\n'
+            '[obligation.b]\nnode = "n"\nsource = "PRD S3"\n'
+            'milestone = "post-mvp"\nsatisfied_by = ["roadmap"]\n'
+        )
+        code, report = self.run_selector("--validate")
+        self.assertEqual(code, 2)
+        self.assertTrue(
+            any("outside the active completion profile" in error for error in report["errors"])
+        )
+
+    def test_malformed_obligations_matrix_fails_closed(self) -> None:
+        self.todo("todo.alpha.md")
+        self.obligations("[completion\nprofile =")
+        code, report = self.run_selector("--validate")
+        self.assertEqual(code, 2)
+        self.assertTrue(
+            any("unreadable obligations matrix" in error for error in report["errors"])
+        )
+
+    def test_missing_matrix_means_no_filtering(self) -> None:
+        self.todo("todo.alpha.md")
+        code, report = self.run_selector()
+        self.assertEqual(code, 0)
+        self.assertEqual(report["next"], "alpha")
+        self.assertEqual(report["outside_profile"], [])
 
 
 if __name__ == "__main__":

@@ -109,6 +109,88 @@ class CoverageTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(report, {"schema": 1, "valid": True})
 
+    def test_mvp_profile_scopes_termination_and_generation(self) -> None:
+        self.todo("done", "done")
+        self.obligations(
+            '[completion]\nprofile = "mvp"\n'
+            '[obligation.core]\nnode = "firth.language.kernel"\nsource = "PRD R1"\n'
+            'satisfied_by = ["done"]\n'
+            '[obligation.later]\nnode = "firth.language.kernel"\nsource = "PRD S6"\n'
+            'milestone = "post-mvp"\nsatisfied_by = []\n'
+        )
+        code, report = self.run_coverage()
+        self.assertEqual(code, 0)
+        self.assertEqual(report["profile"], "mvp")
+        self.assertEqual(report["outside_profile"], ["later"])
+        self.assertTrue(report["loop_exhausted_valid"])
+        self.assertIsNone(report["next_obligation"])
+
+    def test_full_profile_restores_whole_matrix_completion(self) -> None:
+        self.todo("done", "done")
+        self.obligations(
+            '[completion]\nprofile = "full"\n'
+            '[obligation.core]\nnode = "firth.language.kernel"\nsource = "PRD R1"\n'
+            'satisfied_by = ["done"]\n'
+            '[obligation.later]\nnode = "firth.language.kernel"\nsource = "PRD S6"\n'
+            'milestone = "post-mvp"\nsatisfied_by = []\n'
+        )
+        code, report = self.run_coverage()
+        self.assertEqual(code, 0)
+        self.assertFalse(report["loop_exhausted_valid"])
+        self.assertEqual(report["next_obligation"], "later")
+        self.assertEqual(report["outside_profile"], [])
+
+    def test_todo_mapped_only_to_inactive_rows_does_not_gate(self) -> None:
+        self.todo("done", "done")
+        self.todo("roadmap", "open")
+        self.obligations(
+            '[completion]\nprofile = "mvp"\n'
+            '[obligation.core]\nnode = "firth.language.kernel"\nsource = "PRD R1"\n'
+            'satisfied_by = ["done"]\n'
+            '[obligation.later]\nnode = "firth.language.kernel"\nsource = "PRD S3"\n'
+            'milestone = "post-mvp"\nsatisfied_by = ["roadmap"]\n'
+        )
+        code, report = self.run_coverage()
+        self.assertEqual(code, 0)
+        self.assertTrue(report["loop_exhausted_valid"])
+
+    def test_unmapped_open_todo_still_gates_exhaustion(self) -> None:
+        self.todo("done", "done")
+        self.todo("stray", "open")
+        self.obligations(
+            '[completion]\nprofile = "mvp"\n'
+            '[obligation.core]\nnode = "firth.language.kernel"\nsource = "PRD R1"\n'
+            'satisfied_by = ["done"]\n'
+        )
+        code, report = self.run_coverage()
+        self.assertEqual(code, 0)
+        self.assertFalse(report["loop_exhausted_valid"])
+
+    def test_inactive_only_dependency_node_does_not_deadlock(self) -> None:
+        self.obligations(
+            '[completion]\nprofile = "mvp"\n'
+            '[obligation.gated]\nnode = "firth.language.surface"\nsource = "PRD R2"\n'
+            'satisfied_by = []\n'
+            '[obligation.later]\nnode = "firth.language.kernel"\nsource = "PRD S3"\n'
+            'milestone = "post-mvp"\nsatisfied_by = []\n'
+        )
+        code, report = self.run_coverage()
+        self.assertEqual(code, 0)
+        self.assertEqual(report["next_obligation"], "gated")
+
+    def test_invalid_profile_and_milestone_fail_validation(self) -> None:
+        self.todo("done", "done")
+        self.obligations(
+            '[completion]\nprofile = "beta"\n'
+            '[obligation.core]\nnode = "firth.language.kernel"\nsource = "PRD R1"\n'
+            'milestone = "later"\nsatisfied_by = ["done"]\n'
+        )
+        code, report = self.run_coverage("--validate")
+        self.assertEqual(code, 2)
+        joined = " ".join(report["errors"])
+        self.assertIn("completion.profile", joined)
+        self.assertIn("milestone", joined)
+
 
 if __name__ == "__main__":
     unittest.main()

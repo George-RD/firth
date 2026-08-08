@@ -4,6 +4,18 @@
 # it and the todo slugs that discharge it. satisfied_by = [] means the
 # obligation is ungenerated: no todo exists yet. Enabling research or design
 # work is intentionally not sufficient for a product obligation.
+#
+# milestone = "mvp" (default) or "post-mvp". The [completion] table names the
+# active completion profile: "mvp" ends the loop when every mvp-tagged row is
+# discharged; "full" restores whole-matrix completion. Post-mvp rows stay in
+# the matrix as the visible roadmap: they are never chosen as next_obligation
+# while the mvp profile is active and do not hold loop_exhausted_valid false.
+# Milestone tags and the active profile are goal layer (dec.loop-autonomy
+# clause 2a; boundary defined by dec.mvp-completion): only a maintainer-
+# authored decision landed outside the loop may change them.
+
+[completion]
+profile = "mvp"
 
 [obligation.scope-language-kernel-calculus]
 node = "firth.language.kernel"
@@ -78,6 +90,7 @@ satisfied_by = ["diagnostic-schema"]
 [obligation.scope-toolchain-signature-search]
 node = "firth.toolchain.agent"
 source = "PRD 4.2 signature search"
+milestone = "post-mvp"
 satisfied_by = []
 
 [obligation.scope-runtime-vm]
@@ -103,6 +116,7 @@ satisfied_by = []
 [obligation.scope-ecosystem-lsp]
 node = "firth.ecosystem.lsp"
 source = "PRD 4.4 language server"
+milestone = "post-mvp"
 satisfied_by = []
 
 [obligation.scope-ecosystem-specs]
@@ -188,6 +202,7 @@ satisfied_by = ["kernel-spec-freeze", "surface-syntax-spec", "refinement-dischar
 [obligation.req-r16]
 node = "firth.toolchain.agent"
 source = "PRD R16"
+milestone = "post-mvp"
 satisfied_by = []
 
 [obligation.req-r17]
@@ -203,16 +218,19 @@ satisfied_by = ["kernel-spec-freeze", "kernel-metatheory"]
 [obligation.sc-s2]
 node = "firth.toolchain.diffharness"
 source = "PRD S2"
+milestone = "post-mvp"
 satisfied_by = []
 
 [obligation.sc-s3]
 node = "firth.runtime.patch"
 source = "PRD S3"
+milestone = "post-mvp"
 satisfied_by = []
 
 [obligation.sc-s4]
 node = "firth.ecosystem.stdlib"
 source = "PRD S4"
+milestone = "post-mvp"
 satisfied_by = []
 
 [obligation.sc-s5]
@@ -223,9 +241,21 @@ satisfied_by = []
 [obligation.sc-s6]
 node = "firth.runtime.vm"
 source = "PRD S6"
+milestone = "post-mvp"
 satisfied_by = []
 
 [obligation.sc-s7]
 node = "firth.toolchain.agent"
 source = "PRD S7"
+milestone = "post-mvp"
+satisfied_by = []
+
+# MVP acceptance gate (dec.mvp-completion clause 4): an agent-facing language
+# guide plus basic example applications authored by a code model given only
+# the guide and the agent interface, each elaborated, checked, compiled, run
+# on the VM with interpreter agreement, wired into a repeatable executable
+# gate. Discharged like every other row: by the done todos listed here.
+[obligation.mvp-agent-authoring]
+node = "firth.toolchain.agent"
+source = "dec.mvp-completion clause 4 (MVP reading of PRD S5/S7)"
 satisfied_by = []
