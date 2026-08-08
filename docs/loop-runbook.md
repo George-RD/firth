@@ -110,7 +110,29 @@ $MISSION"
   "$TMO" -k 60 "$MAXTIME" $AGENT "$prompt" > "$log" 2>&1
   agent_rc=$?
   cat "$log"
-  token=$(awk '{ sub(/\r$/, "") } NF { last=$0 } END { print last }' "$log")
+  # Token acceptance (dec.driver-token-tail): exactly one distinct terminal
+  # token among the last 15 non-empty lines, matched as a whole line after
+  # CR strip. A token followed by its own report is accepted for
+  # ITERATION COMPLETE and LOOP HALTED. LOOP EXHAUSTED is the completion
+  # claim and stays strict: it counts only as the final non-empty line.
+  # Zero tokens, conflicting tokens, a buried token, or a non-final
+  # LOOP EXHAUSTED fail closed.
+  token=$(awk '
+    { sub(/\r$/, "") }
+    NF { n += 1; tail[n % 15] = $0 }
+    END {
+      start = n - 14; if (start < 1) start = 1
+      for (i = start; i <= n; i++) {
+        line = tail[i % 15]
+        if (line == "ITERATION COMPLETE" || line == "LOOP HALTED" || line == "LOOP EXHAUSTED") {
+          if (seen != "" && seen != line) { print "AMBIGUOUS TOKENS"; exit }
+          seen = line
+        }
+      }
+      if (seen == "") exit
+      if (seen == "LOOP EXHAUSTED" && tail[n % 15] != "LOOP EXHAUSTED") exit
+      print seen
+    }' "$log")
   if [ "$agent_rc" -eq 124 ] || [ "$agent_rc" -eq 137 ]; then
     tfail=$((tfail + 1))
     printf 'watchdog killed iteration %s after %ss (exit %s); consecutive timeouts: %s; the next iteration recovers the partial state\n' "$i" "$MAXTIME" "$agent_rc" "$tfail" >&2
@@ -237,7 +259,16 @@ and only external evidence (PRD S6) remains, or earlier on any other halt.
 
 ## Terminal tokens and health
 
-The final non-empty output line is the loop control token.
+The loop reports its control token as the final non-empty output line
+(that authoring contract in the command file is unchanged). The driver
+accepts `ITERATION COMPLETE` or `LOOP HALTED` when exactly one distinct
+token appears as a whole line among the last 15 non-empty lines, so a
+token followed by its own report still counts. `LOOP EXHAUSTED` is the
+completion claim and stays strict: it counts only as the final non-empty
+line. Zero tokens, conflicting tokens, a buried token, or a non-final
+`LOOP EXHAUSTED` stop the run rc 3, fail closed (dec.driver-token-tail;
+twice a landed or safely-deferred iteration was discarded by
+last-line-only reading: 2026-08-06, and 2026-08-08 after PR #60 landed).
 
 | Token | Meaning | Action |
 | --- | --- | --- |
