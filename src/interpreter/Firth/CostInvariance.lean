@@ -429,4 +429,116 @@ theorem traceStep_cost_matches_kappa {gamma : Gamma} {dictionary : Dictionary}
           refine ⟨atom, rest, stack, rfl, ?_⟩
           exact step_cost_matches_kappa gamma dictionary costs stack atom rest middle cost stepProof
 
+/-! R10 claim forms are closed over the governed kernel metrics.  Host
+    measurements are diagnostics and cannot discharge a semantic claim. -/
+inductive CostClaimForm where
+  | executionCost
+  | wallClockMilliseconds
+  | hostAllocationBytes
+  | peakMemoryBytes
+  | named (name : String)
+  deriving BEq, DecidableEq, Repr
+
+inductive CostClaimKind where
+  | timing
+  | memory
+  deriving BEq, DecidableEq, Repr
+
+inductive CostClaimDisposition where
+  | semanticTraceCost
+  | diagnosticOnly
+  | rejected
+  deriving BEq, DecidableEq, Repr
+
+structure CostClaimRegistration where
+  form : CostClaimForm
+  kind : CostClaimKind
+  disposition : CostClaimDisposition
+  deriving BEq, Repr
+
+def executionCostRegistration : CostClaimRegistration :=
+  { form := .executionCost, kind := .timing,
+    disposition := .semanticTraceCost }
+
+def wallClockRegistration : CostClaimRegistration :=
+  { form := .wallClockMilliseconds, kind := .timing,
+    disposition := .diagnosticOnly }
+
+def hostAllocationRegistration : CostClaimRegistration :=
+  { form := .hostAllocationBytes, kind := .memory,
+    disposition := .diagnosticOnly }
+
+def peakMemoryRegistration : CostClaimRegistration :=
+  { form := .peakMemoryBytes, kind := .memory,
+    disposition := .rejected }
+
+def costClaimRegistry : List CostClaimRegistration :=
+  [ executionCostRegistration, wallClockRegistration,
+    hostAllocationRegistration, peakMemoryRegistration ]
+
+def registeredCostClaim : CostClaimForm → Option CostClaimRegistration
+  | .executionCost => some executionCostRegistration
+  | .wallClockMilliseconds => some wallClockRegistration
+  | .hostAllocationBytes => some hostAllocationRegistration
+  | .peakMemoryBytes => some peakMemoryRegistration
+  | .named _ => none
+
+def costClaimSupported (form : CostClaimForm) : Bool :=
+  match registeredCostClaim form with
+  | some registration => registration.disposition == .semanticTraceCost
+  | none => false
+
+def deriveCostClaim {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
+    {start finish : Config} (trace : Trace gamma dictionary costs start finish)
+    (form : CostClaimForm) : Option Nat :=
+  match registeredCostClaim form with
+  | some registration =>
+      match registration.disposition with
+      | .semanticTraceCost => some (traceCost trace)
+      | .diagnosticOnly | .rejected => none
+  | none => none
+
+theorem executionCost_claim_derives_trace_cost
+    {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
+    {start finish : Config} (trace : Trace gamma dictionary costs start finish) :
+    deriveCostClaim trace .executionCost = some (traceCost trace) := by
+  simp [deriveCostClaim, registeredCostClaim, executionCostRegistration]
+
+theorem unsupported_cost_claims_are_rejected
+    {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
+    {start finish : Config} (trace : Trace gamma dictionary costs start finish) :
+    deriveCostClaim trace .wallClockMilliseconds = none ∧
+      deriveCostClaim trace .hostAllocationBytes = none ∧
+      deriveCostClaim trace .peakMemoryBytes = none := by
+  simp [deriveCostClaim, registeredCostClaim, wallClockRegistration,
+    hostAllocationRegistration, peakMemoryRegistration]
+
+theorem unregistered_cost_claims_are_rejected
+    {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
+    {start finish : Config} (trace : Trace gamma dictionary costs start finish)
+    (name : String) :
+    deriveCostClaim trace (.named name) = none := by
+  simp [deriveCostClaim, registeredCostClaim]
+
+def executableCostClaimChecks : List Bool :=
+  [ costClaimSupported .executionCost,
+    !costClaimSupported .wallClockMilliseconds,
+    !costClaimSupported .hostAllocationBytes,
+    !costClaimSupported .peakMemoryBytes,
+    !costClaimSupported (.named "unregistered") ]
+
+def literalCostTrace : Trace defaultGamma emptyDictionary defaultCosts
+    { stack := [], program := .cons (.lit (.nat 1)) .empty }
+    { stack := [.literal (.nat 1)], program := .empty } :=
+  .cons 1 (by rfl) (.nil _)
+
+def executableDerivedCostClaimChecks : List Bool :=
+  [ deriveCostClaim literalCostTrace .executionCost == some 1,
+    deriveCostClaim literalCostTrace .wallClockMilliseconds == none,
+    deriveCostClaim literalCostTrace .peakMemoryBytes == none ]
+
+example : executableCostClaimChecks.all id = true := by decide
+
+example : executableDerivedCostClaimChecks.all id = true := by decide
+
 end Firth.Interpreter
