@@ -444,4 +444,107 @@ theorem preservation (gamma : Gamma) (dictionary : Dictionary) (costs : CostTabl
                     exact preservation_prim h primitivesPreserve stackTyping hdelta restTyping
                 case h_2 hdelta => cases successor
 
+
+inductive KernelEffectDependency where
+  | word (name : String) (type : WordType)
+  | primitive (name : Prim) (input output : StackType)
+  deriving BEq, Repr
+
+mutual
+  def resolveKernelValueDependencies (gamma : Gamma) (dictionary : Dictionary) :
+      Value → Option (List KernelEffectDependency)
+    | .literal _ => some []
+    | .world _ => some []
+    | .quotation body _ => resolveKernelProgramDependencies gamma dictionary body
+
+  def resolveKernelAtomDependencies (gamma : Gamma) (dictionary : Dictionary) :
+      Atom → Option (List KernelEffectDependency)
+    | .lit _ => some []
+    | .push value => resolveKernelValueDependencies gamma dictionary value
+    | .quotation body => resolveKernelProgramDependencies gamma dictionary body
+    | .dup | .drop | .swap | .dip | .call | .compose | .quote | .ifThenElse => some []
+    | .word name =>
+        match dictionary name with
+        | some entry => some [.word name entry.type]
+        | none => none
+    | .prim name =>
+        match gamma.primitive name with
+        | some specification => some [.primitive name specification.input specification.output]
+        | none => none
+
+  def resolveKernelProgramDependencies (gamma : Gamma) (dictionary : Dictionary) :
+      Program → Option (List KernelEffectDependency)
+    | .empty => some []
+    | .cons head tail =>
+        match resolveKernelAtomDependencies gamma dictionary head,
+          resolveKernelProgramDependencies gamma dictionary tail with
+        | some headDependencies, some tailDependencies =>
+            some (headDependencies ++ tailDependencies)
+        | _, _ => none
+end
+
+structure KernelEffectBoundary (gamma : Gamma) (dictionary : Dictionary)
+    (body : Program) (input output : StackType) where
+  dependencies : List KernelEffectDependency
+  resolved : resolveKernelProgramDependencies gamma dictionary body = some dependencies
+  typing : ProgramTyping gamma dictionary body input output
+
+mutual
+  theorem valueTyping_resolves_kernel_effect_dependencies
+      (typing : ValueTyping gamma dictionary value type) :
+      ∃ dependencies,
+        resolveKernelValueDependencies gamma dictionary value = some dependencies := by
+    cases typing with
+    | literal => exact ⟨[], rfl⟩
+    | world => exact ⟨[], rfl⟩
+    | quotation bodyTyping =>
+        exact programTyping_resolves_kernel_effect_dependencies bodyTyping
+
+  theorem atomTyping_resolves_kernel_effect_dependencies
+      (typing : AtomTyping gamma dictionary atom input output) :
+      ∃ dependencies,
+        resolveKernelAtomDependencies gamma dictionary atom = some dependencies := by
+    cases typing with
+    | lit => exact ⟨[], rfl⟩
+    | push valueTyping =>
+        exact valueTyping_resolves_kernel_effect_dependencies valueTyping
+    | quotation bodyTyping =>
+        exact programTyping_resolves_kernel_effect_dependencies bodyTyping
+    | dup => exact ⟨[], rfl⟩
+    | drop => exact ⟨[], rfl⟩
+    | swap => exact ⟨[], rfl⟩
+    | call => exact ⟨[], rfl⟩
+    | dip => exact ⟨[], rfl⟩
+    | compose => exact ⟨[], rfl⟩
+    | quote => exact ⟨[], rfl⟩
+    | ifThenElse => exact ⟨[], rfl⟩
+    | @word name input output h =>
+        rcases h with ⟨entry, entryEq, _, _⟩
+        refine ⟨[.word name entry.type], ?_⟩
+        simp [resolveKernelAtomDependencies, entryEq]
+    | @prim name specification h =>
+        refine ⟨[.primitive name specification.input specification.output], ?_⟩
+        simp [resolveKernelAtomDependencies, h]
+
+  theorem programTyping_resolves_kernel_effect_dependencies
+      (typing : ProgramTyping gamma dictionary body input output) :
+      ∃ dependencies,
+        resolveKernelProgramDependencies gamma dictionary body = some dependencies := by
+    cases typing with
+    | empty => exact ⟨[], rfl⟩
+    | cons headTyping tailTyping =>
+        rcases atomTyping_resolves_kernel_effect_dependencies headTyping with
+          ⟨headDependencies, headResolved⟩
+        rcases programTyping_resolves_kernel_effect_dependencies tailTyping with
+          ⟨tailDependencies, tailResolved⟩
+        refine ⟨headDependencies ++ tailDependencies, ?_⟩
+        simp [resolveKernelProgramDependencies, headResolved, tailResolved]
+end
+
+theorem programTyping_has_kernel_effect_boundary
+    (typing : ProgramTyping gamma dictionary body input output) :
+    Nonempty (KernelEffectBoundary gamma dictionary body input output) := by
+  rcases programTyping_resolves_kernel_effect_dependencies typing with
+    ⟨dependencies, resolved⟩
+  exact ⟨{ dependencies, resolved, typing }⟩
 end Firth.Interpreter
