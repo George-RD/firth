@@ -1,0 +1,326 @@
+schema = "firth.tcb-boundary"
+version = 1
+source_spec = "specs/component-spec-boundaries.md"
+source_decision = "meta/decisions/tcb-boundary-inventory.md"
+
+required_component_ids = [
+  "firth.language.kernel",
+  "firth.language.surface",
+  "firth.language.types",
+  "firth.toolchain.elaborator",
+  "firth.toolchain.elaborator.translator",
+  "firth.toolchain.elaborator.cache",
+  "firth.toolchain.interpreter",
+  "firth.toolchain.compiler",
+  "firth.toolchain.compiler.translator",
+  "firth.toolchain.diffharness",
+  "firth.toolchain.smt",
+  "firth.toolchain.smt.translator",
+  "firth.toolchain.agent",
+  "firth.toolchain.agent.diagnostic",
+  "firth.runtime.vm",
+  "firth.runtime.image",
+  "firth.runtime.patch",
+  "firth.ecosystem.stdlib",
+  "firth.ecosystem.lsp",
+  "firth.ecosystem.specs",
+  "firth.governance.loop",
+]
+
+[[trusted_components]]
+id = "lean-kernel"
+name = "Lean kernel"
+condition = "The pinned Lean kernel checks every accepted theorem, definition, type, and proof term. No unproved escape hatch is accepted."
+
+[[trusted_components]]
+id = "smt-solver"
+name = "Pinned SMT solver"
+conditional = true
+condition = "Included only for an approved profile when the pinned solver returns unsat, the input and result are content-addressed, the translation-soundness bridge is checked by Lean, and the record is regenerated and rechecked."
+excluded_results = ["sat", "unknown", "timeout", "resource-exhausted", "malformed", "crashed", "unchecked-unsat", "unsupported", "translation-failure"]
+
+[[trusted_components]]
+id = "vm"
+name = "Firth VM"
+condition = "The VM is the trusted execution boundary. Its target contract, decoding, image, patch, and conformance evidence remain explicit."
+
+[smt_policy]
+required_terms = ["unsat", "pinned", "content-addressed", "Lean", "rechecked"]
+accepted_result = "unsat"
+solver_pinned = true
+record_content_addressed = true
+translation_soundness_checked_by = "lean-kernel"
+record_rechecked = true
+excluded_results = ["sat", "unknown", "timeout", "resource-exhausted", "malformed", "crashed", "unchecked-unsat", "unsupported", "translation-failure"]
+
+[[components]]
+id = "firth.language.kernel"
+module = "firth.language.kernel"
+category = "kernel-specification"
+status = "implemented"
+trusted = false
+[[components.outputs]]
+id = "kernel-definitions-and-metatheory"
+accepted_by = ["lean-kernel"]
+evidence = ["lean-zero-admit", "lean-build", "lean-test-driver"]
+
+[[components]]
+id = "firth.language.surface"
+module = "firth.language.surface"
+category = "surface-parser-and-erasure"
+status = "implemented"
+trusted = false
+[[components.outputs]]
+id = "checked-kernel-programs"
+accepted_by = ["lean-kernel"]
+evidence = ["lean-build", "lean-test-driver"]
+
+[[components]]
+id = "firth.language.types"
+module = "firth.language.types"
+category = "type-system"
+status = "implemented"
+trusted = false
+[[components.outputs]]
+id = "typed-stack-effects"
+accepted_by = ["lean-kernel"]
+evidence = ["lean-build", "lean-test-driver"]
+
+[[components]]
+id = "firth.toolchain.elaborator"
+module = "firth.toolchain.elaborator"
+category = "elaborator"
+status = "implemented"
+trusted = false
+[[components.outputs]]
+id = "checked-kernel-terms-and-word-contracts"
+accepted_by = ["lean-kernel"]
+evidence = ["lean-build", "lean-test-driver"]
+[[components.outputs]]
+id = "refinement-specifications-and-discharge-records"
+accepted_by = ["lean-kernel"]
+evidence = ["smt-boundary", "lean-test-driver"]
+
+[[components]]
+id = "firth.toolchain.elaborator.translator"
+module = "firth.toolchain.elaborator"
+category = "refinement-translator"
+status = "planned"
+trusted = false
+[[components.outputs]]
+id = "sound-smt-formulas"
+accepted_by = ["lean-kernel"]
+evidence = ["smt-boundary"]
+
+[[components]]
+id = "firth.toolchain.elaborator.cache"
+module = "firth.toolchain.elaborator"
+category = "content-addressed-cache"
+status = "planned"
+trusted = false
+[[components.outputs]]
+id = "rechecked-cached-discharge-records"
+accepted_by = ["lean-kernel"]
+evidence = ["smt-boundary", "lean-test-driver"]
+
+[[components]]
+id = "firth.toolchain.interpreter"
+module = "firth.toolchain.interpreter"
+category = "reference-interpreter"
+status = "implemented"
+trusted = false
+[[components.outputs]]
+id = "kernel-execution-traces-and-outcomes"
+accepted_by = ["lean-kernel"]
+evidence = ["lean-build", "lean-test-driver"]
+
+[[components]]
+id = "firth.toolchain.compiler"
+module = "firth.toolchain.compiler"
+category = "compiler"
+status = "planned"
+trusted = false
+[[components.outputs]]
+id = "target-code-and-lowering-evidence"
+accepted_by = ["vm"]
+evidence = ["vm-conformance", "vm-fixtures"]
+
+[[components]]
+id = "firth.toolchain.compiler.translator"
+module = "firth.toolchain.compiler"
+category = "target-translator"
+status = "planned"
+trusted = false
+[[components.outputs]]
+id = "canonical-target-instructions"
+accepted_by = ["vm"]
+evidence = ["vm-conformance"]
+
+[[components]]
+id = "firth.toolchain.diffharness"
+module = "firth.toolchain.diffharness"
+category = "differential-harness"
+status = "planned"
+trusted = false
+[[components.outputs]]
+id = "reproducible-agreement-or-failure-artefacts"
+accepted_by = ["lean-kernel", "vm"]
+evidence = ["lean-test-driver", "vm-conformance"]
+
+[[components]]
+id = "firth.toolchain.smt"
+module = "firth.toolchain.smt"
+category = "smt-integration"
+status = "implemented"
+trusted = false
+[[components.outputs]]
+id = "discharge-records"
+accepted_by = ["lean-kernel"]
+evidence = ["smt-boundary", "lean-test-driver"]
+
+[[components]]
+id = "firth.toolchain.smt.translator"
+module = "firth.toolchain.smt"
+category = "smt-normaliser-encoder-serialiser"
+status = "implemented"
+trusted = false
+[[components.outputs]]
+id = "normalised-verification-conditions-and-smt-lib"
+accepted_by = ["lean-kernel"]
+evidence = ["smt-boundary"]
+
+[[components]]
+id = "firth.toolchain.agent"
+module = "firth.toolchain.agent"
+category = "agent-interface"
+status = "implemented"
+trusted = false
+[[components.outputs]]
+id = "typed-holes-and-signature-results"
+accepted_by = ["lean-kernel"]
+evidence = ["lean-test-driver"]
+
+[[components]]
+id = "firth.toolchain.agent.diagnostic"
+module = "firth.toolchain.agent"
+category = "diagnostic-envelope-and-renderer"
+status = "implemented"
+trusted = false
+[[components.outputs]]
+id = "validated-diagnostic-json"
+accepted_by = ["lean-kernel"]
+evidence = ["lean-test-driver"]
+
+[[components]]
+id = "firth.runtime.vm"
+module = "firth.runtime.vm"
+category = "trusted-runtime"
+status = "implemented"
+trusted = true
+trusted_component = "vm"
+[[components.outputs]]
+id = "target-execution-and-image-boundary"
+accepted_by = ["vm"]
+evidence = ["vm-conformance", "vm-fixtures"]
+
+[[components]]
+id = "firth.runtime.image"
+module = "firth.runtime.image"
+category = "runtime-image"
+status = "planned"
+trusted = false
+[[components.outputs]]
+id = "immutable-versioned-image-transitions"
+accepted_by = ["vm"]
+evidence = ["vm-conformance"]
+
+[[components]]
+id = "firth.runtime.patch"
+module = "firth.runtime.patch"
+category = "verified-patch-protocol"
+status = "planned"
+trusted = false
+[[components.outputs]]
+id = "evidence-bound-image-replacements"
+accepted_by = ["lean-kernel", "vm"]
+evidence = ["lean-test-driver", "vm-conformance"]
+
+[[components]]
+id = "firth.ecosystem.stdlib"
+module = "firth.ecosystem.stdlib"
+category = "standard-library"
+status = "planned"
+trusted = false
+[[components.outputs]]
+id = "elaborated-library-words-and-target-code"
+accepted_by = ["lean-kernel", "vm"]
+evidence = ["lean-test-driver", "vm-conformance"]
+
+[[components]]
+id = "firth.ecosystem.lsp"
+module = "firth.ecosystem.lsp"
+category = "language-server"
+status = "planned"
+trusted = false
+[[components.outputs]]
+id = "validated-diagnostic-views"
+accepted_by = ["lean-kernel"]
+evidence = ["lean-test-driver"]
+
+[[components]]
+id = "firth.ecosystem.specs"
+module = "firth.ecosystem.specs"
+category = "specification-component"
+status = "implemented"
+trusted = false
+[[components.outputs]]
+id = "reimplementable-component-specifications"
+accepted_by = ["lean-kernel", "vm"]
+evidence = ["lean-build", "vm-conformance"]
+
+[[components]]
+id = "firth.governance.loop"
+module = "firth.governance.loop"
+category = "governance-checking"
+status = "implemented"
+trusted = false
+[[components.outputs]]
+id = "gate-and-boundary-results"
+accepted_by = ["lean-kernel", "vm"]
+evidence = ["lean-test-driver", "vm-conformance"]
+
+[[stages]]
+id = "lean-zero-admit"
+command = "python3 tools/loop/check_zero_admit.py"
+trusted_components = ["lean-kernel"]
+evidence_paths = ["tools/loop/check_zero_admit.py", "src"]
+
+[[stages]]
+id = "lean-build"
+command = "lake build"
+trusted_components = ["lean-kernel"]
+evidence_paths = ["lakefile.toml", "lean-toolchain", "src"]
+
+[[stages]]
+id = "lean-test-driver"
+command = "lake test"
+trusted_components = ["lean-kernel"]
+evidence_paths = ["lakefile.toml", "src/agent/FirthAllTest.lean"]
+
+[[stages]]
+id = "smt-boundary"
+command = "lake exe smtBoundaryTest"
+trusted_components = ["lean-kernel"]
+evidence_paths = ["src/smt/Firth/SmtBoundary.lean", "src/smt/Firth/SmtBoundaryTest.lean"]
+
+[[stages]]
+id = "vm-conformance"
+command = "cargo test --locked --manifest-path src/runtime/vm/Cargo.toml"
+trusted_components = ["vm"]
+evidence_paths = ["src/runtime/vm/Cargo.toml", "src/runtime/vm/src"]
+
+[[stages]]
+id = "vm-fixtures"
+command = "tools/loop/check_kernel_fixtures.sh"
+trusted_components = ["lean-kernel", "vm"]
+evidence_paths = ["tools/loop/check_kernel_fixtures.sh", "src/runtime/vm/fixtures/kernel.tsv"]
