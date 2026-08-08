@@ -900,6 +900,62 @@ def expectOutOfFuel (result : RunResult) : Bool :=
   | .outOfFuel _ _ _ => true
   | _ => false
 
+
+def r11WordType : WordType :=
+  { rowVariables := ["ρ"], input := .row "ρ", output := .row "ρ" }
+
+def r11WordEntry : WordEntry :=
+  { type := r11WordType, body := .empty }
+
+def r11Dictionary : Dictionary := fun name =>
+  if name == "one" then some r11WordEntry else none
+
+def r11RecursiveDictionary : Dictionary := fun name =>
+  if name == "loop" then some
+    { type := r11WordType, body := .cons (.word "loop") .empty }
+  else none
+
+example :
+    resolveKernelProgramDependencies defaultGamma r11Dictionary
+      (.cons (.word "one") .empty) =
+      some [.word "one" r11WordType] := by
+  simp [resolveKernelProgramDependencies, resolveKernelAtomDependencies,
+    r11Dictionary, r11WordEntry, r11WordType]
+
+example :
+    resolveKernelProgramDependencies defaultGamma r11Dictionary
+      (.cons (.push (.quotation (.cons (.word "one") .empty) .many)) .empty) =
+      some [.word "one" r11WordType] := by
+  simp [resolveKernelProgramDependencies, resolveKernelAtomDependencies,
+    resolveKernelValueDependencies, r11Dictionary, r11WordEntry, r11WordType]
+
+example :
+    resolveKernelProgramDependencies defaultGamma r11RecursiveDictionary
+      (.cons (.word "loop") .empty) =
+      some [.word "loop" r11WordType] := by
+  simp [resolveKernelProgramDependencies, resolveKernelAtomDependencies,
+    r11RecursiveDictionary, r11WordType]
+
+def r11NoPrimitiveGamma : Gamma :=
+  { defaultGamma with primitive := fun _ => none }
+
+example :
+    resolveKernelProgramDependencies defaultGamma emptyDictionary
+      (.cons (.prim "makeWorld") .empty) =
+      some [.primitive "makeWorld" (.row "ρ")
+        (.snoc (.row "ρ") (.base .world .linear))] := by
+  simp [resolveKernelProgramDependencies, resolveKernelAtomDependencies,
+    defaultGamma, emptyDictionary]
+
+example :
+    resolveKernelProgramDependencies r11NoPrimitiveGamma emptyDictionary
+      (.cons (.prim "makeWorld") .empty) = none := by
+  simp [resolveKernelProgramDependencies, resolveKernelAtomDependencies,
+    r11NoPrimitiveGamma, emptyDictionary]
+
+#print axioms programTyping_resolves_kernel_effect_dependencies
+#print axioms programTyping_has_kernel_effect_boundary
+
 def runTest (name : String) (condition : Bool) : IO Unit :=
   if condition then pure () else throw <| IO.userError s!"test failed: {name}"
 
