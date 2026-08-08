@@ -172,7 +172,7 @@ satisfied_by = []
 [obligation.req-r10]
 node = "firth.language.kernel"
 source = "PRD R10"
-satisfied_by = []
+satisfied_by = ["kernel-cost-semantics-claims"]
 
 [obligation.req-r11]
 node = "firth.language.kernel"
