@@ -2,6 +2,8 @@
 set -euo pipefail
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+
+(cd "$root" && python3 tools/loop/test_tcb_boundary.py)
 fixture="$root/src/runtime/vm/fixtures/kernel.tsv"
 generated=$(mktemp)
 trap 'rm -f "$generated"' EXIT

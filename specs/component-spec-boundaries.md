@@ -4,6 +4,12 @@ Status: accepted boundary map for the component specifications listed in the
 PRD artefact chain. This document is subordinate to the frozen kernel
 specification and the VM target contract.
 
+The machine-readable TCB inventory and its fail-closed validator live at
+`specs/tcb-boundary.toml` and `tools/loop/check_tcb_boundary.py`. The inventory
+is the executable companion to this map: every listed output names a trusted
+revalidator and evidence stage, while the conditional SMT policy records when
+the solver may be included in the trusted base.
+
 ## 1. Boundary rule
 
 The frozen kernel specification, `files/firth-kernel-spec-draft.md`, is the
