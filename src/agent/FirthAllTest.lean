@@ -11,3 +11,4 @@ def main : IO Unit := do
   runSuite "firthRefinementTest"
   runSuite "firthAgentDiagnosticTest"
   runSuite "firthPipelineTest"
+  runSuite "smtBoundaryTest"
