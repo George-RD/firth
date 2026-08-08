@@ -90,6 +90,17 @@ class DriverTokenTests(unittest.TestCase):
         if rc:
             (self.dir / f"rc.{number}").write_text(str(rc), encoding="utf-8")
 
+    def coverage_stub(self, valid: bool) -> None:
+        # The driver re-verifies LOOP EXHAUSTED against coverage.py
+        # --run-gates from its own checkout; the scenario controls the
+        # boolean the stub reports.
+        loop_dir = self.dir / "tools" / "loop"
+        loop_dir.mkdir(parents=True, exist_ok=True)
+        (loop_dir / "coverage.py").write_text(
+            f'print(\'{{"loop_exhausted_valid": {str(valid).lower()}}}\')\n',
+            encoding="utf-8",
+        )
+
     def run_driver(self) -> subprocess.CompletedProcess:
         env = dict(
             os.environ,
@@ -140,12 +151,26 @@ class DriverTokenTests(unittest.TestCase):
         done = self.run_driver()
         self.assertEqual(done.returncode, 3)
 
-    def test_exhausted_as_final_line_exits_zero(self) -> None:
+    def test_exhausted_verified_by_coverage_exits_zero(self) -> None:
+        self.coverage_stub(valid=True)
         self.iteration(1, "coverage says done\nLOOP EXHAUSTED\n")
         done = self.run_driver()
         self.assertEqual(done.returncode, 0)
 
+    def test_exhausted_refuted_by_coverage_fails_closed(self) -> None:
+        self.coverage_stub(valid=False)
+        self.iteration(1, "premature claim\nLOOP EXHAUSTED\n")
+        done = self.run_driver()
+        self.assertEqual(done.returncode, 3)
+        self.assertIn("coverage --run-gates disagrees", done.stderr)
+
+    def test_exhausted_without_coverage_fails_closed(self) -> None:
+        self.iteration(1, "no control plane here\nLOOP EXHAUSTED\n")
+        done = self.run_driver()
+        self.assertEqual(done.returncode, 3)
+
     def test_exhausted_followed_by_report_fails_closed(self) -> None:
+        self.coverage_stub(valid=True)
         self.iteration(1, "LOOP EXHAUSTED\ntrailing report\n")
         done = self.run_driver()
         self.assertEqual(done.returncode, 3)

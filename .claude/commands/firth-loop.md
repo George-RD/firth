@@ -398,7 +398,11 @@ class and nothing else is incomplete, the report's FIRST line is
 by the outstanding evidence; the token is still LOOP HALTED, because LOOP
 EXHAUSTED belongs to the coverage boolean alone. Blocked todos are never
 selected or unblocked here. LOOP EXHAUSTED requires `loop_exhausted_valid`
-true in the coverage JSON.
+true from `python3 tools/loop/coverage.py --run-gates`, which also
+executes any pinned acceptance gates (dec.mvp-completion clause 4): a
+missing or failing gate holds the boolean false, and plain coverage
+output never substitutes at this decision point. The driver re-verifies
+the same command mechanically before accepting the token.
 
 **Cairn gaps.** An unresolved design question discovered during a unit that
 does not block its success criterion is registered with

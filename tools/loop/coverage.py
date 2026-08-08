@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 import tomllib
 from pathlib import Path
@@ -86,6 +87,11 @@ def node_status(
 def main() -> int:
     parser = argparse.ArgumentParser(description="reconcile PRD obligations against todos")
     parser.add_argument("--validate", action="store_true", help="validate only")
+    parser.add_argument(
+        "--run-gates",
+        action="store_true",
+        help="execute pinned acceptance gates; a failure holds exhaustion false",
+    )
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     obligations_path = root / "tools" / "loop" / "obligations.toml"
@@ -162,16 +168,33 @@ def main() -> int:
     }
     all_todos_done = bool(gated) and all(status == "done" for status in gated.values())
     # A row may pin an executable acceptance gate (dec.mvp-completion
-    # clause 4). Its presence is machine-checked here; its execution
-    # belongs to the Verify battery and the pre-exhaustion preflight.
-    # Absence holds exhaustion false, so done todos alone can never
-    # discharge the endpoint without the gate existing on disk.
+    # clause 4). Presence is always machine-checked; --run-gates also
+    # executes each present gate, and a non-zero exit holds exhaustion
+    # false. The exhaustion decision point and the dry-run preflight run
+    # with --run-gates, so neither prose nor a broken gate script can
+    # stand in for the executable criterion.
     missing_gates = sorted(
         str(row["gate"])
         for row in active.values()
         if isinstance(row.get("gate"), str) and not (root / str(row["gate"])).is_file()
     )
-    loop_exhausted_valid = not ungenerated and all_todos_done and not missing_gates
+    failing_gates: list[str] = []
+    if args.run_gates:
+        for gate in sorted(
+            {
+                str(row["gate"])
+                for row in active.values()
+                if isinstance(row.get("gate"), str) and (root / str(row["gate"])).is_file()
+            }
+        ):
+            done = subprocess.run(
+                [sys.executable, str(root / gate)], cwd=root, capture_output=True
+            )
+            if done.returncode != 0:
+                failing_gates.append(gate)
+    loop_exhausted_valid = (
+        not ungenerated and all_todos_done and not missing_gates and not failing_gates
+    )
     print(
         json.dumps(
             {
@@ -185,6 +208,7 @@ def main() -> int:
                 "first_incomplete": first_incomplete,
                 "next_obligation": next_obligation,
                 "missing_gates": missing_gates,
+                "failing_gates": failing_gates,
                 "loop_exhausted_valid": loop_exhausted_valid,
             },
             sort_keys=True,

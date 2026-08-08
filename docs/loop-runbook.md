@@ -158,6 +158,22 @@ $MISSION"
       printf 'stopping after iteration %s: %s\n' "$i" "$token"
       rc=2; break ;;
     "LOOP EXHAUSTED")
+      if [ -z "$MISSION" ]; then
+        # The completion claim is never trusted from session output. The
+        # driver refreshes this checkout to the landed main and re-runs
+        # coverage with the pinned acceptance gates executed
+        # (dec.mvp-completion clause 4); disagreement fails closed. With a
+        # MISSION the token may mean the immutable mission cannot
+        # progress, which coverage cannot see, so it stays operator-read.
+        if ! git fetch origin main || ! git merge --ff-only -q FETCH_HEAD; then
+          printf 'stopping: cannot refresh the checkout to verify LOOP EXHAUSTED\n' >&2
+          rc=3; break
+        fi
+        if ! python3 tools/loop/coverage.py --run-gates | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin).get("loop_exhausted_valid") is True else 1)'; then
+          printf 'stopping: LOOP EXHAUSTED claimed but coverage --run-gates disagrees\n' >&2
+          rc=3; break
+        fi
+      fi
       printf 'stopping after iteration %s: %s\n' "$i" "$token"
       rc=0; break ;;
     "ITERATION COMPLETE")

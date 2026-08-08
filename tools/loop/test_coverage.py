@@ -152,6 +152,36 @@ class CoverageTests(unittest.TestCase):
         self.assertTrue(report["loop_exhausted_valid"])
         self.assertEqual(report["missing_gates"], [])
 
+    def test_failing_gate_holds_exhaustion_false_under_run_gates(self) -> None:
+        self.todo("done", "done")
+        (self.root / "tools" / "loop" / "mvp_agent_gate.py").write_text(
+            "raise SystemExit(1)\n", encoding="utf-8"
+        )
+        self.obligations(
+            '[completion]\nprofile = "mvp"\n'
+            '[obligation.core]\nnode = "firth.language.kernel"\nsource = "PRD R1"\n'
+            'gate = "tools/loop/mvp_agent_gate.py"\nsatisfied_by = ["done"]\n'
+        )
+        code, report = self.run_coverage("--run-gates")
+        self.assertEqual(code, 0)
+        self.assertFalse(report["loop_exhausted_valid"])
+        self.assertEqual(report["failing_gates"], ["tools/loop/mvp_agent_gate.py"])
+
+    def test_passing_gate_permits_exhaustion_under_run_gates(self) -> None:
+        self.todo("done", "done")
+        (self.root / "tools" / "loop" / "mvp_agent_gate.py").write_text(
+            "raise SystemExit(0)\n", encoding="utf-8"
+        )
+        self.obligations(
+            '[completion]\nprofile = "mvp"\n'
+            '[obligation.core]\nnode = "firth.language.kernel"\nsource = "PRD R1"\n'
+            'gate = "tools/loop/mvp_agent_gate.py"\nsatisfied_by = ["done"]\n'
+        )
+        code, report = self.run_coverage("--run-gates")
+        self.assertEqual(code, 0)
+        self.assertTrue(report["loop_exhausted_valid"])
+        self.assertEqual(report["failing_gates"], [])
+
     def test_full_profile_restores_whole_matrix_completion(self) -> None:
         self.todo("done", "done")
         self.obligations(
