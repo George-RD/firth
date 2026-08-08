@@ -547,4 +547,152 @@ theorem programTyping_has_kernel_effect_boundary
   rcases programTyping_resolves_kernel_effect_dependencies typing with
     ⟨dependencies, resolved⟩
   exact ⟨{ dependencies, resolved, typing }⟩
+inductive KernelObligationResult where
+  | unchecked
+  | accepted
+  | rejected (reason : String)
+  deriving BEq, Repr
+
+structure KernelWordReference where
+  name : String
+  type : WordType
+  deriving BEq, Repr
+
+structure KernelWordObligation where
+  private mk ::
+  private word : String
+  private body : Program
+  referencedSignatures : List KernelWordReference
+  private requiredPremises : List KernelEffectDependency
+  private checker : String
+  private status : KernelObligationResult
+  private verified : Bool
+  private verifiedWord : String
+  private verifiedBody : Program
+  private verifiedPremises : List KernelEffectDependency
+  deriving BEq, Repr
+def KernelWordObligation.result
+    (obligation : KernelWordObligation) : KernelObligationResult :=
+  obligation.status
+
+def KernelEffectDependency.toReference :
+    KernelEffectDependency → Option KernelWordReference
+  | .word name type => some { name, type }
+  | .primitive _ _ _ => none
+
+def kernelWordReferences : List KernelEffectDependency → List KernelWordReference
+  | [] => []
+  | dependency :: rest =>
+      match dependency.toReference with
+      | some reference => reference :: kernelWordReferences rest
+      | none => kernelWordReferences rest
+
+def checkedKernelWordObligation (name : String) (dictionary : Dictionary)
+    (entry : WordEntry) (hlookup : dictionary name = some entry)
+    (boundary : KernelEffectBoundary gamma dictionary entry.body
+      entry.type.input entry.type.output) : KernelWordObligation :=
+  { word := name
+    body := entry.body
+    referencedSignatures := kernelWordReferences boundary.dependencies
+    requiredPremises := boundary.dependencies
+    checker := "ProgramTyping"
+    status := .accepted
+    verified := true
+    verifiedWord := name
+    verifiedBody := entry.body
+    verifiedPremises := boundary.dependencies }
+def uncheckedKernelWordObligation (word : String) : KernelWordObligation :=
+  { word, body := .empty, referencedSignatures := [], requiredPremises := [],
+    checker := "unchecked", status := .unchecked, verified := false,
+    verifiedWord := word, verifiedBody := .empty, verifiedPremises := [] }
+def rejectedKernelWordObligation (word : String) (reason : String) :
+    KernelWordObligation :=
+  { word, body := .empty, referencedSignatures := [], requiredPremises := [],
+    checker := "rejected", status := .rejected reason, verified := false,
+    verifiedWord := word, verifiedBody := .empty, verifiedPremises := [] }
+
+
+def composeKernelObligationResults :
+    List KernelWordObligation → KernelObligationResult
+  | [] => .accepted
+  | obligation :: rest =>
+      match obligation.status with
+      | .rejected reason => .rejected reason
+      | .unchecked =>
+          match composeKernelObligationResults rest with
+          | .rejected reason => .rejected reason
+          | _ => .unchecked
+      | .accepted =>
+          if obligation.verified then
+            composeKernelObligationResults rest
+          else
+            .unchecked
+
+structure KernelVocabularyObligation where
+  private mk ::
+  private entries : List KernelWordObligation
+  deriving BEq, Repr
+
+def KernelVocabularyObligation.words
+    (vocabulary : KernelVocabularyObligation) : List KernelWordObligation :=
+  vocabulary.entries
+
+def KernelVocabularyObligation.result
+    (vocabulary : KernelVocabularyObligation) : KernelObligationResult :=
+  composeKernelObligationResults vocabulary.entries
+
+def composeKernelObligations
+    (words : List KernelWordObligation) : KernelVocabularyObligation :=
+  { entries := words }
+
+def kernelNameMember (name : String) : List String → Bool
+  | [] => false
+  | head :: tail => name == head || kernelNameMember name tail
+
+def kernelReferenceDependsOnAny (names : List String) :
+    List KernelWordReference → Bool
+  | [] => false
+  | reference :: rest =>
+      kernelNameMember reference.name names || kernelReferenceDependsOnAny names rest
+
+def kernelObligationDependsOnAny (names : List String)
+    (obligation : KernelWordObligation) : Bool :=
+  kernelNameMember obligation.word names ||
+    kernelReferenceDependsOnAny names
+      (kernelWordReferences obligation.requiredPremises)
+
+def kernelAppendName (names : List String) (name : String) : List String :=
+  if kernelNameMember name names then names else names ++ [name]
+
+def expandKernelAffectedNames (obligations : List KernelWordObligation)
+    (names : List String) : List String :=
+  obligations.foldl (fun expanded obligation =>
+    if kernelObligationDependsOnAny expanded obligation then
+      kernelAppendName expanded obligation.word
+    else
+      expanded) names
+
+def kernelAffectedNamesFuel (obligations : List KernelWordObligation) :
+    Nat → List String → List String
+  | 0, names => names
+  | fuel + 1, names =>
+      let expanded := expandKernelAffectedNames obligations names
+      if expanded.length == names.length then
+        expanded
+      else
+        kernelAffectedNamesFuel obligations fuel expanded
+
+def affectedKernelWordNames (changed : String)
+    (obligations : List KernelWordObligation) : List String :=
+  kernelAffectedNamesFuel obligations obligations.length [changed]
+
+def invalidateKernelWordObligations (changed : String)
+    (obligations : List KernelWordObligation) : List KernelWordObligation :=
+  let affected := affectedKernelWordNames changed obligations
+  obligations.map (fun obligation =>
+    if kernelNameMember obligation.word affected then
+      { obligation with status := .unchecked, verified := false }
+    else
+      obligation)
+
 end Firth.Interpreter
