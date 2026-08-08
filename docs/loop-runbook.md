@@ -94,6 +94,12 @@ mark=$(git ls-remote origin refs/heads/main | awk '{print $1}')
 while :; do
   i=$((i + 1))
   log="/tmp/firth-loop-${i}.log"
+  # Bounded log retention: keep the last 20 iteration logs. A long healthy
+  # run otherwise accumulates one file per iteration for its whole life;
+  # the launcher-side cleanup runs only between runs.
+  if [ "$i" -gt 20 ]; then
+    rm -f "/tmp/firth-loop-$((i - 20)).log"
+  fi
   if ! git fetch origin main; then
     printf 'stopping: cannot fetch origin/main for prompt refresh on iteration %s\n' "$i" >&2
     rc=3; break

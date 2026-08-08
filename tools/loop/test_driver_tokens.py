@@ -165,6 +165,22 @@ class DriverTokenTests(unittest.TestCase):
         done = self.run_driver()
         self.assertEqual(done.returncode, 2)
 
+    def test_log_retention_keeps_last_twenty(self) -> None:
+        # The driver deletes log i-20 at each iteration top, so a long run
+        # holds at most 20 iteration logs. 26 iterations: logs 1-6 pruned.
+        for n in range(1, 26):
+            self.iteration(n, "did work\nITERATION COMPLETE\n")
+        for n in range(1, 27):
+            Path(f"/tmp/firth-loop-{n}.log").unlink(missing_ok=True)
+        done = self.run_driver()
+        self.assertEqual(done.returncode, 2)  # iteration 26 is the stub halt
+        gone = [n for n in range(1, 7) if Path(f"/tmp/firth-loop-{n}.log").exists()]
+        kept = [n for n in range(7, 27) if not Path(f"/tmp/firth-loop-{n}.log").exists()]
+        self.assertEqual(gone, [], f"logs not pruned: {gone}")
+        self.assertEqual(kept, [], f"logs missing from retention window: {kept}")
+        for n in range(7, 27):
+            Path(f"/tmp/firth-loop-{n}.log").unlink(missing_ok=True)
+
 
 if __name__ == "__main__":
     unittest.main()
