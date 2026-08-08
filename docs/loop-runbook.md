@@ -291,13 +291,24 @@ ends itself with `LOOP EXHAUSTED` at project completion, or with
 success criteria outstanding` when everything machine-reachable is done
 and only external evidence (PRD S6) remains, or earlier on any other halt.
 
-A launcher MAY automate one operator action: relaunching after `rc=3`
-when a machine-checked provider-quota report (the harness's own usage
-endpoint, never output text) positively identified exhaustion at the
-stop and confirms recovery after the reported reset time. Attempts are
-bounded, an unreadable or still-exhausted report stays down, and every
-other exit code remains a human's decision: this automates the
-documented relaunch, not recovery (dec.loop-autonomy clause 7).
+A launcher MAY automate two operator actions, and nothing else.
+
+First, relaunching after `rc=3` when a machine-checked provider-quota
+report (the harness's own usage endpoint, never output text) positively
+identified exhaustion at the stop and confirms recovery after the
+reported reset time. Attempts are bounded, an unreadable or
+still-exhausted report stays down: this automates the documented
+relaunch, not recovery (dec.loop-autonomy clause 7).
+
+Second, a bounded halt intervention after `rc=2` under
+dec.halt-recovery: a credential-less advisor delegate on a different
+model family reads the halt evidence, the mandate at
+`docs/loop-recovery-mandate.md`, and the ledger of prior interventions,
+then proposes from a fixed allowlist; a deterministic executor
+re-verifies every precondition, appends the full intervention to its
+ledger before acting, and either relaunches (at most twice per incident
+signature, never after history rewrite on `main`) or stays down. Every
+other exit code remains a human's decision.
 
 ## Terminal tokens and health
 
