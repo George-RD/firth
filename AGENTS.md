@@ -82,6 +82,7 @@ cairn scan            # run before committing; zero findings is the target
 cairn hook all        # strict gate; exit 0 means the commit is safe
 python3 tools/loop/test_select_unit.py
 python3 tools/loop/test_coverage.py
+python3 tools/loop/test_driver_tokens.py
 python3 tools/loop/select_unit.py --validate
 python3 tools/loop/coverage.py --validate
 

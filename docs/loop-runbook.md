@@ -288,6 +288,7 @@ Run this once before launch, from the repository root:
 ```sh
 python3 tools/loop/select_unit.py --validate && python3 tools/loop/select_unit.py
 python3 tools/loop/coverage.py --validate && python3 tools/loop/coverage.py
+python3 tools/loop/test_driver_tokens.py
 cairn scan
 cairn hook all
 lake build && lake test
