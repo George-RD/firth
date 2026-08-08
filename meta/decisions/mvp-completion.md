@@ -86,9 +86,24 @@ loop, as clause 2a requires for goal-layer changes.
      given only the guide and the agent interface, each of which
      elaborates, type/linearity-checks, compiles, and runs on the VM with
      compiler/interpreter agreement;
-   - a gate script pinned at `tools/loop/mvp_agent_gate.py` that rebuilds
-     and re-runs those apps so the criterion is re-checkable by machine,
-     wired into the loop's verification gates.
+   - a provenance manifest pinned at `tools/loop/mvp_agent_manifest.toml`
+     binding the authorship claim to bytes: sha256 of the exact guide and
+     agent-interface files the model was given, and per app its source
+     path, sha256, and the authoring transcript (stored under
+     `meta/sources/` per the artefact rules) whose recorded context
+     lists only the guide, the agent interface, and the task, and whose
+     recorded output hashes to the checked-in app. Any later hand edit
+     to an app or the guide breaks the manifest mechanically;
+   - a gate script pinned at `tools/loop/mvp_agent_gate.py` that verifies
+     every manifest hash, then rebuilds and runs each app in a scratch
+     workspace exposing only that app's source and the toolchain, so the
+     criterion is re-checkable by machine and wired into the loop's
+     verification gates.
+   Trust boundary, stated plainly: no gate can prove a transcript was not
+   fabricated, because the loop is itself a code model. The manifest
+   makes the authorship claim falsifiable and drift-detected, the
+   two-lens review and this goal-layer decision guard the process, and a
+   human can audit the cited transcript at any time.
    Backlog generation authors the todos for this row like any other; the
    row's discharge is the loop's own `LOOP EXHAUSTED` precondition.
    Enforcement is split by responsibility: `coverage.py` machine-checks

@@ -253,10 +253,13 @@ satisfied_by = []
 # MVP acceptance gate (dec.mvp-completion clause 4): an agent-facing language
 # guide plus basic example applications authored by a code model given only
 # the guide and the agent interface, each elaborated, checked, compiled, run
-# on the VM with interpreter agreement, wired into a repeatable executable
-# gate. Discharged by done todos like every row, with one extra machine
-# check: coverage.py holds loop_exhausted_valid false while the pinned gate
-# script is absent, so prose can never stand in for the executable gate.
+# on the VM with interpreter agreement. The pinned gate script must verify
+# the provenance manifest at tools/loop/mvp_agent_manifest.toml (guide,
+# interface, transcript, and app hashes) and fail without it, then rebuild
+# and run each app in a scratch workspace. Discharged by done todos like
+# every row, with one extra machine check: coverage.py holds
+# loop_exhausted_valid false while the pinned gate is absent, and executes
+# it under --run-gates, so prose can never stand in for the executable gate.
 [obligation.mvp-agent-authoring]
 node = "firth.toolchain.agent"
 source = "dec.mvp-completion clause 4 (MVP reading of PRD S5/S7)"
