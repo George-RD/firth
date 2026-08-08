@@ -1,9 +1,8 @@
 ---
 node: firth.language.kernel
-status: blocked
+status: open
 created: 2026-08-08
 ---
-Blocked on prerequisite: todo.req-r8 (firth.language.kernel)
 
 # Kernel Non-Local Effect Isolation
 # Goal
