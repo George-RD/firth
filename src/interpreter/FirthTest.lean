@@ -959,6 +959,106 @@ example :
 def runTest (name : String) (condition : Bool) : IO Unit :=
   if condition then pure () else throw <| IO.userError s!"test failed: {name}"
 
+def reqR9Type : WordType :=
+  { rowVariables := ["ρ"]
+    input := .row "ρ"
+    output := .snoc (.row "ρ") (.base .nat .many) }
+
+def reqR9EntryA : WordEntry :=
+  { type := reqR9Type
+    body := .cons (.lit (.nat 1)) .empty }
+
+def reqR9EntryB : WordEntry :=
+  { type := reqR9Type
+    body := .cons (.word "a") .empty }
+
+def reqR9EntryC : WordEntry :=
+  { type := reqR9Type
+    body := .cons (.word "b") .empty }
+
+def reqR9EntryD : WordEntry := reqR9EntryA
+def reqR9Dictionary : Dictionary
+  | "a" => some reqR9EntryA
+  | "b" => some reqR9EntryB
+  | "c" => some reqR9EntryC
+  | "d" => some reqR9EntryD
+  | _ => none
+
+def reqR9TypingA :
+    ProgramTyping defaultGamma reqR9Dictionary reqR9EntryA.body
+      reqR9EntryA.type.input reqR9EntryA.type.output := by
+  exact ProgramTyping.cons (AtomTyping.lit (by simp [defaultGamma])) ProgramTyping.empty
+def reqR9TypingD :
+    ProgramTyping defaultGamma reqR9Dictionary reqR9EntryD.body
+      reqR9EntryD.type.input reqR9EntryD.type.output := by
+  simpa [reqR9EntryD] using reqR9TypingA
+
+def reqR9TypingB :
+    ProgramTyping defaultGamma reqR9Dictionary reqR9EntryB.body
+      reqR9EntryB.type.input reqR9EntryB.type.output := by
+  apply ProgramTyping.cons
+  · apply AtomTyping.word
+    exact ⟨reqR9EntryA, by rfl, rfl, rfl⟩
+  · exact ProgramTyping.empty
+
+def reqR9TypingC :
+    ProgramTyping defaultGamma reqR9Dictionary reqR9EntryC.body
+      reqR9EntryC.type.input reqR9EntryC.type.output := by
+  apply ProgramTyping.cons
+  · apply AtomTyping.word
+    exact ⟨reqR9EntryB, by rfl, rfl, rfl⟩
+  · exact ProgramTyping.empty
+
+def reqR9BoundaryA : KernelEffectBoundary defaultGamma reqR9Dictionary
+    reqR9EntryA.body reqR9EntryA.type.input reqR9EntryA.type.output :=
+  { dependencies := []
+    resolved := by simp [reqR9EntryA, resolveKernelProgramDependencies,
+      resolveKernelAtomDependencies]
+    typing := reqR9TypingA }
+
+def reqR9BoundaryB : KernelEffectBoundary defaultGamma reqR9Dictionary
+    reqR9EntryB.body reqR9EntryB.type.input reqR9EntryB.type.output :=
+  { dependencies := [.word "a" reqR9Type]
+    resolved := by simp [reqR9EntryB, reqR9EntryA, reqR9Type, reqR9Dictionary,
+      resolveKernelProgramDependencies, resolveKernelAtomDependencies]
+    typing := reqR9TypingB }
+
+def reqR9BoundaryC : KernelEffectBoundary defaultGamma reqR9Dictionary
+    reqR9EntryC.body reqR9EntryC.type.input reqR9EntryC.type.output :=
+  { dependencies := [.word "b" reqR9Type]
+    resolved := by simp [reqR9EntryC, reqR9EntryB, reqR9EntryA, reqR9Type,
+      reqR9Dictionary, resolveKernelProgramDependencies,
+      resolveKernelAtomDependencies]
+    typing := reqR9TypingC }
+def reqR9BoundaryD : KernelEffectBoundary defaultGamma reqR9Dictionary
+    reqR9EntryD.body reqR9EntryD.type.input reqR9EntryD.type.output :=
+  reqR9BoundaryA
+
+
+example :
+    (checkedKernelWordObligation "b" reqR9Dictionary reqR9EntryB (by rfl)
+      reqR9BoundaryB).referencedSignatures =
+      [{ name := "a", type := reqR9Type }] := by
+  rfl
+
+example :
+    (composeKernelObligations [
+      checkedKernelWordObligation "a" reqR9Dictionary reqR9EntryA (by rfl)
+        reqR9BoundaryA,
+      checkedKernelWordObligation "b" reqR9Dictionary reqR9EntryB (by rfl)
+        reqR9BoundaryB]).result = .accepted := by
+  rfl
+
+example :
+    (composeKernelObligations [uncheckedKernelWordObligation "unchecked"]).result =
+      .unchecked := by
+  rfl
+
+example :
+    composeKernelObligationResults [
+      uncheckedKernelWordObligation "unchecked",
+      rejectedKernelWordObligation "rejected" "bad"] = .rejected "bad" := by
+  rfl
 def main : IO Unit := do
   let parserResult ← IO.Process.output { cmd := "lake", args := #["exe", "firthParserTest"] }
   if parserResult.exitCode != 0 then throw <| IO.userError parserResult.stderr
@@ -966,6 +1066,27 @@ def main : IO Unit := do
   let d := emptyDictionary
   let c := defaultCosts
   let lit value := Value.literal (.nat value)
+  let obligationA := checkedKernelWordObligation "a" reqR9Dictionary
+    reqR9EntryA (by rfl) reqR9BoundaryA
+  let obligationB := checkedKernelWordObligation "b" reqR9Dictionary
+    reqR9EntryB (by rfl) reqR9BoundaryB
+  let obligationC := checkedKernelWordObligation "c" reqR9Dictionary
+    reqR9EntryC (by rfl) reqR9BoundaryC
+  let unrelated :=
+    checkedKernelWordObligation "d" reqR9Dictionary reqR9EntryD (by rfl)
+      reqR9BoundaryD
+  let vocabulary := composeKernelObligations
+    [obligationA, obligationB, obligationC, unrelated]
+  runTest "per-word vocabulary checks compose"
+    (vocabulary.result == .accepted)
+  let invalidated := invalidateKernelWordObligations "a"
+    [obligationA, obligationB, obligationC, unrelated]
+  runTest "changed word invalidates transitive dependants"
+    (match invalidated with
+    | [a, b, c, unaffected] =>
+        a.result == .unchecked && b.result == .unchecked &&
+          c.result == .unchecked && unaffected.result == .accepted
+    | _ => false)
   -- S-LIT, S-DUP, S-DROP, S-SWAP.
   let structural :=
     { stack := ([] : Stack),
