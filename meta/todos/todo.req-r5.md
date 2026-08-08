@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.interpreter
-status: open
+status: blocked
 created: 2026-08-08
 ---
 
@@ -9,6 +9,7 @@ created: 2026-08-08
 Make the Lean reference interpreter the executable oracle for compiler behaviour, so any mismatch is a machine-detected compiler failure.
 
 Requires: reference-interpreter, diffharness-fuzz-strategy
+blocked on sub-todos: todo.reference-interpreter-oracle-result todo.reference-interpreter-oracle-adapter todo.reference-interpreter-conformance
 
 ## Acceptance criteria
 - Define a machine-readable oracle result for a dictionary and kernel program, including terminal and stuck outcomes, and classify bounded-fuel exhaustion as inconclusive only when both runs exhaust equivalent budgets; treat one-sided exhaustion as a mismatch.
