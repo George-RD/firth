@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -43,12 +44,15 @@ class CoverageTests(unittest.TestCase):
     def obligations(self, text: str) -> None:
         (self.root / "tools" / "loop" / "obligations.toml").write_text(text, encoding="utf-8")
 
-    def run_coverage(self, *args: str) -> tuple[int, dict[str, object]]:
+    def run_coverage(
+        self, *args: str, env: dict[str, str] | None = None
+    ) -> tuple[int, dict[str, object]]:
         result = subprocess.run(
             ["python3", str(self.root / "tools" / "loop" / "coverage.py"), *args],
             text=True,
             capture_output=True,
             check=False,
+            env=dict(os.environ, **env) if env else None,
         )
         return result.returncode, json.loads(result.stdout)
 
@@ -181,6 +185,23 @@ class CoverageTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertTrue(report["loop_exhausted_valid"])
         self.assertEqual(report["failing_gates"], [])
+
+    def test_hung_gate_fails_closed_under_run_gates(self) -> None:
+        self.todo("done", "done")
+        (self.root / "tools" / "loop" / "mvp_agent_gate.py").write_text(
+            "import time\ntime.sleep(30)\n", encoding="utf-8"
+        )
+        self.obligations(
+            '[completion]\nprofile = "mvp"\n'
+            '[obligation.core]\nnode = "firth.language.kernel"\nsource = "PRD R1"\n'
+            'gate = "tools/loop/mvp_agent_gate.py"\nsatisfied_by = ["done"]\n'
+        )
+        code, report = self.run_coverage(
+            "--run-gates", env={"COVERAGE_GATE_TIMEOUT": "1"}
+        )
+        self.assertEqual(code, 0)
+        self.assertFalse(report["loop_exhausted_valid"])
+        self.assertEqual(report["failing_gates"], ["tools/loop/mvp_agent_gate.py"])
 
     def test_full_profile_restores_whole_matrix_completion(self) -> None:
         self.todo("done", "done")

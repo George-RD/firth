@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -180,6 +181,14 @@ def main() -> int:
     )
     failing_gates: list[str] = []
     if args.run_gates:
+        # Bounded and silent: gate output is discarded (nothing here reads
+        # it, so it cannot grow memory) and a hung gate is a failed gate,
+        # never a wedged completion check. COVERAGE_GATE_TIMEOUT seconds,
+        # default 1800.
+        try:
+            gate_timeout = int(os.environ.get("COVERAGE_GATE_TIMEOUT", "1800"))
+        except ValueError:
+            gate_timeout = 1800
         for gate in sorted(
             {
                 str(row["gate"])
@@ -187,10 +196,18 @@ def main() -> int:
                 if isinstance(row.get("gate"), str) and (root / str(row["gate"])).is_file()
             }
         ):
-            done = subprocess.run(
-                [sys.executable, str(root / gate)], cwd=root, capture_output=True
-            )
-            if done.returncode != 0:
+            try:
+                done = subprocess.run(
+                    [sys.executable, str(root / gate)],
+                    cwd=root,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=gate_timeout,
+                )
+                failed = done.returncode != 0
+            except (subprocess.TimeoutExpired, OSError):
+                failed = True
+            if failed:
                 failing_gates.append(gate)
     loop_exhausted_valid = (
         not ungenerated and all_todos_done and not missing_gates and not failing_gates
