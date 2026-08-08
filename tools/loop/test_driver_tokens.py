@@ -101,7 +101,7 @@ class DriverTokenTests(unittest.TestCase):
             encoding="utf-8",
         )
 
-    def run_driver(self) -> subprocess.CompletedProcess:
+    def run_driver(self, extra_env: dict[str, str] | None = None) -> subprocess.CompletedProcess:
         env = dict(
             os.environ,
             PATH=f"{self.dir / 'bin'}:{os.environ['PATH']}",
@@ -114,6 +114,8 @@ class DriverTokenTests(unittest.TestCase):
             W="10",
             MAXTIME="60",
         )
+        if extra_env:
+            env.update(extra_env)
         return subprocess.run(
             ["sh", str(self.dir / "driver.sh")],
             cwd=self.dir,
@@ -205,6 +207,15 @@ class DriverTokenTests(unittest.TestCase):
         kept = [n for n in range(7, 27) if not (self.dir / f"firth-loop-{n}.log").exists()]
         self.assertEqual(gone, [], f"logs not pruned: {gone}")
         self.assertEqual(kept, [], f"logs missing from retention window: {kept}")
+
+    def test_low_disk_stops_before_the_iteration(self) -> None:
+        # An impossible threshold forces the guard: the driver must stop
+        # rc 3 with the labelled message before ever invoking the harness.
+        self.iteration(1, "should never run\nITERATION COMPLETE\n")
+        done = self.run_driver(extra_env={"FIRTH_LOOP_MIN_FREE_KB": "999999999999"})
+        self.assertEqual(done.returncode, 3)
+        self.assertIn("free before iteration 1", done.stderr)
+        self.assertFalse((self.dir / "iter").exists(), "harness ran despite the guard")
 
 
 if __name__ == "__main__":

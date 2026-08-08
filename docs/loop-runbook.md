@@ -103,6 +103,15 @@ while :; do
   if [ "$i" -gt 20 ]; then
     rm -f "$LOGDIR/firth-loop-$((i - 20)).log"
   fi
+  # Fail closed before the iteration, not mid-build: a nearly full disk
+  # otherwise surfaces as a half-written Lean cache inside a unit. An
+  # unreadable measurement counts as full. Default 2GB, injectable.
+  free_kb=$(df -Pk . 2>/dev/null | awk 'NR==2 { print $4 }')
+  case "$free_kb" in ''|*[!0-9]*) free_kb=0 ;; esac
+  if [ "$free_kb" -lt "${FIRTH_LOOP_MIN_FREE_KB:-2097152}" ]; then
+    printf 'stopping: only %sKB free before iteration %s; need %sKB\n' "$free_kb" "$i" "${FIRTH_LOOP_MIN_FREE_KB:-2097152}" >&2
+    rc=3; break
+  fi
   if ! git fetch origin main; then
     printf 'stopping: cannot fetch origin/main for prompt refresh on iteration %s\n' "$i" >&2
     rc=3; break
