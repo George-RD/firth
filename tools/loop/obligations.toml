@@ -147,7 +147,7 @@ satisfied_by = []
 [obligation.req-r5]
 node = "firth.toolchain.interpreter"
 source = "PRD R5"
-satisfied_by = []
+satisfied_by = ["req-r5"]
 
 [obligation.req-r6]
 node = "firth.runtime.patch"
