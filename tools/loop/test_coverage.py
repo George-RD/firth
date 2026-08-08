@@ -8,6 +8,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -202,6 +203,42 @@ class CoverageTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertFalse(report["loop_exhausted_valid"])
         self.assertEqual(report["failing_gates"], ["tools/loop/mvp_agent_gate.py"])
+
+    def test_timed_out_gate_cannot_orphan_children(self) -> None:
+        self.todo("done", "done")
+        # The gate spawns a long-lived child, records its pid, then hangs.
+        # After the 1s timeout, the whole process group must be dead: a
+        # real gate that launched lake or VM work must not keep an
+        # unattended host busy after coverage returns.
+        (self.root / "tools" / "loop" / "mvp_agent_gate.py").write_text(
+            "import pathlib, subprocess, sys, time\n"
+            "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])\n"
+            "pathlib.Path(__file__).with_name('childpid').write_text(str(child.pid))\n"
+            "time.sleep(60)\n",
+            encoding="utf-8",
+        )
+        self.obligations(
+            '[completion]\nprofile = "mvp"\n'
+            '[obligation.core]\nnode = "firth.language.kernel"\nsource = "PRD R1"\n'
+            'gate = "tools/loop/mvp_agent_gate.py"\nsatisfied_by = ["done"]\n'
+        )
+        code, report = self.run_coverage(
+            "--run-gates", env={"COVERAGE_GATE_TIMEOUT": "1"}
+        )
+        self.assertEqual(code, 0)
+        self.assertEqual(report["failing_gates"], ["tools/loop/mvp_agent_gate.py"])
+        pid_file = self.root / "tools" / "loop" / "childpid"
+        self.assertTrue(pid_file.is_file(), "gate never started its child")
+        child = int(pid_file.read_text())
+        for _ in range(30):
+            try:
+                os.kill(child, 0)
+            except ProcessLookupError:
+                break
+            time.sleep(0.1)
+        else:
+            os.kill(child, 9)
+            self.fail("gate child survived the group kill")
 
     def test_full_profile_restores_whole_matrix_completion(self) -> None:
         self.todo("done", "done")

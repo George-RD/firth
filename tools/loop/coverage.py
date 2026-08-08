@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 import tomllib
@@ -183,8 +184,10 @@ def main() -> int:
     if args.run_gates:
         # Bounded and silent: gate output is discarded (nothing here reads
         # it, so it cannot grow memory) and a hung gate is a failed gate,
-        # never a wedged completion check. COVERAGE_GATE_TIMEOUT seconds,
-        # default 1800.
+        # never a wedged completion check. Each gate runs in its own
+        # session so a timeout kills the whole process group: a gate that
+        # spawned lake or VM work cannot orphan it onto an unattended
+        # host. COVERAGE_GATE_TIMEOUT seconds, default 1800.
         try:
             gate_timeout = int(os.environ.get("COVERAGE_GATE_TIMEOUT", "1800"))
         except ValueError:
@@ -197,15 +200,24 @@ def main() -> int:
             }
         ):
             try:
-                done = subprocess.run(
+                proc = subprocess.Popen(
                     [sys.executable, str(root / gate)],
                     cwd=root,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
-                    timeout=gate_timeout,
+                    start_new_session=True,
                 )
-                failed = done.returncode != 0
-            except (subprocess.TimeoutExpired, OSError):
+            except OSError:
+                failing_gates.append(gate)
+                continue
+            try:
+                failed = proc.wait(timeout=gate_timeout) != 0
+            except subprocess.TimeoutExpired:
+                try:
+                    os.killpg(proc.pid, signal.SIGKILL)
+                except (ProcessLookupError, PermissionError):
+                    pass
+                proc.wait()
                 failed = True
             if failed:
                 failing_gates.append(gate)
