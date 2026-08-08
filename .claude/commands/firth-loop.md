@@ -342,7 +342,9 @@ exists, write the test first, red then green. Substantial work goes through
 `.claude/skills/cairn-apply/SKILL.md`, read in full under Required reading.
 
 **Verify: the gate.** Run `python3 tools/loop/test_select_unit.py`,
-`python3 tools/loop/test_coverage.py`, then `python3 tools/loop/select_unit.py
+`python3 tools/loop/test_coverage.py`,
+`python3 tools/loop/test_driver_tokens.py` (the driver's token acceptance,
+dec.driver-token-tail), then `python3 tools/loop/select_unit.py
 --validate` and `python3 tools/loop/coverage.py --validate`; a non-zero exit or malformed
 JSON is a gate failure. Then run the staged
 language gates from Repo bindings: `lake build` and `lake test` (the root
