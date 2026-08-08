@@ -1,6 +1,6 @@
 name = "firth"
 version = "0.1.0"
-defaultTargets = ["firthTest", "firthParserTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthAgentDiagnosticTest", "firthPipelineTest", "firthAllTest"]
+defaultTargets = ["firthTest", "firthParserTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthAgentDiagnosticTest", "firthPipelineTest", "smtBoundaryTest", "firthAllTest"]
 testDriver = "firthAllTest"
 
 [[lean_lib]]
@@ -70,4 +70,9 @@ srcDir = "src"
 [[lean_exe]]
 name = "firthAllTest"
 root = "agent.FirthAllTest"
+srcDir = "src"
+
+[[lean_exe]]
+name = "smtBoundaryTest"
+root = "smt.Firth.SmtBoundaryTest"
 srcDir = "src"
