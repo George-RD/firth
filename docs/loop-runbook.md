@@ -257,6 +257,14 @@ ends itself with `LOOP EXHAUSTED` at project completion, or with
 success criteria outstanding` when everything machine-reachable is done
 and only external evidence (PRD S6) remains, or earlier on any other halt.
 
+A launcher MAY automate one operator action: relaunching after `rc=3`
+when a machine-checked provider-quota report (the harness's own usage
+endpoint, never output text) positively identified exhaustion at the
+stop and confirms recovery after the reported reset time. Attempts are
+bounded, an unreadable or still-exhausted report stays down, and every
+other exit code remains a human's decision: this automates the
+documented relaunch, not recovery (dec.loop-autonomy clause 7).
+
 ## Terminal tokens and health
 
 The loop reports its control token as the final non-empty output line
