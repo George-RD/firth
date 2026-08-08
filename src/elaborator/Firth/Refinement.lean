@@ -521,6 +521,7 @@ inductive LeanEscalationReason where
   | invalidCountermodel
   | externalRequestIneligible
   | externalProfileMismatch
+  | externalProofMismatch
   deriving Repr, BEq
 
 structure LeanProofObligation where
@@ -1239,6 +1240,13 @@ def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
     { leanQueue := [leanObligation obligation .externalProfileMismatch]
       diagnostics := [makeDiagnostic requestId obligation .deferred
         (reasonData "external-profile-mismatch")] }
+  else if !validSmtProofBindings result.proofBindings ||
+      match entry.request with
+      | some request => request.proofBindings != result.proofBindings
+      | none => true then
+    { leanQueue := [leanObligation obligation .externalProofMismatch]
+      diagnostics := [makeDiagnostic requestId obligation .deferred
+        (reasonData "external-proof-mismatch")] }
   else
     match result.outcome with
     | .sat model =>

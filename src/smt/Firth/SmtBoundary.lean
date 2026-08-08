@@ -180,8 +180,23 @@ inductive ExternalOutcome where
   | sat (model : Valuation)
   deriving Repr, BEq
 
+structure SmtProofBindings where
+  translationRuleHashes : List String
+  translationSoundnessProofHashes : List String
+  deriving Repr, BEq
+
+def defaultSmtProofBindings : SmtProofBindings :=
+  { translationRuleHashes :=
+      ["sha256:eb40a3611281719157351e0b09a954710d5e2c33b395647e47afa9cbe41c7073"]
+    translationSoundnessProofHashes :=
+      ["sha256:fdfb98b23ce8d0c2b6d46065d2b9e359324b46e156c8000e840f59cbab092cb6"] }
+
+def validSmtProofBindings (bindings : SmtProofBindings) : Bool :=
+  bindings == defaultSmtProofBindings
+
 structure SmtResult where
   profile : SolverProfile
+  proofBindings : SmtProofBindings := defaultSmtProofBindings
   outcome : ExternalOutcome
   deriving Repr, BEq
 
@@ -250,6 +265,7 @@ structure SmtRequest where
   profile : SolverProfile
   formula : Formula
   bindings : List SmtBinding
+  proofBindings : SmtProofBindings := defaultSmtProofBindings
   smtLib : String
   deriving Repr, BEq
 
@@ -367,7 +383,193 @@ private def renderSmtLib (formula : Formula) (bindings : List SmtBinding) :
       "(check-sat)",
       "(exit)"]
   pure (String.intercalate "\n" lines)
+private def renderQfLiaIntExpr (bindings : List SmtBinding) :
+    QfLiaIntExpr → Except SmtTranslationError String
+  | .literal value => .ok (renderIntLiteral value)
+  | .variable symbol => findBinding .integer symbol bindings
+  | .add left right => do
+      let left ← renderQfLiaIntExpr bindings left
+      let right ← renderQfLiaIntExpr bindings right
+      pure s!"(+ {left} {right})"
+  | .sub left right => do
+      let left ← renderQfLiaIntExpr bindings left
+      let right ← renderQfLiaIntExpr bindings right
+      pure s!"(- {left} {right})"
+  | .scale coefficient body => do
+      let body ← renderQfLiaIntExpr bindings body
+      pure s!"(* {renderIntLiteral coefficient} {body})"
 
+private def renderQfLiaPredicate (bindings : List SmtBinding) :
+    QfLiaPredicate → Except SmtTranslationError String
+  | .truth => .ok "true"
+  | .falsity => .ok "false"
+  | .boolVariable symbol => findBinding .boolean symbol bindings
+  | .not body => do
+      let body ← renderQfLiaPredicate bindings body
+      pure s!"(not {body})"
+  | .and left right => do
+      let left ← renderQfLiaPredicate bindings left
+      let right ← renderQfLiaPredicate bindings right
+      pure s!"(and {left} {right})"
+  | .or left right => do
+      let left ← renderQfLiaPredicate bindings left
+      let right ← renderQfLiaPredicate bindings right
+      pure s!"(or {left} {right})"
+  | .intEq left right => do
+      let left ← renderQfLiaIntExpr bindings left
+      let right ← renderQfLiaIntExpr bindings right
+      pure s!"(= {left} {right})"
+  | .intNe left right => do
+      let left ← renderQfLiaIntExpr bindings left
+      let right ← renderQfLiaIntExpr bindings right
+      pure s!"(distinct {left} {right})"
+  | .intLe left right => do
+      let left ← renderQfLiaIntExpr bindings left
+      let right ← renderQfLiaIntExpr bindings right
+      pure s!"(<= {left} {right})"
+  | .intLt left right => do
+      let left ← renderQfLiaIntExpr bindings left
+      let right ← renderQfLiaIntExpr bindings right
+      pure s!"(< {left} {right})"
+
+private def renderEncodedSmtLib (formula : QfLiaFormula) (bindings : List SmtBinding) :
+    Except SmtTranslationError String := do
+  let premises ← formula.premises.mapM (renderQfLiaPredicate bindings)
+  let conclusions ← formula.conclusions.mapM (renderQfLiaPredicate bindings)
+  let declarations := bindings.map renderBinding
+  let lines :=
+    ["(set-logic QF_LIA)"] ++
+    declarations ++
+    ["(assert " ++ renderConjunction premises ++ ")",
+      "(assert (not " ++ renderConjunction conclusions ++ "))",
+      "(check-sat)",
+      "(exit)"]
+  pure (String.intercalate "\n" lines)
+
+theorem renderIntExpr_encode (bindings : List SmtBinding) (expression : IntExpr) :
+    renderIntExpr bindings expression =
+      renderQfLiaIntExpr bindings (encodeIntExpr expression) := by
+  induction expression with
+  | literal => rfl
+  | «variable» name => rfl
+  | add left right ihLeft ihRight =>
+      simp [renderIntExpr, renderQfLiaIntExpr, encodeIntExpr, ihLeft, ihRight]
+  | sub left right ihLeft ihRight =>
+      simp [renderIntExpr, renderQfLiaIntExpr, encodeIntExpr, ihLeft, ihRight]
+  | scale coefficient body ih =>
+      simp [renderIntExpr, renderQfLiaIntExpr, encodeIntExpr, ih]
+
+theorem renderPredicate_of_encode (bindings : List SmtBinding)
+    (predicate : Predicate) (encoded : QfLiaPredicate)
+    (encodedEq : encodePredicate predicate = some encoded) :
+    renderPredicate bindings predicate = renderQfLiaPredicate bindings encoded := by
+  induction predicate generalizing encoded with
+  | truth =>
+      simp [encodePredicate] at encodedEq
+      cases encodedEq
+      rfl
+  | falsity =>
+      simp [encodePredicate] at encodedEq
+      cases encodedEq
+      rfl
+  | boolVariable name =>
+      simp [encodePredicate] at encodedEq
+      cases encodedEq
+      rfl
+  | not body ih =>
+      cases result : encodePredicate body with
+      | none =>
+          simp [encodePredicate, result] at encodedEq
+      | some bodyEncoded =>
+          simp [encodePredicate, result] at encodedEq
+          cases encodedEq
+          simp [renderPredicate, renderQfLiaPredicate,
+            ih bodyEncoded result]
+  | and left right ihLeft ihRight =>
+      cases leftResult : encodePredicate left with
+      | none => simp [encodePredicate, leftResult] at encodedEq
+      | some leftEncoded =>
+          cases rightResult : encodePredicate right with
+          | none => simp [encodePredicate, leftResult, rightResult] at encodedEq
+          | some rightEncoded =>
+              simp [encodePredicate, leftResult, rightResult] at encodedEq
+              cases encodedEq
+              simp only [renderPredicate, renderQfLiaPredicate]
+              rw [ihLeft leftEncoded leftResult, ihRight rightEncoded rightResult]
+  | or left right ihLeft ihRight =>
+      cases leftResult : encodePredicate left with
+      | none => simp [encodePredicate, leftResult] at encodedEq
+      | some leftEncoded =>
+          cases rightResult : encodePredicate right with
+          | none => simp [encodePredicate, leftResult, rightResult] at encodedEq
+          | some rightEncoded =>
+              simp [encodePredicate, leftResult, rightResult] at encodedEq
+              cases encodedEq
+              simp only [renderPredicate, renderQfLiaPredicate]
+              rw [ihLeft leftEncoded leftResult, ihRight rightEncoded rightResult]
+  | intEq left right =>
+      simp [encodePredicate] at encodedEq
+      cases encodedEq
+      simp [renderPredicate, renderQfLiaPredicate, renderIntExpr_encode]
+  | intNe left right =>
+      simp [encodePredicate] at encodedEq
+      cases encodedEq
+      simp [renderPredicate, renderQfLiaPredicate, renderIntExpr_encode]
+  | intLe left right =>
+      simp [encodePredicate] at encodedEq
+      cases encodedEq
+      simp [renderPredicate, renderQfLiaPredicate, renderIntExpr_encode]
+  | intLt left right =>
+      simp [encodePredicate] at encodedEq
+      cases encodedEq
+      simp [renderPredicate, renderQfLiaPredicate, renderIntExpr_encode]
+  | named =>
+      simp [encodePredicate] at encodedEq
+  | nonlinear =>
+      simp [encodePredicate] at encodedEq
+  | worldSensitive =>
+      simp [encodePredicate] at encodedEq
+
+theorem renderPredicates_of_encode (bindings : List SmtBinding)
+    (predicates : List Predicate) (encoded : List QfLiaPredicate)
+    (encodedEq : encodePredicates predicates = some encoded) :
+    predicates.mapM (renderPredicate bindings) =
+      encoded.mapM (renderQfLiaPredicate bindings) := by
+  induction predicates generalizing encoded with
+  | nil =>
+      simp [encodePredicates] at encodedEq ⊢
+      cases encodedEq
+      rfl
+  | cons predicate rest ih =>
+      cases predicateResult : encodePredicate predicate with
+      | none => simp [encodePredicates, predicateResult] at encodedEq
+      | some predicateEncoded =>
+          cases restResult : encodePredicates rest with
+          | none => simp [encodePredicates, predicateResult, restResult] at encodedEq
+          | some restEncoded =>
+              simp [encodePredicates, predicateResult, restResult] at encodedEq
+              cases encodedEq
+              rw [List.mapM_cons, List.mapM_cons]
+              rw [renderPredicate_of_encode bindings predicate predicateEncoded
+                predicateResult, ih restEncoded restResult]
+
+theorem renderSmtLib_of_encodeFormula (formula : Formula) (bindings : List SmtBinding)
+    (encoded : QfLiaFormula) (encodedEq : encodeFormula formula = some encoded) :
+    renderSmtLib formula bindings = renderEncodedSmtLib encoded bindings := by
+  cases formula with
+  | mk premises conclusions =>
+      cases premiseResult : encodePredicates premises with
+      | none => simp [encodeFormula, premiseResult] at encodedEq
+      | some encodedPremises =>
+          cases conclusionResult : encodePredicates conclusions with
+          | none => simp [encodeFormula, premiseResult, conclusionResult] at encodedEq
+          | some encodedConclusions =>
+              simp [encodeFormula, premiseResult, conclusionResult] at encodedEq
+              cases encodedEq
+              simp only [renderSmtLib, renderEncodedSmtLib]
+              rw [renderPredicates_of_encode bindings premises encodedPremises
+                premiseResult, renderPredicates_of_encode bindings conclusions
+                encodedConclusions conclusionResult]
 def checkedSmtRequest (profile : SolverProfile) (formula : Formula) :
     Except SmtTranslationError SmtRequest :=
   if !validSolverProfile profile then
@@ -377,7 +579,8 @@ def checkedSmtRequest (profile : SolverProfile) (formula : Formula) :
     | .qfLia =>
         let bindings := formulaBindings formula
         match renderSmtLib formula bindings with
-        | .ok smtLib => .ok { profile, formula, bindings, smtLib }
+        | .ok smtLib =>
+            .ok { profile, formula, bindings, proofBindings := defaultSmtProofBindings, smtLib }
         | .error error => .error error
     | fragment => .error (.unsupportedFragment fragment)
 
