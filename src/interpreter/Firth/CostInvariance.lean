@@ -472,16 +472,15 @@ def peakMemoryRegistration : CostClaimRegistration :=
   { form := .peakMemoryBytes, kind := .memory,
     disposition := .rejected }
 
-def costClaimRegistry : List CostClaimRegistration :=
-  [ executionCostRegistration, wallClockRegistration,
-    hostAllocationRegistration, peakMemoryRegistration ]
-
-def registeredCostClaim : CostClaimForm → Option CostClaimRegistration
+def costClaimRegistry : CostClaimForm → Option CostClaimRegistration
   | .executionCost => some executionCostRegistration
   | .wallClockMilliseconds => some wallClockRegistration
   | .hostAllocationBytes => some hostAllocationRegistration
   | .peakMemoryBytes => some peakMemoryRegistration
   | .named _ => none
+
+def registeredCostClaim (form : CostClaimForm) : Option CostClaimRegistration :=
+  costClaimRegistry form
 
 def costClaimSupported (form : CostClaimForm) : Bool :=
   match registeredCostClaim form with
@@ -502,7 +501,8 @@ theorem executionCost_claim_derives_trace_cost
     {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
     {start finish : Config} (trace : Trace gamma dictionary costs start finish) :
     deriveCostClaim trace .executionCost = some (traceCost trace) := by
-  simp [deriveCostClaim, registeredCostClaim, executionCostRegistration]
+  simp [deriveCostClaim, registeredCostClaim, costClaimRegistry,
+    executionCostRegistration]
 
 theorem unsupported_cost_claims_are_rejected
     {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
@@ -510,15 +510,15 @@ theorem unsupported_cost_claims_are_rejected
     deriveCostClaim trace .wallClockMilliseconds = none ∧
       deriveCostClaim trace .hostAllocationBytes = none ∧
       deriveCostClaim trace .peakMemoryBytes = none := by
-  simp [deriveCostClaim, registeredCostClaim, wallClockRegistration,
-    hostAllocationRegistration, peakMemoryRegistration]
+  simp [deriveCostClaim, registeredCostClaim, costClaimRegistry,
+    wallClockRegistration, hostAllocationRegistration, peakMemoryRegistration]
 
 theorem unregistered_cost_claims_are_rejected
     {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
     {start finish : Config} (trace : Trace gamma dictionary costs start finish)
     (name : String) :
     deriveCostClaim trace (.named name) = none := by
-  simp [deriveCostClaim, registeredCostClaim]
+  simp [deriveCostClaim, registeredCostClaim, costClaimRegistry]
 
 def executableCostClaimChecks : List Bool :=
   [ costClaimSupported .executionCost,
