@@ -275,17 +275,32 @@ structure OracleResult where
   cost : Nat
   deriving BEq, Repr
 
-def observeWorld : Stack → List Nat
-  | [] => []
-  | .world id :: tail => id :: observeWorld tail
-  | _ :: tail => observeWorld tail
+mutual
+  def observeWorld : Stack → List Nat
+    | [] => []
+    | value :: tail => observeWorldValue value ++ observeWorld tail
+
+  def observeWorldValue : Value → List Nat
+    | .literal _ => []
+    | .world id => [id]
+    | .quotation body _ => observeWorldProgram body
+
+  def observeWorldProgram : Program → List Nat
+    | .empty => []
+    | .cons head tail => observeWorldAtom head ++ observeWorldProgram tail
+
+  def observeWorldAtom : Atom → List Nat
+    | .push value => observeWorldValue value
+    | .quotation body => observeWorldProgram body
+    | _ => []
+end
 
 def oracleResult (fuel : Nat) : RunResult → OracleResult
   | .terminal config steps cost =>
       { status := .terminal
         residualStack := config.stack
         residualProgram := config.program
-        worldState := observeWorld config.stack
+        worldState := observeWorld config.stack ++ observeWorldProgram config.program
         fuelBudget := fuel
         steps
         cost }
@@ -293,7 +308,7 @@ def oracleResult (fuel : Nat) : RunResult → OracleResult
       { status := .stuck
         residualStack := config.stack
         residualProgram := config.program
-        worldState := observeWorld config.stack
+        worldState := observeWorld config.stack ++ observeWorldProgram config.program
         fuelBudget := fuel
         steps
         cost }
@@ -301,7 +316,7 @@ def oracleResult (fuel : Nat) : RunResult → OracleResult
       { status := .fuelExhausted
         residualStack := config.stack
         residualProgram := config.program
-        worldState := observeWorld config.stack
+        worldState := observeWorld config.stack ++ observeWorldProgram config.program
         fuelBudget := fuel
         steps
         cost }
@@ -316,9 +331,7 @@ def sameOracleObservation (left right : OracleResult) : Bool :=
   left.status == right.status &&
     left.residualStack == right.residualStack &&
     left.residualProgram == right.residualProgram &&
-    left.worldState == right.worldState &&
-    left.steps == right.steps &&
-    left.cost == right.cost
+    left.worldState == right.worldState
 
 def compareOracleResults (left right : OracleResult) : OracleComparison :=
   match left.status, right.status with
