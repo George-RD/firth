@@ -1,6 +1,6 @@
 ---
 node: firth.language.types
-status: open
+status: done
 created: 2026-08-09
 ---
 Requires: kernel-spec-freeze quotation-typing-prior-art specification-predicates
