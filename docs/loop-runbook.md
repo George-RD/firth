@@ -319,14 +319,19 @@ still-exhausted report stays down: this automates the documented
 relaunch, not recovery (dec.loop-autonomy clause 7).
 
 Second, a bounded halt intervention after `rc=2` under
-dec.halt-recovery: a credential-less advisor delegate on a different
+dec.halt-recovery, and after `rc=3` under dec.rc3-recovery once the
+same machine-checked quota gate positively reports available quota
+(exhaustion keeps the first path; an unreadable report stays down
+without consulting anyone): a credential-less advisor delegate on a different
 model family reads the halt evidence, the mandate at
 `docs/loop-recovery-mandate.md`, and the ledger of prior interventions,
 then proposes from a fixed allowlist; a deterministic executor
 re-verifies every precondition, appends the full intervention to its
 ledger before acting, and either relaunches (at most twice per incident
-signature, never after history rewrite on `main`) or stays down. Every
-other exit code remains a human's decision.
+signature, never after history rewrite on `main`) or stays down.
+Every granted relaunch refreshes the launch checkout and re-extracts
+the driver, exactly like a fresh launch. Every other exit code
+remains a human's decision.
 
 ## Terminal tokens and health
 
