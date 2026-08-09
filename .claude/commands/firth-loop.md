@@ -348,7 +348,12 @@ dec.driver-token-tail), then `python3 tools/loop/select_unit.py
 --validate` and `python3 tools/loop/coverage.py --validate`; a non-zero exit or malformed
 JSON is a gate failure. Then run the staged
 language gates from Repo bindings: `lake build` and `lake test` (the root
-lakefile configures `testDriver`); if the unit touches a path holding a
+lakefile configures `testDriver`); if the unit changed any governed proof
+module (`governedProofModules` in `src/elaborator/Firth/Refinement.lean`),
+regenerate the manifest with `python3 tools/loop/update_proof_manifest.py`
+after `lake build` and before `lake test`, and stage it with the unit;
+`--check` failing or the gate reporting "refinement proof-module hash is
+unavailable" means the manifest is stale, not a proof defect. if the unit touches a path holding a
 `Cargo.toml` (today `src/runtime/vm`), also run `cargo fmt --check`,
 `cargo clippy`, and `cargo test --locked` from that crate directory.
 Always: `$CAIRN scan` (zero Errors;
