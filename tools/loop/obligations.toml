@@ -60,7 +60,7 @@ satisfied_by = ["scope-language-visibility-model"]
 [obligation.scope-toolchain-elaborator]
 node = "firth.toolchain.elaborator"
 source = "PRD 4.2 elaborator"
-satisfied_by = []
+satisfied_by = ["scope-toolchain-elaborator"]
 
 [obligation.scope-toolchain-interpreter]
 node = "firth.toolchain.interpreter"
