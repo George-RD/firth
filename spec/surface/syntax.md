@@ -54,7 +54,7 @@ errors.
 
     file            = { vocabulary | use-declaration | word-definition } ;
     vocabulary      = "vocab" , word-name , "{" ,
-                      { use-declaration | word-definition } , "}" ;
+                      { vocabulary | use-declaration | word-definition } , "}" ;
     use-declaration = "use" , name , [ "as" , word-name ] , ";" ;
     word-definition = ":" , word-name , stack-effect , body , ";" ;
     body            = { item } ;
@@ -65,24 +65,63 @@ errors.
     local-block     = "locals" , "{" , word-name , { word-name } , "}" ,
                       "{" , { item } , "}" ;
 
-The outermost file is an implicit vocabulary. A vocabulary's canonical name is
-its enclosing qualified name. A `use` makes exported words available
-unqualified for the rest of the containing scope. `as` adds an alias for
-qualified lookup. A word is exported by default from its defining vocabulary;
-future visibility modifiers are outside v0.1.
+The outermost file is an implicit vocabulary with an empty canonical prefix.
+A top-level word named `w` therefore has canonical dictionary key `w`. A
+vocabulary named `v` in a scope with canonical prefix `p` has canonical name
+`p.v` (or `v` at the top level), and a word named `w` in it has canonical key
+`p.v.w` (or `v.w` at the top level).
 
-Duplicate canonical names, duplicate aliases, and ambiguous unqualified uses
-are errors. Qualified lookup is exact and cannot be shadowed. Vocabulary
-declarations, `use`, aliases, and export status erase completely. The
-dictionary key is the canonical qualified name, and the dictionary value is the
-word's erased prenex stack effect and elaborated kernel body. Vocabularies
+Each file and vocabulary body is a lexical scope. A nested vocabulary inherits
+the active `use` declarations from enclosing scopes at its declaration, and
+its own `use` declarations remain active through the end of its body. A `use`
+declaration names a vocabulary and its target must resolve to exactly one
+declared vocabulary. A missing, non-vocabulary, or ambiguous target is rejected
+at the declaration before any imported candidate is considered. Resolved
+exported words become unqualified lookup candidates from the declaration
+through the end of its containing scope. `as` binds an alias for that
+vocabulary, so `alias.w` is qualified lookup for the canonical word `v.w`. An
+alias cannot equal another alias or a visible canonical vocabulary prefix in the
+same scope; either collision is a duplicate-alias error. A word is exported by
+default from its defining vocabulary; private words and user-selectable export
+modifiers are outside v0.1. A word defined in the current vocabulary is
+directly available there without a `use`.
+
+Name resolution constructs its candidate set before checking a body. Qualified
+lookup first expands a leading alias to its canonical vocabulary prefix, then
+the resulting canonical reference must match exactly one canonical dictionary
+key and is never shadowed. An unqualified reference considers the current
+vocabulary and the exported words made visible by its active `use` declarations.
+Candidates are compared by canonical key, not declaration or import order. A
+duplicate canonical name, duplicate alias binding, ambiguous unqualified
+candidate set, or empty candidate set is rejected with the stable diagnostics
+below.
+
+| Code | Condition |
+| --- | --- |
+| `firth.name.duplicate-canonical` | two declarations produce one canonical key |
+| `firth.name.duplicate-alias` | an alias repeats or collides with a visible canonical vocabulary prefix |
+| `firth.name.ambiguous-use` | an unqualified reference has multiple candidates |
+| `firth.name.unresolved` | a use target or qualified or unqualified reference has no candidate |
+
+Name diagnostics identify the declaration or reference span that caused the
+failure and include related spans for every colliding declaration or candidate.
+When several diagnostics exist, order them by the established diagnostic
+envelope key: source URI or path, primary range start, primary range end, stable
+code, then payload ID. Candidate lists and related spans are sorted by canonical
+key, then source range start and end, then payload ID. Resolution therefore has
+no implementation-defined choice and does not depend on hash-map iteration.
+
+Vocabulary declarations, `use`, aliases, and export status erase completely.
+The dictionary key is the canonical qualified name, and the dictionary value is
+the word's erased prenex stack effect and elaborated kernel body. Vocabularies
 organise names but introduce no runtime operations.
 
-Definitions are visible throughout their vocabulary, including before their
-textual definition, so mutually recursive dictionary words are possible. A
-body is checked against its declared effect while all declared signatures are
-in the dictionary. A public contract may retain refinements, but the kernel
-dictionary stores only the erased `WordType`.
+Implementations collect vocabulary declarations and all word signatures before
+checking bodies. Definitions are visible throughout their vocabulary, including
+before their textual definition, so mutually recursive dictionary words are
+possible. A body is checked against its declared effect while all declared
+signatures are in the dictionary. A public contract may retain refinements, but
+the kernel dictionary stores only the erased `WordType`.
 
 ## 3. Stack effects
 
