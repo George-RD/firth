@@ -123,6 +123,145 @@ possible. A body is checked against its declared effect while all declared
 signatures are in the dictionary. A public contract may retain refinements, but
 the kernel dictionary stores only the erased `WordType`.
 
+## 2.1 Vocabulary layers
+
+A vocabulary layer is a finite dictionary `D_L` together with a public
+contract map `C_L`. For every word `w`, `D_L(w)` is an erased
+`(WordType, Program)` entry and `C_L(w) = C(w)`, the established public
+contract `(WordType, Spec)`, including checked predicates and any other `Spec`
+fields.
+A layer manifest
+`M_L = (package_id, role, dependencies, primitives, gamma_profile,
+primitive_profile, content_profile, dependency_profile)` records the canonical
+package identity, role, vocabulary dependencies, exact primitive closure,
+target-independent Γ and primitive semantic profiles, a content hash over the
+package's words and `C(w)` contracts, and a content hash over the resolved
+dependency manifests and contract/profile closure. The closure is derived from
+its words and dependencies.
+The primitive and Γ closures are graph-wide over every word in the declared
+dependency closure, not only references reached from one body; the visited set
+deduplicates that finite graph.
+`gamma_profile`, `primitive_profile`, `content_profile`, and
+`dependency_profile` are content-addressed identifiers for canonical profile
+records. A supported target or package provider publishes the records and
+identifiers; curation stores all identifiers rather than an unbound claim.
+Canonical profile serialization is deterministic and its identifier is the
+SHA-256 digest of that serialization; profile equality is identifier equality
+after canonicalization.
+
+Primitive profile records include each primitive's deterministic, total `δπ` on
+its typed shape, ownership contract, and observable behaviour; effectful
+primitives without a shared observation profile are not portable.
+
+The `primitive_profile` keys must equal the derived primitive closure, and the
+`gamma_profile` keys must equal the required Γ entries; missing or extra keys
+are rejected before portability is assessed.
+`gamma_profile` covers non-primitive Γ entries, including base types and
+literals; primitive signatures and semantics belong to `primitive_profile`.
+
+Each manifest is attached to exactly one canonical vocabulary package, and `D_L`
+contains the words declared by that package. Every nested vocabulary has its
+own canonical package identity and manifest, whether or not it is imported.
+`D_L` is local to its package. Checking uses the linked union of `D_L` and
+dependency dictionaries, while imported entries remain owned by their provider
+and are not duplicated into the importing layer.
+Linking rejects duplicate canonical keys with
+`firth.name.duplicate-canonical` before body checking; a package URI identifies
+ownership and does not create a second canonical namespace.
+
+The outer implicit vocabulary uses its source file or package URI as its
+canonical package identity in the manifest.
+Manifest dependency names use canonical vocabulary names for nested packages
+and package URIs for outer file packages; resolution normalises both forms
+before matching dependencies.
+The package registry binds each outer package URI to a canonical vocabulary
+name before source resolution; `use` and `as` therefore expose URI-backed
+packages through ordinary `name` and alias syntax.
+The loader registers manifest dependencies in the declared-vocabulary
+environment before resolving `use`; a registry-backed package therefore counts
+as a declared vocabulary for the existing resolution rule.
+
+For an outer package alias `p`, `p.w` resolves to that package's empty-prefix
+key `w`; the alias identifies ownership without changing the stored key.
+Every inherited `use` declaration contributes a direct dependency to each nested
+package in its lexical scope; the nested manifest must list that dependency even
+when no body or contract reference is resolved through it.
+
+The manifest is package metadata, not new source syntax in v0.1; `vocab` and
+`use` continue to declare words and lexical imports. Manifest direct
+dependencies must match each imported vocabulary target and must form an
+acyclic graph; their manifests determine the transitive dependency closure.
+Resolved cross-vocabulary qualified references also contribute direct
+dependencies; a manifest mismatch is rejected even when no `use` declaration is
+present.
+
+For an imported word, `C_L(w)` is the provider's `C(w)` and cannot be
+overridden by the importing layer. Each imported word is checked and used
+through its declared `C_L` contract; refinement obligations cannot be bypassed by crossing
+a layer boundary.
+
+The standard roles are:
+1. **Core vocabularies** provide foundational reusable words over the frozen
+   kernel atoms, literals, and the declared portable primitive set. They may
+   depend only on core vocabularies and must not depend on domain or application
+   vocabularies.
+2. **Domain vocabularies** provide reusable words for a problem area. They may
+   depend only on core vocabularies and lower domain layers, and must not depend
+   on application vocabularies.
+3. **Application vocabularies** provide words for one application or
+   deployment. They may depend only on core and domain vocabularies, and must
+   not depend on application vocabularies. They are not required to be reusable
+   by a standard layer.
+“Lower” means a domain dependency that precedes the dependent package in the
+acyclic manifest graph; no separate numeric rank is required.
+
+These roles describe dependency and curation boundaries, not new runtime
+categories. Every layer introduces dictionary words only. Name resolution,
+contract checking, refinement discharge, and erasure produce the same frozen
+kernel dictionary entries and `Program` terms as an unlayered vocabulary.
+Layer metadata, imports, and curation status erase completely.
+
+Users extend Firth by declaring a vocabulary, supplying each word body and
+boundary contract, and supplying its layer manifest. The elaborator derives
+the primitive set from every word body and its dependency closure, and rejects
+a manifest whose `primitives` entry does not exactly match that derived set.
+Primitive derivation traverses canonical word references with a visited set and
+uses the finite least closure, so mutually recursive words do not loop or
+duplicate dependencies.
+Contract predicate references and the required Γ literal and base-type entries
+are included in the same dependency closure. A portable package records a
+target-independent Γ profile for those entries, and every supported target must
+provide that profile.
+
+It then checks the manifest, dependency closure, word contracts, refinements,
+and kernel erasure; an extension cannot add atoms, primitives, or runtime
+operations.
+An accepted contract also retains the existing proof or evidence that its
+`Spec` predicates describe the defining elaborated body; unsupported predicate
+or primitive fragments cannot be curated as portable contracts.
+The elaborator rejects role-invalid edges and any unchecked or failed word
+contract, refinement, or kernel-erasure result before a layer is accepted.
+For `role=core`, the primitive closure and Γ profile must already satisfy the
+portable target profiles; a core layer with any nonportable entry is rejected.
+
+The declared portable primitive set contains only primitives with a checked,
+target-independent semantic contract, including stack typing and deterministic
+transitions and observable effects, shared by every supported target. The
+toolchain declares this portable set and its supported targets as configuration.
+A primitive belongs to the set only when every supported target
+provides that same semantic contract; standard-layer curation records the
+portable-set configuration with the accepted vocabulary contracts. A vocabulary
+is portable only when all word contracts, refinements, kernel erasure, and its
+dependency closure are accepted, its `gamma_profile` and `primitive_profile`
+match every supported target, and its derived primitive set is a subset of that
+declared set. The standard library curates
+core and domain layers only from accepted, portable vocabulary contracts;
+application layers remain user-owned unless separately accepted.
+Changing a word body, its `C(w)`, an imported provider body or contract,
+dependency manifests, any semantic or content profile, or the supported-target
+configuration invalidates the accepted contract and requires rechecking before
+curation or publication.
+
 ## 3. Stack effects
 
 The chosen v0.1 annotation is a parenthesised effect at the word boundary:
