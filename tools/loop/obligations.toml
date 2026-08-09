@@ -55,7 +55,7 @@ satisfied_by = ["surface-syntax-spec"]
 [obligation.scope-language-visibility-model]
 node = "firth.language.surface"
 source = "PRD 4.1 module and word visibility model"
-satisfied_by = []
+satisfied_by = ["scope-language-visibility-model"]
 
 [obligation.scope-toolchain-elaborator]
 node = "firth.toolchain.elaborator"
