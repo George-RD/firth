@@ -1196,6 +1196,59 @@ def main : IO Unit := do
     else none
   runTest "fuel-bounded divergence"
     (expectOutOfFuel (run gamma loopWords c 12 { stack := [], program := .cons (.word "loop") .empty }))
+  let terminalOracle := runOracle gamma d c 0
+    { stack := [.world 7, .literal (.nat 3)], program := .empty }
+  runTest "oracle terminal captures residual and World state"
+    (terminalOracle.status == .terminal &&
+      terminalOracle.residualStack == [.world 7, .literal (.nat 3)] &&
+      terminalOracle.residualProgram == .empty &&
+      terminalOracle.worldState == [7] &&
+      terminalOracle.fuelBudget == 0 &&
+      terminalOracle.steps == 0 &&
+      terminalOracle.cost == 0)
+  let nestedWorldOracle := runOracle gamma d c 0
+    { stack := [.quotation (.cons (.push (.world 8)) .empty) .linear], program := .empty }
+  runTest "oracle observes Worlds captured in quotations"
+    (nestedWorldOracle.worldState == [8])
+  let residualProgramWorldOracle := runOracle gamma d c 0
+    { stack := [], program := .cons (.push (.world 9)) .empty }
+  runTest "oracle observes Worlds in residual programs"
+    (residualProgramWorldOracle.status == .fuelExhausted &&
+      residualProgramWorldOracle.worldState == [9])
+  let differentTraceOracle := runOracle gamma d c 2
+    { stack := [.world 7, .literal (.nat 3)],
+      program := .cons (.lit (.nat 9)) (.cons .drop .empty) }
+  runTest "oracle semantic equality ignores execution accounting"
+    (compareOracleResults terminalOracle differentTraceOracle == .equivalent)
+  let stuckOracle := runOracle gamma d c 0
+    { stack := [], program := .cons .drop .empty }
+  runTest "oracle stuck preserves residual state"
+    (stuckOracle.status == .stuck &&
+      stuckOracle.residualStack == [] &&
+      stuckOracle.residualProgram == .cons .drop .empty &&
+      stuckOracle.worldState == [] &&
+      stuckOracle.steps == 0 &&
+      stuckOracle.cost == 0)
+  let fuelOracle := runOracle gamma loopWords c 2
+    { stack := [], program := .cons (.word "loop") .empty }
+  runTest "oracle fuel exhaustion preserves residual state"
+    (fuelOracle.status == .fuelExhausted &&
+      fuelOracle.residualStack == [] &&
+      fuelOracle.residualProgram == .cons (.word "loop") .empty &&
+      fuelOracle.worldState == [] &&
+      fuelOracle.fuelBudget == 2 &&
+      fuelOracle.steps == 2 &&
+      fuelOracle.cost == 2)
+  runTest "oracle comparison accepts equivalent terminal runs"
+    (compareOracleResults terminalOracle terminalOracle == .equivalent)
+  runTest "oracle comparison marks equal-budget exhaustion inconclusive"
+    (compareOracleResults fuelOracle fuelOracle == .inconclusive)
+  let otherBudgetFuelOracle := runOracle gamma loopWords c 3
+    { stack := [], program := .cons (.word "loop") .empty }
+  runTest "oracle comparison rejects unequal exhaustion budgets"
+    (compareOracleResults fuelOracle otherBudgetFuelOracle == .mismatch)
+  runTest "oracle comparison rejects one-sided exhaustion"
+    (compareOracleResults fuelOracle terminalOracle == .mismatch)
   let loopLive : AConfig :=
     { stack := [.world 0 7], program := .cons (.word "loop") .empty, nextTag := 1 }
   runTest "loop witness retains live tag"
