@@ -45,7 +45,7 @@ satisfied_by = []
 [obligation.scope-language-spec-predicates]
 node = "firth.language.types"
 source = "PRD 4.1 specification predicates"
-satisfied_by = []
+satisfied_by = ["specification-predicates"]
 
 [obligation.scope-language-naming-grammar]
 node = "firth.language.surface"
