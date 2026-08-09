@@ -30,7 +30,7 @@ satisfied_by = ["surface-syntax-spec"]
 [obligation.scope-language-type-system]
 node = "firth.language.types"
 source = "PRD 4.1 type system"
-satisfied_by = []
+satisfied_by = ["type-system"]
 
 [obligation.scope-language-quotations]
 node = "firth.language.types"
