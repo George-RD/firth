@@ -345,6 +345,47 @@ def compareOracleResults (left right : OracleResult) : OracleComparison :=
   | _, _ =>
       if sameOracleObservation left right then .equivalent else .mismatch
 
+inductive TargetStatus where
+  | terminal
+  | stuck
+  | fuelExhausted
+  | trap
+  | rejected
+  deriving BEq, DecidableEq, Repr
+
+/- A target report carries semantic residue separately from target-specific
+   instruction accounting. `cost` is the aggregated target κ cost, not an
+   interpreter step count. -/
+structure TargetObservation where
+  status : TargetStatus
+  residualStack : Stack
+  residualProgram : Program
+  worldState : List Nat
+  fuelBudget : Nat
+  cost : Nat
+  deriving BEq, Repr
+
+def sameTargetObservation (oracle : OracleResult) (target : TargetObservation) : Bool :=
+  oracle.residualStack == target.residualStack &&
+    oracle.residualProgram == target.residualProgram &&
+    oracle.worldState == target.worldState
+
+def compareTargetObservation (oracle : OracleResult) (target : TargetObservation)
+    (expectedCost : Nat) : OracleComparison :=
+  if target.cost != expectedCost then
+    .mismatch
+  else
+    match oracle.status, target.status with
+    | .fuelExhausted, .fuelExhausted =>
+        if oracle.fuelBudget == target.fuelBudget then .inconclusive else .mismatch
+    | .fuelExhausted, _ => .mismatch
+    | _, .fuelExhausted => .mismatch
+    | .terminal, .terminal =>
+        if sameTargetObservation oracle target then .equivalent else .mismatch
+    | .stuck, .stuck =>
+        if sameTargetObservation oracle target then .equivalent else .mismatch
+    | _, _ => .mismatch
+
 def run (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable) : Nat → Config → RunResult
   | fuel, config =>
       match step gamma dictionary costs config with
