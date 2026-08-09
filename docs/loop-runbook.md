@@ -89,6 +89,7 @@ rc=4 # 0 exhausted, 2 halted, 3 unknown token/harness/observation failure, 4 wed
 i=0
 window=0
 tfail=0
+nfail=0
 # Injectable so the driver test suite never touches a live run's logs;
 # production leaves the default, which the launcher's summary reads.
 LOGDIR=${FIRTH_LOOP_LOG_DIR:-/tmp}
@@ -165,6 +166,23 @@ $MISSION"
     rc=3; break
   fi
   tfail=0
+  # Harness no-op guard: exit 0 with nothing but spinner lines means the
+  # session never ran (no assistant output, no token, no persisted
+  # session) - an infrastructure failure, not a model decision. Retry
+  # after a short backoff like the watchdog path; two consecutive no-ops
+  # stop rc=3. Any other tokenless output is a contract violation and
+  # still fails closed on the first occurrence.
+  if [ -z "$token" ] && awk '{ sub(/\r$/, "") } NF && $0 != "Working..." { bad = 1 } END { exit bad }' "$log"; then
+    nfail=$((nfail + 1))
+    printf 'harness no-op on iteration %s (exit 0, spinner-only output); consecutive no-ops: %s\n' "$i" "$nfail" >&2
+    if [ "$nfail" -ge 2 ]; then
+      printf 'stopping: two consecutive harness no-op runs\n' >&2
+      rc=3; break
+    fi
+    sleep "${FIRTH_LOOP_NOOP_BACKOFF:-60}"
+    continue
+  fi
+  nfail=0
   case "$token" in
     "LOOP HALTED")
       printf 'stopping after iteration %s: %s\n' "$i" "$token"
@@ -322,6 +340,11 @@ line. Zero tokens, conflicting tokens, a buried token, or a non-final
 `LOOP EXHAUSTED` stop the run rc 3, fail closed (dec.driver-token-tail;
 twice a landed or safely-deferred iteration was discarded by
 last-line-only reading: 2026-08-06, and 2026-08-08 after PR #60 landed).
+A spinner-only exit-0 run (every non-empty line is `Working...`) is a
+harness no-op: the session never started, so the driver retries after a
+backoff (`FIRTH_LOOP_NOOP_BACKOFF`, default 60s) instead of halting on a
+failure the model never saw; two consecutive no-ops stop rc=3
+(dec.driver-noop-retry; observed 2026-08-09, iteration log of 12 bytes).
 
 | Token | Meaning | Action |
 | --- | --- | --- |

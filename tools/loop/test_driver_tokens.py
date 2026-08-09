@@ -151,6 +151,35 @@ class DriverTokenTests(unittest.TestCase):
         done = self.run_driver()
         self.assertEqual(done.returncode, 3)
 
+    def test_noop_run_retried_then_recovers(self) -> None:
+        # Spinner-only exit-0 output means the session never ran; the
+        # driver retries instead of halting, then accepts real work.
+        self.iteration(1, "Working...\n")
+        self.iteration(2, "did work\nITERATION COMPLETE\n")
+        done = self.run_driver({"FIRTH_LOOP_NOOP_BACKOFF": "0"})
+        self.assertEqual(done.returncode, 2)  # iteration 3 is the stub halt
+        self.assertIn("consecutive no-ops: 1", done.stderr)
+        self.assertEqual((self.dir / "iter").read_text(), "3")
+
+    def test_two_consecutive_noop_runs_stop(self) -> None:
+        # The retry is bounded: a second no-op in a row stops rc=3. An
+        # entirely empty log counts as a no-op too (instant exit).
+        self.iteration(1, "Working...\nWorking...\n")
+        self.iteration(2, "")
+        done = self.run_driver({"FIRTH_LOOP_NOOP_BACKOFF": "0"})
+        self.assertEqual(done.returncode, 3)
+        self.assertIn("two consecutive harness no-op runs", done.stderr)
+
+    def test_noop_streak_reset_by_real_iteration(self) -> None:
+        # No-ops separated by a real iteration never accumulate.
+        self.iteration(1, "Working...\n")
+        self.iteration(2, "did work\nITERATION COMPLETE\n")
+        self.iteration(3, "Working...\n")
+        self.iteration(4, "more work\nITERATION COMPLETE\n")
+        done = self.run_driver({"FIRTH_LOOP_NOOP_BACKOFF": "0"})
+        self.assertEqual(done.returncode, 2)  # stub halt on iteration 5
+        self.assertNotIn("two consecutive", done.stderr)
+
     def test_missing_token_fails_closed(self) -> None:
         self.iteration(1, "worked on things\nno token here\n")
         done = self.run_driver()
