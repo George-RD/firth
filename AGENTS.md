@@ -164,6 +164,13 @@ and hook checks.
   cost invariance) is mechanised with zero admits; the **differential test
   harness** (fuzzed compiler-vs-interpreter agreement) is specified and not
   yet implemented.
+- **Governed proof modules:** `lake test` authenticates the built
+  `.olean` hashes of the six governed proof modules (see
+  `governedProofModules` in `src/elaborator/Firth/Refinement.lean`) against
+  `src/elaborator/refinement-proof-module.sha256`. After changing any of
+  them, run `lake build && python3 tools/loop/update_proof_manifest.py`
+  to regenerate the manifest (`--check` verifies); otherwise the gate
+  fails with "refinement proof-module hash is unavailable".
 - **Before committing:** run `cairn scan` (target: zero findings) and
   `cairn hook all` (strict gate; exit 0 means safe). New/moved files must be
   reachable from a blueprint module `path` or cairn will flag them.
