@@ -1196,8 +1196,8 @@ def main : IO Unit := do
     else none
   runTest "fuel-bounded divergence"
     (expectOutOfFuel (run gamma loopWords c 12 { stack := [], program := .cons (.word "loop") .empty }))
-  let terminalOracle := oracleResult 0 (run gamma d c 0
-    { stack := [.world 7, .literal (.nat 3)], program := .empty })
+  let terminalOracle := runOracle gamma d c 0
+    { stack := [.world 7, .literal (.nat 3)], program := .empty }
   runTest "oracle terminal captures residual and World state"
     (terminalOracle.status == .terminal &&
       terminalOracle.residualStack == [.world 7, .literal (.nat 3)] &&
@@ -1206,22 +1206,22 @@ def main : IO Unit := do
       terminalOracle.fuelBudget == 0 &&
       terminalOracle.steps == 0 &&
       terminalOracle.cost == 0)
-  let nestedWorldOracle := oracleResult 0 (run gamma d c 0
-    { stack := [.quotation (.cons (.push (.world 8)) .empty) .linear], program := .empty })
+  let nestedWorldOracle := runOracle gamma d c 0
+    { stack := [.quotation (.cons (.push (.world 8)) .empty) .linear], program := .empty }
   runTest "oracle observes Worlds captured in quotations"
     (nestedWorldOracle.worldState == [8])
-  let residualProgramWorldOracle := oracleResult 0 (run gamma d c 0
-    { stack := [], program := .cons (.push (.world 9)) .empty })
+  let residualProgramWorldOracle := runOracle gamma d c 0
+    { stack := [], program := .cons (.push (.world 9)) .empty }
   runTest "oracle observes Worlds in residual programs"
     (residualProgramWorldOracle.status == .fuelExhausted &&
       residualProgramWorldOracle.worldState == [9])
-  let differentTraceOracle := oracleResult 2 (run gamma d c 2
+  let differentTraceOracle := runOracle gamma d c 2
     { stack := [.world 7, .literal (.nat 3)],
-      program := .cons (.lit (.nat 9)) (.cons .drop .empty) })
+      program := .cons (.lit (.nat 9)) (.cons .drop .empty) }
   runTest "oracle semantic equality ignores execution accounting"
     (compareOracleResults terminalOracle differentTraceOracle == .equivalent)
-  let stuckOracle := oracleResult 0 (run gamma d c 0
-    { stack := [], program := .cons .drop .empty })
+  let stuckOracle := runOracle gamma d c 0
+    { stack := [], program := .cons .drop .empty }
   runTest "oracle stuck preserves residual state"
     (stuckOracle.status == .stuck &&
       stuckOracle.residualStack == [] &&
@@ -1229,8 +1229,8 @@ def main : IO Unit := do
       stuckOracle.worldState == [] &&
       stuckOracle.steps == 0 &&
       stuckOracle.cost == 0)
-  let fuelOracle := oracleResult 2
-    (run gamma loopWords c 2 { stack := [], program := .cons (.word "loop") .empty })
+  let fuelOracle := runOracle gamma loopWords c 2
+    { stack := [], program := .cons (.word "loop") .empty }
   runTest "oracle fuel exhaustion preserves residual state"
     (fuelOracle.status == .fuelExhausted &&
       fuelOracle.residualStack == [] &&
@@ -1243,8 +1243,8 @@ def main : IO Unit := do
     (compareOracleResults terminalOracle terminalOracle == .equivalent)
   runTest "oracle comparison marks equal-budget exhaustion inconclusive"
     (compareOracleResults fuelOracle fuelOracle == .inconclusive)
-  let otherBudgetFuelOracle := oracleResult 3
-    (run gamma loopWords c 3 { stack := [], program := .cons (.word "loop") .empty })
+  let otherBudgetFuelOracle := runOracle gamma loopWords c 3
+    { stack := [], program := .cons (.word "loop") .empty }
   runTest "oracle comparison rejects unequal exhaustion budgets"
     (compareOracleResults fuelOracle otherBudgetFuelOracle == .mismatch)
   runTest "oracle comparison rejects one-sided exhaustion"

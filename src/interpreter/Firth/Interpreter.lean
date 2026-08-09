@@ -295,7 +295,7 @@ mutual
     | _ => []
 end
 
-def oracleResult (fuel : Nat) : RunResult → OracleResult
+private def oracleResult (fuel : Nat) : RunResult → OracleResult
   | .terminal config steps cost =>
       { status := .terminal
         residualStack := config.stack
@@ -358,6 +358,10 @@ def run (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable) : Nat → 
               | .terminal final steps cost => .terminal final (steps + 1) (cost + stepCost)
               | .stuck stuckConfig steps cost => .stuck stuckConfig (steps + 1) (cost + stepCost)
               | .outOfFuel last steps cost => .outOfFuel last (steps + 1) (cost + stepCost)
+
+def runOracle (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
+    (fuel : Nat) (config : Config) : OracleResult :=
+  oracleResult fuel (run gamma dictionary costs fuel config)
 
 /-! The shared kernel typing judgements. Concrete stacks are typed by extending
 the symbolic row `ρ` from the bottom upwards; this matches the executable
