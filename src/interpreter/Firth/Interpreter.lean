@@ -256,6 +256,82 @@ inductive RunResult where
   | outOfFuel (config : Config) (steps cost : Nat)
   deriving Repr
 
+inductive OracleStatus where
+  | terminal
+  | stuck
+  | fuelExhausted
+  deriving BEq, DecidableEq, Repr
+
+/- A canonical, serialisable summary of one bounded execution. The stack
+   remains top-first, matching the executable representation and preserving
+   the residual program exactly. -/
+structure OracleResult where
+  status : OracleStatus
+  residualStack : Stack
+  residualProgram : Program
+  worldState : List Nat
+  fuelBudget : Nat
+  steps : Nat
+  cost : Nat
+  deriving BEq, Repr
+
+def observeWorld : Stack → List Nat
+  | [] => []
+  | .world id :: tail => id :: observeWorld tail
+  | _ :: tail => observeWorld tail
+
+def oracleResult (fuel : Nat) : RunResult → OracleResult
+  | .terminal config steps cost =>
+      { status := .terminal
+        residualStack := config.stack
+        residualProgram := config.program
+        worldState := observeWorld config.stack
+        fuelBudget := fuel
+        steps
+        cost }
+  | .stuck config steps cost =>
+      { status := .stuck
+        residualStack := config.stack
+        residualProgram := config.program
+        worldState := observeWorld config.stack
+        fuelBudget := fuel
+        steps
+        cost }
+  | .outOfFuel config steps cost =>
+      { status := .fuelExhausted
+        residualStack := config.stack
+        residualProgram := config.program
+        worldState := observeWorld config.stack
+        fuelBudget := fuel
+        steps
+        cost }
+
+inductive OracleComparison where
+  | equivalent
+  | inconclusive
+  | mismatch
+  deriving BEq, DecidableEq, Repr
+
+def sameOracleObservation (left right : OracleResult) : Bool :=
+  left.status == right.status &&
+    left.residualStack == right.residualStack &&
+    left.residualProgram == right.residualProgram &&
+    left.worldState == right.worldState &&
+    left.steps == right.steps &&
+    left.cost == right.cost
+
+def compareOracleResults (left right : OracleResult) : OracleComparison :=
+  match left.status, right.status with
+  | .fuelExhausted, .fuelExhausted =>
+      if left.fuelBudget == right.fuelBudget then
+        .inconclusive
+      else
+        .mismatch
+  | .fuelExhausted, _ => .mismatch
+  | _, .fuelExhausted => .mismatch
+  | _, _ =>
+      if sameOracleObservation left right then .equivalent else .mismatch
+
 def run (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable) : Nat → Config → RunResult
   | fuel, config =>
       match step gamma dictionary costs config with
