@@ -137,7 +137,7 @@ satisfied_by = ["kernel-spec-freeze", "surface-syntax-spec"]
 [obligation.req-r3]
 node = "firth.toolchain.elaborator"
 source = "PRD R3"
-satisfied_by = []
+satisfied_by = ["req-r3"]
 
 [obligation.req-r4]
 node = "firth.toolchain.elaborator"
