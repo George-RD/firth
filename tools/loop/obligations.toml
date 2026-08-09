@@ -40,7 +40,7 @@ satisfied_by = ["quotation-typing-prior-art"]
 [obligation.scope-language-vocabulary-layering]
 node = "firth.language.surface"
 source = "PRD 4.1 vocabulary layering"
-satisfied_by = []
+satisfied_by = ["scope-language-vocabulary-layering"]
 
 [obligation.scope-language-spec-predicates]
 node = "firth.language.types"
