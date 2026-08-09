@@ -1,4 +1,5 @@
 import Firth.Interpreter
+import Firth.OracleAdapter
 import Firth.KernelMetatheory
 import Firth.Linearity
 
@@ -1281,6 +1282,73 @@ def main : IO Unit := do
     (match run gamma d c 0 { stack := [], program := .empty } with
      | .terminal _ 0 0 => true
      | _ => false)
+  let adapter program stack fuel := runOracleAdapter gamma d program stack c fuel
+  runTest "oracle adapter maps literals" (
+    (adapter (.cons (.lit (.nat 1)) .empty) [] 1).residualStack ==
+      [Value.literal (.nat 1)])
+  runTest "oracle adapter maps quotations and World captures" (
+    let body := .cons (.push (.world 8)) .empty
+    let result := adapter (.cons (.quotation body) .empty) [] 1
+    result.status == .terminal && result.worldState == [8])
+  runTest "oracle adapter maps dup drop and swap" (
+    let duplicated := adapter (.cons .dup .empty)
+      [Value.literal (.nat 3)] 1
+    let dropped := adapter (.cons .drop .empty)
+      [Value.literal (.nat 3)] 1
+    let swapped := adapter (.cons .swap .empty)
+      [Value.literal (.nat 2), Value.literal (.nat 1)] 1
+    duplicated.residualStack == [Value.literal (.nat 3), Value.literal (.nat 3)] &&
+      dropped.residualStack == [] &&
+      swapped.residualStack == [Value.literal (.nat 1), Value.literal (.nat 2)])
+  runTest "oracle adapter maps dip call and compose" (
+    let first := .cons (.lit (.nat 1)) .empty
+    let second := .cons (.lit (.nat 2)) .empty
+    let dipped := adapter (.cons .dip .empty)
+      [.quotation first .many, Value.literal (.nat 9)] 10
+    let called := adapter (.cons .call .empty)
+      [.quotation first .many] 10
+    let composed := adapter (.cons .compose (.cons .call .empty))
+      [.quotation second .many, .quotation first .many] 10
+    dipped.residualStack == [Value.literal (.nat 9), Value.literal (.nat 1)] &&
+      called.residualStack == [Value.literal (.nat 1)] &&
+      composed.residualStack == [Value.literal (.nat 2), Value.literal (.nat 1)])
+  runTest "oracle adapter maps quote and conditional branches" (
+    let trueBranch := .cons (.lit (.nat 1)) .empty
+    let falseBranch := .cons (.lit (.nat 2)) .empty
+    let quoted := adapter (.cons .quote .empty)
+      [Value.literal (.nat 4)] 1
+    let branched := adapter (.cons .ifThenElse .empty)
+      [.quotation falseBranch .many, .quotation trueBranch .many,
+        Value.literal (.bool true)] 2
+    quoted.status == .terminal &&
+      branched.residualStack == [Value.literal (.nat 1)])
+  runTest "oracle adapter maps dictionary words and primitives" (
+    let wordResult := runOracleAdapter gamma words
+      (.cons (.word "one") .empty) [] c 10
+    let tunedCosts := { c with
+      atom := fun _ => 3
+      primitive := fun _ => 5 }
+    let primitiveResult := runOracleAdapter gamma d
+      (.cons (.lit (.nat 3)) (.cons (.lit (.nat 4))
+        (.cons (.prim "addNat") .empty))) [] tunedCosts 10
+    let customResult := runOracleAdapter customGamma d
+      (.cons (.prim "custom") .empty) [] c 1
+    wordResult.residualStack == [Value.literal (.nat 1)] &&
+      primitiveResult.residualStack == [Value.literal (.nat 7)] &&
+      primitiveResult.cost == 11 &&
+      customResult.residualStack == [Value.literal (.nat 42)])
+  runTest "oracle adapter preserves residuals and linear World state" (
+    let initial := [Value.world 7]
+    let result := runOracleAdapter gamma d .empty initial c 0
+    let fuelResult := runOracleAdapter gamma d
+      (.cons (.push (.world 9)) .empty) [] c 0
+    result.status == .terminal &&
+      result.residualStack == initial &&
+      result.worldState == [7] &&
+      result.fuelBudget == 0 &&
+      fuelResult.status == .fuelExhausted &&
+      fuelResult.residualProgram == .cons (.push (.world 9)) .empty &&
+      fuelResult.worldState == [9])
   let erasureResult ← IO.Process.output { cmd := "lake", args := #["exe", "firthErasureTest"] }
   if erasureResult.exitCode != 0 then throw <| IO.userError erasureResult.stderr
   let stackEffectResult ← IO.Process.output { cmd := "lake", args := #["exe", "firthStackEffectTest"] }
