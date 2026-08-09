@@ -1250,6 +1250,55 @@ def main : IO Unit := do
     (compareOracleResults fuelOracle otherBudgetFuelOracle == .mismatch)
   runTest "oracle comparison rejects one-sided exhaustion"
     (compareOracleResults fuelOracle terminalOracle == .mismatch)
+  let terminalTarget : TargetObservation :=
+    { status := .terminal
+      residualStack := terminalOracle.residualStack
+      residualProgram := terminalOracle.residualProgram
+      worldState := terminalOracle.worldState
+      fuelBudget := terminalOracle.fuelBudget
+      cost := 9 }
+  runTest "target conformance accepts semantic terminal with target kappa cost"
+    (compareTargetObservation terminalOracle terminalTarget 9 == .equivalent)
+  let stuckTarget : TargetObservation :=
+    { status := .stuck
+      residualStack := stuckOracle.residualStack
+      residualProgram := stuckOracle.residualProgram
+      worldState := stuckOracle.worldState
+      fuelBudget := stuckOracle.fuelBudget
+      cost := 0 }
+  runTest "target conformance accepts matching stuck outcome"
+    (compareTargetObservation stuckOracle stuckTarget 0 == .equivalent)
+  let fuelTarget : TargetObservation :=
+    { status := .fuelExhausted
+      residualStack := fuelOracle.residualStack
+      residualProgram := fuelOracle.residualProgram
+      worldState := fuelOracle.worldState
+      fuelBudget := fuelOracle.fuelBudget
+      cost := 100 }
+  runTest "target conformance makes equal-budget fuel inconclusive"
+    (compareTargetObservation fuelOracle fuelTarget 100 == .inconclusive)
+  runTest "target conformance rejects unequal fuel budgets"
+    (compareTargetObservation fuelOracle
+      { fuelTarget with fuelBudget := 3 } 100 == .mismatch)
+  runTest "target conformance rejects one-sided fuel exhaustion"
+    (compareTargetObservation fuelOracle terminalTarget 9 == .mismatch)
+  runTest "target conformance rejects a target trap"
+    (compareTargetObservation stuckOracle
+      { stuckTarget with status := .trap } 0 == .mismatch)
+  runTest "target conformance rejects residual program mismatch"
+    (compareTargetObservation terminalOracle
+      { terminalTarget with residualProgram := .cons .drop .empty } 9 == .mismatch)
+  runTest "target conformance rejects World observation mismatch"
+    (compareTargetObservation terminalOracle
+      { terminalTarget with worldState := [99] } 9 == .mismatch)
+  runTest "target conformance rejects residual mismatch"
+    (compareTargetObservation terminalOracle
+      { terminalTarget with residualStack := [] } 9 == .mismatch)
+  runTest "target conformance rejects kappa mismatch"
+    (compareTargetObservation terminalOracle terminalTarget 8 == .mismatch)
+  runTest "target conformance rejects explicit target rejection"
+    (compareTargetObservation terminalOracle
+      { terminalTarget with status := .rejected } 9 == .mismatch)
   let loopLive : AConfig :=
     { stack := [.world 0 7], program := .cons (.word "loop") .empty, nextTag := 1 }
   runTest "loop witness retains live tag"
