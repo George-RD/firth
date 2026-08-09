@@ -121,6 +121,23 @@ def runElaboratorDiagnosticTests : IO Unit := do
   | .ok envelope => expectEqual "typed-hole adapter kind" envelope.payloadKind "typed_hole"
   | .error error => fail s!"typed-hole adapter invalid: {error.code}"
 
+  let inferredHoleInput : Firth.Elaborator.StackEffect.AStack :=
+    .row (.rigid "rho")
+  let inferredHoleProgram : Firth.Elaborator.KernelProgram := [{
+    span := span 5 1 2
+    atom := .lit (.nat 7) }]
+  match Firth.Elaborator.StackEffect.typedHole
+      { literal := Firth.Elaborator.StackEffect.defaultLiteralType }
+      inferredHoleInput inferredHoleProgram (span 5 3 3) with
+  | .ok inferredHole =>
+      let inferredHoleJson := encodeTypedHole (context "inferred-hole-1")
+        "h-inferred" inferredHole
+      match validate inferredHoleJson with
+      | .ok envelope =>
+          expectEqual "inferred typed-hole adapter kind" envelope.payloadKind "typed_hole"
+      | .error error => fail s!"inferred typed-hole adapter invalid: {error.code}"
+  | .error error => fail s!"typed-hole inference failed: {repr error}"
+
   let refinedStack : Firth.Elaborator.Refinement.RefinedStack := {
     erased := intStack
     refinements := {} }
