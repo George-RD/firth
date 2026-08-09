@@ -4,6 +4,8 @@ open Firth.Elaborator
 open Firth.Elaborator.StackEffect
 open Firth.Elaborator.Refinement
 open Firth.Smt
+open Firth.Interpreter
+
 
 private def refinementPremises (sourcePath : String) (word : WordDefinition)
     (scheme : Scheme) (declaredPostcondition : RefinementSet)
@@ -113,6 +115,24 @@ def runPipelineTests : IO Unit := do
         "referenced mixed-usage outputs retain bottom-to-top source order"
   | .failure diagnostics => fail s!"mixed-usage reference failed: {repr diagnostics}"
 
+  match elaborate
+      ": choose ( b:Bool^many -- x:Int^many ) [ 1 ] [ 2 ] if ;" with
+  | .success { words := [word] } =>
+      match word.program.map (·.atom) with
+      | [Atom.quotation (Program.cons (Atom.lit (.nat 1)) Program.empty),
+          Atom.quotation (Program.cons (Atom.lit (.nat 2)) Program.empty),
+          Atom.ifThenElse] => pure ()
+      | atoms => fail s!"quotation branch lowering changed: {repr atoms}"
+  | result => fail s!"quotation branch inference failed: {repr result}"
+
+  match elaborate
+      ": bad-branch ( b:Bool^many -- x:Int^many ) [ 1 ] [ true ] if ;" with
+  | .failure [.stackEffect diagnostic] =>
+      expectEq diagnostic.code "firth.type.branch-mismatch"
+        "quotation branch mismatches retain the structured stage diagnostic"
+  | result => fail s!"quotation branch mismatch was not rejected: {repr result}"
+
+
   match elaborate ": bad ( -- ) missing ;" with
   | .failure [.erasure "bad" (.unresolvedEffect "missing" _)] => pure ()
   | result => fail s!"expected an erasure diagnostic, got {repr result}"
@@ -182,7 +202,19 @@ def runPipelineTests : IO Unit := do
     "repeated elaboration is deterministic"
   expectEq (elaborateWith externalWordConfig deterministicSource)
     (elaborateWith externalWordConfig deterministicSource)
-    "repeated configured elaboration is deterministic"
+    "repeated configured elaboration"
+
+  let deterministicFailure := ": unstable ( -- x:Int ) true ;"
+  let firstFailure := elaborate deterministicFailure
+  let secondFailure := elaborate deterministicFailure
+  match firstFailure, secondFailure with
+  | .failure [.stackEffect firstDiagnostic], .failure [.stackEffect secondDiagnostic] =>
+      expectEq firstDiagnostic.code "firth.type.declared-effect-mismatch"
+        "deterministic failure fixture retains the expected diagnostic"
+      expectEq firstDiagnostic secondDiagnostic
+        "repeated elaboration produces identical structured diagnostics"
+  | first, second =>
+      fail s!"deterministic failure fixture changed shape: {repr first}, {repr second}"
 
   IO.println "pipeline tests passed"
 
