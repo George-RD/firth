@@ -111,7 +111,7 @@ satisfied_by = []
 [obligation.scope-ecosystem-stdlib]
 node = "firth.ecosystem.stdlib"
 source = "PRD 4.4 standard library"
-satisfied_by = []
+satisfied_by = ["scope-ecosystem-stdlib"]
 
 [obligation.scope-ecosystem-lsp]
 node = "firth.ecosystem.lsp"
