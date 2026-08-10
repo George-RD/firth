@@ -94,16 +94,18 @@ private def expectEq [BEq α] [Repr α] (actual expected : α) (message : String
   if actual == expected then pure ()
   else fail s!"{message}\nactual: {repr actual}\nexpected: {repr expected}"
 
-private def isLinearCopyAtSpan (error : ErasureError) : Bool :=
+private def isLinearCopyAtSpan (error : ErasureError) (expectedStart expectedStop : Nat) : Bool :=
   match error with
   | .linearCopy name sourceSpan =>
-      name == "h" && sourceSpan.start.offset < sourceSpan.stop.offset
+      name == "h" && sourceSpan.start.offset == expectedStart &&
+        sourceSpan.stop.offset == expectedStop
   | _ => false
 
-private def isLinearUnusedAtSpan (error : ErasureError) : Bool :=
+private def isLinearUnusedAtSpan (error : ErasureError) (expectedStart expectedStop : Nat) : Bool :=
   match error with
   | .linearUnused name sourceSpan =>
-      name == "h" && sourceSpan.start.offset < sourceSpan.stop.offset
+      name == "h" && sourceSpan.start.offset == expectedStart &&
+        sourceSpan.stop.offset == expectedStop
   | _ => false
 
 def runPipelineTests : IO Unit := do
@@ -160,15 +162,15 @@ def runPipelineTests : IO Unit := do
   let duplicateLinear := ": duplicate ( h:Handle^linear -- ) locals { h } { h h } ;"
   match elaborate duplicateLinear with
   | .failure [.erasure "duplicate" error] =>
-      expectTrue (isLinearCopyAtSpan error)
-        "duplicate linear use identifies the local and reports a source span"
+      expectTrue (isLinearCopyAtSpan error 52 53)
+        "duplicate linear use identifies the exact local use and reports its source span"
   | result => fail s!"duplicate linear use was not rejected: {repr result}"
 
   let discardedLinear := ": discard ( h:Handle^linear -- ) locals { h } { } ;"
   match elaborate discardedLinear with
   | .failure [.erasure "discard" error] =>
-      expectTrue (isLinearUnusedAtSpan error)
-        "discarded linear value identifies the local and reports a source span"
+      expectTrue (isLinearUnusedAtSpan error 42 43)
+        "discarded linear value identifies the exact binding and reports its source span"
   | result => fail s!"discarded linear value was not rejected: {repr result}"
 
   match elaborateWith linearUsageConfig
