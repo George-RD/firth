@@ -13,7 +13,7 @@ Requires: diagnostic-schema
 
 ## Acceptance criteria
 - Provide the agent-facing guide and the checked-in interface manifest used by the gate, with no implicit repository context.
-- Provide a small corpus of basic applications plus the model transcript and provenance manifest required by `dec.mvp-gate-provenance`.
+- Provide at least three basic applications authored by the model from only the guide and agent interface, plus the model transcript and provenance manifest required by `dec.mvp-gate-provenance`.
 - Add `tools/loop/mvp_agent_gate.py` to verify the manifest hashes, rebuild each application in an isolated workspace, elaborate and check it, compile it, run it on the VM, and compare its result with the reference interpreter.
 - Make the gate deterministic, fail closed on missing or stale guide, interface, transcript, application, or hash entries, and invoke it from `python3 tools/loop/coverage.py --run-gates`.
 
