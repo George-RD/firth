@@ -4,7 +4,7 @@ vocab core {
     ;
 
   : duplicate-int
-    ( forall ρ; ρ value:Int^many -- ρ value:Int^many value:Int^many )
+    ( forall ρ; ρ value:Int^many -- ρ copy-one:Int^many copy-two:Int^many )
     dup;
 
   : discard-int
@@ -12,7 +12,7 @@ vocab core {
     drop;
 
   : exchange-int
-    ( forall ρ; ρ first:Int^many second:Int^many -- ρ second:Int^many first:Int^many )
+    ( forall ρ; ρ first:Int^many second:Int^many -- ρ exchanged-second:Int^many exchanged-first:Int^many )
     swap;
 
   : example
