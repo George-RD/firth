@@ -122,6 +122,23 @@ def runPipelineTests : IO Unit := do
             "successful refinement leaves no diagnostics"
       | _ => fail "checked word is absent"
   | .failure diagnostics => fail s!"valid source failed: {repr diagnostics}"
+  let stdlibSource ← IO.FS.readFile "stdlib/core.firth"
+  match elaborateWith { sourcePath := "stdlib/core.firth" } stdlibSource with
+  | .success { words := [identity, duplicate, discard, exchange, exampleWord] } =>
+      expectEq (identity.program.map (·.atom)) []
+        "core identity lowers to an empty kernel program"
+      expectEq (duplicate.program.map (·.atom)) [.dup]
+        "core duplicate-int lowers to dup"
+      expectEq (discard.program.map (·.atom)) [.drop]
+        "core discard-int lowers to drop"
+      expectEq (exchange.program.map (·.atom)) [.swap]
+        "core exchange-int lowers to swap"
+      expectEq (exampleWord.program.map (·.atom))
+        [.lit (.nat 7), .word "duplicate-int", .word "discard-int", .word "identity"]
+        "core example uses the checked vocabulary words"
+  | .success program => fail s!"unexpected core vocabulary words: {program.words.map (·.name)}"
+  | .failure diagnostics => fail s!"core vocabulary failed: {repr diagnostics}"
+
 
   match elaborate
       ": id ( forall ρ; ρ -- ρ ) ; : caller ( h:Handle^linear -- h:Handle^linear ) id ;" with

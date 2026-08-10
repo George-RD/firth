@@ -1,0 +1,21 @@
+vocab core {
+  : identity
+    ( forall ρ; ρ -- ρ )
+    ;
+
+  : duplicate-int
+    ( forall ρ; ρ value:Int^many -- ρ value:Int^many value:Int^many )
+    dup;
+
+  : discard-int
+    ( forall ρ; ρ value:Int^many -- ρ )
+    drop;
+
+  : exchange-int
+    ( forall ρ; ρ first:Int^many second:Int^many -- ρ second:Int^many first:Int^many )
+    swap;
+
+  : example
+    ( -- result:Int^many )
+    7 duplicate-int discard-int identity;
+}

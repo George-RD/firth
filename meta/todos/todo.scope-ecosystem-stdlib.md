@@ -1,6 +1,6 @@
 ---
 node: firth.ecosystem.stdlib
-status: open
+status: done
 created: 2026-08-10
 ---
 
