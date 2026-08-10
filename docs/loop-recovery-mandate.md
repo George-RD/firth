@@ -43,6 +43,11 @@ judgement within the fences below.
   infrastructure, not a model decision: the session never ran, so
   there is nothing for a relaunch to repeat. If the ledger shows the
   same signature already relaunched without progress, escalate.
+- A violation that has already landed with every machine gate green is
+  inert: staying down cannot repair it, and the ledger plus your report
+  are the adjudication artifact either way. Prefer relaunch with the
+  violation recorded; reserve escalate for live risk - uncommitted or
+  ambiguous work, failing gates, or a signature that already recurred.
 - Be suspicious of your own confidence. If you cannot tell whether a
   branch's work landed, say so and escalate. An unnecessary escalation
   costs one human look; a wrong recovery can cost real work.

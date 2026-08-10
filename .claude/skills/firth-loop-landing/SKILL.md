@@ -79,8 +79,26 @@ pr=$(gh pr view --json number --jq .number)
 Run two independent read-only reviews of the diff: a **correctness** lens
 (state machine, fail-closed paths, edge cases, contract changes) and a
 **simplicity** lens (dead code, duplication, naming, over-explanation).
-Adjudicate; fix what stands; drop the rest with a one-line reason. Then run
-Cleanup. (A single-line documentation change may skip this.)
+Adjudicate; fix what stands; drop the rest with a one-line reason. Then
+publish the evidence: one PR comment per lens, first line binding the
+reviewed head SHA, body carrying the adjudicated findings:
+
+```sh
+head=$(git rev-parse HEAD)
+gh pr comment "$pr" --body "review: correctness $head
+<adjudicated correctness findings, or 'no findings'>"
+gh pr comment "$pr" --body "review: simplicity $head
+<adjudicated simplicity findings, or 'no findings'>"
+```
+
+There is no exemption (dec.review-mandatory): every merge takes both
+lenses, including the open-PR recovery row (review the published diff,
+post the comments, then run Cleanup). The predecessor clause ("a
+single-line documentation change may skip this") was prose where a rule
+was needed and parked the loop on an unadjudicable ambiguity; the lenses
+cost pennies, the ambiguity cost a day. Cleanup refuses to merge without
+both comments for the exact head it is merging, so a post-review commit
+invalidates the review and requires a fresh pass. Then run Cleanup.
 
 ## Cleanup: the merge, fail-closed
 
@@ -97,6 +115,14 @@ pr=""; slug=""; CAIRN=""                # BIND: PR number, the unit's branch
                                         # tail, and the cairn binary per Repo bindings;
                                         # the ONLY substitution point
 [ -n "$pr" ] && [ -n "$slug" ] && [ -n "$CAIRN" ] || exit 1
+# dec.review-mandatory: no merge without durable two-lens review evidence
+# bound to the exact head being merged. Comments are the review artefacts
+# the Pre-submit section posts; a newer commit invalidates them.
+rhead=$(gh pr view "$pr" --json headRefOid --jq .headRefOid)
+[ -n "$rhead" ] || exit 1
+rbodies=$(gh pr view "$pr" --json comments --jq '.comments[].body')
+printf '%s' "$rbodies" | grep -q "review: correctness $rhead" || exit 1
+printf '%s' "$rbodies" | grep -q "review: simplicity $rhead" || exit 1
 state=$(gh pr view "$pr" --json state --jq .state)
 case "$state" in
   OPEN)   gh pr merge "$pr" --squash --delete-branch || true ;;

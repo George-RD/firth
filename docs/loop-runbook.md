@@ -333,6 +333,22 @@ Every granted relaunch refreshes the launch checkout and re-extracts
 the driver, exactly like a fresh launch. Every other exit code
 remains a human's decision.
 
+A stay-down no longer exits the container: the supervisor parks,
+records `parked` in its state file, and opens one deduplicated,
+metadata-only GitHub issue per incident signature
+(dec.escalation-surfacing) - no model or tool output leaves the host.
+The issue is pure notification. The only resume channel is the
+host-side control file, mounted read-only into the container, carrying
+the one-time nonce the park minted: no in-container process can
+acknowledge a park, and a file staged before the park cannot contain
+its nonce. A valid ack resumes through the same refreshed launch path
+a fresh start gets; for an rc 3 park the machine-checked quota gate is
+re-run first, and the ack opens a fresh bounded quota window rather
+than overriding the gate. An operator stop while parked terminates as
+usual. An escalation nobody receives is not an escalation; the issue
+is the request for the one human look, and the ack is that human
+decision, made receivable.
+
 ## Terminal tokens and health
 
 The loop reports its control token as the final non-empty output line
