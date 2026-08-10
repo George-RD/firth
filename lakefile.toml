@@ -1,11 +1,12 @@
 name = "firth"
 version = "0.1.0"
-defaultTargets = ["firthTest", "firthParserTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthAgentDiagnosticTest", "firthPipelineTest", "smtBoundaryTest", "firthAllTest"]
+defaultTargets = ["firthTest", "firthParserTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthAgentDiagnosticTest", "firthPipelineTest", "smtBoundaryTest", "firthReferenceRunTest", "firthAllTest"]
 testDriver = "firthAllTest"
 
 [[lean_lib]]
 name = "Firth"
 srcDir = "src/interpreter"
+roots = ["Firth", "FirthReferenceRun"]
 
 [[lean_lib]]
 name = "FirthElaborator"
@@ -76,3 +77,13 @@ srcDir = "src"
 name = "smtBoundaryTest"
 root = "smt.Firth.SmtBoundaryTest"
 srcDir = "src"
+
+[[lean_exe]]
+name = "firthReferenceRun"
+root = "FirthReferenceRunMain"
+srcDir = "src/interpreter"
+
+[[lean_exe]]
+name = "firthReferenceRunTest"
+root = "FirthReferenceRunTest"
+srcDir = "src/interpreter"
