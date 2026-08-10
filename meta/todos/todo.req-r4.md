@@ -8,7 +8,7 @@ created: 2026-08-10
 # Goal
 Deliver PRD R4 by ensuring restricted (`^linear`) values cannot be implicitly duplicated or discarded during elaboration, and violations surface as deterministic compile-time diagnostics.
 
-Requires: elaborator-parser elaborator-stack-effect-inference elaborator-refinement-discharge elaborator-pipeline-boundary
+Requires: elaborator-parser elaborator-stack-effect-inference elaborator-refinement-discharge elaborator-pipeline-boundary elaborator-diagnostic-envelope
 
 ## Acceptance criteria
 - The checked-kernel entry point rejects duplicate use, discard, and invalid consumption of `^linear` stack values before a program is accepted.
