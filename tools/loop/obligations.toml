@@ -142,7 +142,7 @@ satisfied_by = ["req-r3"]
 [obligation.req-r4]
 node = "firth.toolchain.elaborator"
 source = "PRD R4"
-satisfied_by = []
+satisfied_by = ["req-r4"]
 
 [obligation.req-r5]
 node = "firth.toolchain.interpreter"
