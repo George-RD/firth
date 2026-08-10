@@ -1,0 +1,201 @@
+manifest_version = 1
+protocol_version = "1.0"
+language_version = "0.1"
+role = "mvp-agent-input-and-provenance"
+guide_path = "docs/firth-agent-guide.md"
+interface_root = "src/agent/Firth/Agent"
+gate_path = "tools/loop/mvp_agent_gate.py"
+
+# The model-facing input is the guide plus these checked-in interface files.
+# The gate separately validates this manifest's Gamma and adapter contracts.
+[inputs]
+model_only = true
+guide_path = "docs/firth-agent-guide.md"
+guide_sha256 = "954a84a992fe2b48b480b092b140534941a396f2bfe110acf8cbaf2a3a7cfc35"
+interface_paths = [
+  "src/agent/Firth/Agent/DiagnosticEnvelope.lean",
+  "src/agent/Firth/Agent/Validation.lean",
+  "src/agent/Firth/Agent/ElaboratorDiagnostics.lean",
+]
+
+[[inputs.interface]]
+path = "src/agent/Firth/Agent/DiagnosticEnvelope.lean"
+sha256 = "e61ee6d9912a2c74f1b9a149c5be268499e5d7d7c56546de617758bdb6386bd3"
+role = "envelope-types-and-canonical-encoding"
+
+[[inputs.interface]]
+path = "src/agent/Firth/Agent/Validation.lean"
+sha256 = "4e434eeee5f151d1dd42ccc78511fc06a9a7befebfd954b95f5334110326c2da"
+role = "envelope-validation"
+
+[[inputs.interface]]
+path = "src/agent/Firth/Agent/ElaboratorDiagnostics.lean"
+sha256 = "93b427d4fe5bb17f7172e83289ea9af1bf77c4f536ad86ed4f3fd6ec6ed15c2c"
+role = "elaborator-to-envelope-adapters"
+
+[gamma]
+version = "0.1"
+portable = true
+primitives = ["+", "send"]
+values = ["Int", "Bool", "Handle", "Bytes", "World"]
+predicates = ["positive", "nonzero", "is-open"]
+
+[gamma.primitive."+"]
+effect = "Int^many Int^many -- Int^many"
+transition = "deterministic-integer-addition"
+observation = "pure"
+
+[gamma.primitive.send]
+effect = "World^linear Handle^linear Bytes^linear -- World^linear"
+transition = "deterministic-world-send"
+observation = "world-threaded"
+
+[gamma.predicate.positive]
+effect = "Int^many -- Bool^many"
+purity = "pure"
+totality = "required"
+
+[gamma.predicate.nonzero]
+effect = "Int^many -- Bool^many"
+purity = "pure"
+totality = "required"
+
+[gamma.predicate."is-open"]
+effect = "Handle^many -- Bool^many"
+purity = "pure"
+totality = "required"
+
+[agent_protocol]
+schema_version = "1.0"
+payload_kinds = [
+  "diagnostic",
+  "typed_hole",
+  "signature_search_request",
+  "signature_search_response",
+]
+diagnostic_code_namespaces = [
+  "type",
+  "linearity",
+  "refinement",
+  "elaboration",
+  "syntax",
+  "name",
+  "search",
+  "protocol",
+]
+
+# These entry points are versioned logical adapters. The current CLI prints a
+# Lean representation and does not satisfy this structured contract, so all
+# adapters remain gate-required until the executable gate provides them.
+[schema."firth.source.v1"]
+version = "1.0"
+encoding = "utf-8"
+fields = ["request_id:string", "source_path:string", "source_text:string", "language_version:string", "gamma_version:string"]
+
+[schema."firth.elaboration.v1"]
+version = "1.0"
+encoding = "json"
+fields = ["request_id:string", "status:success|failure", "checked_words:array", "erased_word_types:array", "kernel_programs:array", "warnings:array", "diagnostics:array"]
+
+[schema."firth.checked-kernel.v1"]
+version = "1.0"
+encoding = "json"
+fields = ["request_id:string", "checked_words:array", "erased_word_types:array", "gamma_version:string", "target_version:string"]
+
+[schema."firth.target-program.v1"]
+version = "1.0"
+encoding = "json"
+fields = ["request_id:string", "status:success|failure", "target_program:object", "word_digests:object", "debug_locations:array", "compile_error:object|null"]
+
+[schema."firth.reference-execution.v1"]
+version = "1.0"
+encoding = "json"
+fields = ["request_id:string", "checked_kernel:object", "initial_stack:array", "dictionary:object", "gamma_version:string", "fuel:nonnegative-integer"]
+
+[schema."firth.vm-execution.v1"]
+version = "1.0"
+encoding = "json"
+fields = ["request_id:string", "target_program:object", "initial_stack:array", "image:object", "gamma_version:string", "fuel:nonnegative-integer"]
+
+[schema."firth.observation.v1"]
+version = "1.0"
+encoding = "json"
+fields = ["request_id:string", "status:success|trap", "stack:array", "trace:array", "cost:object", "trap:string|null", "world_observation:object|null"]
+
+[entry_point.elaborate]
+version = "0.1"
+kind = "source-to-checked-kernel"
+availability = "gate-required"
+adapter = "firth.elaborate.v1"
+transport = "structured-json"
+request_schema = "firth.source.v1"
+response_schema = "firth.elaboration.v1"
+
+[entry_point.elaborate.request]
+required = ["request_id", "source_path", "source_text", "language_version", "gamma_version"]
+source_encoding = "utf-8"
+
+[entry_point.elaborate.response]
+required = ["request_id", "status"]
+success = ["checked_words", "erased_word_types", "kernel_programs", "warnings"]
+failure = ["diagnostics"]
+
+[entry_point.compile]
+version = "0.1"
+kind = "checked-kernel-to-target"
+availability = "gate-required"
+adapter = "firth.compile.v1"
+transport = "structured-json"
+request_schema = "firth.checked-kernel.v1"
+response_schema = "firth.target-program.v1"
+
+[entry_point.compile.request]
+required = ["request_id", "checked_words", "erased_word_types", "gamma_version", "target_version"]
+
+[entry_point.compile.response]
+required = ["request_id", "status"]
+success = ["target_program", "word_digests", "debug_locations"]
+failure = ["compile_error"]
+
+[entry_point.reference_run]
+version = "0.1"
+kind = "checked-kernel-execution"
+availability = "gate-required"
+adapter = "firth.reference-run.v1"
+transport = "structured-json"
+request_schema = "firth.reference-execution.v1"
+response_schema = "firth.observation.v1"
+
+[entry_point.reference_run.request]
+required = ["request_id", "checked_kernel", "initial_stack", "dictionary", "gamma_version", "fuel"]
+
+[entry_point.reference_run.response]
+required = ["request_id", "status", "stack", "trace", "cost", "trap", "world_observation"]
+
+[entry_point.vm_run]
+version = "0.1"
+kind = "target-execution"
+availability = "gate-required"
+adapter = "firth.vm-run.v1"
+transport = "structured-json"
+request_schema = "firth.vm-execution.v1"
+response_schema = "firth.observation.v1"
+
+[entry_point.vm_run.request]
+required = ["request_id", "target_program", "initial_stack", "image", "gamma_version", "fuel"]
+
+[entry_point.vm_run.response]
+required = ["request_id", "status", "stack", "trace", "cost", "trap", "world_observation"]
+
+[comparison]
+terminal_status = true
+bottom_to_top_stack = true
+trap_classification = true
+bounded_trace = true
+cost_report = true
+world_observation = true
+fuel_exhaustion = "bounded-fuel-inconclusive"
+
+[applications]
+minimum = 3
+entries = []
