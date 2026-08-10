@@ -1,8 +1,9 @@
 ---
 node: firth.toolchain.agent
-status: open
+status: blocked
 created: 2026-08-10
 ---
+blocked on sub-todos: todo.mvp-agent-guide, todo.mvp-agent-examples, todo.mvp-agent-gate, todo.mvp-agent-coverage
 
 # MVP agent authoring
 
