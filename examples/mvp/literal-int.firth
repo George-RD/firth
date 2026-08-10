@@ -1,0 +1,3 @@
+: literal-int
+  ( -- result:Int^many )
+  42;

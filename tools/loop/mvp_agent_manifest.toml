@@ -198,4 +198,23 @@ fuel_exhaustion = "bounded-fuel-inconclusive"
 
 [applications]
 minimum = 3
-entries = []
+[[applications.entries]]
+name = "literal-int"
+source_path = "examples/mvp/literal-int.firth"
+source_sha256 = "fc1dd483c760942a46195bf0d28284d386d81e417007cb47821cc72e266ad433"
+transcript_path = "meta/sources/mvp-agent-example-literal-int.md"
+transcript_output_sha256 = "fc1dd483c760942a46195bf0d28284d386d81e417007cb47821cc72e266ad433"
+
+[[applications.entries]]
+name = "quotation-call"
+source_path = "examples/mvp/quotation-call.firth"
+source_sha256 = "4286a9528aec35e6109bf12be5f939c74098cb4f58f2cf4192232d65ee78e699"
+transcript_path = "meta/sources/mvp-agent-example-quotation-call.md"
+transcript_output_sha256 = "4286a9528aec35e6109bf12be5f939c74098cb4f58f2cf4192232d65ee78e699"
+
+[[applications.entries]]
+name = "conditional"
+source_path = "examples/mvp/conditional.firth"
+source_sha256 = "fe4bb195204140ceae58f5223af1cd8a52bd6177cd72a8d925f9789842a61914"
+transcript_path = "meta/sources/mvp-agent-example-conditional.md"
+transcript_output_sha256 = "fe4bb195204140ceae58f5223af1cd8a52bd6177cd72a8d925f9789842a61914"
