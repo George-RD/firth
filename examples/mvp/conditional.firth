@@ -1,0 +1,3 @@
+: conditional
+  ( -- result:Int^many )
+  false [ 42 ] [ 0 ] if;

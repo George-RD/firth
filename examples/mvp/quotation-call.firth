@@ -1,0 +1,3 @@
+: quotation-call
+  ( -- result:Int^many )
+  [ 7 ] call;

@@ -57,6 +57,7 @@ System Firth "Concatenative language elaborated through Lean 4 and compiled to a
 
         Module AgentInterface "Agent interface: structured machine-parseable diagnostics, typed holes, signature search over the dictionary" id "firth.toolchain.agent" {
             path "src/agent"
+            path "examples/mvp"
         }
     }
 
