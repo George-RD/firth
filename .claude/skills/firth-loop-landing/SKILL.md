@@ -120,9 +120,13 @@ pr=""; slug=""; CAIRN=""                # BIND: PR number, the unit's branch
 # the Pre-submit section posts; a newer commit invalidates them.
 rhead=$(gh pr view "$pr" --json headRefOid --jq .headRefOid)
 [ -n "$rhead" ] || exit 1
-rbodies=$(gh pr view "$pr" --json comments --jq '.comments[].body')
-printf '%s' "$rbodies" | grep -q "review: correctness $rhead" || exit 1
-printf '%s' "$rbodies" | grep -q "review: simplicity $rhead" || exit 1
+# One line per comment: each comment's FIRST line. grep -Fx demands an
+# exact whole-line match, so each lens needs its own comment whose first
+# line binds the exact head; substrings, buried markers, and one comment
+# carrying both markers all fail.
+rfirsts=$(gh pr view "$pr" --json comments --jq '.comments[].body | split("\n")[0]')
+printf '%s\n' "$rfirsts" | grep -Fxq "review: correctness $rhead" || exit 1
+printf '%s\n' "$rfirsts" | grep -Fxq "review: simplicity $rhead" || exit 1
 state=$(gh pr view "$pr" --json state --jq .state)
 case "$state" in
   OPEN)   gh pr merge "$pr" --squash --delete-branch || true ;;
