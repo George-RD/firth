@@ -265,4 +265,4 @@ satisfied_by = []
 node = "firth.toolchain.agent"
 source = "dec.mvp-gate-provenance (MVP reading of PRD S5/S7 per dec.mvp-completion clause 4)"
 gate = "tools/loop/mvp_agent_gate.py"
-satisfied_by = []
+satisfied_by = ["mvp-agent-authoring"]
