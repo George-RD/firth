@@ -60,6 +60,20 @@ private def mixedUsageConfig : PipelineConfig :=
         primitive := fun name =>
           if name == "consumeLinear" then some scheme else none } }
 
+private def linearUsageConfig : PipelineConfig :=
+  let signature : Signature := { input := [.linear], output := [] }
+  let scheme : Scheme :=
+    { rowVariables := ["ρ"]
+      input := .snoc (.row (.rigid "ρ")) (.base "Handle" .linear)
+      output := .row (.rigid "ρ") }
+  { erasureEnv :=
+      { primitive := fun name =>
+          if name == "consumeLinear" then some signature else none }
+    typingEnv :=
+      { literal := defaultLiteralType
+        primitive := fun name =>
+          if name == "consumeLinear" then some scheme else none } }
+
 private def externalWordConfig : PipelineConfig :=
   let signature : Signature := { input := [], output := [] }
   let scheme : Scheme := { rowVariables := [], input := .empty, output := .empty }
@@ -79,6 +93,18 @@ private def expectTrue (condition : Bool) (message : String) : IO Unit :=
 private def expectEq [BEq α] [Repr α] (actual expected : α) (message : String) : IO Unit :=
   if actual == expected then pure ()
   else fail s!"{message}\nactual: {repr actual}\nexpected: {repr expected}"
+
+private def isLinearCopyAtSpan (error : ErasureError) : Bool :=
+  match error with
+  | .linearCopy name sourceSpan =>
+      name == "h" && sourceSpan.start.offset < sourceSpan.stop.offset
+  | _ => false
+
+private def isLinearUnusedAtSpan (error : ErasureError) : Bool :=
+  match error with
+  | .linearUnused name sourceSpan =>
+      name == "h" && sourceSpan.start.offset < sourceSpan.stop.offset
+  | _ => false
 
 def runPipelineTests : IO Unit := do
   match elaborate "vocab core { : id ( a:Int^many -- a:Int^many ) ; }" with
@@ -131,6 +157,27 @@ def runPipelineTests : IO Unit := do
       expectEq diagnostic.code "firth.type.branch-mismatch"
         "quotation branch mismatches retain the structured stage diagnostic"
   | result => fail s!"quotation branch mismatch was not rejected: {repr result}"
+  let duplicateLinear := ": duplicate ( h:Handle^linear -- ) locals { h } { h h } ;"
+  match elaborate duplicateLinear with
+  | .failure [.erasure "duplicate" error] =>
+      expectTrue (isLinearCopyAtSpan error)
+        "duplicate linear use identifies the local and reports a source span"
+  | result => fail s!"duplicate linear use was not rejected: {repr result}"
+
+  let discardedLinear := ": discard ( h:Handle^linear -- ) locals { h } { } ;"
+  match elaborate discardedLinear with
+  | .failure [.erasure "discard" error] =>
+      expectTrue (isLinearUnusedAtSpan error)
+        "discarded linear value identifies the local and reports a source span"
+  | result => fail s!"discarded linear value was not rejected: {repr result}"
+
+  match elaborateWith linearUsageConfig
+      ": single-use ( h:Handle^linear -- ) locals { h } { h prim consumeLinear } ;" with
+  | .success { words := [word] } =>
+      expectEq (word.program.map (·.atom)) [.prim "consumeLinear"]
+        "a linear value consumed exactly once elaborates successfully"
+  | result => fail s!"single-use linear value failed: {repr result}"
+
 
 
   match elaborate ": bad ( -- ) missing ;" with
