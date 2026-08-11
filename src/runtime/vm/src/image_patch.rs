@@ -32,6 +32,7 @@ fn prepare_patch(
         return Err(ImageError::StaleWord);
     }
     validate_code_structure(&patch.code, 0).map_err(ImageError::InvalidImage)?;
+    validate_capture_indices(&patch.code, 0).map_err(ImageError::InvalidImage)?;
     if patch.body_digest.len() != DIGEST_BYTES
         || patch.body_digest != sha256(&canonical_code(&patch.code))
     {

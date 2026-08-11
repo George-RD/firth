@@ -114,9 +114,22 @@ fn validate_capture_indices(code: &[Instruction], count: u64) -> Result<(), VmEr
                 return Err(VmError::InvalidCaptureIndex(*index));
             }
             Some(Operand::Quote(quotation)) => {
-                validate_capture_indices(&quotation.code, quotation.captures.len() as u64)?
+                validate_capture_indices(&quotation.code, quotation.captures.len() as u64)?;
+                for capture in &quotation.captures {
+                    validate_capture_value_indices(capture)?;
+                }
             }
             _ => {}
+        }
+    }
+    Ok(())
+}
+
+fn validate_capture_value_indices(value: &Value) -> Result<(), VmError> {
+    if let Value::Quotation(quotation) = value {
+        validate_capture_indices(&quotation.code, quotation.captures.len() as u64)?;
+        for capture in &quotation.captures {
+            validate_capture_value_indices(capture)?;
         }
     }
     Ok(())

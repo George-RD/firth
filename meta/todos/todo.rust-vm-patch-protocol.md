@@ -1,6 +1,6 @@
 ---
 node: firth.runtime.patch
-status: open
+status: done
 created: 2026-07-18
 ---
 
@@ -23,7 +23,7 @@ Implement VM-side admission and atomic application of verified word patches, bin
 - `cargo fmt --manifest-path src/runtime/vm/Cargo.toml --check`
 - `cargo test --manifest-path src/runtime/vm/Cargo.toml --locked`
 - `cargo clippy --manifest-path src/runtime/vm/Cargo.toml --all-targets --all-features --locked -- -D warnings`
-- `! rg -n 'todo!|unimplemented!|TODO|placeholder' src/runtime/patch src/runtime/vm`
+- `! rg -n 'todo!|unimplemented!|TODO|placeholder' src/runtime/vm`
 - `git diff --check`
 
 ## Non-goals

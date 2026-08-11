@@ -319,6 +319,7 @@ fn validate_image(image: &Image) -> Result<(), VmError> {
             });
         }
         validate_code_structure(&word.code, 0)?;
+        validate_capture_indices(&word.code, 0)?;
         if code_contains_world(&word.code) {
             return Err(VmError::WorldFault);
         }
