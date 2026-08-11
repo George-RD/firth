@@ -47,17 +47,22 @@ credential-less, and nothing in-stack survives a dead container.
      still apply after the ack (a quota park re-enters the bounded
      quota wait).
    - `relaunch`: `compose up -d` for a container that exited with a
-     genuine failure code. Operator stops (143/137), clean exits (0),
+     genuine failure code, or `compose up -d --force-recreate
+     firth-loop` when durable state says `parked` but the park marker is
+     missing. The forced recreation invokes the supervisor's
+     fail-closed startup reconstruction path and mints a new nonce
+     before driver work. Operator stops (143/137), clean exits (0),
      `stopped_by_operator` state, and the durable `healer-off` sentinel
      are never overridden.
    - `leave`: the default and the fail-closed interpretation of any
      malformed answer.
 
-4. **Bounds.** One healer attempt per incident key (park nonce or
-   container death id), a global daily attempt cap, every attempt
-   ledgered host-side before the session starts (a crash mid-session
-   burns the key). The session cannot reach the ack channel, the Docker
-   socket, the wrapper's ledger, or any write credential.
+4. **Bounds.** One healer attempt per incident key (park nonce,
+   missing-marker state fingerprint, or container death id), a global
+   daily attempt cap, and every attempt ledgered host-side before the
+   session starts (a crash mid-session burns the key). The session
+   cannot reach the ack channel, the Docker socket, the wrapper's
+   ledger, or any write credential.
 
 5. **Amendment of dec.escalation-surfacing.** The ack channel remains
    host-side and operator-owned; the healer wrapper is an operator
