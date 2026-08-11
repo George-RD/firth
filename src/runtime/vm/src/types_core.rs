@@ -231,6 +231,120 @@ pub struct Trap {
     pub frames: Vec<FrameTrace>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConformanceStatus {
+    Terminal,
+    Stuck,
+    FuelExhausted,
+    Trap,
+    Rejected,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConformanceComparison {
+    Equivalent,
+    Inconclusive,
+    Mismatch,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConformanceObservation {
+    pub status: ConformanceStatus,
+    pub residual_stack: Vec<Value>,
+    pub residual_frames: Vec<FrameTrace>,
+    pub world_observation: Vec<u8>,
+    pub fuel_budget: u64,
+    pub cost: CostReport,
+    pub trap_code: Option<&'static str>,
+}
+
+impl ConformanceObservation {
+    pub fn from_outcome(outcome: ExecutionOutcome, fuel_budget: u64) -> Self {
+        match outcome {
+            ExecutionOutcome::Complete(report) => Self {
+                status: ConformanceStatus::Terminal,
+                residual_stack: report.stack,
+                residual_frames: report.frames,
+                world_observation: report.world.observation().to_vec(),
+                fuel_budget,
+                cost: report.cost,
+                trap_code: None,
+            },
+            ExecutionOutcome::Trap(trap) => {
+                let status = match trap.code {
+                    "fuel-exhausted" => ConformanceStatus::FuelExhausted,
+                    "stack-fault" => ConformanceStatus::Stuck,
+                    _ => ConformanceStatus::Trap,
+                };
+                Self {
+                    status,
+                    residual_stack: trap.stack,
+                    residual_frames: trap.frames,
+                    world_observation: trap.world.observation().to_vec(),
+                    fuel_budget,
+                    cost: trap.cost,
+                    trap_code: Some(trap.code),
+                }
+            }
+        }
+    }
+
+    pub fn rejected(error: &VmError, fuel_budget: u64) -> Self {
+        Self {
+            status: ConformanceStatus::Rejected,
+            residual_stack: Vec::new(),
+            residual_frames: Vec::new(),
+            world_observation: vec![0],
+            fuel_budget,
+            cost: CostReport::zero(),
+            trap_code: Some(error.stable_code()),
+        }
+    }
+
+    pub fn compare(&self, other: &Self) -> ConformanceComparison {
+        if matches!(self.status, ConformanceStatus::FuelExhausted)
+            && matches!(other.status, ConformanceStatus::FuelExhausted)
+        {
+            return if self.fuel_budget == other.fuel_budget {
+                ConformanceComparison::Inconclusive
+            } else {
+                ConformanceComparison::Mismatch
+            };
+        }
+        if matches!(self.status, ConformanceStatus::FuelExhausted)
+            || matches!(other.status, ConformanceStatus::FuelExhausted)
+        {
+            return ConformanceComparison::Mismatch;
+        }
+        if self.status != other.status
+            || self.residual_stack != other.residual_stack
+            || self.residual_frames != other.residual_frames
+            || self.world_observation != other.world_observation
+        {
+            return ConformanceComparison::Mismatch;
+        }
+        if matches!(
+            self.status,
+            ConformanceStatus::Trap | ConformanceStatus::Rejected
+        ) && self.trap_code != other.trap_code
+        {
+            return ConformanceComparison::Mismatch;
+        }
+        ConformanceComparison::Equivalent
+    }
+
+    pub fn compare_with_cost(
+        &self,
+        target: &Self,
+        expected_cost: u64,
+    ) -> ConformanceComparison {
+        if target.cost.total != expected_cost {
+            return ConformanceComparison::Mismatch;
+        }
+        self.compare(target)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExecutionOutcome {
     Complete(ExecutionReport),
@@ -244,6 +358,17 @@ pub struct CostReport {
     pub word_entries: u64,
     pub primitives: u64,
     pub steps: Vec<CostStep>,
+}
+impl CostReport {
+    pub fn zero() -> Self {
+        Self {
+            total: 0,
+            instructions: 0,
+            word_entries: 0,
+            primitives: 0,
+            steps: Vec::new(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

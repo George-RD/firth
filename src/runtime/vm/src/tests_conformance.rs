@@ -375,3 +375,102 @@
         };
         assert_eq!(trap.error, VmError::WorldFault);
     }
+
+#[test]
+fn conformance_adapter_preserves_world_cost_and_rejection_classification() {
+    let registry = default_registry();
+    let world_image = test_image(vec![word(
+        "main",
+        vec![
+            instruction(
+                Op::Prim,
+                Some(Operand::Primitive(String::from("makeWorld"))),
+            ),
+            instruction(
+                Op::Prim,
+                Some(Operand::Primitive(String::from("consumeWorld"))),
+            ),
+        ],
+    )]);
+    let encoded = encode_image(&world_image);
+    let observation = conformance_observation(&encoded, 2, &registry);
+    assert_eq!(observation.status, ConformanceStatus::Terminal);
+    assert_eq!(observation.residual_stack, Vec::<Value>::new());
+    assert_eq!(observation.residual_frames, Vec::<FrameTrace>::new());
+    assert_eq!(observation.world_observation, vec![0, 0, 1]);
+    assert_eq!(observation.cost.primitives, 2);
+    assert_eq!(observation.cost.total, 2);
+    assert_eq!(
+        observation.compare_with_cost(&observation, 2),
+        ConformanceComparison::Equivalent
+    );
+    assert_eq!(
+        observation.compare_with_cost(&observation, 3),
+        ConformanceComparison::Mismatch
+    );
+
+    let mut malformed = encoded;
+    malformed.push(0);
+    let rejected = conformance_observation(&malformed, 2, &registry);
+    assert_eq!(rejected.status, ConformanceStatus::Rejected);
+    assert_eq!(rejected.trap_code, Some("malformed-instruction"));
+    assert_eq!(rejected.cost, CostReport::zero());
+}
+
+#[test]
+fn conformance_adapter_classifies_faults_and_dual_fuel_exhaustion() {
+    let registry = default_registry();
+    let recursive = test_image(vec![word(
+        "main",
+        vec![instruction(
+            Op::CallWord,
+            Some(Operand::Word(String::from("main"))),
+        )],
+    )]);
+    let fuel_left = ConformanceObservation::from_outcome(
+        execute_diagnostic(&recursive, 2, &registry),
+        2,
+    );
+    let fuel_right = ConformanceObservation::from_outcome(
+        execute_diagnostic(&recursive, 2, &registry),
+        2,
+    );
+    assert_eq!(fuel_left.status, ConformanceStatus::FuelExhausted);
+    assert!(!fuel_left.residual_frames.is_empty());
+    assert_eq!(
+        fuel_left.compare(&fuel_right),
+        ConformanceComparison::Inconclusive
+    );
+    let other_budget = ConformanceObservation::from_outcome(
+        execute_diagnostic(&recursive, 3, &registry),
+        3,
+    );
+    assert_eq!(
+        fuel_left.compare(&other_budget),
+        ConformanceComparison::Mismatch
+    );
+
+    let primitive_fault = test_image(vec![word(
+        "main",
+        vec![
+            instruction(
+                Op::PushLiteral,
+                Some(Operand::Literal(Value::Int(i64::MAX))),
+            ),
+            instruction(
+                Op::PushLiteral,
+                Some(Operand::Literal(Value::Int(1))),
+            ),
+            instruction(
+                Op::Prim,
+                Some(Operand::Primitive(String::from("addNat"))),
+            ),
+        ],
+    )]);
+    let fault = ConformanceObservation::from_outcome(
+        execute_diagnostic(&primitive_fault, 8, &registry),
+        8,
+    );
+    assert_eq!(fault.status, ConformanceStatus::Trap);
+    assert_eq!(fault.trap_code, Some("primitive-fault"));
+}
