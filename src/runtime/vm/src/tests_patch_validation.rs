@@ -173,6 +173,29 @@
     }
 
     #[test]
+    fn patch_capture_indices_are_validated_before_publication() {
+        let image = dictionary_image();
+        let (mut patch, mut verifier) = patch_for(&image, "value", 2);
+        patch.code = vec![instruction(
+            Op::PushQuote,
+            Some(Operand::Quote(Quotation {
+                code: vec![instruction(Op::PushCapture, Some(Operand::Capture(1)))],
+                captures: vec![Value::Int(0)],
+                consumed: vec![false],
+            })),
+        )];
+        patch.body_digest = sha256(&canonical_code(&patch.code)).to_vec();
+        verifier.new_body = patch.body_digest.clone();
+        let store = ImageStore::new(image.clone()).expect("valid store");
+
+        assert!(matches!(
+            store.apply_patch(&patch, &verifier),
+            Err(ImageError::InvalidImage(VmError::InvalidCaptureIndex(1)))
+        ));
+        assert_eq!(store.snapshot().expect("active image").image(), &image);
+    }
+
+    #[test]
     fn candidate_image_size_is_bounded_before_copy_and_hash() {
         struct MustNotCopy;
         impl ImageAllocation for MustNotCopy {
