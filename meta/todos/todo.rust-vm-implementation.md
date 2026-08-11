@@ -4,7 +4,7 @@ status: open
 created: 2026-07-18
 ---
 
-Requires: rust-vm-bootstrap rust-vm-kernel-execution rust-vm-dictionary-image rust-vm-patch-protocol
+Requires: rust-vm-bootstrap rust-vm-kernel-execution rust-vm-dictionary-image rust-vm-patch-protocol rust-vm-lifecycle-integration rust-vm-reference-conformance
 
 # Rust VM implementation integration
 
