@@ -1,13 +1,12 @@
 ---
 node: firth.toolchain.smt
-status: blocked
+status: open
 created: 2026-08-06
 ---
-blocked on sub-todos: todo.smt-normaliser-vc-proofs, todo.smt-encoder-translation-proofs, todo.smt-serialiser-proof-bindings
 
 # Smt Lean Adapter Proofs
 
-Requires: smt-checked-adapter-pipeline
+Requires: smt-checked-adapter-pipeline smt-normaliser-vc-proofs smt-encoder-translation-proofs smt-serialiser-proof-bindings
 
 ## Goal
 Prove the adapter translation and serialisation semantics in Lean and bind their identities.

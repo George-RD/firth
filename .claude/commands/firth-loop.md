@@ -279,11 +279,14 @@ The tool's rule is deterministic: an `in_progress` todo is surfaced first as
 Otherwise `next` is the first eligible open slug sorted lexicographically.
 Eligible means status open and every Requires slug done. The JSON also lists
 `ineligible_open` with sorted missing slugs, plus sorted `blocked` and
-`in_progress` lists. A blocked todo with no Requires line is never
-auto-unblocked by the selector; dec.loop-autonomy (clauses 3 and 4) governs
-why such a todo may exist and why a starved selection over remaining
-blockers fails closed. A blocked todo
-with "blocked on sub-todos: <ids>" follows the split rule. The tool validates
+`in_progress` lists. A blocked todo is never auto-unblocked by the
+selector; dec.loop-autonomy (clauses 3 and 4) governs why such a todo may
+exist and why a starved selection over remaining blockers fails closed,
+and validation rejects any blocked todo that does not carry an
+`External-evidence:` or `Failing-check:` line (dec.split-todo-form): the
+blocked status is reserved for environment, authority, and
+external-evidence dependencies. Work that waits on other todos is never
+blocked; it stays open with those todos in `Requires:`. The tool validates
 unknown slugs, cycles, filename/slug mismatches, duplicate slugs, and invalid
 status before selection. The tool's stable ordering is the contract.
 
@@ -296,10 +299,13 @@ and never select the unit.
 
 Sizing rule: the unit must fit one small reviewable PR. Too big: this
 iteration IS the decomposition. Create the branch `loop/split.<slug>` first,
-then on it create sub-todos with `$CAIRN todo new` and set the parent to
-`blocked` with body line "blocked on sub-todos: <ids>" (the iteration
-completing the last child flips the parent to `done`), and land that
-decomposition as this iteration's single commit.
+then on it create sub-todos with `$CAIRN todo new` and append every child
+slug to the parent's `Requires:` line; the parent STAYS `open`
+(dec.split-todo-form). Land that decomposition as this iteration's single
+commit. No flip bookkeeping exists: the selector surfaces the parent again
+exactly when its last child is done, and the parent's own iteration then
+verifies its acceptance criteria - residual integration work if any,
+otherwise a verified `done` flip is that iteration's whole unit.
 
 Artefact rule: every todo or `meta/` artefact this loop creates is written
 ON the unit's `loop/*` branch (never while parked detached) and reaches main
@@ -315,12 +321,12 @@ criterion. If the unit would touch `spec/kernel` or
 Firth policy §iii before doing anything else. Scope may reroute, never
 expand: if orientation reveals a prerequisite that must land first
 (including "the spec-freeze decision this touch requires does not yet
-exist"), stop before touching code; author the prerequisite todo, set this
-unit's todo `blocked` on it (the body names the prerequisite todo slug,
-`todo.<slug>`, and node id where relevant), land those tracker edits as this
-iteration's single commit, and end. The prerequisite is then an open todo,
-eligible for normal selection while the blocked unit is skipped; selection
-order is unchanged.
+exist"), stop before touching code; author the prerequisite todo and append
+its slug to this unit's todo `Requires:` line (the todo stays `open`;
+dec.split-todo-form), land those tracker edits as this iteration's single
+commit, and end. The prerequisite is then an open todo, eligible for normal
+selection while this unit waits as `ineligible_open`; selection order is
+unchanged.
 
 **Implement + test.** The unit's branch is `loop/<tail>` where `<tail>` is
 the derived form from Isolation (`todo.<slug>`, `<finding-code>.<node>`, or

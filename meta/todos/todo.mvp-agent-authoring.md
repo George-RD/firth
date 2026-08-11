@@ -1,16 +1,15 @@
 ---
 node: firth.toolchain.agent
-status: blocked
+status: open
 created: 2026-08-10
 ---
-blocked on sub-todos: todo.mvp-agent-guide, todo.mvp-agent-examples, todo.mvp-agent-gate, todo.mvp-agent-coverage
 
 # MVP agent authoring
 
 ## Goal
 Discharge the MVP acceptance obligation with a machine-checked agent-facing language guide, minimal example applications, and a pinned gate proving that a code model can use only the guide and agent interface to build and run basic Firth applications.
 
-Requires: diagnostic-schema
+Requires: diagnostic-schema mvp-agent-guide mvp-agent-examples mvp-agent-gate mvp-agent-coverage
 
 ## Acceptance criteria
 - Provide the agent-facing guide and the checked-in interface manifest used by the gate, with no implicit repository context.

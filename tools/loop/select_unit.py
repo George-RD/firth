@@ -177,6 +177,18 @@ def main() -> int:
         if status not in STATUSES:
             errors.append(f"{path}: missing or invalid status")
         records[slug] = {"path": path, "status": status, "requires": requires, "node": fields.get("node")}
+        if status == "blocked":
+            # dec.loop-autonomy clause 3: a maintainer-blocked todo must
+            # name what is outstanding in machine-findable form. Anything
+            # else is a defect of the iteration that parked it, and the
+            # split pattern (parent waiting on children) must instead stay
+            # open with the children in Requires.
+            body = path.read_text(encoding="utf-8")
+            if not re.search(r"^\s*(External-evidence|Failing-check):", body, re.MULTILINE):
+                errors.append(
+                    f"{slug}: blocked without an External-evidence: or Failing-check: line"
+                    " (loop-autonomy clause 3; split parents stay open with children in Requires)"
+                )
     # Also catch markdown files in the directory that are not todo.<slug>.md.
     for path in sorted(todo_dir.glob("*.md")):
         if not FILENAME.fullmatch(path.name):

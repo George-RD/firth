@@ -25,9 +25,10 @@ class SelectorTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.tmp.cleanup()
 
-    def todo(self, filename: str, *, status: str = "open", requires: str = "", extra: str = "") -> None:
+    def todo(self, filename: str, *, status: str = "open", requires: str = "", extra: str = "",
+             extra_body: str = "") -> None:
         body = f"---\nnode: firth.governance.loop\nstatus: {status}\n{extra}---\n\n"
-        body += f"Requires: {requires}\n"
+        body += f"Requires: {requires}\n{extra_body}"
         (self.root / "meta" / "todos" / filename).write_text(body, encoding="utf-8")
 
     def obligations(self, text: str) -> None:
@@ -171,7 +172,8 @@ class SelectorTests(unittest.TestCase):
         self.assertEqual(report["next"], "alpha")
 
     def test_blocked_is_not_eligible(self) -> None:
-        self.todo("todo.alpha.md", status="blocked")
+        self.todo("todo.alpha.md", status="blocked",
+                  extra_body="Failing-check: remote credential rotation\n")
         self.todo("todo.beta.md")
         code, report = self.run_selector()
         self.assertEqual(code, 0)
@@ -256,6 +258,47 @@ class SelectorTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(report["next"], "alpha")
         self.assertEqual(report["outside_profile"], [])
+
+
+    def test_blocked_without_marker_returns_two(self) -> None:
+        # dec.loop-autonomy clause 3: convenience-blocked todos are defects.
+        self.todo("todo.alpha.md", status="blocked")
+        code, report = self.run_selector("--validate")
+        self.assertEqual(code, 2)
+        self.assertTrue(any("blocked without an External-evidence" in e for e in report["errors"]))
+
+    def test_blocked_with_external_evidence_passes(self) -> None:
+        self.todo("todo.alpha.md", status="blocked")
+        path = self.root / "meta" / "todos" / "todo.alpha.md"
+        path.write_text(path.read_text() + "\nExternal-evidence: third-party VM reimplementation\n")
+        code, report = self.run_selector("--validate")
+        self.assertEqual(code, 0)
+        self.assertEqual(report, {"schema": 1, "valid": True})
+
+    def test_blocked_with_failing_check_passes_and_stays_unselected(self) -> None:
+        self.todo("todo.alpha.md", status="blocked")
+        path = self.root / "meta" / "todos" / "todo.alpha.md"
+        path.write_text(path.read_text() + "\nFailing-check: gh auth login inside the loop container\n")
+        self.todo("todo.beta.md")
+        code, report = self.run_selector()
+        self.assertEqual(code, 0)
+        self.assertEqual(report["blocked"], ["alpha"])
+        self.assertEqual(report["next"], "beta")
+
+    def test_split_parent_open_with_children_in_requires(self) -> None:
+        # The sanctioned split form: parent stays open, gated by Requires.
+        self.todo("todo.parent.md", requires="child-a child-b")
+        self.todo("todo.child-a.md", status="done")
+        self.todo("todo.child-b.md")
+        code, report = self.run_selector()
+        self.assertEqual(code, 0)
+        self.assertEqual(report["ineligible_open"], [{"slug": "parent", "missing": ["child-b"]}])
+        (self.root / "meta" / "todos" / "todo.child-b.md").write_text(
+            "---\nnode: firth.governance.loop\nstatus: done\n---\n\nRequires: \n"
+        )
+        code, report = self.run_selector()
+        self.assertEqual(code, 0)
+        self.assertIn("parent", report["eligible"])
 
 
 if __name__ == "__main__":

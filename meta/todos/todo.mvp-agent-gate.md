@@ -1,10 +1,9 @@
 ---
 node: firth.toolchain.agent
-status: blocked
+status: open
 created: 2026-08-10
 ---
-Requires: mvp-agent-guide mvp-agent-examples
-blocked on sub-todos: todo.mvp-agent-compiler-adapter (firth.toolchain.compiler), todo.mvp-agent-reference-adapter (firth.toolchain.interpreter), todo.mvp-agent-vm-adapter (firth.runtime.vm)
+Requires: mvp-agent-guide mvp-agent-examples mvp-agent-compiler-adapter mvp-agent-reference-adapter mvp-agent-vm-adapter
 
 # Mvp Agent Gate
 ## Goal

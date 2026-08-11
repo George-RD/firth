@@ -1,12 +1,10 @@
 ---
 node: firth.toolchain.elaborator
-status: blocked
+status: open
 created: 2026-07-18
 ---
 
-blocked on sub-todos: todo.elaborator-pipeline-boundary, todo.elaborator-pipeline-failures, todo.elaborator-pipeline-tests
-
-Requires: elaborator-parser elaborator-named-local-erasure elaborator-stack-effect-inference elaborator-refinement-discharge elaborator-diagnostic-envelope
+Requires: elaborator-parser elaborator-named-local-erasure elaborator-stack-effect-inference elaborator-refinement-discharge elaborator-diagnostic-envelope elaborator-pipeline-boundary elaborator-pipeline-failures elaborator-pipeline-tests
 
 # Elaborator implementation integration
 

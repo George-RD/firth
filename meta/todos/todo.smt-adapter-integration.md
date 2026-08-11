@@ -1,14 +1,13 @@
 ---
 node: firth.toolchain.smt
-status: blocked
+status: open
 created: 2026-07-18
 ---
-blocked on sub-todos: todo.smt-solver-profile-binding, todo.smt-checked-adapter-pipeline, todo.smt-lean-adapter-proofs, todo.smt-bounded-solver-results, todo.smt-discharge-record-recheck, todo.smt-adapter-integration-tests, todo.smt-record-integrity-tests
 
 
 # SMT adapter integration
 
-Requires: elaborator-refinement-discharge
+Requires: elaborator-refinement-discharge smt-solver-profile-binding smt-checked-adapter-pipeline smt-lean-adapter-proofs smt-bounded-solver-results smt-discharge-record-recheck smt-adapter-integration-tests smt-record-integrity-tests
 
 ## Objective
 
