@@ -30,17 +30,14 @@ credential-less, and nothing in-stack survives a dead container.
 
 2. **Judgement and execution are split.** A model session (the healer
    delegate) runs in an isolated container with its own transcript, the
-   published mandate, the incident evidence, and the loop's git and
-   model credentials - exactly the credentials every ordinary loop
-   iteration already runs with, so this decision grants the session no
-   authority the loop does not exercise hourly; the incremental
-   authority created here is the gated ack, which the session cannot
-   reach. It diagnoses and MAY repair repository defects - exclusively
-   through the loop's own reviewed landing path (`heal/<slug>` branch,
-   PR, both head-bound lens comments per dec.review-mandatory, all
-   gates green, squash-merge; the goal layer and the anti-shortcut
-   charter of dec.loop-autonomy bind it in full). Its verdict is
-   advice, not action.
+   published mandate, the incident evidence, and model access only: NO
+   git, GitHub, or ack credential of any kind. It diagnoses (the
+   repository is public and readable over https) and, when the root
+   cause is a repairable repository defect, proposes the precise repair
+   in its rationale for a credentialed agent to land through the loop's
+   reviewed landing path (dec.review-mandatory; the goal layer and the
+   anti-shortcut charter of dec.loop-autonomy bind any such landing in
+   full). Its verdict is advice, not action.
 
 3. **Only a deterministic wrapper acts, from an allowlist.**
    - `resume`: write the park's nonce to the host ack file, only if the
@@ -58,8 +55,9 @@ credential-less, and nothing in-stack survives a dead container.
 
 4. **Bounds.** One healer attempt per incident key (park nonce or
    container death id), a global daily attempt cap, every attempt
-   ledgered host-side before acting. The session cannot reach the ack
-   channel, the Docker socket, or the wrapper's ledger.
+   ledgered host-side before the session starts (a crash mid-session
+   burns the key). The session cannot reach the ack channel, the Docker
+   socket, the wrapper's ledger, or any write credential.
 
 5. **Amendment of dec.escalation-surfacing.** The ack channel remains
    host-side and operator-owned; the healer wrapper is an operator
