@@ -1,6 +1,6 @@
 ---
 node: firth.runtime.vm
-status: open
+status: done
 created: 2026-08-11
 ---
 Requires: rust-vm-bootstrap rust-vm-kernel-execution rust-vm-dictionary-image rust-vm-patch-protocol

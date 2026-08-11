@@ -25,6 +25,14 @@
         }
     }
 
+struct RejectEvidence;
+
+impl PatchVerifier for RejectEvidence {
+    fn verify(&self, _evidence: &PatchEvidence<'_>) -> bool {
+        false
+    }
+}
+
     fn literal_code(value: i64) -> Vec<Instruction> {
         vec![instruction(
             Op::PushLiteral,
@@ -120,12 +128,6 @@
 
     #[test]
     fn unproven_patch_is_rejected_without_changing_the_active_image() {
-        struct RejectEvidence;
-        impl PatchVerifier for RejectEvidence {
-            fn verify(&self, _evidence: &PatchEvidence<'_>) -> bool {
-                false
-            }
-        }
 
         let image = dictionary_image();
         let original_digest = image.image_digest.clone();
@@ -205,3 +207,63 @@
         assert_eq!(rolled_back.lookup("value").expect("value").entry().code, literal_code(1));
         assert_ne!(rolled_back.image().image_digest, patch.body_digest);
     }
+
+#[test]
+fn canonical_image_lifecycle_executes_patch_and_rollback() {
+    let encoded = encode_image(&dictionary_image());
+    let decoded = decode(&encoded).expect("canonical image");
+    let store = ImageStore::new(decoded.clone()).expect("valid store");
+    let prior = store.snapshot().expect("prior image");
+    let retained = prior.lookup("value").expect("retained value");
+
+    assert_eq!(execute_active(&store), Ok(vec![Value::Int(1)]));
+
+    let (patch, verifier) = patch_for(&decoded, "value", 2);
+    let published = store
+        .apply_patch(&patch, &verifier)
+        .expect("verified patch publishes");
+    assert_eq!(published.image_version(), 2);
+    assert_eq!(execute_active(&store), Ok(vec![Value::Int(2)]));
+    assert_eq!(retained.entry().code, literal_code(1));
+    assert_eq!(retained.image_version(), prior.image_version());
+
+    let rolled_back = store
+        .rollback(published.image_version(), prior.image_version())
+        .expect("rollback publishes");
+    assert_eq!(rolled_back.image_version(), 3);
+    assert_eq!(execute_active(&store), Ok(vec![Value::Int(1)]));
+    assert_eq!(
+        rolled_back.lookup("value").expect("restored value").entry().code,
+        literal_code(1)
+    );
+}
+
+#[test]
+fn rejected_lifecycle_patches_preserve_execution_and_snapshot() {
+    let encoded = encode_image(&dictionary_image());
+    let decoded = decode(&encoded).expect("canonical image");
+    let store = ImageStore::new(decoded.clone()).expect("valid store");
+    let before = store.snapshot().expect("prior image");
+    let baseline = execute_active(&store).expect("baseline execution");
+    let (patch, _) = patch_for(&decoded, "value", 2);
+
+    let mut stale = patch.clone();
+    stale.expected_image_version = 0;
+    assert!(matches!(
+        store.apply_patch(&stale, &ExternalPass),
+        Err(ImageError::StaleImage {
+            expected: 0,
+            actual: 1
+        })
+    ));
+    assert_eq!(execute_active(&store), Ok(baseline.clone()));
+    assert_eq!(store.snapshot().expect("active image").image(), before.image());
+
+    assert!(matches!(
+        store.apply_patch(&patch, &RejectEvidence),
+        Err(ImageError::UnprovenPatch)
+    ));
+
+    assert_eq!(execute_active(&store), Ok(baseline));
+    assert_eq!(store.snapshot().expect("active image").image(), before.image());
+}
