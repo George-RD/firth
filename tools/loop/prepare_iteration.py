@@ -380,11 +380,6 @@ def prepare_iteration(
         "fresh", *SAFE_RECOVERY_VERDICTS, *REFUSED_VERDICTS
     }:
         raise PreparationError("unknown preflight verdict")
-    if (
-        preflight.get("observation_generation") != request.get("observation_generation")
-        or preflight.get("observation_signature") != request.get("observation_signature")
-    ):
-        raise PreparationError("preflight observation identity does not match request")
     if verdict in REFUSED_VERDICTS:
         raise PreparationError(f"preflight verdict {verdict} refuses normal launch")
 

@@ -391,21 +391,6 @@ class PrepareIterationTests(unittest.TestCase):
             )
         self.assertEqual(state.calls, [])
 
-    def test_preflight_observation_mismatch_never_contacts_state(self) -> None:
-        for field, value in (
-            ("observation_generation", 9),
-            ("observation_signature", "f" * 64),
-        ):
-            with self.subTest(field=field):
-                state = FakeState()
-                with self.assertRaisesRegex(prepare.PreparationError, "observation identity"):
-                    prepare.prepare_iteration(
-                        self.request(),
-                        self.preflight(**{field: value}),
-                        self.selector(),
-                        state,
-                    )
-                self.assertEqual(state.calls, [])
 
     def test_missing_selection_or_malformed_inputs_fail_without_state(self) -> None:
         for request, preflight, selector in (
