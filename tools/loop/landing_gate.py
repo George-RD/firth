@@ -502,6 +502,8 @@ def validate_landing(
             raise LandingError("non-todo unit changed tracker bytes")
     else:
         selected_todo = _text(selected_todo, "selected_todo")
+        if selected_todo != unit:
+            raise LandingError("selected todo and prepared unit mismatch")
         expected_path = f"meta/todos/todo.{selected_todo}.md"
         if expected_path not in base_todos or expected_path not in candidate_todos:
             raise LandingError("selected todo is missing from one tree")

@@ -336,6 +336,11 @@ class LandingGateTests(unittest.TestCase):
                 [self.todo_path],
             )
 
+    def test_selected_todo_must_match_prepared_unit(self) -> None:
+        self.admission["selected_todo"] = "beta"
+        with self.assertRaisesRegex(landing.LandingError, "prepared unit mismatch"):
+            self.validate()
+
     def test_normal_auto_rejects_protected_and_git_control_paths(self) -> None:
         for path in (
             "tools/loop/landing_gate.py",
