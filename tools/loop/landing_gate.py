@@ -360,7 +360,7 @@ def _validate_finaliser(
     state = receipt.get("state_attestation")
     if (
         not isinstance(state, Mapping)
-        or state.get("schema") != "firth.state-finaliser-receipt.v1"
+        or state.get("schema") != "firth.state-finaliser-receipt.v2"
         or state.get("source") != "installed-state"
     ):
         raise LandingError("installed state finaliser attestation is missing")

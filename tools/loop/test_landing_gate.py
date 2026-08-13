@@ -102,7 +102,7 @@ class LandingGateTests(unittest.TestCase):
             "receipts": ["7" * 64, "a" * 64, "8" * 64, "b" * 64],
             "model_terminal": True,
             "state_attestation": {
-                "schema": "firth.state-finaliser-receipt.v1",
+                "schema": "firth.state-finaliser-receipt.v2",
                 "source": "installed-state",
                 "issuer": "firth-resolver-state",
                 "namespace": "normal-iteration",

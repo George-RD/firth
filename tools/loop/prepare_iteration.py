@@ -778,7 +778,7 @@ def finalise_iteration(
             if not isinstance(state_receipt, Mapping):
                 raise PreparationError("state finaliser receipt is missing")
             expected_state_receipt = {
-                "schema": "firth.state-finaliser-receipt.v1",
+                "schema": "firth.state-finaliser-receipt.v2",
                 "namespace": NAMESPACE,
                 "repository_id": context["repository_id"],
                 "incident_id": context["incident_id"],

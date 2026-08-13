@@ -170,7 +170,7 @@ class FakeState:
                 prepare._canonical_projection_bytes(self.stage_attestations)
             ).hexdigest()
             receipt_body = {
-                "schema": "firth.state-finaliser-receipt.v1",
+                "schema": "firth.state-finaliser-receipt.v2",
                 "issuer": "firth-resolver-state",
                 "namespace": "normal-iteration",
                 "repository_id": context["repository_id"],
