@@ -19,15 +19,19 @@ marker is present, return `LOOP HALTED` immediately, touch nothing, and do not
 run `git`, `gh`, or any other landing effect. Prepared sessions must never read, invoke, or hand off to this skill, even for a recovery row; this guard is an
 accidental-call refusal, not a prepared terminal token.
 
-When the marker is present, a missing, stale, or malformed prepared envelope
-is fail-closed and the session stops before landing. Prepared admissions are
-owned by the host resolver's pure
-`tools/loop/landing_gate.py::validate_landing` API. The broker supplies the
-committed projection, exact finaliser receipt, external reviews, tracker
-bytes, candidate paths, and other bound objects before any forge effect. This
-legacy skill does not call that API and does not claim its receipt or
-selected-todo policy. The legacy procedure below remains unchanged when the
-marker is absent.
+When the marker is present, a missing, stale, or malformed protocol-v2
+prepared envelope is fail-closed and the session stops before landing.
+Prepared admissions are owned by the host resolver's pure
+`tools/loop/landing_gate.py::validate_landing` API loaded only from the
+root-installed accepted Firth release. Before any forge effect, the broker
+obtains the prepared envelope and finaliser receipt directly from the
+authenticated State RPC and supplies that State-owned receipt separately from
+the finaliser-controlled evidence. The gate also receives the committed
+projection, external reviews, tracker bytes, and complete candidate paths.
+Missing, replayed, or mismatched State evidence refuses admission. This legacy
+skill does not call that API and does not claim its receipt or selected-todo
+policy. The legacy procedure below remains unchanged when the marker is
+absent.
 
 ## Exit tokens
 

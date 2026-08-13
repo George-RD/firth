@@ -43,6 +43,58 @@ FINALISE_STAGES = {
     "normal.finalise.acl-transfer": "acl-transferred",
     "normal.finalise.lease-acquire": "lease-acquired",
 }
+FINALISE_OBJECT_FIELDS = {
+    "normal.finalise.seal": (
+        "repository_id",
+        "policy_digest",
+        "unit",
+        "branch",
+        "head",
+        "worktree_id",
+        "lease_epoch",
+        "seal_requested",
+    ),
+    "normal.finalise.model-stop": (
+        "repository_id",
+        "policy_digest",
+        "unit",
+        "branch",
+        "head",
+        "worktree_id",
+        "lease_epoch",
+        "container_id",
+        "cgroup_id",
+        "writer_present",
+        "cgroup_stopped",
+        "descendant_count",
+    ),
+    "normal.finalise.acl-transfer": (
+        "repository_id",
+        "policy_digest",
+        "unit",
+        "branch",
+        "head",
+        "worktree_id",
+        "lease_epoch",
+        "writer",
+        "model_write_access",
+        "broker_write_access",
+    ),
+    "normal.finalise.lease-acquire": (
+        "repository_id",
+        "policy_digest",
+        "unit",
+        "branch",
+        "head",
+        "worktree_id",
+        "lease_epoch",
+        "head_tree",
+        "lease_holder",
+        "writer_present",
+        "model_write_access",
+        "broker_write_access",
+    ),
+}
 SAFE_RECOVERY_VERDICTS = {
     "dirty-known-unit",
     "open-pr",
@@ -76,6 +128,7 @@ UNIT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 class StateClient(Protocol):
     def request(self, template_id: str, context: Mapping[str, Any]) -> Mapping[str, Any]: ...
+    def protocol(self) -> Mapping[str, Any]: ...
 
 
 class StableSnapshotter(Protocol):
@@ -124,6 +177,23 @@ def _normal_branch(incident_id: str) -> str:
     return f"loop/resolver.{incident_id.replace('-', '')}"
 
 
+
+
+def _require_state_protocol(client: StateClient) -> None:
+    try:
+        protocol = client.protocol()
+    except Exception as error:
+        raise PreparationError(
+            f"state finalisation protocol unavailable: {error}"
+        ) from error
+    expected = {
+        "schema": SCHEMA,
+        "namespace": NAMESPACE,
+        "finalisation_protocol": FINALISATION_PROTOCOL,
+        "state_finaliser_receipt_schema": "firth.state-finaliser-receipt.v2",
+    }
+    if not isinstance(protocol, Mapping) or dict(protocol) != expected:
+        raise PreparationError("state finalisation protocol mismatch")
 
 
 def _request(
@@ -401,6 +471,7 @@ def prepare_iteration(
     generation = int(base["observation_generation"])
     receipts: list[str] = []
 
+    _require_state_protocol(client)
     if verdict in SAFE_RECOVERY_VERDICTS:
         branch = _require_text(preflight.get("branch"), "preflight branch")
         if preflight.get("unit") != unit:
@@ -682,6 +753,7 @@ def finalise_iteration(
     complete envelope, state client, and fixed no-authority snapshot helper.
     """
     envelope = validate_prepared_envelope(envelope, load_installed_policy_projection())
+    _require_state_protocol(client)
 
     context = {
         "incident_id": _require_incident(envelope.get("incident_id")),
@@ -728,6 +800,14 @@ def finalise_iteration(
             "branch": context["branch"],
             "worktree_id": context["worktree_id"],
         }
+        postcondition_objects = {
+            field: objects.get(field)
+            for field in FINALISE_OBJECT_FIELDS[template_id]
+        }
+        if any(field not in objects for field in FINALISE_OBJECT_FIELDS[template_id]):
+            raise PreparationError(
+                f"{template_id} postcondition object subset is incomplete"
+            )
         stage_attestation = response.get("stage_attestation")
         if (
             not isinstance(stage_attestation, Mapping)
@@ -749,6 +829,10 @@ def finalise_iteration(
             "generation": generation,
             "observation_signature": response["observation_signature"],
             "receipt_id": response["receipt_id"],
+            "postcondition_objects": postcondition_objects,
+            "objects_digest": hashlib.sha256(
+                _canonical_projection_bytes(postcondition_objects)
+            ).hexdigest(),
         }
         for field, value in expected_stage_attestation.items():
             if stage_attestation.get(field) != value:

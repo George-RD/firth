@@ -21,11 +21,17 @@ MISSION text, prompts, and model output cannot select or upgrade it.
   failed validation is `LOOP HALTED` before the harness and never downgrades
   to legacy. The command performs only the bound unit, calls the typed
   no-argument `firth_finalize` once, and emits no terminal token.
-- Before any prepared forge effect, the host broker invokes pure
-  `tools/loop/landing_gate.py::validate_landing` with the committed projection,
-  exact finaliser receipt, external reviews, tracker bytes, candidate paths,
-  and other bound evidence. The legacy landing skill does not invoke this API;
-  its marker-absent GitHub procedure remains unchanged.
+- Before any prepared forge effect, the broker loads
+  `tools/loop/landing_gate.py::validate_landing` only from the root-installed,
+  accepted Firth release whose commit, tree, and file digest match the release
+  manifest. It obtains the prepared envelope and finaliser receipt directly
+  from the authenticated State RPC, including the protocol-v2 four-stage
+  transition chain and canonical postcondition objects. It supplies that
+  State receipt separately from the finaliser-controlled evidence, plus the
+  committed projection, external reviews, tracker bytes, and complete candidate
+  paths. Missing, stale, replayed, or mismatched evidence blocks before any
+  forge effect. The legacy landing skill does not invoke this API; its
+  marker-absent GitHub procedure remains unchanged.
 
 ## Maintainer prerequisites
 

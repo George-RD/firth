@@ -50,6 +50,7 @@ class LandingGateTests(unittest.TestCase):
             "base_commit": "1" * 40,
             "base_tree": "2" * 40,
             "head_commit": "3" * 40,
+            "finaliser_operation_id": "operation-finalise-lease",
             "head_tree": "4" * 40,
             "unit": "alpha",
             "branch": self.branch,
@@ -186,6 +187,42 @@ class LandingGateTests(unittest.TestCase):
             "iteration_complete": False,
             "loop_exhausted": False,
         }
+        prepared_objects = {
+            "repository_id": "George-RD/firth",
+            "policy_digest": self.projection["policy_digest"],
+            "unit": "alpha",
+            "branch": self.branch,
+            "head": "1" * 40,
+            "worktree_id": "worktree-1",
+            "lease_epoch": 7,
+        }
+        transition_objects = (
+            {**prepared_objects, "seal_requested": True},
+            {
+                **prepared_objects,
+                "container_id": "container-1",
+                "cgroup_id": "cgroup-1",
+                "writer_present": False,
+                "cgroup_stopped": True,
+                "descendant_count": 0,
+            },
+            {
+                **prepared_objects,
+                "writer": "broker",
+                "model_write_access": False,
+                "broker_write_access": True,
+            },
+            {
+                **prepared_objects,
+                "head": "3" * 40,
+                "head_tree": "4" * 40,
+                "lease_epoch": 8,
+                "lease_holder": "broker",
+                "writer_present": False,
+                "model_write_access": False,
+                "broker_write_access": True,
+            },
+        )
         self.finaliser["transition_attestations"] = [
             {
                 "schema": "firth.state-transition-attestation.v1",
@@ -202,12 +239,24 @@ class LandingGateTests(unittest.TestCase):
                 "generation": generation,
                 "observation_signature": signature,
                 "receipt_id": receipt_id,
+                "postcondition_objects": transition_objects[index],
+                "objects_digest": __import__("hashlib").sha256(
+                    landing._canonical_bytes(transition_objects[index])
+                ).hexdigest(),
             }
-            for template_id, stage, generation, signature, receipt_id in (
-                ("normal.finalise.seal", "seal-requested", 5, "5" * 64, "7" * 64),
-                ("normal.finalise.model-stop", "model-stopped", 6, "6" * 64, "a" * 64),
-                ("normal.finalise.acl-transfer", "acl-transferred", 7, "7" * 64, "8" * 64),
-                ("normal.finalise.lease-acquire", "lease-acquired", 8, "e" * 64, "b" * 64),
+            for index, (
+                template_id,
+                stage,
+                generation,
+                signature,
+                receipt_id,
+            ) in enumerate(
+                (
+                    ("normal.finalise.seal", "seal-requested", 5, "5" * 64, "7" * 64),
+                    ("normal.finalise.model-stop", "model-stopped", 6, "6" * 64, "a" * 64),
+                    ("normal.finalise.acl-transfer", "acl-transferred", 7, "7" * 64, "8" * 64),
+                    ("normal.finalise.lease-acquire", "lease-acquired", 8, "e" * 64, "b" * 64),
+                )
             )
         ]
         transition_chain_digest = __import__("hashlib").sha256(

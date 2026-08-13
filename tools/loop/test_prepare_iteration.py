@@ -28,7 +28,18 @@ class FakeState:
         self.calls: list[tuple[str, dict[str, Any]]] = []
         self.mutate: dict[str, Any] = {}
         self.fail_at: str | None = None
+        self.protocol_calls = 0
+        self.finalisation_protocol = prepare.FINALISATION_PROTOCOL
         self.stage_attestations: list[dict[str, Any]] = []
+
+    def protocol(self) -> Mapping[str, Any]:
+        self.protocol_calls += 1
+        return {
+            "schema": prepare.SCHEMA,
+            "namespace": prepare.NAMESPACE,
+            "finalisation_protocol": self.finalisation_protocol,
+            "state_finaliser_receipt_schema": "firth.state-finaliser-receipt.v2",
+        }
 
     def request(self, template_id: str, context: Mapping[str, Any]) -> Mapping[str, Any]:
         if template_id == self.fail_at:
@@ -100,6 +111,8 @@ class FakeState:
                 "worktree_id": context["worktree_id"],
                 "lease_epoch": context["lease_epoch"],
             }
+            if template_id == "normal.finalise.seal":
+                objects["seal_requested"] = True
             if template_id == "normal.finalise.model-stop":
                 objects.update(
                     container_id=context["container_id"],
@@ -162,6 +175,18 @@ class FakeState:
                 "generation": self.generation,
                 "observation_signature": response["observation_signature"],
                 "receipt_id": response_receipt_id,
+                "postcondition_objects": {
+                    field: objects[field]
+                    for field in prepare.FINALISE_OBJECT_FIELDS[template_id]
+                },
+                "objects_digest": hashlib.sha256(
+                    prepare._canonical_projection_bytes(
+                        {
+                            field: objects[field]
+                            for field in prepare.FINALISE_OBJECT_FIELDS[template_id]
+                        }
+                    )
+                ).hexdigest(),
             }
             response["stage_attestation"] = stage_attestation
             self.stage_attestations.append(stage_attestation)
@@ -523,6 +548,29 @@ class PrepareIterationTests(unittest.TestCase):
         ):
             prepare.finalise_iteration(envelope, state, FakeSnapshot())
         self.assertEqual(state.calls, [])
+
+    def test_finalisation_refuses_old_state_protocol_before_effect(self) -> None:
+        envelope, _preparation_state = self.prepare()
+        state = FakeState(generation=envelope["generation"])
+        state.finalisation_protocol = 1
+        with self.assertRaisesRegex(
+            prepare.PreparationError, "state finalisation protocol mismatch"
+        ):
+            prepare.finalise_iteration(envelope, state, FakeSnapshot())
+        self.assertEqual(state.calls, [])
+        self.assertEqual(state.protocol_calls, 1)
+
+    def test_preparation_refuses_old_state_protocol_before_effect(self) -> None:
+        state = FakeState()
+        state.finalisation_protocol = 1
+        with self.assertRaisesRegex(
+            prepare.PreparationError, "state finalisation protocol mismatch"
+        ):
+            prepare.prepare_iteration(
+                self.request(), self.preflight(), self.selector(), state
+            )
+        self.assertEqual(state.calls, [])
+        self.assertEqual(state.protocol_calls, 1)
 
     def test_finalisation_refuses_live_writer_or_descendant(self) -> None:
         envelope, _preparation_state = self.prepare()

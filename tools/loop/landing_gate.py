@@ -310,6 +310,8 @@ def _validate_finaliser(
         ("normal.finalise.lease-acquire", "lease-acquired"),
     )
     transition_signatures: list[str] = []
+    transition_object_digests: list[str] = []
+    transition_objects: list[dict[str, Any]] = []
     for index, (template_id, stage) in enumerate(transition_templates):
         attestation = transition_attestations[index]
         assert isinstance(attestation, Mapping)
@@ -343,6 +345,25 @@ def _validate_finaliser(
                 f"{template_id} state transition signature",
             )
         )
+        transition_object_digests.append(
+            _digest(
+                attestation.get("objects_digest"),
+                f"{template_id} state transition objects_digest",
+            )
+        )
+        postcondition_objects = attestation.get("postcondition_objects")
+        if not isinstance(postcondition_objects, Mapping):
+            raise LandingError(
+                f"{template_id} state transition postcondition objects are missing"
+            )
+        canonical_objects = dict(postcondition_objects)
+        if hashlib.sha256(_canonical_bytes(canonical_objects)).hexdigest() != (
+            transition_object_digests[-1]
+        ):
+            raise LandingError(
+                f"{template_id} state transition objects digest mismatch"
+            )
+        transition_objects.append(canonical_objects)
     snapshot_artifact = _text(receipt.get("snapshot_artifact_id"), "snapshot_artifact_id")
     provenance = admission.get("snapshot_provenance")
     if (
@@ -387,6 +408,10 @@ def _validate_finaliser(
         "lease_epoch": lease_epoch,
         "stage": "lease-acquired",
         "observation_generation": receipt.get("generation"),
+        "operation_id": _text(
+            admission.get("finaliser_operation_id"),
+            "finaliser_operation_id",
+        ),
         "observation_signature": finaliser_signature,
     }
     for field, value in state_expected.items():
@@ -394,7 +419,6 @@ def _validate_finaliser(
             raise LandingError(f"state finaliser attestation {field} mismatch")
     if state.get("receipt_id") != state_receipt_id:
         raise LandingError("state finaliser attestation receipt mismatch")
-    _text(state.get("operation_id"), "state finaliser operation_id")
     transition_chain_digest = hashlib.sha256(
         _canonical_bytes(transition_attestations)
     ).hexdigest()
@@ -482,6 +506,50 @@ def _validate_finaliser(
     for field, value in worktree_expected.items():
         if worktree.get(field) != value:
             raise LandingError(f"worktree lease attestation {field} mismatch")
+    prepared_objects = {
+        "repository_id": admission["repository_id"],
+        "policy_digest": admission["policy_digest"],
+        "unit": admission["unit"],
+        "branch": admission["branch"],
+        "head": admission["prepared_head"],
+        "worktree_id": admission["prepared_worktree_id"],
+        "lease_epoch": admission["prepared_lease_epoch"],
+    }
+    expected_transition_objects = (
+        {**prepared_objects, "seal_requested": True},
+        {
+            **prepared_objects,
+            "container_id": admission["prepared_container_id"],
+            "cgroup_id": admission["prepared_cgroup_id"],
+            "writer_present": False,
+            "cgroup_stopped": True,
+            "descendant_count": 0,
+        },
+        {
+            **prepared_objects,
+            "writer": "broker",
+            "model_write_access": False,
+            "broker_write_access": True,
+        },
+        {
+            **prepared_objects,
+            "head": admission["head_commit"],
+            "head_tree": admission["head_tree"],
+            "lease_epoch": lease_epoch,
+            "lease_holder": "broker",
+            "writer_present": False,
+            "model_write_access": False,
+            "broker_write_access": True,
+        },
+    )
+    for index, objects in enumerate(expected_transition_objects):
+        actual_digest = hashlib.sha256(_canonical_bytes(objects)).hexdigest()
+        if transition_objects[index] != objects or (
+            transition_object_digests[index] != actual_digest
+        ):
+            raise LandingError(
+                f"{transition_templates[index][0]} authenticated objects mismatch"
+            )
     if _digest(worktree.get("receipt_id"), "worktree lease attestation receipt_id") != receipts[3]:
         raise LandingError("worktree lease attestation receipt mismatch")
     _object_id(worktree.get("head"), "worktree lease attestation head")
