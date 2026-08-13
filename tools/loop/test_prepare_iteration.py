@@ -529,6 +529,23 @@ class PrepareIterationTests(unittest.TestCase):
                 for index, template_id in enumerate(prepare.FINALISE_TEMPLATES)
             ],
         )
+        edited_state = FakeState(generation=envelope["generation"])
+        edited_state.mutate["normal.finalise.lease-acquire"] = {
+            "head": "c" * 40,
+            "head_tree": "d" * 40,
+        }
+        edited_receipt = prepare.finalise_iteration(
+            envelope,
+            edited_state,
+            FakeSnapshot(),
+        )
+        self.assertEqual(edited_receipt["head"], "c" * 40)
+        self.assertEqual(edited_receipt["head_tree"], "d" * 40)
+        self.assertEqual(
+            edited_receipt["state_attestation"]["operation_id"],
+            "operation-finalise-lease",
+        )
+
 
         state = FakeState(generation=envelope["generation"])
         state.mutate["response:normal.finalise.seal"] = {
@@ -594,7 +611,7 @@ class PrepareIterationTests(unittest.TestCase):
             ("normal.finalise.acl-transfer", {"writer": "model"}),
             ("normal.finalise.lease-acquire", {"lease_holder": "model"}),
             ("normal.finalise.lease-acquire", {"writer_present": True}),
-            ("normal.finalise.lease-acquire", {"head": "9" * 40}),
+            ("normal.finalise.lease-acquire", {"head": "z" * 40}),
         ):
             with self.subTest(template=template, mutation=mutation):
                 envelope, _preparation_state = self.prepare()

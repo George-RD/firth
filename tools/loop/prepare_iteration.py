@@ -239,7 +239,10 @@ def _request(
     for field in fields:
         if field not in context:
             raise PreparationError(f"{template_id}: request omitted bound field {field}")
-        if template_id == "normal.finalise.lease-acquire" and field == "lease_epoch":
+        if template_id == "normal.finalise.lease-acquire" and field in {
+            "head",
+            "lease_epoch",
+        }:
             continue
         if objects.get(field) != context[field]:
             raise PreparationError(f"{template_id}: observed {field} does not match request identity")
@@ -864,6 +867,8 @@ def finalise_iteration(
             expected_state_receipt = {
                 "schema": "firth.state-finaliser-receipt.v2",
                 "namespace": NAMESPACE,
+                "issuer": "firth-resolver-state",
+                "template_id": "normal.finalise.lease-acquire",
                 "repository_id": context["repository_id"],
                 "incident_id": context["incident_id"],
                 "unit": context["unit"],
@@ -877,6 +882,10 @@ def finalise_iteration(
                 "stage": "lease-acquired",
                 "policy_digest": context["policy_digest"],
             }
+            _require_text(
+                state_receipt.get("operation_id"),
+                "state finaliser operation_id",
+            )
             for field, value in expected_state_receipt.items():
                 if state_receipt.get(field) != value:
                     raise PreparationError(f"state finaliser receipt {field} mismatch")

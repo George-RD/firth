@@ -606,6 +606,19 @@ class LandingGateTests(unittest.TestCase):
                     landing.LandingError, "transition chain digest"
                 ):
                     self.validate([self.todo_path], finaliser=finaliser)
+        for attestation, label in (
+            ("model_attestation", "model"),
+            ("worktree_attestation", "worktree"),
+        ):
+            with self.subTest(external_signature=label):
+                finaliser = copy.deepcopy(self.finaliser)
+                finaliser[attestation]["observation_signature"] = "0" * 64
+                with self.assertRaisesRegex(
+                    landing.LandingError,
+                    "signature mismatch",
+                ):
+                    self.validate([self.todo_path], finaliser=finaliser)
+
 
         finaliser = copy.deepcopy(self.finaliser)
         finaliser["state_attestation"]["transition_chain_digest"] = "0" * 64
