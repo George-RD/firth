@@ -110,6 +110,8 @@ def _status_transition(before: bytes, after: bytes, expected: str) -> bool:
     changed = 0
     in_frontmatter = False
     closed = False
+    before_statuses = 0
+    after_statuses = 0
     for old, new in zip(before_lines, after_lines, strict=True):
         old_value = old.rstrip("\r\n")
         new_value = new.rstrip("\r\n")
@@ -118,6 +120,11 @@ def _status_transition(before: bytes, after: bytes, expected: str) -> bool:
         elif old_value == "---" and in_frontmatter:
             in_frontmatter = False
             closed = True
+        if in_frontmatter:
+            if old_value.split(":", 1)[0].strip() == "status":
+                before_statuses += 1
+            if new_value.split(":", 1)[0].strip() == "status":
+                after_statuses += 1
         if old == new:
             continue
         if not in_frontmatter:
@@ -127,7 +134,7 @@ def _status_transition(before: bytes, after: bytes, expected: str) -> bool:
         if old[len(old_value) :] != new[len(new_value) :]:
             return False
         changed += 1
-    return closed and changed == 1
+    return closed and changed == 1 and before_statuses == 1 and after_statuses == 1
 
 
 def _validate_projection(projection: Mapping[str, Any], repository_id: str, policy_digest: str) -> None:
@@ -219,6 +226,11 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
         "iteration_complete": False,
         "loop_exhausted": False,
     }
+    prepared_generation = admission["prepared_generation"]
+    if receipt.get("prepared_generation") != prepared_generation:
+        raise LandingError("finaliser prepared generation mismatch")
+    if receipt.get("prepared_observation_signature") != admission["prepared_observation_signature"]:
+        raise LandingError("finaliser prepared observation signature mismatch")
     for field, value in expected.items():
         if receipt.get(field) != value:
             raise LandingError(f"finaliser receipt {field} mismatch")
@@ -226,13 +238,21 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
     _object_id(receipt.get("head_tree"), "finaliser head_tree")
     worktree_id = _text(receipt.get("worktree_id"), "finaliser worktree_id")
     generation = receipt.get("generation")
-    if not isinstance(generation, int) or isinstance(generation, bool) or generation < 1:
-        raise LandingError("finaliser generation is invalid")
+    if (
+        not isinstance(generation, int)
+        or isinstance(generation, bool)
+        or generation != prepared_generation + 4
+    ):
+        raise LandingError("finaliser generation is not the exact four-transition successor")
     finaliser_signature = _digest(receipt.get("observation_signature"), "finaliser observation_signature")
     state_receipt_id = _digest(receipt.get("state_receipt_id"), "state finaliser receipt_id")
     lease_epoch = receipt.get("lease_epoch")
-    if not isinstance(lease_epoch, int) or isinstance(lease_epoch, bool) or lease_epoch < 2:
-        raise LandingError("finaliser lease_epoch is invalid")
+    if (
+        not isinstance(lease_epoch, int)
+        or isinstance(lease_epoch, bool)
+        or lease_epoch != admission["prepared_lease_epoch"] + 1
+    ):
+        raise LandingError("finaliser lease_epoch is not the prepared successor")
     receipts = receipt.get("receipts")
     if not isinstance(receipts, list) or len(receipts) != 4 or not all(
         isinstance(value, str) and value for value in receipts
@@ -313,10 +333,9 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
     if (
         not isinstance(model_generation, int)
         or isinstance(model_generation, bool)
-        or model_generation < 1
-        or model_generation >= generation
+        or model_generation != prepared_generation + 2
     ):
-        raise LandingError("model stop attestation generation is invalid")
+        raise LandingError("model stop attestation generation is not the exact successor")
 
     worktree = receipt.get("worktree_attestation")
     if (
@@ -474,6 +493,17 @@ def validate_landing(
         or prepared_lease_epoch < 1
     ):
         raise LandingError("prepared lease epoch is invalid")
+    prepared_generation = admission.get("prepared_generation")
+    if (
+        not isinstance(prepared_generation, int)
+        or isinstance(prepared_generation, bool)
+        or prepared_generation < 1
+    ):
+        raise LandingError("prepared generation is invalid")
+    _digest(
+        admission.get("prepared_observation_signature"),
+        "prepared observation signature",
+    )
     unit = _text(admission.get("unit"), "unit")
     incident_id = _incident(admission.get("incident_id"))
     branch = _text(admission.get("branch"), "branch")

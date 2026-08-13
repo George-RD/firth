@@ -41,6 +41,8 @@ class LandingGateTests(unittest.TestCase):
             "snapshot_digest": "c" * 64,
             "patch_hash": "d" * 64,
             "prepared_lease_epoch": 7,
+            "prepared_generation": 4,
+            "prepared_observation_signature": "5" * 64,
             "prepared_head": "1" * 40,
             "base_commit": "1" * 40,
             "base_tree": "2" * 40,
@@ -64,6 +66,8 @@ class LandingGateTests(unittest.TestCase):
             },
         }
         self.finaliser = {
+            "prepared_generation": 4,
+            "prepared_observation_signature": "5" * 64,
             "schema": 1,
             "kind": "firth-finaliser-receipt",
             "namespace": "normal-iteration",
@@ -206,11 +210,16 @@ class LandingGateTests(unittest.TestCase):
             },
         ]
 
-    def validate(self, candidate_paths: list[str] | None = None) -> dict[str, Any]:
+    def validate(
+        self,
+        candidate_paths: list[str] | None = None,
+        *,
+        finaliser: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         return landing.validate_landing(
             self.admission,
             self.projection,
-            self.finaliser,
+            finaliser or self.finaliser,
             self.reviews,
             {self.todo_path: self.before},
             {self.todo_path: self.after},
@@ -335,6 +344,51 @@ class LandingGateTests(unittest.TestCase):
                 {self.todo_path: changed},
                 [self.todo_path],
             )
+
+    def test_duplicate_todo_status_is_rejected(self) -> None:
+        duplicate_before = self.before.replace(
+            b"status: in_progress\n",
+            b"status: blocked\nstatus: in_progress\n",
+        )
+        duplicate_after = self.after.replace(
+            b"status: done\n",
+            b"status: blocked\nstatus: done\n",
+        )
+        with self.assertRaisesRegex(landing.LandingError, "sanctioned final status"):
+            landing.validate_landing(
+                self.admission,
+                self.projection,
+                self.finaliser,
+                self.reviews,
+                {self.todo_path: duplicate_before},
+                {self.todo_path: duplicate_after},
+                [self.todo_path],
+            )
+
+    def test_finaliser_requires_exact_generation_and_lease_successors(self) -> None:
+        for field, value in (
+            ("generation", 9),
+            ("prepared_generation", 3),
+            ("prepared_observation_signature", "4" * 64),
+            ("lease_epoch", 9),
+        ):
+            with self.subTest(field=field):
+                finaliser = copy.deepcopy(self.finaliser)
+                finaliser[field] = value
+                with self.assertRaises(landing.LandingError):
+                    self.validate([self.todo_path], finaliser=finaliser)
+
+        for attestation in ("state_attestation", "worktree_attestation", "snapshot_attestation"):
+            with self.subTest(attestation=attestation):
+                finaliser = copy.deepcopy(self.finaliser)
+                finaliser[attestation]["lease_epoch"] = 9
+                with self.assertRaises(landing.LandingError):
+                    self.validate([self.todo_path], finaliser=finaliser)
+
+        finaliser = copy.deepcopy(self.finaliser)
+        finaliser["model_attestation"]["observation_generation"] = 7
+        with self.assertRaises(landing.LandingError):
+            self.validate([self.todo_path], finaliser=finaliser)
 
     def test_selected_todo_must_match_prepared_unit(self) -> None:
         self.admission["selected_todo"] = "beta"

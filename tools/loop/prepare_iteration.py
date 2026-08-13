@@ -357,6 +357,17 @@ def prepare_iteration(
     """Prepare or verify one iteration and return its immutable launch envelope."""
     if not isinstance(request, Mapping) or not isinstance(preflight, Mapping) or not isinstance(selector, Mapping):
         raise PreparationError("preparation inputs must be objects")
+    policy_projection = load_installed_policy_projection()
+    if (
+        policy_projection.get("schema") != SCHEMA
+        or policy_projection.get("kind") != "firth-authority-policy-projection"
+    ):
+        raise PreparationError("installed policy projection is invalid")
+    _validate_policy_projection(policy_projection)
+    if request.get("repository_id") != policy_projection.get("repository_id"):
+        raise PreparationError("request repository identity does not match installed policy")
+    if request.get("policy_digest") != policy_projection.get("policy_digest"):
+        raise PreparationError("request policy digest does not match installed policy")
     preflight_schema = preflight.get("schema")
     if (
         not isinstance(preflight_schema, int)
@@ -365,8 +376,15 @@ def prepare_iteration(
     ):
         raise PreparationError("preflight schema mismatch")
     verdict = preflight.get("verdict")
-    if verdict not in {"fresh", *SAFE_RECOVERY_VERDICTS, *REFUSED_VERDICTS}:
+    if not isinstance(verdict, str) or verdict not in {
+        "fresh", *SAFE_RECOVERY_VERDICTS, *REFUSED_VERDICTS
+    }:
         raise PreparationError("unknown preflight verdict")
+    if (
+        preflight.get("observation_generation") != request.get("observation_generation")
+        or preflight.get("observation_signature") != request.get("observation_signature")
+    ):
+        raise PreparationError("preflight observation identity does not match request")
     if verdict in REFUSED_VERDICTS:
         raise PreparationError(f"preflight verdict {verdict} refuses normal launch")
 
@@ -379,6 +397,8 @@ def prepare_iteration(
         branch = _require_text(preflight.get("branch"), "preflight branch")
         if preflight.get("unit") != unit:
             raise PreparationError("recovered binding does not match selected unit")
+        if preflight.get("incident_id") != base["incident_id"]:
+            raise PreparationError("recovered incident does not match prepared incident")
         if branch != _normal_branch(str(base["incident_id"])):
             raise PreparationError("recovered branch does not match prepared incident")
         head = _require_object_id(preflight.get("head"), "preflight head")
@@ -409,6 +429,8 @@ def prepare_iteration(
         cgroup_id = _require_text(objects.get("cgroup_id"), "cgroup_id")
         receipts.append(str(response["receipt_id"]))
         final_signature = response["observation_signature"]
+    elif preflight.get("head") != base["main_commit"]:
+        raise PreparationError("fresh preflight head does not match observed main")
     else:
         branch = _normal_branch(str(base["incident_id"]))
         context: dict[str, Any] = dict(base)
@@ -873,6 +895,8 @@ def finalise_iteration(
         "artifact_id": snapshot_artifact,
     }
     return {
+        "prepared_generation": envelope["generation"],
+        "prepared_observation_signature": envelope["observation_signature"],
         "schema": SCHEMA,
         "kind": "firth-finaliser-receipt",
         "namespace": NAMESPACE,
@@ -907,7 +931,11 @@ def main() -> int:
     subparsers.add_parser("validate-envelope")
     args = parser.parse_args()
     try:
-        envelope = json.loads(INSTALLED_ENVELOPE.read_text(encoding="utf-8"))
+        envelope = json.loads(
+            INSTALLED_ENVELOPE.read_text(encoding="utf-8"),
+            object_pairs_hook=_projection_pairs,
+            parse_float=_reject_projection_float,
+        )
         result = validate_prepared_envelope(envelope, load_installed_policy_projection())
     except (OSError, UnicodeError, json.JSONDecodeError, PreparationError) as error:
         print(json.dumps({"schema": SCHEMA, "valid": False, "error": str(error)}, sort_keys=True))

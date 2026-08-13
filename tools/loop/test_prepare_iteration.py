@@ -243,7 +243,15 @@ class PrepareIterationTests(unittest.TestCase):
         return {"schema": 1, "next": unit}
 
     def preflight(self, verdict: str = "fresh", **fields: Any) -> dict[str, Any]:
-        return {"schema": 1, "verdict": verdict, **fields}
+        base = {
+            "schema": 1,
+            "verdict": verdict,
+            "head": "a" * 40,
+            "observation_generation": 10,
+            "observation_signature": "e" * 64,
+        }
+        base.update(fields)
+        return base
 
     def prepare(self, state: FakeState | None = None) -> tuple[dict[str, Any], FakeState]:
         state = state or FakeState()
@@ -338,7 +346,13 @@ class PrepareIterationTests(unittest.TestCase):
                 state = FakeState()
                 envelope = prepare.prepare_iteration(
                     self.request(),
-                    self.preflight(verdict, branch=branch, head="c" * 40, unit="alpha"),
+                    self.preflight(
+                        verdict,
+                        branch=branch,
+                        head="c" * 40,
+                        unit="alpha",
+                        incident_id="019126d3-4f7a-7cc0-9b5f-123456789abc",
+                    ),
                     self.selector(),
                     state,
                 )
@@ -376,6 +390,22 @@ class PrepareIterationTests(unittest.TestCase):
                 state,
             )
         self.assertEqual(state.calls, [])
+
+    def test_preflight_observation_mismatch_never_contacts_state(self) -> None:
+        for field, value in (
+            ("observation_generation", 9),
+            ("observation_signature", "f" * 64),
+        ):
+            with self.subTest(field=field):
+                state = FakeState()
+                with self.assertRaisesRegex(prepare.PreparationError, "observation identity"):
+                    prepare.prepare_iteration(
+                        self.request(),
+                        self.preflight(**{field: value}),
+                        self.selector(),
+                        state,
+                    )
+                self.assertEqual(state.calls, [])
 
     def test_missing_selection_or_malformed_inputs_fail_without_state(self) -> None:
         for request, preflight, selector in (

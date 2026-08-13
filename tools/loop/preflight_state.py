@@ -25,6 +25,7 @@ INCIDENT = re.compile(
 )
 SCHEMA = 1
 OBJECT_ID = re.compile(r"^[0-9a-f]{40,64}$")
+SHA256 = re.compile(r"^[0-9a-f]{64}$")
 VERDICTS = {
     "fresh",
     "dirty-known-unit",
@@ -239,7 +240,7 @@ def _normalise_prs(
 
 
 
-def classify(
+def _classify(
     observation: Mapping[str, Any] | Any,
     todos: Mapping[str, Mapping[str, Any]] | Any,
     *,
@@ -392,6 +393,14 @@ def classify(
             or branch["incident_id"] != pr["incident_id"]
         ):
             return _failed("open pull request head or binding does not match the observed local branch")
+        extra_branches = sorted(
+            candidate["name"] for candidate in branches if candidate["name"] != pr["head_ref"]
+        )
+        if extra_branches:
+            return _failed(
+                "open pull request is not the only surviving loop branch",
+                errors=extra_branches,
+            )
         return {
             "schema": SCHEMA,
             "verdict": "open-pr",
@@ -503,6 +512,34 @@ def classify(
         "verdict": "fresh",
         "reason": "clean current main has no surviving loop state",
         "head": head,
+    }
+
+
+def classify(
+    observation: Mapping[str, Any] | Any,
+    todos: Mapping[str, Mapping[str, Any]] | Any,
+    *,
+    legacy_mode: bool = False,
+) -> dict[str, Any]:
+    """Bind a closed verdict to the immutable observer generation."""
+
+    if not isinstance(observation, Mapping):
+        return _failed("repository observation is not an object")
+    generation = observation.get("observation_generation")
+    signature = observation.get("observation_signature")
+    if (
+        not isinstance(generation, int)
+        or isinstance(generation, bool)
+        or generation < 1
+        or not isinstance(signature, str)
+        or SHA256.fullmatch(signature) is None
+    ):
+        return _failed("repository observation identity is malformed")
+    result = _classify(observation, todos, legacy_mode=legacy_mode)
+    return {
+        **result,
+        "observation_generation": generation,
+        "observation_signature": signature,
     }
 
 

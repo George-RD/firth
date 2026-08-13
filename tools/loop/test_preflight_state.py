@@ -67,6 +67,8 @@ class PreflightStateTests(unittest.TestCase):
         value: dict[str, Any] = {
             "schema": 1,
             "failures": [],
+            "observation_generation": 10,
+            "observation_signature": "e" * 64,
             "forge": {"complete": True, "items": [], "error": None},
             "main_head": "a" * 40,
             "head": "a" * 40,
@@ -91,7 +93,10 @@ class PreflightStateTests(unittest.TestCase):
         return result
 
     def test_fresh(self) -> None:
-        self.assertEqual(self.classify()["verdict"], "fresh")
+        result = self.classify()
+        self.assertEqual(result["verdict"], "fresh")
+        self.assertEqual(result["observation_generation"], 10)
+        self.assertEqual(result["observation_signature"], "e" * 64)
 
     def test_dirty_known_unit(self) -> None:
         branch = self.bound_branch()
@@ -146,6 +151,25 @@ class PreflightStateTests(unittest.TestCase):
             },
         )
         self.assertEqual(result["verdict"], "observation-failed")
+
+    def test_open_pr_rejects_an_extra_surviving_branch(self) -> None:
+        result = self.classify(
+            loop_branches=[
+                self.bound_branch(),
+                self.bound_branch(
+                    "beta",
+                    "c" * 40,
+                    "019126d3-4f7a-7cc0-9b5f-123456789abd",
+                ),
+            ],
+            forge={
+                "complete": True,
+                "error": None,
+                "items": [self.bound_pr()],
+            },
+        )
+        self.assertEqual(result["verdict"], "observation-failed")
+        self.assertIn("not the only surviving", result["reason"])
 
     def test_multiple_open_prs_precede_dirty_state(self) -> None:
         alpha_branch = self.bound_branch()
