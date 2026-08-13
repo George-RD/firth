@@ -67,8 +67,6 @@ class PreflightStateTests(unittest.TestCase):
         value: dict[str, Any] = {
             "schema": 1,
             "failures": [],
-            "observation_generation": 10,
-            "observation_signature": "e" * 64,
             "forge": {"complete": True, "items": [], "error": None},
             "main_head": "a" * 40,
             "head": "a" * 40,
@@ -95,8 +93,6 @@ class PreflightStateTests(unittest.TestCase):
     def test_fresh(self) -> None:
         result = self.classify()
         self.assertEqual(result["verdict"], "fresh")
-        self.assertEqual(result["observation_generation"], 10)
-        self.assertEqual(result["observation_signature"], "e" * 64)
 
     def test_dirty_known_unit(self) -> None:
         branch = self.bound_branch()
