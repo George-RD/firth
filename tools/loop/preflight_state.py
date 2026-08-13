@@ -299,6 +299,9 @@ def classify(
         if unit is None:
             return _failed("repository observation is malformed", errors=[f"loop branch {index} has invalid binding"])
         branches.append({"name": name, "head": branch_head, "unit": unit, "incident_id": incident_id})
+    branch_names = [branch["name"] for branch in branches]
+    if len(branch_names) != len(set(branch_names)):
+        return _failed("repository observation contains duplicate loop branch names")
 
     open_prs = sorted((pr for pr in prs if pr["state"] == "OPEN"), key=lambda pr: pr["head_ref"])
     if len(open_prs) > 1:

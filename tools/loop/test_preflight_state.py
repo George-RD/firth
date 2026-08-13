@@ -167,6 +167,13 @@ class PreflightStateTests(unittest.TestCase):
         self.assertEqual(result["verdict"], "observation-failed")
         self.assertIn("not the only surviving", result["reason"])
 
+    def test_duplicate_loop_branch_names_fail_closed(self) -> None:
+        branch = self.bound_branch()
+        stale = {**branch, "head": "c" * 40}
+        result = self.classify(loop_branches=[branch, stale])
+        self.assertEqual(result["verdict"], "observation-failed")
+        self.assertIn("duplicate loop branch", result["reason"])
+
     def test_multiple_open_prs_precede_dirty_state(self) -> None:
         alpha_branch = self.bound_branch()
         beta_branch = self.bound_branch(
