@@ -131,6 +131,8 @@ class FakeState:
             response_receipt_id = "a" * 64
         elif template_id == "normal.finalise.lease-acquire":
             response_receipt_id = "b" * 64
+        elif template_id in prepare.FINALISE_TEMPLATES:
+            response_receipt_id = f"{self.generation:064x}"
         else:
             response_receipt_id = f"receipt-{self.generation}"
         response: dict[str, Any] = {
@@ -143,6 +145,23 @@ class FakeState:
             "receipt_id": response_receipt_id,
             "objects": objects,
         }
+        if template_id in prepare.FINALISE_TEMPLATES:
+            response["stage_attestation"] = {
+                "schema": "firth.state-transition-attestation.v1",
+                "source": "installed-state",
+                "namespace": "normal-iteration",
+                "repository_id": context["repository_id"],
+                "policy_digest": context["policy_digest"],
+                "incident_id": context["incident_id"],
+                "unit": context["unit"],
+                "branch": context["branch"],
+                "worktree_id": context["worktree_id"],
+                "template_id": template_id,
+                "stage": prepare.FINALISE_STAGES[template_id],
+                "generation": self.generation,
+                "observation_signature": response["observation_signature"],
+                "receipt_id": response_receipt_id,
+            }
         if template_id == "normal.finalise.lease-acquire":
             response["finaliser_receipt"] = {
                 "receipt_id": "f" * 64,

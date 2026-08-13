@@ -36,6 +36,12 @@ FINALISE_TEMPLATES = (
     "normal.finalise.acl-transfer",
     "normal.finalise.lease-acquire",
 )
+FINALISE_STAGES = {
+    "normal.finalise.seal": "seal-requested",
+    "normal.finalise.model-stop": "model-stopped",
+    "normal.finalise.acl-transfer": "acl-transferred",
+    "normal.finalise.lease-acquire": "lease-acquired",
+}
 SAFE_RECOVERY_VERDICTS = {
     "dirty-known-unit",
     "open-pr",
@@ -693,6 +699,7 @@ def finalise_iteration(
         raise PreparationError("invalid prepared generation")
 
     receipts: list[str] = []
+    transition_attestations: list[dict[str, Any]] = []
     last: Mapping[str, Any] | None = None
     state_receipt: Mapping[str, Any] | None = None
     model_response: Mapping[str, Any] | None = None
@@ -710,6 +717,37 @@ def finalise_iteration(
             "branch": context["branch"],
             "worktree_id": context["worktree_id"],
         }
+        stage_attestation = response.get("stage_attestation")
+        if (
+            not isinstance(stage_attestation, Mapping)
+            or stage_attestation.get("schema")
+            != "firth.state-transition-attestation.v1"
+            or stage_attestation.get("source") != "installed-state"
+        ):
+            raise PreparationError(f"{template_id} state stage attestation is missing")
+        expected_stage_attestation = {
+            "namespace": NAMESPACE,
+            "repository_id": context["repository_id"],
+            "policy_digest": context["policy_digest"],
+            "incident_id": context["incident_id"],
+            "unit": context["unit"],
+            "branch": context["branch"],
+            "worktree_id": context["worktree_id"],
+            "template_id": template_id,
+            "stage": FINALISE_STAGES[template_id],
+            "generation": generation,
+            "observation_signature": response["observation_signature"],
+            "receipt_id": response["receipt_id"],
+        }
+        for field, value in expected_stage_attestation.items():
+            if stage_attestation.get(field) != value:
+                raise PreparationError(
+                    f"{template_id} state stage attestation {field} mismatch"
+                )
+        _require_digest(
+            stage_attestation.get("receipt_id"),
+            f"{template_id} state stage receipt_id",
+        )
         if template_id == "normal.finalise.lease-acquire":
             _assert_equal(objects, common_identity, template_id)
             head = _require_object_id(objects.get("head"), "post-model head")
@@ -781,6 +819,7 @@ def finalise_iteration(
                 model_objects = objects
             context = _continued_context(context, response, generation)
         receipts.append(str(response["receipt_id"]))
+        transition_attestations.append(dict(stage_attestation))
         last = response
 
     assert last is not None
@@ -946,6 +985,7 @@ def finalise_iteration(
         "observation_signature": last["observation_signature"],
         "state_receipt_id": state_receipt["receipt_id"],
         "receipts": receipts,
+        "transition_attestations": transition_attestations,
         "model_terminal": True,
         "iteration_complete": False,
         "loop_exhausted": False,

@@ -96,7 +96,7 @@ class LandingGateTests(unittest.TestCase):
             "generation": 8,
             "state_receipt_id": "f" * 64,
             "lease_epoch": 8,
-            "receipts": ["seal", "a" * 64, "acl", "b" * 64],
+            "receipts": ["7" * 64, "a" * 64, "8" * 64, "b" * 64],
             "model_terminal": True,
             "state_attestation": {
                 "schema": "firth.state-finaliser-receipt.v1",
@@ -180,6 +180,30 @@ class LandingGateTests(unittest.TestCase):
             "iteration_complete": False,
             "loop_exhausted": False,
         }
+        self.finaliser["transition_attestations"] = [
+            {
+                "schema": "firth.state-transition-attestation.v1",
+                "source": "installed-state",
+                "namespace": "normal-iteration",
+                "repository_id": "George-RD/firth",
+                "policy_digest": self.projection["policy_digest"],
+                "incident_id": self.incident_id,
+                "unit": "alpha",
+                "branch": self.branch,
+                "worktree_id": "worktree-1",
+                "template_id": template_id,
+                "stage": stage,
+                "generation": generation,
+                "observation_signature": signature,
+                "receipt_id": receipt_id,
+            }
+            for template_id, stage, generation, signature, receipt_id in (
+                ("normal.finalise.seal", "seal-requested", 5, "5" * 64, "7" * 64),
+                ("normal.finalise.model-stop", "model-stopped", 6, "6" * 64, "a" * 64),
+                ("normal.finalise.acl-transfer", "acl-transferred", 7, "7" * 64, "8" * 64),
+                ("normal.finalise.lease-acquire", "lease-acquired", 8, "e" * 64, "b" * 64),
+            )
+        ]
         common = {
             "schema": 1,
             "kind": "firth-exact-object-review",
@@ -464,6 +488,29 @@ class LandingGateTests(unittest.TestCase):
         finaliser = copy.deepcopy(self.finaliser)
         finaliser["model_attestation"]["observation_generation"] = 7
         with self.assertRaises(landing.LandingError):
+            self.validate([self.todo_path], finaliser=finaliser)
+
+        for field, value in (
+            ("stage", "lease-acquired"),
+            ("source", "caller"),
+            ("generation", 8),
+            ("receipt_id", "b" * 64),
+        ):
+            with self.subTest(transition_field=field):
+                finaliser = copy.deepcopy(self.finaliser)
+                finaliser["transition_attestations"][0][field] = value
+                with self.assertRaises(landing.LandingError):
+                    self.validate([self.todo_path], finaliser=finaliser)
+
+        finaliser = copy.deepcopy(self.finaliser)
+        finaliser["transition_attestations"].reverse()
+        with self.assertRaises(landing.LandingError):
+            self.validate([self.todo_path], finaliser=finaliser)
+
+        finaliser = copy.deepcopy(self.finaliser)
+        finaliser["receipts"][2] = finaliser["receipts"][0]
+        finaliser["transition_attestations"][2]["receipt_id"] = finaliser["receipts"][0]
+        with self.assertRaisesRegex(landing.LandingError, "duplicated"):
             self.validate([self.todo_path], finaliser=finaliser)
 
     def test_selected_todo_must_match_prepared_unit(self) -> None:

@@ -285,6 +285,54 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
         isinstance(value, str) and value for value in receipts
     ):
         raise LandingError("finaliser transition receipts are incomplete")
+    transition_attestations = receipt.get("transition_attestations")
+    if (
+        not isinstance(transition_attestations, list)
+        or len(transition_attestations) != 4
+        or not all(isinstance(value, Mapping) for value in transition_attestations)
+        or len(set(receipts)) != 4
+    ):
+        raise LandingError("finaliser transition attestations are incomplete or duplicated")
+    transition_templates = (
+        ("normal.finalise.seal", "seal-requested"),
+        ("normal.finalise.model-stop", "model-stopped"),
+        ("normal.finalise.acl-transfer", "acl-transferred"),
+        ("normal.finalise.lease-acquire", "lease-acquired"),
+    )
+    transition_signatures: list[str] = []
+    for index, (template_id, stage) in enumerate(transition_templates):
+        attestation = transition_attestations[index]
+        assert isinstance(attestation, Mapping)
+        expected_transition = {
+            "schema": "firth.state-transition-attestation.v1",
+            "source": "installed-state",
+            "namespace": "normal-iteration",
+            "repository_id": admission["repository_id"],
+            "policy_digest": admission["policy_digest"],
+            "incident_id": admission["incident_id"],
+            "unit": admission["unit"],
+            "branch": admission["branch"],
+            "worktree_id": worktree_id,
+            "template_id": template_id,
+            "stage": stage,
+            "generation": prepared_generation + index + 1,
+            "receipt_id": receipts[index],
+        }
+        for field, value in expected_transition.items():
+            if attestation.get(field) != value:
+                raise LandingError(
+                    f"{template_id} state transition attestation {field} mismatch"
+                )
+        _digest(
+            attestation.get("receipt_id"),
+            f"{template_id} state transition receipt_id",
+        )
+        transition_signatures.append(
+            _digest(
+                attestation.get("observation_signature"),
+                f"{template_id} state transition signature",
+            )
+        )
     snapshot_artifact = _text(receipt.get("snapshot_artifact_id"), "snapshot_artifact_id")
     provenance = admission.get("snapshot_provenance")
     if (
@@ -363,6 +411,8 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
         or model_generation != prepared_generation + 2
     ):
         raise LandingError("model stop attestation generation is not the exact successor")
+    if transition_signatures[1] != model_signature:
+        raise LandingError("model stop state transition signature mismatch")
 
     worktree = receipt.get("worktree_attestation")
     if (
@@ -399,6 +449,8 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
     )
     if worktree_generation != generation or worktree_signature != finaliser_signature:
         raise LandingError("worktree lease attestation generation or signature mismatch")
+    if transition_signatures[3] != worktree_signature:
+        raise LandingError("lease state transition signature mismatch")
 
     snapshot = receipt.get("snapshot_attestation")
     if (
