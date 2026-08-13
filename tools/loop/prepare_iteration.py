@@ -922,6 +922,11 @@ def finalise_iteration(
                 {**common_identity, "head": context["head"], "lease_epoch": context["lease_epoch"]},
                 template_id,
             )
+            if (
+                template_id == "normal.finalise.seal"
+                and objects.get("seal_requested") is not True
+            ):
+                raise PreparationError("finalisation seal was not independently observed")
             if template_id == "normal.finalise.model-stop" and (
                 objects.get("container_id") != context["container_id"]
                 or objects.get("cgroup_id") != context["cgroup_id"]

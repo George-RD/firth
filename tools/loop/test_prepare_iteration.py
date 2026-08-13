@@ -546,6 +546,20 @@ class PrepareIterationTests(unittest.TestCase):
             "operation-finalise-lease",
         )
 
+        unsealed_state = FakeState(generation=envelope["generation"])
+        unsealed_state.mutate["normal.finalise.seal"] = {
+            "seal_requested": False,
+        }
+        with self.assertRaisesRegex(
+            prepare.PreparationError,
+            "seal was not independently observed",
+        ):
+            prepare.finalise_iteration(envelope, unsealed_state, FakeSnapshot())
+        self.assertEqual(
+            [template for template, _ in unsealed_state.calls],
+            ["normal.finalise.seal"],
+        )
+
 
         state = FakeState(generation=envelope["generation"])
         state.mutate["response:normal.finalise.seal"] = {
