@@ -25,10 +25,10 @@ EXPECTED_NORMAL_TEMPLATE_FIELDS = {
     "normal.worktree.create": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature", "mirror_id", "branch", "head"},
     "normal.lease.grant": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature", "mirror_id", "branch", "head", "worktree_id"},
     "normal.binding.verify": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature", "branch", "head", "verdict"},
-    "normal.finalise.seal": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "lease_epoch", "observation_generation", "observation_signature"},
-    "normal.finalise.model-stop": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "lease_epoch", "observation_generation", "observation_signature"},
-    "normal.finalise.acl-transfer": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "lease_epoch", "observation_generation", "observation_signature"},
-    "normal.finalise.lease-acquire": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "lease_epoch", "observation_generation", "observation_signature"},
+    "normal.finalise.seal": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "lease_epoch", "container_id", "cgroup_id", "observation_generation", "observation_signature"},
+    "normal.finalise.model-stop": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "lease_epoch", "container_id", "cgroup_id", "observation_generation", "observation_signature"},
+    "normal.finalise.acl-transfer": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "lease_epoch", "container_id", "cgroup_id", "observation_generation", "observation_signature"},
+    "normal.finalise.lease-acquire": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "lease_epoch", "container_id", "cgroup_id", "observation_generation", "observation_signature"},
 }
 RECEIPT_PATH_PREFIXES = (
     ".firth/reviews/",
