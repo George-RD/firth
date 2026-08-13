@@ -31,6 +31,7 @@ class FakeState:
         self.protocol_calls = 0
         self.finalisation_protocol = prepare.FINALISATION_PROTOCOL
         self.stage_attestations: list[dict[str, Any]] = []
+        self.duplicate_model_receipt = False
 
     def protocol(self) -> Mapping[str, Any]:
         self.protocol_calls += 1
@@ -141,7 +142,12 @@ class FakeState:
             raise AssertionError(f"unexpected template {template_id}")
         objects = {**dict(context), **objects}
         objects.update(self.mutate.get(template_id, {}))
-        if template_id == "normal.finalise.model-stop":
+        if (
+            template_id == "normal.finalise.model-stop"
+            and self.duplicate_model_receipt
+        ):
+            response_receipt_id = f"{self.generation - 1:064x}"
+        elif template_id == "normal.finalise.model-stop":
             response_receipt_id = "a" * 64
         elif template_id == "normal.finalise.lease-acquire":
             response_receipt_id = "b" * 64
@@ -602,6 +608,20 @@ class PrepareIterationTests(unittest.TestCase):
             )
         self.assertEqual(state.calls, [])
         self.assertEqual(state.protocol_calls, 1)
+
+    def test_finalisation_refuses_duplicate_transition_receipt_before_acl(self) -> None:
+        envelope, _preparation_state = self.prepare()
+        state = FakeState(generation=envelope["generation"])
+        state.duplicate_model_receipt = True
+        with self.assertRaisesRegex(
+            prepare.PreparationError,
+            "duplicate transition receipt_id",
+        ):
+            prepare.finalise_iteration(envelope, state, FakeSnapshot())
+        self.assertEqual(
+            [template for template, _ in state.calls],
+            list(prepare.FINALISE_TEMPLATES[:2]),
+        )
 
     def test_finalisation_refuses_live_writer_or_descendant(self) -> None:
         envelope, _preparation_state = self.prepare()

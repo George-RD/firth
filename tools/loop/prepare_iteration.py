@@ -794,6 +794,10 @@ def finalise_iteration(
     worktree_objects: Mapping[str, Any] | None = None
     for template_id in FINALISE_TEMPLATES:
         response, generation = _request(client, template_id, context, previous_generation=generation)
+        if response["receipt_id"] in receipts:
+            raise PreparationError(
+                f"{template_id}: duplicate transition receipt_id"
+            )
         objects = response["objects"]
         assert isinstance(objects, Mapping)
         common_identity = {
