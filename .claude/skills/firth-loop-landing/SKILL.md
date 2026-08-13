@@ -11,6 +11,24 @@ the `firth-loop` command. The command owns selection and the verdict table;
 this file owns the publish-and-merge procedure and the terminal tokens a
 successful or failed landing returns.
 
+## Mode boundary
+
+This skill is the legacy Land/Cleanup procedure. It is entered only when the
+host marker `/run/firth/normal-finalizer-active` is absent. At entry, if that
+marker is present, return `LOOP HALTED` immediately, touch nothing, and do not
+run `git`, `gh`, or any other landing effect. Prepared sessions must never read, invoke, or hand off to this skill, even for a recovery row; this guard is an
+accidental-call refusal, not a prepared terminal token.
+
+When the marker is present, a missing, stale, or malformed prepared envelope
+is fail-closed and the session stops before landing. Prepared admissions are
+owned by the host resolver's pure
+`tools/loop/landing_gate.py::validate_landing` API. The broker supplies the
+committed projection, exact finaliser receipt, external reviews, tracker
+bytes, candidate paths, and other bound objects before any forge effect. This
+legacy skill does not call that API and does not claim its receipt or
+selected-todo policy. The legacy procedure below remains unchanged when the
+marker is absent.
+
 ## Exit tokens
 
 This file declares the terminal tokens the router's End step keys on. It

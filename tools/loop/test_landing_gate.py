@@ -21,6 +21,14 @@ class LandingGateTests(unittest.TestCase):
     def setUp(self) -> None:
         self.incident_id = "019126d3-4f7a-7cc0-9b5f-123456789abc"
         self.branch = "loop/resolver.019126d34f7a7cc09b5f123456789abc"
+        self.projection_fixture = Path(__file__).with_name("authority-policy.projection.json")
+        self.projection = __import__("json").loads(
+            self.projection_fixture.read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            __import__("hashlib").sha256(self.projection_fixture.read_bytes()).hexdigest(),
+            "e72af3a9a2b7fc3506d595fded5372eab2222c23042e8840e9ceeb04620e6fd1",
+        )
         self.todo_path = "meta/todos/todo.alpha.md"
         self.before = b"---\nnode: firth.governance.loop\nstatus: in_progress\n---\n\nRequires:\n"
         self.after = b"---\nnode: firth.governance.loop\nstatus: done\n---\n\nRequires:\n"
@@ -28,10 +36,11 @@ class LandingGateTests(unittest.TestCase):
             "schema": 1,
             "namespace": "normal-iteration",
             "repository_id": "George-RD/firth",
-            "policy_digest": "a" * 64,
+            "policy_digest": self.projection["policy_digest"],
             "ruleset_digest": "b" * 64,
             "snapshot_digest": "c" * 64,
             "patch_hash": "d" * 64,
+            "prepared_lease_epoch": 7,
             "prepared_head": "1" * 40,
             "base_commit": "1" * 40,
             "base_tree": "2" * 40,
@@ -44,6 +53,7 @@ class LandingGateTests(unittest.TestCase):
             "selected_todo": "alpha",
             "selected_todo_expected_status": "in_progress",
             "snapshot_provenance": {
+                "source": "installed-state",
                 "artifact_id": "artifact-1",
                 "snapshot_digest": "c" * 64,
                 "prepared_head": "1" * 40,
@@ -53,66 +63,101 @@ class LandingGateTests(unittest.TestCase):
                 "verified": True,
             },
         }
-        templates = {
-            template_id: {
-                "namespace": "normal-iteration",
-                "max_invocations": 1,
-                "retry": "never" if template_id in {"normal.binding.verify", "normal.finalise.seal"} else "reconcile-only",
-                "input_fields": sorted(fields),
-            }
-            for template_id, fields in landing.EXPECTED_NORMAL_TEMPLATE_FIELDS.items()
-        }
-        self.projection = {
-            "schema": 1,
-            "kind": "firth-authority-policy-projection",
-            "policy_version": 1,
-            "repository_id": "George-RD/firth",
-            "operator_repository_id": "George-RD/georges-devops",
-            "policy_digest": "a" * 64,
-            "issuer_namespaces": ["normal-iteration", "halted-recovery", "local-operator"],
-            "merge_classes": ["normal-auto", "resolver-auto", "auto-operator", "protected-human", "manual-root"],
-            "path_classes": {
-                "normal-auto": {
-                    "repositories": ["firth"],
-                    "include": ["src/**", "meta/todos/todo.<selected-slug>.md"],
-                    "exclude": ["src/**/.gitmodules", "src/**/.gitattributes", "src/**/.gitconfig"],
-                    "approval": "exact-group-check",
-                },
-                "resolver-auto": {
-                    "repositories": ["firth"],
-                    "include": ["src/**"],
-                    "exclude": ["src/**/.gitmodules", "src/**/.gitattributes", "src/**/.gitconfig"],
-                    "approval": "exact-group-check",
-                },
-            },
-            "completion_tcb": {
-                "exclusive_command": "python3 tools/loop/coverage.py --run-gates",
-                "required_paths": [".claude/commands/firth-loop.md", "tools/loop/coverage.py", "tools/loop/obligations.toml"],
-                "terminal_token": "LOOP EXHAUSTED",
-            },
-            "normal_templates": templates,
-        }
-        self.projection["projection_digest"] = __import__("hashlib").sha256(
-            landing._canonical_bytes(self.projection)
-        ).hexdigest()
         self.finaliser = {
             "schema": 1,
             "kind": "firth-finaliser-receipt",
             "namespace": "normal-iteration",
             "repository_id": "George-RD/firth",
-            "policy_digest": "a" * 64,
+            "policy_digest": self.projection["policy_digest"],
             "incident_id": self.incident_id,
             "head": "3" * 40,
             "head_tree": "4" * 40,
             "unit": "alpha",
             "branch": self.branch,
+            "worktree_id": "worktree-1",
             "snapshot_digest": "c" * 64,
             "snapshot_artifact_id": "artifact-1",
             "observation_signature": "e" * 64,
+            "generation": 8,
             "state_receipt_id": "f" * 64,
             "lease_epoch": 8,
-            "receipts": ["seal", "stop", "acl", "lease"],
+            "receipts": ["seal", "a" * 64, "acl", "b" * 64],
             "model_terminal": True,
+            "state_attestation": {
+                "schema": "firth.state-finaliser-receipt.v1",
+                "source": "installed-state",
+                "namespace": "normal-iteration",
+                "repository_id": "George-RD/firth",
+                "policy_digest": self.projection["policy_digest"],
+                "incident_id": self.incident_id,
+                "unit": "alpha",
+                "branch": self.branch,
+                "worktree_id": "worktree-1",
+                "head_commit": "3" * 40,
+                "head_tree": "4" * 40,
+                "lease_epoch": 8,
+                "observation_generation": 8,
+                "observation_signature": "e" * 64,
+                "stage": "lease-acquired",
+                "receipt_id": "f" * 64,
+            },
+            "model_attestation": {
+                "schema": "firth.model-stop-attestation.v1",
+                "source": "installed-model",
+                "repository_id": "George-RD/firth",
+                "policy_digest": self.projection["policy_digest"],
+                "incident_id": self.incident_id,
+                "unit": "alpha",
+                "branch": self.branch,
+                "worktree_id": "worktree-1",
+                "head": "1" * 40,
+                "lease_epoch": 7,
+                "container_id": "container-1",
+                "cgroup_id": "cgroup-1",
+                "writer_present": False,
+                "cgroup_stopped": True,
+                "descendant_count": 0,
+                "observation_signature": "6" * 64,
+                "observation_generation": 6,
+                "receipt_id": "a" * 64,
+            },
+            "worktree_attestation": {
+                "schema": "firth.worktree-lease-attestation.v1",
+                "source": "installed-worktree",
+                "repository_id": "George-RD/firth",
+                "policy_digest": self.projection["policy_digest"],
+                "incident_id": self.incident_id,
+                "unit": "alpha",
+                "branch": self.branch,
+                "worktree_id": "worktree-1",
+                "head": "3" * 40,
+                "head_tree": "4" * 40,
+                "lease_epoch": 8,
+                "lease_holder": "broker",
+                "writer_present": False,
+                "model_write_access": False,
+                "broker_write_access": True,
+                "observation_generation": 8,
+                "observation_signature": "e" * 64,
+                "receipt_id": "b" * 64,
+            },
+            "snapshot_attestation": {
+                "schema": "firth.stable-snapshot-attestation.v1",
+                "source": "installed-state",
+                "repository_id": "George-RD/firth",
+                "policy_digest": self.projection["policy_digest"],
+                "incident_id": self.incident_id,
+                "unit": "alpha",
+                "branch": self.branch,
+                "worktree_id": "worktree-1",
+                "head": "3" * 40,
+                "head_tree": "4" * 40,
+                "lease_epoch": 8,
+                "observation_generation": 8,
+                "observation_signature": "e" * 64,
+                "snapshot_digest": "c" * 64,
+                "artifact_id": "artifact-1",
+            },
             "iteration_complete": False,
             "loop_exhausted": False,
         }
@@ -120,7 +165,7 @@ class LandingGateTests(unittest.TestCase):
             "schema": 1,
             "kind": "firth-exact-object-review",
             "repository_id": "George-RD/firth",
-            "policy_digest": "a" * 64,
+            "policy_digest": self.projection["policy_digest"],
             "ruleset_digest": "b" * 64,
             "base_commit": "1" * 40,
             "base_tree": "2" * 40,
@@ -131,8 +176,34 @@ class LandingGateTests(unittest.TestCase):
             "verdict": "accept",
         }
         self.reviews = [
-            {**common, "lens": "correctness", "model_id": "reviewer-a", "session_id": "session-a"},
-            {**common, "lens": "simplicity", "model_id": "reviewer-b", "session_id": "session-b"},
+            {
+                **common,
+                "lens": "correctness",
+                "model_id": "reviewer-a",
+                "session_id": "session-a",
+                "review_attestation": {
+                    **common,
+                    "schema": "firth.review-attestation.v1",
+                    "source": "installed-model-gateway",
+                    "lens": "correctness",
+                    "model_id": "reviewer-a",
+                    "session_id": "session-a",
+                },
+            },
+            {
+                **common,
+                "lens": "simplicity",
+                "model_id": "reviewer-b",
+                "session_id": "session-b",
+                "review_attestation": {
+                    **common,
+                    "schema": "firth.review-attestation.v1",
+                    "source": "installed-model-gateway",
+                    "lens": "simplicity",
+                    "model_id": "reviewer-b",
+                    "session_id": "session-b",
+                },
+            },
         ]
 
     def validate(self, candidate_paths: list[str] | None = None) -> dict[str, Any]:
@@ -184,6 +255,58 @@ class LandingGateTests(unittest.TestCase):
                 with self.assertRaises(landing.LandingError):
                     self.validate()
                 target[field] = original
+    def test_installed_attestations_reject_fabricated_or_cross_bound_receipts(self) -> None:
+        for key in ("state_attestation", "model_attestation", "worktree_attestation", "snapshot_attestation"):
+            fabricated = copy.deepcopy(self.finaliser)
+            fabricated.pop(key)
+            original = self.finaliser
+            self.finaliser = fabricated
+            with self.subTest(missing=key), self.assertRaises(landing.LandingError):
+                self.validate()
+            self.finaliser = original
+
+        mutations = (
+            (self.finaliser["state_attestation"], "incident_id", "019126d3-4f7a-7cc0-9b5f-123456789abd"),
+            (self.finaliser["state_attestation"], "unit", "beta"),
+            (self.finaliser["model_attestation"], "worktree_id", "worktree-other"),
+            (self.finaliser["worktree_attestation"], "head", "5" * 40),
+            (self.finaliser["snapshot_attestation"], "head_tree", "6" * 40),
+        )
+        for target, field, value in mutations:
+            with self.subTest(field=field):
+                original = target[field]
+                target[field] = value
+                with self.assertRaises(landing.LandingError):
+                    self.validate()
+                target[field] = original
+
+    def test_policy_version_and_projection_drift_fail_closed(self) -> None:
+        projection = copy.deepcopy(self.projection)
+        projection["policy_version"] = 2
+        unsigned = dict(projection)
+        unsigned.pop("projection_digest")
+        projection["projection_digest"] = __import__("hashlib").sha256(
+            landing._canonical_bytes(unsigned)
+        ).hexdigest()
+        original = self.projection
+        self.projection = projection
+        with self.assertRaisesRegex(landing.LandingError, "policy version"):
+            self.validate()
+        self.projection = original
+
+    def test_fabricated_review_without_installed_attestation_is_rejected(self) -> None:
+        reviews = copy.deepcopy(self.reviews)
+        reviews[0].pop("review_attestation")
+        with self.assertRaisesRegex(landing.LandingError, "reviewer attestation"):
+            landing.validate_landing(
+                self.admission,
+                self.projection,
+                self.finaliser,
+                reviews,
+                {self.todo_path: self.before},
+                {self.todo_path: self.after},
+                [self.todo_path],
+            )
 
     def test_review_receipts_must_be_distinct_external_lenses(self) -> None:
         duplicate = copy.deepcopy(self.reviews)

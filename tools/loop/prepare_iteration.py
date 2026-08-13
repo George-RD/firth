@@ -78,6 +78,11 @@ class PreparationError(RuntimeError):
     """Closed refusal caused by missing, stale, or contradictory evidence."""
 
 
+def _require_schema(value: Any, field: str) -> None:
+    if not isinstance(value, int) or isinstance(value, bool) or value != SCHEMA:
+        raise PreparationError(f"{field} schema mismatch")
+
+
 def _require_text(value: Any, field: str) -> str:
     if not isinstance(value, str) or not value:
         raise PreparationError(f"missing or invalid {field}")
@@ -127,7 +132,12 @@ def _request(
         raise PreparationError(f"{template_id}: state request failed: {error}") from error
     if not isinstance(response, Mapping):
         raise PreparationError(f"{template_id}: state response is not an object")
-    if response.get("schema") != SCHEMA:
+    response_schema = response.get("schema")
+    if (
+        not isinstance(response_schema, int)
+        or isinstance(response_schema, bool)
+        or response_schema != SCHEMA
+    ):
         raise PreparationError(f"{template_id}: unsupported state schema")
     if response.get("namespace") != NAMESPACE:
         raise PreparationError(f"{template_id}: wrong issuer namespace")
@@ -139,12 +149,34 @@ def _request(
     if not isinstance(generation, int) or isinstance(generation, bool) or generation != previous_generation + 1:
         raise PreparationError(f"{template_id}: observation generation is not the next generation")
     _require_digest(response.get("observation_signature"), f"{template_id} observation_signature")
-    _require_text(response.get("receipt_id"), f"{template_id} receipt_id")
+    if template_id in {"normal.finalise.model-stop", "normal.finalise.lease-acquire"}:
+        _require_digest(response.get("receipt_id"), f"{template_id} attestation receipt_id")
+    else:
+        _require_text(response.get("receipt_id"), f"{template_id} receipt_id")
     objects = response.get("objects")
     if not isinstance(objects, Mapping):
         raise PreparationError(f"{template_id}: missing observed objects")
-    if "incident_id" in context and objects.get("incident_id") != context["incident_id"]:
-        raise PreparationError(f"{template_id}: incident identity mismatch")
+    fields = EXPECTED_NORMAL_TEMPLATE_FIELDS.get(template_id)
+    if fields is None:
+        raise PreparationError(f"{template_id}: unknown transition template")
+    for field in fields:
+        if field not in context:
+            raise PreparationError(f"{template_id}: request omitted bound field {field}")
+        if template_id == "normal.finalise.lease-acquire" and field == "lease_epoch":
+            continue
+        if objects.get(field) != context[field]:
+            raise PreparationError(f"{template_id}: observed {field} does not match request identity")
+    if template_id == "normal.finalise.lease-acquire":
+        lease_epoch = objects.get("lease_epoch")
+        expected_epoch = context.get("lease_epoch")
+        if (
+            not isinstance(lease_epoch, int)
+            or isinstance(lease_epoch, bool)
+            or not isinstance(expected_epoch, int)
+            or isinstance(expected_epoch, bool)
+            or lease_epoch != expected_epoch + 1
+        ):
+            raise PreparationError(f"{template_id}: observed lease epoch is not the next epoch")
     return dict(response), generation
 
 
@@ -171,7 +203,8 @@ def _base_context(request: Mapping[str, Any], unit: str) -> dict[str, Any]:
 
 
 def _selected_unit(selector: Mapping[str, Any]) -> str:
-    if selector.get("schema") != SCHEMA:
+    schema = selector.get("schema")
+    if not isinstance(schema, int) or isinstance(schema, bool) or schema != SCHEMA:
         raise PreparationError("selector schema mismatch")
     unit = selector.get("next")
     if not isinstance(unit, str) or UNIT.fullmatch(unit) is None:
@@ -274,7 +307,8 @@ def _validate_policy_projection(projection: Mapping[str, Any]) -> None:
     actual = hashlib.sha256(_canonical_projection_bytes(unsigned)).hexdigest()
     if actual != digest:
         raise PreparationError("installed policy projection digest mismatch")
-    if projection.get("policy_version") != 1:
+    policy_version = projection.get("policy_version")
+    if not isinstance(policy_version, int) or isinstance(policy_version, bool) or policy_version != 1:
         raise PreparationError("installed policy version is unsupported")
     if projection.get("operator_repository_id") != "George-RD/georges-devops":
         raise PreparationError("installed operator repository identity mismatch")
@@ -323,8 +357,12 @@ def prepare_iteration(
     """Prepare or verify one iteration and return its immutable launch envelope."""
     if not isinstance(request, Mapping) or not isinstance(preflight, Mapping) or not isinstance(selector, Mapping):
         raise PreparationError("preparation inputs must be objects")
-
-    if preflight.get("schema") != SCHEMA:
+    preflight_schema = preflight.get("schema")
+    if (
+        not isinstance(preflight_schema, int)
+        or isinstance(preflight_schema, bool)
+        or preflight_schema != SCHEMA
+    ):
         raise PreparationError("preflight schema mismatch")
     verdict = preflight.get("verdict")
     if verdict not in {"fresh", *SAFE_RECOVERY_VERDICTS, *REFUSED_VERDICTS}:
@@ -502,10 +540,15 @@ def validate_prepared_envelope(
     policy_projection: Mapping[str, Any] | Any,
 ) -> dict[str, Any]:
     """Validate the issuer-bound launch identity without performing an effect."""
-
     if not isinstance(envelope, Mapping):
         raise PreparationError("prepared envelope must be an object")
-    if envelope.get("schema") != SCHEMA or envelope.get("kind") != "firth-prepared-iteration":
+    envelope_schema = envelope.get("schema")
+    if (
+        not isinstance(envelope_schema, int)
+        or isinstance(envelope_schema, bool)
+        or envelope_schema != SCHEMA
+        or envelope.get("kind") != "firth-prepared-iteration"
+    ):
         raise PreparationError("invalid prepared envelope")
     if envelope.get("namespace") != NAMESPACE:
         raise PreparationError("prepared envelope namespace mismatch")
@@ -557,8 +600,11 @@ def validate_prepared_envelope(
         raise PreparationError("prepared worktree authority is invalid")
     if not isinstance(policy_projection, Mapping):
         raise PreparationError("installed policy projection must be an object")
+    projection_schema = policy_projection.get("schema")
     if (
-        policy_projection.get("schema") != SCHEMA
+        not isinstance(projection_schema, int)
+        or isinstance(projection_schema, bool)
+        or projection_schema != SCHEMA
         or policy_projection.get("kind") != "firth-authority-policy-projection"
     ):
         raise PreparationError("installed policy projection is invalid")
@@ -626,6 +672,10 @@ def finalise_iteration(
     receipts: list[str] = []
     last: Mapping[str, Any] | None = None
     state_receipt: Mapping[str, Any] | None = None
+    model_response: Mapping[str, Any] | None = None
+    model_objects: Mapping[str, Any] | None = None
+    worktree_response: Mapping[str, Any] | None = None
+    worktree_objects: Mapping[str, Any] | None = None
     for template_id in FINALISE_TEMPLATES:
         response, generation = _request(client, template_id, context, previous_generation=generation)
         objects = response["objects"]
@@ -658,6 +708,7 @@ def finalise_iteration(
             expected_state_receipt = {
                 "schema": "firth.state-finaliser-receipt.v1",
                 "namespace": NAMESPACE,
+                "repository_id": context["repository_id"],
                 "incident_id": context["incident_id"],
                 "unit": context["unit"],
                 "branch": context["branch"],
@@ -674,6 +725,8 @@ def finalise_iteration(
                 if state_receipt.get(field) != value:
                     raise PreparationError(f"state finaliser receipt {field} mismatch")
             _require_digest(state_receipt.get("receipt_id"), "state finaliser receipt_id")
+            worktree_response = response
+            worktree_objects = objects
             context = {
                 **_continued_context(context, response, generation),
                 "head": head,
@@ -700,6 +753,9 @@ def finalise_iteration(
                 or objects.get("broker_write_access") is not True
             ):
                 raise PreparationError("ACL transfer did not revoke model write access")
+            if template_id == "normal.finalise.model-stop":
+                model_response = response
+                model_objects = objects
             context = _continued_context(context, response, generation)
         receipts.append(str(response["receipt_id"]))
         last = response
@@ -711,6 +767,7 @@ def finalise_iteration(
         raise PreparationError(f"stable snapshot failed: {error}") from error
     if not isinstance(snapshot, Mapping):
         raise PreparationError("stable snapshot result is not an object")
+    _require_schema(snapshot.get("schema"), "stable snapshot")
     expected_snapshot = {
         "schema": SCHEMA,
         "kind": "firth-stable-source-snapshot",
@@ -733,7 +790,88 @@ def finalise_iteration(
             raise PreparationError(f"stable snapshot {field} mismatch")
     snapshot_digest = _require_digest(snapshot.get("snapshot_digest"), "snapshot_digest")
     snapshot_artifact = _require_text(snapshot.get("artifact_id"), "snapshot artifact_id")
-    assert state_receipt is not None
+    if state_receipt is None or model_response is None or model_objects is None:
+        raise PreparationError("finaliser attestations are incomplete")
+    if worktree_response is None or worktree_objects is None:
+        raise PreparationError("worktree lease attestation is missing")
+    model_head = _require_object_id(model_objects.get("head"), "model attestation head")
+    model_lease_epoch = model_objects.get("lease_epoch")
+    if not isinstance(model_lease_epoch, int) or isinstance(model_lease_epoch, bool) or model_lease_epoch < 1:
+        raise PreparationError("model attestation lease_epoch is invalid")
+    worktree_head = _require_object_id(worktree_objects.get("head"), "worktree attestation head")
+    worktree_tree = _require_object_id(worktree_objects.get("head_tree"), "worktree attestation head_tree")
+    worktree_lease_epoch = worktree_objects.get("lease_epoch")
+    if (
+        not isinstance(worktree_lease_epoch, int)
+        or isinstance(worktree_lease_epoch, bool)
+        or worktree_lease_epoch < 1
+    ):
+        raise PreparationError("worktree attestation lease_epoch is invalid")
+    state_attestation = dict(state_receipt)
+    state_attestation["source"] = "installed-state"
+    model_attestation = {
+        "schema": "firth.model-stop-attestation.v1",
+        "source": "installed-model",
+        "repository_id": context["repository_id"],
+        "policy_digest": context["policy_digest"],
+        "incident_id": context["incident_id"],
+        "unit": context["unit"],
+        "branch": context["branch"],
+        "worktree_id": context["worktree_id"],
+        "head": model_head,
+        "lease_epoch": model_lease_epoch,
+        "container_id": _require_text(model_objects.get("container_id"), "model attestation container_id"),
+        "cgroup_id": _require_text(model_objects.get("cgroup_id"), "model attestation cgroup_id"),
+        "writer_present": False,
+        "cgroup_stopped": True,
+        "descendant_count": 0,
+        "observation_generation": model_response["generation"],
+        "observation_signature": _require_digest(
+            model_response.get("observation_signature"), "model attestation observation_signature"
+        ),
+        "receipt_id": _require_digest(model_response.get("receipt_id"), "model attestation receipt_id"),
+    }
+    worktree_attestation = {
+        "schema": "firth.worktree-lease-attestation.v1",
+        "source": "installed-worktree",
+        "repository_id": context["repository_id"],
+        "policy_digest": context["policy_digest"],
+        "incident_id": context["incident_id"],
+        "unit": context["unit"],
+        "branch": context["branch"],
+        "worktree_id": context["worktree_id"],
+        "head": worktree_head,
+        "head_tree": worktree_tree,
+        "lease_epoch": worktree_lease_epoch,
+        "lease_holder": "broker",
+        "writer_present": False,
+        "model_write_access": False,
+        "broker_write_access": True,
+        "observation_generation": worktree_response["generation"],
+        "observation_signature": _require_digest(
+            worktree_response.get("observation_signature"), "worktree attestation observation_signature"
+        ),
+        "receipt_id": _require_digest(worktree_response.get("receipt_id"), "worktree attestation receipt_id"),
+    }
+    snapshot_attestation = {
+        "schema": "firth.stable-snapshot-attestation.v1",
+        "source": "installed-state",
+        "repository_id": context["repository_id"],
+        "policy_digest": context["policy_digest"],
+        "incident_id": context["incident_id"],
+        "unit": context["unit"],
+        "branch": context["branch"],
+        "worktree_id": context["worktree_id"],
+        "head": context["head"],
+        "head_tree": context["head_tree"],
+        "lease_epoch": context["lease_epoch"],
+        "observation_generation": generation,
+        "observation_signature": _require_digest(
+            last.get("observation_signature"), "snapshot attestation observation_signature"
+        ),
+        "snapshot_digest": snapshot_digest,
+        "artifact_id": snapshot_artifact,
+    }
     return {
         "schema": SCHEMA,
         "kind": "firth-finaliser-receipt",
@@ -749,6 +887,10 @@ def finalise_iteration(
         "lease_epoch": context["lease_epoch"],
         "snapshot_digest": snapshot_digest,
         "snapshot_artifact_id": snapshot_artifact,
+        "snapshot_attestation": snapshot_attestation,
+        "state_attestation": state_attestation,
+        "model_attestation": model_attestation,
+        "worktree_attestation": worktree_attestation,
         "generation": generation,
         "observation_signature": last["observation_signature"],
         "state_receipt_id": state_receipt["receipt_id"],

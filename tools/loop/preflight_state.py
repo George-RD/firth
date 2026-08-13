@@ -24,6 +24,7 @@ INCIDENT = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 )
 SCHEMA = 1
+OBJECT_ID = re.compile(r"^[0-9a-f]{40,64}$")
 VERDICTS = {
     "fresh",
     "dirty-known-unit",
@@ -58,11 +59,13 @@ def collect_forge_pages(
             page = fetch_page(cursor)
             if not isinstance(page, Mapping):
                 raise ValueError("forge page is not an object")
+            if "next_cursor" not in page:
+                raise ValueError("forge page omitted explicit next_cursor")
             raw_items = page.get("items")
             if not isinstance(raw_items, list) or not all(isinstance(item, dict) for item in raw_items):
                 raise ValueError("forge page items must be an array of objects")
             items.extend(raw_items)
-            next_cursor = page.get("next_cursor")
+            next_cursor = page["next_cursor"]
             if next_cursor is None:
                 return {"complete": True, "items": items, "error": None}
             if not isinstance(next_cursor, str) or not next_cursor:
@@ -158,38 +161,74 @@ def _discard_authorised(text: str) -> bool:
     )
 
 
-def _normalise_prs(forge: Mapping[str, Any]) -> tuple[list[dict[str, Any]], list[str]]:
+def _normalise_prs(
+    forge: Mapping[str, Any], *, legacy_mode: bool = False
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Validate and normalize the complete, adapter-owned forge result.
+
+    The default shape is the prepared resolver shape: every item is a loop
+    branch carrying a full unit/incident binding.  A legacy caller may opt in
+    to the historical ``loop/<slug>`` branch shape, but it still must provide
+    a complete item and every unrecognised item is an observation failure.
+    """
+
     errors: list[str] = []
     if forge.get("complete") is not True:
         errors.append(str(forge.get("error") or "forge observation incomplete"))
         return [], errors
+    if forge.get("error") is not None:
+        return [], [f"complete forge observation has error: {forge.get('error')}"]
     raw_items = forge.get("items")
     if not isinstance(raw_items, list):
         return [], ["forge items must be an array"]
     prs: list[dict[str, Any]] = []
+    required = {"number", "head_ref", "head_sha", "state"}
     for index, item in enumerate(raw_items):
         if not isinstance(item, dict):
             errors.append(f"forge item {index} is not an object")
             continue
+        missing = sorted(required.difference(item))
+        if missing:
+            errors.append(f"forge item {index} is missing fields: {', '.join(missing)}")
+            continue
+        number = item.get("number")
         branch = item.get("head_ref")
         state = item.get("state")
         head = item.get("head_sha")
-        if not isinstance(branch, str) or _loop_slug(branch) is None:
-            continue
-        unit, incident_id = _branch_unit(branch, item)
         if (
-            unit is None
+            not isinstance(number, int)
+            or isinstance(number, bool)
+            or number < 1
+            or not isinstance(branch, str)
+            or _loop_slug(branch) is None
             or state not in {"OPEN", "MERGED", "CLOSED"}
             or not isinstance(head, str)
-            or not head
+            or OBJECT_ID.fullmatch(head) is None
         ):
-            errors.append(f"forge item {index} has invalid state, head, or binding")
+            errors.append(f"forge item {index} has invalid number, branch, state, or head")
+            continue
+        unit, incident_id = _branch_unit(branch, item)
+        if unit is None:
+            errors.append(f"forge item {index} has invalid branch binding")
+            continue
+        if incident_id is None:
+            if not legacy_mode:
+                errors.append(f"forge item {index} uses a legacy branch shape outside legacy mode")
+                continue
+            if "incident_id" in item and item["incident_id"] is not None:
+                errors.append(f"forge item {index} has an invalid legacy incident binding")
+                continue
+            if "unit" in item and item["unit"] not in {None, unit}:
+                errors.append(f"forge item {index} has a conflicting legacy unit")
+                continue
+        elif item.get("unit") != unit:
+            errors.append(f"forge item {index} has a conflicting unit binding")
             continue
         prs.append(
             {
                 "head_ref": branch,
                 "head_sha": head,
-                "number": item.get("number"),
+                "number": number,
                 "state": state,
                 "unit": unit,
                 "incident_id": incident_id,
@@ -198,13 +237,21 @@ def _normalise_prs(forge: Mapping[str, Any]) -> tuple[list[dict[str, Any]], list
     return prs, errors
 
 
+
+
 def classify(
-    observation: Mapping[str, Any] | Any, todos: Mapping[str, Mapping[str, Any]] | Any
+    observation: Mapping[str, Any] | Any,
+    todos: Mapping[str, Mapping[str, Any]] | Any,
+    *,
+    legacy_mode: bool = False,
 ) -> dict[str, Any]:
-    """Return exactly one closed verdict for an immutable observation."""
+    """Return exactly one closed schema-1 verdict for an immutable observation."""
 
     if not isinstance(observation, Mapping):
         return _failed("repository observation is not an object")
+    schema = observation.get("schema")
+    if not isinstance(schema, int) or isinstance(schema, bool) or schema != SCHEMA:
+        return _failed("unsupported repository observation schema")
     if not isinstance(todos, Mapping) or not all(
         isinstance(slug, str) and isinstance(record, Mapping)
         for slug, record in todos.items()
@@ -219,7 +266,7 @@ def classify(
     forge = observation.get("forge")
     if not isinstance(forge, Mapping):
         return _failed("missing forge observation")
-    prs, forge_errors = _normalise_prs(forge)
+    prs, forge_errors = _normalise_prs(forge, legacy_mode=legacy_mode)
     if forge_errors:
         return _failed("forge observation failed", errors=forge_errors)
 

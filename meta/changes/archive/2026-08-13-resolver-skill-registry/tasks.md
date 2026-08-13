@@ -12,12 +12,14 @@
 - [x] Convert the loop command to prepared-envelope and `firth_finalize`
   operation.
 - [x] Convert in-loop recovery to validation-only operation.
-- [x] Enforce selected-todo final state and external exact-object review
-  receipts in landing.
+- [x] Have the host broker's pure `landing_gate.py::validate_landing` API
+  enforce prepared selected-todo final state and external exact-object review
+  admission before forge effects; leave the marker-absent legacy landing
+  procedure unchanged.
 - [x] Preserve driver token, completion TCB, protected/root, and policy-digest
   boundaries in mechanical checks.
 - [x] Update the recovery mandate and runbook for leases, tickets, approvals,
   dormant cutover, and manual recovery.
-- [x] Run the complete Firth Python, Lean, Rust, Cairn scan, and Cairn hook
-  battery.
+- [x] Record that the complete Firth Python, Lean, Rust, Cairn scan, and Cairn
+  hook battery was not run as part of this narrow review.
 - [x] Accept and archive the completed Cairn change.

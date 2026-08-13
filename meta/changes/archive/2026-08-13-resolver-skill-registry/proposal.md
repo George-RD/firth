@@ -20,9 +20,10 @@ are installed.
 Firth exposes a deterministic preflight and iteration-preparation contract in
 which the unit branch, linked worktree, and lease are prepared before OMP
 starts. A terminal no-argument finaliser seals only that prepared unit.
-Recovery inside OMP is validation-only. Installed policy, external exact-object
-review receipts, and the selected todo's sanctioned final state gate later
-publication and merge.
+Recovery inside OMP is validation-only. Before a prepared forge effect, the
+host broker invokes the pure `tools/loop/landing_gate.py::validate_landing`
+admission API against installed policy, external exact-object review receipts,
+and the selected todo's sanctioned final state.
 
 The authority decision defines separate normal, halted-recovery, and local
 operator ticket namespaces. It preserves the existing review, autonomy, model
@@ -35,8 +36,9 @@ The boundary is the Firth loop command and its deterministic helpers when run
 against fixture repositories and prepared envelopes. A model session must be
 unlaunchable before branch/worktree/lease preparation, unable to mutate Git
 metadata, and terminal after `firth_finalize`. Recovery must refuse every
-mutation. Landing must reject missing or stale policy, review, finaliser, and
-selected-todo evidence.
+mutation. Prepared host-broker admission must reject missing or stale policy,
+review, finaliser, and selected-todo evidence before any forge effect; the
+legacy landing skill remains unchanged when its marker-absent path is used.
 
 ## Evidence
 
@@ -45,11 +47,11 @@ selected-todo evidence.
 - `test_prepare_iteration.py` proves ordered state-issued mirror, branch,
   worktree, and lease transitions before launch, plus the stop, ACL, lease, and
   stable-snapshot finalisation chain.
-- The driver, review, and TCB boundary suites prove exact-object receipts,
+- The driver, review, and TCB boundary suites cover exact-object receipts,
   policy-digest binding, terminal-token separation, and exclusive completion
   authority.
-- The repository's full Python, Lean, Rust, Cairn scan, and Cairn hook gates
-  pass from the fresh change checkout.
+- The complete resolver-service, Lean, Rust, Cairn scan, and Cairn hook
+  validation batteries were not run as part of this narrow review.
 
 ## Scope
 

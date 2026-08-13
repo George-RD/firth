@@ -71,6 +71,13 @@ def check(name: str, cond: bool) -> None:
 
 
 def main() -> int:
+    landing = SKILL.read_text(encoding="utf-8")
+    check("prepared marker refuses legacy landing", all(fragment in landing for fragment in (
+        "return `LOOP HALTED` immediately",
+        "touch nothing",
+        "must never read, invoke, or hand off",
+        "validate_landing",
+    )))
     check("both lenses on first lines pass", run_gate(HEAD, [
         f"review: correctness {HEAD}", f"review: simplicity {HEAD}"]) == 0)
     check("missing simplicity fails", run_gate(HEAD, [
@@ -92,6 +99,15 @@ def main() -> int:
     check("unreadable head fails", run_gate(HEAD, [
         f"review: correctness {HEAD}", f"review: simplicity {HEAD}"],
         gh_head="") != 0)
+    command = (ROOT / ".claude" / "commands" / "firth-loop.md").read_text(
+        encoding="utf-8"
+    )
+    prepared = command.split("**Input: MISSION.**", 1)[0]
+    check("prepared command refuses landing", all(fragment in prepared for fragment in (
+        "prepared mode never invokes it",
+        "Do not run MISSION selection",
+        "Land, Cleanup",
+    )))
     print("RESULT:", "PASS" if ok else "FAIL")
     return 0 if ok else 1
 

@@ -40,6 +40,10 @@ RECEIPT_PATH_PREFIXES = (
 
 class LandingError(RuntimeError):
     pass
+def _schema(value: Any, field: str) -> None:
+    if not isinstance(value, int) or isinstance(value, bool) or value != SCHEMA:
+        raise LandingError(f"{field} schema is unsupported")
+
 
 
 def _text(value: Any, field: str) -> str:
@@ -134,8 +138,12 @@ def _validate_projection(projection: Mapping[str, Any], repository_id: str, poli
     }
     if set(projection) != required:
         raise LandingError("installed policy projection shape is invalid")
-    if projection.get("schema") != SCHEMA or projection.get("kind") != "firth-authority-policy-projection":
+    _schema(projection.get("schema"), "installed policy projection")
+    if projection.get("kind") != "firth-authority-policy-projection":
         raise LandingError("installed policy projection is invalid")
+    policy_version = projection.get("policy_version")
+    if not isinstance(policy_version, int) or isinstance(policy_version, bool) or policy_version != 1:
+        raise LandingError("installed policy version is unsupported")
     unsigned = dict(projection)
     projection_digest = _digest(unsigned.pop("projection_digest", None), "projection_digest")
     if hashlib.sha256(_canonical_bytes(unsigned)).hexdigest() != projection_digest:
@@ -195,8 +203,8 @@ def _validate_candidate_paths(
 
 
 def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]) -> None:
+    _schema(receipt.get("schema"), "finaliser receipt")
     expected = {
-        "schema": SCHEMA,
         "kind": "firth-finaliser-receipt",
         "namespace": "normal-iteration",
         "repository_id": admission["repository_id"],
@@ -216,8 +224,12 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
             raise LandingError(f"finaliser receipt {field} mismatch")
     _object_id(receipt.get("head"), "finaliser head")
     _object_id(receipt.get("head_tree"), "finaliser head_tree")
-    _digest(receipt.get("observation_signature"), "finaliser observation_signature")
-    _digest(receipt.get("state_receipt_id"), "state finaliser receipt_id")
+    worktree_id = _text(receipt.get("worktree_id"), "finaliser worktree_id")
+    generation = receipt.get("generation")
+    if not isinstance(generation, int) or isinstance(generation, bool) or generation < 1:
+        raise LandingError("finaliser generation is invalid")
+    finaliser_signature = _digest(receipt.get("observation_signature"), "finaliser observation_signature")
+    state_receipt_id = _digest(receipt.get("state_receipt_id"), "state finaliser receipt_id")
     lease_epoch = receipt.get("lease_epoch")
     if not isinstance(lease_epoch, int) or isinstance(lease_epoch, bool) or lease_epoch < 2:
         raise LandingError("finaliser lease_epoch is invalid")
@@ -226,20 +238,147 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
         isinstance(value, str) and value for value in receipts
     ):
         raise LandingError("finaliser transition receipts are incomplete")
-    _text(receipt.get("snapshot_artifact_id"), "snapshot_artifact_id")
+    snapshot_artifact = _text(receipt.get("snapshot_artifact_id"), "snapshot_artifact_id")
     provenance = admission.get("snapshot_provenance")
     if (
         not isinstance(provenance, Mapping)
-        or provenance.get("artifact_id") != receipt.get("snapshot_artifact_id")
+        or provenance.get("source") != "installed-state"
+        or provenance.get("artifact_id") != snapshot_artifact
         or provenance.get("snapshot_digest") != admission["snapshot_digest"]
         or provenance.get("prepared_head") != admission["prepared_head"]
         or provenance.get("candidate_commit") != admission["head_commit"]
         or provenance.get("candidate_tree") != admission["head_tree"]
         or provenance.get("patch_hash") != admission["patch_hash"]
-        or provenance.get("verified") is not True
     ):
-        raise LandingError("candidate commit is not bound to the finaliser snapshot")
+        raise LandingError("candidate commit is not bound to the installed finaliser snapshot")
 
+    state = receipt.get("state_attestation")
+    if (
+        not isinstance(state, Mapping)
+        or state.get("schema") != "firth.state-finaliser-receipt.v1"
+        or state.get("source") != "installed-state"
+    ):
+        raise LandingError("installed state finaliser attestation is missing")
+    state_expected = {
+        "namespace": "normal-iteration",
+        "repository_id": admission["repository_id"],
+        "policy_digest": admission["policy_digest"],
+        "incident_id": admission["incident_id"],
+        "unit": admission["unit"],
+        "branch": admission["branch"],
+        "worktree_id": worktree_id,
+        "head_commit": admission["head_commit"],
+        "head_tree": admission["head_tree"],
+        "lease_epoch": lease_epoch,
+        "stage": "lease-acquired",
+        "observation_generation": receipt.get("generation"),
+        "observation_signature": finaliser_signature,
+    }
+    for field, value in state_expected.items():
+        if state.get(field) != value:
+            raise LandingError(f"state finaliser attestation {field} mismatch")
+    if state.get("receipt_id") != state_receipt_id:
+        raise LandingError("state finaliser attestation receipt mismatch")
+
+    model = receipt.get("model_attestation")
+    if (
+        not isinstance(model, Mapping)
+        or model.get("schema") != "firth.model-stop-attestation.v1"
+        or model.get("source") != "installed-model"
+    ):
+        raise LandingError("installed model stop attestation is missing")
+    model_expected = {
+        "repository_id": admission["repository_id"],
+        "policy_digest": admission["policy_digest"],
+        "incident_id": admission["incident_id"],
+        "unit": admission["unit"],
+        "branch": admission["branch"],
+        "worktree_id": worktree_id,
+        "head": admission["prepared_head"],
+        "lease_epoch": admission["prepared_lease_epoch"],
+        "writer_present": False,
+        "cgroup_stopped": True,
+        "descendant_count": 0,
+    }
+    for field, value in model_expected.items():
+        if model.get(field) != value:
+            raise LandingError(f"model stop attestation {field} mismatch")
+    _text(model.get("container_id"), "model attestation container_id")
+    _text(model.get("cgroup_id"), "model attestation cgroup_id")
+    if _digest(model.get("receipt_id"), "model stop attestation receipt_id") != receipts[1]:
+        raise LandingError("model stop attestation receipt mismatch")
+    _object_id(model.get("head"), "model attestation head")
+    model_signature = _digest(model.get("observation_signature"), "model stop attestation signature")
+    model_generation = model.get("observation_generation")
+    if (
+        not isinstance(model_generation, int)
+        or isinstance(model_generation, bool)
+        or model_generation < 1
+        or model_generation >= generation
+    ):
+        raise LandingError("model stop attestation generation is invalid")
+
+    worktree = receipt.get("worktree_attestation")
+    if (
+        not isinstance(worktree, Mapping)
+        or worktree.get("schema") != "firth.worktree-lease-attestation.v1"
+        or worktree.get("source") != "installed-worktree"
+    ):
+        raise LandingError("installed worktree lease attestation is missing")
+    worktree_expected = {
+        "repository_id": admission["repository_id"],
+        "policy_digest": admission["policy_digest"],
+        "incident_id": admission["incident_id"],
+        "unit": admission["unit"],
+        "branch": admission["branch"],
+        "worktree_id": worktree_id,
+        "head": admission["head_commit"],
+        "head_tree": admission["head_tree"],
+        "lease_epoch": lease_epoch,
+        "lease_holder": "broker",
+        "writer_present": False,
+        "model_write_access": False,
+        "broker_write_access": True,
+    }
+    for field, value in worktree_expected.items():
+        if worktree.get(field) != value:
+            raise LandingError(f"worktree lease attestation {field} mismatch")
+    if _digest(worktree.get("receipt_id"), "worktree lease attestation receipt_id") != receipts[3]:
+        raise LandingError("worktree lease attestation receipt mismatch")
+    _object_id(worktree.get("head"), "worktree lease attestation head")
+    _object_id(worktree.get("head_tree"), "worktree lease attestation head_tree")
+    worktree_generation = worktree.get("observation_generation")
+    worktree_signature = _digest(
+        worktree.get("observation_signature"), "worktree lease attestation signature"
+    )
+    if worktree_generation != generation or worktree_signature != finaliser_signature:
+        raise LandingError("worktree lease attestation generation or signature mismatch")
+
+    snapshot = receipt.get("snapshot_attestation")
+    if (
+        not isinstance(snapshot, Mapping)
+        or snapshot.get("schema") != "firth.stable-snapshot-attestation.v1"
+        or snapshot.get("source") != "installed-state"
+    ):
+        raise LandingError("installed stable snapshot attestation is missing")
+    snapshot_expected = {
+        "repository_id": admission["repository_id"],
+        "policy_digest": admission["policy_digest"],
+        "incident_id": admission["incident_id"],
+        "unit": admission["unit"],
+        "branch": admission["branch"],
+        "worktree_id": worktree_id,
+        "head": admission["head_commit"],
+        "head_tree": admission["head_tree"],
+        "lease_epoch": lease_epoch,
+        "snapshot_digest": admission["snapshot_digest"],
+        "artifact_id": snapshot_artifact,
+        "observation_generation": receipt.get("generation"),
+        "observation_signature": finaliser_signature,
+    }
+    for field, value in snapshot_expected.items():
+        if snapshot.get(field) != value:
+            raise LandingError(f"stable snapshot attestation {field} mismatch")
 
 def _validate_reviews(
     reviews: Sequence[Mapping[str, Any]], admission: Mapping[str, Any]
@@ -251,6 +390,7 @@ def _validate_reviews(
     for review in reviews:
         if not isinstance(review, Mapping):
             raise LandingError("review receipt is not an object")
+        _schema(review.get("schema"), "review receipt")
         lens = review.get("lens")
         if lens not in {"correctness", "simplicity"} or lens in lenses:
             raise LandingError("review lenses must be correctness and simplicity exactly once")
@@ -263,7 +403,6 @@ def _validate_reviews(
             raise LandingError("review identities must be distinct")
         identities.add(identity)
         expected = {
-            "schema": SCHEMA,
             "kind": "firth-exact-object-review",
             "repository_id": admission["repository_id"],
             "policy_digest": admission["policy_digest"],
@@ -279,6 +418,22 @@ def _validate_reviews(
         for field, value in expected.items():
             if review.get(field) != value:
                 raise LandingError(f"{lens} review {field} mismatch")
+        attestation = review.get("review_attestation")
+        if (
+            not isinstance(attestation, Mapping)
+            or attestation.get("schema") != "firth.review-attestation.v1"
+            or attestation.get("source") != "installed-model-gateway"
+        ):
+            raise LandingError(f"{lens} installed reviewer attestation is missing")
+        attestation_expected = {
+            "model_id": identity[0],
+            "session_id": identity[1],
+            "lens": lens,
+            **expected,
+        }
+        for field, value in attestation_expected.items():
+            if attestation.get(field) != value:
+                raise LandingError(f"{lens} reviewer attestation {field} mismatch")
 
 
 def validate_landing(
@@ -302,7 +457,8 @@ def validate_landing(
         raise LandingError("candidate paths must be an array")
     if not all(isinstance(path, str) and path for path in candidate_paths):
         raise LandingError("candidate path is invalid")
-    if admission.get("schema") != SCHEMA or admission.get("namespace") != "normal-iteration":
+    _schema(admission.get("schema"), "landing admission")
+    if admission.get("namespace") != "normal-iteration":
         raise LandingError("landing admission namespace is invalid")
 
     repository_id = _text(admission.get("repository_id"), "repository_id")
@@ -311,6 +467,13 @@ def validate_landing(
         _digest(admission.get(field), field)
     for field in ("base_commit", "base_tree", "prepared_head", "head_commit", "head_tree"):
         _object_id(admission.get(field), field)
+    prepared_lease_epoch = admission.get("prepared_lease_epoch")
+    if (
+        not isinstance(prepared_lease_epoch, int)
+        or isinstance(prepared_lease_epoch, bool)
+        or prepared_lease_epoch < 1
+    ):
+        raise LandingError("prepared lease epoch is invalid")
     unit = _text(admission.get("unit"), "unit")
     incident_id = _incident(admission.get("incident_id"))
     branch = _text(admission.get("branch"), "branch")

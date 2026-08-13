@@ -33,18 +33,27 @@ class PreflightStateTests(unittest.TestCase):
             "beta": {"status": "in_progress", "text": ""},
         }
 
-    def bound_branch(self, unit: str = "alpha", head: str | None = None) -> dict[str, Any]:
+    def bound_branch(
+        self,
+        unit: str = "alpha",
+        head: str | None = None,
+        incident_id: str = "019126d3-4f7a-7cc0-9b5f-123456789abc",
+    ) -> dict[str, Any]:
         return {
-            "name": "loop/resolver.019126d34f7a7cc09b5f123456789abc",
+            "name": f"loop/resolver.{incident_id.replace('-', '')}",
             "head": head or "b" * 40,
             "unit": unit,
-            "incident_id": "019126d3-4f7a-7cc0-9b5f-123456789abc",
+            "incident_id": incident_id,
         }
 
     def bound_pr(
-        self, unit: str = "alpha", head: str | None = None, state: str = "OPEN"
+        self,
+        unit: str = "alpha",
+        head: str | None = None,
+        state: str = "OPEN",
+        incident_id: str = "019126d3-4f7a-7cc0-9b5f-123456789abc",
     ) -> dict[str, Any]:
-        branch = self.bound_branch(unit, head)
+        branch = self.bound_branch(unit, head, incident_id)
         return {
             "number": 7,
             "head_ref": branch["name"],
@@ -56,6 +65,7 @@ class PreflightStateTests(unittest.TestCase):
 
     def observation(self, **changes: Any) -> dict[str, Any]:
         value: dict[str, Any] = {
+            "schema": 1,
             "failures": [],
             "forge": {"complete": True, "items": [], "error": None},
             "main_head": "a" * 40,
@@ -126,45 +136,61 @@ class PreflightStateTests(unittest.TestCase):
         self.assertEqual(result["pr"], 7)
 
     def test_open_pr_requires_exact_local_tip(self) -> None:
+        branch = self.bound_branch(head="c" * 40)
         result = self.classify(
-            loop_branches=[{"name": "loop/alpha", "head": "c" * 40}],
+            loop_branches=[branch],
             forge={
                 "complete": True,
                 "error": None,
-                "items": [{"number": 7, "head_ref": "loop/alpha", "head_sha": "b" * 40, "state": "OPEN"}],
+                "items": [self.bound_pr(head="b" * 40)],
             },
         )
         self.assertEqual(result["verdict"], "observation-failed")
 
     def test_multiple_open_prs_precede_dirty_state(self) -> None:
-        branches = [
-            {"name": "loop/alpha", "head": "b" * 40},
-            {"name": "loop/beta", "head": "c" * 40},
-        ]
+        alpha_branch = self.bound_branch()
+        beta_branch = self.bound_branch(
+            "beta",
+            "c" * 40,
+            "019126d3-4f7a-7cc0-9b5f-123456789abd",
+        )
+        branches = [alpha_branch, beta_branch]
+        beta_pr = self.bound_pr(
+            "beta",
+            "c" * 40,
+            incident_id="019126d3-4f7a-7cc0-9b5f-123456789abd",
+        )
+        beta_pr["number"] = 2
         result = self.classify(
-            current_branch="loop/alpha",
+            current_branch=alpha_branch["name"],
             head="b" * 40,
             dirty=True,
             loop_branches=branches,
             forge={
                 "complete": True,
                 "error": None,
-                "items": [
-                    {"number": 1, "head_ref": "loop/alpha", "head_sha": "b" * 40, "state": "OPEN"},
-                    {"number": 2, "head_ref": "loop/beta", "head_sha": "c" * 40, "state": "OPEN"},
-                ],
+                "items": [self.bound_pr(), beta_pr],
             },
         )
         self.assertEqual(result["verdict"], "multiple-open-prs")
-        self.assertEqual(result["branches"], ["loop/alpha", "loop/beta"])
+        self.assertEqual(
+            result["branches"],
+            [
+                "loop/resolver.019126d34f7a7cc09b5f123456789abc",
+                "loop/resolver.019126d34f7a7cc09b5f123456789abd",
+            ],
+        )
 
     def test_merged_tip_cleanup_requires_exact_head(self) -> None:
+        branch = self.bound_branch()
+        merged_pr = self.bound_pr(state="MERGED")
+        merged_pr["number"] = 3
         result = self.classify(
-            loop_branches=[{"name": "loop/alpha", "head": "b" * 40}],
+            loop_branches=[branch],
             forge={
                 "complete": True,
                 "error": None,
-                "items": [{"number": 3, "head_ref": "loop/alpha", "head_sha": "b" * 40, "state": "MERGED"}],
+                "items": [merged_pr],
             },
         )
         self.assertEqual(result["verdict"], "merged-tip-cleanup")
@@ -172,12 +198,15 @@ class PreflightStateTests(unittest.TestCase):
     def test_recover_todo_precedes_open_pr(self) -> None:
         todos = dict(self.todos)
         todos["recover-alpha"] = {"status": "blocked", "text": "Failing-check: owner decision\n"}
+        branch = self.bound_branch()
+        pr = self.bound_pr()
+        pr["number"] = 4
         observation = self.observation(
-            loop_branches=[{"name": "loop/alpha", "head": "b" * 40}],
+            loop_branches=[branch],
             forge={
                 "complete": True,
                 "error": None,
-                "items": [{"number": 4, "head_ref": "loop/alpha", "head_sha": "b" * 40, "state": "OPEN"}],
+                "items": [pr],
             },
         )
         self.assertEqual(preflight.classify(observation, todos)["verdict"], "recover-todo")
@@ -323,6 +352,39 @@ class PreflightStateTests(unittest.TestCase):
         self.assertEqual(self.classify(failures=["git status timed out"])["verdict"], "observation-failed")
         self.assertEqual(self.classify(main_head=None)["verdict"], "observation-failed")
 
+    def test_observation_schema_must_be_exact_integer_one(self) -> None:
+        for schema in (None, 0, 2, True, "1"):
+            with self.subTest(schema=schema):
+                observation = self.observation()
+                if schema is None:
+                    observation.pop("schema")
+                else:
+                    observation["schema"] = schema
+                self.assertEqual(
+                    preflight.classify(observation, self.todos)["verdict"],
+                    "observation-failed",
+                )
+
+    def test_every_malformed_forge_item_fails_closed(self) -> None:
+        malformed = (
+            {"number": 1, "head_ref": "feature/not-loop", "head_sha": "b" * 40, "state": "OPEN"},
+            {"number": 1, "head_ref": self.bound_branch()["name"], "head_sha": "b" * 40},
+            {
+                "number": 1,
+                "head_ref": self.bound_branch()["name"],
+                "head_sha": "b" * 40,
+                "state": "OPEN",
+                "unit": "beta",
+                "incident_id": self.bound_branch()["incident_id"],
+            },
+            "not-an-object",
+        )
+        for item in malformed:
+            with self.subTest(item=item):
+                result = self.classify(
+                    forge={"complete": True, "error": None, "items": [item]}
+                )
+                self.assertEqual(result["verdict"], "observation-failed")
     def test_non_object_and_optional_observations_fail_closed(self) -> None:
         self.assertEqual(preflight.classify([], self.todos)["verdict"], "observation-failed")
         self.assertEqual(
@@ -342,6 +404,11 @@ class PreflightStateTests(unittest.TestCase):
             self.assertEqual(records, {})
             self.assertEqual(len(errors), 1)
             self.assertIn("unreadable todo", errors[0])
+
+    def test_pagination_requires_explicit_next_cursor(self) -> None:
+        result = preflight.collect_forge_pages(lambda _cursor: {"items": []})
+        self.assertFalse(result["complete"])
+        self.assertIn("omitted explicit next_cursor", result["error"])
 
     def test_incomplete_forge_is_failure_not_empty(self) -> None:
         result = self.classify(forge={"complete": False, "items": [], "error": "rate limited"})

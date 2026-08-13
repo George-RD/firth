@@ -89,13 +89,16 @@ Finalisation follows separate observed transitions:
 Only then may a no-authority helper snapshot stable working bytes. Publication,
 review, merge, acknowledgement, and progress are later transitions.
 
-### Landing and recovery
+### Landing admission and recovery
 
-Landing validates the selected todo's exact sanctioned final state, exact
+For prepared mode, the host broker invokes the pure
+`tools/loop/landing_gate.py::validate_landing` API before any forge effect.
+It validates the selected todo's exact sanctioned final state, exact
 head/tree finaliser receipt, two external review receipts, installed policy
 digest, and merge class. Protected and manual-root changes cannot auto-merge.
-The recovery skill is reduced to deterministic validation of an existing
-prepared envelope and binding; it performs no mutation.
+The legacy landing skill does not invoke this API and remains unchanged on its
+marker-absent path. The recovery skill is reduced to deterministic validation
+of an existing prepared envelope and binding; it performs no mutation.
 
 ## Changes
 
@@ -105,12 +108,12 @@ ADDED:
 - `tools/loop/prepare_iteration.py` and coordinator/finalisation tests.
 - Generated installed-policy projection and digest-drift checks.
 
-MODIFIED:
 - `.claude/commands/firth-loop.md` consumes a prepared envelope and terminates
   through `firth_finalize`.
 - `.claude/skills/firth-loop-recovery/SKILL.md` becomes validation-only.
-- `.claude/skills/firth-loop-landing/SKILL.md` enforces final-state and external
-  exact-object receipts.
+- The host broker's `landing_gate.py::validate_landing` API enforces prepared
+  final-state and external exact-object admission before forge effects; the
+  legacy landing skill remains unchanged.
 - Driver, review, and TCB boundary checks cover finalisation and policy drift.
 - Runbook and recovery mandate describe namespaces, leases, approvals, cutover,
   and manual recovery.
