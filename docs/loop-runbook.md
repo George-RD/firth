@@ -5,6 +5,28 @@ harness that can re-inject one fixed prompt per iteration. The normative
 prompt is the full contents of `.claude/commands/firth-loop.md`. This runbook
 is descriptive and does not replace that prompt or either named skill.
 
+## Authority modes
+
+The host selects the mode before an OMP session starts; candidate bytes,
+MISSION text, prompts, and model output cannot select or upgrade it.
+
+- **Legacy launch:** when `/run/firth/normal-finalizer-active` is absent, the
+  existing preflight, recovery, branch, Verify, Land, Cleanup, and terminal
+  token procedure remains in force. It is not a fallback selected by prepared
+  sessions.
+- **Prepared launch:** when the host marker is present, the host validates the
+  read-only `/run/firth/prepared-envelope.json` and installed
+  `/run/firth/authority-policy.projection.json` with the external
+  `prepare-iteration validate-envelope` helper. Missing, stale, malformed, or
+  failed validation is `LOOP HALTED` before the harness and never downgrades
+  to legacy. The command performs only the bound unit, calls the typed
+  no-argument `firth_finalize` once, and emits no terminal token.
+- Before any prepared forge effect, the host broker invokes pure
+  `tools/loop/landing_gate.py::validate_landing` with the committed projection,
+  exact finaliser receipt, external reviews, tracker bytes, candidate paths,
+  and other bound evidence. The legacy landing skill does not invoke this API;
+  its marker-absent GitHub procedure remains unchanged.
+
 ## Maintainer prerequisites
 
 Complete these checks before launching the loop:

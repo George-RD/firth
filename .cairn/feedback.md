@@ -21,3 +21,7 @@ severity: major
 ## 2026-08-04T14:01:13Z (cairn 0.9.0)
 
 cairn 0.9.0 change accept runs the cargo battery from the repository root, but this repo has no root Cargo.toml: the only crate is src/runtime/vm. cargo build/clippy/fmt/test therefore report FAILED for every change (verified identical on a pristine origin/main worktree for the already-landed autonomous-loop change), so the acceptance gate is unreachable. Expected: detect nested crate manifests, or skip cargo steps when no root manifest exists. Also, cairn lint --strict exits 1 on pre-existing repository warnings (unresolved gaps, CAIRN_CONTRACT_LEAF_UNCOVERED, CAIRN_PATH_GITIGNORED), which makes the strict step in the battery permanently red.
+
+## 2026-08-13T15:06:40Z (cairn 0.9.0)
+
+change accept ran root Cargo commands despite this repository declaring its Cargo crate at src/runtime/vm; expected repository-specific verified gates to permit acceptance
