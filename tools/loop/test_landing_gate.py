@@ -44,9 +44,13 @@ class LandingGateTests(unittest.TestCase):
             "prepared_generation": 4,
             "prepared_observation_signature": "5" * 64,
             "prepared_head": "1" * 40,
+            "prepared_worktree_id": "worktree-1",
+            "prepared_container_id": "container-1",
+            "prepared_cgroup_id": "cgroup-1",
             "base_commit": "1" * 40,
             "base_tree": "2" * 40,
             "head_commit": "3" * 40,
+            "finaliser_operation_id": "operation-finalise-lease",
             "head_tree": "4" * 40,
             "unit": "alpha",
             "branch": self.branch,
@@ -78,7 +82,7 @@ class LandingGateTests(unittest.TestCase):
         self.finaliser = {
             "prepared_generation": 4,
             "prepared_observation_signature": "5" * 64,
-            "schema": 1,
+            "schema": landing.FINALISATION_PROTOCOL,
             "kind": "firth-finaliser-receipt",
             "namespace": "normal-iteration",
             "repository_id": "George-RD/firth",
@@ -96,14 +100,17 @@ class LandingGateTests(unittest.TestCase):
             "generation": 8,
             "state_receipt_id": "f" * 64,
             "lease_epoch": 8,
-            "receipts": ["seal", "a" * 64, "acl", "b" * 64],
+            "receipts": ["7" * 64, "a" * 64, "8" * 64, "b" * 64],
             "model_terminal": True,
             "state_attestation": {
-                "schema": "firth.state-finaliser-receipt.v1",
+                "schema": "firth.state-finaliser-receipt.v2",
                 "source": "installed-state",
+                "issuer": "firth-resolver-state",
                 "namespace": "normal-iteration",
                 "repository_id": "George-RD/firth",
                 "policy_digest": self.projection["policy_digest"],
+                "operation_id": "operation-finalise-lease",
+                "template_id": "normal.finalise.lease-acquire",
                 "incident_id": self.incident_id,
                 "unit": "alpha",
                 "branch": self.branch,
@@ -180,6 +187,100 @@ class LandingGateTests(unittest.TestCase):
             "iteration_complete": False,
             "loop_exhausted": False,
         }
+        prepared_objects = {
+            "repository_id": "George-RD/firth",
+            "policy_digest": self.projection["policy_digest"],
+            "unit": "alpha",
+            "branch": self.branch,
+            "head": "1" * 40,
+            "worktree_id": "worktree-1",
+            "lease_epoch": 7,
+        }
+        transition_objects = (
+            {**prepared_objects, "seal_requested": True},
+            {
+                **prepared_objects,
+                "container_id": "container-1",
+                "cgroup_id": "cgroup-1",
+                "writer_present": False,
+                "cgroup_stopped": True,
+                "descendant_count": 0,
+            },
+            {
+                **prepared_objects,
+                "writer": "broker",
+                "model_write_access": False,
+                "broker_write_access": True,
+            },
+            {
+                **prepared_objects,
+                "head": "3" * 40,
+                "head_tree": "4" * 40,
+                "lease_epoch": 8,
+                "lease_holder": "broker",
+                "writer_present": False,
+                "model_write_access": False,
+                "broker_write_access": True,
+            },
+        )
+        self.finaliser["transition_attestations"] = [
+            {
+                "schema": "firth.state-transition-attestation.v1",
+                "source": "installed-state",
+                "namespace": "normal-iteration",
+                "repository_id": "George-RD/firth",
+                "policy_digest": self.projection["policy_digest"],
+                "incident_id": self.incident_id,
+                "unit": "alpha",
+                "branch": self.branch,
+                "worktree_id": "worktree-1",
+                "template_id": template_id,
+                "stage": stage,
+                "generation": generation,
+                "observation_signature": signature,
+                "receipt_id": receipt_id,
+                "postcondition_objects": transition_objects[index],
+                "objects_digest": __import__("hashlib").sha256(
+                    landing._canonical_bytes(transition_objects[index])
+                ).hexdigest(),
+            }
+            for index, (
+                template_id,
+                stage,
+                generation,
+                signature,
+                receipt_id,
+            ) in enumerate(
+                (
+                    ("normal.finalise.seal", "seal-requested", 5, "5" * 64, "7" * 64),
+                    ("normal.finalise.model-stop", "model-stopped", 6, "6" * 64, "a" * 64),
+                    ("normal.finalise.acl-transfer", "acl-transferred", 7, "7" * 64, "8" * 64),
+                    ("normal.finalise.lease-acquire", "lease-acquired", 8, "e" * 64, "b" * 64),
+                )
+            )
+        ]
+        transition_chain_digest = __import__("hashlib").sha256(
+            landing._canonical_bytes(self.finaliser["transition_attestations"])
+        ).hexdigest()
+        self.finaliser["state_attestation"][
+            "transition_chain_digest"
+        ] = transition_chain_digest
+        state_body = {
+            key: value
+            for key, value in self.finaliser["state_attestation"].items()
+            if key not in {"source", "receipt_id"}
+        }
+        state_receipt_id = __import__("hashlib").sha256(
+            b"firth-resolver/v1/finaliser_receipt\0"
+            + landing._canonical_bytes(state_body)
+        ).hexdigest()
+        self.finaliser["state_attestation"]["receipt_id"] = state_receipt_id
+        self.finaliser["state_receipt_id"] = state_receipt_id
+        self.authenticated_state_receipt = {
+            key: value
+            for key, value in self.finaliser["state_attestation"].items()
+            if key != "source"
+        }
         common = {
             "schema": 1,
             "kind": "firth-exact-object-review",
@@ -231,14 +332,14 @@ class LandingGateTests(unittest.TestCase):
         *,
         finaliser: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        return landing.validate_landing(
-            self.admission,
-            self.projection,
-            finaliser or self.finaliser,
-            self.reviews,
-            {self.todo_path: self.before},
-            {self.todo_path: self.after},
+        return landing.validate_landing(self.admission,
+        self.projection,
+        finaliser or self.finaliser,
+        self.reviews,
+        {self.todo_path: self.before},
+        {self.todo_path: self.after},
             candidate_paths or ["src/Firth/Kernel.lean", self.todo_path],
+            self.authenticated_state_receipt,
         )
 
     def test_exact_identity_reviews_and_final_todo_are_admitted(self) -> None:
@@ -276,14 +377,14 @@ class LandingGateTests(unittest.TestCase):
         with self.assertRaisesRegex(
             landing.LandingError, "manifest digest|snapshot attestation changed_paths"
         ):
-            landing.validate_landing(
-                admission,
-                self.projection,
-                self.finaliser,
-                self.reviews,
-                {self.todo_path: self.before},
-                {self.todo_path: self.after},
+            landing.validate_landing(admission,
+            self.projection,
+            self.finaliser,
+            self.reviews,
+            {self.todo_path: self.before},
+            {self.todo_path: self.after},
                 [self.todo_path],
+                self.authenticated_state_receipt,
             )
 
     def test_unit_and_selected_todo_require_canonical_slugs(self) -> None:
@@ -294,14 +395,14 @@ class LandingGateTests(unittest.TestCase):
                 if field == "unit":
                     admission["selected_todo"] = "alpha/beta"
                 with self.assertRaisesRegex(landing.LandingError, "canonical slug"):
-                    landing.validate_landing(
-                        admission,
-                        self.projection,
-                        self.finaliser,
-                        self.reviews,
-                        {self.todo_path: self.before},
-                        {self.todo_path: self.after},
+                    landing.validate_landing(admission,
+                    self.projection,
+                    self.finaliser,
+                    self.reviews,
+                    {self.todo_path: self.before},
+                    {self.todo_path: self.after},
                         ["src/Firth/Kernel.lean", self.todo_path],
+                        self.authenticated_state_receipt,
                     )
 
         admission = copy.deepcopy(self.admission)
@@ -316,14 +417,14 @@ class LandingGateTests(unittest.TestCase):
             "hashlib"
         ).sha256(landing._canonical_bytes(altered_manifest)).hexdigest()
         with self.assertRaisesRegex(landing.LandingError, "finaliser changed path"):
-            landing.validate_landing(
-                admission,
-                self.projection,
-                self.finaliser,
-                self.reviews,
-                {self.todo_path: self.before},
-                {self.todo_path: self.after},
+            landing.validate_landing(admission,
+            self.projection,
+            self.finaliser,
+            self.reviews,
+            {self.todo_path: self.before},
+            {self.todo_path: self.after},
                 [self.todo_path],
+                self.authenticated_state_receipt,
             )
 
     def test_finaliser_and_reviews_bind_the_same_exact_objects(self) -> None:
@@ -383,14 +484,14 @@ class LandingGateTests(unittest.TestCase):
         reviews = copy.deepcopy(self.reviews)
         reviews[0].pop("review_attestation")
         with self.assertRaisesRegex(landing.LandingError, "reviewer attestation"):
-            landing.validate_landing(
-                self.admission,
-                self.projection,
-                self.finaliser,
-                reviews,
-                {self.todo_path: self.before},
-                {self.todo_path: self.after},
+            landing.validate_landing(self.admission,
+            self.projection,
+            self.finaliser,
+            reviews,
+            {self.todo_path: self.before},
+            {self.todo_path: self.after},
                 [self.todo_path],
+                self.authenticated_state_receipt,
             )
 
     def test_review_receipts_must_be_distinct_external_lenses(self) -> None:
@@ -398,27 +499,27 @@ class LandingGateTests(unittest.TestCase):
         duplicate[1]["model_id"] = duplicate[0]["model_id"]
         duplicate[1]["session_id"] = duplicate[0]["session_id"]
         with self.assertRaisesRegex(landing.LandingError, "distinct"):
-            landing.validate_landing(
-                self.admission,
-                self.projection,
-                self.finaliser,
-                duplicate,
-                {self.todo_path: self.before},
-                {self.todo_path: self.after},
+            landing.validate_landing(self.admission,
+            self.projection,
+            self.finaliser,
+            duplicate,
+            {self.todo_path: self.before},
+            {self.todo_path: self.after},
                 [self.todo_path],
+                self.authenticated_state_receipt,
             )
 
     def test_only_selected_todo_status_may_change(self) -> None:
         changed = self.after.replace(b"Requires:\n", b"Requires: beta\n")
         with self.assertRaisesRegex(landing.LandingError, "sanctioned final status"):
-            landing.validate_landing(
-                self.admission,
-                self.projection,
-                self.finaliser,
-                self.reviews,
-                {self.todo_path: self.before},
-                {self.todo_path: changed},
+            landing.validate_landing(self.admission,
+            self.projection,
+            self.finaliser,
+            self.reviews,
+            {self.todo_path: self.before},
+            {self.todo_path: changed},
                 [self.todo_path],
+                self.authenticated_state_receipt,
             )
 
     def test_duplicate_todo_status_is_rejected(self) -> None:
@@ -431,15 +532,21 @@ class LandingGateTests(unittest.TestCase):
             b"status: blocked\nstatus: done\n",
         )
         with self.assertRaisesRegex(landing.LandingError, "sanctioned final status"):
-            landing.validate_landing(
-                self.admission,
-                self.projection,
-                self.finaliser,
-                self.reviews,
-                {self.todo_path: duplicate_before},
-                {self.todo_path: duplicate_after},
+            landing.validate_landing(self.admission,
+            self.projection,
+            self.finaliser,
+            self.reviews,
+            {self.todo_path: duplicate_before},
+            {self.todo_path: duplicate_after},
                 [self.todo_path],
+                self.authenticated_state_receipt,
             )
+
+    def test_old_finaliser_protocol_is_rejected(self) -> None:
+        finaliser = copy.deepcopy(self.finaliser)
+        finaliser["schema"] = 1
+        with self.assertRaisesRegex(landing.LandingError, "protocol mismatch"):
+            self.validate(finaliser=finaliser)
 
     def test_finaliser_requires_exact_generation_and_lease_successors(self) -> None:
         for field, value in (
@@ -465,6 +572,98 @@ class LandingGateTests(unittest.TestCase):
         finaliser["model_attestation"]["observation_generation"] = 7
         with self.assertRaises(landing.LandingError):
             self.validate([self.todo_path], finaliser=finaliser)
+
+        for field, value in (
+            ("stage", "lease-acquired"),
+            ("source", "caller"),
+            ("generation", 8),
+            ("receipt_id", "b" * 64),
+        ):
+            with self.subTest(transition_field=field):
+                finaliser = copy.deepcopy(self.finaliser)
+                finaliser["transition_attestations"][0][field] = value
+                with self.assertRaises(landing.LandingError):
+                    self.validate([self.todo_path], finaliser=finaliser)
+
+        finaliser = copy.deepcopy(self.finaliser)
+        finaliser["transition_attestations"].reverse()
+        with self.assertRaises(landing.LandingError):
+            self.validate([self.todo_path], finaliser=finaliser)
+
+        finaliser = copy.deepcopy(self.finaliser)
+        finaliser["receipts"][2] = finaliser["receipts"][0]
+        finaliser["transition_attestations"][2]["receipt_id"] = finaliser["receipts"][0]
+        with self.assertRaisesRegex(landing.LandingError, "duplicated"):
+            self.validate([self.todo_path], finaliser=finaliser)
+
+        for index, label in ((0, "seal"), (2, "ACL")):
+            with self.subTest(transition_signature=label):
+                finaliser = copy.deepcopy(self.finaliser)
+                finaliser["transition_attestations"][index][
+                    "observation_signature"
+                ] = "0" * 64
+                with self.assertRaisesRegex(
+                    landing.LandingError, "transition chain digest"
+                ):
+                    self.validate([self.todo_path], finaliser=finaliser)
+        for attestation, label in (
+            ("model_attestation", "model"),
+            ("worktree_attestation", "worktree"),
+        ):
+            with self.subTest(external_signature=label):
+                finaliser = copy.deepcopy(self.finaliser)
+                finaliser[attestation]["observation_signature"] = "0" * 64
+                with self.assertRaisesRegex(
+                    landing.LandingError,
+                    "signature mismatch",
+                ):
+                    self.validate([self.todo_path], finaliser=finaliser)
+
+
+        finaliser = copy.deepcopy(self.finaliser)
+        finaliser["state_attestation"]["transition_chain_digest"] = "0" * 64
+        with self.assertRaisesRegex(landing.LandingError, "not authenticated"):
+            self.validate([self.todo_path], finaliser=finaliser)
+
+        finaliser = copy.deepcopy(self.finaliser)
+        finaliser["transition_attestations"][0]["observation_signature"] = "0" * 64
+        forged_chain_digest = __import__("hashlib").sha256(
+            landing._canonical_bytes(finaliser["transition_attestations"])
+        ).hexdigest()
+        finaliser["state_attestation"][
+            "transition_chain_digest"
+        ] = forged_chain_digest
+        forged_state_body = {
+            key: value
+            for key, value in finaliser["state_attestation"].items()
+            if key not in {"source", "receipt_id"}
+        }
+        forged_state_receipt_id = __import__("hashlib").sha256(
+            b"firth-resolver/v1/finaliser_receipt\0"
+            + landing._canonical_bytes(forged_state_body)
+        ).hexdigest()
+        finaliser["state_attestation"]["receipt_id"] = forged_state_receipt_id
+        finaliser["state_receipt_id"] = forged_state_receipt_id
+        with self.assertRaisesRegex(landing.LandingError, "not authenticated"):
+            self.validate([self.todo_path], finaliser=finaliser)
+
+        finaliser = copy.deepcopy(self.finaliser)
+        for attestation in finaliser["transition_attestations"]:
+            attestation["worktree_id"] = "worktree-other"
+        finaliser["worktree_id"] = "worktree-other"
+        finaliser["state_attestation"]["worktree_id"] = "worktree-other"
+        finaliser["model_attestation"]["worktree_id"] = "worktree-other"
+        finaliser["worktree_attestation"]["worktree_id"] = "worktree-other"
+        finaliser["snapshot_attestation"]["worktree_id"] = "worktree-other"
+        with self.assertRaisesRegex(landing.LandingError, "prepared worktree"):
+            self.validate([self.todo_path], finaliser=finaliser)
+
+        for field in ("container_id", "cgroup_id"):
+            with self.subTest(prepared_identity=field):
+                finaliser = copy.deepcopy(self.finaliser)
+                finaliser["model_attestation"][field] = f"{field}-other"
+                with self.assertRaisesRegex(landing.LandingError, field):
+                    self.validate([self.todo_path], finaliser=finaliser)
 
     def test_selected_todo_must_match_prepared_unit(self) -> None:
         self.admission["selected_todo"] = "beta"

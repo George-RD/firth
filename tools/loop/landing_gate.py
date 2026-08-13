@@ -17,6 +17,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 SCHEMA = 1
+FINALISATION_PROTOCOL = 2
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 OBJECT_ID = re.compile(r"^[0-9a-f]{40,64}$")
 UNIT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -236,8 +237,13 @@ def _validate_candidate_manifest(
         raise LandingError("candidate path manifest digest mismatch")
 
 
-def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]) -> None:
-    _schema(receipt.get("schema"), "finaliser receipt")
+def _validate_finaliser(
+    receipt: Mapping[str, Any],
+    admission: Mapping[str, Any],
+    authenticated_state_receipt: Mapping[str, Any],
+) -> None:
+    if receipt.get("schema") != FINALISATION_PROTOCOL:
+        raise LandingError("finaliser receipt protocol mismatch")
     expected = {
         "kind": "firth-finaliser-receipt",
         "namespace": "normal-iteration",
@@ -264,6 +270,10 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
     _object_id(receipt.get("head"), "finaliser head")
     _object_id(receipt.get("head_tree"), "finaliser head_tree")
     worktree_id = _text(receipt.get("worktree_id"), "finaliser worktree_id")
+    if worktree_id != _text(
+        admission.get("prepared_worktree_id"), "prepared_worktree_id"
+    ):
+        raise LandingError("finaliser worktree does not match prepared worktree")
     generation = receipt.get("generation")
     if (
         not isinstance(generation, int)
@@ -285,6 +295,75 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
         isinstance(value, str) and value for value in receipts
     ):
         raise LandingError("finaliser transition receipts are incomplete")
+    transition_attestations = receipt.get("transition_attestations")
+    if (
+        not isinstance(transition_attestations, list)
+        or len(transition_attestations) != 4
+        or not all(isinstance(value, Mapping) for value in transition_attestations)
+        or len(set(receipts)) != 4
+    ):
+        raise LandingError("finaliser transition attestations are incomplete or duplicated")
+    transition_templates = (
+        ("normal.finalise.seal", "seal-requested"),
+        ("normal.finalise.model-stop", "model-stopped"),
+        ("normal.finalise.acl-transfer", "acl-transferred"),
+        ("normal.finalise.lease-acquire", "lease-acquired"),
+    )
+    transition_signatures: list[str] = []
+    transition_object_digests: list[str] = []
+    transition_objects: list[dict[str, Any]] = []
+    for index, (template_id, stage) in enumerate(transition_templates):
+        attestation = transition_attestations[index]
+        assert isinstance(attestation, Mapping)
+        expected_transition = {
+            "schema": "firth.state-transition-attestation.v1",
+            "source": "installed-state",
+            "namespace": "normal-iteration",
+            "repository_id": admission["repository_id"],
+            "policy_digest": admission["policy_digest"],
+            "incident_id": admission["incident_id"],
+            "unit": admission["unit"],
+            "branch": admission["branch"],
+            "worktree_id": worktree_id,
+            "template_id": template_id,
+            "stage": stage,
+            "generation": prepared_generation + index + 1,
+            "receipt_id": receipts[index],
+        }
+        for field, value in expected_transition.items():
+            if attestation.get(field) != value:
+                raise LandingError(
+                    f"{template_id} state transition attestation {field} mismatch"
+                )
+        _digest(
+            attestation.get("receipt_id"),
+            f"{template_id} state transition receipt_id",
+        )
+        transition_signatures.append(
+            _digest(
+                attestation.get("observation_signature"),
+                f"{template_id} state transition signature",
+            )
+        )
+        transition_object_digests.append(
+            _digest(
+                attestation.get("objects_digest"),
+                f"{template_id} state transition objects_digest",
+            )
+        )
+        postcondition_objects = attestation.get("postcondition_objects")
+        if not isinstance(postcondition_objects, Mapping):
+            raise LandingError(
+                f"{template_id} state transition postcondition objects are missing"
+            )
+        canonical_objects = dict(postcondition_objects)
+        if hashlib.sha256(_canonical_bytes(canonical_objects)).hexdigest() != (
+            transition_object_digests[-1]
+        ):
+            raise LandingError(
+                f"{template_id} state transition objects digest mismatch"
+            )
+        transition_objects.append(canonical_objects)
     snapshot_artifact = _text(receipt.get("snapshot_artifact_id"), "snapshot_artifact_id")
     provenance = admission.get("snapshot_provenance")
     if (
@@ -302,12 +381,22 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
     state = receipt.get("state_attestation")
     if (
         not isinstance(state, Mapping)
-        or state.get("schema") != "firth.state-finaliser-receipt.v1"
+        or state.get("schema") != "firth.state-finaliser-receipt.v2"
         or state.get("source") != "installed-state"
     ):
         raise LandingError("installed state finaliser attestation is missing")
+    authenticated_state = dict(authenticated_state_receipt)
+    if authenticated_state.get("source") is not None:
+        raise LandingError("authenticated State receipt contains caller provenance")
+    presented_state = {
+        key: value for key, value in state.items() if key != "source"
+    }
+    if _canonical_bytes(authenticated_state) != _canonical_bytes(presented_state):
+        raise LandingError("state finaliser attestation is not authenticated")
     state_expected = {
         "namespace": "normal-iteration",
+        "issuer": "firth-resolver-state",
+        "template_id": "normal.finalise.lease-acquire",
         "repository_id": admission["repository_id"],
         "policy_digest": admission["policy_digest"],
         "incident_id": admission["incident_id"],
@@ -319,6 +408,10 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
         "lease_epoch": lease_epoch,
         "stage": "lease-acquired",
         "observation_generation": receipt.get("generation"),
+        "operation_id": _text(
+            admission.get("finaliser_operation_id"),
+            "finaliser_operation_id",
+        ),
         "observation_signature": finaliser_signature,
     }
     for field, value in state_expected.items():
@@ -326,6 +419,22 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
             raise LandingError(f"state finaliser attestation {field} mismatch")
     if state.get("receipt_id") != state_receipt_id:
         raise LandingError("state finaliser attestation receipt mismatch")
+    transition_chain_digest = hashlib.sha256(
+        _canonical_bytes(transition_attestations)
+    ).hexdigest()
+    if state.get("transition_chain_digest") != transition_chain_digest:
+        raise LandingError("state finaliser transition chain digest mismatch")
+    state_receipt_body = {
+        key: value
+        for key, value in state.items()
+        if key not in {"receipt_id", "source"}
+    }
+    expected_state_receipt_id = hashlib.sha256(
+        b"firth-resolver/v1/finaliser_receipt\0"
+        + _canonical_bytes(state_receipt_body)
+    ).hexdigest()
+    if state_receipt_id != expected_state_receipt_id:
+        raise LandingError("state finaliser receipt digest mismatch")
 
     model = receipt.get("model_attestation")
     if (
@@ -350,8 +459,14 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
     for field, value in model_expected.items():
         if model.get(field) != value:
             raise LandingError(f"model stop attestation {field} mismatch")
-    _text(model.get("container_id"), "model attestation container_id")
-    _text(model.get("cgroup_id"), "model attestation cgroup_id")
+    if model.get("container_id") != _text(
+        admission.get("prepared_container_id"), "prepared_container_id"
+    ):
+        raise LandingError("model attestation container_id mismatch")
+    if model.get("cgroup_id") != _text(
+        admission.get("prepared_cgroup_id"), "prepared_cgroup_id"
+    ):
+        raise LandingError("model attestation cgroup_id mismatch")
     if _digest(model.get("receipt_id"), "model stop attestation receipt_id") != receipts[1]:
         raise LandingError("model stop attestation receipt mismatch")
     _object_id(model.get("head"), "model attestation head")
@@ -363,6 +478,8 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
         or model_generation != prepared_generation + 2
     ):
         raise LandingError("model stop attestation generation is not the exact successor")
+    if transition_signatures[1] != model_signature:
+        raise LandingError("model stop state transition signature mismatch")
 
     worktree = receipt.get("worktree_attestation")
     if (
@@ -389,6 +506,50 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
     for field, value in worktree_expected.items():
         if worktree.get(field) != value:
             raise LandingError(f"worktree lease attestation {field} mismatch")
+    prepared_objects = {
+        "repository_id": admission["repository_id"],
+        "policy_digest": admission["policy_digest"],
+        "unit": admission["unit"],
+        "branch": admission["branch"],
+        "head": admission["prepared_head"],
+        "worktree_id": admission["prepared_worktree_id"],
+        "lease_epoch": admission["prepared_lease_epoch"],
+    }
+    expected_transition_objects = (
+        {**prepared_objects, "seal_requested": True},
+        {
+            **prepared_objects,
+            "container_id": admission["prepared_container_id"],
+            "cgroup_id": admission["prepared_cgroup_id"],
+            "writer_present": False,
+            "cgroup_stopped": True,
+            "descendant_count": 0,
+        },
+        {
+            **prepared_objects,
+            "writer": "broker",
+            "model_write_access": False,
+            "broker_write_access": True,
+        },
+        {
+            **prepared_objects,
+            "head": admission["head_commit"],
+            "head_tree": admission["head_tree"],
+            "lease_epoch": lease_epoch,
+            "lease_holder": "broker",
+            "writer_present": False,
+            "model_write_access": False,
+            "broker_write_access": True,
+        },
+    )
+    for index, objects in enumerate(expected_transition_objects):
+        actual_digest = hashlib.sha256(_canonical_bytes(objects)).hexdigest()
+        if transition_objects[index] != objects or (
+            transition_object_digests[index] != actual_digest
+        ):
+            raise LandingError(
+                f"{transition_templates[index][0]} authenticated objects mismatch"
+            )
     if _digest(worktree.get("receipt_id"), "worktree lease attestation receipt_id") != receipts[3]:
         raise LandingError("worktree lease attestation receipt mismatch")
     _object_id(worktree.get("head"), "worktree lease attestation head")
@@ -399,6 +560,8 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
     )
     if worktree_generation != generation or worktree_signature != finaliser_signature:
         raise LandingError("worktree lease attestation generation or signature mismatch")
+    if transition_signatures[3] != worktree_signature:
+        raise LandingError("lease state transition signature mismatch")
 
     snapshot = receipt.get("snapshot_attestation")
     if (
@@ -500,10 +663,19 @@ def validate_landing(
     base_todos: Mapping[str, bytes] | Any,
     candidate_todos: Mapping[str, bytes] | Any,
     candidate_paths: Sequence[str] | Any,
+    authenticated_state_receipt: Mapping[str, Any] | Any,
 ) -> dict[str, Any]:
     """Validate the complete normal-iteration landing contract."""
 
-    if not all(isinstance(value, Mapping) for value in (admission, projection, finaliser_receipt)):
+    if not all(
+        isinstance(value, Mapping)
+        for value in (
+            admission,
+            projection,
+            finaliser_receipt,
+            authenticated_state_receipt,
+        )
+    ):
         raise LandingError("landing admission objects are malformed")
     if not isinstance(reviews, Sequence) or isinstance(reviews, (str, bytes)):
         raise LandingError("review receipts must be an array")
@@ -562,7 +734,11 @@ def validate_landing(
             "loop_exhausted": False,
         }
 
-    _validate_finaliser(finaliser_receipt, admission)
+    _validate_finaliser(
+        finaliser_receipt,
+        admission,
+        authenticated_state_receipt,
+    )
     _validate_reviews(reviews, admission)
 
     selected_todo = admission.get("selected_todo")

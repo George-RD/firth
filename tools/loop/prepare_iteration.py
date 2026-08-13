@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 SCHEMA = 1
+FINALISATION_PROTOCOL = 2
 NAMESPACE = "normal-iteration"
 INSTALLED_ENVELOPE = Path("/run/firth/prepared-envelope.json")
 INSTALLED_POLICY_PROJECTION = Path("/run/firth/authority-policy.projection.json")
@@ -36,6 +37,64 @@ FINALISE_TEMPLATES = (
     "normal.finalise.acl-transfer",
     "normal.finalise.lease-acquire",
 )
+FINALISE_STAGES = {
+    "normal.finalise.seal": "seal-requested",
+    "normal.finalise.model-stop": "model-stopped",
+    "normal.finalise.acl-transfer": "acl-transferred",
+    "normal.finalise.lease-acquire": "lease-acquired",
+}
+FINALISE_OBJECT_FIELDS = {
+    "normal.finalise.seal": (
+        "repository_id",
+        "policy_digest",
+        "unit",
+        "branch",
+        "head",
+        "worktree_id",
+        "lease_epoch",
+        "seal_requested",
+    ),
+    "normal.finalise.model-stop": (
+        "repository_id",
+        "policy_digest",
+        "unit",
+        "branch",
+        "head",
+        "worktree_id",
+        "lease_epoch",
+        "container_id",
+        "cgroup_id",
+        "writer_present",
+        "cgroup_stopped",
+        "descendant_count",
+    ),
+    "normal.finalise.acl-transfer": (
+        "repository_id",
+        "policy_digest",
+        "unit",
+        "branch",
+        "head",
+        "worktree_id",
+        "lease_epoch",
+        "writer",
+        "model_write_access",
+        "broker_write_access",
+    ),
+    "normal.finalise.lease-acquire": (
+        "repository_id",
+        "policy_digest",
+        "unit",
+        "branch",
+        "head",
+        "worktree_id",
+        "lease_epoch",
+        "head_tree",
+        "lease_holder",
+        "writer_present",
+        "model_write_access",
+        "broker_write_access",
+    ),
+}
 SAFE_RECOVERY_VERDICTS = {
     "dirty-known-unit",
     "open-pr",
@@ -69,6 +128,7 @@ UNIT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 class StateClient(Protocol):
     def request(self, template_id: str, context: Mapping[str, Any]) -> Mapping[str, Any]: ...
+    def protocol(self) -> Mapping[str, Any]: ...
 
 
 class StableSnapshotter(Protocol):
@@ -119,6 +179,23 @@ def _normal_branch(incident_id: str) -> str:
 
 
 
+def _require_state_protocol(client: StateClient) -> None:
+    try:
+        protocol = client.protocol()
+    except Exception as error:
+        raise PreparationError(
+            f"state finalisation protocol unavailable: {error}"
+        ) from error
+    expected = {
+        "schema": SCHEMA,
+        "namespace": NAMESPACE,
+        "finalisation_protocol": FINALISATION_PROTOCOL,
+        "state_finaliser_receipt_schema": "firth.state-finaliser-receipt.v2",
+    }
+    if not isinstance(protocol, Mapping) or dict(protocol) != expected:
+        raise PreparationError("state finalisation protocol mismatch")
+
+
 def _request(
     client: StateClient,
     template_id: str,
@@ -149,7 +226,7 @@ def _request(
     if not isinstance(generation, int) or isinstance(generation, bool) or generation != previous_generation + 1:
         raise PreparationError(f"{template_id}: observation generation is not the next generation")
     _require_digest(response.get("observation_signature"), f"{template_id} observation_signature")
-    if template_id in {"normal.finalise.model-stop", "normal.finalise.lease-acquire"}:
+    if template_id in FINALISE_TEMPLATES:
         _require_digest(response.get("receipt_id"), f"{template_id} attestation receipt_id")
     else:
         _require_text(response.get("receipt_id"), f"{template_id} receipt_id")
@@ -162,7 +239,10 @@ def _request(
     for field in fields:
         if field not in context:
             raise PreparationError(f"{template_id}: request omitted bound field {field}")
-        if template_id == "normal.finalise.lease-acquire" and field == "lease_epoch":
+        if template_id == "normal.finalise.lease-acquire" and field in {
+            "head",
+            "lease_epoch",
+        }:
             continue
         if objects.get(field) != context[field]:
             raise PreparationError(f"{template_id}: observed {field} does not match request identity")
@@ -247,6 +327,12 @@ def _canonical_projection_bytes(value: Any) -> bytes:
             + b"}"
         )
     raise PreparationError("installed policy projection contains an unsupported value")
+
+def _domain_digest(kind: str, value: Any) -> str:
+    return hashlib.sha256(
+        f"firth-resolver/v1/{kind}\0".encode("ascii")
+        + _canonical_projection_bytes(value)
+    ).hexdigest()
 
 def _projection_pairs(values: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
@@ -388,6 +474,7 @@ def prepare_iteration(
     generation = int(base["observation_generation"])
     receipts: list[str] = []
 
+    _require_state_protocol(client)
     if verdict in SAFE_RECOVERY_VERDICTS:
         branch = _require_text(preflight.get("branch"), "preflight branch")
         if preflight.get("unit") != unit:
@@ -529,6 +616,7 @@ def prepare_iteration(
 
     return {
         "schema": SCHEMA,
+        "finalisation_protocol": FINALISATION_PROTOCOL,
         "kind": "firth-prepared-iteration",
         "namespace": NAMESPACE,
         "repository_id": base["repository_id"],
@@ -569,6 +657,8 @@ def validate_prepared_envelope(
         or envelope.get("kind") != "firth-prepared-iteration"
     ):
         raise PreparationError("invalid prepared envelope")
+    if envelope.get("finalisation_protocol") != FINALISATION_PROTOCOL:
+        raise PreparationError("prepared envelope finalisation protocol mismatch")
     if envelope.get("namespace") != NAMESPACE:
         raise PreparationError("prepared envelope namespace mismatch")
     if envelope.get("finalise_arguments") != [] or envelope.get("finalise_tool") != "firth_finalize":
@@ -593,6 +683,7 @@ def validate_prepared_envelope(
         raise PreparationError("invalid prepared receipts")
     result = {
         "schema": SCHEMA,
+        "finalisation_protocol": FINALISATION_PROTOCOL,
         "kind": "firth-prepared-iteration",
         "namespace": NAMESPACE,
         "repository_id": _require_text(envelope.get("repository_id"), "repository_id"),
@@ -665,6 +756,7 @@ def finalise_iteration(
     complete envelope, state client, and fixed no-authority snapshot helper.
     """
     envelope = validate_prepared_envelope(envelope, load_installed_policy_projection())
+    _require_state_protocol(client)
 
     context = {
         "incident_id": _require_incident(envelope.get("incident_id")),
@@ -693,6 +785,7 @@ def finalise_iteration(
         raise PreparationError("invalid prepared generation")
 
     receipts: list[str] = []
+    transition_attestations: list[dict[str, Any]] = []
     last: Mapping[str, Any] | None = None
     state_receipt: Mapping[str, Any] | None = None
     model_response: Mapping[str, Any] | None = None
@@ -701,6 +794,10 @@ def finalise_iteration(
     worktree_objects: Mapping[str, Any] | None = None
     for template_id in FINALISE_TEMPLATES:
         response, generation = _request(client, template_id, context, previous_generation=generation)
+        if response["receipt_id"] in receipts:
+            raise PreparationError(
+                f"{template_id}: duplicate transition receipt_id"
+            )
         objects = response["objects"]
         assert isinstance(objects, Mapping)
         common_identity = {
@@ -710,6 +807,49 @@ def finalise_iteration(
             "branch": context["branch"],
             "worktree_id": context["worktree_id"],
         }
+        postcondition_objects = {
+            field: objects.get(field)
+            for field in FINALISE_OBJECT_FIELDS[template_id]
+        }
+        if any(field not in objects for field in FINALISE_OBJECT_FIELDS[template_id]):
+            raise PreparationError(
+                f"{template_id} postcondition object subset is incomplete"
+            )
+        stage_attestation = response.get("stage_attestation")
+        if (
+            not isinstance(stage_attestation, Mapping)
+            or stage_attestation.get("schema")
+            != "firth.state-transition-attestation.v1"
+            or stage_attestation.get("source") != "installed-state"
+        ):
+            raise PreparationError(f"{template_id} state stage attestation is missing")
+        expected_stage_attestation = {
+            "namespace": NAMESPACE,
+            "repository_id": context["repository_id"],
+            "policy_digest": context["policy_digest"],
+            "incident_id": context["incident_id"],
+            "unit": context["unit"],
+            "branch": context["branch"],
+            "worktree_id": context["worktree_id"],
+            "template_id": template_id,
+            "stage": FINALISE_STAGES[template_id],
+            "generation": generation,
+            "observation_signature": response["observation_signature"],
+            "receipt_id": response["receipt_id"],
+            "postcondition_objects": postcondition_objects,
+            "objects_digest": hashlib.sha256(
+                _canonical_projection_bytes(postcondition_objects)
+            ).hexdigest(),
+        }
+        for field, value in expected_stage_attestation.items():
+            if stage_attestation.get(field) != value:
+                raise PreparationError(
+                    f"{template_id} state stage attestation {field} mismatch"
+                )
+        _require_digest(
+            stage_attestation.get("receipt_id"),
+            f"{template_id} state stage receipt_id",
+        )
         if template_id == "normal.finalise.lease-acquire":
             _assert_equal(objects, common_identity, template_id)
             head = _require_object_id(objects.get("head"), "post-model head")
@@ -729,8 +869,10 @@ def finalise_iteration(
             if not isinstance(state_receipt, Mapping):
                 raise PreparationError("state finaliser receipt is missing")
             expected_state_receipt = {
-                "schema": "firth.state-finaliser-receipt.v1",
+                "schema": "firth.state-finaliser-receipt.v2",
                 "namespace": NAMESPACE,
+                "issuer": "firth-resolver-state",
+                "template_id": "normal.finalise.lease-acquire",
                 "repository_id": context["repository_id"],
                 "incident_id": context["incident_id"],
                 "unit": context["unit"],
@@ -744,10 +886,32 @@ def finalise_iteration(
                 "stage": "lease-acquired",
                 "policy_digest": context["policy_digest"],
             }
+            _require_text(
+                state_receipt.get("operation_id"),
+                "state finaliser operation_id",
+            )
             for field, value in expected_state_receipt.items():
                 if state_receipt.get(field) != value:
                     raise PreparationError(f"state finaliser receipt {field} mismatch")
             _require_digest(state_receipt.get("receipt_id"), "state finaliser receipt_id")
+            prospective_chain = [
+                *transition_attestations,
+                dict(stage_attestation),
+            ]
+            transition_chain_digest = hashlib.sha256(
+                _canonical_projection_bytes(prospective_chain)
+            ).hexdigest()
+            if state_receipt.get("transition_chain_digest") != transition_chain_digest:
+                raise PreparationError("state finaliser transition chain digest mismatch")
+            state_receipt_body = {
+                key: value
+                for key, value in state_receipt.items()
+                if key != "receipt_id"
+            }
+            if state_receipt["receipt_id"] != _domain_digest(
+                "finaliser_receipt", state_receipt_body
+            ):
+                raise PreparationError("state finaliser receipt digest mismatch")
             worktree_response = response
             worktree_objects = objects
             context = {
@@ -762,6 +926,11 @@ def finalise_iteration(
                 {**common_identity, "head": context["head"], "lease_epoch": context["lease_epoch"]},
                 template_id,
             )
+            if (
+                template_id == "normal.finalise.seal"
+                and objects.get("seal_requested") is not True
+            ):
+                raise PreparationError("finalisation seal was not independently observed")
             if template_id == "normal.finalise.model-stop" and (
                 objects.get("container_id") != context["container_id"]
                 or objects.get("cgroup_id") != context["cgroup_id"]
@@ -781,6 +950,7 @@ def finalise_iteration(
                 model_objects = objects
             context = _continued_context(context, response, generation)
         receipts.append(str(response["receipt_id"]))
+        transition_attestations.append(dict(stage_attestation))
         last = response
 
     assert last is not None
@@ -923,7 +1093,7 @@ def finalise_iteration(
     return {
         "prepared_generation": envelope["generation"],
         "prepared_observation_signature": envelope["observation_signature"],
-        "schema": SCHEMA,
+        "schema": FINALISATION_PROTOCOL,
         "kind": "firth-finaliser-receipt",
         "namespace": NAMESPACE,
         "repository_id": context["repository_id"],
@@ -946,6 +1116,7 @@ def finalise_iteration(
         "observation_signature": last["observation_signature"],
         "state_receipt_id": state_receipt["receipt_id"],
         "receipts": receipts,
+        "transition_attestations": transition_attestations,
         "model_terminal": True,
         "iteration_complete": False,
         "loop_exhausted": False,

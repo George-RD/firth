@@ -28,6 +28,19 @@ class FakeState:
         self.calls: list[tuple[str, dict[str, Any]]] = []
         self.mutate: dict[str, Any] = {}
         self.fail_at: str | None = None
+        self.protocol_calls = 0
+        self.finalisation_protocol = prepare.FINALISATION_PROTOCOL
+        self.stage_attestations: list[dict[str, Any]] = []
+        self.duplicate_model_receipt = False
+
+    def protocol(self) -> Mapping[str, Any]:
+        self.protocol_calls += 1
+        return {
+            "schema": prepare.SCHEMA,
+            "namespace": prepare.NAMESPACE,
+            "finalisation_protocol": self.finalisation_protocol,
+            "state_finaliser_receipt_schema": "firth.state-finaliser-receipt.v2",
+        }
 
     def request(self, template_id: str, context: Mapping[str, Any]) -> Mapping[str, Any]:
         if template_id == self.fail_at:
@@ -99,6 +112,8 @@ class FakeState:
                 "worktree_id": context["worktree_id"],
                 "lease_epoch": context["lease_epoch"],
             }
+            if template_id == "normal.finalise.seal":
+                objects["seal_requested"] = True
             if template_id == "normal.finalise.model-stop":
                 objects.update(
                     container_id=context["container_id"],
@@ -127,10 +142,17 @@ class FakeState:
             raise AssertionError(f"unexpected template {template_id}")
         objects = {**dict(context), **objects}
         objects.update(self.mutate.get(template_id, {}))
-        if template_id == "normal.finalise.model-stop":
+        if (
+            template_id == "normal.finalise.model-stop"
+            and self.duplicate_model_receipt
+        ):
+            response_receipt_id = f"{self.generation - 1:064x}"
+        elif template_id == "normal.finalise.model-stop":
             response_receipt_id = "a" * 64
         elif template_id == "normal.finalise.lease-acquire":
             response_receipt_id = "b" * 64
+        elif template_id in prepare.FINALISE_TEMPLATES:
+            response_receipt_id = f"{self.generation:064x}"
         else:
             response_receipt_id = f"receipt-{self.generation}"
         response: dict[str, Any] = {
@@ -143,13 +165,50 @@ class FakeState:
             "receipt_id": response_receipt_id,
             "objects": objects,
         }
-        if template_id == "normal.finalise.lease-acquire":
-            response["finaliser_receipt"] = {
-                "receipt_id": "f" * 64,
-                "schema": "firth.state-finaliser-receipt.v1",
+        if template_id in prepare.FINALISE_TEMPLATES:
+            stage_attestation = {
+                "schema": "firth.state-transition-attestation.v1",
+                "source": "installed-state",
                 "namespace": "normal-iteration",
                 "repository_id": context["repository_id"],
+                "policy_digest": context["policy_digest"],
                 "incident_id": context["incident_id"],
+                "unit": context["unit"],
+                "branch": context["branch"],
+                "worktree_id": context["worktree_id"],
+                "template_id": template_id,
+                "stage": prepare.FINALISE_STAGES[template_id],
+                "generation": self.generation,
+                "observation_signature": response["observation_signature"],
+                "receipt_id": response_receipt_id,
+                "postcondition_objects": {
+                    field: objects[field]
+                    for field in prepare.FINALISE_OBJECT_FIELDS[template_id]
+                },
+                "objects_digest": hashlib.sha256(
+                    prepare._canonical_projection_bytes(
+                        {
+                            field: objects[field]
+                            for field in prepare.FINALISE_OBJECT_FIELDS[template_id]
+                        }
+                    )
+                ).hexdigest(),
+            }
+            response["stage_attestation"] = stage_attestation
+            self.stage_attestations.append(stage_attestation)
+        if template_id == "normal.finalise.lease-acquire":
+            transition_chain_digest = hashlib.sha256(
+                prepare._canonical_projection_bytes(self.stage_attestations)
+            ).hexdigest()
+            receipt_body = {
+                "schema": "firth.state-finaliser-receipt.v2",
+                "issuer": "firth-resolver-state",
+                "namespace": "normal-iteration",
+                "repository_id": context["repository_id"],
+                "policy_digest": context["policy_digest"],
+                "incident_id": context["incident_id"],
+                "operation_id": "operation-finalise-lease",
+                "template_id": "normal.finalise.lease-acquire",
                 "unit": context["unit"],
                 "branch": context["branch"],
                 "worktree_id": context["worktree_id"],
@@ -159,7 +218,13 @@ class FakeState:
                 "observation_generation": self.generation,
                 "observation_signature": response["observation_signature"],
                 "stage": "lease-acquired",
-                "policy_digest": context["policy_digest"],
+                "transition_chain_digest": transition_chain_digest,
+            }
+            response["finaliser_receipt"] = {
+                "receipt_id": prepare._domain_digest(
+                    "finaliser_receipt", receipt_body
+                ),
+                **receipt_body,
             }
         response.update(self.mutate.get(f"response:{template_id}", {}))
         return response
@@ -443,11 +508,120 @@ class PrepareIterationTests(unittest.TestCase):
         self.assertEqual(receipt["head"], "a" * 40)
         self.assertEqual(receipt["head_tree"], "4" * 40)
         self.assertEqual(receipt["lease_epoch"], envelope["lease_epoch"] + 1)
-        self.assertEqual(receipt["state_receipt_id"], "f" * 64)
+        self.assertRegex(receipt["state_receipt_id"], r"^[0-9a-f]{64}$")
         self.assertEqual(receipt["model_terminal"], True)
         self.assertEqual(receipt["iteration_complete"], False)
         self.assertEqual(receipt["loop_exhausted"], False)
         self.assertEqual(len(receipt["receipts"]), 4)
+        self.assertEqual(
+            [
+                (
+                    attestation["template_id"],
+                    attestation["stage"],
+                    attestation["generation"],
+                    attestation["receipt_id"],
+                    attestation["observation_signature"],
+                )
+                for attestation in receipt["transition_attestations"]
+            ],
+            [
+                (
+                    template_id,
+                    prepare.FINALISE_STAGES[template_id],
+                    15 + index,
+                    receipt["receipts"][index],
+                    f"{15 + index:064x}",
+                )
+                for index, template_id in enumerate(prepare.FINALISE_TEMPLATES)
+            ],
+        )
+        edited_state = FakeState(generation=envelope["generation"])
+        edited_state.mutate["normal.finalise.lease-acquire"] = {
+            "head": "c" * 40,
+            "head_tree": "d" * 40,
+        }
+        edited_receipt = prepare.finalise_iteration(
+            envelope,
+            edited_state,
+            FakeSnapshot(),
+        )
+        self.assertEqual(edited_receipt["head"], "c" * 40)
+        self.assertEqual(edited_receipt["head_tree"], "d" * 40)
+        self.assertEqual(
+            edited_receipt["state_attestation"]["operation_id"],
+            "operation-finalise-lease",
+        )
+
+        unsealed_state = FakeState(generation=envelope["generation"])
+        unsealed_state.mutate["normal.finalise.seal"] = {
+            "seal_requested": False,
+        }
+        with self.assertRaisesRegex(
+            prepare.PreparationError,
+            "seal was not independently observed",
+        ):
+            prepare.finalise_iteration(envelope, unsealed_state, FakeSnapshot())
+        self.assertEqual(
+            [template for template, _ in unsealed_state.calls],
+            ["normal.finalise.seal"],
+        )
+
+
+        state = FakeState(generation=envelope["generation"])
+        state.mutate["response:normal.finalise.seal"] = {
+            "stage_attestation": None
+        }
+        with self.assertRaisesRegex(
+            prepare.PreparationError, "stage attestation is missing"
+        ):
+            prepare.finalise_iteration(envelope, state, FakeSnapshot())
+
+    def test_finalisation_refuses_old_protocol_before_state(self) -> None:
+        envelope, _preparation_state = self.prepare()
+        envelope["finalisation_protocol"] = 1
+        state = FakeState(generation=envelope["generation"])
+        with self.assertRaisesRegex(
+            prepare.PreparationError, "finalisation protocol mismatch"
+        ):
+            prepare.finalise_iteration(envelope, state, FakeSnapshot())
+        self.assertEqual(state.calls, [])
+
+    def test_finalisation_refuses_old_state_protocol_before_effect(self) -> None:
+        envelope, _preparation_state = self.prepare()
+        state = FakeState(generation=envelope["generation"])
+        state.finalisation_protocol = 1
+        with self.assertRaisesRegex(
+            prepare.PreparationError, "state finalisation protocol mismatch"
+        ):
+            prepare.finalise_iteration(envelope, state, FakeSnapshot())
+        self.assertEqual(state.calls, [])
+        self.assertEqual(state.protocol_calls, 1)
+
+    def test_preparation_refuses_old_state_protocol_before_effect(self) -> None:
+        state = FakeState()
+        state.finalisation_protocol = 1
+        with self.assertRaisesRegex(
+            prepare.PreparationError, "state finalisation protocol mismatch"
+        ):
+            prepare.prepare_iteration(
+                self.request(), self.preflight(), self.selector(), state
+            )
+        self.assertEqual(state.calls, [])
+        self.assertEqual(state.protocol_calls, 1)
+
+    def test_finalisation_refuses_duplicate_transition_receipt_before_acl(self) -> None:
+        envelope, _preparation_state = self.prepare()
+        state = FakeState(generation=envelope["generation"])
+        state.duplicate_model_receipt = True
+        with self.assertRaisesRegex(
+            prepare.PreparationError,
+            "duplicate transition receipt_id",
+        ):
+            prepare.finalise_iteration(envelope, state, FakeSnapshot())
+        self.assertEqual(
+            [template for template, _ in state.calls],
+            list(prepare.FINALISE_TEMPLATES[:2]),
+        )
 
     def test_finalisation_refuses_live_writer_or_descendant(self) -> None:
         envelope, _preparation_state = self.prepare()
@@ -471,7 +645,7 @@ class PrepareIterationTests(unittest.TestCase):
             ("normal.finalise.acl-transfer", {"writer": "model"}),
             ("normal.finalise.lease-acquire", {"lease_holder": "model"}),
             ("normal.finalise.lease-acquire", {"writer_present": True}),
-            ("normal.finalise.lease-acquire", {"head": "9" * 40}),
+            ("normal.finalise.lease-acquire", {"head": "z" * 40}),
         ):
             with self.subTest(template=template, mutation=mutation):
                 envelope, _preparation_state = self.prepare()
