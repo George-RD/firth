@@ -187,6 +187,8 @@ class FakeSnapshot:
             "head": context["head"],
             "worktree_id": context["worktree_id"],
             "head_tree": context["head_tree"],
+            "base_commit": context["base_commit"],
+            "base_tree": context["base_tree"],
             "lease_epoch": context["lease_epoch"],
             "observation_generation": context["observation_generation"],
             "observation_signature": context["observation_signature"],
@@ -194,7 +196,18 @@ class FakeSnapshot:
             "snapshot_count": 1,
             "snapshot_digest": "d" * 64,
             "artifact_id": "artifact-snapshot-1",
+            "patch_hash": "9" * 64,
+            "changed_paths": ["meta/todos/todo.alpha.md", "src/Firth/Kernel.lean"],
         }
+        manifest = {
+            "base_commit": context["base_commit"],
+            "head_tree": context["head_tree"],
+            "patch_hash": result["patch_hash"],
+            "changed_paths": result["changed_paths"],
+        }
+        result["changed_paths_digest"] = hashlib.sha256(
+            prepare._canonical_projection_bytes(manifest)
+        ).hexdigest()
         result.update(self.mutate)
         return result
 

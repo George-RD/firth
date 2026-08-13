@@ -85,6 +85,7 @@ class LandingGateTests(unittest.TestCase):
             "policy_digest": self.projection["policy_digest"],
             "incident_id": self.incident_id,
             "head": "3" * 40,
+            "changed_paths_digest": self.admission["snapshot_provenance"]["changed_paths_digest"],
             "head_tree": "4" * 40,
             "unit": "alpha",
             "branch": self.branch,
@@ -163,6 +164,10 @@ class LandingGateTests(unittest.TestCase):
                 "incident_id": self.incident_id,
                 "unit": "alpha",
                 "branch": self.branch,
+                "base_commit": "1" * 40,
+                "patch_hash": "d" * 64,
+                "changed_paths": ["meta/todos/todo.alpha.md", "src/Firth/Kernel.lean"],
+                "changed_paths_digest": self.admission["snapshot_provenance"]["changed_paths_digest"],
                 "worktree_id": "worktree-1",
                 "head": "3" * 40,
                 "head_tree": "4" * 40,
@@ -268,7 +273,49 @@ class LandingGateTests(unittest.TestCase):
 
         admission = copy.deepcopy(self.admission)
         admission["snapshot_provenance"]["changed_paths"] = [self.todo_path]
-        with self.assertRaisesRegex(landing.LandingError, "manifest digest"):
+        with self.assertRaisesRegex(
+            landing.LandingError, "manifest digest|snapshot attestation changed_paths"
+        ):
+            landing.validate_landing(
+                admission,
+                self.projection,
+                self.finaliser,
+                self.reviews,
+                {self.todo_path: self.before},
+                {self.todo_path: self.after},
+                [self.todo_path],
+            )
+
+    def test_unit_and_selected_todo_require_canonical_slugs(self) -> None:
+        for field in ("unit", "selected_todo"):
+            with self.subTest(field=field):
+                admission = copy.deepcopy(self.admission)
+                admission[field] = "alpha/beta"
+                if field == "unit":
+                    admission["selected_todo"] = "alpha/beta"
+                with self.assertRaisesRegex(landing.LandingError, "canonical slug"):
+                    landing.validate_landing(
+                        admission,
+                        self.projection,
+                        self.finaliser,
+                        self.reviews,
+                        {self.todo_path: self.before},
+                        {self.todo_path: self.after},
+                        ["src/Firth/Kernel.lean", self.todo_path],
+                    )
+
+        admission = copy.deepcopy(self.admission)
+        admission["snapshot_provenance"]["changed_paths"] = [self.todo_path]
+        altered_manifest = {
+            "base_commit": admission["base_commit"],
+            "head_tree": admission["head_tree"],
+            "patch_hash": admission["patch_hash"],
+            "changed_paths": [self.todo_path],
+        }
+        admission["snapshot_provenance"]["changed_paths_digest"] = __import__(
+            "hashlib"
+        ).sha256(landing._canonical_bytes(altered_manifest)).hexdigest()
+        with self.assertRaisesRegex(landing.LandingError, "finaliser changed path"):
             landing.validate_landing(
                 admission,
                 self.projection,

@@ -19,6 +19,7 @@ from typing import Any
 SCHEMA = 1
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 OBJECT_ID = re.compile(r"^[0-9a-f]{40,64}$")
+UNIT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 EXPECTED_NORMAL_TEMPLATE_FIELDS = {
     "normal.mirror.fetch": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature"},
     "normal.branch.create": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature", "mirror_id", "branch"},
@@ -406,6 +407,12 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
         or snapshot.get("source") != "installed-state"
     ):
         raise LandingError("installed stable snapshot attestation is missing")
+    changed_paths = provenance.get("changed_paths")
+    changed_paths_digest = _digest(
+        provenance.get("changed_paths_digest"), "candidate changed_paths_digest"
+    )
+    if receipt.get("changed_paths_digest") != changed_paths_digest:
+        raise LandingError("finaliser changed path manifest mismatch")
     snapshot_expected = {
         "repository_id": admission["repository_id"],
         "policy_digest": admission["policy_digest"],
@@ -420,6 +427,10 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
         "artifact_id": snapshot_artifact,
         "observation_generation": receipt.get("generation"),
         "observation_signature": finaliser_signature,
+        "base_commit": admission["base_commit"],
+        "patch_hash": admission["patch_hash"],
+        "changed_paths": changed_paths,
+        "changed_paths_digest": changed_paths_digest,
     }
     for field, value in snapshot_expected.items():
         if snapshot.get(field) != value:
@@ -531,6 +542,8 @@ def validate_landing(
         "prepared observation signature",
     )
     unit = _text(admission.get("unit"), "unit")
+    if UNIT.fullmatch(unit) is None:
+        raise LandingError("prepared unit is not a canonical slug")
     incident_id = _incident(admission.get("incident_id"))
     branch = _text(admission.get("branch"), "branch")
     if branch != _normal_branch(incident_id):
@@ -558,6 +571,8 @@ def validate_landing(
             raise LandingError("non-todo unit changed tracker bytes")
     else:
         selected_todo = _text(selected_todo, "selected_todo")
+        if UNIT.fullmatch(selected_todo) is None:
+            raise LandingError("selected_todo is not a canonical slug")
         if selected_todo != unit:
             raise LandingError("selected todo and prepared unit mismatch")
         expected_path = f"meta/todos/todo.{selected_todo}.md"

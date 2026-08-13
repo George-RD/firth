@@ -536,6 +536,8 @@ def prepare_iteration(
         "incident_id": base["incident_id"],
         "unit": unit,
         "branch": branch,
+        "base_commit": base["main_commit"],
+        "base_tree": base["main_tree"],
         "head": head,
         "worktree_id": worktree_id,
         "container_id": container_id,
@@ -598,6 +600,8 @@ def validate_prepared_envelope(
         "incident_id": incident_id,
         "unit": unit,
         "branch": branch,
+        "base_commit": _require_object_id(envelope.get("base_commit"), "base_commit"),
+        "base_tree": _require_object_id(envelope.get("base_tree"), "base_tree"),
         "head": _require_object_id(envelope.get("head"), "head"),
         "worktree_id": _require_text(envelope.get("worktree_id"), "worktree_id"),
         "container_id": _require_text(envelope.get("container_id"), "container_id"),
@@ -668,6 +672,8 @@ def finalise_iteration(
         "policy_digest": _require_digest(envelope.get("policy_digest"), "policy_digest"),
         "unit": _require_text(envelope.get("unit"), "unit"),
         "branch": _require_text(envelope.get("branch"), "branch"),
+        "base_commit": _require_object_id(envelope.get("base_commit"), "base_commit"),
+        "base_tree": _require_object_id(envelope.get("base_tree"), "base_tree"),
         "head": _require_object_id(envelope.get("head"), "head"),
         "worktree_id": _require_text(envelope.get("worktree_id"), "worktree_id"),
         "container_id": _require_text(envelope.get("container_id"), "container_id"),
@@ -797,6 +803,8 @@ def finalise_iteration(
         "worktree_id": context["worktree_id"],
         "head_tree": context["head_tree"],
         "lease_epoch": context["lease_epoch"],
+        "base_commit": context["base_commit"],
+        "base_tree": context["base_tree"],
         "observation_generation": generation,
         "observation_signature": last["observation_signature"],
         "stable": True,
@@ -807,6 +815,25 @@ def finalise_iteration(
             raise PreparationError(f"stable snapshot {field} mismatch")
     snapshot_digest = _require_digest(snapshot.get("snapshot_digest"), "snapshot_digest")
     snapshot_artifact = _require_text(snapshot.get("artifact_id"), "snapshot artifact_id")
+    patch_hash = _require_digest(snapshot.get("patch_hash"), "snapshot patch_hash")
+    changed_paths = snapshot.get("changed_paths")
+    if (
+        not isinstance(changed_paths, list)
+        or not all(isinstance(path, str) and path for path in changed_paths)
+        or changed_paths != sorted(set(changed_paths))
+    ):
+        raise PreparationError("stable snapshot changed_paths are invalid")
+    manifest = {
+        "base_commit": context["base_commit"],
+        "head_tree": context["head_tree"],
+        "patch_hash": patch_hash,
+        "changed_paths": changed_paths,
+    }
+    changed_paths_digest = hashlib.sha256(
+        _canonical_projection_bytes(manifest)
+    ).hexdigest()
+    if snapshot.get("changed_paths_digest") != changed_paths_digest:
+        raise PreparationError("stable snapshot changed path manifest digest mismatch")
     if state_receipt is None or model_response is None or model_objects is None:
         raise PreparationError("finaliser attestations are incomplete")
     if worktree_response is None or worktree_objects is None:
@@ -888,6 +915,10 @@ def finalise_iteration(
         ),
         "snapshot_digest": snapshot_digest,
         "artifact_id": snapshot_artifact,
+        "base_commit": context["base_commit"],
+        "patch_hash": patch_hash,
+        "changed_paths": changed_paths,
+        "changed_paths_digest": changed_paths_digest,
     }
     return {
         "prepared_generation": envelope["generation"],
@@ -903,6 +934,7 @@ def finalise_iteration(
         "head": context["head"],
         "head_tree": context["head_tree"],
         "worktree_id": context["worktree_id"],
+        "changed_paths_digest": changed_paths_digest,
         "lease_epoch": context["lease_epoch"],
         "snapshot_digest": snapshot_digest,
         "snapshot_artifact_id": snapshot_artifact,
