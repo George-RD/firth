@@ -209,6 +209,32 @@ def _validate_candidate_paths(
         raise LandingError(f"candidate path is outside normal-auto policy: {path}")
 
 
+def _validate_candidate_manifest(
+    admission: Mapping[str, Any], candidate_paths: Sequence[str]
+) -> None:
+    provenance = admission.get("snapshot_provenance")
+    if not isinstance(provenance, Mapping) or provenance.get("source") != "installed-state":
+        raise LandingError("installed candidate path manifest is missing")
+    authoritative = provenance.get("changed_paths")
+    if (
+        not isinstance(authoritative, list)
+        or not all(isinstance(path, str) and path for path in authoritative)
+        or authoritative != sorted(set(authoritative))
+        or len(candidate_paths) != len(authoritative)
+        or sorted(candidate_paths) != authoritative
+    ):
+        raise LandingError("candidate paths are not the complete authoritative tree delta")
+    manifest = {
+        "base_commit": admission["base_commit"],
+        "head_tree": admission["head_tree"],
+        "patch_hash": admission["patch_hash"],
+        "changed_paths": authoritative,
+    }
+    actual = hashlib.sha256(_canonical_bytes(manifest)).hexdigest()
+    if provenance.get("changed_paths_digest") != actual:
+        raise LandingError("candidate path manifest digest mismatch")
+
+
 def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]) -> None:
     _schema(receipt.get("schema"), "finaliser receipt")
     expected = {
@@ -553,7 +579,7 @@ def validate_landing(
                 raise LandingError(f"unselected todo changed: {path}")
 
     _validate_candidate_paths(projection, candidate_paths, selected_todo)
-
+    _validate_candidate_manifest(admission, candidate_paths)
     return {
         "schema": SCHEMA,
         "admitted": True,

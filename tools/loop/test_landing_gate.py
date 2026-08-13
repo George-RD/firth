@@ -62,9 +62,19 @@ class LandingGateTests(unittest.TestCase):
                 "candidate_commit": "3" * 40,
                 "candidate_tree": "4" * 40,
                 "patch_hash": "d" * 64,
+                "changed_paths": ["meta/todos/todo.alpha.md", "src/Firth/Kernel.lean"],
                 "verified": True,
             },
         }
+        manifest = {
+            "base_commit": self.admission["base_commit"],
+            "head_tree": self.admission["head_tree"],
+            "patch_hash": self.admission["patch_hash"],
+            "changed_paths": self.admission["snapshot_provenance"]["changed_paths"],
+        }
+        self.admission["snapshot_provenance"]["changed_paths_digest"] = __import__(
+            "hashlib"
+        ).sha256(landing._canonical_bytes(manifest)).hexdigest()
         self.finaliser = {
             "prepared_generation": 4,
             "prepared_observation_signature": "5" * 64,
@@ -249,6 +259,25 @@ class LandingGateTests(unittest.TestCase):
                 self.admission.update(incident_id=incident_id, branch=branch)
                 with self.assertRaises(landing.LandingError):
                     self.validate()
+
+    def test_candidate_paths_must_equal_installed_complete_tree_delta(self) -> None:
+        with self.assertRaisesRegex(landing.LandingError, "complete authoritative"):
+            self.validate([self.todo_path])
+        with self.assertRaisesRegex(landing.LandingError, "complete authoritative"):
+            self.validate(["src/Firth/Kernel.lean", self.todo_path, "src/Firth/Extra.lean"])
+
+        admission = copy.deepcopy(self.admission)
+        admission["snapshot_provenance"]["changed_paths"] = [self.todo_path]
+        with self.assertRaisesRegex(landing.LandingError, "manifest digest"):
+            landing.validate_landing(
+                admission,
+                self.projection,
+                self.finaliser,
+                self.reviews,
+                {self.todo_path: self.before},
+                {self.todo_path: self.after},
+                [self.todo_path],
+            )
 
     def test_finaliser_and_reviews_bind_the_same_exact_objects(self) -> None:
         mutations = (
