@@ -264,6 +264,10 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
     _object_id(receipt.get("head"), "finaliser head")
     _object_id(receipt.get("head_tree"), "finaliser head_tree")
     worktree_id = _text(receipt.get("worktree_id"), "finaliser worktree_id")
+    if worktree_id != _text(
+        admission.get("prepared_worktree_id"), "prepared_worktree_id"
+    ):
+        raise LandingError("finaliser worktree does not match prepared worktree")
     generation = receipt.get("generation")
     if (
         not isinstance(generation, int)
@@ -374,6 +378,22 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
             raise LandingError(f"state finaliser attestation {field} mismatch")
     if state.get("receipt_id") != state_receipt_id:
         raise LandingError("state finaliser attestation receipt mismatch")
+    transition_chain_digest = hashlib.sha256(
+        _canonical_bytes(transition_attestations)
+    ).hexdigest()
+    if state.get("transition_chain_digest") != transition_chain_digest:
+        raise LandingError("state finaliser transition chain digest mismatch")
+    state_receipt_body = {
+        key: value
+        for key, value in state.items()
+        if key not in {"receipt_id", "source"}
+    }
+    expected_state_receipt_id = hashlib.sha256(
+        b"firth-resolver/v1/finaliser_receipt\0"
+        + _canonical_bytes(state_receipt_body)
+    ).hexdigest()
+    if state_receipt_id != expected_state_receipt_id:
+        raise LandingError("state finaliser receipt digest mismatch")
 
     model = receipt.get("model_attestation")
     if (
@@ -398,8 +418,14 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
     for field, value in model_expected.items():
         if model.get(field) != value:
             raise LandingError(f"model stop attestation {field} mismatch")
-    _text(model.get("container_id"), "model attestation container_id")
-    _text(model.get("cgroup_id"), "model attestation cgroup_id")
+    if model.get("container_id") != _text(
+        admission.get("prepared_container_id"), "prepared_container_id"
+    ):
+        raise LandingError("model attestation container_id mismatch")
+    if model.get("cgroup_id") != _text(
+        admission.get("prepared_cgroup_id"), "prepared_cgroup_id"
+    ):
+        raise LandingError("model attestation cgroup_id mismatch")
     if _digest(model.get("receipt_id"), "model stop attestation receipt_id") != receipts[1]:
         raise LandingError("model stop attestation receipt mismatch")
     _object_id(model.get("head"), "model attestation head")

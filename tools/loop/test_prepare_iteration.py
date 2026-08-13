@@ -28,6 +28,7 @@ class FakeState:
         self.calls: list[tuple[str, dict[str, Any]]] = []
         self.mutate: dict[str, Any] = {}
         self.fail_at: str | None = None
+        self.stage_attestations: list[dict[str, Any]] = []
 
     def request(self, template_id: str, context: Mapping[str, Any]) -> Mapping[str, Any]:
         if template_id == self.fail_at:
@@ -146,7 +147,7 @@ class FakeState:
             "objects": objects,
         }
         if template_id in prepare.FINALISE_TEMPLATES:
-            response["stage_attestation"] = {
+            stage_attestation = {
                 "schema": "firth.state-transition-attestation.v1",
                 "source": "installed-state",
                 "namespace": "normal-iteration",
@@ -162,13 +163,21 @@ class FakeState:
                 "observation_signature": response["observation_signature"],
                 "receipt_id": response_receipt_id,
             }
+            response["stage_attestation"] = stage_attestation
+            self.stage_attestations.append(stage_attestation)
         if template_id == "normal.finalise.lease-acquire":
-            response["finaliser_receipt"] = {
-                "receipt_id": "f" * 64,
+            transition_chain_digest = hashlib.sha256(
+                prepare._canonical_projection_bytes(self.stage_attestations)
+            ).hexdigest()
+            receipt_body = {
                 "schema": "firth.state-finaliser-receipt.v1",
+                "issuer": "firth-resolver-state",
                 "namespace": "normal-iteration",
                 "repository_id": context["repository_id"],
+                "policy_digest": context["policy_digest"],
                 "incident_id": context["incident_id"],
+                "operation_id": "operation-finalise-lease",
+                "template_id": "normal.finalise.lease-acquire",
                 "unit": context["unit"],
                 "branch": context["branch"],
                 "worktree_id": context["worktree_id"],
@@ -178,7 +187,13 @@ class FakeState:
                 "observation_generation": self.generation,
                 "observation_signature": response["observation_signature"],
                 "stage": "lease-acquired",
-                "policy_digest": context["policy_digest"],
+                "transition_chain_digest": transition_chain_digest,
+            }
+            response["finaliser_receipt"] = {
+                "receipt_id": prepare._domain_digest(
+                    "finaliser_receipt", receipt_body
+                ),
+                **receipt_body,
             }
         response.update(self.mutate.get(f"response:{template_id}", {}))
         return response
@@ -462,11 +477,42 @@ class PrepareIterationTests(unittest.TestCase):
         self.assertEqual(receipt["head"], "a" * 40)
         self.assertEqual(receipt["head_tree"], "4" * 40)
         self.assertEqual(receipt["lease_epoch"], envelope["lease_epoch"] + 1)
-        self.assertEqual(receipt["state_receipt_id"], "f" * 64)
+        self.assertRegex(receipt["state_receipt_id"], r"^[0-9a-f]{64}$")
         self.assertEqual(receipt["model_terminal"], True)
         self.assertEqual(receipt["iteration_complete"], False)
         self.assertEqual(receipt["loop_exhausted"], False)
         self.assertEqual(len(receipt["receipts"]), 4)
+        self.assertEqual(
+            [
+                (
+                    attestation["template_id"],
+                    attestation["stage"],
+                    attestation["generation"],
+                    attestation["receipt_id"],
+                    attestation["observation_signature"],
+                )
+                for attestation in receipt["transition_attestations"]
+            ],
+            [
+                (
+                    template_id,
+                    prepare.FINALISE_STAGES[template_id],
+                    15 + index,
+                    receipt["receipts"][index],
+                    f"{15 + index:064x}",
+                )
+                for index, template_id in enumerate(prepare.FINALISE_TEMPLATES)
+            ],
+        )
+
+        state = FakeState(generation=envelope["generation"])
+        state.mutate["response:normal.finalise.seal"] = {
+            "stage_attestation": None
+        }
+        with self.assertRaisesRegex(
+            prepare.PreparationError, "stage attestation is missing"
+        ):
+            prepare.finalise_iteration(envelope, state, FakeSnapshot())
 
     def test_finalisation_refuses_live_writer_or_descendant(self) -> None:
         envelope, _preparation_state = self.prepare()

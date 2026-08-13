@@ -44,6 +44,9 @@ class LandingGateTests(unittest.TestCase):
             "prepared_generation": 4,
             "prepared_observation_signature": "5" * 64,
             "prepared_head": "1" * 40,
+            "prepared_worktree_id": "worktree-1",
+            "prepared_container_id": "container-1",
+            "prepared_cgroup_id": "cgroup-1",
             "base_commit": "1" * 40,
             "base_tree": "2" * 40,
             "head_commit": "3" * 40,
@@ -101,9 +104,12 @@ class LandingGateTests(unittest.TestCase):
             "state_attestation": {
                 "schema": "firth.state-finaliser-receipt.v1",
                 "source": "installed-state",
+                "issuer": "firth-resolver-state",
                 "namespace": "normal-iteration",
                 "repository_id": "George-RD/firth",
                 "policy_digest": self.projection["policy_digest"],
+                "operation_id": "operation-finalise-lease",
+                "template_id": "normal.finalise.lease-acquire",
                 "incident_id": self.incident_id,
                 "unit": "alpha",
                 "branch": self.branch,
@@ -204,6 +210,23 @@ class LandingGateTests(unittest.TestCase):
                 ("normal.finalise.lease-acquire", "lease-acquired", 8, "e" * 64, "b" * 64),
             )
         ]
+        transition_chain_digest = __import__("hashlib").sha256(
+            landing._canonical_bytes(self.finaliser["transition_attestations"])
+        ).hexdigest()
+        self.finaliser["state_attestation"][
+            "transition_chain_digest"
+        ] = transition_chain_digest
+        state_body = {
+            key: value
+            for key, value in self.finaliser["state_attestation"].items()
+            if key not in {"source", "receipt_id"}
+        }
+        state_receipt_id = __import__("hashlib").sha256(
+            b"firth-resolver/v1/finaliser_receipt\0"
+            + landing._canonical_bytes(state_body)
+        ).hexdigest()
+        self.finaliser["state_attestation"]["receipt_id"] = state_receipt_id
+        self.finaliser["state_receipt_id"] = state_receipt_id
         common = {
             "schema": 1,
             "kind": "firth-exact-object-review",
@@ -512,6 +535,40 @@ class LandingGateTests(unittest.TestCase):
         finaliser["transition_attestations"][2]["receipt_id"] = finaliser["receipts"][0]
         with self.assertRaisesRegex(landing.LandingError, "duplicated"):
             self.validate([self.todo_path], finaliser=finaliser)
+
+        for index, label in ((0, "seal"), (2, "ACL")):
+            with self.subTest(transition_signature=label):
+                finaliser = copy.deepcopy(self.finaliser)
+                finaliser["transition_attestations"][index][
+                    "observation_signature"
+                ] = "0" * 64
+                with self.assertRaisesRegex(
+                    landing.LandingError, "transition chain digest"
+                ):
+                    self.validate([self.todo_path], finaliser=finaliser)
+
+        finaliser = copy.deepcopy(self.finaliser)
+        finaliser["state_attestation"]["transition_chain_digest"] = "0" * 64
+        with self.assertRaisesRegex(landing.LandingError, "transition chain digest"):
+            self.validate([self.todo_path], finaliser=finaliser)
+
+        finaliser = copy.deepcopy(self.finaliser)
+        for attestation in finaliser["transition_attestations"]:
+            attestation["worktree_id"] = "worktree-other"
+        finaliser["worktree_id"] = "worktree-other"
+        finaliser["state_attestation"]["worktree_id"] = "worktree-other"
+        finaliser["model_attestation"]["worktree_id"] = "worktree-other"
+        finaliser["worktree_attestation"]["worktree_id"] = "worktree-other"
+        finaliser["snapshot_attestation"]["worktree_id"] = "worktree-other"
+        with self.assertRaisesRegex(landing.LandingError, "prepared worktree"):
+            self.validate([self.todo_path], finaliser=finaliser)
+
+        for field in ("container_id", "cgroup_id"):
+            with self.subTest(prepared_identity=field):
+                finaliser = copy.deepcopy(self.finaliser)
+                finaliser["model_attestation"][field] = f"{field}-other"
+                with self.assertRaisesRegex(landing.LandingError, field):
+                    self.validate([self.todo_path], finaliser=finaliser)
 
     def test_selected_todo_must_match_prepared_unit(self) -> None:
         self.admission["selected_todo"] = "beta"

@@ -155,7 +155,7 @@ def _request(
     if not isinstance(generation, int) or isinstance(generation, bool) or generation != previous_generation + 1:
         raise PreparationError(f"{template_id}: observation generation is not the next generation")
     _require_digest(response.get("observation_signature"), f"{template_id} observation_signature")
-    if template_id in {"normal.finalise.model-stop", "normal.finalise.lease-acquire"}:
+    if template_id in FINALISE_TEMPLATES:
         _require_digest(response.get("receipt_id"), f"{template_id} attestation receipt_id")
     else:
         _require_text(response.get("receipt_id"), f"{template_id} receipt_id")
@@ -253,6 +253,12 @@ def _canonical_projection_bytes(value: Any) -> bytes:
             + b"}"
         )
     raise PreparationError("installed policy projection contains an unsupported value")
+
+def _domain_digest(kind: str, value: Any) -> str:
+    return hashlib.sha256(
+        f"firth-resolver/v1/{kind}\0".encode("ascii")
+        + _canonical_projection_bytes(value)
+    ).hexdigest()
 
 def _projection_pairs(values: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
@@ -786,6 +792,24 @@ def finalise_iteration(
                 if state_receipt.get(field) != value:
                     raise PreparationError(f"state finaliser receipt {field} mismatch")
             _require_digest(state_receipt.get("receipt_id"), "state finaliser receipt_id")
+            prospective_chain = [
+                *transition_attestations,
+                dict(stage_attestation),
+            ]
+            transition_chain_digest = hashlib.sha256(
+                _canonical_projection_bytes(prospective_chain)
+            ).hexdigest()
+            if state_receipt.get("transition_chain_digest") != transition_chain_digest:
+                raise PreparationError("state finaliser transition chain digest mismatch")
+            state_receipt_body = {
+                key: value
+                for key, value in state_receipt.items()
+                if key != "receipt_id"
+            }
+            if state_receipt["receipt_id"] != _domain_digest(
+                "finaliser_receipt", state_receipt_body
+            ):
+                raise PreparationError("state finaliser receipt digest mismatch")
             worktree_response = response
             worktree_objects = objects
             context = {
