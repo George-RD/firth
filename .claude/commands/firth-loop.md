@@ -21,10 +21,59 @@ of these files from memory or by guessing its contents.
 
 | File | When | Declared tokens |
 |---|---|---|
-| `.claude/skills/firth-loop-recovery/SKILL.md` | Any preflight recovery row (dirty-tree recovery, open-PR recovery, interrupted cleanup, recover-todo branch, surviving-branch adopt/quarantine) | `RECOVERED`, `LOOP HALTED` (terminal tokens come from landing after a hand-off) |
-| `.claude/skills/firth-loop-landing/SKILL.md` | Land (publish) and Cleanup (merge); also the open-PR recovery row after CI/review is green, and the quarantine hand-off | `ITERATION COMPLETE`, `LOOP HALTED` |
+| `.claude/skills/firth-loop-recovery/SKILL.md` | Any non-fresh legacy preflight row, for read-only validation before the host resolver takes over | `RECOVERY VALIDATED`, `LOOP HALTED` (both make the command emit `LOOP HALTED`) |
+| `.claude/skills/firth-loop-landing/SKILL.md` | Dormant legacy Land and Cleanup only; prepared mode never invokes it | `ITERATION COMPLETE`, `LOOP HALTED` |
 | `.claude/skills/cairn-propose/SKILL.md` | Substantial-work trigger before proposing a change | procedure-specific |
 | `.claude/skills/cairn-apply/SKILL.md` | Substantial-work trigger while applying a change | procedure-specific |
+
+
+**Authority mode.** The host chooses one mode before this session exists.
+Candidate bytes and model output never choose it.
+
+- **Prepared finaliser mode:** the host mounts
+  `/run/firth/normal-finalizer-active`,
+  `/run/firth/prepared-envelope.json`, and
+  `/run/firth/authority-policy.projection.json` read-only and exposes the typed
+  no-argument `firth_finalize` tool. If the marker exists, this mode is
+  mandatory. Validate the installed objects before any write with the
+  host-installed, digest-pinned helper outside the writable candidate checkout:
+  `/usr/libexec/firth-resolver/prepare-iteration validate-envelope`. Never run
+  `tools/loop/prepare_iteration.py` from candidate bytes for admission. Any
+  missing file or helper, non-zero exit, policy mismatch, stale binding, or
+  missing finaliser is
+  `LOOP HALTED`; touch nothing. The validated envelope supplies the one
+  selected unit, branch, head, worktree identity, lease epoch, policy digest,
+  and observation generation. Do not run MISSION selection, Preflight, Select
+  ONE unit, Backlog generation, branch creation, Land, Cleanup, `git add`,
+  `git commit`, `git push`, `gh`, or any recovery mutation. The branch and
+  linked worktree already exist and their Git file, index, refs, common
+  metadata, config, and credentials are outside model write authority.
+  Working-tree bytes are the only writable repository surface.
+
+  In prepared mode, resolve the Cairn binding, read the selected todo or
+  finding named by the envelope, then follow Scope, Implement + test starting
+  at "Make the smallest change", Verify, and Record for that unit only. For a
+  todo unit, put the selected todo in its sanctioned final `done` state before
+  finalisation; never alter another todo or another byte of the selected todo
+  except the template-owned status transition. Then call `firth_finalize`
+  exactly once with no arguments. The call is terminal for this OMP session:
+  it requests only the issuer-bound prepared unit's seal. Do not print a
+  terminal token or claim merge, acknowledgement, recovery, iteration
+  completion, or project completion. State must separately observe model
+  cgroup stop and all descendants gone, no writer, ACL transfer, broker lease,
+  and exactly one stable snapshot before any later commit, gate, review,
+  publication, merge, or acknowledgement transition.
+
+- **Dormant legacy mode:** if and only if the host marker is absent, the
+  procedure below remains temporarily authorised during rollout. Its branch,
+  publication, and merge steps are legacy authority, not a fallback a prepared
+  session may select. The installed cutover later removes this mode. Because
+  the recovery skill is validation-only, a legacy preflight recovery verdict
+  reports the validated state and halts for the host resolver rather than
+  mutating it in OMP.
+
+Nothing in either mode emits `LOOP EXHAUSTED` except the explicit
+`coverage.py --run-gates` decision point below.
 
 **Input: MISSION.** The harness re-injects one fixed user message per
 iteration. Any text in that message beyond the command itself binds MISSION.
@@ -40,12 +89,11 @@ Precedence:
    `python3 tools/loop/select_unit.py --node <id>` for the todo branch; its first
    lint Error finding remains first, else use its top eligible open todo (see
    Select ONE unit). Already
-   done, or blocked/quarantined: report why and output LOOP EXHAUSTED; the
-   message is immutable, so no later iteration of this run can progress
-   either.
+   done, blocked, or quarantined: report why and output LOOP HALTED. The
+   immutable message cannot establish project completion.
 3. MISSION is a scope filter (e.g. "toolchain only"): apply normal selection
-   restricted to that scope. Nothing in scope: report it, output LOOP
-   EXHAUSTED. Never select outside the scope.
+   restricted to that scope. Nothing in scope: report it and output LOOP
+   HALTED. Never select outside the scope.
 4. MISSION describes new work: derive the slug canonically so every session
    computes the same one: lowercase the mission text, replace runs of
    non-alphanumerics with single hyphens, take the first 40 characters, then
@@ -62,7 +110,7 @@ Precedence:
    `firth.language.kernel`), or a file path that falls under exactly one
    node's `path`. Nothing else resolves; never infer a node from meaning.
    Unresolved: report that the mission needs a node, list candidate nodes
-   with a ready-to-paste corrected mission, and output LOOP EXHAUSTED. Node
+   with a ready-to-paste corrected mission, and output LOOP HALTED. Node
    choice drives Scope, deps, and provenance for every later iteration, so a
    wrong anchor compounds silently. When adopting any surviving branch for a
    MISSION, confirm its slug maps to this MISSION's unit; a mismatched
@@ -247,21 +295,16 @@ list`; never read a failed observation as an absence.
 
 | State | Action |
 |---|---|
-| Dirty tree, on a `loop/*` branch whose slug maps to a known unit (todo or finding) | Finishing that unit IS this iteration. Read `firth-loop-recovery` §1 (recover in place). No checkout of any kind until the tree is clean. On `RECOVERED`, continue at Verify. |
-| Dirty tree, anything else (detached, unknown branch, unexplained files, intent unclear) | FAIL CLOSED. Touch nothing: no stage, stash, clean, commit, checkout, and no file writes either, the dirty tree is evidence. Report the state (`git status --short`, branch/HEAD, why unclassifiable) and output LOOP HALTED. Next sessions land in this row and re-report until the maintainer resolves it; that repeating halt IS the durable signal. |
-| Clean; exactly ONE open `loop/*` PR exists | Recovery unit. Read `firth-loop-recovery` §2, then `firth-loop-landing` at Cleanup. On `ITERATION COMPLETE` from landing, end. |
-| Clean; MORE than one open `loop/*` PR | FAIL CLOSED. A prior run violated one-PR-per-iteration and the right merge order is a judgment call. Report all of them, output LOOP HALTED. |
-| Clean; a `loop/*` branch whose tip matches a MERGED PR's headRefOid (`gh pr list --state merged --head <branch> --json headRefOid,mergedAt`) | Interrupted cleanup, not work. Read `firth-loop-recovery` §3. Preflight deletes branches ONLY here and in the discard-note case (§4). On `RECOVERED`, continue preflight. |
-| Clean; a `loop/*` branch covered by an existing `todo.recover-<slug>` on main | Read `firth-loop-recovery` §4 (status-branched: discard-authorised cleanup, ambiguous, or quarantined). Never delete or commit to a quarantined branch; if the worktree has it checked out, park off it (clean tree, pure ref move). On `RECOVERED`, continue preflight as if the branch were absent. |
-| Clean; any other surviving `loop/*` branch (closed PR, no PR, or tip differs from merged PR) | Read `firth-loop-recovery` §5. Adopt (open todo/finding → `RECOVERED`, continue at Scope) or quarantine (author `todo.recover-<slug>`, hand off to `firth-loop-landing`; landing emits the terminal token). A local branch ref is the only thing keeping those commits alive: never delete without a MERGED PR at the same tip or an explicit maintainer discard note in the todo. |
-| Clean, parked detached, no unquarantined `loop/*` branches or PRs | Freshness is part of the verdict: if `git rev-parse HEAD` differs from `git rev-parse origin/main`, classify by ancestry: HEAD an ancestor of origin/main - fast-forward the park (`git merge-base --is-ancestor HEAD origin/main && git merge --ff-only origin/main`); HEAD ahead of or diverged from origin/main - unreferenced committed work, FAIL CLOSED: report both hashes and output LOOP HALTED (the detached commits are the only reference keeping that work alive; clean tree, pure ref moves only - the supervisor refreshes only the launch checkout, never this worktree, observed 2026-08-11: selection on a week-old detached HEAD starved and re-parked a fixed incident). Then select fresh work (below). |
+| Dirty tree, on a `loop/*` branch whose slug maps to a known unit | Read `firth-loop-recovery` for validation only. Preserve every byte and ref. Report the validated binding or indeterminate evidence, then output LOOP HALTED for host-resolver handoff. |
+| Dirty tree, anything else (detached, unknown branch, unexplained files, intent unclear) | FAIL CLOSED. Touch nothing: no stage, stash, clean, commit, checkout, or file writes. Report the state and output LOOP HALTED. |
+| Clean; exactly ONE open `loop/*` PR exists | Read `firth-loop-recovery` for validation only. Do not fix, push, comment, review, enqueue, merge, acknowledge, or relaunch. Report, then output LOOP HALTED for host-resolver handoff. |
+| Clean; MORE than one open `loop/*` PR | FAIL CLOSED. Complete forge evidence is conflicting and merge order is a judgement. Report all of it, then output LOOP HALTED. |
+| Clean; any surviving `loop/*` branch, including exact merged tips, recover-todo branches, adoptable units, and orphans | Read `firth-loop-recovery` for validation only. Do not checkout, delete, fast-forward, author a todo, push, or hand off to landing. Report the immutable template recommendation or no-ticket reason, then output LOOP HALTED. |
+| Clean, parked detached, no `loop/*` branches or PRs | Continue only when `git rev-parse HEAD` exactly equals `git rev-parse origin/main`. Any ancestor, ahead, divergence, missing identity, or observation failure is validated read-only by `firth-loop-recovery`, reported, and ends in LOOP HALTED. No in-OMP fast-forward is authorised. |
 
-**Setup.** Runs AFTER the preflight verdict and before the first `$CAIRN`
-command (preflight needs only git and gh; on a fail-closed verdict nothing
-is touched at all). If the verdict adopted a surviving `loop/*` branch,
-check it out NOW (`git checkout loop/<slug>`; clean tree, pure ref move) so
-Scope and everything after run against the recovered state, not
-origin/main. Then resolve the `CAIRN` binding per Repo bindings above
+**Setup.** Runs only after the dormant legacy preflight proves a clean checkout
+at exact `origin/main` with no loop branch or PR. No adopted or recovered branch
+continues in OMP. Resolve the `CAIRN` binding per Repo bindings above
 (`command -v cairn`, the `-x` test, then `--version`); failing at any step:
 touch nothing, report, output LOOP HALTED.
 
@@ -447,10 +490,10 @@ required file's declared tokens):
 
 - ITERATION COMPLETE: unit landed, or safely deferred with a blocked todo.
 - LOOP EXHAUSTED: no eligible todo exists, Backlog generation found no next
-  obligation, and coverage reports `loop_exhausted_valid` true (with no
-  MISSION this is project completion, per dec.loop-autonomy); or the
-  immutable MISSION can never progress in this run (named unit done or
-  blocked, scope empty).
+  obligation, and `python3 tools/loop/coverage.py --run-gates` reports
+  `loop_exhausted_valid` true. With no MISSION this is project completion per
+  dec.loop-autonomy and dec.mvp-completion. No MISSION state, receipt, merge,
+  skill, deployment, resume, acknowledgement, or UI status substitutes.
 - LOOP HALTED: fail-closed state needs the maintainer; do not continue.
 
 The token is the FINAL line of output, alone, verbatim; the summary comes

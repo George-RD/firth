@@ -70,27 +70,31 @@ def check(name: str, cond: bool) -> None:
         ok = False
 
 
-check("both lenses on first lines pass", run_gate(HEAD, [
-    f"review: correctness {HEAD}", f"review: simplicity {HEAD}"]) == 0)
-check("missing simplicity fails", run_gate(HEAD, [
-    f"review: correctness {HEAD}"]) != 0)
-check("missing correctness fails", run_gate(HEAD, [
-    f"review: simplicity {HEAD}"]) != 0)
-check("no comments fail", run_gate(HEAD, []) != 0)
-check("wrong sha fails", run_gate(HEAD, [
-    f"review: correctness {HEAD}",
-    "review: simplicity 9999999999999999999999999999999999999999"]) != 0)
-check("one comment cannot carry both lenses", run_gate(HEAD, [
-    f"review: correctness {HEAD}"]) != 0
-    and run_gate(HEAD, [f"review: correctness {HEAD} review: simplicity {HEAD}"]) != 0)
-check("trailing text on the marker line fails", run_gate(HEAD, [
-    f"review: correctness {HEAD} looks good",
-    f"review: simplicity {HEAD}"]) != 0)
-check("marker as substring fails", run_gate(HEAD, [
-    f"re: review: correctness {HEAD}", f"review: simplicity {HEAD}"]) != 0)
-check("unreadable head fails", run_gate(HEAD, [
-    f"review: correctness {HEAD}", f"review: simplicity {HEAD}"],
-    gh_head="") != 0)
+def main() -> int:
+    check("both lenses on first lines pass", run_gate(HEAD, [
+        f"review: correctness {HEAD}", f"review: simplicity {HEAD}"]) == 0)
+    check("missing simplicity fails", run_gate(HEAD, [
+        f"review: correctness {HEAD}"]) != 0)
+    check("missing correctness fails", run_gate(HEAD, [
+        f"review: simplicity {HEAD}"]) != 0)
+    check("no comments fail", run_gate(HEAD, []) != 0)
+    check("wrong sha fails", run_gate(HEAD, [
+        f"review: correctness {HEAD}",
+        "review: simplicity 9999999999999999999999999999999999999999"]) != 0)
+    check("one comment cannot carry both lenses", run_gate(HEAD, [
+        f"review: correctness {HEAD}"]) != 0
+        and run_gate(HEAD, [f"review: correctness {HEAD} review: simplicity {HEAD}"]) != 0)
+    check("trailing text on the marker line fails", run_gate(HEAD, [
+        f"review: correctness {HEAD} looks good",
+        f"review: simplicity {HEAD}"]) != 0)
+    check("marker as substring fails", run_gate(HEAD, [
+        f"re: review: correctness {HEAD}", f"review: simplicity {HEAD}"]) != 0)
+    check("unreadable head fails", run_gate(HEAD, [
+        f"review: correctness {HEAD}", f"review: simplicity {HEAD}"],
+        gh_head="") != 0)
+    print("RESULT:", "PASS" if ok else "FAIL")
+    return 0 if ok else 1
 
-print("RESULT:", "PASS" if ok else "FAIL")
-sys.exit(0 if ok else 1)
+
+if __name__ == "__main__":
+    sys.exit(main())
