@@ -514,6 +514,16 @@ class PrepareIterationTests(unittest.TestCase):
         ):
             prepare.finalise_iteration(envelope, state, FakeSnapshot())
 
+    def test_finalisation_refuses_old_protocol_before_state(self) -> None:
+        envelope, _preparation_state = self.prepare()
+        envelope["finalisation_protocol"] = 1
+        state = FakeState(generation=envelope["generation"])
+        with self.assertRaisesRegex(
+            prepare.PreparationError, "finalisation protocol mismatch"
+        ):
+            prepare.finalise_iteration(envelope, state, FakeSnapshot())
+        self.assertEqual(state.calls, [])
+
     def test_finalisation_refuses_live_writer_or_descendant(self) -> None:
         envelope, _preparation_state = self.prepare()
         for mutation in (

@@ -17,6 +17,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 SCHEMA = 1
+FINALISATION_PROTOCOL = 2
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 OBJECT_ID = re.compile(r"^[0-9a-f]{40,64}$")
 UNIT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -236,8 +237,13 @@ def _validate_candidate_manifest(
         raise LandingError("candidate path manifest digest mismatch")
 
 
-def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]) -> None:
-    _schema(receipt.get("schema"), "finaliser receipt")
+def _validate_finaliser(
+    receipt: Mapping[str, Any],
+    admission: Mapping[str, Any],
+    authenticated_state_receipt: Mapping[str, Any],
+) -> None:
+    if receipt.get("schema") != FINALISATION_PROTOCOL:
+        raise LandingError("finaliser receipt protocol mismatch")
     expected = {
         "kind": "firth-finaliser-receipt",
         "namespace": "normal-iteration",
@@ -358,8 +364,18 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
         or state.get("source") != "installed-state"
     ):
         raise LandingError("installed state finaliser attestation is missing")
+    authenticated_state = dict(authenticated_state_receipt)
+    if authenticated_state.get("source") is not None:
+        raise LandingError("authenticated State receipt contains caller provenance")
+    presented_state = {
+        key: value for key, value in state.items() if key != "source"
+    }
+    if _canonical_bytes(authenticated_state) != _canonical_bytes(presented_state):
+        raise LandingError("state finaliser attestation is not authenticated")
     state_expected = {
         "namespace": "normal-iteration",
+        "issuer": "firth-resolver-state",
+        "template_id": "normal.finalise.lease-acquire",
         "repository_id": admission["repository_id"],
         "policy_digest": admission["policy_digest"],
         "incident_id": admission["incident_id"],
@@ -378,6 +394,7 @@ def _validate_finaliser(receipt: Mapping[str, Any], admission: Mapping[str, Any]
             raise LandingError(f"state finaliser attestation {field} mismatch")
     if state.get("receipt_id") != state_receipt_id:
         raise LandingError("state finaliser attestation receipt mismatch")
+    _text(state.get("operation_id"), "state finaliser operation_id")
     transition_chain_digest = hashlib.sha256(
         _canonical_bytes(transition_attestations)
     ).hexdigest()
@@ -578,10 +595,19 @@ def validate_landing(
     base_todos: Mapping[str, bytes] | Any,
     candidate_todos: Mapping[str, bytes] | Any,
     candidate_paths: Sequence[str] | Any,
+    authenticated_state_receipt: Mapping[str, Any] | Any,
 ) -> dict[str, Any]:
     """Validate the complete normal-iteration landing contract."""
 
-    if not all(isinstance(value, Mapping) for value in (admission, projection, finaliser_receipt)):
+    if not all(
+        isinstance(value, Mapping)
+        for value in (
+            admission,
+            projection,
+            finaliser_receipt,
+            authenticated_state_receipt,
+        )
+    ):
         raise LandingError("landing admission objects are malformed")
     if not isinstance(reviews, Sequence) or isinstance(reviews, (str, bytes)):
         raise LandingError("review receipts must be an array")
@@ -640,7 +666,11 @@ def validate_landing(
             "loop_exhausted": False,
         }
 
-    _validate_finaliser(finaliser_receipt, admission)
+    _validate_finaliser(
+        finaliser_receipt,
+        admission,
+        authenticated_state_receipt,
+    )
     _validate_reviews(reviews, admission)
 
     selected_todo = admission.get("selected_todo")

@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 SCHEMA = 1
+FINALISATION_PROTOCOL = 2
 NAMESPACE = "normal-iteration"
 INSTALLED_ENVELOPE = Path("/run/firth/prepared-envelope.json")
 INSTALLED_POLICY_PROJECTION = Path("/run/firth/authority-policy.projection.json")
@@ -541,6 +542,7 @@ def prepare_iteration(
 
     return {
         "schema": SCHEMA,
+        "finalisation_protocol": FINALISATION_PROTOCOL,
         "kind": "firth-prepared-iteration",
         "namespace": NAMESPACE,
         "repository_id": base["repository_id"],
@@ -581,6 +583,8 @@ def validate_prepared_envelope(
         or envelope.get("kind") != "firth-prepared-iteration"
     ):
         raise PreparationError("invalid prepared envelope")
+    if envelope.get("finalisation_protocol") != FINALISATION_PROTOCOL:
+        raise PreparationError("prepared envelope finalisation protocol mismatch")
     if envelope.get("namespace") != NAMESPACE:
         raise PreparationError("prepared envelope namespace mismatch")
     if envelope.get("finalise_arguments") != [] or envelope.get("finalise_tool") != "firth_finalize":
@@ -605,6 +609,7 @@ def validate_prepared_envelope(
         raise PreparationError("invalid prepared receipts")
     result = {
         "schema": SCHEMA,
+        "finalisation_protocol": FINALISATION_PROTOCOL,
         "kind": "firth-prepared-iteration",
         "namespace": NAMESPACE,
         "repository_id": _require_text(envelope.get("repository_id"), "repository_id"),
@@ -986,7 +991,7 @@ def finalise_iteration(
     return {
         "prepared_generation": envelope["generation"],
         "prepared_observation_signature": envelope["observation_signature"],
-        "schema": SCHEMA,
+        "schema": FINALISATION_PROTOCOL,
         "kind": "firth-finaliser-receipt",
         "namespace": NAMESPACE,
         "repository_id": context["repository_id"],

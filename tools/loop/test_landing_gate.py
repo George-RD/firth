@@ -81,7 +81,7 @@ class LandingGateTests(unittest.TestCase):
         self.finaliser = {
             "prepared_generation": 4,
             "prepared_observation_signature": "5" * 64,
-            "schema": 1,
+            "schema": landing.FINALISATION_PROTOCOL,
             "kind": "firth-finaliser-receipt",
             "namespace": "normal-iteration",
             "repository_id": "George-RD/firth",
@@ -227,6 +227,11 @@ class LandingGateTests(unittest.TestCase):
         ).hexdigest()
         self.finaliser["state_attestation"]["receipt_id"] = state_receipt_id
         self.finaliser["state_receipt_id"] = state_receipt_id
+        self.authenticated_state_receipt = {
+            key: value
+            for key, value in self.finaliser["state_attestation"].items()
+            if key != "source"
+        }
         common = {
             "schema": 1,
             "kind": "firth-exact-object-review",
@@ -278,14 +283,14 @@ class LandingGateTests(unittest.TestCase):
         *,
         finaliser: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        return landing.validate_landing(
-            self.admission,
-            self.projection,
-            finaliser or self.finaliser,
-            self.reviews,
-            {self.todo_path: self.before},
-            {self.todo_path: self.after},
+        return landing.validate_landing(self.admission,
+        self.projection,
+        finaliser or self.finaliser,
+        self.reviews,
+        {self.todo_path: self.before},
+        {self.todo_path: self.after},
             candidate_paths or ["src/Firth/Kernel.lean", self.todo_path],
+            self.authenticated_state_receipt,
         )
 
     def test_exact_identity_reviews_and_final_todo_are_admitted(self) -> None:
@@ -323,14 +328,14 @@ class LandingGateTests(unittest.TestCase):
         with self.assertRaisesRegex(
             landing.LandingError, "manifest digest|snapshot attestation changed_paths"
         ):
-            landing.validate_landing(
-                admission,
-                self.projection,
-                self.finaliser,
-                self.reviews,
-                {self.todo_path: self.before},
-                {self.todo_path: self.after},
+            landing.validate_landing(admission,
+            self.projection,
+            self.finaliser,
+            self.reviews,
+            {self.todo_path: self.before},
+            {self.todo_path: self.after},
                 [self.todo_path],
+                self.authenticated_state_receipt,
             )
 
     def test_unit_and_selected_todo_require_canonical_slugs(self) -> None:
@@ -341,14 +346,14 @@ class LandingGateTests(unittest.TestCase):
                 if field == "unit":
                     admission["selected_todo"] = "alpha/beta"
                 with self.assertRaisesRegex(landing.LandingError, "canonical slug"):
-                    landing.validate_landing(
-                        admission,
-                        self.projection,
-                        self.finaliser,
-                        self.reviews,
-                        {self.todo_path: self.before},
-                        {self.todo_path: self.after},
+                    landing.validate_landing(admission,
+                    self.projection,
+                    self.finaliser,
+                    self.reviews,
+                    {self.todo_path: self.before},
+                    {self.todo_path: self.after},
                         ["src/Firth/Kernel.lean", self.todo_path],
+                        self.authenticated_state_receipt,
                     )
 
         admission = copy.deepcopy(self.admission)
@@ -363,14 +368,14 @@ class LandingGateTests(unittest.TestCase):
             "hashlib"
         ).sha256(landing._canonical_bytes(altered_manifest)).hexdigest()
         with self.assertRaisesRegex(landing.LandingError, "finaliser changed path"):
-            landing.validate_landing(
-                admission,
-                self.projection,
-                self.finaliser,
-                self.reviews,
-                {self.todo_path: self.before},
-                {self.todo_path: self.after},
+            landing.validate_landing(admission,
+            self.projection,
+            self.finaliser,
+            self.reviews,
+            {self.todo_path: self.before},
+            {self.todo_path: self.after},
                 [self.todo_path],
+                self.authenticated_state_receipt,
             )
 
     def test_finaliser_and_reviews_bind_the_same_exact_objects(self) -> None:
@@ -430,14 +435,14 @@ class LandingGateTests(unittest.TestCase):
         reviews = copy.deepcopy(self.reviews)
         reviews[0].pop("review_attestation")
         with self.assertRaisesRegex(landing.LandingError, "reviewer attestation"):
-            landing.validate_landing(
-                self.admission,
-                self.projection,
-                self.finaliser,
-                reviews,
-                {self.todo_path: self.before},
-                {self.todo_path: self.after},
+            landing.validate_landing(self.admission,
+            self.projection,
+            self.finaliser,
+            reviews,
+            {self.todo_path: self.before},
+            {self.todo_path: self.after},
                 [self.todo_path],
+                self.authenticated_state_receipt,
             )
 
     def test_review_receipts_must_be_distinct_external_lenses(self) -> None:
@@ -445,27 +450,27 @@ class LandingGateTests(unittest.TestCase):
         duplicate[1]["model_id"] = duplicate[0]["model_id"]
         duplicate[1]["session_id"] = duplicate[0]["session_id"]
         with self.assertRaisesRegex(landing.LandingError, "distinct"):
-            landing.validate_landing(
-                self.admission,
-                self.projection,
-                self.finaliser,
-                duplicate,
-                {self.todo_path: self.before},
-                {self.todo_path: self.after},
+            landing.validate_landing(self.admission,
+            self.projection,
+            self.finaliser,
+            duplicate,
+            {self.todo_path: self.before},
+            {self.todo_path: self.after},
                 [self.todo_path],
+                self.authenticated_state_receipt,
             )
 
     def test_only_selected_todo_status_may_change(self) -> None:
         changed = self.after.replace(b"Requires:\n", b"Requires: beta\n")
         with self.assertRaisesRegex(landing.LandingError, "sanctioned final status"):
-            landing.validate_landing(
-                self.admission,
-                self.projection,
-                self.finaliser,
-                self.reviews,
-                {self.todo_path: self.before},
-                {self.todo_path: changed},
+            landing.validate_landing(self.admission,
+            self.projection,
+            self.finaliser,
+            self.reviews,
+            {self.todo_path: self.before},
+            {self.todo_path: changed},
                 [self.todo_path],
+                self.authenticated_state_receipt,
             )
 
     def test_duplicate_todo_status_is_rejected(self) -> None:
@@ -478,15 +483,21 @@ class LandingGateTests(unittest.TestCase):
             b"status: blocked\nstatus: done\n",
         )
         with self.assertRaisesRegex(landing.LandingError, "sanctioned final status"):
-            landing.validate_landing(
-                self.admission,
-                self.projection,
-                self.finaliser,
-                self.reviews,
-                {self.todo_path: duplicate_before},
-                {self.todo_path: duplicate_after},
+            landing.validate_landing(self.admission,
+            self.projection,
+            self.finaliser,
+            self.reviews,
+            {self.todo_path: duplicate_before},
+            {self.todo_path: duplicate_after},
                 [self.todo_path],
+                self.authenticated_state_receipt,
             )
+
+    def test_old_finaliser_protocol_is_rejected(self) -> None:
+        finaliser = copy.deepcopy(self.finaliser)
+        finaliser["schema"] = 1
+        with self.assertRaisesRegex(landing.LandingError, "protocol mismatch"):
+            self.validate(finaliser=finaliser)
 
     def test_finaliser_requires_exact_generation_and_lease_successors(self) -> None:
         for field, value in (
@@ -549,7 +560,29 @@ class LandingGateTests(unittest.TestCase):
 
         finaliser = copy.deepcopy(self.finaliser)
         finaliser["state_attestation"]["transition_chain_digest"] = "0" * 64
-        with self.assertRaisesRegex(landing.LandingError, "transition chain digest"):
+        with self.assertRaisesRegex(landing.LandingError, "not authenticated"):
+            self.validate([self.todo_path], finaliser=finaliser)
+
+        finaliser = copy.deepcopy(self.finaliser)
+        finaliser["transition_attestations"][0]["observation_signature"] = "0" * 64
+        forged_chain_digest = __import__("hashlib").sha256(
+            landing._canonical_bytes(finaliser["transition_attestations"])
+        ).hexdigest()
+        finaliser["state_attestation"][
+            "transition_chain_digest"
+        ] = forged_chain_digest
+        forged_state_body = {
+            key: value
+            for key, value in finaliser["state_attestation"].items()
+            if key not in {"source", "receipt_id"}
+        }
+        forged_state_receipt_id = __import__("hashlib").sha256(
+            b"firth-resolver/v1/finaliser_receipt\0"
+            + landing._canonical_bytes(forged_state_body)
+        ).hexdigest()
+        finaliser["state_attestation"]["receipt_id"] = forged_state_receipt_id
+        finaliser["state_receipt_id"] = forged_state_receipt_id
+        with self.assertRaisesRegex(landing.LandingError, "not authenticated"):
             self.validate([self.todo_path], finaliser=finaliser)
 
         finaliser = copy.deepcopy(self.finaliser)
