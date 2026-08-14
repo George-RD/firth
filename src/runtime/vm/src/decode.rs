@@ -378,3 +378,19 @@ pub fn execute_diagnostic_with_stack_budget(
         Err(error) => diagnostic_trap(error, state),
     }
 }
+
+/// Normalises a decoded image execution for the deterministic conformance
+/// boundary, preserving rejection, trap, world, frame, and cost observations.
+pub fn conformance_observation(
+    bytes: &[u8],
+    fuel: u64,
+    registry: &PrimitiveRegistry,
+) -> ConformanceObservation {
+    match decode(bytes) {
+        Ok(image) => ConformanceObservation::from_outcome(
+            execute_diagnostic(&image, fuel, registry),
+            fuel,
+        ),
+        Err(error) => ConformanceObservation::rejected(&error, fuel),
+    }
+}
