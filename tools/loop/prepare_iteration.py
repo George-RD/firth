@@ -160,6 +160,42 @@ EXPECTED_NORMAL_TEMPLATE_IDS = frozenset(
         "normal.worktree.create",
     }
 )
+CANDIDATE_IDENTITY_FIELDS = frozenset(
+    {
+        "incident_id",
+        "observation_generation",
+        "observation_signature",
+        "policy_digest",
+        "registry_digest",
+        "repository_id",
+        "unit",
+        "base_commit",
+        "base_tree",
+        "branch",
+        "head_commit",
+        "head_tree",
+        "worktree_id",
+        "candidate_digest",
+        "candidate_tree",
+        "patch_hash",
+        "ruleset_digest",
+        "bundle_digest",
+    }
+)
+REVIEW_IDENTITY_FIELDS = CANDIDATE_IDENTITY_FIELDS | {
+    "merge_class",
+    "gate_operation_id",
+    "gate_receipt_digest",
+    "reservation_id",
+    "gateway_session_digest",
+    "model_id",
+    "destination",
+    "call_cap",
+    "token_cap",
+    "cost_cap_micros",
+    "lens",
+    "reviewer_id",
+}
 EXPECTED_NORMAL_TEMPLATE_FIELDS = {
     "normal.mirror.fetch": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature"},
     "normal.branch.create": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature", "mirror_id", "branch"},
@@ -173,6 +209,12 @@ EXPECTED_NORMAL_TEMPLATE_FIELDS = {
     "normal.finalise.model-stop": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "container_id", "cgroup_id", "lease_epoch", "merge_class", "ruleset_digest", "observation_generation", "observation_signature"},
     "normal.finalise.acl-transfer": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "container_id", "cgroup_id", "lease_epoch", "merge_class", "ruleset_digest", "observation_generation", "observation_signature"},
     "normal.finalise.lease-acquire": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "container_id", "cgroup_id", "lease_epoch", "merge_class", "ruleset_digest", "observation_generation", "observation_signature"},
+    "normal.candidate.prepare": {"repository_id", "policy_digest", "incident_id", "unit", "observation_generation", "observation_signature", "main_commit", "main_tree", "base_commit", "base_tree", "candidate_digest", "candidate_tree"},
+    "normal.gate.run": CANDIDATE_IDENTITY_FIELDS
+    | {"candidate_operation_id", "candidate_receipt_digest"},
+    "normal.review.correctness": REVIEW_IDENTITY_FIELDS,
+    "normal.review.simplicity": REVIEW_IDENTITY_FIELDS
+    | {"correctness_operation_id", "correctness_receipt_digest"},
 }
 OBJECT_ID = re.compile(r"^[0-9a-f]{40,64}$")
 UNIT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")

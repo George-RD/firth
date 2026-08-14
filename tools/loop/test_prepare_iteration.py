@@ -16,6 +16,22 @@ from typing import Any
 
 SOURCE = Path(__file__).with_name("prepare_iteration.py")
 PROJECTION_FIXTURE = Path(__file__).with_name("authority-policy.projection.json")
+# The accepted policy derives patch_hash as the SHA-256 of the deterministic
+# diff bytes `git diff <main_tree> <candidate_tree> --no-color --full-index
+# --no-renames -U3`, so the fixture digests real patch bytes rather than an
+# arbitrary constant.
+CANDIDATE_PATCH = (
+    b"diff --git a/meta/todos/todo.alpha.md b/meta/todos/todo.alpha.md\n"
+    b"index 3f1c0dd0c1cb3f1b8f4c6de4f4a0a4d4d4a1f0aa..7c9c2f8a1f9b1d2e3f4a5b6c7d8e9f0a1b2c3d4e 100644\n"
+    b"--- a/meta/todos/todo.alpha.md\n"
+    b"+++ b/meta/todos/todo.alpha.md\n"
+    b"@@ -1,4 +1,4 @@\n"
+    b" ---\n"
+    b" node: firth.governance.loop\n"
+    b"-status: in_progress\n"
+    b"+status: done\n"
+)
+CANDIDATE_PATCH_HASH = hashlib.sha256(CANDIDATE_PATCH).hexdigest()
 spec = importlib.util.spec_from_file_location("prepare_iteration", SOURCE)
 assert spec and spec.loader
 prepare = importlib.util.module_from_spec(spec)
@@ -340,7 +356,7 @@ class FakeSnapshot:
             "snapshot_count": 1,
             "snapshot_digest": "d" * 64,
             "artifact_id": "artifact-snapshot-1",
-            "patch_hash": "9" * 64,
+            "patch_hash": CANDIDATE_PATCH_HASH,
             "changed_paths": ["meta/todos/todo.alpha.md", "src/Firth/Kernel.lean"],
         }
         manifest = {
@@ -363,7 +379,7 @@ class PrepareIterationTests(unittest.TestCase):
         self.committed_projection = json.loads(PROJECTION_FIXTURE.read_text(encoding="utf-8"))
         self.assertEqual(
             hashlib.sha256(PROJECTION_FIXTURE.read_bytes()).hexdigest(),
-            "b600d4de630919e9d2dded36d3e718262968baf7757630ecfa41caaab51231f9",
+            "2bd1db6bf26570b99970e7f93c0ea852734eceae93df1495de8c19c2833537ab",
         )
         prepare.INSTALLED_POLICY_PROJECTION = Path(self.tmp.name) / "authority-policy.projection.json"
         self.write_projection()
@@ -605,6 +621,25 @@ class PrepareIterationTests(unittest.TestCase):
         self.assertEqual(snapshot.calls[0]["observation_signature"], f"{21:064x}")
         self.assertEqual(receipt["snapshot_digest"], "d" * 64)
         self.assertEqual(receipt["snapshot_artifact_id"], "artifact-snapshot-1")
+        self.assertEqual(
+            receipt["snapshot_attestation"]["patch_hash"], CANDIDATE_PATCH_HASH
+        )
+        self.assertEqual(
+            receipt["changed_paths_digest"],
+            hashlib.sha256(
+                prepare._canonical_projection_bytes(
+                    {
+                        "base_commit": envelope["base_commit"],
+                        "head_tree": "4" * 40,
+                        "patch_hash": CANDIDATE_PATCH_HASH,
+                        "changed_paths": [
+                            "meta/todos/todo.alpha.md",
+                            "src/Firth/Kernel.lean",
+                        ],
+                    }
+                )
+            ).hexdigest(),
+        )
         self.assertEqual(receipt["head"], "a" * 40)
         self.assertEqual(receipt["head_tree"], "4" * 40)
         self.assertEqual(receipt["lease_epoch"], envelope["lease_epoch"] + 1)
@@ -836,6 +871,43 @@ class PrepareIterationTests(unittest.TestCase):
         with self.assertRaisesRegex(prepare.PreparationError, "duplicate key"):
             prepare.finalise_iteration(prepared, state, FakeSnapshot())
         self.assertEqual(state.calls, [])
+
+    def test_candidate_gate_and_review_templates_pin_exact_identity_fields(self) -> None:
+        templates = self.committed_projection["normal_templates"]
+        self.assertIn("registry_digest", templates["normal.gate.run"]["input_fields"])
+        for lens in ("correctness", "simplicity"):
+            fields = templates[f"normal.review.{lens}"]["input_fields"]
+            self.assertIn("registry_digest", fields)
+            self.assertIn("merge_class", fields)
+        for field in ("main_commit", "main_tree", "base_commit", "base_tree"):
+            self.assertIn(
+                field, templates["normal.candidate.prepare"]["input_fields"]
+            )
+
+        for template_id, dropped in (
+            ("normal.candidate.prepare", "main_commit"),
+            ("normal.candidate.prepare", "main_tree"),
+            ("normal.gate.run", "registry_digest"),
+            ("normal.review.correctness", "registry_digest"),
+            ("normal.review.correctness", "merge_class"),
+            ("normal.review.simplicity", "merge_class"),
+        ):
+            with self.subTest(template_id=template_id, dropped=dropped):
+                prepared, _preparation_state = self.prepare()
+                state = FakeState(generation=prepared["session_attestation"]["generation"])
+                drifted = copy.deepcopy(templates)
+                drifted[template_id]["input_fields"] = [
+                    field
+                    for field in drifted[template_id]["input_fields"]
+                    if field != dropped
+                ]
+                self.write_projection(normal_templates=drifted)
+                with self.assertRaisesRegex(
+                    prepare.PreparationError, f"installed template {template_id} mismatch"
+                ):
+                    prepare.finalise_iteration(prepared, state, FakeSnapshot())
+                self.assertEqual(state.calls, [])
+                self.write_projection()
 
 
 if __name__ == "__main__":

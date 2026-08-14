@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import unittest
 from pathlib import Path
@@ -16,6 +17,23 @@ assert spec and spec.loader
 landing = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(landing)
 
+# The accepted policy derives patch_hash as the SHA-256 of the deterministic
+# diff bytes `git diff <main_tree> <candidate_tree> --no-color --full-index
+# --no-renames -U3`, so the fixture digests real patch bytes rather than an
+# arbitrary constant.
+CANDIDATE_PATCH = (
+    b"diff --git a/meta/todos/todo.alpha.md b/meta/todos/todo.alpha.md\n"
+    b"index 3f1c0dd0c1cb3f1b8f4c6de4f4a0a4d4d4a1f0aa..7c9c2f8a1f9b1d2e3f4a5b6c7d8e9f0a1b2c3d4e 100644\n"
+    b"--- a/meta/todos/todo.alpha.md\n"
+    b"+++ b/meta/todos/todo.alpha.md\n"
+    b"@@ -1,4 +1,4 @@\n"
+    b" ---\n"
+    b" node: firth.governance.loop\n"
+    b"-status: in_progress\n"
+    b"+status: done\n"
+)
+CANDIDATE_PATCH_HASH = hashlib.sha256(CANDIDATE_PATCH).hexdigest()
+
 
 class LandingGateTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -27,11 +45,11 @@ class LandingGateTests(unittest.TestCase):
         )
         self.assertEqual(
             __import__("hashlib").sha256(self.projection_fixture.read_bytes()).hexdigest(),
-            "b600d4de630919e9d2dded36d3e718262968baf7757630ecfa41caaab51231f9",
+            "2bd1db6bf26570b99970e7f93c0ea852734eceae93df1495de8c19c2833537ab",
         )
         self.assertEqual(
             self.projection.get("projection_digest"),
-            "c2c971c658033fbb4a7ff456944f20ea1649b0be78922f4dccb2a04ea7986e8b",
+            "07ba5567beb7368e601e115f870a5a243abad007f6c12fd300400f5feafa4536",
         )
         self.todo_path = "meta/todos/todo.alpha.md"
         self.before = b"---\nnode: firth.governance.loop\nstatus: in_progress\n---\n\nRequires:\n"
@@ -43,7 +61,7 @@ class LandingGateTests(unittest.TestCase):
             "policy_digest": self.projection["policy_digest"],
             "ruleset_digest": "b" * 64,
             "snapshot_digest": "c" * 64,
-            "patch_hash": "d" * 64,
+            "patch_hash": CANDIDATE_PATCH_HASH,
             "prepared_lease_epoch": 7,
             "prepared_generation": 4,
             "prepared_observation_signature": "5" * 64,
@@ -69,7 +87,7 @@ class LandingGateTests(unittest.TestCase):
                 "prepared_head": "1" * 40,
                 "candidate_commit": "3" * 40,
                 "candidate_tree": "4" * 40,
-                "patch_hash": "d" * 64,
+                "patch_hash": CANDIDATE_PATCH_HASH,
                 "changed_paths": ["meta/todos/todo.alpha.md", "src/Firth/Kernel.lean"],
                 "verified": True,
             },
@@ -176,7 +194,7 @@ class LandingGateTests(unittest.TestCase):
                 "unit": "alpha",
                 "branch": self.branch,
                 "base_commit": "1" * 40,
-                "patch_hash": "d" * 64,
+                "patch_hash": CANDIDATE_PATCH_HASH,
                 "changed_paths": ["meta/todos/todo.alpha.md", "src/Firth/Kernel.lean"],
                 "changed_paths_digest": self.admission["snapshot_provenance"]["changed_paths_digest"],
                 "worktree_id": "worktree-1",
@@ -295,7 +313,7 @@ class LandingGateTests(unittest.TestCase):
             "base_tree": "2" * 40,
             "head_commit": "3" * 40,
             "head_tree": "4" * 40,
-            "patch_hash": "d" * 64,
+            "patch_hash": CANDIDATE_PATCH_HASH,
             "incident_id": self.incident_id,
             "verdict": "accept",
         }
