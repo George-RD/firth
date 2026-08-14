@@ -31,8 +31,8 @@ class FakeState:
         self.protocol_calls = 0
         self.finalisation_protocol = prepare.FINALISATION_PROTOCOL
         self.stage_attestations: list[dict[str, Any]] = []
+        self.prepared_session_attestation: dict[str, Any] | None = None
         self.duplicate_model_receipt = False
-
     def protocol(self) -> Mapping[str, Any]:
         self.protocol_calls += 1
         return {
@@ -75,6 +75,16 @@ class FakeState:
                 "worktree_id": "worktree-1",
                 "metadata_read_only": True,
             }
+        elif template_id == "normal.prepared-launch":
+            objects = {
+                "repository_id": context["repository_id"],
+                "policy_digest": context["policy_digest"],
+                "branch": context["branch"],
+                "head": context["head"],
+                "worktree_id": context["worktree_id"],
+                "container_id": "container-1",
+                "cgroup_id": "cgroup-1",
+            }
         elif template_id == "normal.lease.grant":
             objects = {
                 "repository_id": context["repository_id"],
@@ -82,11 +92,11 @@ class FakeState:
                 "branch": context["branch"],
                 "head": context["head"],
                 "worktree_id": context["worktree_id"],
+                "container_id": context["container_id"],
+                "cgroup_id": context["cgroup_id"],
                 "lease_epoch": 7,
                 "metadata_read_only": True,
                 "writer": "model",
-                "container_id": "container-1",
-                "cgroup_id": "cgroup-1",
             }
         elif template_id == "normal.binding.verify":
             objects = {
@@ -96,11 +106,34 @@ class FakeState:
                 "branch": context["branch"],
                 "head": context["head"],
                 "worktree_id": "worktree-existing",
+                "mirror_id": "mirror-existing",
                 "lease_epoch": 12,
                 "metadata_read_only": True,
                 "writer": "model",
                 "container_id": "container-existing",
                 "cgroup_id": "cgroup-existing",
+            }
+        elif template_id == "normal.session.initialise":
+            objects = {
+                "repository_id": context["repository_id"],
+                "policy_digest": context["policy_digest"],
+                "main_commit": context["main_commit"],
+                "main_tree": context["main_tree"],
+                "incident_id": context["incident_id"],
+                "unit": context["unit"],
+                "observation_generation": context["observation_generation"],
+                "observation_signature": context["observation_signature"],
+                "mirror_id": context["mirror_id"],
+                "branch": context["branch"],
+                "head": context["head"],
+                "worktree_id": context["worktree_id"],
+                "container_id": context["container_id"],
+                "cgroup_id": context["cgroup_id"],
+                "lease_epoch": context["lease_epoch"],
+                "envelope_digest": context["envelope_digest"],
+                "profile_volume_id": context["profile_volume_id"],
+                "merge_class": context["merge_class"],
+                "ruleset_digest": context["ruleset_digest"],
             }
         elif template_id in prepare.FINALISE_TEMPLATES:
             objects = {
@@ -112,6 +145,24 @@ class FakeState:
                 "worktree_id": context["worktree_id"],
                 "lease_epoch": context["lease_epoch"],
             }
+            if template_id == "normal.session.close":
+                objects.update(
+                    session_id=context["session_id"],
+                    authorization_digest=context["authorization_digest"],
+                    envelope_digest=context["envelope_digest"],
+                    profile_volume_id=context["profile_volume_id"],
+                    runtime_container_id=context["container_id"],
+                    total_calls=0,
+                    settled_calls=0,
+                    in_flight_calls=0,
+                    actual_tokens=0,
+                    actual_cost_micros=0,
+                    closed=True,
+                    closed_ns="1",
+                    outcome="closed",
+                    close_outcome="completed",
+                    model_outcome="completed",
+                )
             if template_id == "normal.finalise.seal":
                 objects["seal_requested"] = True
             if template_id == "normal.finalise.model-stop":
@@ -151,6 +202,8 @@ class FakeState:
             response_receipt_id = "a" * 64
         elif template_id == "normal.finalise.lease-acquire":
             response_receipt_id = "b" * 64
+        elif template_id == "normal.session.initialise":
+            response_receipt_id = "c" * 64
         elif template_id in prepare.FINALISE_TEMPLATES:
             response_receipt_id = f"{self.generation:064x}"
         else:
@@ -165,6 +218,32 @@ class FakeState:
             "receipt_id": response_receipt_id,
             "objects": objects,
         }
+        if template_id == "normal.session.initialise":
+            attestation = {
+                "schema": "firth.prepared-session-attestation.v1",
+                "issuer": "firth-resolver-state",
+                "namespace": "normal-iteration",
+                "template_id": "normal.session.initialise",
+                "stage": "session-ready",
+                "policy_digest": context["policy_digest"],
+                "repository_id": context["repository_id"],
+                "incident_id": context["incident_id"],
+                "operation_id": "operation-session-init",
+                "worktree_id": context["worktree_id"],
+                "container_id": context["container_id"],
+                "cgroup_id": context["cgroup_id"],
+                "envelope_digest": context["envelope_digest"],
+                "profile_volume_id": context["profile_volume_id"],
+                "session_id": "session-1",
+                "authorization_digest": "a" * 64,
+                "profile_digest": "e" * 64,
+                "generation": self.generation,
+                "observation_signature": response["observation_signature"],
+                "receipt_id": response_receipt_id,
+                "receipt_digest": "d" * 64,
+            }
+            response["session_attestation"] = attestation
+            self.prepared_session_attestation = attestation
         if template_id in prepare.FINALISE_TEMPLATES:
             stage_attestation = {
                 "schema": "firth.state-transition-attestation.v1",
@@ -284,7 +363,7 @@ class PrepareIterationTests(unittest.TestCase):
         self.committed_projection = json.loads(PROJECTION_FIXTURE.read_text(encoding="utf-8"))
         self.assertEqual(
             hashlib.sha256(PROJECTION_FIXTURE.read_bytes()).hexdigest(),
-            "e72af3a9a2b7fc3506d595fded5372eab2222c23042e8840e9ceeb04620e6fd1",
+            "b600d4de630919e9d2dded36d3e718262968baf7757630ecfa41caaab51231f9",
         )
         prepare.INSTALLED_POLICY_PROJECTION = Path(self.tmp.name) / "authority-policy.projection.json"
         self.write_projection()
@@ -315,6 +394,8 @@ class PrepareIterationTests(unittest.TestCase):
             "incident_id": "019126d3-4f7a-7cc0-9b5f-123456789abc",
             "observation_generation": 10,
             "observation_signature": "e" * 64,
+            "merge_class": "normal-auto",
+            "ruleset_digest": "f" * 64,
         }
 
     def selector(self, unit: str | None = "alpha") -> dict[str, Any]:
@@ -327,29 +408,39 @@ class PrepareIterationTests(unittest.TestCase):
             "head": "a" * 40,
             "observation_generation": 10,
             "observation_signature": "e" * 64,
+            "mirror_id": "mirror-existing",
         }
         base.update(fields)
         return base
 
     def prepare(self, state: FakeState | None = None) -> tuple[dict[str, Any], FakeState]:
         state = state or FakeState()
-        envelope = prepare.prepare_iteration(
+        prepared = prepare.prepare_iteration(
             self.request(), self.preflight(), self.selector(), state
         )
-        return envelope, state
+        return prepared, state
 
-    def test_fresh_preparation_orders_four_separately_observed_transitions(self) -> None:
-        envelope, state = self.prepare()
+    def test_fresh_preparation_orders_five_separately_observed_transitions(self) -> None:
+        prepared, state = self.prepare()
+        envelope = prepared["envelope"]
         self.assertEqual([template for template, _ in state.calls], list(prepare.PREPARE_TEMPLATES))
-        self.assertEqual([call[1]["observation_generation"] for call in state.calls], [10, 11, 12, 13])
+        self.assertEqual([call[1]["observation_generation"] for call in state.calls], [10, 11, 12, 13, 14, 15])
         self.assertEqual(
             [call[1]["observation_signature"] for call in state.calls],
-            ["e" * 64, f"{11:064x}", f"{12:064x}", f"{13:064x}"],
+            ["e" * 64, f"{11:064x}", f"{12:064x}", f"{13:064x}", f"{14:064x}", f"{15:064x}"],
         )
-        self.assertEqual(
-            envelope["branch"],
-            "loop/resolver.019126d34f7a7cc09b5f123456789abc",
-        )
+        launch_context = state.calls[3][1]
+        lease_context = state.calls[4][1]
+        session_context = state.calls[5][1]
+        self.assertNotIn("container_id", launch_context)
+        self.assertNotIn("cgroup_id", launch_context)
+        self.assertEqual(lease_context["container_id"], "container-1")
+        self.assertEqual(lease_context["cgroup_id"], "cgroup-1")
+        self.assertEqual(session_context["envelope_digest"], hashlib.sha256(
+            prepare._canonical_projection_bytes(envelope)
+        ).hexdigest())
+        self.assertEqual(session_context["profile_volume_id"], "firth-loop_prepared-worktree-1")
+        self.assertEqual(envelope["branch"], "loop/resolver.019126d34f7a7cc09b5f123456789abc")
         self.assertEqual(envelope["head"], "a" * 40)
         self.assertEqual(envelope["worktree_id"], "worktree-1")
         self.assertEqual(envelope["lease_epoch"], 7)
@@ -357,8 +448,12 @@ class PrepareIterationTests(unittest.TestCase):
         self.assertEqual(envelope["cgroup_id"], "cgroup-1")
         self.assertEqual(envelope["metadata_read_only"], True)
         self.assertEqual(envelope["writer"], "model")
-        self.assertEqual(envelope["generation"], 14)
-        self.assertEqual(len(envelope["receipts"]), 4)
+        self.assertEqual(envelope["generation"], 15)
+        self.assertEqual(envelope["merge_class"], "normal-auto")
+        self.assertEqual(envelope["ruleset_digest"], "f" * 64)
+        self.assertEqual(len(envelope["receipts"]), 5)
+        self.assertEqual(prepared["session_attestation"]["generation"], 16)
+        self.assertEqual(prepared["session_attestation"]["session_id"], "session-1")
         self.assertEqual(envelope["finalise_tool"], "firth_finalize")
         self.assertEqual(envelope["finalise_arguments"], [])
 
@@ -422,7 +517,7 @@ class PrepareIterationTests(unittest.TestCase):
         for verdict in sorted(prepare.SAFE_RECOVERY_VERDICTS):
             with self.subTest(verdict=verdict):
                 state = FakeState()
-                envelope = prepare.prepare_iteration(
+                prepared = prepare.prepare_iteration(
                     self.request(),
                     self.preflight(
                         verdict,
@@ -434,7 +529,11 @@ class PrepareIterationTests(unittest.TestCase):
                     self.selector(),
                     state,
                 )
-                self.assertEqual([template for template, _ in state.calls], ["normal.binding.verify"])
+                envelope = prepared["envelope"]
+                self.assertEqual(
+                    [template for template, _ in state.calls],
+                    ["normal.binding.verify", "normal.session.initialise"],
+                )
                 self.assertEqual(envelope["head"], "c" * 40)
                 self.assertEqual(envelope["worktree_id"], "worktree-existing")
                 self.assertEqual(envelope["lease_epoch"], 12)
@@ -483,26 +582,27 @@ class PrepareIterationTests(unittest.TestCase):
             self.assertEqual(state.calls, [])
 
     def test_finalisation_stops_model_before_acl_lease_and_one_snapshot(self) -> None:
-        envelope, _preparation_state = self.prepare()
-        state = FakeState(generation=envelope["generation"])
+        prepared, _preparation_state = self.prepare()
+        envelope = prepared["envelope"]
+        final_generation = prepared["session_attestation"]["generation"]
+        state = FakeState(generation=final_generation)
         snapshot = FakeSnapshot()
-        receipt = prepare.finalise_iteration(envelope, state, snapshot)
+        receipt = prepare.finalise_iteration(prepared, state, snapshot)
         self.assertEqual([template for template, _ in state.calls], list(prepare.FINALISE_TEMPLATES))
         self.assertEqual(
             [call[1]["observation_generation"] for call in state.calls],
-            [14, 15, 16, 17],
+            [16, 17, 18, 19, 20],
         )
         self.assertEqual(
             [call[1]["observation_signature"] for call in state.calls],
-            [f"{14:064x}", f"{15:064x}", f"{16:064x}", f"{17:064x}"],
+            [f"{16:064x}", f"{17:064x}", f"{18:064x}", f"{19:064x}", f"{20:064x}"],
         )
         self.assertLess(
             [template for template, _ in state.calls].index("normal.finalise.model-stop"),
             [template for template, _ in state.calls].index("normal.finalise.acl-transfer"),
         )
-        self.assertEqual(len(snapshot.calls), 1)
-        self.assertEqual(snapshot.calls[0]["observation_generation"], 18)
-        self.assertEqual(snapshot.calls[0]["observation_signature"], f"{18:064x}")
+        self.assertEqual(snapshot.calls[0]["observation_generation"], 21)
+        self.assertEqual(snapshot.calls[0]["observation_signature"], f"{21:064x}")
         self.assertEqual(receipt["snapshot_digest"], "d" * 64)
         self.assertEqual(receipt["snapshot_artifact_id"], "artifact-snapshot-1")
         self.assertEqual(receipt["head"], "a" * 40)
@@ -512,7 +612,7 @@ class PrepareIterationTests(unittest.TestCase):
         self.assertEqual(receipt["model_terminal"], True)
         self.assertEqual(receipt["iteration_complete"], False)
         self.assertEqual(receipt["loop_exhausted"], False)
-        self.assertEqual(len(receipt["receipts"]), 4)
+        self.assertEqual(len(receipt["receipts"]), 5)
         self.assertEqual(
             [
                 (
@@ -528,20 +628,20 @@ class PrepareIterationTests(unittest.TestCase):
                 (
                     template_id,
                     prepare.FINALISE_STAGES[template_id],
-                    15 + index,
+                    17 + index,
                     receipt["receipts"][index],
-                    f"{15 + index:064x}",
+                    f"{17 + index:064x}",
                 )
                 for index, template_id in enumerate(prepare.FINALISE_TEMPLATES)
             ],
         )
-        edited_state = FakeState(generation=envelope["generation"])
+        edited_state = FakeState(generation=prepared["session_attestation"]["generation"])
         edited_state.mutate["normal.finalise.lease-acquire"] = {
             "head": "c" * 40,
             "head_tree": "d" * 40,
         }
         edited_receipt = prepare.finalise_iteration(
-            envelope,
+            prepared,
             edited_state,
             FakeSnapshot(),
         )
@@ -552,7 +652,7 @@ class PrepareIterationTests(unittest.TestCase):
             "operation-finalise-lease",
         )
 
-        unsealed_state = FakeState(generation=envelope["generation"])
+        unsealed_state = FakeState(generation=prepared["session_attestation"]["generation"])
         unsealed_state.mutate["normal.finalise.seal"] = {
             "seal_requested": False,
         }
@@ -560,42 +660,68 @@ class PrepareIterationTests(unittest.TestCase):
             prepare.PreparationError,
             "seal was not independently observed",
         ):
-            prepare.finalise_iteration(envelope, unsealed_state, FakeSnapshot())
+            prepare.finalise_iteration(prepared, unsealed_state, FakeSnapshot())
         self.assertEqual(
             [template for template, _ in unsealed_state.calls],
-            ["normal.finalise.seal"],
+            ["normal.session.close", "normal.finalise.seal"],
         )
 
-
-        state = FakeState(generation=envelope["generation"])
+        state = FakeState(generation=prepared["session_attestation"]["generation"])
         state.mutate["response:normal.finalise.seal"] = {
             "stage_attestation": None
         }
         with self.assertRaisesRegex(
             prepare.PreparationError, "stage attestation is missing"
         ):
-            prepare.finalise_iteration(envelope, state, FakeSnapshot())
-
+            prepare.finalise_iteration(prepared, state, FakeSnapshot())
     def test_finalisation_refuses_old_protocol_before_state(self) -> None:
-        envelope, _preparation_state = self.prepare()
-        envelope["finalisation_protocol"] = 1
-        state = FakeState(generation=envelope["generation"])
+        prepared, _preparation_state = self.prepare()
+        prepared["envelope"]["finalisation_protocol"] = 1
+        state = FakeState(generation=prepared["session_attestation"]["generation"])
         with self.assertRaisesRegex(
             prepare.PreparationError, "finalisation protocol mismatch"
         ):
-            prepare.finalise_iteration(envelope, state, FakeSnapshot())
+            prepare.finalise_iteration(prepared, state, FakeSnapshot())
         self.assertEqual(state.calls, [])
 
-    def test_finalisation_refuses_old_state_protocol_before_effect(self) -> None:
-        envelope, _preparation_state = self.prepare()
-        state = FakeState(generation=envelope["generation"])
-        state.finalisation_protocol = 1
+    def test_finalisation_rejects_invalid_session_close_postcondition(self) -> None:
+        cases = (
+            {"closed": False},
+            {"closed_ns": 1},
+            {"closed_ns": "01"},
+            {"outcome": "stopped"},
+            {"close_outcome": "failed"},
+            {"model_outcome": "failed"},
+            {"runtime_container_id": "container-other"},
+            {"total_calls": 1},
+            {"in_flight_calls": 1},
+            {"actual_tokens": -1},
+        )
+        for mutation in cases:
+            with self.subTest(mutation=mutation):
+                prepared, _preparation_state = self.prepare()
+                state = FakeState(generation=prepared["session_attestation"]["generation"])
+                state.mutate["normal.session.close"] = mutation
+                snapshot = FakeSnapshot()
+                with self.assertRaisesRegex(
+                    prepare.PreparationError,
+                    "session close postcondition",
+                ):
+                    prepare.finalise_iteration(prepared, state, snapshot)
+                self.assertEqual(
+                    [template for template, _ in state.calls],
+                    ["normal.session.close"],
+                )
+                self.assertEqual(snapshot.calls, [])
+
+    def test_finalisation_refuses_missing_session_attestation(self) -> None:
+        prepared, _preparation_state = self.prepare()
+        prepared.pop("session_attestation")
+        state = FakeState(generation=16)
         with self.assertRaisesRegex(
-            prepare.PreparationError, "state finalisation protocol mismatch"
+            prepare.PreparationError, "requires envelope and session attestation"
         ):
-            prepare.finalise_iteration(envelope, state, FakeSnapshot())
-        self.assertEqual(state.calls, [])
-        self.assertEqual(state.protocol_calls, 1)
+            prepare.finalise_iteration(prepared, state, FakeSnapshot())
 
     def test_preparation_refuses_old_state_protocol_before_effect(self) -> None:
         state = FakeState()
@@ -610,34 +736,34 @@ class PrepareIterationTests(unittest.TestCase):
         self.assertEqual(state.protocol_calls, 1)
 
     def test_finalisation_refuses_duplicate_transition_receipt_before_acl(self) -> None:
-        envelope, _preparation_state = self.prepare()
-        state = FakeState(generation=envelope["generation"])
+        prepared, _preparation_state = self.prepare()
+        state = FakeState(generation=prepared["session_attestation"]["generation"])
         state.duplicate_model_receipt = True
         with self.assertRaisesRegex(
             prepare.PreparationError,
             "duplicate transition receipt_id",
         ):
-            prepare.finalise_iteration(envelope, state, FakeSnapshot())
+            prepare.finalise_iteration(prepared, state, FakeSnapshot())
         self.assertEqual(
             [template for template, _ in state.calls],
-            list(prepare.FINALISE_TEMPLATES[:2]),
+            list(prepare.FINALISE_TEMPLATES[:3]),
         )
 
     def test_finalisation_refuses_live_writer_or_descendant(self) -> None:
-        envelope, _preparation_state = self.prepare()
+        prepared, _preparation_state = self.prepare()
         for mutation in (
             {"writer_present": True},
             {"cgroup_stopped": False},
             {"descendant_count": 1},
         ):
             with self.subTest(mutation=mutation):
-                state = FakeState(generation=envelope["generation"])
+                state = FakeState(generation=prepared["session_attestation"]["generation"])
                 state.mutate["normal.finalise.model-stop"] = mutation
                 with self.assertRaisesRegex(prepare.PreparationError, "descendant termination"):
-                    prepare.finalise_iteration(envelope, state, FakeSnapshot())
+                    prepare.finalise_iteration(prepared, state, FakeSnapshot())
                 self.assertEqual(
                     [template for template, _ in state.calls],
-                    list(prepare.FINALISE_TEMPLATES[:2]),
+                    list(prepare.FINALISE_TEMPLATES[:3]),
                 )
 
     def test_finalisation_refuses_acl_lease_or_unstable_snapshot(self) -> None:
@@ -648,68 +774,67 @@ class PrepareIterationTests(unittest.TestCase):
             ("normal.finalise.lease-acquire", {"head": "z" * 40}),
         ):
             with self.subTest(template=template, mutation=mutation):
-                envelope, _preparation_state = self.prepare()
-                state = FakeState(generation=envelope["generation"])
+                prepared, _preparation_state = self.prepare()
+                state = FakeState(generation=prepared["session_attestation"]["generation"])
                 state.mutate[template] = mutation
                 snapshot = FakeSnapshot()
                 with self.assertRaises(prepare.PreparationError):
-                    prepare.finalise_iteration(envelope, state, snapshot)
+                    prepare.finalise_iteration(prepared, state, snapshot)
                 self.assertEqual(snapshot.calls, [])
     def test_finalisation_rejects_fabricated_nonempty_attestation_receipt(self) -> None:
-        envelope, _preparation_state = self.prepare()
-        state = FakeState(generation=envelope["generation"])
+        prepared, _preparation_state = self.prepare()
+        state = FakeState(generation=prepared["session_attestation"]["generation"])
         state.mutate["response:normal.finalise.model-stop"] = {"receipt_id": "fabricated"}
         snapshot = FakeSnapshot()
         with self.assertRaisesRegex(prepare.PreparationError, "attestation receipt"):
-            prepare.finalise_iteration(envelope, state, snapshot)
+            prepare.finalise_iteration(prepared, state, snapshot)
         self.assertEqual(snapshot.calls, [])
 
-        for mutation in ({"stable": False}, {"snapshot_count": 2}, {"observation_generation": 17}):
+        for mutation in ({"stable": False}, {"snapshot_count": 2}, {"observation_generation": 23}):
             with self.subTest(snapshot=mutation):
-                envelope, _preparation_state = self.prepare()
-                state = FakeState(generation=envelope["generation"])
+                prepared, _preparation_state = self.prepare()
+                state = FakeState(generation=prepared["session_attestation"]["generation"])
                 snapshot = FakeSnapshot()
                 snapshot.mutate = mutation
                 with self.assertRaises(prepare.PreparationError):
-                    prepare.finalise_iteration(envelope, state, snapshot)
+                    prepare.finalise_iteration(prepared, state, snapshot)
                 self.assertEqual(len(snapshot.calls), 1)
-
     def test_finalisation_rejects_caller_supplied_argument_contract(self) -> None:
-        envelope, _preparation_state = self.prepare()
-        envelope["finalise_arguments"] = ["other-unit"]
-        state = FakeState(generation=envelope["generation"])
+        prepared, _preparation_state = self.prepare()
+        prepared["envelope"]["finalise_arguments"] = ["other-unit"]
+        state = FakeState(generation=prepared["session_attestation"]["generation"])
         with self.assertRaisesRegex(prepare.PreparationError, "no-argument finaliser"):
-            prepare.finalise_iteration(envelope, state, FakeSnapshot())
+            prepare.finalise_iteration(prepared, state, FakeSnapshot())
         self.assertEqual(state.calls, [])
 
     def test_finalisation_requires_installed_matching_policy_projection(self) -> None:
-        envelope, _preparation_state = self.prepare()
-        state = FakeState(generation=envelope["generation"])
+        prepared, _preparation_state = self.prepare()
+        state = FakeState(generation=prepared["session_attestation"]["generation"])
         prepare.INSTALLED_POLICY_PROJECTION.unlink()
         with self.assertRaisesRegex(prepare.PreparationError, "unavailable"):
-            prepare.finalise_iteration(envelope, state, FakeSnapshot())
+            prepare.finalise_iteration(prepared, state, FakeSnapshot())
         self.assertEqual(state.calls, [])
 
         self.write_projection(policy_digest="0" * 64)
         with self.assertRaisesRegex(prepare.PreparationError, "digest mismatch"):
-            prepare.finalise_iteration(envelope, state, FakeSnapshot())
+            prepare.finalise_iteration(prepared, state, FakeSnapshot())
         self.assertEqual(state.calls, [])
 
     def test_installed_projection_rejects_tampering_and_noncanonical_json(self) -> None:
-        envelope, _preparation_state = self.prepare()
-        state = FakeState(generation=envelope["generation"])
+        prepared, _preparation_state = self.prepare()
+        state = FakeState(generation=prepared["session_attestation"]["generation"])
         projection = json.loads(prepare.INSTALLED_POLICY_PROJECTION.read_text(encoding="utf-8"))
         projection["normal_templates"]["normal.branch.create"]["input_fields"].append("head")
         prepare.INSTALLED_POLICY_PROJECTION.write_text(json.dumps(projection), encoding="utf-8")
         with self.assertRaisesRegex(prepare.PreparationError, "digest mismatch"):
-            prepare.finalise_iteration(envelope, state, FakeSnapshot())
+            prepare.finalise_iteration(prepared, state, FakeSnapshot())
         self.assertEqual(state.calls, [])
 
         prepare.INSTALLED_POLICY_PROJECTION.write_text(
             '{"schema":1,"schema":1}', encoding="utf-8"
         )
         with self.assertRaisesRegex(prepare.PreparationError, "duplicate key"):
-            prepare.finalise_iteration(envelope, state, FakeSnapshot())
+            prepare.finalise_iteration(prepared, state, FakeSnapshot())
         self.assertEqual(state.calls, [])
 
 

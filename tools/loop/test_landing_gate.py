@@ -27,7 +27,11 @@ class LandingGateTests(unittest.TestCase):
         )
         self.assertEqual(
             __import__("hashlib").sha256(self.projection_fixture.read_bytes()).hexdigest(),
-            "e72af3a9a2b7fc3506d595fded5372eab2222c23042e8840e9ceeb04620e6fd1",
+            "b600d4de630919e9d2dded36d3e718262968baf7757630ecfa41caaab51231f9",
+        )
+        self.assertEqual(
+            self.projection.get("projection_digest"),
+            "c2c971c658033fbb4a7ff456944f20ea1649b0be78922f4dccb2a04ea7986e8b",
         )
         self.todo_path = "meta/todos/todo.alpha.md"
         self.before = b"---\nnode: firth.governance.loop\nstatus: in_progress\n---\n\nRequires:\n"
@@ -479,6 +483,47 @@ class LandingGateTests(unittest.TestCase):
         with self.assertRaisesRegex(landing.LandingError, "policy version"):
             self.validate()
         self.projection = original
+    def test_projection_extensions_require_exact_maps_and_shape(self) -> None:
+        for field in (
+            "registry_coverage",
+            "recovery_templates",
+            "model_limits",
+        ):
+            missing = copy.deepcopy(self.projection)
+            missing.pop(field)
+            original = self.projection
+            self.projection = missing
+            with self.subTest(case="missing", field=field), self.assertRaisesRegex(
+                landing.LandingError, "projection shape"
+            ):
+                self.validate()
+            self.projection = original
+
+            extra = copy.deepcopy(self.projection)
+            extra["unexpected"] = {}
+            self.projection = extra
+            with self.subTest(case="extra", field=field), self.assertRaisesRegex(
+                landing.LandingError, "projection shape"
+            ):
+                self.validate()
+            self.projection = original
+
+            wrong_type = copy.deepcopy(self.projection)
+            wrong_type[field] = []
+            self.projection = wrong_type
+            with self.subTest(case="type", field=field), self.assertRaisesRegex(
+                landing.LandingError, f"{field} must be a map"
+            ):
+                self.validate()
+            self.projection = original
+            noncanonical = copy.deepcopy(self.projection)
+            noncanonical[field] = {"invalid": 1.0}
+            self.projection = noncanonical
+            with self.subTest(case="noncanonical", field=field), self.assertRaisesRegex(
+                landing.LandingError, "non-canonical value"
+            ):
+                self.validate()
+            self.projection = original
 
     def test_fabricated_review_without_installed_attestation_is_rejected(self) -> None:
         reviews = copy.deepcopy(self.reviews)

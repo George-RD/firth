@@ -21,17 +21,6 @@ FINALISATION_PROTOCOL = 2
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 OBJECT_ID = re.compile(r"^[0-9a-f]{40,64}$")
 UNIT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
-EXPECTED_NORMAL_TEMPLATE_FIELDS = {
-    "normal.mirror.fetch": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature"},
-    "normal.branch.create": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature", "mirror_id", "branch"},
-    "normal.worktree.create": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature", "mirror_id", "branch", "head"},
-    "normal.lease.grant": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature", "mirror_id", "branch", "head", "worktree_id"},
-    "normal.binding.verify": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature", "branch", "head", "verdict"},
-    "normal.finalise.seal": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "lease_epoch", "container_id", "cgroup_id", "observation_generation", "observation_signature"},
-    "normal.finalise.model-stop": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "lease_epoch", "container_id", "cgroup_id", "observation_generation", "observation_signature"},
-    "normal.finalise.acl-transfer": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "lease_epoch", "container_id", "cgroup_id", "observation_generation", "observation_signature"},
-    "normal.finalise.lease-acquire": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "lease_epoch", "container_id", "cgroup_id", "observation_generation", "observation_signature"},
-}
 RECEIPT_PATH_PREFIXES = (
     ".firth/reviews/",
     ".resolver/receipts/",
@@ -144,9 +133,20 @@ def _validate_projection(projection: Mapping[str, Any], repository_id: str, poli
         "schema", "kind", "policy_version", "repository_id", "operator_repository_id",
         "policy_digest", "projection_digest", "issuer_namespaces", "merge_classes",
         "path_classes", "completion_tcb", "normal_templates",
+        "registry_coverage", "recovery_templates", "model_limits",
     }
     if set(projection) != required:
         raise LandingError("installed policy projection shape is invalid")
+    for field in ("registry_coverage", "recovery_templates", "model_limits"):
+        value = projection.get(field)
+        if not isinstance(value, Mapping):
+            raise LandingError(f"installed policy projection {field} must be a map")
+        try:
+            _canonical_bytes(value)
+        except LandingError as error:
+            raise LandingError(
+                f"installed policy projection {field} contains a non-canonical value"
+            ) from error
     _schema(projection.get("schema"), "installed policy projection")
     if projection.get("kind") != "firth-authority-policy-projection":
         raise LandingError("installed policy projection is invalid")
@@ -170,12 +170,24 @@ def _validate_projection(projection: Mapping[str, Any], repository_id: str, poli
     if not isinstance(completion, Mapping) or completion.get("exclusive_command") != "python3 tools/loop/coverage.py --run-gates" or completion.get("terminal_token") != "LOOP EXHAUSTED":
         raise LandingError("installed completion TCB projection mismatch")
     templates = projection.get("normal_templates")
-    if not isinstance(templates, Mapping) or set(templates) != set(EXPECTED_NORMAL_TEMPLATE_FIELDS):
-        raise LandingError("installed normal template set mismatch")
-    for template_id, fields in EXPECTED_NORMAL_TEMPLATE_FIELDS.items():
-        template = templates[template_id]
-        if not isinstance(template, Mapping) or template.get("namespace") != "normal-iteration" or template.get("max_invocations") != 1 or template.get("retry") not in {"never", "reconcile-only"} or set(template.get("input_fields", [])) != fields:
-            raise LandingError(f"installed template {template_id} mismatch")
+    if not isinstance(templates, Mapping):
+        raise LandingError("installed normal template set is not a map")
+    try:
+        _canonical_bytes(templates)
+    except LandingError as error:
+        raise LandingError(
+            "installed normal template set contains a non-canonical value"
+        ) from error
+    for template_id, template in templates.items():
+        if (
+            not isinstance(template_id, str)
+            or not template_id.startswith("normal.")
+            or not isinstance(template, Mapping)
+            or template.get("namespace") != "normal-iteration"
+            or not isinstance(template.get("input_fields"), list)
+            or not all(isinstance(field, str) for field in template["input_fields"])
+        ):
+            raise LandingError(f"installed template {template_id!r} shape is invalid")
 
 def _validate_candidate_paths(
     projection: Mapping[str, Any], candidate_paths: Sequence[str], selected_todo: str | None

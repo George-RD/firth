@@ -29,21 +29,42 @@ PREPARE_TEMPLATES = (
     "normal.mirror.fetch",
     "normal.branch.create",
     "normal.worktree.create",
+    "normal.prepared-launch",
     "normal.lease.grant",
+    "normal.session.initialise",
 )
 FINALISE_TEMPLATES = (
+    "normal.session.close",
     "normal.finalise.seal",
     "normal.finalise.model-stop",
     "normal.finalise.acl-transfer",
     "normal.finalise.lease-acquire",
 )
 FINALISE_STAGES = {
+    "normal.session.close": "session-closed",
     "normal.finalise.seal": "seal-requested",
     "normal.finalise.model-stop": "model-stopped",
     "normal.finalise.acl-transfer": "acl-transferred",
     "normal.finalise.lease-acquire": "lease-acquired",
 }
 FINALISE_OBJECT_FIELDS = {
+    "normal.session.close": (
+        "session_id",
+        "authorization_digest",
+        "envelope_digest",
+        "profile_volume_id",
+        "runtime_container_id",
+        "total_calls",
+        "settled_calls",
+        "in_flight_calls",
+        "actual_tokens",
+        "actual_cost_micros",
+        "closed",
+        "closed_ns",
+        "outcome",
+        "close_outcome",
+        "model_outcome",
+    ),
     "normal.finalise.seal": (
         "repository_id",
         "policy_digest",
@@ -111,16 +132,47 @@ REFUSED_VERDICTS = {
     "observation-failed",
 }
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
+EXPECTED_NORMAL_TEMPLATE_IDS = frozenset(
+    {
+        "normal.binding.verify",
+        "normal.branch.create",
+        "normal.branch.publish",
+        "normal.candidate.admit",
+        "normal.candidate.prepare",
+        "normal.finalise.acl-transfer",
+        "normal.finalise.lease-acquire",
+        "normal.finalise.model-stop",
+        "normal.finalise.seal",
+        "normal.gate.run",
+        "normal.iteration.archive",
+        "normal.lease.grant",
+        "normal.merge.authorize",
+        "normal.merge.enqueue",
+        "normal.merge.reconcile",
+        "normal.merged.cleanup",
+        "normal.mirror.fetch",
+        "normal.pr.open",
+        "normal.prepared-launch",
+        "normal.review.correctness",
+        "normal.review.simplicity",
+        "normal.session.close",
+        "normal.session.initialise",
+        "normal.worktree.create",
+    }
+)
 EXPECTED_NORMAL_TEMPLATE_FIELDS = {
     "normal.mirror.fetch": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature"},
     "normal.branch.create": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature", "mirror_id", "branch"},
     "normal.worktree.create": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature", "mirror_id", "branch", "head"},
-    "normal.lease.grant": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature", "mirror_id", "branch", "head", "worktree_id"},
+    "normal.prepared-launch": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature", "mirror_id", "branch", "head", "worktree_id"},
+    "normal.lease.grant": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature", "mirror_id", "branch", "head", "worktree_id", "container_id", "cgroup_id"},
+    "normal.session.initialise": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature", "mirror_id", "branch", "head", "worktree_id", "container_id", "cgroup_id", "lease_epoch", "envelope_digest", "profile_volume_id", "merge_class", "ruleset_digest"},
+    "normal.session.close": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "container_id", "cgroup_id", "lease_epoch", "session_id", "authorization_digest", "envelope_digest", "profile_volume_id", "merge_class", "ruleset_digest", "observation_generation", "observation_signature"},
     "normal.binding.verify": {"repository_id", "policy_digest", "main_commit", "main_tree", "incident_id", "unit", "observation_generation", "observation_signature", "branch", "head", "verdict"},
-    "normal.finalise.seal": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "container_id", "cgroup_id", "lease_epoch", "observation_generation", "observation_signature"},
-    "normal.finalise.model-stop": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "container_id", "cgroup_id", "lease_epoch", "observation_generation", "observation_signature"},
-    "normal.finalise.acl-transfer": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "container_id", "cgroup_id", "lease_epoch", "observation_generation", "observation_signature"},
-    "normal.finalise.lease-acquire": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "container_id", "cgroup_id", "lease_epoch", "observation_generation", "observation_signature"},
+    "normal.finalise.seal": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "container_id", "cgroup_id", "lease_epoch", "merge_class", "ruleset_digest", "observation_generation", "observation_signature"},
+    "normal.finalise.model-stop": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "container_id", "cgroup_id", "lease_epoch", "merge_class", "ruleset_digest", "observation_generation", "observation_signature"},
+    "normal.finalise.acl-transfer": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "container_id", "cgroup_id", "lease_epoch", "merge_class", "ruleset_digest", "observation_generation", "observation_signature"},
+    "normal.finalise.lease-acquire": {"incident_id", "repository_id", "policy_digest", "unit", "branch", "head", "worktree_id", "container_id", "cgroup_id", "lease_epoch", "merge_class", "ruleset_digest", "observation_generation", "observation_signature"},
 }
 OBJECT_ID = re.compile(r"^[0-9a-f]{40,64}$")
 UNIT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -161,6 +213,13 @@ def _require_digest(value: Any, field: str) -> str:
     if SHA256.fullmatch(text) is None:
         raise PreparationError(f"invalid {field}")
     return text
+def _is_positive_decimal_string(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and value.isascii()
+        and value.isdigit()
+        and value[0] != "0"
+    )
 
 def _require_incident(value: Any) -> str:
     text = _require_text(value, "incident_id")
@@ -270,6 +329,10 @@ def _base_context(request: Mapping[str, Any], unit: str) -> dict[str, Any]:
         raise PreparationError("invalid observation_generation")
     signature = _require_digest(request.get("observation_signature"), "observation_signature")
     incident_id = _require_incident(request.get("incident_id"))
+    merge_class = _require_text(request.get("merge_class"), "merge_class")
+    ruleset_digest = _require_digest(request.get("ruleset_digest"), "ruleset_digest")
+    if merge_class != "normal-auto":
+        raise PreparationError("normal preparation requires the normal-auto merge class")
     return {
         "repository_id": repository_id,
         "policy_digest": policy_digest,
@@ -279,6 +342,8 @@ def _base_context(request: Mapping[str, Any], unit: str) -> dict[str, Any]:
         "unit": unit,
         "observation_generation": generation,
         "observation_signature": signature,
+        "merge_class": merge_class,
+        "ruleset_digest": ruleset_digest,
     }
 
 
@@ -384,6 +449,9 @@ def _validate_policy_projection(projection: Mapping[str, Any]) -> None:
         "path_classes",
         "completion_tcb",
         "normal_templates",
+        "model_limits",
+        "recovery_templates",
+        "registry_coverage",
     }
     if set(projection) != allowed:
         raise PreparationError("installed policy projection shape is invalid")
@@ -420,18 +488,162 @@ def _validate_policy_projection(projection: Mapping[str, Any]) -> None:
     ):
         raise PreparationError("installed completion TCB projection mismatch")
     templates = projection.get("normal_templates")
-    if not isinstance(templates, Mapping) or set(templates) != set(EXPECTED_NORMAL_TEMPLATE_FIELDS):
+    if not isinstance(templates, Mapping) or set(templates) != EXPECTED_NORMAL_TEMPLATE_IDS:
         raise PreparationError("installed normal template set mismatch")
-    for template_id, expected in EXPECTED_NORMAL_TEMPLATE_FIELDS.items():
+    for template_id in EXPECTED_NORMAL_TEMPLATE_IDS:
         template = templates.get(template_id)
         if (
             not isinstance(template, Mapping)
             or template.get("namespace") != NAMESPACE
             or template.get("max_invocations") != 1
             or template.get("retry") not in {"never", "reconcile-only"}
-            or set(template.get("input_fields", [])) != expected
         ):
+            raise PreparationError(f"installed template {template_id} metadata mismatch")
+        expected = EXPECTED_NORMAL_TEMPLATE_FIELDS.get(template_id)
+        if expected is not None and set(template.get("input_fields", [])) != expected:
             raise PreparationError(f"installed template {template_id} mismatch")
+
+
+SESSION_ATTESTATION_FIELDS = frozenset(
+    {
+        "schema",
+        "issuer",
+        "namespace",
+        "template_id",
+        "stage",
+        "policy_digest",
+        "repository_id",
+        "incident_id",
+        "operation_id",
+        "worktree_id",
+        "container_id",
+        "cgroup_id",
+        "envelope_digest",
+        "profile_volume_id",
+        "session_id",
+        "authorization_digest",
+        "profile_digest",
+        "generation",
+        "observation_signature",
+        "receipt_id",
+        "receipt_digest",
+    }
+)
+
+
+def _prepared_envelope(
+    *,
+    base: Mapping[str, Any],
+    unit: str,
+    branch: str,
+    head: str,
+    worktree_id: str,
+    container_id: str,
+    cgroup_id: str,
+    lease_epoch: int,
+    generation: int,
+    observation_signature: str,
+    receipts: list[str],
+) -> dict[str, Any]:
+    return {
+        "schema": SCHEMA,
+        "finalisation_protocol": FINALISATION_PROTOCOL,
+        "kind": "firth-prepared-iteration",
+        "namespace": NAMESPACE,
+        "repository_id": base["repository_id"],
+        "policy_digest": base["policy_digest"],
+        "incident_id": base["incident_id"],
+        "unit": unit,
+        "branch": branch,
+        "base_commit": base["main_commit"],
+        "base_tree": base["main_tree"],
+        "head": head,
+        "worktree_id": worktree_id,
+        "container_id": container_id,
+        "cgroup_id": cgroup_id,
+        "lease_epoch": lease_epoch,
+        "merge_class": base["merge_class"],
+        "ruleset_digest": base["ruleset_digest"],
+        "metadata_read_only": True,
+        "writer": "model",
+        "generation": generation,
+        "observation_signature": _require_digest(
+            observation_signature, "prepared observation_signature"
+        ),
+        "receipts": list(receipts),
+        "finalise_tool": "firth_finalize",
+        "finalise_arguments": [],
+    }
+
+
+def _validate_session_attestation(
+    attestation: Any,
+    *,
+    envelope: Mapping[str, Any],
+    response: Mapping[str, Any],
+) -> dict[str, Any]:
+    if not isinstance(attestation, Mapping) or set(attestation) != SESSION_ATTESTATION_FIELDS:
+        raise PreparationError("prepared session attestation shape is invalid")
+    expected_envelope_digest = hashlib.sha256(
+        _canonical_projection_bytes(envelope)
+    ).hexdigest()
+    if (
+        attestation.get("schema") != "firth.prepared-session-attestation.v1"
+        or attestation.get("issuer") != "firth-resolver-state"
+        or attestation.get("namespace") != NAMESPACE
+        or attestation.get("template_id") != "normal.session.initialise"
+        or attestation.get("stage") != "session-ready"
+        or attestation.get("repository_id") != envelope.get("repository_id")
+        or attestation.get("policy_digest") != envelope.get("policy_digest")
+        or attestation.get("incident_id") != envelope.get("incident_id")
+        or attestation.get("worktree_id") != envelope.get("worktree_id")
+        or attestation.get("container_id") != envelope.get("container_id")
+        or attestation.get("cgroup_id") != envelope.get("cgroup_id")
+        or attestation.get("envelope_digest") != expected_envelope_digest
+        or attestation.get("profile_volume_id")
+        != f"firth-loop_prepared-{envelope.get('worktree_id')}"
+        or attestation.get("observation_signature")
+        != response.get("observation_signature")
+    ):
+        raise PreparationError("prepared session attestation binding is stale")
+    _require_text(attestation.get("operation_id"), "session attestation operation_id")
+    _require_text(attestation.get("session_id"), "session attestation session_id")
+    _require_text(
+        attestation.get("profile_volume_id"), "session attestation profile_volume_id"
+    )
+    for field in (
+        "policy_digest",
+        "envelope_digest",
+        "authorization_digest",
+        "profile_digest",
+        "observation_signature",
+        "receipt_id",
+        "receipt_digest",
+    ):
+        _require_digest(attestation.get(field), f"session attestation {field}")
+    generation = attestation.get("generation")
+    if (
+        not isinstance(generation, int)
+        or isinstance(generation, bool)
+        or generation <= envelope.get("generation", 0)
+        or generation != response.get("generation")
+    ):
+        raise PreparationError("prepared session attestation generation is stale")
+    return dict(attestation)
+
+
+def _session_attestation_from_client(
+    client: StateClient,
+    envelope: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    provider = getattr(client, "session_attestation", None)
+    if callable(provider):
+        value = provider(envelope)
+    else:
+        value = getattr(client, "prepared_session_attestation", None)
+    if not isinstance(value, Mapping):
+        raise PreparationError("prepared session attestation is unavailable")
+    return value
 
 
 def prepare_iteration(
@@ -504,6 +716,10 @@ def prepare_iteration(
             "normal.binding.verify",
         )
         worktree_id = _require_text(objects.get("worktree_id"), "worktree_id")
+        mirror_id = _require_text(
+            objects.get("mirror_id") or preflight.get("mirror_id"),
+            "recovered mirror_id",
+        )
         lease_epoch = objects.get("lease_epoch")
         if not isinstance(lease_epoch, int) or isinstance(lease_epoch, bool) or lease_epoch < 1:
             raise PreparationError("normal.binding.verify: invalid lease_epoch")
@@ -588,8 +804,42 @@ def prepare_iteration(
             linked,
             generation,
         )
-        leased, generation = _request(
+        launched, generation = _request(
             client, PREPARE_TEMPLATES[3], context, previous_generation=generation
+        )
+        launched_objects = launched["objects"]
+        assert isinstance(launched_objects, Mapping)
+        _assert_equal(
+            launched_objects,
+            {
+                "repository_id": base["repository_id"],
+                "policy_digest": base["policy_digest"],
+                "branch": branch,
+                "head": head,
+                "worktree_id": worktree_id,
+            },
+            PREPARE_TEMPLATES[3],
+        )
+        container_id = _require_text(
+            launched_objects.get("container_id"),
+            "normal.prepared-launch container_id",
+        )
+        cgroup_id = _require_text(
+            launched_objects.get("cgroup_id"),
+            "normal.prepared-launch cgroup_id",
+        )
+        receipts.append(str(launched["receipt_id"]))
+        context = _continued_context(
+            {
+                **context,
+                "container_id": container_id,
+                "cgroup_id": cgroup_id,
+            },
+            launched,
+            generation,
+        )
+        leased, generation = _request(
+            client, PREPARE_TEMPLATES[4], context, previous_generation=generation
         )
         leased_objects = leased["objects"]
         assert isinstance(leased_objects, Mapping)
@@ -601,43 +851,67 @@ def prepare_iteration(
                 "branch": branch,
                 "head": head,
                 "worktree_id": worktree_id,
+                "container_id": container_id,
+                "cgroup_id": cgroup_id,
                 "metadata_read_only": True,
                 "writer": "model",
             },
-            PREPARE_TEMPLATES[3],
+            PREPARE_TEMPLATES[4],
         )
         lease_epoch = leased_objects.get("lease_epoch")
         if not isinstance(lease_epoch, int) or isinstance(lease_epoch, bool) or lease_epoch < 1:
             raise PreparationError("normal.lease.grant: invalid lease_epoch")
-        container_id = _require_text(leased_objects.get("container_id"), "container_id")
-        cgroup_id = _require_text(leased_objects.get("cgroup_id"), "cgroup_id")
         receipts.append(str(leased["receipt_id"]))
         final_signature = leased["observation_signature"]
-
-    return {
-        "schema": SCHEMA,
-        "finalisation_protocol": FINALISATION_PROTOCOL,
-        "kind": "firth-prepared-iteration",
-        "namespace": NAMESPACE,
-        "repository_id": base["repository_id"],
-        "policy_digest": base["policy_digest"],
-        "incident_id": base["incident_id"],
-        "unit": unit,
+    envelope = _prepared_envelope(
+        base=base,
+        unit=unit,
+        branch=branch,
+        head=head,
+        worktree_id=worktree_id,
+        container_id=container_id,
+        cgroup_id=cgroup_id,
+        lease_epoch=lease_epoch,
+        generation=generation,
+        observation_signature=final_signature,
+        receipts=receipts,
+    )
+    profile_volume_id = f"firth-loop_prepared-{worktree_id}"
+    session_context = {
+        **base,
+        "mirror_id": mirror_id,
         "branch": branch,
-        "base_commit": base["main_commit"],
-        "base_tree": base["main_tree"],
         "head": head,
         "worktree_id": worktree_id,
         "container_id": container_id,
         "cgroup_id": cgroup_id,
         "lease_epoch": lease_epoch,
-        "metadata_read_only": True,
-        "writer": "model",
-        "generation": generation,
-        "observation_signature": _require_digest(final_signature, "prepared observation_signature"),
-        "receipts": receipts,
-        "finalise_tool": "firth_finalize",
-        "finalise_arguments": [],
+        "envelope_digest": hashlib.sha256(
+            _canonical_projection_bytes(envelope)
+        ).hexdigest(),
+        "profile_volume_id": profile_volume_id,
+        "observation_generation": generation,
+        "observation_signature": _require_digest(
+            final_signature, "session initialisation observation_signature"
+        ),
+    }
+    session_response, session_generation = _request(
+        client,
+        PREPARE_TEMPLATES[5],
+        session_context,
+        previous_generation=generation,
+    )
+    session_attestation = session_response.get("session_attestation")
+    if not isinstance(session_attestation, Mapping):
+        session_attestation = _session_attestation_from_client(client, envelope)
+    session_attestation = _validate_session_attestation(
+        session_attestation,
+        envelope=envelope,
+        response=session_response,
+    )
+    return {
+        "envelope": envelope,
+        "session_attestation": session_attestation,
     }
 
 
@@ -698,6 +972,8 @@ def validate_prepared_envelope(
         "container_id": _require_text(envelope.get("container_id"), "container_id"),
         "cgroup_id": _require_text(envelope.get("cgroup_id"), "cgroup_id"),
         "lease_epoch": lease_epoch,
+        "merge_class": _require_text(envelope.get("merge_class"), "merge_class"),
+        "ruleset_digest": _require_digest(envelope.get("ruleset_digest"), "ruleset_digest"),
         "metadata_read_only": envelope.get("metadata_read_only"),
         "writer": envelope.get("writer"),
         "generation": generation,
@@ -721,6 +997,13 @@ def validate_prepared_envelope(
     ):
         raise PreparationError("installed policy projection is invalid")
     _validate_policy_projection(policy_projection)
+    merge_classes = policy_projection.get("merge_classes")
+    if (
+        result["merge_class"] != "normal-auto"
+        or not isinstance(merge_classes, list)
+        or result["merge_class"] not in merge_classes
+    ):
+        raise PreparationError("prepared envelope merge class is not normal-auto")
     if policy_projection.get("repository_id") != result["repository_id"]:
         raise PreparationError("installed policy repository identity mismatch")
     if policy_projection.get("policy_digest") != result["policy_digest"]:
@@ -748,14 +1031,29 @@ def load_installed_policy_projection() -> Mapping[str, Any]:
 
 
 def finalise_iteration(
-    envelope: Mapping[str, Any], client: StateClient, snapshotter: StableSnapshotter
+    prepared: Mapping[str, Any], client: StateClient, snapshotter: StableSnapshotter
 ) -> dict[str, Any]:
     """Seal one prepared unit, transfer its lease, then snapshot without authority.
 
     The public tool supplies no arguments. Its issuer-bound session injects the
-    complete envelope, state client, and fixed no-authority snapshot helper.
+    immutable envelope and the separate state-issued session attestation.
     """
-    envelope = validate_prepared_envelope(envelope, load_installed_policy_projection())
+    if not isinstance(prepared, Mapping):
+        raise PreparationError("prepared finalisation input must be an object")
+    envelope_input = prepared.get("envelope")
+    attestation_input = prepared.get("session_attestation")
+    if not isinstance(envelope_input, Mapping) or not isinstance(
+        attestation_input, Mapping
+    ):
+        raise PreparationError("prepared finalisation requires envelope and session attestation")
+    envelope = validate_prepared_envelope(
+        envelope_input, load_installed_policy_projection()
+    )
+    session_attestation = _validate_session_attestation(
+        attestation_input,
+        envelope=envelope,
+        response=attestation_input,
+    )
     _require_state_protocol(client)
 
     context = {
@@ -771,16 +1069,29 @@ def finalise_iteration(
         "container_id": _require_text(envelope.get("container_id"), "container_id"),
         "cgroup_id": _require_text(envelope.get("cgroup_id"), "cgroup_id"),
         "lease_epoch": envelope.get("lease_epoch"),
-        "observation_generation": envelope.get("generation"),
+        "merge_class": _require_text(envelope.get("merge_class"), "merge_class"),
+        "ruleset_digest": _require_digest(envelope.get("ruleset_digest"), "ruleset_digest"),
+        "session_id": _require_text(session_attestation.get("session_id"), "session_id"),
+        "authorization_digest": _require_digest(
+            session_attestation.get("authorization_digest"), "authorization_digest"
+        ),
+        "envelope_digest": _require_digest(
+            session_attestation.get("envelope_digest"), "envelope_digest"
+        ),
+        "profile_volume_id": _require_text(
+            session_attestation.get("profile_volume_id"), "profile_volume_id"
+        ),
+        "observation_generation": session_attestation.get("generation"),
         "observation_signature": _require_digest(
-            envelope.get("observation_signature"), "observation_signature"
+            session_attestation.get("observation_signature"),
+            "session attestation observation_signature",
         ),
     }
     if context["branch"] != _normal_branch(str(context["incident_id"])):
         raise PreparationError("prepared incident and branch mismatch")
     if not isinstance(context["lease_epoch"], int) or isinstance(context["lease_epoch"], bool):
         raise PreparationError("invalid prepared lease_epoch")
-    generation = envelope.get("generation")
+    generation = context["observation_generation"]
     if not isinstance(generation, int) or isinstance(generation, bool) or generation < 1:
         raise PreparationError("invalid prepared generation")
 
@@ -926,6 +1237,37 @@ def finalise_iteration(
                 {**common_identity, "head": context["head"], "lease_epoch": context["lease_epoch"]},
                 template_id,
             )
+            if template_id == "normal.session.close":
+                counter_fields = (
+                    "total_calls",
+                    "settled_calls",
+                    "in_flight_calls",
+                    "actual_tokens",
+                    "actual_cost_micros",
+                )
+                if (
+                    objects.get("session_id") != context["session_id"]
+                    or objects.get("authorization_digest") != context["authorization_digest"]
+                    or objects.get("envelope_digest") != context["envelope_digest"]
+                    or objects.get("profile_volume_id") != context["profile_volume_id"]
+                    or objects.get("runtime_container_id") != context["container_id"]
+                    or objects.get("closed") is not True
+                    or objects.get("outcome") != "closed"
+                    or objects.get("close_outcome") != "completed"
+                    or objects.get("model_outcome") != "completed"
+                    or not _is_positive_decimal_string(objects.get("closed_ns"))
+                    or any(
+                        not isinstance(objects.get(field), int)
+                        or isinstance(objects.get(field), bool)
+                        or objects.get(field) < 0
+                        for field in counter_fields
+                    )
+                    or objects.get("total_calls") != objects.get("settled_calls")
+                    or objects.get("in_flight_calls") != 0
+                ):
+                    raise PreparationError(
+                        "normal.session.close session close postcondition is invalid"
+                    )
             if (
                 template_id == "normal.finalise.seal"
                 and objects.get("seal_requested") is not True

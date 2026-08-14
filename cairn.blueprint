@@ -99,6 +99,7 @@ System Firth "Concatenative language elaborated through Lean 4 and compiled to a
             path ".claude"
             path "tools/loop"
             path "docs"
+            contract "tools/loop/contract.md"
         }
     }
 }
