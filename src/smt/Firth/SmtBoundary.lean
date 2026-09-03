@@ -188,9 +188,12 @@ structure SmtProofBindings where
 
 def defaultSmtProofBindings : SmtProofBindings :=
   { translationRuleHashes :=
-      ["sha256:eb40a3611281719157351e0b09a954710d5e2c33b395647e47afa9cbe41c7073"]
+      ["sha256:5deded60a78d1e6a4eaef3d85663a63c614cc8248ef54f0184d6d1bf5ce0c714",
+       "sha256:d66d0bab5887fedd138dee570d223bdf5b6aeee5ed34bf171bd5f562aad72fa9"]
     translationSoundnessProofHashes :=
-      ["sha256:fdfb98b23ce8d0c2b6d46065d2b9e359324b46e156c8000e840f59cbab092cb6"] }
+      ["sha256:9a97b6a24e06c39a51117e5b598942a26fc9aaedbe361a3e596dc24c9e72e111",
+       "sha256:f921db9f6e4e257cfc9060ddf2e61b0b6b0bae7f116a8bf3bed26a573f395774",
+       "sha256:d2019818f45a5b7caad0cfd3482ebf8b6f1f29d15a10a013881bfe5c2932e005"] }
 
 def validSmtProofBindings (bindings : SmtProofBindings) : Bool :=
   bindings == defaultSmtProofBindings
@@ -255,6 +258,7 @@ inductive QfLiaSort where
   | boolean
   deriving Repr, BEq, DecidableEq
 
+-- firth:translation-rules-begin encoder
 def encodeSort : SmtSort → QfLiaSort
   | .integer => .integer
   | .boolean => .boolean
@@ -326,6 +330,8 @@ def encodeFormula (formula : Formula) : Option QfLiaFormula :=
   | some premises, some conclusions => some { premises, conclusions }
   | _, _ => none
 
+
+-- firth:translation-rules-end encoder
 
 def evalQfLiaInt (valuation : Valuation) : QfLiaIntExpr → Option Int
   | .literal value => some value
@@ -407,6 +413,7 @@ def evalEncodedAnyFalse (valuation : Valuation) :
 
 
 
+-- firth:translation-soundness-begin encoder
 theorem encodeSort_preserves (sort : SmtSort) :
     encodeSort sort == (match sort with
       | .integer => QfLiaSort.integer
@@ -634,6 +641,8 @@ theorem encodeFormula_semantics (valuation : Valuation) (formula : Formula) :
                 evalEncodedFormula, evalEncodedPredicates, evalEncodedAnyFalse,
                 evalFormula, premiseSound, conclusionSound]
 
+-- firth:translation-soundness-end encoder
+
 structure SmtBinding where
   sourceName : String
   symbol : String
@@ -688,6 +697,7 @@ private def findBinding (sort : SmtSort) (name : String) :
       else
         findBinding sort name rest
 
+-- firth:translation-rules-begin serialiser
 private def renderIntLiteral (value : Int) : String :=
   if value < 0 then
     s!"(- {toString (-value)})"
@@ -770,6 +780,8 @@ private def renderSmtLib (formula : Formula) (bindings : List SmtBinding) :
       "(check-sat)",
       "(exit)"]
   pure (String.intercalate "\n" lines)
+-- firth:translation-rules-end serialiser
+
 private def renderQfLiaIntExpr (bindings : List SmtBinding) :
     QfLiaIntExpr → Except SmtTranslationError String
   | .literal value => .ok (renderIntLiteral value)
@@ -833,6 +845,7 @@ private def renderEncodedSmtLib (formula : QfLiaFormula) (bindings : List SmtBin
       "(exit)"]
   pure (String.intercalate "\n" lines)
 
+-- firth:translation-soundness-begin serialiser
 theorem renderIntExpr_encode (bindings : List SmtBinding) (expression : IntExpr) :
     renderIntExpr bindings expression =
       renderQfLiaIntExpr bindings (encodeIntExpr expression) := by
@@ -957,6 +970,8 @@ theorem renderSmtLib_of_encodeFormula (formula : Formula) (bindings : List SmtBi
               rw [renderPredicates_of_encode bindings premises encodedPremises
                 premiseResult, renderPredicates_of_encode bindings conclusions
                 encodedConclusions conclusionResult]
+-- firth:translation-soundness-end serialiser
+
 def checkedSmtRequest (profile : SolverProfile) (formula : Formula) :
     Except SmtTranslationError SmtRequest :=
   if !validSolverProfile profile then
@@ -980,5 +995,291 @@ def validSmtRequest (request : SmtRequest) : Bool :=
   match checkedSmtRequest request.profile request.formula with
   | .ok expected => expected == request
   | .error _ => false
+
+/-!
+## What an `unsat` verdict establishes
+
+`spec/smt/refinement-discharge-architecture.md` §3 requires Lean to check the
+translation pipeline before a solver answer may be used as evidence. The
+encoder and serialiser theorems above relate the source formula to the script
+that is emitted; the theorems below say what an answer to that script means.
+
+The script asserts the premises and the negation of the conclusions, so a
+model of it is a valuation satisfying the premises and falsifying some
+conclusion. `unsat` says no such model exists.
+
+Two facts about the two model theories have to be kept straight. An SMT model
+is total: it assigns every declared symbol. A Lean `Valuation` is a partial
+association list, and a predicate mentioning an unbound variable is
+unevaluable rather than false. So an `unsat` verdict establishes validity over
+valuations that bind the formula, which is what `ValidUnderBinding` states,
+and not the unrestricted `Firth.Elaborator.Refinement.Valid`. The Lean
+discharge path reaches the unrestricted form because closed predicates
+evaluate identically under every valuation; the external path does not, and
+saying so precisely is the point of these definitions.
+-/
+
+/-- The integer variables a formula mentions, premises and conclusions alike. -/
+def Formula.integerVariables (formula : Formula) : List String :=
+  (formula.premises ++ formula.conclusions).flatMap Predicate.integerVariables
+
+/-- The boolean variables a formula mentions, premises and conclusions alike. -/
+def Formula.booleanVariables (formula : Formula) : List String :=
+  (formula.premises ++ formula.conclusions).flatMap Predicate.booleanVariables
+
+/-- A valuation binds a formula when it assigns every variable the formula
+mentions. This is the totality an SMT model has by construction, and it is
+exactly the condition `validatesCounterexample` already imposes on a model
+offered as a counterexample. -/
+def Binds (formula : Formula) (valuation : Valuation) : Prop :=
+  (∀ name ∈ formula.integerVariables, (lookup name valuation.integers).isSome) ∧
+  (∀ name ∈ formula.booleanVariables, (lookup name valuation.booleans).isSome)
+
+/-- A model of the emitted script. -/
+def ScriptModel (formula : Formula) (valuation : Valuation) : Prop :=
+  Binds formula valuation ∧
+  evalConjunction valuation formula.premises = some true ∧
+  evalAnyFalse valuation formula.conclusions = some true
+
+/-- The `unsat` verdict, as a proposition about the script's models. This is
+the one claim the pinned solver is trusted for; everything else on the path is
+checked here. -/
+def ScriptUnsatisfiable (formula : Formula) : Prop :=
+  ∀ valuation, ¬ ScriptModel formula valuation
+
+/-- Validity over binding valuations: the claim an `unsat` verdict supports. -/
+def ValidUnderBinding (formula : Formula) : Prop :=
+  ∀ valuation, Binds formula valuation →
+    (∀ predicate ∈ formula.premises, evalPredicate valuation predicate = some true) →
+      ∀ predicate ∈ formula.conclusions, evalPredicate valuation predicate = some true
+
+-- firth:translation-soundness-begin adapter
+theorem evalInt_isSome (valuation : Valuation) (expression : IntExpr)
+    (bound : ∀ name ∈ expression.variables, (lookup name valuation.integers).isSome) :
+    (evalInt valuation expression).isSome := by
+  induction expression with
+  | literal => simp [evalInt]
+  | «variable» name =>
+      have := bound name (by simp [IntExpr.variables])
+      simpa [evalInt] using this
+  | add left right leftIh rightIh =>
+      have leftBound := fun name (member : name ∈ left.variables) =>
+        bound name (by simp [IntExpr.variables]; exact Or.inl member)
+      have rightBound := fun name (member : name ∈ right.variables) =>
+        bound name (by simp [IntExpr.variables]; exact Or.inr member)
+      have leftSome := leftIh leftBound
+      have rightSome := rightIh rightBound
+      cases leftValue : evalInt valuation left <;> cases rightValue : evalInt valuation right <;>
+        simp_all [evalInt]
+  | sub left right leftIh rightIh =>
+      have leftBound := fun name (member : name ∈ left.variables) =>
+        bound name (by simp [IntExpr.variables]; exact Or.inl member)
+      have rightBound := fun name (member : name ∈ right.variables) =>
+        bound name (by simp [IntExpr.variables]; exact Or.inr member)
+      have leftSome := leftIh leftBound
+      have rightSome := rightIh rightBound
+      cases leftValue : evalInt valuation left <;> cases rightValue : evalInt valuation right <;>
+        simp_all [evalInt]
+  | scale coefficient body ih =>
+      have bodyBound := fun name (member : name ∈ body.variables) =>
+        bound name (by simpa [IntExpr.variables] using member)
+      have bodySome := ih bodyBound
+      cases bodyValue : evalInt valuation body <;> simp_all [evalInt]
+
+theorem evalPredicate_isSome (valuation : Valuation) (predicate : Predicate)
+    (translatable : (encodePredicate predicate).isSome)
+    (integers : ∀ name ∈ predicate.integerVariables, (lookup name valuation.integers).isSome)
+    (booleans : ∀ name ∈ predicate.booleanVariables, (lookup name valuation.booleans).isSome) :
+    (evalPredicate valuation predicate).isSome := by
+  induction predicate with
+  | truth => simp [evalPredicate]
+  | falsity => simp [evalPredicate]
+  | boolVariable name =>
+      have := booleans name (by simp [Predicate.booleanVariables])
+      simpa [evalPredicate] using this
+  | «not» body ih =>
+      have bodyTranslatable : (encodePredicate body).isSome := by
+        cases bodyEncoded : encodePredicate body <;> simp_all [encodePredicate]
+      have bodySome := ih bodyTranslatable
+        (fun name member => integers name (by simpa [Predicate.integerVariables] using member))
+        (fun name member => booleans name (by simpa [Predicate.booleanVariables] using member))
+      cases bodyValue : evalPredicate valuation body <;> simp_all [evalPredicate]
+  | «and» left right leftIh rightIh =>
+      have leftTranslatable : (encodePredicate left).isSome := by
+        cases leftEncoded : encodePredicate left <;> simp_all [encodePredicate]
+      have rightTranslatable : (encodePredicate right).isSome := by
+        cases leftEncoded : encodePredicate left <;> cases rightEncoded : encodePredicate right <;>
+          simp_all [encodePredicate]
+      have leftSome := leftIh leftTranslatable
+        (fun name member => integers name (by simp [Predicate.integerVariables]; exact Or.inl member))
+        (fun name member => booleans name (by simp [Predicate.booleanVariables]; exact Or.inl member))
+      have rightSome := rightIh rightTranslatable
+        (fun name member => integers name (by simp [Predicate.integerVariables]; exact Or.inr member))
+        (fun name member => booleans name (by simp [Predicate.booleanVariables]; exact Or.inr member))
+      cases leftValue : evalPredicate valuation left <;>
+        cases rightValue : evalPredicate valuation right <;> simp_all [evalPredicate]
+  | «or» left right leftIh rightIh =>
+      have leftTranslatable : (encodePredicate left).isSome := by
+        cases leftEncoded : encodePredicate left <;> simp_all [encodePredicate]
+      have rightTranslatable : (encodePredicate right).isSome := by
+        cases leftEncoded : encodePredicate left <;> cases rightEncoded : encodePredicate right <;>
+          simp_all [encodePredicate]
+      have leftSome := leftIh leftTranslatable
+        (fun name member => integers name (by simp [Predicate.integerVariables]; exact Or.inl member))
+        (fun name member => booleans name (by simp [Predicate.booleanVariables]; exact Or.inl member))
+      have rightSome := rightIh rightTranslatable
+        (fun name member => integers name (by simp [Predicate.integerVariables]; exact Or.inr member))
+        (fun name member => booleans name (by simp [Predicate.booleanVariables]; exact Or.inr member))
+      cases leftValue : evalPredicate valuation left <;>
+        cases rightValue : evalPredicate valuation right <;> simp_all [evalPredicate]
+  | intEq left right | intNe left right | intLe left right | intLt left right =>
+      have leftSome := evalInt_isSome valuation left
+        (fun name member => integers name (by simp [Predicate.integerVariables]; exact Or.inl member))
+      have rightSome := evalInt_isSome valuation right
+        (fun name member => integers name (by simp [Predicate.integerVariables]; exact Or.inr member))
+      cases leftValue : evalInt valuation left <;> cases rightValue : evalInt valuation right <;>
+        simp_all [evalPredicate]
+  | named _ _ _ => simp [encodePredicate] at translatable
+  | nonlinear _ => simp [encodePredicate] at translatable
+  | worldSensitive _ => simp [encodePredicate] at translatable
+
+theorem encodePredicates_mem (predicates : List Predicate) (encoded : List QfLiaPredicate)
+    (encodedEq : encodePredicates predicates = some encoded) :
+    ∀ predicate ∈ predicates, (encodePredicate predicate).isSome := by
+  induction predicates generalizing encoded with
+  | nil => intro predicate member; cases member
+  | cons head tail ih =>
+      intro predicate member
+      cases headEncoded : encodePredicate head with
+      | none => simp [encodePredicates, headEncoded] at encodedEq
+      | some headValue =>
+          cases tailEncoded : encodePredicates tail with
+          | none => simp [encodePredicates, headEncoded, tailEncoded] at encodedEq
+          | some tailValue =>
+              cases member with
+              | head => simp [headEncoded]
+              | tail _ rest => exact ih tailValue tailEncoded predicate rest
+
+theorem evalConjunction_of_all_true (valuation : Valuation) (predicates : List Predicate)
+    (allTrue : ∀ predicate ∈ predicates, evalPredicate valuation predicate = some true) :
+    evalConjunction valuation predicates = some true := by
+  induction predicates with
+  | nil => rfl
+  | cons head tail ih =>
+      have headTrue := allTrue head (by simp)
+      have tailTrue := ih (fun predicate member => allTrue predicate (by simp [member]))
+      simp [evalConjunction, headTrue, tailTrue]
+
+theorem evalAnyFalse_isSome (valuation : Valuation) (predicates : List Predicate)
+    (evaluable : ∀ predicate ∈ predicates, (evalPredicate valuation predicate).isSome) :
+    (evalAnyFalse valuation predicates).isSome := by
+  induction predicates with
+  | nil => simp [evalAnyFalse]
+  | cons head tail ih =>
+      have headSome := evaluable head (by simp)
+      have tailSome := ih (fun predicate member => evaluable predicate (by simp [member]))
+      cases headValue : evalPredicate valuation head with
+      | none => simp [headValue] at headSome
+      | some value =>
+          cases value <;>
+            cases tailValue : evalAnyFalse valuation tail <;>
+              simp_all [evalAnyFalse]
+
+theorem evalAnyFalse_of_not_all_true (valuation : Valuation) (predicates : List Predicate)
+    (evaluable : ∀ predicate ∈ predicates, (evalPredicate valuation predicate).isSome)
+    (witness : Predicate) (member : witness ∈ predicates)
+    (notTrue : evalPredicate valuation witness ≠ some true) :
+    evalAnyFalse valuation predicates = some true := by
+  induction predicates with
+  | nil => cases member
+  | cons head tail ih =>
+      have headSome := evaluable head (by simp)
+      have tailEvaluable := fun predicate (m : predicate ∈ tail) =>
+        evaluable predicate (by simp [m])
+      have tailSome := evalAnyFalse_isSome valuation tail tailEvaluable
+      cases headValue : evalPredicate valuation head with
+      | none => simp [headValue] at headSome
+      | some value =>
+          cases value with
+          | false =>
+              cases tailValue : evalAnyFalse valuation tail with
+              | none => simp [tailValue] at tailSome
+              | some _ => simp [evalAnyFalse, headValue, tailValue]
+          | true =>
+              cases member with
+              | head => exact absurd headValue notTrue
+              | tail _ rest =>
+                  simp only [evalAnyFalse, headValue]
+                  exact ih tailEvaluable rest
+
+/-- The adapter-soundness bridge.
+
+An `unsat` verdict on the emitted script establishes that the formula holds
+under every valuation binding it. This is the theorem that makes a solver
+answer usable as evidence at all: without it, a discharge record would record
+a verdict about a string with no stated relation to the obligation. -/
+theorem validUnderBinding_of_scriptUnsatisfiable (formula : Formula)
+    (encoded : QfLiaFormula) (encodedEq : encodeFormula formula = some encoded)
+    (unsat : ScriptUnsatisfiable formula) : ValidUnderBinding formula := by
+  intro valuation binds premisesTrue predicate member
+  have conclusionsEncoded : encodePredicates formula.conclusions = some encoded.conclusions := by
+    cases premiseResult : encodePredicates formula.premises with
+    | none => simp [encodeFormula, premiseResult] at encodedEq
+    | some encodedPremises =>
+        cases conclusionResult : encodePredicates formula.conclusions with
+        | none => simp [encodeFormula, premiseResult, conclusionResult] at encodedEq
+        | some encodedConclusions =>
+            simp [encodeFormula, premiseResult, conclusionResult] at encodedEq
+            simp [conclusionResult, ← encodedEq]
+  have translatable :=
+    encodePredicates_mem formula.conclusions encoded.conclusions conclusionsEncoded
+  have evaluable : ∀ conclusion ∈ formula.conclusions,
+      (evalPredicate valuation conclusion).isSome := by
+    intro conclusion conclusionMember
+    refine evalPredicate_isSome valuation conclusion (translatable conclusion conclusionMember)
+      (fun name nameMember => binds.1 name ?_) (fun name nameMember => binds.2 name ?_)
+    · exact List.mem_flatMap.mpr ⟨conclusion, by simp [conclusionMember], nameMember⟩
+    · exact List.mem_flatMap.mpr ⟨conclusion, by simp [conclusionMember], nameMember⟩
+  cases witnessValue : evalPredicate valuation predicate with
+  | none =>
+      have := evaluable predicate member
+      simp [witnessValue] at this
+  | some value =>
+      cases value with
+      | true => rfl
+      | false =>
+          exact absurd
+            ⟨binds, evalConjunction_of_all_true valuation formula.premises premisesTrue,
+              evalAnyFalse_of_not_all_true valuation formula.conclusions evaluable predicate
+                member (by simp [witnessValue])⟩
+            (unsat valuation)
+
+/-- The checked adapter never rewrites the formula it was asked about, so a
+verdict on the request is a verdict on the obligation. -/
+theorem checkedSmtRequest_formula (profile : SolverProfile) (formula : Formula)
+    (request : SmtRequest) (checked : checkedSmtRequest profile formula = .ok request) :
+    request.formula = formula := by
+  cases valid : validSolverProfile profile with
+  | false => simp [checkedSmtRequest, valid] at checked
+  | true =>
+      cases fragment : classify formula with
+      | qfLia =>
+          cases rendered : renderSmtLib formula (formulaBindings formula) with
+          | error error => simp [checkedSmtRequest, valid, fragment, rendered] at checked
+          | ok text =>
+              simp [checkedSmtRequest, valid, fragment, rendered] at checked
+              simp [← checked]
+      | untranslatedPredicate => simp [checkedSmtRequest, valid, fragment] at checked
+      | nonlinearArithmetic => simp [checkedSmtRequest, valid, fragment] at checked
+      | worldEffect => simp [checkedSmtRequest, valid, fragment] at checked
+
+/-- The same bridge, stated over a request the checked adapter produced. -/
+theorem validUnderBinding_of_checkedRequest (profile : SolverProfile) (formula : Formula)
+    (request : SmtRequest) (checked : checkedSmtRequest profile formula = .ok request)
+    (encoded : QfLiaFormula) (encodedEq : encodeFormula formula = some encoded)
+    (unsat : ScriptUnsatisfiable request.formula) : ValidUnderBinding formula :=
+  validUnderBinding_of_scriptUnsatisfiable formula encoded encodedEq
+    (checkedSmtRequest_formula profile formula request checked ▸ unsat)
+-- firth:translation-soundness-end adapter
 
 end Firth.Smt

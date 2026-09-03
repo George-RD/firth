@@ -86,6 +86,8 @@ python3 tools/loop/test_driver_tokens.py
 python3 tools/loop/test_review_gate.py
 python3 tools/loop/test_mvp_agent_gate.py
 python3 tools/loop/test_mvp_agent_coverage.py
+python3 tools/loop/test_smt_proof_bindings.py
+python3 tools/loop/update_smt_proof_bindings.py --check
 python3 tools/loop/mvp_agent_gate.py
 python3 tools/loop/select_unit.py --validate
 python3 tools/loop/coverage.py --validate

@@ -2,10 +2,27 @@ import smt.Firth.SmtBoundary
 
 namespace Firth.Smt
 
+-- Every theorem the translation-soundness hashes cover is audited here, so a
+-- proof that grew a new dependency is visible in the build output.
 #print axioms encodeSort_preserves
 #print axioms encodeIntExpr_sound
 #print axioms encodePredicate_semantics
+#print axioms encodePredicates_conjunction_sound
+#print axioms encodePredicates_anyFalse_sound
 #print axioms encodeFormula_semantics
+#print axioms renderIntExpr_encode
+#print axioms renderPredicate_of_encode
+#print axioms renderPredicates_of_encode
+#print axioms renderSmtLib_of_encodeFormula
+#print axioms evalInt_isSome
+#print axioms evalPredicate_isSome
+#print axioms encodePredicates_mem
+#print axioms evalConjunction_of_all_true
+#print axioms evalAnyFalse_isSome
+#print axioms evalAnyFalse_of_not_all_true
+#print axioms checkedSmtRequest_formula
+#print axioms validUnderBinding_of_scriptUnsatisfiable
+#print axioms validUnderBinding_of_checkedRequest
 private def fail (message : String) : IO α :=
   throw <| IO.userError message
 
@@ -73,6 +90,41 @@ private def expectTrue (condition : Bool) (message : String) : IO Unit :=
       { premises := [], conclusions := [.worldSensitive "effect"] } with
   | .error (.unsupportedFragment .worldEffect) => pure ()
   | result => fail s!"effectful predicate was accepted: {repr result}"
+  -- The adapter bridge's hypotheses, exercised concretely. The theorems
+  -- themselves are Props and cannot be run; what a suite can check is that the
+  -- facts they are stated over behave as the proofs assume.
+  let bridgeFormula : Formula :=
+    { premises := [.intLt (.literal 0) (.variable "x")]
+      conclusions := [.intLt (.literal 0) (.add (.variable "x") (.literal 1))] }
+  match checkedSmtRequest defaultSolverProfile bridgeFormula with
+  | .error error => fail s!"a QF_LIA obligation was rejected: {repr error}"
+  | .ok request =>
+      expectEq request.formula bridgeFormula
+        "the checked adapter does not rewrite the formula it was asked about"
+      expectEq request.proofBindings defaultSmtProofBindings
+        "every request carries the translation-rule and soundness-proof hashes"
+      expectTrue (validSmtRequest request)
+        "a request the checked adapter produced rebuilds to itself"
+  -- A binding valuation makes every QF_LIA predicate evaluable; a valuation
+  -- missing a variable leaves it unevaluable rather than false, which is the
+  -- gap between the two model theories that `ValidUnderBinding` names.
+  let bound : Valuation := { integers := [("x", 1)], booleans := [] }
+  let unbound : Valuation := { integers := [], booleans := [] }
+  for predicate in bridgeFormula.premises ++ bridgeFormula.conclusions do
+    expectTrue (evalPredicate bound predicate).isSome
+      "a binding valuation evaluates every translatable predicate"
+    expectEq (evalPredicate unbound predicate) none
+      "an unbound variable leaves a predicate unevaluable, not false"
+  expectEq (evalConjunction bound bridgeFormula.premises) (some true)
+    "the premises hold under the binding valuation"
+  expectEq (evalAnyFalse bound bridgeFormula.conclusions) (some false)
+    "no conclusion is falsified under the binding valuation"
+  expectEq (evalAnyFalse unbound bridgeFormula.conclusions) none
+    "an unevaluable conclusion is not reported as falsified"
+  expectEq (evalAnyFalse bound [Predicate.falsity, .truth]) (some true)
+    "a false conclusion is reported, which is the model the script asks for"
+  expectEq (evalAnyFalse bound [Predicate.truth, .worldSensitive "effect"]) none
+    "an untranslatable conclusion is unevaluable rather than satisfied"
   IO.println "all SMT encoder translation proof tests passed"
 
  end Firth.Smt
