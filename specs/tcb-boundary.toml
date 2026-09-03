@@ -138,7 +138,7 @@ evidence = ["lean-build", "lean-test-driver"]
 id = "firth.toolchain.compiler"
 module = "firth.toolchain.compiler"
 category = "compiler"
-status = "planned"
+status = "implemented"
 trusted = false
 [[components.outputs]]
 id = "target-code-and-lowering-evidence"
@@ -149,7 +149,7 @@ evidence = ["vm-conformance", "vm-fixtures"]
 id = "firth.toolchain.compiler.translator"
 module = "firth.toolchain.compiler"
 category = "target-translator"
-status = "planned"
+status = "implemented"
 trusted = false
 [[components.outputs]]
 id = "canonical-target-instructions"

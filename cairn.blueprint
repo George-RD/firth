@@ -118,6 +118,8 @@ firth.toolchain.elaborator -> firth.toolchain.smt "elaborator discharges refinem
 firth.toolchain.smt -> firth.language.kernel "refinement discharge targets kernel stack semantics"
 firth.toolchain.compiler -> firth.language.kernel "compiler consumes kernel terms"
 firth.toolchain.compiler -> firth.runtime.vm "compiler targets the VM instruction contract"
+firth.toolchain.compiler -> firth.toolchain.interpreter "compiler consumes the kernel term types the interpreter defines"
+firth.toolchain.compiler -> firth.toolchain.agent "compile adapter speaks the agent JSON transport"
 firth.toolchain.interpreter -> firth.language.kernel "interpreter executes kernel terms"
 firth.runtime.vm -> firth.toolchain.interpreter "VM target is validated against interpreter semantics"
 firth.toolchain.diffharness -> firth.toolchain.compiler "harness checks compiler output"
