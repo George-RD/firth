@@ -1,0 +1,56 @@
+# The stated specification the S5 witness is verified and executed against.
+#
+# PRD S5 asks for a non-trivial program written, verified to a stated
+# specification, and executed on the VM within a bounded cost envelope. This
+# file is that stated specification, in the form the pinned gate checks.
+#
+# The verified part is the elaborated word type of every definition: the
+# elaborator checks each body against its declared stack effect, including row
+# polymorphism and ownership, and the gate refuses anything it did not check.
+# The executed part is the entry word's observation on the VM. The bounded
+# part is `target_cost_envelope`.
+
+specification_version = 1
+source_path = "examples/s5/protocol-handler.firth"
+
+# The program's shape, so a refactor that quietly flattens it fails the gate
+# rather than passing a weaker witness.
+[structure]
+words = ["handle-ping", "handle-pong", "dispatch", "session"]
+entry = "session"
+# `dispatch` selects a handler through a quotation, so the program is
+# higher-order rather than a straight-line sequence.
+higher_order_dispatch = true
+# Both `if` branches are taken across the session.
+both_branches_taken = true
+# Every handler is reached through a dictionary call, not by inlining. The
+# first count is static call sites in the source; the second is the calls the
+# session actually makes, which the VM charges one administrative entry each.
+dictionary_call_sites = 5
+dictionary_calls_made = 6
+
+# The declared word type of every definition, exactly as the elaborator
+# checked it and the compiler rendered it for the target.
+[types]
+"handle-ping" = "(forallρ;ρ,v0:Int^many--ρ,v0:Int^many)"
+"handle-pong" = "(forallρ;ρ,v0:Int^many--ρ,v0:Int^many)"
+"dispatch" = "(forallρ;ρ,v0:Int^many,v1:Bool^many--ρ,v0:Int^many)"
+"session" = "(--v0:Int^many)"
+
+# The behavioural specification: starting from an empty stack, the session
+# handles ping, pong, ping and leaves exactly one Int.
+[behaviour]
+initial_stack = []
+result = 4
+fuel = 256
+
+# The cost envelope. `kernel_cost` is the exact charge the Lean reference
+# interpreter accounts for and both hosts must agree on it. `target_cost` is
+# the VM's own charge, which additionally counts one administrative entry per
+# dictionary call. `target_cost_envelope` is the bound the execution must stay
+# within, and it is deliberately above `target_cost` so the witness states a
+# bound rather than restating the measurement.
+[cost]
+kernel_cost = 25
+target_cost = 31
+target_cost_envelope = 40

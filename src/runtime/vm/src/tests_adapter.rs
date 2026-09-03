@@ -112,7 +112,7 @@ fn a_literal_program_runs_and_reports_a_success_observation() {
     );
     assert_eq!(
         response.member("cost"),
-        Some(&parse_json("{\"steps\":1,\"total\":1}").unwrap())
+        Some(&parse_json("{\"steps\":1,\"total\":1,\"kernel\":1}").unwrap())
     );
     assert_eq!(
         response.member("world_observation"),
@@ -142,7 +142,7 @@ fn an_entry_word_other_than_main_runs_without_an_administrative_call() {
     assert_eq!(member_str(&response, "status"), "success");
     assert_eq!(
         response.member("cost"),
-        Some(&parse_json("{\"steps\":1,\"total\":1}").unwrap())
+        Some(&parse_json("{\"steps\":1,\"total\":1,\"kernel\":1}").unwrap())
     );
 }
 
@@ -183,7 +183,7 @@ fn fuel_exhaustion_is_reported_as_a_trap_with_its_own_class() {
     assert_eq!(member_str(&response, "trap"), "fuel-exhausted");
     assert_eq!(
         response.member("cost"),
-        Some(&parse_json("{\"steps\":0,\"total\":0}").unwrap())
+        Some(&parse_json("{\"steps\":0,\"total\":0,\"kernel\":0}").unwrap())
     );
 }
 
@@ -316,7 +316,7 @@ fn the_adapter_is_deterministic() {
     );
     assert_eq!(
         response.member("cost"),
-        Some(&parse_json("{\"steps\":3,\"total\":3}").unwrap())
+        Some(&parse_json("{\"steps\":3,\"total\":3,\"kernel\":3}").unwrap())
     );
 }
 
@@ -328,4 +328,31 @@ fn a_refusal_renders_its_stable_code_alongside_its_message() {
     assert_eq!(member_str(&parsed, "status"), "error");
     assert_eq!(member_str(&parsed, "code"), "malformed-json");
     assert!(!member_str(&parsed, "error").is_empty());
+}
+
+#[test]
+fn a_dictionary_call_separates_the_kernel_cost_from_the_target_cost() {
+    // Two words, so the request builder above is not enough: the caller's
+    // CALL_WORD costs one instruction plus one administrative word entry, and
+    // only the instruction is a cost the reference interpreter also charges.
+    let callee = word(
+        "callee",
+        vec![instruction(
+            Op::PushLiteral,
+            Some(Operand::Literal(Value::Int(7))),
+        )],
+    );
+    let caller = word(
+        "main",
+        vec![instruction(
+            Op::CallWord,
+            Some(Operand::Word(String::from("callee"))),
+        )],
+    );
+    let image = seal_image(1, vec![caller, callee]);
+    let observed = observe_image(&image, Vec::new(), 64, &default_registry());
+    assert_eq!(observed.stack, "7");
+    assert_eq!(observed.cost.total, 3);
+    assert_eq!(observed.cost.kernel, 2);
+    assert_eq!(observed.cost.breakdown.word_entries, 1);
 }

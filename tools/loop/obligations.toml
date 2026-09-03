@@ -70,7 +70,7 @@ satisfied_by = ["reference-interpreter"]
 [obligation.scope-toolchain-compiler]
 node = "firth.toolchain.compiler"
 source = "PRD 4.2 compiler"
-satisfied_by = []
+satisfied_by = ["mvp-agent-compiler-adapter"]
 
 [obligation.scope-toolchain-diffharness]
 node = "firth.toolchain.diffharness"
@@ -96,17 +96,17 @@ satisfied_by = []
 [obligation.scope-runtime-vm]
 node = "firth.runtime.vm"
 source = "PRD 4.3 VM implementation"
-satisfied_by = []
+satisfied_by = ["rust-vm-implementation"]
 
 [obligation.scope-runtime-image]
 node = "firth.runtime.image"
 source = "PRD 4.3 image model"
-satisfied_by = []
+satisfied_by = ["rust-vm-dictionary-image"]
 
 [obligation.scope-runtime-patch]
 node = "firth.runtime.patch"
 source = "PRD 4.3 verified-patch protocol"
-satisfied_by = []
+satisfied_by = ["rust-vm-patch-protocol"]
 
 [obligation.scope-ecosystem-stdlib]
 node = "firth.ecosystem.stdlib"
@@ -152,12 +152,12 @@ satisfied_by = ["req-r5"]
 [obligation.req-r6]
 node = "firth.runtime.patch"
 source = "PRD R6"
-satisfied_by = []
+satisfied_by = ["rust-vm-patch-protocol", "rust-vm-lifecycle-integration", "rust-vm-implementation"]
 
 [obligation.req-r7]
 node = "firth.runtime.patch"
 source = "PRD R7"
-satisfied_by = []
+satisfied_by = ["rust-vm-patch-protocol", "elaborator-refinement-discharge"]
 
 [obligation.req-r8]
 node = "firth.language.kernel"
@@ -236,7 +236,8 @@ satisfied_by = []
 [obligation.sc-s5]
 node = "firth.runtime.vm"
 source = "PRD S5"
-satisfied_by = []
+gate = "tools/loop/check_s5_envelope.py"
+satisfied_by = ["s5-bounded-cost-envelope"]
 
 [obligation.sc-s6]
 node = "firth.runtime.vm"

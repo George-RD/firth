@@ -66,6 +66,7 @@ System Firth "Concatenative language elaborated through Lean 4 and compiled to a
         Module Vm "Minimal permissively-licensed VM implementing the Forth-class target semantics" id "firth.runtime.vm" {
             path "src/runtime/vm"
             path "rust-toolchain.toml"
+            path "examples/s5"
             contract "src/runtime/vm/target-spec.md"
         }
 

@@ -41,13 +41,16 @@ class MvpAgentCoverageTests(unittest.TestCase):
         self.assertEqual(row["gate"], GATE)
         self.assertTrue((ROOT / GATE).is_file())
 
-    def test_the_pinned_gate_is_the_only_gate_in_the_matrix(self) -> None:
+    def test_every_pinned_gate_exists_and_is_repository_relative(self) -> None:
         gates = {
             row["gate"]
             for row in self.obligations["obligation"].values()
             if isinstance(row.get("gate"), str)
         }
-        self.assertEqual(gates, {GATE})
+        self.assertIn(GATE, gates)
+        for gate in gates:
+            self.assertFalse(gate.startswith("/"), gate)
+            self.assertTrue((ROOT / gate).is_file(), gate)
 
     def test_the_manifest_agrees_with_the_matrix_about_the_gate(self) -> None:
         self.assertEqual(self.manifest["gate_path"], GATE)

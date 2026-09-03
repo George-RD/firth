@@ -597,10 +597,22 @@ fn trace_json(trace: &[TraceEvent], registry: &PrimitiveRegistry) -> Json {
     )
 }
 
-fn cost_json(steps: usize, total: u64) -> Json {
+/// The cost report.
+///
+/// `total` is this target's `kappa_vm` charge. `kernel` is the same total
+/// without the administrative word-entry charges, which is the quantity the
+/// Lean reference `kappa` accounts for, so `kernel` is the field a
+/// cross-host comparison uses. The two coincide exactly when the program
+/// makes no dictionary call, which is why a corpus without one never
+/// exposed the difference.
+fn cost_json(steps: usize, cost: &CostReport) -> Json {
     Json::Object(vec![
         (String::from("steps"), Json::Int(steps as i64)),
-        (String::from("total"), Json::Int(total as i64)),
+        (String::from("total"), Json::Int(cost.total as i64)),
+        (
+            String::from("kernel"),
+            Json::Int(cost.total.saturating_sub(cost.word_entries) as i64),
+        ),
     ])
 }
 
@@ -646,7 +658,7 @@ pub fn run_vm_request(request: &VmRunRequest, registry: &PrimitiveRegistry) -> J
             "success",
             stack_json(&report.stack, registry),
             trace_json(&report.trace, registry),
-            cost_json(report.trace.len(), report.cost.total),
+            cost_json(report.trace.len(), &report.cost),
             Json::Null,
             world_json(report.world.observation()),
         ),
@@ -655,7 +667,7 @@ pub fn run_vm_request(request: &VmRunRequest, registry: &PrimitiveRegistry) -> J
             "trap",
             stack_json(&trap.stack, registry),
             trace_json(&trap.trace, registry),
-            cost_json(trap.trace.len(), trap.cost.total),
+            cost_json(trap.trace.len(), &trap.cost),
             Json::Str(String::from(trap.code)),
             world_json(trap.world.observation()),
         ),
