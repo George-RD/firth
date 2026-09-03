@@ -218,3 +218,13 @@ source_path = "examples/mvp/conditional.firth"
 source_sha256 = "fe4bb195204140ceae58f5223af1cd8a52bd6177cd72a8d925f9789842a61914"
 transcript_path = "meta/sources/mvp-agent-example-conditional.md"
 transcript_output_sha256 = "fe4bb195204140ceae58f5223af1cd8a52bd6177cd72a8d925f9789842a61914"
+
+# Added with the executable gate: the three original applications reach only
+# literals, `call` and `if`, so nothing executable exercised the Gamma
+# primitive profile the comparison contract names. This one applies `+`.
+[[applications.entries]]
+name = "add-one"
+source_path = "examples/mvp/add-one.firth"
+source_sha256 = "960d894edfca48657229f6aa21921da7002acad4c27abcb2d9d4275b44aca401"
+transcript_path = "meta/sources/mvp-agent-example-add-one.md"
+transcript_output_sha256 = "960d894edfca48657229f6aa21921da7002acad4c27abcb2d9d4275b44aca401"
