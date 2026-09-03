@@ -1,6 +1,6 @@
 name = "firth"
 version = "0.1.0"
-defaultTargets = ["firthTest", "firthParserTest", "firthCompilerTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthAgentDiagnosticTest", "firthPipelineTest", "smtBoundaryTest", "firthReferenceRunTest", "firthAllTest"]
+defaultTargets = ["firthTest", "firthParserTest", "firthCompilerTest", "firthElaborateTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthAgentDiagnosticTest", "firthPipelineTest", "smtBoundaryTest", "firthReferenceRunTest", "firthAllTest"]
 testDriver = "firthAllTest"
 
 [[lean_lib]]
@@ -21,7 +21,7 @@ roots = ["compiler.Firth.Digest", "compiler.Firth.Target", "compiler.Firth.WordT
 [[lean_lib]]
 name = "FirthAgent"
 srcDir = "src"
-roots = ["agent.Firth.Agent.DiagnosticEnvelope", "agent.Firth.Agent.JsonMembers", "agent.Firth.Agent.Validation", "agent.Firth.Agent.ElaboratorDiagnostics"]
+roots = ["agent.Firth.Agent.DiagnosticEnvelope", "agent.Firth.Agent.JsonMembers", "agent.Firth.Agent.Validation", "agent.Firth.Agent.ElaboratorDiagnostics", "agent.Firth.Agent.ElaborateAdapter"]
 
 [[lean_lib]]
 name = "FirthAgentTests"
@@ -46,6 +46,16 @@ srcDir = "src"
 [[lean_exe]]
 name = "firthPipelineTest"
 root = "elaborator.FirthPipelineTest"
+srcDir = "src"
+
+[[lean_exe]]
+name = "firthElaborateTest"
+root = "agent.FirthElaborateTest"
+srcDir = "src"
+
+[[lean_exe]]
+name = "firthElaborate"
+root = "agent.FirthElaborateCli"
 srcDir = "src"
 
 [[lean_exe]]

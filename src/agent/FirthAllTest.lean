@@ -14,3 +14,4 @@ def main : IO Unit := do
   runSuite "smtBoundaryTest"
   runSuite "firthReferenceRunTest"
   runSuite "firthCompilerTest"
+  runSuite "firthElaborateTest"
