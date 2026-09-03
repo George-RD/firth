@@ -85,6 +85,7 @@ python3 tools/loop/test_coverage.py
 python3 tools/loop/test_driver_tokens.py
 python3 tools/loop/test_review_gate.py
 python3 tools/loop/test_mvp_agent_gate.py
+python3 tools/loop/test_mvp_agent_coverage.py
 python3 tools/loop/mvp_agent_gate.py
 python3 tools/loop/select_unit.py --validate
 python3 tools/loop/coverage.py --validate
@@ -161,6 +162,9 @@ and hook checks.
 - Control-plane tests live in `tools/loop/test_select_unit.py`,
   `tools/loop/test_coverage.py` and `tools/loop/test_mvp_agent_gate.py`; all
   use temporary synthetic trees and never read the real tracker in fixtures.
+  `tools/loop/test_mvp_agent_coverage.py` is the exception by design: it pins
+  the live bindings between the obligations matrix, the manifest and the
+  pinned gate, and catches a stale acceptance hash without a toolchain.
 - **The pinned MVP gate** is `tools/loop/mvp_agent_gate.py`. It verifies the
   provenance manifest before executing anything, then rebuilds every
   manifest-listed application in a scratch workspace holding only that
