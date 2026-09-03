@@ -240,7 +240,19 @@ pub fn observe_image(
     fuel: u64,
     registry: &PrimitiveRegistry,
 ) -> ConformanceObservation {
-    match execute_diagnostic_with_stack(image, initial_stack, fuel, registry) {
+    observe_image_entry(image, "main", initial_stack, fuel, registry)
+}
+
+/// Observes one execution of a named entry word through the conformance
+/// boundary.
+pub fn observe_image_entry(
+    image: &Image,
+    entry: &str,
+    initial_stack: Vec<Value>,
+    fuel: u64,
+    registry: &PrimitiveRegistry,
+) -> ConformanceObservation {
+    match execute_diagnostic_entry(image, entry, initial_stack, fuel, registry, None) {
         ExecutionOutcome::Complete(report) => ConformanceObservation {
             status: ConformanceStatus::Terminal,
             stack: render_conformance_stack(&report.stack, registry),

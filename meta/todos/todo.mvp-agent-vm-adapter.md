@@ -1,6 +1,6 @@
 ---
 node: firth.runtime.vm
-status: open
+status: done
 created: 2026-08-10
 ---
 Requires: rust-vm-implementation

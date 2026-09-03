@@ -28,6 +28,8 @@ include!("syntax.rs");
 include!("encoding.rs");
 include!("image_encoding.rs");
 include!("conformance.rs");
+include!("json.rs");
+include!("adapter.rs");
 
 #[cfg(feature = "std")]
 include!("image_types.rs");

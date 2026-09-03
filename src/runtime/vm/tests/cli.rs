@@ -1,6 +1,7 @@
 use std::process::Command;
 
-const USAGE: &[u8] = b"usage: firth-vm --smoke | firth-vm run <image-path> [--fuel <n>]\n";
+const USAGE: &[u8] =
+    b"usage: firth-vm --smoke | firth-vm run <image-path> [--fuel <n>] | firth-vm vm-run\n";
 
 fn firth_vm(args: &[&str]) -> std::process::Output {
     Command::new(env!("CARGO_BIN_EXE_firth-vm"))
@@ -108,4 +109,75 @@ fn run_without_a_readable_image_fails_without_a_report() {
 
 fn firth_vm_smoke_image() -> Vec<u8> {
     firth_vm::smoke_image()
+}
+
+#[test]
+fn vm_run_reads_one_request_from_stdin_and_writes_one_observation() {
+    use std::io::Write;
+    let digest = hex(&firth_vm::body_digest(&[firth_vm::Instruction {
+        op: firth_vm::Op::PushLiteral,
+        operand: Some(firth_vm::Operand::Literal(firth_vm::Value::Int(42))),
+    }]));
+    let evidence = hex(&firth_vm::evidence_digest(&[]));
+    let request = format!(
+        "{{\"request_id\":\"cli\",\"target_program\":{{\"format_version\":1,\"entry\":\"main\",\
+         \"words\":[{{\"name\":\"main\",\"erased_word_type\":\"(--)\",\
+         \"code\":[{{\"op\":\"push-literal\",\"literal\":{{\"kind\":\"int\",\"value\":42}}}}],\
+         \"body_digest\":\"{digest}\",\"kernel_evidence_digest\":\"{evidence}\",\
+         \"refinement_evidence_digest\":\"{evidence}\",\"generation\":0}}]}},\
+         \"initial_stack\":[],\"image\":{{\"image_version\":1,\"gamma_version\":1}},\
+         \"gamma_version\":\"0.1\",\"fuel\":64}}"
+    );
+
+    let mut child = Command::new(env!("CARGO_BIN_EXE_firth-vm"))
+        .arg("vm-run")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .expect("CLI starts");
+    child
+        .stdin
+        .as_mut()
+        .expect("stdin")
+        .write_all(request.as_bytes())
+        .expect("write request");
+    let output = child.wait_with_output().expect("CLI finishes");
+
+    assert!(output.status.success());
+    let response = String::from_utf8(output.stdout).expect("utf-8 response");
+    assert!(
+        response.starts_with("{\"request_id\":\"cli\",\"status\":\"success\""),
+        "{response}"
+    );
+    assert!(response.ends_with("\n"));
+    assert!(output.stderr.is_empty());
+}
+
+#[test]
+fn vm_run_reports_a_refusal_on_stderr_and_never_on_stdout() {
+    use std::io::Write;
+    let mut child = Command::new(env!("CARGO_BIN_EXE_firth-vm"))
+        .arg("vm-run")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .expect("CLI starts");
+    child
+        .stdin
+        .as_mut()
+        .expect("stdin")
+        .write_all(b"not json")
+        .expect("write request");
+    let output = child.wait_with_output().expect("CLI finishes");
+
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stdout.is_empty());
+    let error = String::from_utf8(output.stderr).expect("utf-8 error");
+    assert!(error.contains("\"code\":\"malformed-json\""), "{error}");
+}
+
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }

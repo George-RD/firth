@@ -1,13 +1,16 @@
 use std::env;
 use std::fs;
+use std::io::Read;
 use std::process::ExitCode;
 
 use firth_vm::{
     ConformanceStatus, DEFAULT_FUEL, Value, decode, default_registry, execute, observe_image_bytes,
-    render_conformance_bytes, render_conformance_cost, render_conformance_trap, smoke_image,
+    render_adapter_error, render_conformance_bytes, render_conformance_cost,
+    render_conformance_trap, smoke_image, vm_run,
 };
 
-const USAGE: &str = "usage: firth-vm --smoke | firth-vm run <image-path> [--fuel <n>]";
+const USAGE: &str =
+    "usage: firth-vm --smoke | firth-vm run <image-path> [--fuel <n>] | firth-vm vm-run";
 
 fn main() -> ExitCode {
     run(env::args().skip(1))
@@ -18,6 +21,7 @@ fn run(args: impl Iterator<Item = String>) -> ExitCode {
     match args.split_first() {
         Some((command, rest)) if command == "--smoke" && rest.is_empty() => smoke(),
         Some((command, rest)) if command == "run" => run_image(rest),
+        Some((command, rest)) if command == "vm-run" && rest.is_empty() => vm_run_adapter(),
         _ => usage(),
     }
 }
@@ -75,6 +79,28 @@ fn run_image(args: &[String]) -> ExitCode {
         ExitCode::SUCCESS
     } else {
         ExitCode::from(1)
+    }
+}
+
+/// The `firth.vm-run.v1` adapter entry point: one request object on stdin,
+/// one `firth.observation.v1` object on stdout. A refused request prints its
+/// classified error on stderr and exits 1, so a caller can never mistake a
+/// refusal for an observation.
+fn vm_run_adapter() -> ExitCode {
+    let mut input = String::new();
+    if std::io::stdin().read_to_string(&mut input).is_err() {
+        eprintln!("cannot read the request from stdin");
+        return ExitCode::from(1);
+    }
+    match vm_run(&input) {
+        Ok(response) => {
+            println!("{response}");
+            ExitCode::SUCCESS
+        }
+        Err(error) => {
+            eprintln!("{}", render_adapter_error(&error));
+            ExitCode::from(1)
+        }
     }
 }
 
@@ -136,5 +162,14 @@ mod tests {
     fn usage_names_every_supported_command() {
         assert!(USAGE.contains("--smoke"));
         assert!(USAGE.contains("run <image-path>"));
+        assert!(USAGE.contains("vm-run"));
+    }
+
+    #[test]
+    fn vm_run_takes_no_argument() {
+        assert_eq!(
+            run(arguments(&["vm-run", "request.json"])),
+            std::process::ExitCode::from(2)
+        );
     }
 }
