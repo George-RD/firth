@@ -1380,8 +1380,10 @@ def Refusal.code : Refusal → String
 The formula is rebuilt from the typed IR and re-serialised, every binding is
 re-validated, and every field that can be derived without running a solver is
 recomputed and compared. One field cannot: `evidenceHash` addresses what the
-solver said, so only a run can recompute it, and `Firth.Smt.Solver.rerunDischargeRecord`
-is where it is compared.
+solver said, so only a run can recompute it. A rerun does not compare it
+either, because evidence is an output and §3 makes a cache hit conditional on
+the inputs matching; what a rerun does with it is replace it with what that run
+said.
 
 What this cannot do is re-answer the question, so it returns the request to
 re-run: a record that survives this is a record whose inputs still hold, not
