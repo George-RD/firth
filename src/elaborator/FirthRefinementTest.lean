@@ -117,8 +117,14 @@ private def diagnosticVariant (diagnostic : RefinementDiagnostic) (payloadId cod
         related := diagnostic.body.related
         groupId := diagnostic.body.groupId } }
 
+private def externalIdentity (entry : SmtQueueEntry) : String :=
+  match entry.request with
+  | some request => canonicalRequestIdentity request
+  | none => ""
+
 private def recordExternal (entry : SmtQueueEntry) (outcome : ExternalOutcome) : PipelineResult :=
-  recordExternalOutcome "request-a" entry { profile := entry.profile, outcome }
+  recordExternalOutcome "request-a" entry
+    { profile := entry.profile, requestIdentity := externalIdentity entry, outcome }
 
 
 private def expectExternalDeferred (entry : SmtQueueEntry) (outcome : ExternalOutcome)
@@ -497,7 +503,8 @@ private def runTests : IO Unit := do
     "negative literals and coefficients use SMT-LIB numeral syntax"
   let mismatchedProfile := { defaultSolverProfile with version := "5.0.1" }
   let mismatchedResult := recordExternalOutcome "request-a" smtEntry
-    { profile := mismatchedProfile, outcome := .unknown }
+    { profile := mismatchedProfile, requestIdentity := externalIdentity smtEntry
+      outcome := .unknown }
   let mismatchQueue ← expectOneLeanQueue mismatchedResult "profile mismatch"
   expectEq mismatchQueue.reason .externalProfileMismatch
     "profile mismatch is deferred before interpreting the external outcome"
@@ -506,17 +513,32 @@ private def runTests : IO Unit := do
   let mutatedRequest := recordExternalOutcome "request-a"
     { smtEntry with
       request := some { checkedRequest with proofBindings := staleProofBindings } }
-    { profile := defaultSolverProfile, outcome := .unknown }
+    { profile := defaultSolverProfile, requestIdentity := externalIdentity smtEntry
+      outcome := .unknown }
   let mutatedRequestQueue ← expectOneLeanQueue mutatedRequest
     "proof-binding mutation in the request"
   expectEq mutatedRequestQueue.reason .externalRequestIneligible
     "mutated request proof bindings are rejected"
   let mutatedResult := recordExternalOutcome "request-a" smtEntry
-    { profile := defaultSolverProfile, proofBindings := staleProofBindings, outcome := .unknown }
+    { profile := defaultSolverProfile, proofBindings := staleProofBindings
+      requestIdentity := externalIdentity smtEntry, outcome := .unknown }
   let mutatedResultQueue ← expectOneLeanQueue mutatedResult
     "proof-binding mutation in the result"
   expectEq mutatedResultQueue.reason .externalProofMismatch
     "mutated result proof bindings are deferred before outcome interpretation"
+  -- A result answers one request. Without the identity binding, a verdict
+  -- produced for another obligation could be attached to this one.
+  let foreignResult := recordExternalOutcome "request-a" smtEntry
+    { profile := defaultSolverProfile, requestIdentity := "request(0:)"
+      outcome := .unknown }
+  let foreignQueue ← expectOneLeanQueue foreignResult "foreign request identity"
+  expectEq foreignQueue.reason .externalRequestIdentityMismatch
+    "a result bound to another request is deferred before outcome interpretation"
+  let unboundResult := recordExternalOutcome "request-a" smtEntry
+    { profile := defaultSolverProfile, outcome := .unknown }
+  let unboundQueue ← expectOneLeanQueue unboundResult "absent request identity"
+  expectEq unboundQueue.reason .externalRequestIdentityMismatch
+    "a result carrying no request identity is deferred, never interpreted"
   let oversizedExternalObligation : Obligation :=
     { smtEntry.obligation with
       obligationId := "attacker-supplied-over-budget-obligation"

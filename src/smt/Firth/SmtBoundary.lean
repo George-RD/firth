@@ -201,6 +201,12 @@ def validSmtProofBindings (bindings : SmtProofBindings) : Bool :=
 structure SmtResult where
   profile : SolverProfile
   proofBindings : SmtProofBindings := defaultSmtProofBindings
+  /-- The canonical identity of the request this result answers.
+
+  Without it a result carries no binding to the obligation it came from, so a
+  verdict produced for one request could be attached to another. The default
+  is empty and never matches a real request, which fails closed. -/
+  requestIdentity : String := ""
   outcome : ExternalOutcome
   deriving Repr, BEq
 
@@ -990,6 +996,22 @@ def serialiseQfLia (formula : Formula) : Except SmtTranslationError String :=
   match checkedSmtRequest defaultSolverProfile formula with
   | .ok request => .ok request.smtLib
   | .error error => .error error
+
+/-- The canonical identity of a request: every byte that determines what was
+asked and of which solver. `spec/smt/refinement-discharge-architecture.md` §3
+requires a record to bind its result to the request, and this is the value
+both sides quote. Like `obligationIdentity` it is a canonical framed string
+rather than a digest, so it can be compared without a hash implementation on
+this path. -/
+def canonicalRequestIdentity (request : SmtRequest) : String :=
+  "request(" ++ frame request.profile.solverId ++ frame request.profile.version ++
+    frame request.profile.executableDigest ++
+    frame (encodeList request.profile.invocationOptions) ++
+    frame (toString request.profile.wallTimeMilliseconds) ++
+    frame (toString request.profile.memoryBytes) ++
+    frame (canonicalFormula request.formula) ++ frame request.smtLib ++
+    frame (encodeList request.proofBindings.translationRuleHashes) ++
+    frame (encodeList request.proofBindings.translationSoundnessProofHashes) ++ ")"
 
 def validSmtRequest (request : SmtRequest) : Bool :=
   match checkedSmtRequest request.profile request.formula with

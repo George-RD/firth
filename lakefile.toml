@@ -1,6 +1,6 @@
 name = "firth"
 version = "0.1.0"
-defaultTargets = ["firthTest", "firthParserTest", "firthCompilerTest", "firthElaborateTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthAgentDiagnosticTest", "firthPipelineTest", "smtBoundaryTest", "firthReferenceRunTest", "firthAllTest"]
+defaultTargets = ["firthTest", "firthParserTest", "firthCompilerTest", "firthElaborateTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthAgentDiagnosticTest", "firthPipelineTest", "smtBoundaryTest", "smtSolverTest", "firthReferenceRunTest", "firthAllTest"]
 testDriver = "firthAllTest"
 
 [[lean_lib]]
@@ -11,7 +11,7 @@ roots = ["Firth", "FirthReferenceRun"]
 [[lean_lib]]
 name = "FirthElaborator"
 srcDir = "src"
-roots = ["elaborator.Firth.Parser", "elaborator.Firth.Erasure", "elaborator.Firth.StackEffect", "smt.Firth.SmtBoundary", "elaborator.Firth.Refinement", "elaborator.Firth.Pipeline", "elaborator.FirthElaborator"]
+roots = ["elaborator.Firth.Parser", "elaborator.Firth.Erasure", "elaborator.Firth.StackEffect", "smt.Firth.SmtBoundary", "smt.Firth.SmtSolver", "elaborator.Firth.Refinement", "elaborator.Firth.Pipeline", "elaborator.FirthElaborator"]
 
 [[lean_lib]]
 name = "FirthCompiler"
@@ -96,6 +96,11 @@ srcDir = "src"
 [[lean_exe]]
 name = "firthAllTest"
 root = "agent.FirthAllTest"
+srcDir = "src"
+
+[[lean_exe]]
+name = "smtSolverTest"
+root = "smt.FirthSmtSolverTest"
 srcDir = "src"
 
 [[lean_exe]]

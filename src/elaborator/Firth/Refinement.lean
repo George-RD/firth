@@ -677,6 +677,7 @@ inductive LeanEscalationReason where
   | externalRequestIneligible
   | externalProfileMismatch
   | externalProofMismatch
+  | externalRequestIdentityMismatch
   deriving Repr, BEq
 
 structure LeanProofObligation where
@@ -1402,6 +1403,12 @@ def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
     { leanQueue := [leanObligation obligation .externalProofMismatch]
       diagnostics := [makeDiagnostic requestId obligation .deferred
         (reasonData "external-proof-mismatch")] }
+  else if match entry.request with
+      | some request => result.requestIdentity != canonicalRequestIdentity request
+      | none => true then
+    { leanQueue := [leanObligation obligation .externalRequestIdentityMismatch]
+      diagnostics := [makeDiagnostic requestId obligation .deferred
+        (reasonData "external-request-identity-mismatch")] }
   else
     match result.outcome with
     | .sat model =>
