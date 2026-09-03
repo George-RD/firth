@@ -256,8 +256,13 @@ private def evidenceTests (entry : SmtQueueEntry) (record : DischargeRecord) : I
   expectEq record.translationSoundnessProofHashes
     defaultSmtProofBindings.translationSoundnessProofHashes
     "a record binds the soundness proofs it was produced under"
-  expectTrue (record.translationSoundnessProofHashes.length >= 3)
-    "the soundness bindings cover the encoder, the serialiser and the adapter"
+  expectEq record.translationRuleHashes.length 4
+    "the rule bindings cover the encoder, the serialiser, the normaliser and the VC generator"
+  expectTrue (record.translationSoundnessProofHashes.length >= 5)
+    "the soundness bindings cover every stage the spec names, plus the adapter bridge"
+  expectTrue (record.translationSoundnessProofHashes.eraseDups.length ==
+      record.translationSoundnessProofHashes.length)
+    "no two stages share a soundness hash, so each covers its own proofs"
 
 def runTests : IO Unit := do
   let entry ← queueEntry

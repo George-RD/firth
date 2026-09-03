@@ -8,16 +8,23 @@ was produced under. `Firth.Smt.defaultSmtProofBindings` holds those hashes,
 and this tool is what computes them: before it existed they were two literals
 with no producing tool, which is a pinned constant rather than a binding.
 
-Each hash covers a marked region of `src/smt/Firth/SmtBoundary.lean`:
+Each hash covers a marked region of one of the sources listed in `SOURCES`:
 
 * `-- firth:translation-rules-begin <name>` ... `-- firth:translation-rules-end <name>`
-  encloses one translation rule set. Today: the QF_LIA encoder and the SMT-LIB
-  serialiser.
+  encloses one translation rule set. Today: the typed-IR normaliser, the VC
+  generator, the QF_LIA encoder and the SMT-LIB serialiser.
 * `-- firth:translation-soundness-begin <name>` ... `-- firth:translation-soundness-end <name>`
   encloses the Lean-checked theorems for one of them, plus the adapter bridge
   that says what an `unsat` verdict establishes.
 
-Hashing marked regions rather than the whole file avoids a fixed point: the
+The spec's §3 sentence names five stages: the typed-IR normaliser, the VC
+generator, the sort and theory encoder, each registered predicate translation,
+and the final SMT-LIB serialiser. The first two live in the elaborator and the
+rest in the SMT boundary, so the tool reads both files. Order is by file and
+then by position, so an existing hash keeps its place in the list when a
+region is added after it.
+
+Hashing marked regions rather than whole files avoids a fixed point: the
 hashes themselves live in `defaultSmtProofBindings`, which sits outside every
 marked region, so writing them cannot change what they cover. It is also more
 honest than a whole-file hash, which would churn on a comment.
@@ -35,7 +42,11 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = ROOT / "src" / "smt" / "Firth" / "SmtBoundary.lean"
+BINDINGS_SOURCE = ROOT / "src" / "smt" / "Firth" / "SmtBoundary.lean"
+SOURCES = [
+    BINDINGS_SOURCE,
+    ROOT / "src" / "elaborator" / "Firth" / "Refinement.lean",
+]
 
 RULE_FIELD = "translationRuleHashes"
 PROOF_FIELD = "translationSoundnessProofHashes"
@@ -50,8 +61,8 @@ BINDINGS = re.compile(
 )
 
 
-def regions(text: str) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
-    """Extracts the marked regions, in file order, refusing malformed markers."""
+def regions(source: Path, text: str) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    """Extracts one file's marked regions, in order, refusing malformed markers."""
     rules: list[tuple[str, str]] = []
     proofs: list[tuple[str, str]] = []
     open_kind: str | None = None
@@ -62,15 +73,15 @@ def regions(text: str) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
         end = END.match(line)
         if begin:
             if open_kind is not None:
-                raise SystemExit(f"{SOURCE}:{number}: a region is already open")
+                raise SystemExit(f"{source}:{number}: a region is already open")
             open_kind, open_name = begin.group(1), begin.group(2)
             collected = []
             continue
         if end:
             if open_kind is None:
-                raise SystemExit(f"{SOURCE}:{number}: no region is open")
+                raise SystemExit(f"{source}:{number}: no region is open")
             if (end.group(1), end.group(2)) != (open_kind, open_name):
-                raise SystemExit(f"{SOURCE}:{number}: region markers do not match")
+                raise SystemExit(f"{source}:{number}: region markers do not match")
             body = "\n".join(collected) + "\n"
             target = rules if open_kind == "translation-rules" else proofs
             target.append((open_name or "", body))
@@ -79,11 +90,35 @@ def regions(text: str) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
         if open_kind is not None:
             collected.append(line)
     if open_kind is not None:
-        raise SystemExit(f"{SOURCE}: region {open_name!r} is never closed")
+        raise SystemExit(f"{source}: region {open_name!r} is never closed")
+    return rules, proofs
+
+
+def allRegions() -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    """Collects every marked region across `SOURCES`, by file then position."""
+    rules: list[tuple[str, str]] = []
+    proofs: list[tuple[str, str]] = []
+    ruleNames: set[str] = set()
+    proofNames: set[str] = set()
+    for source in SOURCES:
+        fileRules, fileProofs = regions(source, source.read_text(encoding="utf-8"))
+        # A rule set and its soundness proofs share a name on purpose. Two rule
+        # sets, or two proof sets, sharing one would make a hash ambiguous
+        # about what it covers.
+        for name, _ in fileRules:
+            if name in ruleNames:
+                raise SystemExit(f"{source}: rule region {name!r} is declared twice")
+            ruleNames.add(name)
+        for name, _ in fileProofs:
+            if name in proofNames:
+                raise SystemExit(f"{source}: soundness region {name!r} is declared twice")
+            proofNames.add(name)
+        rules.extend(fileRules)
+        proofs.extend(fileProofs)
     if not rules:
-        raise SystemExit(f"{SOURCE}: no translation-rule region is marked")
+        raise SystemExit("no translation-rule region is marked")
     if not proofs:
-        raise SystemExit(f"{SOURCE}: no translation-soundness region is marked")
+        raise SystemExit("no translation-soundness region is marked")
     return rules, proofs
 
 
@@ -94,8 +129,8 @@ def render(field: str, hashes: list[str]) -> str:
 
 def main() -> int:
     check = "--check" in sys.argv[1:]
-    text = SOURCE.read_text(encoding="utf-8")
-    rules, proofs = regions(text)
+    text = BINDINGS_SOURCE.read_text(encoding="utf-8")
+    rules, proofs = allRegions()
 
     rule_hashes = [f"sha256:{hashlib.sha256(body.encode('utf-8')).hexdigest()}" for _, body in rules]
     proof_hashes = [
@@ -112,7 +147,7 @@ def main() -> int:
     )
     match = BINDINGS.search(text)
     if match is None:
-        raise SystemExit(f"{SOURCE}: defaultSmtProofBindings was not found")
+        raise SystemExit(f"{BINDINGS_SOURCE}: defaultSmtProofBindings was not found")
     updated = text[: match.start()] + replacement + text[match.start(2) :]
 
     if check:
@@ -129,9 +164,9 @@ def main() -> int:
         )
         return 0
 
-    SOURCE.write_text(updated, encoding="utf-8")
+    BINDINGS_SOURCE.write_text(updated, encoding="utf-8")
     print(
-        f"wrote {SOURCE.relative_to(ROOT)}: "
+        f"wrote {BINDINGS_SOURCE.relative_to(ROOT)}: "
         f"{', '.join(name for name, _ in rules)} rules, "
         f"{', '.join(name for name, _ in proofs)} proofs"
     )

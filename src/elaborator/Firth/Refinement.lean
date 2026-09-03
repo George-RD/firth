@@ -30,6 +30,7 @@ def evalConjunction (valuation : Valuation) : List Predicate → Option Bool
       let restValue ← evalConjunction valuation rest
       pure (predicateValue && restValue)
 
+-- firth:translation-rules-begin normaliser
 def normaliseConjunction : List Predicate → Predicate
   | [] => .truth
   | predicate :: rest => .and predicate (normaliseConjunction rest)
@@ -37,10 +38,16 @@ def normaliseConjunction : List Predicate → Predicate
 def RefinementSet.normalise (refinement : RefinementSet) : Predicate :=
   normaliseConjunction refinement.conjuncts
 
+def normaliseFormula (formula : Formula) : Formula :=
+  { premises := [normaliseConjunction formula.premises]
+    conclusions := [normaliseConjunction formula.conclusions] }
+-- firth:translation-rules-end normaliser
+
 def RefinementSet.satisfies (valuation : Valuation) (refinement : RefinementSet) :
     Option Bool :=
   evalConjunction valuation refinement.conjuncts
 
+-- firth:translation-soundness-begin normaliser
 theorem evalPredicate_normaliseConjunction (valuation : Valuation)
     (predicates : List Predicate) :
     evalPredicate valuation (normaliseConjunction predicates) =
@@ -84,11 +91,7 @@ theorem evalConjunction_true_iff (valuation : Valuation) (predicates : List Pred
                   simp [evalConjunction, predicateResult, restResult]
               | true =>
                   simpa [evalConjunction, predicateResult, restResult] using ih
-
-def normaliseFormula (formula : Formula) : Formula :=
-  { premises := [normaliseConjunction formula.premises]
-    conclusions := [normaliseConjunction formula.conclusions] }
-
+-- firth:translation-soundness-end normaliser
 
 structure Contract where
   wordType : Scheme
@@ -223,6 +226,7 @@ private def frame (value : String) : String := s!"{value.toUTF8.size}:{value}"
 private def encodeStrings (values : List String) : String :=
   s!"{values.length}[{String.intercalate "" (values.map frame)}]"
 
+-- firth:translation-rules-begin vc-generator
 def obligationIdentity (kind : ObligationKind) (formula : Formula)
     (context : ObligationContext) : String :=
   "obligation(" ++ frame context.wordId ++ frame context.bodyHash ++
@@ -254,7 +258,9 @@ def makeObligation (kind : ObligationKind) (premises conclusions : List Predicat
 def generateVc (kind : ObligationKind) (formula : Formula)
     (context : ObligationContext) : Obligation :=
   makeObligation kind formula.premises formula.conclusions context
+-- firth:translation-rules-end vc-generator
 
+-- firth:translation-soundness-begin vc-generator
 theorem generateVc_formula (kind : ObligationKind) (formula : Formula)
     (context : ObligationContext) (withinBounds : withinKernelBounds formula = true) :
     (generateVc kind formula context).formula = formula := by
@@ -269,6 +275,7 @@ theorem generateVc_identity (kind : ObligationKind) (formula : Formula)
   have bounds : formulaWithinKernelBounds formula = true := by
     simpa [withinKernelBounds] using withinBounds
   simp [generateVc, makeObligation, bounds]
+-- firth:translation-soundness-end vc-generator
 
 
 structure TotalityTypingPremises where
@@ -412,6 +419,7 @@ def Valid (formula : Formula) : Prop :=
     (∀ predicate, predicate ∈ formula.premises → evalPredicate valuation predicate = some true) →
       ∀ predicate, predicate ∈ formula.conclusions →
         evalPredicate valuation predicate = some true
+-- firth:translation-soundness-begin normaliser-validity
 theorem valid_normaliseFormula_iff (formula : Formula) :
     Valid (normaliseFormula formula) ↔ Valid formula := by
   constructor
@@ -463,6 +471,7 @@ theorem valid_normaliseFormula_iff (formula : Formula) :
       exact original valuation originalPremises conclusion conclusionMember
     rw [evalPredicate_normaliseConjunction]
     exact (evalConjunction_true_iff valuation formula.conclusions).mpr conclusionsTrue
+-- firth:translation-soundness-end normaliser-validity
 
 
 theorem evalInt_stable (expression : IntExpr) (valuation : Valuation) (result : Int) :

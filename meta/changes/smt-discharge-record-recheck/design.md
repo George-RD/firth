@@ -8,14 +8,16 @@ content-addressed by canonical framed string rather than by digest, that every
 derived field is recomputed rather than accepted, that the binding is plain
 strings so a record does not depend on the elaborator's types, that rechecking
 returns the request rather than a verdict because the rerun is still required,
-and that the rebuilt record must equal the recorded one.
+and that the rebuilt record must equal the recorded one on every input,
+evidence excepted because it is an output.
 
 The unit splits along the effect boundary. `SmtBoundary` holds the pure half:
 promotion, construction, and the recheck that rebuilds the formula, revalidates
 every binding and recomputes every derived field. `SmtSolver` holds
 `rerunDischargeRecord`, which is the half that needs `IO`: recheck, solve with
-the pinned runner, promote through `checkUnsat`, rebuild, and require equality
-with the record in hand. Keeping the drift cases pure means `lake test`
+the pinned runner, promote through `checkUnsat`, rebuild, and require the
+rebuilt record to match the one in hand on every field but its evidence
+address. Keeping the drift cases pure means `lake test`
 exercises all of them on a host with no solver, matching the constraint
 `dec.smt-bounded-solver-invocation` records for the runner seam.
 
