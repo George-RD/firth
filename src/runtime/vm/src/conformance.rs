@@ -327,7 +327,8 @@ pub fn fixture_reference(case: &FixtureCase) -> Option<ConformanceReference> {
     })
 }
 
-fn render_observation_bytes(bytes: &[u8]) -> String {
+/// Renders observation bytes as a canonical comma-separated decimal list.
+pub fn render_conformance_bytes(bytes: &[u8]) -> String {
     let mut rendered = String::new();
     for (index, byte) in bytes.iter().enumerate() {
         if index != 0 {
@@ -338,7 +339,8 @@ fn render_observation_bytes(bytes: &[u8]) -> String {
     rendered
 }
 
-fn render_trap(trap: Option<&ConformanceTrap>) -> String {
+/// Renders a classified trap as `code` or `code/subcode`, `-` when absent.
+pub fn render_conformance_trap(trap: Option<&ConformanceTrap>) -> String {
     match trap {
         None => String::from("-"),
         Some(trap) => {
@@ -350,6 +352,21 @@ fn render_trap(trap: Option<&ConformanceTrap>) -> String {
             rendered
         }
     }
+}
+
+/// Renders a cost report as `total=.. kernel=.. instructions=.. word-entries=.. primitives=..`.
+pub fn render_conformance_cost(cost: &ConformanceCost) -> String {
+    let mut rendered = String::from("total=");
+    rendered.push_str(&cost.total.to_string());
+    rendered.push_str(" kernel=");
+    rendered.push_str(&cost.kernel.to_string());
+    rendered.push_str(" instructions=");
+    rendered.push_str(&cost.breakdown.instructions.to_string());
+    rendered.push_str(" word-entries=");
+    rendered.push_str(&cost.breakdown.word_entries.to_string());
+    rendered.push_str(" primitives=");
+    rendered.push_str(&cost.breakdown.primitives.to_string());
+    rendered
 }
 
 fn render_breakdown(breakdown: ConformanceCostBreakdown) -> String {
@@ -411,8 +428,8 @@ pub fn compare_conformance(
     {
         mismatches.push(mismatch(
             "world-observation",
-            render_observation_bytes(expected),
-            render_observation_bytes(&target.world_observation),
+            render_conformance_bytes(expected),
+            render_conformance_bytes(&target.world_observation),
         ));
     }
     if let Some(expected) = &reference.trap
@@ -420,8 +437,8 @@ pub fn compare_conformance(
     {
         mismatches.push(mismatch(
             "trap",
-            render_trap(Some(expected)),
-            render_trap(target.trap.as_ref()),
+            render_conformance_trap(Some(expected)),
+            render_conformance_trap(target.trap.as_ref()),
         ));
     }
     if reference.cost.total != target.cost.total {
