@@ -9,6 +9,7 @@ def main : IO Unit := do
   runSuite "firthErasureTest"
   runSuite "firthStackEffectTest"
   runSuite "firthRefinementTest"
+  runSuite "firthRecordIntegrityTest"
   runSuite "firthAgentDiagnosticTest"
   runSuite "firthPipelineTest"
   runSuite "smtBoundaryTest"

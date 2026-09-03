@@ -1,6 +1,6 @@
 name = "firth"
 version = "0.1.0"
-defaultTargets = ["firthTest", "firthParserTest", "firthCompilerTest", "firthElaborateTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthAgentDiagnosticTest", "firthPipelineTest", "smtBoundaryTest", "smtSolverTest", "firthReferenceRunTest", "firthAllTest"]
+defaultTargets = ["firthTest", "firthParserTest", "firthCompilerTest", "firthElaborateTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthRecordIntegrityTest", "firthAgentDiagnosticTest", "firthPipelineTest", "smtBoundaryTest", "smtSolverTest", "firthReferenceRunTest", "firthAllTest"]
 testDriver = "firthAllTest"
 
 [[lean_lib]]
@@ -86,6 +86,11 @@ srcDir = "src"
 [[lean_exe]]
 name = "firthRefinementTest"
 root = "elaborator.FirthRefinementTest"
+srcDir = "src"
+
+[[lean_exe]]
+name = "firthRecordIntegrityTest"
+root = "elaborator.FirthRecordIntegrityTest"
 srcDir = "src"
 
 [[lean_exe]]

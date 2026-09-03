@@ -94,6 +94,7 @@ python3 tools/loop/coverage.py --validate
 
 lake build
 lake test            # driver: firthAllTest
+lake exe firthRecordIntegrityTest   # record drift, staleness and tampering
 ( cd src/runtime/vm && cargo fmt --check && cargo clippy && cargo test --locked )
 ! rg -n '\b(sorry|admit)\b' src
 git diff --check
@@ -173,6 +174,10 @@ and hook checks.
   application's source, running elaborate, compile, VM and reference-run and
   comparing the two observations. `python3 tools/loop/coverage.py --run-gates`
   invokes it, and a failure holds `loop_exhausted_valid` false.
+- **Record integrity** is covered by `firthRecordIntegrityTest`, which drives
+  every way a discharge record can go stale, drift or be edited through the
+  real rerun and the real refinement-discharge result boundary. It uses an
+  injected solver runner, so it needs no solver on the host.
 - Product gates are live: `lake build` / `lake test` (driver
   `firthAllTest`) and the VM crate gates from `src/runtime/vm`. The kernel
   metatheory (determinism, preservation, progress, linearity soundness,
