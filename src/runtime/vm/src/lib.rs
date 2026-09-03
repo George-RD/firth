@@ -9,7 +9,7 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
-use alloc::{string::String, vec, vec::Vec};
+use alloc::{string::String, string::ToString, vec, vec::Vec};
 
 const MAX_INSTRUCTIONS: u64 = 4096;
 const MAX_BYTES: usize = 1 << 20;
@@ -27,6 +27,7 @@ include!("validation.rs");
 include!("syntax.rs");
 include!("encoding.rs");
 include!("image_encoding.rs");
+include!("conformance.rs");
 
 #[cfg(feature = "std")]
 include!("image_types.rs");
