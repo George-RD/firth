@@ -125,6 +125,48 @@ private def expectTrue (condition : Bool) (message : String) : IO Unit :=
     "a false conclusion is reported, which is the model the script asks for"
   expectEq (evalAnyFalse bound [Predicate.truth, .worldSensitive "effect"]) none
     "an untranslatable conclusion is unevaluable rather than satisfied"
+
+  -- A record's formula address separates formulas. Without this the field
+  -- could be a constant and every drift test would still pass, because they
+  -- all compare a mutation against whatever the constant happened to be.
+  expectTrue
+    (canonicalNormalisedFormula { premises := [], conclusions := [.truth] } !=
+      canonicalNormalisedFormula { premises := [], conclusions := [.falsity] })
+    "two formulas do not share a normalised-formula address"
+  expectTrue
+    (canonicalNormalisedFormula { premises := [.truth], conclusions := [.truth] } !=
+      canonicalNormalisedFormula { premises := [], conclusions := [.truth, .truth] })
+    "premises and conclusions are not interchangeable in a formula address"
+
+  -- The failure codes travel in diagnostics and records, so they are part of
+  -- the boundary's contract and not free to be reworded.
+  expectEq (CheckFailure.unpinnedProfile.code) "firth.smt.unpinned-profile" "check code"
+  expectEq (CheckFailure.unpinnedRequest.code) "firth.smt.unpinned-request" "check code"
+  expectEq (CheckFailure.requestIdentityMismatch.code)
+    "firth.smt.request-identity-mismatch" "check code"
+  expectEq (CheckFailure.proofBindingsMismatch.code)
+    "firth.smt.proof-bindings-mismatch" "check code"
+  expectEq ((CheckFailure.unsupportedFragment .worldEffect).code)
+    "firth.smt.unsupported-fragment" "check code"
+  expectEq (CheckFailure.notUnsat.code) "firth.smt.not-unsat" "check code"
+  expectEq (RecheckFailure.recordStale.code) "firth.smt.record-stale" "recheck code"
+  expectEq ((RecheckFailure.recordTampered "smt2").code)
+    "firth.smt.record-tampered" "recheck code"
+  expectEq (RecheckFailure.profileDrift.code) "firth.smt.profile-drift" "recheck code"
+  expectEq (RecheckFailure.digestDrift.code) "firth.smt.digest-drift" "recheck code"
+  expectEq (RecheckFailure.optionDrift.code) "firth.smt.option-drift" "recheck code"
+  expectEq (RecheckFailure.requestMismatch.code) "firth.smt.request-mismatch" "recheck code"
+  expectEq (RecheckFailure.translationDrift.code) "firth.smt.translation-drift" "recheck code"
+  expectEq (RecheckFailure.resultNotUnsat.code) "firth.smt.result-not-unsat" "recheck code"
+  expectEq ((RecheckFailure.untranslatable (.unsupportedFragment .worldEffect)).code)
+    "firth.smt.untranslatable" "recheck code"
+  expectEq (Refusal.digestUnavailable.code) "firth.smt.digest-unavailable" "refusal code"
+  expectEq ((RecheckVerdict.driftedRecord .profileDrift).code)
+    "firth.smt.profile-drift" "a verdict reports the drift's own code"
+  expectEq ((RecheckVerdict.refused .digestUnavailable).code)
+    "firth.smt.digest-unavailable" "a verdict reports the refusal's own code"
+  expectEq (Fragment.qfLia.canonical) "qf-lia" "fragment name"
+
   IO.println "all SMT encoder translation proof tests passed"
 
  end Firth.Smt

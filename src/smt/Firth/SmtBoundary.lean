@@ -110,6 +110,14 @@ inductive Fragment where
   | nonlinearArithmetic
   | worldEffect
   deriving Repr, BEq, DecidableEq
+
+/-- A stable name for a fragment, for identities and diagnostics. -/
+def Fragment.canonical : Fragment → String
+  | .qfLia => "qf-lia"
+  | .untranslatedPredicate => "untranslated-predicate"
+  | .nonlinearArithmetic => "nonlinear-arithmetic"
+  | .worldEffect => "world-effect"
+
 structure SolverProfile where
   solverId : String
   version : String
@@ -178,6 +186,16 @@ inductive ExternalOutcome where
   | malformed (detail : String)
   | crashed (detail : String)
   | uncheckedUnsat (evidence : String)
+  /-- An `unsat` the checked adapter has validated: pinned profile, pinned
+  request, current translation and proof bindings, and a formula inside the
+  supported fragment. `Firth.Smt.checkUnsat` is the only thing that produces
+  one, and `classifyTranscript` never does, so no solver answer carries it.
+
+  The constructor is public, so the type alone does not stop a caller from
+  writing one. Nothing downstream treats that as evidence: the refinement
+  boundary refuses a result that arrives already promoted and promotes an
+  `uncheckedUnsat` itself. -/
+  | checkedUnsat (evidence : String)
   | sat (model : Valuation)
   deriving Repr, BEq
 
@@ -997,6 +1015,22 @@ def serialiseQfLia (formula : Formula) : Except SmtTranslationError String :=
   | .ok request => .ok request.smtLib
   | .error error => .error error
 
+/-- The canonical content address of a solver profile: every field of it.
+
+`canonicalRequestIdentity` quotes only the fields that determine what was asked
+and of which binary, because that is what a result must be bound to. A record
+outlives the run, so it addresses the whole profile, licence and acquisition
+source included: `spec/smt/refinement-discharge-architecture.md` §6 makes the
+binary, version, licence and invocation options part of the record. -/
+def canonicalSolverProfile (profile : SolverProfile) : String :=
+  "profile(" ++ frame profile.solverId ++ frame profile.version ++
+    frame profile.licence ++ frame profile.platform ++
+    frame profile.executableDigest ++ frame profile.acquisitionSource ++
+    frame profile.logic ++ frame (encodeList profile.invocationOptions) ++
+    frame (toString profile.wallTimeMilliseconds) ++
+    frame (toString profile.memoryBytes) ++
+    frame (encodeList (profile.supportedFragments.map Fragment.canonical)) ++ ")"
+
 /-- The canonical identity of a request: every byte that determines what was
 asked and of which solver. `spec/smt/refinement-discharge-architecture.md` §3
 requires a record to bind its result to the request, and this is the value
@@ -1074,6 +1108,341 @@ def ValidUnderBinding (formula : Formula) : Prop :=
   ∀ valuation, Binds formula valuation →
     (∀ predicate ∈ formula.premises, evalPredicate valuation predicate = some true) →
       ∀ predicate ∈ formula.conclusions, evalPredicate valuation predicate = some true
+
+/-!
+## Discharge records
+
+`spec/smt/refinement-discharge-architecture.md` §3 requires a
+content-addressed record carrying every input that determined a discharge, so
+that a cache hit is usable only when all of them match and a stale or
+mismatched record is an open obligation rather than a remembered success.
+
+Content addressing here is by canonical framed string rather than by digest,
+matching `obligationIdentity` and `canonicalSmtRequest`: the identity of a
+record is determined by its bytes either way, and a canonical string keeps a
+hash implementation off this path.
+
+The elaborator-owned fields arrive as plain strings. A record is a wire
+artefact that outlives the elaboration that produced it, so coupling it to the
+elaborator's types would be the wrong dependency as well as the wrong
+direction.
+-/
+
+/-- The elaborator-owned identity of the obligation a record discharges. -/
+structure ObligationBinding where
+  obligationId : String
+  wordId : String
+  bodyHash : String
+  erasedWordTypeHash : String
+  specHash : String
+  calleeContractHashes : List String
+  predicateDefinitionHashes : List String
+  vcGeneratorVersion : String
+  normaliserVersion : String
+  toolchainRevision : String
+  /-- The whole source location, not just where it starts. The spec names
+  "source location" as one record field, and a record that kept only the start
+  of the span could not be pointed back at the text it came from. -/
+  sourcePath : String
+  sourceStartOffset : Nat
+  sourceStartLine : Nat
+  sourceStartColumn : Nat
+  sourceStopOffset : Nat
+  sourceStopLine : Nat
+  sourceStopColumn : Nat
+  deriving Repr, BEq
+
+/-- A content-addressed SMT discharge record.
+
+Created only from a checked `unsat`, and only by `makeDischargeRecord`, which
+recomputes every derived field from the formula and the request rather than
+copying a caller's claim about them. -/
+structure DischargeRecord where
+  obligation : ObligationBinding
+  translationRuleHashes : List String
+  translationSoundnessProofHashes : List String
+  normalisedFormulaHash : String
+  smt2Hash : String
+  requestIdentity : String
+  solverId : String
+  solverVersion : String
+  solverExecutableDigest : String
+  invocationOptions : List String
+  profile : SolverProfile
+  /-- The solver result the record was created from, which is always `"unsat"`:
+  the spec names this field, and `makeDischargeRecord` refuses every other
+  outcome. That it was a *checked* `unsat` is carried by the record existing at
+  all, since nothing else can produce one. -/
+  result : String
+  /-- The content address of what the solver said, unsat core included. This is
+  an output rather than an input, so a recheck records it and a rerun is not
+  required to reproduce it byte for byte. -/
+  evidenceHash : String
+  deriving Repr, BEq
+
+/-- Why an `unsat` could not be promoted to a checked one. -/
+inductive CheckFailure where
+  /-- The profile is not the pinned profile. -/
+  | unpinnedProfile
+  /-- The request does not rebuild to itself under the checked adapter. -/
+  | unpinnedRequest
+  /-- The result is not bound to this request. -/
+  | requestIdentityMismatch
+  /-- The result's translation or proof bindings are not the current ones. -/
+  | proofBindingsMismatch
+  /-- The formula is outside the fragment the pinned profile supports. -/
+  | unsupportedFragment (fragment : Fragment)
+  /-- The outcome was not an `unsat` at all. -/
+  | notUnsat
+  deriving Repr, BEq
+
+/-- A stable code for a promotion failure. -/
+def CheckFailure.code : CheckFailure → String
+  | .unpinnedProfile => "firth.smt.unpinned-profile"
+  | .unpinnedRequest => "firth.smt.unpinned-request"
+  | .requestIdentityMismatch => "firth.smt.request-identity-mismatch"
+  | .proofBindingsMismatch => "firth.smt.proof-bindings-mismatch"
+  | .unsupportedFragment _ => "firth.smt.unsupported-fragment"
+  | .notUnsat => "firth.smt.not-unsat"
+
+/-- Promotes an `unsat` answer to a checked one, or says why it cannot.
+
+This is the only producer of `ExternalOutcome.checkedUnsat`. Everything it
+verifies is something the adapter can establish without trusting the solver
+further than the pin allows: that the profile is the pinned one, that the
+request rebuilds to itself, that the result is bound to that request, that the
+translation and soundness bindings are current, and that the formula is inside
+the supported fragment, which is the hypothesis
+`validUnderBinding_of_scriptUnsatisfiable` needs to be anything but vacuous. -/
+def checkUnsat (request : SmtRequest) (result : SmtResult) :
+    Except CheckFailure SmtResult :=
+  match result.outcome with
+  | .uncheckedUnsat evidence =>
+      if !validSolverProfile result.profile || result.profile != request.profile then
+        .error .unpinnedProfile
+      else if !validSmtRequest request then
+        .error .unpinnedRequest
+      else if result.requestIdentity != canonicalRequestIdentity request then
+        .error .requestIdentityMismatch
+      else if !validSmtProofBindings result.proofBindings ||
+          result.proofBindings != request.proofBindings then
+        .error .proofBindingsMismatch
+      else
+        match classify request.formula with
+        | .qfLia => .ok { result with outcome := .checkedUnsat evidence }
+        | fragment => .error (.unsupportedFragment fragment)
+  | _ => .error .notUnsat
+
+/-- The canonical content address of the normalised formula a request carries.
+
+`spec/smt/refinement-discharge-architecture.md` §3 names the normaliser ahead
+of the VC generator in the translation chain, so the formula a generated
+obligation carries is already in the shape the encoder consumes: the encoder
+takes `request.formula` and nothing rewrites it on the way. Addressing that
+formula is therefore addressing the normaliser's output, and the field is not
+a second, unrelated artefact. -/
+def canonicalNormalisedFormula (formula : Formula) : String :=
+  canonicalFormula formula
+
+/-- Builds a record from a checked `unsat`.
+
+Every field but the obligation binding is recomputed here rather than accepted
+from a caller, so a record cannot claim a formula, a translation, a request or
+an evidence payload it was not produced under. The binding is elaborator-owned
+and has one producer of its own.
+
+The result and the request arrive separately, so this repeats the bindings
+`checkUnsat` established rather than assuming they were established against
+*this* request. Without that a checked result for one request could be recorded
+against another, and the record would name a question the solver never
+answered. -/
+def makeDischargeRecord (binding : ObligationBinding) (request : SmtRequest)
+    (result : SmtResult) : Except CheckFailure DischargeRecord :=
+  match result.outcome with
+  | .checkedUnsat evidence =>
+      if !validSolverProfile result.profile || result.profile != request.profile then
+        .error .unpinnedProfile
+      else if !validSmtRequest request then
+        .error .unpinnedRequest
+      else if result.requestIdentity != canonicalRequestIdentity request then
+        .error .requestIdentityMismatch
+      else if !validSmtProofBindings result.proofBindings ||
+          result.proofBindings != request.proofBindings then
+        .error .proofBindingsMismatch
+      else
+      .ok
+        { obligation := binding
+          translationRuleHashes := request.proofBindings.translationRuleHashes
+          translationSoundnessProofHashes :=
+            request.proofBindings.translationSoundnessProofHashes
+          normalisedFormulaHash := canonicalNormalisedFormula request.formula
+          smt2Hash := frame request.smtLib
+          requestIdentity := canonicalRequestIdentity request
+          solverId := request.profile.solverId
+          solverVersion := request.profile.version
+          solverExecutableDigest := request.profile.executableDigest
+          invocationOptions := request.profile.invocationOptions
+          profile := request.profile
+          result := "unsat"
+          evidenceHash := frame evidence }
+  | _ => .error .notUnsat
+
+/-- The content address of a whole record: every field that determines it,
+framed in declaration order.
+
+`spec/smt/refinement-discharge-architecture.md` §3 calls the record
+content-addressed and §5 requires records to remain independently keyed, which
+needs an address of the record itself and not only of the artefacts inside it.
+Like every other identity on this path it is a canonical framed string rather
+than a digest. -/
+def canonicalDischargeRecord (record : DischargeRecord) : String :=
+  let binding := record.obligation
+  "discharge(" ++ frame binding.obligationId ++ frame binding.wordId ++
+    frame binding.bodyHash ++ frame binding.erasedWordTypeHash ++
+    frame binding.specHash ++ frame (encodeList binding.calleeContractHashes) ++
+    frame (encodeList binding.predicateDefinitionHashes) ++
+    frame binding.vcGeneratorVersion ++ frame binding.normaliserVersion ++
+    frame binding.toolchainRevision ++ frame binding.sourcePath ++
+    frame (toString binding.sourceStartOffset) ++
+    frame (toString binding.sourceStartLine) ++
+    frame (toString binding.sourceStartColumn) ++
+    frame (toString binding.sourceStopOffset) ++
+    frame (toString binding.sourceStopLine) ++
+    frame (toString binding.sourceStopColumn) ++
+    frame (encodeList record.translationRuleHashes) ++
+    frame (encodeList record.translationSoundnessProofHashes) ++
+    frame record.normalisedFormulaHash ++ frame record.smt2Hash ++
+    frame record.requestIdentity ++ frame record.solverId ++
+    frame record.solverVersion ++ frame record.solverExecutableDigest ++
+    frame (encodeList record.invocationOptions) ++
+    frame (canonicalSolverProfile record.profile) ++ frame record.result ++
+    frame record.evidenceHash ++ ")"
+
+/-- Why a record failed recheck. Each case is a distinct deferred reason, so a
+drift can be told apart from a tamper and both from a stale record. -/
+inductive RecheckFailure where
+  /-- The record is for another obligation. -/
+  | recordStale
+  /-- A recomputed field does not match the recorded one. -/
+  | recordTampered (field : String)
+  /-- The recorded profile is not the pinned profile. -/
+  | profileDrift
+  /-- The recorded executable digest is not the pinned one. -/
+  | digestDrift
+  /-- The recorded invocation options are not the pinned ones. -/
+  | optionDrift
+  /-- The recorded request is not the one the obligation rebuilds to. -/
+  | requestMismatch
+  /-- The recorded translation or soundness hashes are not the current ones. -/
+  | translationDrift
+  /-- The record does not carry an `unsat` result. -/
+  | resultNotUnsat
+  /-- The obligation no longer translates, so it cannot be rechecked at all. -/
+  | untranslatable (error : SmtTranslationError)
+  deriving Repr, BEq
+
+/-- A stable code for a recheck failure. -/
+def RecheckFailure.code : RecheckFailure → String
+  | .recordStale => "firth.smt.record-stale"
+  | .recordTampered _ => "firth.smt.record-tampered"
+  | .profileDrift => "firth.smt.profile-drift"
+  | .digestDrift => "firth.smt.digest-drift"
+  | .optionDrift => "firth.smt.option-drift"
+  | .requestMismatch => "firth.smt.request-mismatch"
+  | .translationDrift => "firth.smt.translation-drift"
+  | .resultNotUnsat => "firth.smt.result-not-unsat"
+  | .untranslatable _ => "firth.smt.untranslatable"
+
+/-- Why an invocation was refused before the solver was ever spawned. -/
+inductive Refusal where
+  /-- The profile is not the pinned profile. -/
+  | unpinnedProfile
+  /-- The request does not rebuild to itself under the checked adapter. -/
+  | unpinnedRequest
+  /-- The pinned executable is absent at the resolved path. -/
+  | executableMissing (path : String)
+  /-- The host has no usable digest tool, so identity cannot be established. -/
+  | digestUnavailable
+  /-- The executable is present but is not the pinned one. -/
+  | executableDigestMismatch (expected actual : String)
+  deriving Repr, BEq
+
+/-- A stable code for a refusal, for diagnostics and records. -/
+def Refusal.code : Refusal → String
+  | .unpinnedProfile => "firth.smt.unpinned-profile"
+  | .unpinnedRequest => "firth.smt.unpinned-request"
+  | .executableMissing _ => "firth.smt.executable-missing"
+  | .digestUnavailable => "firth.smt.digest-unavailable"
+  | .executableDigestMismatch _ _ => "firth.smt.executable-digest-mismatch"
+
+/-- Rechecks a record against the obligation it claims to discharge.
+
+The formula is rebuilt from the typed IR and re-serialised, every binding is
+re-validated, and every field that can be derived without running a solver is
+recomputed and compared. One field cannot: `evidenceHash` addresses what the
+solver said, so only a run can recompute it, and `Firth.Smt.Solver.rerunDischargeRecord`
+is where it is compared.
+
+What this cannot do is re-answer the question, so it returns the request to
+re-run: a record that survives this is a record whose inputs still hold, not
+yet a remembered success. `spec/smt/refinement-discharge-architecture.md` §3 is
+explicit that a cache hit needs the rerun as well.
+
+The formula is the one the encoder consumes, which is the normalised formula
+the obligation carries. Taking a single formula, rather than a raw one and a
+normalised one, means there is no pair for a caller to get out of step. -/
+def recheckDischargeRecord (binding : ObligationBinding) (formula : Formula)
+    (record : DischargeRecord) : Except RecheckFailure SmtRequest := do
+  if record.obligation != binding then throw .recordStale
+  if record.result != "unsat" then throw .resultNotUnsat
+  if !validSolverProfile record.profile then throw .profileDrift
+  if record.solverExecutableDigest != record.profile.executableDigest ||
+      record.solverExecutableDigest != defaultSolverProfile.executableDigest then
+    throw .digestDrift
+  if record.invocationOptions != record.profile.invocationOptions ||
+      record.invocationOptions != defaultSolverProfile.invocationOptions then
+    throw .optionDrift
+  if record.solverId != record.profile.solverId ||
+      record.solverVersion != record.profile.version then
+    throw (.recordTampered "solver")
+  if record.translationRuleHashes != defaultSmtProofBindings.translationRuleHashes ||
+      record.translationSoundnessProofHashes !=
+        defaultSmtProofBindings.translationSoundnessProofHashes then
+    throw .translationDrift
+  if record.normalisedFormulaHash != canonicalNormalisedFormula formula then
+    throw (.recordTampered "normalised-formula")
+  match checkedSmtRequest record.profile formula with
+  | .error error => throw (.untranslatable error)
+  | .ok request =>
+      if record.smt2Hash != frame request.smtLib then throw (.recordTampered "smt2")
+      if record.requestIdentity != canonicalRequestIdentity request then
+        throw .requestMismatch
+      pure request
+
+/-- What a full recheck concluded. Every case but `rechecked` is a deferred
+non-success, and each names its own reason so a drift can be told apart from a
+refusal and both from an answer that is no longer `unsat`. -/
+inductive RecheckVerdict where
+  /-- Every binding still holds and the pinned solver still answers `unsat`. -/
+  | rechecked (record : DischargeRecord)
+  /-- A recorded input no longer matches what the obligation rebuilds to. -/
+  | driftedRecord (failure : RecheckFailure)
+  /-- The pinned solver could not be invoked. -/
+  | refused (refusal : Refusal)
+  /-- The re-run produced something other than a promotable `unsat`. The
+  outcome travels with the failure, because "the record no longer holds" and
+  "the obligation is now disproved" are different facts and only the outcome
+  tells them apart. -/
+  | notRechecked (failure : CheckFailure) (outcome : ExternalOutcome)
+  deriving Repr, BEq
+
+/-- A stable code for a verdict, for diagnostics. -/
+def RecheckVerdict.code : RecheckVerdict → String
+  | .rechecked _ => "firth.smt.rechecked"
+  | .driftedRecord failure => failure.code
+  | .refused refusal => refusal.code
+  | .notRechecked failure _ => failure.code
+
 
 -- firth:translation-soundness-begin adapter
 theorem evalInt_isSome (valuation : Valuation) (expression : IntExpr)

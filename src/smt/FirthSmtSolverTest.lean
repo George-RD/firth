@@ -171,12 +171,185 @@ private def solveTests : IO Unit := do
   | .error (.executableDigestMismatch _ _) => pure ()
   | result => fail s!"an unpinned executable produced a result: {repr result}"
 
+private def testBinding : ObligationBinding :=
+  { obligationId := "obligation-1"
+    wordId := "w"
+    bodyHash := "sha256:body"
+    erasedWordTypeHash := "sha256:type"
+    specHash := "sha256:spec"
+    calleeContractHashes := []
+    predicateDefinitionHashes := []
+    vcGeneratorVersion := "vc-1"
+    normaliserVersion := "norm-1"
+    toolchainRevision := "rev-1"
+    sourcePath := "w.firth"
+    sourceStartOffset := 0
+    sourceStartLine := 1
+    sourceStartColumn := 1
+    sourceStopOffset := 7
+    sourceStopLine := 1
+    sourceStopColumn := 8 }
+
+private def checkedResult (request : SmtRequest) : IO SmtResult :=
+  match checkUnsat request
+      { profile := defaultSolverProfile
+        proofBindings := request.proofBindings
+        requestIdentity := canonicalRequestIdentity request
+        outcome := .uncheckedUnsat "unsat" } with
+  | .ok result => pure result
+  | .error failure => fail s!"a pinned unsat was refused: {repr failure}"
+
+private def recordTests : IO Unit := do
+  let request ← pinnedRequest
+  -- Promotion refuses each way it can be wrong, and only the checked adapter
+  -- can produce a checked unsat at all.
+  for (result, expected, reason) in [
+      ({ profile := { defaultSolverProfile with version := "4.0.0" }
+         requestIdentity := canonicalRequestIdentity request
+         outcome := ExternalOutcome.uncheckedUnsat "unsat" },
+       CheckFailure.unpinnedProfile, "an unpinned profile"),
+      ({ profile := defaultSolverProfile, requestIdentity := "request(0:)"
+         outcome := .uncheckedUnsat "unsat" },
+       .requestIdentityMismatch, "a result bound to another request"),
+      ({ profile := defaultSolverProfile
+         proofBindings := { defaultSmtProofBindings with translationRuleHashes := ["sha256:x"] }
+         requestIdentity := canonicalRequestIdentity request
+         outcome := .uncheckedUnsat "unsat" },
+       .proofBindingsMismatch, "stale proof bindings"),
+      ({ profile := defaultSolverProfile
+         requestIdentity := canonicalRequestIdentity request
+         outcome := .unknown },
+       .notUnsat, "an answer that is not unsat")] do
+    match checkUnsat request result with
+    | .error failure => expectEq failure expected s!"{reason} is refused"
+    | .ok promoted => fail s!"{reason} was promoted: {repr promoted}"
+  match checkUnsat { request with smtLib := "(check-sat)" }
+      { profile := defaultSolverProfile
+        requestIdentity := canonicalRequestIdentity request
+        outcome := .uncheckedUnsat "unsat" } with
+  | .error .unpinnedRequest => pure ()
+  | result => fail s!"a request that does not rebuild to itself was promoted: {repr result}"
+
+  let checked ← checkedResult request
+  match makeDischargeRecord testBinding request checked with
+  | .error failure => fail s!"a checked unsat produced no record: {repr failure}"
+  | .ok record =>
+      expectEq record.result "unsat" "a record states the result it was created from"
+      expectEq record.solverExecutableDigest defaultSolverProfile.executableDigest
+        "a record binds the pinned executable digest"
+      expectEq record.invocationOptions defaultSolverProfile.invocationOptions
+        "a record binds the pinned invocation options"
+      expectEq record.requestIdentity (canonicalRequestIdentity request)
+        "a record binds the request it answers"
+      expectEq record.translationRuleHashes defaultSmtProofBindings.translationRuleHashes
+        "a record binds the translation rules it was produced under"
+      expectEq record.normalisedFormulaHash (canonicalNormalisedFormula request.formula)
+        "a record binds the formula the encoder consumed"
+      expectEq record.obligation.sourceStopOffset testBinding.sourceStopOffset
+        "a record keeps the whole source span, not just where it starts"
+      -- The record has an address of its own, and it separates records that
+      -- differ in any single field.
+      for (other, field) in [
+          ({ record with evidenceHash := "0:" }, "evidence"),
+          ({ record with result := "sat" }, "result"),
+          ({ record with normalisedFormulaHash := "formula(0[]0[])" }, "formula"),
+          ({ record with obligation := { record.obligation with sourceStopLine := 9 } },
+            "source span"),
+          ({ record with profile := { record.profile with licence := "GPL" } }, "licence")] do
+        expectTrue (canonicalDischargeRecord other != canonicalDischargeRecord record)
+          s!"a record that differs in its {field} has a different address"
+      match recheckDischargeRecord testBinding obligationFormula record with
+      | .ok rebuilt =>
+          expectEq rebuilt request "recheck rebuilds the very request the record names"
+      | .error failure => fail s!"a fresh record failed recheck: {repr failure}"
+      match recheckDischargeRecord { testBinding with wordId := "other" } obligationFormula
+          record with
+      | .error .recordStale => pure ()
+      | result => fail s!"a record for another obligation was accepted: {repr result}"
+  -- An unchecked unsat never becomes a record, whatever else is in order.
+  match makeDischargeRecord testBinding request
+      { profile := defaultSolverProfile
+        requestIdentity := canonicalRequestIdentity request
+        outcome := .uncheckedUnsat "unsat" } with
+  | .error .notUnsat => pure ()
+  | result => fail s!"an unchecked unsat produced a record: {repr result}"
+  -- Nor does a checked result that was not checked against this request.
+  let checkedAgain ← checkedResult request
+  for (mutated, expected, reason) in [
+      ({ checkedAgain with profile := { defaultSolverProfile with version := "4.0.0" } },
+       CheckFailure.unpinnedProfile, "a result carrying another profile"),
+      ({ checkedAgain with requestIdentity := "request(0:)" },
+       .requestIdentityMismatch, "a result bound to another request"),
+      ({ checkedAgain with
+         proofBindings := { defaultSmtProofBindings with translationRuleHashes := ["sha256:x"] } },
+       .proofBindingsMismatch, "a result carrying stale proof bindings")] do
+    match makeDischargeRecord testBinding request mutated with
+    | .error failure => expectEq failure expected s!"{reason} is refused a record"
+    | .ok record => fail s!"{reason} produced a record: {repr record}"
+  match makeDischargeRecord testBinding { request with smtLib := "(check-sat)" } checkedAgain with
+  | .error .unpinnedRequest => pure ()
+  | result => fail s!"a request that does not rebuild to itself produced a record: {repr result}"
+
+private def rerunTests : IO Unit := do
+  let request ← pinnedRequest
+  let checked ← checkedResult request
+  let record ←
+    match makeDischargeRecord testBinding request checked with
+    | .ok record => pure record
+    | .error failure => fail s!"could not build a record: {repr failure}"
+  let runner ← stubRunner [answer "unsat"]
+  match ← rerunDischargeRecord runner testBinding obligationFormula record with
+  | .rechecked rebuilt => expectEq rebuilt record "a recheck rebuilds the same record"
+  | verdict => fail s!"a sound record failed recheck: {repr verdict}"
+  let changedRunner ← stubRunner [answer "unknown"]
+  match ← rerunDischargeRecord changedRunner testBinding obligationFormula record with
+  | .notRechecked .notUnsat .unknown => pure ()
+  | verdict => fail s!"a record whose answer changed was accepted: {repr verdict}"
+  -- A rerun that answers sat is not the same fact as one that answers unknown,
+  -- and the verdict keeps them apart.
+  let satRunner ← stubRunner [answer "sat", answer "sat\n((define-fun i0 () Int 5))"]
+  match ← rerunDischargeRecord satRunner testBinding obligationFormula record with
+  | .notRechecked .notUnsat (.sat model) =>
+      expectEq model.integers [("x", (5 : Int))]
+        "a rerun that answers sat carries the model it found"
+  | verdict => fail s!"a rerun that disproved the obligation was collapsed: {repr verdict}"
+  let impostor ← stubRunner [answer "unsat"] (digest := some "sha256:00")
+  match ← rerunDischargeRecord impostor testBinding obligationFormula record with
+  | .refused (.executableDigestMismatch _ _) => pure ()
+  | verdict => fail s!"an unpinned solver rechecked a record: {repr verdict}"
+  let drifted := { record with invocationOptions := ["-in"] }
+  match ← rerunDischargeRecord runner testBinding obligationFormula drifted with
+  | .driftedRecord .optionDrift => pure ()
+  | verdict => fail s!"invocation-option drift was accepted: {repr verdict}"
+  let tampered := { record with normalisedFormulaHash := "formula(0[]0[])" }
+  match ← rerunDischargeRecord runner testBinding obligationFormula tampered with
+  | .driftedRecord (.recordTampered "normalised-formula") => pure ()
+  | verdict => fail s!"a tampered normalised formula was accepted: {repr verdict}"
+  -- Evidence is an output, not an input. A second run that answers unsat with
+  -- a different core confirms the record; the verdict carries what this run
+  -- said rather than what the stored record did.
+  let coredRunner ← stubRunner [answer "unsat\n(core a)"]
+  match ← rerunDischargeRecord coredRunner testBinding obligationFormula record with
+  | .rechecked rebuilt =>
+      expectTrue (rebuilt.evidenceHash != record.evidenceHash)
+        "the verdict carries the evidence this run produced"
+      expectEq { rebuilt with evidenceHash := record.evidenceHash } record
+        "every input still matches the recorded one"
+  | verdict => fail s!"a differing unsat core was treated as drift: {repr verdict}"
+  let staleSource := { record with
+    obligation := { record.obligation with sourceStopColumn := 99 } }
+  match ← rerunDischargeRecord runner testBinding obligationFormula staleSource with
+  | .driftedRecord .recordStale => pure ()
+  | verdict => fail s!"a record naming another source span was accepted: {repr verdict}"
+
 def runTests : IO Unit := do
   classificationTests
   modelScriptTests
   parseModelTests
   refusalTests
   solveTests
+  recordTests
+  rerunTests
   IO.println "all SMT solver runner tests passed"
 
 end Firth.SmtSolverTest

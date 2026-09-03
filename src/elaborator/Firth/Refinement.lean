@@ -678,6 +678,8 @@ inductive LeanEscalationReason where
   | externalProfileMismatch
   | externalProofMismatch
   | externalRequestIdentityMismatch
+  /-- A checked `unsat` that did not yield a record the boundary would accept. -/
+  | dischargeRecordRejected
   deriving Repr, BEq
 
 structure LeanProofObligation where
@@ -843,6 +845,11 @@ structure PipelineResult where
   leanRecords : List LeanProofRecord := []
   leanQueue : List LeanProofObligation := []
   smtQueue : List SmtQueueEntry := []
+  /-- Content-addressed SMT discharge records. Populated only from a checked
+  `unsat` whose record rechecks; every other external outcome leaves it empty,
+  a validated `sat` because the obligation has failed and everything else
+  because the obligation is deferred to Lean. -/
+  dischargeRecords : List DischargeRecord := []
   diagnostics : List RefinementDiagnostic := []
   deriving Repr, BEq
 
@@ -1298,8 +1305,10 @@ private def discharge (requestId : String) (obligations : List Obligation) : Pip
     { leanRecords := result.leanRecords ++ next.leanRecords
       leanQueue := result.leanQueue ++ next.leanQueue
       smtQueue := result.smtQueue ++ next.smtQueue
+      dischargeRecords := result.dischargeRecords ++ next.dischargeRecords
       diagnostics := result.diagnostics ++ next.diagnostics })
-    { leanRecords := [], leanQueue := [], smtQueue := [], diagnostics := [] }
+    { leanRecords := [], leanQueue := [], smtQueue := [], dischargeRecords := []
+      diagnostics := [] }
   { accumulated with diagnostics := sortDiagnostics accumulated.diagnostics }
 
 def checkBodyRefinements (requestId : String) (typing : BodyTypingPremises) : PipelineResult :=
@@ -1331,6 +1340,7 @@ def checkContractSubsumption (requestId : String)
             messageKey } }] }
 
 private def externalReason : ExternalOutcome → LeanEscalationReason
+  | .checkedUnsat _ => .dischargeRecordRejected
   | .unknown => .externalUnknown
   | .timeout milliseconds => .externalTimeout milliseconds
   | .resourceExhausted => .externalResourceExhausted
@@ -1340,6 +1350,7 @@ private def externalReason : ExternalOutcome → LeanEscalationReason
   | .sat _ => .invalidCountermodel
 
 private def externalData : ExternalOutcome → OpaqueData
+  | .checkedUnsat _ => reasonData "discharge-record-rejected"
   | .unknown => reasonData "external-unknown"
   | .timeout milliseconds => reasonData s!"external-timeout:{milliseconds}"
   | .resourceExhausted => reasonData "external-resource-exhausted"
@@ -1382,6 +1393,40 @@ def validSmtQueueEntry (entry : SmtQueueEntry) : Bool :=
           request.profile == entry.profile &&
           request.formula == entry.obligation.formula
 
+/-- The elaborator-owned half of a discharge record's identity. -/
+def obligationBinding (obligation : Obligation) : ObligationBinding :=
+  { obligationId := obligation.obligationId
+    wordId := obligation.context.wordId
+    bodyHash := obligation.context.bodyHash
+    erasedWordTypeHash := obligation.context.erasedWordTypeHash
+    specHash := obligation.context.specHash
+    calleeContractHashes := obligation.context.calleeContractHashes
+    predicateDefinitionHashes := obligation.context.predicateDefinitionHashes
+    vcGeneratorVersion := obligation.context.vcGeneratorVersion
+    normaliserVersion := obligation.context.normaliserVersion
+    toolchainRevision := obligation.context.toolchainRevision
+    sourcePath := obligation.context.source.path
+    sourceStartOffset := obligation.context.source.span.start.offset
+    sourceStartLine := obligation.context.source.span.start.line
+    sourceStartColumn := obligation.context.source.span.start.column
+    sourceStopOffset := obligation.context.source.span.stop.offset
+    sourceStopLine := obligation.context.source.span.stop.line
+    sourceStopColumn := obligation.context.source.span.stop.column }
+
+/-- Rechecks a record against the obligation it claims to discharge.
+
+The formula is taken from the obligation rather than from the record, so a
+record cannot outlive the verification condition it was generated for, and the
+obligation's own identity is re-derived first: a record binds an obligation id,
+so an obligation whose id is not the canonical identity of its kind, formula
+and context is not the obligation the record names. What comes back is the
+request to re-run: a record whose inputs still hold is not yet a remembered
+success. -/
+def recheckRecord (obligation : Obligation) (record : DischargeRecord) :
+    Except RecheckFailure SmtRequest :=
+  if !canonicalObligationIdentity obligation then .error .recordStale
+  else recheckDischargeRecord (obligationBinding obligation) obligation.formula record
+
 def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
     (result : SmtResult) : PipelineResult :=
   let obligation := entry.obligation
@@ -1411,6 +1456,48 @@ def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
         (reasonData "external-request-identity-mismatch")] }
   else
     match result.outcome with
+    | .checkedUnsat _ =>
+        -- Promotion is this boundary's job, not its caller's. A result that
+        -- arrives already promoted was checked by something outside this
+        -- function, and "checked somewhere" is exactly the claim a record must
+        -- not be built on, so it is refused rather than believed.
+        { leanQueue := [leanObligation obligation .dischargeRecordRejected]
+          diagnostics := [makeDiagnostic requestId obligation .deferred
+            (reasonData "firth.smt.pre-promoted-result")] }
+    | .uncheckedUnsat _ =>
+        match entry.request with
+        | none =>
+            { leanQueue := [leanObligation obligation .externalRequestIneligible]
+              diagnostics := [makeDiagnostic requestId obligation .deferred
+                (reasonData "external-request-ineligible")] }
+        | some request =>
+            -- The checked adapter promotes here, so an `unsat` becomes evidence
+            -- only by passing through it. Everything after this point fails
+            -- closed: an answer that cannot be promoted, a record that cannot
+            -- be built, and a record that does not recheck all defer the
+            -- obligation to Lean rather than discharging it. The guards above
+            -- already establish most of what promotion re-verifies; the
+            -- repetition is what makes "every record this boundary emits is a
+            -- record that rechecks" true by construction rather than by an
+            -- argument about guards written elsewhere.
+            match checkUnsat request result with
+            | .error failure =>
+                { leanQueue := [leanObligation obligation .uncheckedUnsatRejected]
+                  diagnostics := [makeDiagnostic requestId obligation .deferred
+                    (reasonData failure.code)] }
+            | .ok checked =>
+                match makeDischargeRecord (obligationBinding obligation) request checked with
+                | .error failure =>
+                    { leanQueue := [leanObligation obligation .dischargeRecordRejected]
+                      diagnostics := [makeDiagnostic requestId obligation .deferred
+                        (reasonData failure.code)] }
+                | .ok record =>
+                    match recheckRecord obligation record with
+                    | .error failure =>
+                        { leanQueue := [leanObligation obligation .dischargeRecordRejected]
+                          diagnostics := [makeDiagnostic requestId obligation .deferred
+                            (reasonData failure.code)] }
+                    | .ok _ => { dischargeRecords := [record] }
     | .sat model =>
         if validatesCounterexample obligation.formula model then
           let rendered := renderCountermodel model
@@ -1426,5 +1513,22 @@ def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
         { leanQueue := [leanObligation obligation reason]
           diagnostics := [makeDiagnostic requestId obligation .deferred (externalData outcome)] }
 
+
+/-- Reports a rerun through the refinement-discharge result boundary.
+
+`Firth.Smt.Solver.rerunDischargeRecord` is the rerun itself: it needs `IO` and
+the pinned runner, so it lives with the runner. This is where its verdict
+becomes a pipeline result, which is what
+`spec/smt/refinement-discharge-architecture.md` §3 means by a cache hit being
+usable: only a record that rechecked *and* was re-answered is exposed, and
+every other verdict is a deferred non-success carrying its own code. -/
+def recordRerunVerdict (requestId : String) (obligation : Obligation)
+    (verdict : RecheckVerdict) : PipelineResult :=
+  match verdict with
+  | .rechecked record => { dischargeRecords := [record] }
+  | _ =>
+      { leanQueue := [leanObligation obligation .dischargeRecordRejected]
+        diagnostics := [makeDiagnostic requestId obligation .deferred
+          (reasonData verdict.code)] }
 
 end Firth.Elaborator.Refinement

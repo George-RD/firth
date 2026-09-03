@@ -20,8 +20,8 @@ a different one, and nothing it says may enter evidence.
 *Classification is total and deterministic.* Every transcript maps to exactly
 one `ExternalOutcome`, and everything that is not an answer the profile
 supports maps to a deferred outcome rather than to silence. A bare `unsat`
-maps to `uncheckedUnsat`: promoting it is the next unit's job, and doing it
-here would put an unrechecked result into evidence.
+maps to `uncheckedUnsat`: promoting it belongs to the checked adapter in
+`SmtBoundary`, and doing it here would put an unrechecked result into evidence.
 
 *The runner is injected.* `SolverRunner` is a seam, so classification, model
 parsing and the refusal rules are all testable without a fetched binary on a
@@ -56,28 +56,6 @@ structure Transcript where
   /-- Whether the runner's output bound was reached. -/
   outputLimitExceeded : Bool := false
   deriving Repr, BEq, Inhabited
-
-/-- Why an invocation was refused before the solver was ever spawned. -/
-inductive Refusal where
-  /-- The profile is not the pinned profile. -/
-  | unpinnedProfile
-  /-- The request does not rebuild to itself under the checked adapter. -/
-  | unpinnedRequest
-  /-- The pinned executable is absent at the resolved path. -/
-  | executableMissing (path : String)
-  /-- The host has no usable digest tool, so identity cannot be established. -/
-  | digestUnavailable
-  /-- The executable is present but is not the pinned one. -/
-  | executableDigestMismatch (expected actual : String)
-  deriving Repr, BEq
-
-/-- A stable code for a refusal, for diagnostics and records. -/
-def Refusal.code : Refusal → String
-  | .unpinnedProfile => "firth.smt.unpinned-profile"
-  | .unpinnedRequest => "firth.smt.unpinned-request"
-  | .executableMissing _ => "firth.smt.executable-missing"
-  | .digestUnavailable => "firth.smt.digest-unavailable"
-  | .executableDigestMismatch _ _ => "firth.smt.executable-digest-mismatch"
 
 /-- The bounded invocation seam.
 
@@ -353,5 +331,41 @@ def solve (runner : SolverRunner) (profile : SolverProfile) (request : SmtReques
           proofBindings := request.proofBindings
           requestIdentity := canonicalRequestIdentity request
           outcome }
+
+/-- The full recheck: revalidate every input, then re-answer the question.
+
+`spec/smt/refinement-discharge-architecture.md` §3 is explicit that a cache
+hit needs the rerun as well as the bindings, so a record whose inputs still
+hold is not yet a remembered success.
+
+The rebuilt record must agree with the recorded one on every input. It is not
+required to agree on `evidenceHash`, because evidence is an output: §3 makes a
+cache hit conditional on the inputs and the profile matching, and the same
+`unsat` may come with a different unsat core on a second run. So the verdict
+carries the rebuilt record, whose evidence is what this run said rather than
+what the stored one did.
+
+That final equality cannot fail today: `recheckDischargeRecord` has already
+pinned every input the rebuild derives from, so the rebuild reproduces them.
+It stays because it is the only check that is stated over the whole record, so
+a field added to `DischargeRecord` is compared without anyone remembering to
+add a comparison for it. -/
+def rerunDischargeRecord (runner : SolverRunner) (binding : ObligationBinding)
+    (formula : Formula) (record : DischargeRecord) : IO RecheckVerdict := do
+  match recheckDischargeRecord binding formula record with
+  | .error failure => return .driftedRecord failure
+  | .ok request =>
+      match ← solve runner record.profile request with
+      | .error refusal => return .refused refusal
+      | .ok result =>
+          match checkUnsat request result with
+          | .error failure => return .notRechecked failure result.outcome
+          | .ok checked =>
+              match makeDischargeRecord binding request checked with
+              | .error failure => return .notRechecked failure checked.outcome
+              | .ok rebuilt =>
+                  if { rebuilt with evidenceHash := record.evidenceHash } == record then
+                    return .rechecked rebuilt
+                  else return .driftedRecord (.recordTampered "rebuild")
 
 end Firth.Smt.Solver
