@@ -111,7 +111,7 @@ private def isLinearUnusedAtSpan (error : ErasureError) (expectedStart expectedS
 def runPipelineTests : IO Unit := do
   match elaborate "vocab core { : id ( a:Int^many -- a:Int^many ) ; }" with
   | .success program =>
-      expectEq (program.words.map (·.name)) ["id"] "vocabulary words are flattened"
+      expectEq (program.words.map (·.name)) ["core.id"] "vocabulary words preserve their canonical identity"
       expectEq program.words.length 1 "one checked word is returned"
       match program.words with
       | [word] =>
@@ -134,7 +134,7 @@ def runPipelineTests : IO Unit := do
       expectEq (exchange.program.map (·.atom)) [.swap]
         "core exchange-int lowers to swap"
       expectEq (exampleWord.program.map (·.atom))
-        [.lit (.nat 7), .word "duplicate-int", .word "discard-int", .word "identity"]
+        [.lit (.nat 7), .word "core.duplicate-int", .word "core.discard-int", .word "core.identity"]
         "core example uses the checked vocabulary words"
   | .success program => fail s!"unexpected core vocabulary words: {program.words.map (·.name)}"
   | .failure diagnostics => fail s!"core vocabulary failed: {repr diagnostics}"

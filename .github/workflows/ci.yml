@@ -58,14 +58,18 @@ jobs:
           lint: 'false'
           use-mathlib-cache: 'false'
       - name: Build Lean targets
-        run: lake build
+        run: lake build 2>&1 | tee /tmp/language-build.log
       - name: Verify governed proof bindings without rewriting them
         run: |
           python3 tools/loop/check_zero_admit.py
           python3 tools/loop/update_smt_proof_bindings.py --check
           python3 tools/loop/update_proof_manifest.py --check
       - name: Run Lean suites
-        run: lake test
+        run: lake test 2>&1 | tee /tmp/language-lean-tests.log
+      - name: Test canonical names and lexical imports
+        run: lake env lean --run src/elaborator/FirthNamesTest.lean 2>&1 | tee /tmp/language-names.log
+      - name: Test real solver pipes
+        run: lake env lean --run src/smt/FirthSmtProcessTest.lean 2>&1 | tee /tmp/language-process.log
       - name: Verify Rust VM
         working-directory: src/runtime/vm
         run: |
@@ -84,6 +88,6 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: language-diagnostics
-          path: /tmp/language-examples.log
+          path: /tmp/language-*.log
           retention-days: 1
           if-no-files-found: ignore

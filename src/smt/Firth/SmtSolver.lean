@@ -236,10 +236,25 @@ private def executableDigestOf (executable : System.FilePath) : IO (Option Strin
       if digest.isEmpty then return none
       return some s!"sha256:{digest}"
 
-private def readBoundedText (handle : IO.FS.Handle) (limit : Nat) : IO (Option String) := do
-  let bytes ← handle.read (USize.ofNat (limit + 1))
-  if bytes.size > limit then pure none
-  else pure (String.fromUTF8? bytes)
+private partial def readBoundedText (handle : IO.FS.Handle) (limit : Nat) :
+    IO (Option String) := do
+  let rec read (bytes : ByteArray) (overflow : Bool) : IO (Option String) := do
+    let chunk ← handle.read 4096
+    if chunk.isEmpty then
+      pure (if overflow then none else String.fromUTF8? bytes)
+    else if overflow || bytes.size + chunk.size > limit then
+      -- Continue draining after the limit without retaining more bytes. A
+      -- blocked writer must not turn output overflow into a false timeout.
+      read bytes true
+    else
+      read (bytes ++ chunk) false
+  read ByteArray.empty false
+
+private def writeInput (handle : IO.FS.Handle) (script : String) : IO Unit := do
+  handle.putStr script
+  handle.flush
+  -- The task owns this handle. Releasing it signals EOF before waiting for
+  -- the solver, which may not answer until its input stream is closed.
 
 /-- The production runner: one bounded process per invocation.
 
@@ -257,8 +272,9 @@ def processRunner (executable : System.FilePath) (outputLimit : Nat := 65536) :
         stderr := .piped
         setsid := true }
     let (stdin, child) ← child.takeStdin
-    stdin.putStr script
-    stdin.flush
+    let stdout ← IO.asTask (readBoundedText child.stdout outputLimit) Task.Priority.dedicated
+    let stderr ← IO.asTask (readBoundedText child.stderr outputLimit) Task.Priority.dedicated
+    let input ← IO.asTask (writeInput stdin script) Task.Priority.dedicated
     let rec wait : Nat → IO (Option UInt32)
       | 0 => do
           try child.kill catch _ => pure ()
@@ -273,8 +289,11 @@ def processRunner (executable : System.FilePath) (outputLimit : Nat := 65536) :
     match ← wait (timeoutMilliseconds / 25 + 1) with
     | none => pure { exitCode := 0, stdout := "", stderr := "", timedOut := true }
     | some exitCode => do
-        let stdout ← readBoundedText child.stdout outputLimit
-        let stderr ← readBoundedText child.stderr outputLimit
+        -- All streams have been serviced concurrently, including stdin, so
+        -- the deadline also covers a solver that stops reading a large input.
+        IO.ofExcept input.get
+        let stdout ← IO.ofExcept stdout.get
+        let stderr ← IO.ofExcept stderr.get
         match stdout, stderr with
         | some stdout, some stderr => pure { exitCode, stdout, stderr }
         | _, _ =>

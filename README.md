@@ -1,110 +1,105 @@
 # Firth
 
-Firth is a concatenative language in the Forth tradition. Programs carry
-machine-checked guarantees: Lean 4 elaborates the source, discharges types and
-proof obligations, and the result runs on a small Forth-class target.
+Firth is an experimental concatenative language in the Forth tradition.
+Programs are sequences of small words with declared stack effects. Lean checks
+source types and ownership; a compiler lowers checked programs to a small Rust
+VM. The reference interpreter defines the expected behaviour.
 
-Concatenation is the main composition rule. Words stay small, so changes can
-be local and independent. Correctness is checked mechanically rather than
-left to a code reviewer's judgement.
+## Write and run a program
 
-## Status
+Start with [Getting started](docs/getting-started.md) for installation,
+syntax, input values, errors and the current execution limits. From the
+repository root, with the pinned Lean and Rust toolchains installed:
 
-Firth is in early development. The v0.1 kernel calculus is frozen, and Lean 4
-proves its core metatheory (determinism, preservation, and progress) with zero
-admits. The Lean reference interpreter is in `src/interpreter`.
-
-The elaborator surface parser and the canonical Rust VM bootstrap have landed.
-Elaborator erasure and VM kernel execution are in progress. The compiler,
-standard library, and language server are still ahead.
-
-## Architecture
-
-The project has four layers. The detailed design is in `files/firth-prd.md`.
-
-1. **Language**: a kernel calculus of around a dozen combinators, with typing
-   rules and small-step operational semantics; a Forth-flavoured point-free
-   surface syntax; stack-effect types with row polymorphism, linearity, and
-   refinements; plus first-class quotations and vocabularies.
-2. **Toolchain**: an elaborator embedded in Lean 4, a reference interpreter,
-   a compiler to a Forth-class target, differential tests, SMT support for
-   refinement discharge, and a machine-parseable agent interface.
-3. **Runtime**: a small permissively licensed VM with word-level
-   hot-redefinition and a verified-patch protocol.
-4. **Ecosystem**: a standard library written in Firth, a language server, and
-   specifications for the kernel and VM.
-
-The intended flow is:
-
-```
-source -> elaborator (type, linearity, and proof checking) -> kernel terms
-       -> compiler -> Forth-class target -> VM
+```sh
+python3 tools/loop/firth_run.py check examples/mvp/choose-increment.firth
+python3 tools/loop/firth_run.py run examples/mvp/choose-increment.firth \
+  --entry main --stack '[41, true]'
 ```
 
-The reference interpreter defines program behaviour. If a compiler disagrees
-with it, the compiler is wrong. The trusted computing base is the Lean kernel,
-the SMT solver when it is used, and the VM.
+The result has `"status": "success"` and `"stack": [42]`. The runner builds the
+adapters, checks the source, compiles it, and requires matching VM and reference
+results. Select the entry by its source name; its position in the file does not
+choose which word runs.
 
-## Why a VM?
+## Current scope
 
-The VM is not the Firth language, and it is not the product. It is the first
-execution target. We are keeping it deliberately small so the trusted base,
-Lean kernel plus SMT solver plus VM, stays small enough to audit.
+The portable runner handles pure programs with non-negative integer and Boolean
+inputs and results. Words, qualified vocabulary names, stack operations,
+quotations, conditionals and named locals can be composed within that profile.
+The only executable portable primitive is `prim +`.
 
-The Lean reference interpreter defines behaviour, and the compiler is
-fuzz-checked against it. That comparison needs a deterministic executor.
-Word-level hot redefinition and the verified-patch protocol also need a
-runtime that mediates the dictionary instead of letting updates bypass it.
+This is not yet a general-purpose application platform. Text, signed integer
+execution, file/network I/O, `send`, a package manager, a standard library and
+an editor language server are not provided by this runner. The broader
+language design and checker support more than the portable execution adapter.
+See the [support table](docs/getting-started.md#supported-execution-profile)
+before choosing a program to build.
 
-This is not a Java-style claim that the platform is the VM. Native and
-bare-metal targets, in the classic Forth spirit, are still the intended future.
-The kernel's cost table `kappa` is per-target for exactly this reason.
+## Documentation
 
-VM here means Firth's small reference execution target, not a development
-sandbox. If you want an isolated environment, such as a container or an Apple
-VM, to experiment in safely, that is a separate and sensible layer on top. It
-does not change the language or its targets.
+- [Getting started](docs/getting-started.md): the executable user and agent workflow.
+- [Agent language guide](docs/firth-agent-guide.md): the frozen v0.1 language
+  guide used by the original authored corpus. Its full design surface is wider
+  than the executable profile documented above.
+- [Kernel specification](files/firth-kernel-spec-draft.md) and
+  [VM target specification](src/runtime/vm/target-spec.md): language and target semantics.
+- [Development runbook](docs/loop-runbook.md): the governed development loop,
+  not an application-authoring tutorial.
 
-## Kernel model
+## Verification and its limits
 
-There is one value stack: no return stack, environment, or variables. Execution
-is a pure rewrite over configurations `⟨V ∣ p⟩`. Sequencing is composition;
-quotations `⟦p⟧` provide the higher-order structure; and recursion comes from
-the dictionary, not a fixpoint combinator. Effects use a linear `World` base
-type, which forces one ordered effect thread. See
-`files/firth-kernel-spec-draft.md`.
+Lean mechanises the core kernel metatheory, including determinism,
+preservation and progress. This is distinct from proving every compiler
+implementation detail or an application's intended business behaviour.
 
-## Repository layout
+The portable runner compares successful terminal outcomes, final stacks and
+kernel-comparable cost. It validates finite trace bounds but does **not** claim
+full trace equivalence. Effectful observations are refused rather than reduced
+to a misleading Boolean comparison. VM administration is reported separately
+from kernel cost. Fuel exhaustion and integer overflow are failures, not
+successful comparisons.
 
-| Path | Purpose |
-|---|---|
-| `files/` | Design specs: PRD and kernel calculus |
-| `src/interpreter/` | Lean 4 reference interpreter and metatheory |
-| `src/elaborator/` | Lean 4 surface parser and erasure (in progress) |
-| `src/runtime/vm/` | Canonical Rust VM (bootstrap landed, execution in progress) |
-| `spec/` | Landed component specifications |
-| `cairn.blueprint` | Declared architecture, governed by [cairn](https://github.com/cairn-framework/cairn) |
-| `meta/` | Cairn artefacts: todos, decisions, research, sources |
-| `docs/loop-runbook.md` | Autonomous development loop runbook |
+CI builds Lean, runs its suites and proof-binding checks, checks the Rust VM,
+then executes the original authored corpus and the documented multiword
+examples. Python regressions exercise request wiring and provenance tampering.
+The new examples are implementation fixtures, not evidence of independent
+agent authorship. Passing the finite corpus is not a universal compiler proof.
 
-## Building
+## Build and test
 
-The Lean toolchain is pinned to `leanprover/lean4:v4.30.0` and installed via
-`elan`. From the repository root:
+Pins: Lean `leanprover/lean4:v4.30.0`, Rust `1.93.0`, Python `3.11` or newer.
+No external SMT executable is required for the portable examples.
 
 ```sh
 lake build
 lake test
+(cd src/runtime/vm && cargo fmt --check && \
+  cargo clippy --locked --all-targets -- -D warnings && cargo test --locked)
+python3 tools/loop/mvp_agent_gate.py
+python3 tools/loop/check_language_examples.py
 ```
 
-Before committing, run the governance checks:
+For changes to governed code, also run the proof manifest and Cairn checks in
+[AGENTS.md](AGENTS.md). Do not rewrite expected results or proof pins to conceal
+a failing gate.
 
-```sh
-cairn scan       # target: zero findings
-cairn hook all   # strict gate; exit 0 means the commit is safe
-```
+## Repository layout
+
+| Path | Purpose |
+| --- | --- |
+| `src/elaborator/` | Lean source parser, checking and erasure |
+| `src/compiler/` | Checked-kernel to target compiler |
+| `src/interpreter/` | Reference execution and kernel metatheory |
+| `src/runtime/vm/` | Rust VM, image lifecycle and target contract |
+| `src/agent/` | Structured diagnostic and elaboration adapters |
+| `src/smt/` | Refinement solver integration |
+| `examples/mvp/` | Authored corpus and executable regression examples |
+| `tools/loop/firth_run.py` | Source checking and execution command |
+| `spec/`, `specs/`, `files/` | Specifications and design material |
+| `cairn.blueprint`, `meta/` | Architecture and development provenance |
 
 ## Licence
 
-The intended licence for the trusted core and VM is permissive:
-MIT/Apache-2.0. See the PRD for the full licensing posture.
+See [LICENSE](LICENSE) and the licensing posture in the
+[product requirements](files/firth-prd.md).
