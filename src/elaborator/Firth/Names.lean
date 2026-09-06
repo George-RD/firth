@@ -46,8 +46,9 @@ private def resolveWord (keys : List String) (scopeName : String) (uses : List U
     (locals : List String) (name : String) (span : Span) : Except ParseError String := do
   if locals.contains name then return name
   if (name.splitOn ".").length > 1 then return expandAlias uses name
-  let candidates := ((qualified scopeName name :: uses.map (fun use => qualified use.name name))
-    .filter keys.contains).eraseDups
+  let imported : List String := uses.map (fun (declaration : UseDecl) => qualified declaration.name name)
+  let visible : List String := qualified scopeName name :: imported
+  let candidates := (visible.filter (fun key => keys.contains key)).eraseDups
   match candidates with
   | [candidate] => return candidate
   | [] =>
@@ -59,14 +60,19 @@ private partial def resolveItems (keys : List String) (scopeName : String) (uses
     (locals : List String) : List Item → Except ParseError (List Item)
   | [] => pure []
   | item :: rest => do
-      let item ← match item with
-        | .word name span => return .word (← resolveWord keys scopeName uses locals name span) span
-        | .quotation body span => return .quotation (← resolveItems keys scopeName uses locals body) span
-        | .locals names body span =>
-            return .locals names (← resolveItems keys scopeName uses
-              (names.map (·.name) ++ locals) body) span
+      let resolved : Item ← match item with
+        | .word name span => do
+            let canonical ← resolveWord keys scopeName uses locals name span
+            pure (Item.word canonical span)
+        | .quotation body span => do
+            let body ← resolveItems keys scopeName uses locals body
+            pure (Item.quotation body span)
+        | .locals names body span => do
+            let body ← resolveItems keys scopeName uses (names.map (·.name) ++ locals) body
+            pure (Item.locals names body span)
         | other => pure other
-      return item :: (← resolveItems keys scopeName uses locals rest)
+      let tail ← resolveItems keys scopeName uses locals rest
+      pure (resolved :: tail)
 
 private partial def resolveScope (keys vocabularies : List String) (scopeName : String)
     (uses : List UseDecl) : List Declaration → Except ParseError (List WordDefinition)
