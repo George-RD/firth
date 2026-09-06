@@ -76,6 +76,14 @@ jobs:
       - name: Rebuild and compare MVP applications
         run: python3 tools/loop/mvp_agent_gate.py
       - name: Execute documented multiword programs and failure cases
-        run: python3 tools/loop/check_language_examples.py
+        run: python3 tools/loop/check_language_examples.py 2>&1 | tee /tmp/language-examples.log
       - name: Check bounded cost witness
         run: python3 tools/loop/check_s5_envelope.py
+      - name: Retain execution diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: language-diagnostics
+          path: /tmp/language-examples.log
+          retention-days: 1
+          if-no-files-found: ignore
