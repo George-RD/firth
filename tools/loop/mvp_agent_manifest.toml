@@ -84,9 +84,9 @@ diagnostic_code_namespaces = [
   "protocol",
 ]
 
-# These entry points are versioned logical adapters. The current CLI prints a
-# Lean representation and does not satisfy this structured contract, so all
-# adapters remain gate-required until the executable gate provides them.
+# These versioned adapters are exercised by the executable gate.
+# The source runner uses the same boundaries; gate-required means the gate
+# must validate them, not that their implementations are absent.
 [schema."firth.source.v1"]
 version = "1.0"
 encoding = "utf-8"
@@ -100,7 +100,7 @@ fields = ["request_id:string", "status:success|failure", "checked_words:array", 
 [schema."firth.checked-kernel.v1"]
 version = "1.0"
 encoding = "json"
-fields = ["request_id:string", "checked_words:array", "erased_word_types:array", "gamma_version:string", "target_version:string"]
+fields = ["request_id:string", "entry:string (required for multiword requests)", "checked_words:array", "erased_word_types:array", "gamma_version:string", "target_version:string"]
 
 [schema."firth.target-program.v1"]
 version = "1.0"
@@ -150,6 +150,8 @@ request_schema = "firth.checked-kernel.v1"
 response_schema = "firth.target-program.v1"
 
 [entry_point.compile.request]
+optional = ["entry"]
+entry_rule = "source word name; required for multiple checked words; never inferred from definition order"
 required = ["request_id", "checked_words", "erased_word_types", "gamma_version", "target_version"]
 
 [entry_point.compile.response]
@@ -200,21 +202,39 @@ fuel_exhaustion = "bounded-fuel-inconclusive"
 minimum = 3
 [[applications.entries]]
 name = "literal-int"
+entry = "literal-int"
 source_path = "examples/mvp/literal-int.firth"
 source_sha256 = "fc1dd483c760942a46195bf0d28284d386d81e417007cb47821cc72e266ad433"
 transcript_path = "meta/sources/mvp-agent-example-literal-int.md"
+transcript_sha256 = "2a132ca8e4dda517c4106a55166e9b70e6e8cbafe8952314ea4a538a6d9ecca6"
 transcript_output_sha256 = "fc1dd483c760942a46195bf0d28284d386d81e417007cb47821cc72e266ad433"
 
 [[applications.entries]]
 name = "quotation-call"
+entry = "quotation-call"
 source_path = "examples/mvp/quotation-call.firth"
 source_sha256 = "4286a9528aec35e6109bf12be5f939c74098cb4f58f2cf4192232d65ee78e699"
 transcript_path = "meta/sources/mvp-agent-example-quotation-call.md"
+transcript_sha256 = "5c167560fc991ec630088a90a6678b1f74a365e9ee7f78216b1cb2839a589d70"
 transcript_output_sha256 = "4286a9528aec35e6109bf12be5f939c74098cb4f58f2cf4192232d65ee78e699"
 
 [[applications.entries]]
 name = "conditional"
+entry = "conditional"
 source_path = "examples/mvp/conditional.firth"
 source_sha256 = "fe4bb195204140ceae58f5223af1cd8a52bd6177cd72a8d925f9789842a61914"
 transcript_path = "meta/sources/mvp-agent-example-conditional.md"
+transcript_sha256 = "2c29d4e754908885267f376358e7e331cb8777daf9c1cb8fcc953cdd45c8ed17"
 transcript_output_sha256 = "fe4bb195204140ceae58f5223af1cd8a52bd6177cd72a8d925f9789842a61914"
+
+# Added with the executable gate: the three original applications reach only
+# literals, `call` and `if`, so nothing executable exercised the Gamma
+# primitive profile the comparison contract names. This one applies `+`.
+[[applications.entries]]
+name = "add-one"
+entry = "add-one"
+source_path = "examples/mvp/add-one.firth"
+source_sha256 = "960d894edfca48657229f6aa21921da7002acad4c27abcb2d9d4275b44aca401"
+transcript_path = "meta/sources/mvp-agent-example-add-one.md"
+transcript_sha256 = "4479ee092f31266139b0f51c2f747888876b2ee631637ab5593f56dd5e917613"
+transcript_output_sha256 = "960d894edfca48657229f6aa21921da7002acad4c27abcb2d9d4275b44aca401"

@@ -84,11 +84,18 @@ python3 tools/loop/test_select_unit.py
 python3 tools/loop/test_coverage.py
 python3 tools/loop/test_driver_tokens.py
 python3 tools/loop/test_review_gate.py
+python3 tools/loop/test_mvp_agent_gate.py
+python3 tools/loop/test_mvp_agent_coverage.py
+python3 tools/loop/test_smt_proof_bindings.py
+python3 tools/loop/update_smt_proof_bindings.py --check
+python3 tools/loop/mvp_agent_gate.py
 python3 tools/loop/select_unit.py --validate
 python3 tools/loop/coverage.py --validate
 
 lake build
 lake test            # driver: firthAllTest
+lake exe firthRecordIntegrityTest   # record drift, staleness and tampering
+lake exe firthAdapterIntegrationTest # the SMT slice end to end
 ( cd src/runtime/vm && cargo fmt --check && cargo clippy && cargo test --locked )
 ! rg -n '\b(sorry|admit)\b' src
 git diff --check
@@ -156,9 +163,26 @@ and hook checks.
 
 ## Testing & QA
 
-- Control-plane tests live in `tools/loop/test_select_unit.py` and
-  `tools/loop/test_coverage.py`; both use temporary synthetic todo trees and
-  never read the real tracker in fixtures.
+- Control-plane tests live in `tools/loop/test_select_unit.py`,
+  `tools/loop/test_coverage.py` and `tools/loop/test_mvp_agent_gate.py`; all
+  use temporary synthetic trees and never read the real tracker in fixtures.
+  `tools/loop/test_mvp_agent_coverage.py` is the exception by design: it pins
+  the live bindings between the obligations matrix, the manifest and the
+  pinned gate, and catches a stale acceptance hash without a toolchain.
+- **The pinned MVP gate** is `tools/loop/mvp_agent_gate.py`. It verifies the
+  provenance manifest before executing anything, then rebuilds every
+  manifest-listed application in a scratch workspace holding only that
+  application's source, running elaborate, compile, VM and reference-run and
+  comparing the two observations. `python3 tools/loop/coverage.py --run-gates`
+  invokes it, and a failure holds `loop_exhausted_valid` false.
+- **Record integrity** is covered by `firthRecordIntegrityTest`, which drives
+  every way a discharge record can go stale, drift or be edited through the
+  real rerun and the real refinement-discharge result boundary. It uses an
+  injected solver runner, so it needs no solver on the host.
+- **The SMT slice end to end** is covered by `firthAdapterIntegrationTest`,
+  which runs each case from `checkBodyRefinements` through a bounded solver
+  invocation to a diagnostic, and asserts the invocation carries the pinned
+  options and bounds. It uses an injected runner and needs no solver.
 - Product gates are live: `lake build` / `lake test` (driver
   `firthAllTest`) and the VM crate gates from `src/runtime/vm`. The kernel
   metatheory (determinism, preservation, progress, linearity soundness,

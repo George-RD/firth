@@ -1,4 +1,5 @@
 import elaborator.Firth.Parser
+import elaborator.Firth.Names
 import elaborator.Firth.Erasure
 import elaborator.Firth.StackEffect
 import elaborator.Firth.Refinement
@@ -66,12 +67,6 @@ inductive ElaborationResult where
   | success (program : CheckedProgram)
   | failure (diagnostics : List PipelineDiagnostic)
   deriving Repr, BEq
-
-def collectWords : List Declaration → List WordDefinition
-  | [] => []
-  | .use _ :: rest => collectWords rest
-  | .word word :: rest => word :: collectWords rest
-  | .vocabulary _ declarations _ :: rest => collectWords declarations ++ collectWords rest
 
 private def signatureUsages : List StackItem → List Usage
   | [] => []
@@ -153,14 +148,16 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
   match parse source with
   | .failure errors => .failure (errors.map PipelineDiagnostic.parse)
   | .success file =>
-      let words := collectWords file.declarations
-      let env := makeErasureEnv config words
-      match eraseWords env words with
-      | .error (word, error) => .failure [.erasure word error]
-      | .ok erased =>
-          match checkDictionary config.typingEnv (definitionsOf erased) with
-          | .error diagnostic => .failure [.stackEffect diagnostic]
-          | .ok checked => finishWords config erased checked
+      match resolveNames file.declarations with
+      | .error error => .failure [.parse error]
+      | .ok words =>
+          let env := makeErasureEnv config words
+          match eraseWords env words with
+          | .error (word, error) => .failure [.erasure word error]
+          | .ok erased =>
+              match checkDictionary config.typingEnv (definitionsOf erased) with
+              | .error diagnostic => .failure [.stackEffect diagnostic]
+              | .ok checked => finishWords config erased checked
 
 def elaborate (source : String) : ElaborationResult := elaborateWith {} source
 

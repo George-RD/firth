@@ -196,8 +196,19 @@ pub fn execute_report_with_stack(
     fuel: u64,
     registry: &PrimitiveRegistry,
 ) -> Result<ExecutionReport, VmError> {
+    execute_report_entry(image, "main", initial_stack, fuel, registry)
+}
+
+/// Executes a named entry word with an explicit bottom-to-top initial stack.
+pub fn execute_report_entry(
+    image: &Image,
+    entry: &str,
+    initial_stack: Vec<Value>,
+    fuel: u64,
+    registry: &PrimitiveRegistry,
+) -> Result<ExecutionReport, VmError> {
     let resolver = StaticWordResolver { image };
-    let word = resolver.resolve("main")?;
+    let word = resolver.resolve(entry)?;
     execute_report_resolved(word, &resolver, initial_stack, fuel, registry)
 }
 
@@ -299,6 +310,22 @@ pub fn execute_diagnostic_with_stack_budget(
     registry: &PrimitiveRegistry,
     allocation_budget: Option<usize>,
 ) -> ExecutionOutcome {
+    execute_diagnostic_entry(image, "main", initial_stack, fuel, registry, allocation_budget)
+}
+
+/// Executes a named entry word while retaining deterministic state and
+/// location information on a trap. `main` is the conventional entry; an
+/// embedding that compiled a differently named word names it here rather than
+/// wrapping it, so the cost report carries no administrative call it did not
+/// really make.
+pub fn execute_diagnostic_entry(
+    image: &Image,
+    entry: &str,
+    initial_stack: Vec<Value>,
+    fuel: u64,
+    registry: &PrimitiveRegistry,
+    allocation_budget: Option<usize>,
+) -> ExecutionOutcome {
     if let Err(error) = validate_image(image) {
         return diagnostic_trap(error, empty_machine());
     }
@@ -306,8 +333,8 @@ pub fn execute_diagnostic_with_stack_budget(
         return diagnostic_trap(VmError::UnsupportedGamma(registry.version), empty_machine());
     }
     let resolver = StaticWordResolver { image };
-    let Ok(resolved) = resolver.resolve("main") else {
-        return diagnostic_trap(VmError::UnknownWord(String::from("main")), empty_machine());
+    let Ok(resolved) = resolver.resolve(entry) else {
+        return diagnostic_trap(VmError::UnknownWord(String::from(entry)), empty_machine());
     };
     let (_, word) = resolved.parts();
     for value in &initial_stack {
@@ -363,7 +390,7 @@ pub fn execute_diagnostic_with_stack_budget(
         image,
         &environment,
         &mut state,
-        "main",
+        entry,
     ) {
         Ok(()) => match terminal_stack(state.stack.clone(), registry) {
             Ok(stack) => ExecutionOutcome::Complete(ExecutionReport {

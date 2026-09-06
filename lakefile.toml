@@ -1,6 +1,6 @@
 name = "firth"
 version = "0.1.0"
-defaultTargets = ["firthTest", "firthParserTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthAgentDiagnosticTest", "firthPipelineTest", "smtBoundaryTest", "firthReferenceRunTest", "firthAllTest"]
+defaultTargets = ["firthTest", "firthParserTest", "firthCompilerTest", "firthElaborateTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthRecordIntegrityTest", "firthAdapterIntegrationTest", "firthAgentDiagnosticTest", "firthPipelineTest", "smtBoundaryTest", "smtSolverTest", "firthReferenceRunTest", "firthAllTest"]
 testDriver = "firthAllTest"
 
 [[lean_lib]]
@@ -11,12 +11,17 @@ roots = ["Firth", "FirthReferenceRun"]
 [[lean_lib]]
 name = "FirthElaborator"
 srcDir = "src"
-roots = ["elaborator.Firth.Parser", "elaborator.Firth.Erasure", "elaborator.Firth.StackEffect", "smt.Firth.SmtBoundary", "elaborator.Firth.Refinement", "elaborator.Firth.Pipeline", "elaborator.FirthElaborator"]
+roots = ["elaborator.Firth.Parser", "elaborator.Firth.Names", "elaborator.Firth.Erasure", "elaborator.Firth.StackEffect", "smt.Firth.SmtBoundary", "smt.Firth.SmtSolver", "elaborator.Firth.Refinement", "elaborator.Firth.Pipeline", "elaborator.FirthElaborator"]
+
+[[lean_lib]]
+name = "FirthCompiler"
+srcDir = "src"
+roots = ["compiler.Firth.Digest", "compiler.Firth.Target", "compiler.Firth.WordType", "compiler.Firth.Lowering", "compiler.Firth.Compile"]
 
 [[lean_lib]]
 name = "FirthAgent"
 srcDir = "src"
-roots = ["agent.Firth.Agent.DiagnosticEnvelope", "agent.Firth.Agent.JsonMembers", "agent.Firth.Agent.Validation", "agent.Firth.Agent.ElaboratorDiagnostics"]
+roots = ["agent.Firth.Agent.DiagnosticEnvelope", "agent.Firth.Agent.JsonMembers", "agent.Firth.Agent.Validation", "agent.Firth.Agent.ElaboratorDiagnostics", "agent.Firth.Agent.ElaborateAdapter"]
 
 [[lean_lib]]
 name = "FirthAgentTests"
@@ -44,6 +49,26 @@ root = "elaborator.FirthPipelineTest"
 srcDir = "src"
 
 [[lean_exe]]
+name = "firthElaborateTest"
+root = "agent.FirthElaborateTest"
+srcDir = "src"
+
+[[lean_exe]]
+name = "firthElaborate"
+root = "agent.FirthElaborateCli"
+srcDir = "src"
+
+[[lean_exe]]
+name = "firthCompilerTest"
+root = "compiler.FirthCompilerTest"
+srcDir = "src"
+
+[[lean_exe]]
+name = "firthCompile"
+root = "compiler.FirthCompileCli"
+srcDir = "src"
+
+[[lean_exe]]
 name = "firthVmFixtures"
 root = "FirthVmFixtures"
 srcDir = "src/interpreter"
@@ -64,6 +89,16 @@ root = "elaborator.FirthRefinementTest"
 srcDir = "src"
 
 [[lean_exe]]
+name = "firthRecordIntegrityTest"
+root = "elaborator.FirthRecordIntegrityTest"
+srcDir = "src"
+
+[[lean_exe]]
+name = "firthAdapterIntegrationTest"
+root = "elaborator.FirthAdapterIntegrationTest"
+srcDir = "src"
+
+[[lean_exe]]
 name = "firthAgentDiagnosticTest"
 root = "agent.FirthDiagnosticEnvelopeTest"
 srcDir = "src"
@@ -71,6 +106,11 @@ srcDir = "src"
 [[lean_exe]]
 name = "firthAllTest"
 root = "agent.FirthAllTest"
+srcDir = "src"
+
+[[lean_exe]]
+name = "smtSolverTest"
+root = "smt.FirthSmtSolverTest"
 srcDir = "src"
 
 [[lean_exe]]

@@ -117,8 +117,14 @@ private def diagnosticVariant (diagnostic : RefinementDiagnostic) (payloadId cod
         related := diagnostic.body.related
         groupId := diagnostic.body.groupId } }
 
+private def externalIdentity (entry : SmtQueueEntry) : String :=
+  match entry.request with
+  | some request => canonicalRequestIdentity request
+  | none => ""
+
 private def recordExternal (entry : SmtQueueEntry) (outcome : ExternalOutcome) : PipelineResult :=
-  recordExternalOutcome "request-a" entry { profile := entry.profile, outcome }
+  recordExternalOutcome "request-a" entry
+    { profile := entry.profile, requestIdentity := externalIdentity entry, outcome }
 
 
 private def expectExternalDeferred (entry : SmtQueueEntry) (outcome : ExternalOutcome)
@@ -497,7 +503,8 @@ private def runTests : IO Unit := do
     "negative literals and coefficients use SMT-LIB numeral syntax"
   let mismatchedProfile := { defaultSolverProfile with version := "5.0.1" }
   let mismatchedResult := recordExternalOutcome "request-a" smtEntry
-    { profile := mismatchedProfile, outcome := .unknown }
+    { profile := mismatchedProfile, requestIdentity := externalIdentity smtEntry
+      outcome := .unknown }
   let mismatchQueue ← expectOneLeanQueue mismatchedResult "profile mismatch"
   expectEq mismatchQueue.reason .externalProfileMismatch
     "profile mismatch is deferred before interpreting the external outcome"
@@ -506,17 +513,114 @@ private def runTests : IO Unit := do
   let mutatedRequest := recordExternalOutcome "request-a"
     { smtEntry with
       request := some { checkedRequest with proofBindings := staleProofBindings } }
-    { profile := defaultSolverProfile, outcome := .unknown }
+    { profile := defaultSolverProfile, requestIdentity := externalIdentity smtEntry
+      outcome := .unknown }
   let mutatedRequestQueue ← expectOneLeanQueue mutatedRequest
     "proof-binding mutation in the request"
   expectEq mutatedRequestQueue.reason .externalRequestIneligible
     "mutated request proof bindings are rejected"
   let mutatedResult := recordExternalOutcome "request-a" smtEntry
-    { profile := defaultSolverProfile, proofBindings := staleProofBindings, outcome := .unknown }
+    { profile := defaultSolverProfile, proofBindings := staleProofBindings
+      requestIdentity := externalIdentity smtEntry, outcome := .unknown }
   let mutatedResultQueue ← expectOneLeanQueue mutatedResult
     "proof-binding mutation in the result"
   expectEq mutatedResultQueue.reason .externalProofMismatch
     "mutated result proof bindings are deferred before outcome interpretation"
+  -- A result answers one request. Without the identity binding, a verdict
+  -- produced for another obligation could be attached to this one.
+  let foreignResult := recordExternalOutcome "request-a" smtEntry
+    { profile := defaultSolverProfile, requestIdentity := "request(0:)"
+      outcome := .unknown }
+  let foreignQueue ← expectOneLeanQueue foreignResult "foreign request identity"
+  expectEq foreignQueue.reason .externalRequestIdentityMismatch
+    "a result bound to another request is deferred before outcome interpretation"
+  let unboundResult := recordExternalOutcome "request-a" smtEntry
+    { profile := defaultSolverProfile, outcome := .unknown }
+  let unboundQueue ← expectOneLeanQueue unboundResult "absent request identity"
+  expectEq unboundQueue.reason .externalRequestIdentityMismatch
+    "a result carrying no request identity is deferred, never interpreted"
+  -- Promotion happens at this boundary. A result that arrives already promoted
+  -- was checked by something else, and that is the one claim a record must not
+  -- rest on.
+  let prePromoted := recordExternal smtEntry (.checkedUnsat "unsat")
+  expectEq prePromoted.dischargeRecords.length 0
+    "a pre-promoted result creates no discharge record"
+  let prePromotedQueue ← expectOneLeanQueue prePromoted "pre-promoted result"
+  expectEq prePromotedQueue.reason .dischargeRecordRejected
+    "a pre-promoted result is deferred to Lean"
+  let prePromotedDiagnostic ← expectOneDiagnostic prePromoted "pre-promoted result"
+  let prePromotedEntry ← expectAt prePromotedDiagnostic.body.obligations 0 "pre-promoted result"
+  expectEq prePromotedEntry.data.value [("reason", "firth.smt.pre-promoted-result")]
+    "a pre-promoted result names why it was refused"
+
+  -- A bound, pinned unsat is promoted here, recorded, and rechecked before it
+  -- reaches the result boundary.
+  let discharged := recordExternal smtEntry (.uncheckedUnsat "unsat")
+  expectEq discharged.leanQueue.length 0
+    "a promoted unsat does not queue the obligation for Lean"
+  expectEq discharged.diagnostics.length 0
+    "a promoted unsat raises no diagnostic"
+  let record ← expectAt discharged.dischargeRecords 0 "discharge record"
+  expectEq record.result "unsat" "the record states the result it was created from"
+  expectEq record.obligation.obligationId smtEntry.obligation.obligationId
+    "the record binds the obligation it discharges"
+  expectEq record.normalisedFormulaHash
+    (canonicalNormalisedFormula checkedRequest.formula)
+    "the record binds the very formula the encoder consumed"
+  expectEq record.requestIdentity (canonicalRequestIdentity checkedRequest)
+    "the record binds the request it answers"
+  match recheckRecord smtEntry.obligation record with
+  | .ok rebuilt =>
+      expectEq rebuilt checkedRequest "recheck rebuilds the very request the record names"
+  | .error failure => fail s!"a fresh record failed recheck: {repr failure}"
+  let staleRecord := { record with
+    obligation := { record.obligation with bodyHash := "sha256:other" } }
+  match recheckRecord smtEntry.obligation staleRecord with
+  | .error .recordStale => pure ()
+  | result => fail s!"a record for another body was accepted: {repr result}"
+  let forgedObligation := { smtEntry.obligation with obligationId := "forged" }
+  match recheckRecord forgedObligation record with
+  | .error .recordStale => pure ()
+  | result => fail s!"a record rechecked against a forged obligation: {repr result}"
+  -- A checked result recorded against another request names a question the
+  -- solver never answered.
+  match checkUnsat checkedRequest
+      { profile := defaultSolverProfile
+        requestIdentity := canonicalRequestIdentity checkedRequest
+        outcome := .uncheckedUnsat "unsat" } with
+  | .error failure => fail s!"a pinned unsat was refused: {repr failure}"
+  | .ok checked =>
+      let otherRequest := { checkedRequest with smtLib := checkedRequest.smtLib ++ "\n" }
+      match makeDischargeRecord (obligationBinding smtEntry.obligation) otherRequest checked with
+      | .error .unpinnedRequest => pure ()
+      | result => fail s!"a checked result was recorded against another request: {repr result}"
+
+  -- The rerun verdict is what reaches the result boundary, and only a rechecked
+  -- one discharges.
+  let rerunDischarged := recordRerunVerdict "request-a" smtEntry.obligation (.rechecked record)
+  expectEq rerunDischarged.dischargeRecords [record]
+    "a rechecked rerun exposes its record through the result boundary"
+  expectEq rerunDischarged.leanQueue.length 0
+    "a rechecked rerun does not queue the obligation for Lean"
+  let rerunDrifted := recordRerunVerdict "request-a" smtEntry.obligation
+    (.driftedRecord .profileDrift)
+  expectEq rerunDrifted.dischargeRecords.length 0
+    "a drifted rerun exposes no record"
+  let driftedQueue ← expectOneLeanQueue rerunDrifted "drifted rerun"
+  expectEq driftedQueue.reason .dischargeRecordRejected
+    "a drifted rerun defers the obligation to Lean"
+  let driftedDiagnostic ← expectOneDiagnostic rerunDrifted "drifted rerun"
+  let driftedEntry ← expectAt driftedDiagnostic.body.obligations 0 "drifted rerun"
+  expectEq driftedEntry.data.value [("reason", "firth.smt.profile-drift")]
+    "a drifted rerun names the drift that stopped it"
+  let rerunRefused := recordRerunVerdict "request-a" smtEntry.obligation
+    (.refused .digestUnavailable)
+  expectEq rerunRefused.dischargeRecords.length 0
+    "a refused rerun exposes no record"
+  let rerunDisproved := recordRerunVerdict "request-a" smtEntry.obligation
+    (.notRechecked .notUnsat (.sat { integers := [("x", 1)], booleans := [] }))
+  expectEq rerunDisproved.dischargeRecords.length 0
+    "a rerun that no longer answers unsat exposes no record"
   let oversizedExternalObligation : Obligation :=
     { smtEntry.obligation with
       obligationId := "attacker-supplied-over-budget-obligation"
@@ -605,8 +709,8 @@ private def runTests : IO Unit := do
     "external-resource-exhausted"
   expectExternalDeferred smtEntry (.malformed "bad sexpr") .externalMalformed "external-malformed"
   expectExternalDeferred smtEntry (.crashed "exit 9") .externalCrash "external-crash"
-  expectExternalDeferred smtEntry (.uncheckedUnsat "forged") .uncheckedUnsatRejected
-    "unchecked-unsat-rejected"
+  expectExternalDeferred smtEntry (.checkedUnsat "forged") .dischargeRecordRejected
+    "firth.smt.pre-promoted-result"
 
   let falseConclusion := oneBody ctx [.intEq (.variable "x") (.literal 1)] []
     [.intLt (.variable "x") (.literal 0)]

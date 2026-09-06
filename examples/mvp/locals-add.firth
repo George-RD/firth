@@ -1,0 +1,3 @@
+: main
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ result:Int^many)
+  locals { a b } { a b prim + };

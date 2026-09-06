@@ -21,95 +21,31 @@
     }
 
     #[test]
-    fn lean_reference_fixture_vectors_execute_in_rust() {
+    fn lean_reference_fixture_vectors_agree_through_the_conformance_boundary() {
         let fixture = include_str!("../fixtures/kernel.tsv");
+        let registry = default_registry();
+        let mut rows = 0;
         for line in fixture
             .lines()
             .filter(|line| !line.is_empty() && !line.starts_with('#'))
         {
-            let fixture = decode_fixture_line(line).expect("valid fixture row");
-            let expected_outcome = fixture.outcome.as_str();
-            let (stack, cost, frames) = match expected_outcome {
-                "terminal" => {
-                    let report = execute_report_with_stack(
-                        &fixture.image,
-                        fixture.initial_stack.clone(),
-                        64,
-                        &default_registry(),
-                    )
-                    .expect(&fixture.name);
-                    (report.stack, report.cost, report.frames)
-                }
-                "stuck" => {
-                    let ExecutionOutcome::Trap(trap) = execute_diagnostic_with_stack(
-                        &fixture.image,
-                        fixture.initial_stack,
-                        64,
-                        &default_registry(),
-                    ) else {
-                        panic!("expected trap: {}", fixture.name)
-                    };
-                    assert_eq!(trap.code, "stack-fault", "{}", fixture.name);
-                    (trap.stack, trap.cost, trap.frames)
-                }
-                other => panic!("unsupported fixture outcome {other}: {}", fixture.name),
-            };
+            let case = decode_fixture_line(line).expect("valid fixture row");
+            let reference = fixture_reference(&case).expect("frozen outcome vocabulary");
+            let observed = observe_image(
+                &case.image,
+                case.initial_stack.clone(),
+                64,
+                &registry,
+            );
             assert_eq!(
-                render_fixture_stack(&stack),
-                fixture.final_stack,
+                compare_conformance(&reference, &observed),
+                ConformanceVerdict::Agree,
                 "{}",
-                fixture.name
+                case.name
             );
-            assert_eq!(
-                cost.total.saturating_sub(cost.word_entries),
-                fixture.lean_cost,
-                "Lean cost: {}",
-                fixture.name
-            );
-            assert_eq!(
-                render_fixture_frames(&frames),
-                fixture.residual_frames,
-                "{}",
-                fixture.name
-            );
-            assert_eq!(
-                cost.total, fixture.target_cost,
-                "target cost: {}",
-                fixture.name
-            );
+            rows += 1;
         }
-    }
-
-    fn render_fixture_stack(stack: &[Value]) -> String {
-        stack
-            .iter()
-            .map(|value| match value {
-                Value::Int(value) => value.to_string(),
-                Value::Bool(value) => value.to_string(),
-                Value::Quotation(quotation) => {
-                    if quotation.usage(&default_registry()) == Usage::Many {
-                        String::from("quotation-many")
-                    } else {
-                        String::from("quotation-linear")
-                    }
-                }
-                Value::Bytes(_) => String::from("bytes"),
-                Value::PrimitiveValue { .. } => String::from("primitive"),
-                Value::World => String::from("world"),
-            })
-            .collect::<Vec<_>>()
-            .join(",")
-    }
-
-    fn render_fixture_frames(frames: &[FrameTrace]) -> String {
-        if frames.is_empty() {
-            return String::from("-");
-        }
-        frames
-            .iter()
-            .map(|frame| format!("{}@{}", frame.word, frame.pc))
-            .collect::<Vec<_>>()
-            .join(";")
+        assert_eq!(rows, 15, "the frozen corpus lost or gained a row");
     }
 
     fn encoded_call_image(word_name: &str, call_name: &str) -> Vec<u8> {
