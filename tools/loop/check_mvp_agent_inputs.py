@@ -249,6 +249,7 @@ def main() -> int:
                 "encoding": "json",
                 "fields": [
                     "request_id:string",
+                    "entry:string (required for multiword requests)",
                     "checked_words:array",
                     "erased_word_types:array",
                     "gamma_version:string",
