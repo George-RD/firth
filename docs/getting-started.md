@@ -182,7 +182,8 @@ numbers are unbounded; the finite VM's refusal is not evidence of agreement.
 | Negative integers, text and character execution | Not implemented by the portable compiler/adapters |
 | `send`, file/network I/O, external resources | Not implemented by this portable execution path |
 | Refinements and linear effects | Wider checker/solver facilities exist; this runner is not an end-to-end effectful/refinement application interface |
-| Standard library, package manager, editor language server | Future work |
+| Core vocabulary | `stdlib/core.firth` contains identity, duplication, discard and exchange examples; it is not automatically imported |
+| General-purpose standard library, package manager, editor language server | Future work |
 
 In particular, the `send-once` example in the frozen agent guide describes the
 intended linear-effect surface, not an executable network operation available

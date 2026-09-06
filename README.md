@@ -30,10 +30,11 @@ quotations, conditionals and named locals can be composed within that profile.
 The only executable portable primitive is `prim +`.
 
 This is not yet a general-purpose application platform. Text, signed integer
-execution, file/network I/O, `send`, a package manager, a standard library and
+execution, file/network I/O, `send`, a package manager, a general-purpose standard library and
 an editor language server are not provided by this runner. The broader
 language design and checker support more than the portable execution adapter.
-See the [support table](docs/getting-started.md#supported-execution-profile)
+A small core vocabulary exists in `stdlib/core.firth`; it is not automatically
+loaded into programs. See the [support table](docs/getting-started.md#supported-execution-profile)
 before choosing a program to build.
 
 ## Documentation
