@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 """Fail-closed behaviour tests for the pinned MVP acceptance gate.
 
-Every case here runs the gate against a synthetic repository tree, never the
-real tracker, and every case asserts a refusal. The gate verifies provenance
-before it executes anything, so a provenance violation is observable without a
-toolchain: the assertions below check both that the gate refuses and that it
-refuses for the stated reason.
+Provenance cases run the copied gate against synthetic repository trees, never
+the real tracker. Execution wiring cases inspect adapter requests using an
+injected runner. The separate language-examples gate executes real binaries.
+Every refusal here must occur for its stated reason, not a missing toolchain.
 """
 
 from __future__ import annotations
 
 import hashlib
+import importlib.util
+import io
+from contextlib import redirect_stderr, redirect_stdout
+from unittest.mock import patch
 import json
 import shutil
-import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -35,6 +37,19 @@ def sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def transcript(index: int) -> str:
+    paths = ["docs/firth-agent-guide.md", *INTERFACE_PATHS]
+    context = "\n".join(f"- `{path}`" for path in paths)
+    return (
+        "---\n"
+        f"file: examples/mvp/app{index}.firth\n"
+        "type: model-authorship-transcript\n"
+        f"output_sha256: {sha256(APPLICATION)}\n"
+        "---\n# Transcript\n\n## Context\n\n"
+        f"{context}\n\n## Model output\n\n```firth\n{APPLICATION}```\n"
+    )
+
+
 class MvpAgentGateTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
@@ -53,7 +68,7 @@ class MvpAgentGateTests(unittest.TestCase):
                 APPLICATION, encoding="utf-8"
             )
             (self.root / "meta" / "sources" / f"app{index}.md").write_text(
-                "transcript\n", encoding="utf-8"
+                transcript(index), encoding="utf-8"
             )
 
     def tearDown(self) -> None:
@@ -66,6 +81,7 @@ class MvpAgentGateTests(unittest.TestCase):
             "source_sha256": sha256(APPLICATION),
             "transcript_path": f"meta/sources/app{index}.md",
             "transcript_output_sha256": sha256(APPLICATION),
+            "transcript_sha256": sha256(transcript(index)),
         }
         entry.update(overrides)
         return entry
@@ -97,13 +113,18 @@ class MvpAgentGateTests(unittest.TestCase):
         )
 
     def run_gate(self) -> tuple[int, str]:
-        result = subprocess.run(
-            ["python3", str(self.root / "tools" / "loop" / "mvp_agent_gate.py")],
-            text=True,
-            capture_output=True,
-            check=False,
-        )
-        return result.returncode, result.stderr
+        # Import the copied entry point so ROOT still resolves to the synthetic
+        # tree. A fresh module per call prevents state leaking between cases.
+        spec = importlib.util.spec_from_file_location(
+            "synthetic_gate", self.root / "tools/loop/mvp_agent_gate.py")
+        gate = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(gate)
+        stderr, stdout = io.StringIO(), io.StringIO()
+        with redirect_stderr(stderr), redirect_stdout(stdout), patch.object(
+            gate, "build_toolchain", side_effect=gate.GateError("toolchain: unavailable in fixture")
+        ):
+            code = gate.main()
+        return code, stderr.getvalue()
 
     def assert_refused(self, needle: str) -> None:
         code, stderr = self.run_gate()
@@ -206,6 +227,131 @@ class MvpAgentGateTests(unittest.TestCase):
             error.startswith("toolchain:") or error.startswith("lake:") or error.startswith("cargo:"),
             error,
         )
+
+    def test_transcript_byte_drift_is_refused(self) -> None:
+        self.manifest()
+        (self.root / "meta/sources/app0.md").write_text("fabricated\n", encoding="utf-8")
+        self.assert_refused("transcript has drifted")
+
+    def test_repinning_a_transcript_does_not_skip_its_content_checks(self) -> None:
+        cases = [
+            (transcript(0).replace(sha256(APPLICATION), "0" * 64), "records an output"),
+            (transcript(0).replace("  42;", "  99;"), "model output bytes"),
+            (transcript(0).replace("examples/mvp/app0.firth", "other.firth"), "another source path"),
+            (transcript(0).replace("docs/firth-agent-guide.md", "docs/other.md"), "recorded inputs"),
+            (transcript(0).replace("## Model output", "## Other"), "Model output section"),
+            (transcript(0).replace("```firth", "```python"), "Firth output block"),
+            (transcript(0).replace("type: model", "type: model\ntype: model"), "duplicate frontmatter"),
+        ]
+        for text, reason in cases:
+            with self.subTest(reason=reason):
+                (self.root / "meta/sources/app0.md").write_text(text, encoding="utf-8")
+                self.manifest([self.entry(0, transcript_sha256=sha256(text)), self.entry(1), self.entry(2)])
+                self.assert_refused(reason)
+
+    def test_an_application_name_cannot_escape_the_scratch_workspace(self) -> None:
+        for name in ("../outside", "/tmp/outside", ".", "..", "a/b", "a\\b"):
+            with self.subTest(name=name):
+                self.manifest([self.entry(0, name=name), self.entry(1), self.entry(2)])
+                self.assert_refused("safe application name")
+
+
+class ExecutionWiringTests(unittest.TestCase):
+    def setUp(self) -> None:
+        spec = importlib.util.spec_from_file_location("tested_gate", LOOP / "mvp_agent_gate.py")
+        self.gate = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.gate)
+
+    def observations(self):
+        shared = {"status": "success", "trap": None, "stack": [], "trace": []}
+        reference = {**shared, "cost": {"total": 2, "steps": 0}, "world_observation": {"ids": []}}
+        target = {**shared, "cost": {"total": 3, "kernel": 2, "steps": 0}, "world_observation": {"bytes": [0]}}
+        return reference, target
+
+    def test_word_entry_overhead_is_not_a_kernel_mismatch(self) -> None:
+        self.gate.compare(*self.observations(), "calls-helper")
+
+    def test_changed_kernel_cost_is_refused(self) -> None:
+        reference, target = self.observations()
+        target["cost"]["kernel"] = 1
+        with self.assertRaisesRegex(self.gate.GateError, "kernel cost"):
+            self.gate.compare(reference, target, "bad")
+
+    def test_incomplete_or_malformed_costs_never_agree(self) -> None:
+        for cost in ({}, {"total": 2, "kernel": 2}, {"total": 3, "kernel": True, "steps": 0}):
+            reference, target = self.observations()
+            target["cost"] = cost
+            with self.subTest(cost=cost), self.assertRaises(self.gate.GateError):
+                self.gate.compare(reference, target, "bad")
+
+    def test_two_missing_stacks_do_not_count_as_agreement(self) -> None:
+        reference, target = self.observations()
+        del reference["stack"]
+        del target["stack"]
+        with self.assertRaisesRegex(self.gate.GateError, "incomplete"):
+            self.gate.compare(reference, target, "bad")
+
+    def test_effectful_observations_are_not_reduced_to_one_bit(self) -> None:
+        reference, target = self.observations()
+        reference["world_observation"] = {"ids": [1]}
+        target["world_observation"] = {"bytes": [0, 99]}
+        with self.assertRaisesRegex(self.gate.GateError, "effectful"):
+            self.gate.compare(reference, target, "bad")
+
+    def test_dual_fuel_exhaustion_is_not_success(self) -> None:
+        reference, target = self.observations()
+        for observation in (reference, target):
+            observation.update(status="trap", trap="fuel-exhausted")
+        with self.assertRaisesRegex(self.gate.GateError, "inconclusive"):
+            self.gate.compare(reference, target, "bounded")
+
+    def test_input_values_distinguish_booleans_from_integers(self) -> None:
+        encoded = self.gate.initial_values([True, 1])
+        self.assertEqual([value["literal"]["type"] for value in encoded], ["bool", "nat"])
+        for values in (["1"], [-1], [2**63], [None], [1.0], {}):
+            with self.subTest(values=values), self.assertRaises(self.gate.GateError):
+                self.gate.initial_values(values)
+
+    def test_multiword_rebuild_preserves_entry_dictionary_and_markers(self) -> None:
+        main = {"name": "main", "checking_state": "checked", "proof_state": "available",
+                "program": [{"kind": "word", "name": "helper"}]}
+        helper = {"name": "helper", "checking_state": "checked", "proof_state": "available",
+                  "program": [{"kind": "lit", "value": {"type": "nat", "value": 42}}]}
+        elaboration = {
+            "status": "success", "checked_words": [main, helper],
+            "kernel_programs": [{"word": word["name"], "program": word["program"]} for word in (main, helper)],
+            "erased_word_types": [{"word": "main", "type": {"input": {"row": None, "items": []}}}],
+        }
+        calls = {}
+        reference, target = self.observations()
+        def adapter(command, request, workspace, label):
+            calls[label] = request
+            if label.endswith("elaborate"):
+                return elaboration
+            if label.endswith("compile"):
+                return {"status": "success", "target_program": {"entry": "main", "words": [main, helper]}}
+            return reference if label.endswith("reference-run") else target
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source.firth"
+            source.write_text(": main ( -- n:Int ) helper; : helper ( -- n:Int ) 42;", encoding="utf-8")
+            with patch.object(self.gate, "adapter", adapter):
+                result = self.gate.rebuild({"name": "test", "entry": "main", "source": str(source),
+                                           "source_path": "source.firth"}, root)
+        self.assertEqual(calls["test compile"]["entry"], "main")
+        request = calls["test reference-run"]
+        self.assertEqual(set(request["dictionary"]), {"main", "helper"})
+        self.assertEqual(request["checked_kernel"]["program"], main["program"])
+        self.assertEqual(request["dictionary"]["helper"]["proof_state"], helper["proof_state"])
+        self.assertEqual(result["kernel_cost"], 2)
+        self.assertEqual(result["cost"], 3)
+
+    def test_unchecked_dictionary_values_are_refused(self) -> None:
+        for state in ({"checking_state": "unchecked", "proof_state": "available"},
+                      {"checking_state": "checked", "proof_state": "deferred"}):
+            word = {"name": "main", "program": [], **state}
+            with self.subTest(state=state), self.assertRaises(self.gate.GateError):
+                self.gate.checked_dictionary({"checked_words": [word]})
 
 
 def render_toml(data: dict[str, object]) -> str:

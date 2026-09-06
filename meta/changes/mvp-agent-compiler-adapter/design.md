@@ -37,9 +37,10 @@ claiming to be compared, and it rejects duplicate JSON members through
 `Firth.Agent.rejectDuplicateMembers` so a malformed record fails closed the
 same way at every adapter.
 
-The entry word is the last checked word. A Firth definition can only call
-words defined before it, so the final definition is the only one that can
-reach every other; naming it the entry needs no extra request member.
+The optional `entry` request field selects a source word by name. It is required
+for multiword requests and validated before lowering. A single-word request may
+omit it because its entry is unambiguous. Source order does not determine
+reachability: words can refer forward, backward, or recursively.
 
 `debug_locations` is an index correspondence rather than an assertion: the §3
 table emits exactly one instruction per atom, and `compileRequest` checks that

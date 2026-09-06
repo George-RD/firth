@@ -22,8 +22,9 @@ authorship.
 Rebuild. Each manifest-listed application is then rebuilt in a scratch
 workspace that holds only that application's source. The four pinned adapters
 run against it in turn: elaborate, compile, run on the VM, and run on the Lean
-reference interpreter. The two observations are then compared on every field
-`[comparison]` names.
+reference interpreter. Terminal status, final stack and kernel-comparable cost are compared.
+Trace lengths are bounded; full trace equivalence is not established. The
+portable profile refuses effectful world observations.
 
 The gate is deterministic: no clock, no randomness, no network, and a fixed
 fuel budget. It is invoked by `python3 tools/loop/coverage.py --run-gates`,
@@ -103,6 +104,46 @@ def load_manifest() -> dict[str, Any]:
     raise AssertionError("unreachable")
 
 
+def verify_transcript(path: Path, entry: dict[str, Any], inputs: dict[str, Any]) -> None:
+    """Bind the complete transcript, its declared inputs and the recorded source.
+
+    This detects drift, not independent authorship. The latter cannot be proved
+    from a transcript supplied by the same agent that supplied the program.
+    """
+    expected = entry.get("transcript_sha256")
+    if not isinstance(expected, str) or not HASH.fullmatch(expected):
+        fail("transcript_sha256: expected a lowercase SHA-256")
+    if digest(path) != expected:
+        fail("transcript_sha256: the transcript has drifted")
+    text = path.read_bytes().decode("utf-8")
+    parts = text.split("---\n", 2)
+    if len(parts) != 3 or parts[0]:
+        fail("transcript: missing frontmatter")
+    metadata: dict[str, str] = {}
+    for line in parts[1].splitlines():
+        key, separator, value = line.partition(":")
+        if not separator or key in metadata:
+            fail("transcript: malformed or duplicate frontmatter field")
+        metadata[key] = value.strip()
+    if metadata.get("type") != "model-authorship-transcript":
+        fail("transcript: wrong record type")
+    if metadata.get("file") != entry["source_path"]:
+        fail("transcript: records another source path")
+    if metadata.get("output_sha256") != entry["source_sha256"]:
+        fail("transcript: records an output that is not the checked-in source")
+    sections = parts[2].split("## Model output\n")
+    if len(sections) != 2:
+        fail("transcript: expected one Model output section")
+    recorded_inputs = re.findall(r"(?m)^- `([^`\n]+)`[ \t]*$", sections[0])
+    if recorded_inputs != [inputs["guide_path"], *inputs["interface_paths"]]:
+        fail("transcript: recorded inputs do not match the manifest")
+    outputs = re.findall(r"(?ms)^```firth[ \t]*\n(.*?)^```[ \t]*$", sections[1])
+    if len(outputs) != 1:
+        fail("transcript: expected one Firth output block")
+    if hashlib.sha256(outputs[0].encode("utf-8")).hexdigest() != entry["source_sha256"]:
+        fail("transcript: model output bytes do not match the source")
+
+
 def verify_provenance(data: dict[str, Any]) -> list[dict[str, str]]:
     """Verifies every pinned input and returns the application entries.
 
@@ -173,13 +214,13 @@ def verify_provenance(data: dict[str, Any]) -> list[dict[str, str]]:
             if key not in entry:
                 fail(f"{field}.{key}: missing")
         name = entry["name"]
-        if not isinstance(name, str) or not name:
-            fail(f"{field}.name: expected a non-empty name")
+        if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", name):
+            fail(f"{field}.name: expected a safe application name")
         if name in names:
             fail(f"{field}.name: duplicate application {name}")
         names.add(name)
         source = manifest_path(entry["source_path"], f"{field}.source_path")
-        manifest_path(entry["transcript_path"], f"{field}.transcript_path")
+        transcript = manifest_path(entry["transcript_path"], f"{field}.transcript_path")
         for key in ("source_sha256", "transcript_output_sha256"):
             if not isinstance(entry[key], str) or not HASH.fullmatch(entry[key]):
                 fail(f"{field}.{key}: expected a lowercase SHA-256")
@@ -191,9 +232,11 @@ def verify_provenance(data: dict[str, Any]) -> list[dict[str, str]]:
                 f"{field}.transcript_output_sha256: the transcript records an output "
                 f"that is not the checked-in {entry['source_path']}"
             )
+        verify_transcript(transcript, entry, inputs)
         verified.append(
             {
                 "name": name,
+                "entry": entry.get("entry", name),
                 "source_path": entry["source_path"],
                 "source": str(source),
             }
@@ -275,31 +318,26 @@ def expect_status(response: dict[str, Any], expected: str, label: str) -> None:
         fail(f"{label}: status {response.get('status')!r}, expected {expected!r}: {detail}")
 
 
-def world_observed(observation: dict[str, Any], label: str) -> bool:
-    """Projects the two hosts' different world representations onto one bit.
+def compare(reference: dict[str, Any], target: dict[str, Any], name: str,
+            fuel: int = FUEL) -> None:
+    """Compare terminal results and kernel costs; validate bounded traces.
 
-    The reference interpreter reports the `World` identifiers alive in a
-    configuration; the VM reports the registry's observation bytes, which start
-    at a single zero. Neither is derivable from the other, so the comparable
-    fact is whether the effect thread was touched at all.
+    The two trace schemas differ. This does not assert trace equivalence or
+    effectful equivalence: the portable adapter currently runs pure programs.
     """
-    if not isinstance(observation, dict):
-        fail(f"{label}: world_observation is not an object")
-    if "ids" in observation:
-        return bool(observation["ids"])
-    if "bytes" in observation:
-        return list(observation["bytes"]) != [0]
-    fail(f"{label}: world_observation has neither ids nor bytes")
-    raise AssertionError("unreachable")
-
-
-def compare(reference: dict[str, Any], target: dict[str, Any], name: str) -> None:
-    """Compares two observations on every field `[comparison]` names."""
     if reference.get("status") == "trap" and reference.get("trap") == "fuel-exhausted" \
             and target.get("status") == "trap" and target.get("trap") == "fuel-exhausted":
         # `[comparison] fuel_exhaustion = "bounded-fuel-inconclusive"`: a dual
         # exhaustion is never agreement, so it cannot pass the gate either.
         fail(f"{name}: both hosts exhausted the budget, which is inconclusive, not agreement")
+    for side, observation in (("reference", reference), ("target", target)):
+        required = {"status", "trap", "stack", "trace", "cost", "world_observation"}
+        if not required.issubset(observation):
+            fail(f"{name}: {side} observation is incomplete")
+        if observation["status"] != "success" or observation["trap"] is not None:
+            fail(f"{name}: {side} did not terminate successfully: {observation['trap']}")
+        if not isinstance(observation["stack"], list):
+            fail(f"{name}: {side} stack is not an array")
     if reference.get("status") != target.get("status"):
         fail(f"{name}: status {reference.get('status')!r} against {target.get('status')!r}")
     if reference.get("trap") != target.get("trap"):
@@ -313,26 +351,89 @@ def compare(reference: dict[str, Any], target: dict[str, Any], name: str) -> Non
         trace = observation.get("trace")
         if not isinstance(trace, list):
             fail(f"{name}: {side} trace is not an array")
-        if len(trace) > FUEL:
+        if len(trace) > fuel:
             fail(f"{name}: {side} trace is not bounded by the fuel budget")
     reference_cost = reference.get("cost")
     target_cost = target.get("cost")
     if not isinstance(reference_cost, dict) or not isinstance(target_cost, dict):
         fail(f"{name}: a cost report is not an object")
-    if reference_cost.get("total") != target_cost.get("total"):
+    for side, report, keys in (
+        ("reference", reference_cost, ("total", "steps")),
+        ("target", target_cost, ("total", "kernel", "steps")),
+    ):
+        if any(type(report.get(key)) is not int or report[key] < 0 for key in keys):
+            fail(f"{name}: {side} cost report is malformed")
+    if target_cost["kernel"] > target_cost["total"]:
+        fail(f"{name}: kernel cost exceeds target total")
+    if reference_cost["total"] != target_cost["kernel"]:
         fail(
             f"{name}: cost {reference_cost.get('total')!r} against "
-            f"{target_cost.get('total')!r}"
+            f"{target_cost.get('kernel')!r} (target kernel cost)"
         )
-    if world_observed(reference.get("world_observation"), f"{name} reference") != world_observed(
-        target.get("world_observation"), f"{name} target"
-    ):
-        fail(f"{name}: the two hosts disagree about whether the effect thread was touched")
+    if reference["world_observation"] != {"ids": []} or target["world_observation"] != {"bytes": [0]}:
+        fail(f"{name}: effectful observations are not supported by the portable comparison")
 
 
-def rebuild(entry: dict[str, str], workspace: Path) -> dict[str, Any]:
+def initial_values(values: Any) -> list[dict[str, Any]]:
+    """Encode portable input values once for both execution adapters."""
+    if not isinstance(values, list):
+        fail("initial stack: expected a JSON array")
+    encoded = []
+    for value in values:
+        if type(value) is bool:
+            kind = "bool"
+        elif type(value) is int and 0 <= value <= 9223372036854775807:
+            kind = "nat"
+        else:
+            fail("initial stack: use booleans or integers from 0 to 9223372036854775807")
+        encoded.append({"kind": "literal", "literal": {"type": kind, "value": value}})
+    return encoded
+
+
+def checked_dictionary(elaboration: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Preserve evidence markers and bodies, including the root for recursion."""
+    dictionary = {}
+    for word in elaboration["checked_words"]:
+        if not isinstance(word, dict) or not isinstance(word.get("name"), str) or not word["name"]:
+            fail("elaborate: malformed checked word")
+        name = word["name"]
+        if name in dictionary:
+            fail(f"elaborate: duplicate checked word {name}")
+        if word.get("checking_state") != "checked" or word.get("proof_state") != "available":
+            fail(f"elaborate: unavailable checking or proof for {name}")
+        if not isinstance(word.get("program"), list):
+            fail(f"elaborate: malformed program for {name}")
+        dictionary[name] = {key: word[key] for key in ("checking_state", "proof_state", "program")}
+    return dictionary
+
+
+def validate_initial_stack(elaboration: dict[str, Any], entry: str,
+                           stack: list[dict[str, Any]]) -> None:
+    """Check external inputs against the selected word's erased boundary."""
+    types = [item for item in elaboration["erased_word_types"] if item.get("word") == entry]
+    if len(types) != 1:
+        fail(f"entry {entry}: missing or ambiguous checked type")
+    boundary = types[0]["type"]["input"]
+    items = boundary["items"]
+    if len(stack) < len(items) or (boundary["row"] is None and len(stack) != len(items)):
+        fail(f"entry {entry}: initial stack does not match its declared input count")
+    suffix = stack[len(stack) - len(items):] if items else []
+    for expected, value in zip(items, suffix):
+        actual = "Int" if value["literal"]["type"] == "nat" else "Bool"
+        if expected != {"kind": "base", "name": actual, "usage": "many"}:
+            fail(f"entry {entry}: initial stack type mismatch; expected {expected}, got {actual}")
+
+
+def rebuild(entry: dict[str, Any], workspace: Path, *,
+            stack: list[Any] | None = None, fuel: int = FUEL) -> dict[str, Any]:
     """Rebuilds one application in a workspace holding only its source."""
     name = entry["name"]
+    if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", name):
+        fail("application: unsafe scratch directory name")
+    if type(fuel) is not int or not 0 <= fuel <= 100000:
+        fail("fuel: expected an integer from 0 to 100000")
+    initial_stack = initial_values([] if stack is None else stack)
+    entry_word = entry.get("entry", name)
     scratch = workspace / name
     scratch.mkdir()
     source_name = Path(entry["source_path"]).name
@@ -358,10 +459,16 @@ def rebuild(entry: dict[str, str], workspace: Path) -> dict[str, Any]:
         if not isinstance(elaboration.get(key), list) or not elaboration[key]:
             fail(f"{name} elaborate: {key} is empty")
 
+    dictionary = checked_dictionary(elaboration)
+    if not isinstance(entry_word, str) or entry_word not in dictionary:
+        fail(f"entry: unknown checked word {entry_word!r}")
+    validate_initial_stack(elaboration, entry_word, initial_stack)
+
     target_program = adapter(
         [str(LEAN_BIN / "firthCompile")],
         {
             "request_id": name,
+            "entry": entry_word,
             "checked_words": elaboration["checked_words"],
             "erased_word_types": elaboration["erased_word_types"],
             "gamma_version": GAMMA_VERSION,
@@ -377,13 +484,13 @@ def rebuild(entry: dict[str, str], workspace: Path) -> dict[str, Any]:
         {
             "request_id": name,
             "target_program": target_program["target_program"],
-            "initial_stack": [],
+            "initial_stack": initial_stack,
             "image": {
                 "image_version": 1,
                 "gamma_version": TARGET_GAMMA_VERSION,
             },
             "gamma_version": GAMMA_VERSION,
-            "fuel": FUEL,
+            "fuel": fuel,
         },
         scratch,
         f"{name} vm-run",
@@ -395,28 +502,29 @@ def rebuild(entry: dict[str, str], workspace: Path) -> dict[str, Any]:
         {
             "request_id": name,
             "checked_kernel": {
-                "checking_state": "checked",
-                "proof_state": "available",
+                **dictionary[entry_word],
                 "gamma_version": GAMMA_VERSION,
-                "program": elaboration["kernel_programs"][-1]["program"],
             },
-            "initial_stack": [],
-            "dictionary": {},
+            "initial_stack": initial_stack,
+            "dictionary": dictionary,
             "gamma_version": GAMMA_VERSION,
-            "fuel": FUEL,
+            "fuel": fuel,
         },
         scratch,
         f"{name} reference-run",
     )
     expect_status(reference, "success", f"{name} reference-run")
 
-    compare(reference, vm, name)
+    compare(reference, vm, name, fuel)
     return {
         "name": name,
-        "entry": target_program["target_program"]["entry"],
+        "entry": entry_word,
+        "target_entry": target_program["target_program"]["entry"],
         "words": len(target_program["target_program"]["words"]),
         "stack": vm["stack"],
         "cost": vm["cost"]["total"],
+        "kernel_cost": vm["cost"]["kernel"],
+        "fuel": fuel,
     }
 
 

@@ -85,6 +85,8 @@ class MvpAgentCoverageTests(unittest.TestCase):
             transcript = ROOT / entry["transcript_path"]
             self.assertTrue(source.is_file(), entry["source_path"])
             self.assertTrue(transcript.is_file(), entry["transcript_path"])
+            self.assertEqual(entry["transcript_sha256"], digest(transcript),
+                             f"{entry['name']}: the transcript has drifted")
             actual = digest(source)
             self.assertEqual(entry["source_sha256"], actual, f"{entry['name']} has drifted")
             self.assertEqual(

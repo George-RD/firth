@@ -149,8 +149,8 @@ def check_structure(specification: dict[str, Any], elaboration: dict[str, Any]) 
         f"structure.words: elaborated {names}, specified {structure['words']}",
     )
     require(
-        names[-1] == structure["entry"],
-        f"structure.entry: the last definition is {names[-1]!r}, specified {structure['entry']!r}",
+        structure["entry"] in names,
+        f"structure.entry: unknown word {structure['entry']!r}",
     )
 
     programs = {item["word"]: item["program"] for item in elaboration["kernel_programs"]}
@@ -297,6 +297,7 @@ def main() -> int:
                 [str(LEAN_BIN / "firthCompile")],
                 {
                     "request_id": "s5",
+                    "entry": specification["structure"]["entry"],
                     "checked_words": elaboration["checked_words"],
                     "erased_word_types": elaboration["erased_word_types"],
                     "gamma_version": GAMMA_VERSION,

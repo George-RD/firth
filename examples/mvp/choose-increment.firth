@@ -1,0 +1,17 @@
+\ The entry is deliberately first. Helpers may be declared after callers.
+: main
+  (forall ρ; ρ n:Int^many flag:Bool^many -- ρ result:Int^many)
+  [ increment ] [ identity ] if;
+
+: increment
+  (forall ρ; ρ n:Int^many -- ρ result:Int^many)
+  1 prim +;
+
+: identity
+  (forall ρ; ρ n:Int^many -- ρ result:Int^many)
+  ;
+
+\ Being last must not make this the entry.
+: unused
+  ( -- result:Int^many )
+  999;

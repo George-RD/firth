@@ -50,10 +50,11 @@ private def field (name : String) : List (String × Json) → Option Json
   | [] => none
   | (key, value) :: rest => if key == name then some value else field name rest
 
-private def object (context : String) (value : Json) (allowed : List String) :
+private def object (context : String) (value : Json) (allowed : List String)
+    (optional : List String := []) :
     Except String (List (String × Json)) := do
   let values ← fields context value
-  if values.any (fun (key, _) => !allowed.any (· == key)) then
+  if values.any (fun (key, _) => !(allowed ++ optional).any (· == key)) then
     err s!"{context}: unknown member"
   else if allowed.any (fun key => (field key values).isNone) then
     err s!"{context}: missing member"
@@ -160,6 +161,7 @@ private def decodeErasedType (value : Json) : Except String (String × WordType.
 /-- One decoded `firth.checked-kernel.v1` request. -/
 structure Request where
   requestId : String
+  entry : String
   words : List Lowering.CheckedWord
   atomCounts : List Nat
 
@@ -181,6 +183,7 @@ private def pairWords (words : List RequestWord) (types : List (String × WordTy
 def decodeRequest (value : Json) : Except String Request := do
   let values ← object "request" value
     ["request_id", "checked_words", "erased_word_types", "gamma_version", "target_version"]
+    ["entry"]
   let requestId ← nonempty "request.request_id" =<< reqStr "request" "request_id" values
   if (← reqStr "request" "gamma_version" values) != gammaVersion then
     err "request: unsupported gamma version"
@@ -199,7 +202,13 @@ def decodeRequest (value : Json) : Except String Request := do
   let types ← decodeTypes
     (← array "request.erased_word_types" (← required "request" "erased_word_types" values))
   let (checked, counts) ← pairWords words types
-  pure { requestId, words := checked, atomCounts := counts }
+  let entry ← match field "entry" values with
+    | some value => nonempty "request.entry" =<< str "request.entry" value
+    | none => match words with
+      | [word] => pure word.name
+      | _ => err "request.entry: required for multiple checked words"
+  if !names.any (· == entry) then err s!"request.entry: unknown word {entry}"
+  pure { requestId, entry, words := checked, atomCounts := counts }
 
 private def quote (value : String) : String := (Json.str value).compress
 
@@ -300,9 +309,9 @@ private def failureJson (requestId : String) (error : Lowering.CompileError) : S
 
 /-- Compiles one decoded request.
 
-The entry word is the last checked word: a Firth definition can only call
-words defined before it, so the final definition is the only one that can
-reach every other, and naming it the entry needs no extra request member. -/
+The entry is a source word name, not a target name or a position. Multiword
+requests must select it explicitly. A single-word request may omit it for
+backwards compatibility because its entry is unambiguous. -/
 def compileRequest (request : Request) : Except String String := do
   match Lowering.compileWords request.words with
   | .error error => pure (failureJson request.requestId error)
@@ -313,9 +322,9 @@ def compileRequest (request : Request) : Except String String := do
         for (entry, atoms) in entries.zip request.atomCounts do
           if entry.code.length != atoms then
             err s!"internal: {entry.name} lowered {entry.code.length} instructions for {atoms} atoms"
-        match entries.getLast? with
-        | none => err "internal: no compiled words"
-        | some entry =>
+        match (request.words.zip entries).find? (fun pair => pair.1.name == request.entry) with
+        | none => err s!"request.entry: unknown word {request.entry}"
+        | some (_, entry) =>
             pure (successJson request.requestId entry (request.words.map (·.name)) entries)
 
 private def validateJsonMembers (input : String) : Except String Unit :=

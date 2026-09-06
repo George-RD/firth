@@ -75,5 +75,7 @@ jobs:
           cargo test --locked
       - name: Rebuild and compare MVP applications
         run: python3 tools/loop/mvp_agent_gate.py
+      - name: Execute documented multiword programs and failure cases
+        run: python3 tools/loop/check_language_examples.py
       - name: Check bounded cost witness
         run: python3 tools/loop/check_s5_envelope.py

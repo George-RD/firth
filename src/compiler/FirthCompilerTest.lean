@@ -123,10 +123,41 @@ private def wordTypeWitnesses : IO Unit := do
   | .ok rendered => fail s!"duplicate binders rendered: {rendered}"
   | .error _ => pure ()
 
+/-- Entry selection must not depend on definition order. -/
+private def entrySelectionTests : IO Unit := do
+  let mainWord := "{\"name\":\"main\",\"checking_state\":\"checked\",\"proof_state\":\"available\",\"program\":[{\"kind\":\"word\",\"name\":\"helper-word\"}]}"
+  let helperWord := "{\"name\":\"helper-word\",\"checking_state\":\"checked\",\"proof_state\":\"available\",\"program\":[" ++ literal 42 ++ "]}"
+  let multi (reverse : Bool) : String :=
+    "{\"request_id\":\"r1\",\"entry\":\"main\",\"checked_words\":[" ++
+    (if reverse then helperWord ++ "," ++ mainWord else mainWord ++ "," ++ helperWord) ++
+    "],\"erased_word_types\":[{\"word\":\"main\",\"type\":" ++ scheme intOutput ++
+    "},{\"word\":\"helper-word\",\"type\":" ++ scheme intOutput ++
+    "}],\"gamma_version\":\"0.1\",\"target_version\":\"0.1\"}"
+  for reverse in [false, true] do
+    expectContains "explicit entry is independent of source order" (multi reverse)
+      "\"entry\":\"main\""
+    expectContains "word calls still resolve forward and backward" (multi reverse)
+      "\"op\":\"call-word\",\"name\":\"helper_hword\""
+  expectContains "explicit source entry is mangled"
+    ((multi false).replace "\"entry\":\"main\"" "\"entry\":\"helper-word\"")
+    "\"entry\":\"helper_hword\""
+  expectError "multiword request without entry is ambiguous"
+    ((multi false).replace "\"entry\":\"main\"," "")
+  expectError "unknown entry is refused"
+    ((multi false).replace "\"entry\":\"main\"" "\"entry\":\"absent\"")
+  expectError "empty entry is refused"
+    ((multi false).replace "\"entry\":\"main\"" "\"entry\":\"\"")
+  expectError "non-string entry is refused"
+    ((multi false).replace "\"entry\":\"main\"" "\"entry\":7")
+  expectError "duplicate entry is refused"
+    ((multi false).replace "\"entry\":\"main\""
+      "\"entry\":\"main\",\"entry\":\"helper-word\"")
+
 def main : IO Unit := do
   encodingWitnesses
   mangleWitnesses
   wordTypeWitnesses
+  entrySelectionTests
 
   expectContains "literal compiles" (request "literal-int" ("[" ++ literal 42 ++ "]"))
     "\"status\":\"success\""

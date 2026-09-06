@@ -1,0 +1,3 @@
+: main
+  (forall ρ; ρ n:Int^many -- ρ result:Int^many)
+  dup prim +;
