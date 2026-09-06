@@ -1,9 +1,7 @@
 # Firth architecture blueprint.
 # Firth is a concatenative language elaborated through Lean 4 and compiled to
-# a Forth-class VM. The repo is spec-phase: no source code exists yet, so
-# module paths under src/, spec/, stdlib/ and specs/ are declarations of
-# intent, reconciled once implementation begins. See files/firth-prd.md and
-# files/firth-kernel-spec-draft.md for the requirements these modules encode.
+# a Forth-class VM. Paths describe implemented components and declared roadmap
+# components. See files/firth-prd.md and files/firth-kernel-spec-draft.md.
 # Grammar reference: https://github.com/cairn-framework/cairn/blob/HEAD/docs/blueprint.md
 
 System Firth "Concatenative language elaborated through Lean 4 and compiled to a Forth-class VM" id "firth" {
@@ -98,6 +96,7 @@ System Firth "Concatenative language elaborated through Lean 4 and compiled to a
 
         Module Loop "Autonomous dev-loop command, procedures, and deterministic unit selector" id "firth.governance.loop" {
             path ".claude"
+            path ".github"
             path "tools/loop"
             path "docs"
         }

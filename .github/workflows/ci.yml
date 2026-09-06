@@ -1,0 +1,70 @@
+name: Firth CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, claude/firth-workflow-orchestration-rmqipj]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firth-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python regression tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Run control-plane regression suites
+        run: |
+          python3 --version
+          for suite in tools/loop/test_*.py; do
+            python3 "$suite"
+          done
+      - name: Check whitespace
+        run: git diff --check
+
+  language:
+    name: Lean, Rust and source-to-execution gates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install pinned Lean toolchain
+        uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596
+        with:
+          auto-config: 'false'
+          build: 'false'
+          test: 'false'
+          lint: 'false'
+          use-mathlib-cache: 'false'
+      - name: Build Lean targets
+        run: lake build
+      - name: Verify governed proof bindings without rewriting them
+        run: |
+          python3 tools/loop/check_zero_admit.py
+          python3 tools/loop/update_smt_proof_bindings.py --check
+          python3 tools/loop/update_proof_manifest.py --check
+      - name: Run Lean suites
+        run: lake test
+      - name: Verify Rust VM
+        working-directory: src/runtime/vm
+        run: |
+          rustup show
+          cargo fmt --check
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo test --locked
+      - name: Rebuild and compare MVP applications
+        run: python3 tools/loop/mvp_agent_gate.py
+      - name: Check bounded cost witness
+        run: python3 tools/loop/check_s5_envelope.py
