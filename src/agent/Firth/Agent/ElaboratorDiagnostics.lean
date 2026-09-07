@@ -319,18 +319,6 @@ private def internalEnvelope (context : EmissionContext) (span : Firth.Elaborato
     expectedStack := none
     actualStack := none }
 
-private def admissionEnvelope (context : EmissionContext) (code : String)
-    (params : Json) (span : Firth.Elaborator.Span) : Envelope :=
-  envelope context {
-    code
-    severity := "error"
-    messageKey := messageKey code
-    messageParams := params
-    location := locationFromSpan context.source span
-    cause := { kind := "elaboration", data := params }
-    expectedStack := none
-    actualStack := none }
-
 private def withContextSource (context : EmissionContext) (envelope : Envelope) :
     Envelope :=
   { envelope with
@@ -346,10 +334,6 @@ private def pipelineDiagnosticEnvelope (context : EmissionContext) :
   | .erasure _ error => erasureEnvelope context error
   | .stackEffect diagnostic => stackEffectEnvelope context diagnostic
   | .refinement _ diagnostic => withContextSource context (refinementEnvelope diagnostic)
-  | .unsupportedSourceRefinement word span =>
-      admissionEnvelope context "firth.refinement.unsupported-source" (namedParams word) span
-  | .emptyProgram span =>
-      admissionEnvelope context "firth.elaboration.empty-program" (.mkObj []) span
   | .internal span => internalEnvelope context span
 
 def elaboratePipeline (context : EmissionContext) (source : String)

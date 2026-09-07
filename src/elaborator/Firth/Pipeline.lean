@@ -60,8 +60,6 @@ inductive PipelineDiagnostic where
   | erasure (word : String) (error : ErasureError)
   | stackEffect (diagnostic : StackEffect.Diagnostic)
   | refinement (word : String) (diagnostic : Refinement.RefinementDiagnostic)
-  | unsupportedSourceRefinement (word : String) (span : Span)
-  | emptyProgram (span : Span)
   | internal (span : Span)
   deriving Repr, BEq
 
@@ -155,7 +153,8 @@ private def unsupportedSourceRefinements (word : WordDefinition) : List Pipeline
     | .row .. => []
     | .value _ type _ =>
         type.refinements.map fun refinement =>
-          .unsupportedSourceRefinement word.name refinement.span
+          .parse { code := "firth.refinement.unsupported-source"
+                   primary := refinement.span, actual := some word.name, cause := .validation }
 
 def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResult :=
   match parse source with
@@ -164,7 +163,9 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
       match resolveNames file.declarations with
       | .error error => .failure [.parse error]
       | .ok words =>
-          if words.isEmpty then .failure [.emptyProgram file.span]
+          if words.isEmpty then
+            .failure [.parse { code := "firth.elaboration.empty-program"
+                               primary := file.span, cause := .validation }]
           else
             let unsupported := words.flatMap unsupportedSourceRefinements
             if !unsupported.isEmpty then .failure unsupported
