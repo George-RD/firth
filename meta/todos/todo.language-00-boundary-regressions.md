@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.elaborator
-status: open
+status: done
 created: 2026-09-08
 ---
 
@@ -17,4 +17,4 @@ Reject unchecked guarantees and malformed adapter input.
 
 ## Traceability
 
-PR #109; PRD G2-G4, R4/R8/R12. Implementation is on the PR; acceptance remains pending the final gates.
+PR #109; PRD G2-G4, R4/R8/R12. Verified on PR commit 296bc85e0fe92c7301b14c98cd3acca701537099; CI run 34160894897 passed all three jobs. See meta/changes/trustworthy-language-baseline/verification.md. This closes only the boundary-fix task, not baseline acceptance or merge.
