@@ -76,11 +76,12 @@ def quotation_ownership(usage: str) -> None:
 def malformed_capture_state(captures: list[Any], consumed: list[bool], placement: str) -> None:
     quotation = {"kind": "quotation", "code": [], "captures": captures, "consumed": consumed}
     if placement == "instruction":
-        instruction = {"op": "push-quote", "code": [], "captures": captures, "consumed": consumed}
+        instruction = {"op": "push-quote", "quotation": quotation}
     elif placement == "literal":
         instruction = {"op": "push-literal", "literal": quotation}
     else:
-        instruction = {"op": "push-quote", "code": [], "captures": [quotation], "consumed": [False]}
+        instruction = {"op": "push-quote", "quotation": {"kind": "quotation", "code": [],
+                       "captures": [quotation], "consumed": [False]}}
     # Non-zero placeholder digests are intentional: malformed capture shape
     # must be rejected BEFORE canonical hashing or evidence/digest admission.
     word = {"name": "main", "erased_word_type": "(--)", "code": [instruction],
@@ -96,6 +97,9 @@ def malformed_capture_state(captures: list[Any], consumed: list[bool], placement
 
 
 def main() -> int:
+    if not __debug__:
+        print(json.dumps({"status": "error", "error": "assertions must be enabled"}), file=sys.stderr)
+        return 1
     try:
         gate.build_toolchain()
     except (gate.GateError, OSError) as error:
