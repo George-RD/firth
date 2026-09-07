@@ -91,6 +91,8 @@ jobs:
           cargo fmt --check
           cargo clippy --locked --all-targets -- -D warnings
           cargo test --locked
+      - name: Reject unchecked claims and malformed adapter input
+        run: python3 tools/loop/check_trust_boundaries.py 2>&1 | tee /tmp/language-trust.log
       - name: Rebuild and compare MVP applications
         run: python3 tools/loop/mvp_agent_gate.py 2>&1 | tee /tmp/language-mvp.log
       - name: Execute documented multiword programs and failure cases

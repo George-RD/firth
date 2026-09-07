@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+"""Black-box regressions for source guarantees and untrusted adapter inputs.
+
+Runs real pinned binaries, reports every case, and fails on a crash, timeout,
+missing diagnostic, or accidental acceptance. No injected checker/solver.
+"""
+from __future__ import annotations
+
+import copy
+import json
+import subprocess
+import sys
+from typing import Any, Callable
+
+import mvp_agent_gate as gate
+
+
+def invoke(command: list[str], payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    process = subprocess.run(
+        command, input=json.dumps(payload), text=True, encoding="utf-8",
+        capture_output=True, cwd=gate.ROOT, timeout=30, check=False,
+    )
+    if process.returncode not in (0, 1):
+        raise AssertionError(f"adapter crashed/exited {process.returncode}: {process.stderr[:500]}")
+    output = process.stdout if process.returncode == 0 else process.stderr
+    result = json.loads(output)
+    if not isinstance(result, dict):
+        raise AssertionError("adapter did not return a JSON object")
+    return process.returncode, result
+
+
+def source_request(source: str) -> dict[str, Any]:
+    return {"request_id": "trust-source", "source_path": "trust.firth", "source_text": source,
+            "language_version": "0.1", "gamma_version": "0.1"}
+
+
+def source_refusal(source: str, code: str) -> None:
+    rc, result = invoke([str(gate.LEAN_BIN / "firthElaborate")], source_request(source))
+    assert rc == 0 and result.get("status") == "failure", result
+    assert "checked_words" not in result and "kernel_programs" not in result, result
+    # Check the diagnostic's actual code, not a coincidental string in prose.
+    diagnostics = result.get("diagnostics", [])
+    assert any(d.get("body", {}).get("code") == code for d in diagnostics), result
+
+
+def source_success() -> None:
+    rc, result = invoke([str(gate.LEAN_BIN / "firthElaborate")],
+                        source_request(": main ( -- n:Int^many ) 42 ;"))
+    assert rc == 0 and result.get("status") == "success", result
+    assert len(result.get("checked_words", [])) == 1, result
+
+
+def compile_request(usage: str) -> dict[str, Any]:
+    stack = {"row": None, "items": []}
+    output = {"row": None, "items": [{"kind": "base", "name": "Int", "usage": "many"}]}
+    literal = {"kind": "lit", "value": {"type": "nat", "value": 42}}
+    return {"request_id": "trust-compile", "entry": "main", "gamma_version": "0.1",
+            "target_version": "0.1", "checked_words": [{"name": "main",
+            "checking_state": "checked", "proof_state": "available", "program": [
+                {"kind": "push", "value": {"kind": "quotation", "body": [literal], "usage": usage}},
+                {"kind": "call"}]}], "erased_word_types": [{"word": "main", "type": {
+                    "row_variables": [], "input": stack, "output": output}}]}
+
+
+def quotation_ownership(usage: str) -> None:
+    rc, result = invoke([str(gate.LEAN_BIN / "firthCompile")], compile_request(usage))
+    assert rc == 0, result
+    if usage == "many":
+        assert result.get("status") == "success", result
+    else:
+        assert result.get("status") == "failure", result
+        assert result.get("compile_error", {}).get("code") == "firth.compile.unsupported-value", result
+        assert "target_program" not in result, result
+
+
+def malformed_capture_state(captures: list[Any], consumed: list[bool], placement: str) -> None:
+    quotation = {"kind": "quotation", "code": [], "captures": captures, "consumed": consumed}
+    if placement == "instruction":
+        instruction = {"op": "push-quote", "code": [], "captures": captures, "consumed": consumed}
+    elif placement == "literal":
+        instruction = {"op": "push-literal", "literal": quotation}
+    else:
+        instruction = {"op": "push-quote", "code": [], "captures": [quotation], "consumed": [False]}
+    # Non-zero placeholder digests are intentional: malformed capture shape
+    # must be rejected BEFORE canonical hashing or evidence/digest admission.
+    word = {"name": "main", "erased_word_type": "(--)", "code": [instruction],
+            "body_digest": "01" * 32, "kernel_evidence_digest": "01" * 32,
+            "refinement_evidence_digest": "01" * 32, "generation": 0}
+    request = {"request_id": "trust-vm", "target_program": {
+        "format_version": 1, "entry": "main", "words": [word]}, "initial_stack": [],
+        "image": {"image_version": 1, "gamma_version": 1}, "gamma_version": "0.1", "fuel": 32}
+    rc, result = invoke([str(gate.VM_BINARY), "vm-run"], request)
+    assert rc == 1 and result.get("status") == "error", result
+    assert result.get("code") == "invalid-request", result
+    assert "capture state length" in result.get("error", ""), result
+
+
+def main() -> int:
+    try:
+        gate.build_toolchain()
+    except (gate.GateError, OSError) as error:
+        print(json.dumps({"status": "error", "error": str(error)}), file=sys.stderr)
+        return 1
+    checks: list[tuple[str, Callable[[], None]]] = [("plain typed source", source_success)]
+    for name, source in (
+        ("false postcondition", ": main ( -- n:Int^many{n > 0} ) 0 ;"),
+        ("true but unsupported postcondition", ": main ( -- n:Int^many{n > 0} ) 1 ;"),
+        ("precondition", ": main ( n:Int^many{n > 0} -- n:Int^many ) ;"),
+        ("helper contract", ": helper ( -- n:Int^many{n > 0} ) 0 ; : main ( -- n:Int^many ) helper ;"),
+        ("vocabulary contract", "vocab policy { : main ( -- n:Int^many{n > 0} ) 0 ; }"),
+    ):
+        checks.append((name, lambda s=source: source_refusal(s, "firth.refinement.unsupported-source")))
+    for name, source in (("empty source", ""), ("whitespace source", " \n "),
+                         ("empty vocabulary", "vocab empty { }")):
+        checks.append((name, lambda s=source: source_refusal(s, "firth.elaboration.empty-program")))
+    for usage in ("many", "linear"):
+        checks.append((f"{usage} quotation ownership", lambda u=usage: quotation_ownership(u)))
+    for placement in ("instruction", "literal", "nested"):
+        for name, captures, consumed in (
+            ("extra state", [], [True]),
+            ("missing state", [{"kind": "int", "value": 1}], []),
+            ("bitmap overflow", [{"kind": "int", "value": 1}], [False] * 8 + [True]),
+        ):
+            checks.append((f"{placement}: {name}", lambda c=copy.deepcopy(captures),
+                           s=list(consumed), p=placement: malformed_capture_state(c, s, p)))
+    results = []
+    for name, check in checks:
+        try:
+            check()
+            results.append({"case": name, "status": "passed"})
+        except (AssertionError, OSError, ValueError, subprocess.TimeoutExpired) as error:
+            results.append({"case": name, "status": "failed", "error": str(error)})
+    failed = sum(result["status"] == "failed" for result in results)
+    print(json.dumps({"status": "error" if failed else "ok", "passed": len(results) - failed,
+                      "failed": failed, "cases": results}, sort_keys=True))
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
