@@ -60,7 +60,7 @@ satisfied_by = ["scope-language-visibility-model"]
 [obligation.scope-toolchain-elaborator]
 node = "firth.toolchain.elaborator"
 source = "PRD 4.2 elaborator"
-satisfied_by = ["scope-toolchain-elaborator"]
+satisfied_by = ["scope-toolchain-elaborator", "language-00-boundary-regressions", "language-06-source-refinement-execution"]
 
 [obligation.scope-toolchain-interpreter]
 node = "firth.toolchain.interpreter"
@@ -70,22 +70,22 @@ satisfied_by = ["reference-interpreter"]
 [obligation.scope-toolchain-compiler]
 node = "firth.toolchain.compiler"
 source = "PRD 4.2 compiler"
-satisfied_by = ["mvp-agent-compiler-adapter"]
+satisfied_by = ["mvp-agent-compiler-adapter", "language-02-compiler-evidence", "language-11-arithmetic-comparison"]
 
 [obligation.scope-toolchain-diffharness]
 node = "firth.toolchain.diffharness"
 source = "PRD 4.2 differential test harness"
-satisfied_by = ["diffharness-fuzz-strategy"]
+satisfied_by = ["diffharness-fuzz-strategy", "language-04-differential-execution"]
 
 [obligation.scope-toolchain-smt]
 node = "firth.toolchain.smt"
 source = "PRD 4.2 SMT integration"
-satisfied_by = ["refinement-discharge-design"]
+satisfied_by = ["refinement-discharge-design", "language-01-smt-record-admission", "language-06-source-refinement-execution"]
 
 [obligation.scope-toolchain-agent-interface]
 node = "firth.toolchain.agent"
 source = "PRD 4.2 agent interface"
-satisfied_by = ["diagnostic-schema"]
+satisfied_by = ["diagnostic-schema", "language-20-agent-workflow"]
 
 [obligation.scope-toolchain-signature-search]
 node = "firth.toolchain.agent"
@@ -96,7 +96,7 @@ satisfied_by = []
 [obligation.scope-runtime-vm]
 node = "firth.runtime.vm"
 source = "PRD 4.3 VM implementation"
-satisfied_by = ["rust-vm-implementation"]
+satisfied_by = ["rust-vm-implementation", "language-03-runtime-conformance"]
 
 [obligation.scope-runtime-image]
 node = "firth.runtime.image"
@@ -111,7 +111,7 @@ satisfied_by = ["rust-vm-patch-protocol"]
 [obligation.scope-ecosystem-stdlib]
 node = "firth.ecosystem.stdlib"
 source = "PRD 4.4 standard library"
-satisfied_by = ["scope-ecosystem-stdlib"]
+satisfied_by = ["scope-ecosystem-stdlib", "language-12-data-and-modules"]
 
 [obligation.scope-ecosystem-lsp]
 node = "firth.ecosystem.lsp"
@@ -162,7 +162,7 @@ satisfied_by = ["rust-vm-patch-protocol", "elaborator-refinement-discharge"]
 [obligation.req-r8]
 node = "firth.language.kernel"
 source = "PRD R8"
-satisfied_by = ["req-r8"]
+satisfied_by = ["req-r8", "language-01-smt-record-admission", "language-02-compiler-evidence"]
 
 [obligation.req-r9]
 node = "firth.language.kernel"
@@ -182,12 +182,12 @@ satisfied_by = ["req-r11"]
 [obligation.req-r12]
 node = "firth.toolchain.agent"
 source = "PRD R12"
-satisfied_by = ["pin-lean-toolchain", "diagnostic-schema", "component-spec-boundaries"]
+satisfied_by = ["pin-lean-toolchain", "diagnostic-schema", "component-spec-boundaries", "language-20-agent-workflow"]
 
 [obligation.req-r13]
 node = "firth.toolchain.agent"
 source = "PRD R13"
-satisfied_by = ["diagnostic-schema"]
+satisfied_by = ["diagnostic-schema", "language-20-agent-workflow"]
 
 [obligation.req-r14]
 node = "firth.language.surface"
@@ -197,7 +197,7 @@ satisfied_by = ["surface-syntax-spec"]
 [obligation.req-r15]
 node = "firth.language.types"
 source = "PRD R15"
-satisfied_by = ["kernel-spec-freeze", "surface-syntax-spec", "refinement-discharge-design"]
+satisfied_by = ["kernel-spec-freeze", "surface-syntax-spec", "refinement-discharge-design", "language-06-source-refinement-execution"]
 
 [obligation.req-r16]
 node = "firth.toolchain.agent"
@@ -267,3 +267,21 @@ node = "firth.toolchain.agent"
 source = "dec.mvp-gate-provenance (MVP reading of PRD S5/S7 per dec.mvp-completion clause 4)"
 gate = "tools/loop/mvp_agent_gate.py"
 satisfied_by = ["mvp-agent-authoring"]
+
+# Maintainer-authorised acceptance strengthening; dec.usable-language-milestones.
+# Future implementation gates must be pinned before their task is marked done.
+[obligation.usable-language-baseline]
+node = "firth.governance.loop"
+source = "dec.usable-language-milestones M0 (PRD G1-G8)"
+gate = "tools/loop/check_trust_boundaries.py"
+satisfied_by = ["language-00-boundary-regressions", "language-01-smt-record-admission", "language-02-compiler-evidence", "language-03-runtime-conformance", "language-04-differential-execution", "language-05-baseline-acceptance"]
+
+[obligation.usable-inventory-component]
+node = "firth.toolchain.agent"
+source = "dec.usable-language-milestones M1 (PRD G9/S5)"
+satisfied_by = ["language-06-source-refinement-execution", "language-10-inventory-contract", "language-11-arithmetic-comparison", "language-12-data-and-modules", "language-13-inventory-component"]
+
+[obligation.agent-maintained-component]
+node = "firth.toolchain.agent"
+source = "dec.usable-language-milestones M2 (bounded PRD G8/S7 pilot)"
+satisfied_by = ["language-20-agent-workflow", "language-21-docs-only-change-trial"]

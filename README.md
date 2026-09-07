@@ -39,6 +39,9 @@ before choosing a program to build.
 
 ## Documentation
 
+Start with the [roadmap to a useful language](docs/roadmap.md) for acceptance
+milestones and the tracked correctness/application work still open.
+
 - [Getting started](docs/getting-started.md): the executable user and agent workflow.
 - [Agent language guide](docs/firth-agent-guide.md): the frozen v0.1 language
   guide used by the original authored corpus. Its full design surface is wider

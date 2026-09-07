@@ -35,7 +35,7 @@ jobs:
         with:
           name: source-snapshot
           path: /tmp/firth-source.tar.gz
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: error
       - name: Run control-plane regression suites
         run: |
@@ -80,6 +80,8 @@ jobs:
           python3 tools/loop/update_proof_manifest.py --check
       - name: Run Lean suites
         run: lake test 2>&1 | tee /tmp/language-lean-tests.log
+      - name: Verify reference kernel fixtures
+        run: bash tools/loop/check_kernel_fixtures.sh 2>&1 | tee /tmp/language-fixtures.log
       - name: Test canonical names and lexical imports
         run: lake env lean --run src/elaborator/FirthNamesTest.lean 2>&1 | tee /tmp/language-names.log
       - name: Test real solver pipes
@@ -99,11 +101,52 @@ jobs:
         run: python3 tools/loop/check_language_examples.py 2>&1 | tee /tmp/language-examples.log
       - name: Check bounded cost witness
         run: python3 tools/loop/check_s5_envelope.py 2>&1 | tee /tmp/language-s5.log
+      - name: Validate active coverage and execute every pinned gate
+        run: |
+          python3 tools/loop/select_unit.py --validate
+          python3 tools/loop/coverage.py --validate
+          python3 tools/loop/coverage.py --run-gates | tee /tmp/language-coverage.log
+          python3 -c 'import json,sys; r=json.load(open("/tmp/language-coverage.log")); sys.exit(bool(r["failing_gates"] or r["missing_gates"]))'
       - name: Retain execution diagnostics
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: language-diagnostics
           path: /tmp/language-*.log
-          retention-days: 1
+          retention-days: 7
+          if-no-files-found: ignore
+
+  governance:
+    name: Cairn architecture and governance gates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Install checksum-pinned Cairn 0.9.0
+        run: |
+          archive="$RUNNER_TEMP/cairn.tar.xz"
+          curl --proto '=https' --tlsv1.2 --fail --location --retry 2 --max-time 90 \
+            https://github.com/cairn-framework/cairn/releases/download/v0.9.0/cairn-framework-x86_64-unknown-linux-gnu.tar.xz \
+            --output "$archive"
+          echo "bf1499ef311f5ac9e4ea96536d326356703369f6202fe65429ec2ab10583b3f3  $archive" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/cairn-bin"
+          tar -xJf "$archive" -C "$RUNNER_TEMP/cairn-bin" --strip-components=1
+          "$RUNNER_TEMP/cairn-bin/cairn" --version
+          echo "$RUNNER_TEMP/cairn-bin" >> "$GITHUB_PATH"
+      - name: Scan declared architecture
+        run: cairn scan --json 2>&1 | tee /tmp/governance-scan.log
+      - name: Run every governance hook
+        run: cairn hook all --json 2>&1 | tee /tmp/governance-hooks.log
+      - name: Ensure checks did not rewrite tracked evidence
+        run: git diff --exit-code
+      - name: Retain governance diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: governance-diagnostics
+          path: /tmp/governance-*.log
+          retention-days: 7
           if-no-files-found: ignore

@@ -181,13 +181,28 @@ numbers are unbounded; the finite VM's refusal is not evidence of agreement.
 | Quotations as external inputs/results | Not exposed by this runner |
 | Negative integers, text and character execution | Not implemented by the portable compiler/adapters |
 | `send`, file/network I/O, external resources | Not implemented by this portable execution path |
-| Refinements and linear effects | Wider checker/solver facilities exist; this runner is not an end-to-end effectful/refinement application interface |
+| Source refinement annotations `{...}` | Rejected with `firth.refinement.unsupported-source` until source predicates and bodies are translated and checked, even when the annotation happens to be true |
+| Linear effects and pushed linear quotation values | Not supported by the portable compiler; unsupported ownership is rejected rather than erased |
 | Core vocabulary | `stdlib/core.firth` contains identity, duplication, discard and exchange examples; it is not automatically imported |
 | General-purpose standard library, package manager, editor language server | Future work |
 
 In particular, the `send-once` example in the frozen agent guide describes the
 intended linear-effect surface, not an executable network operation available
 through `firth_run.py`. An unsupported primitive must be rejected by compilation.
+
+## Source guarantees are not inferred from syntax
+
+A word containing a refinement annotation is currently refused before erasure.
+For example, `: main ( -- n:Int^many{n > 0} ) 0 ;` must not receive checked
+artefacts. Returning `1` instead does not make source refinement checking
+implemented: that annotated word is refused too. Write a plain typed word for
+typed-only execution; do not remove a required contract merely to get a pass.
+Empty source, including a vocabulary with no words, is a structured
+`firth.elaboration.empty-program` failure.
+
+The solver's internal unit/integration facilities do not establish that a
+predicate written in source was translated or discharged. See the
+[roadmap](roadmap.md) for the separate source-refinement implementation task.
 
 ## What a successful run establishes
 
