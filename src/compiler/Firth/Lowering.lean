@@ -164,7 +164,10 @@ partial def lowerProgram (context : Context) :
 private partial def lowerValue (context : Context) :
     Firth.Interpreter.Value → Except CompileError Target.Value
   | .literal value => lowerLiteral context value
-  | .quotation body _ => do
+  | .quotation _ .linear =>
+      .error (.unsupportedValue context.word
+        "linear quotation ownership has no capture-free target representation")
+  | .quotation body .many => do
       let code ← lowerProgram context body
       pure (.quotation code [] [])
   | .world _ =>

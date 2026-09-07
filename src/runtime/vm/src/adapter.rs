@@ -206,6 +206,15 @@ fn adapter_quotation(value: &Json, context: &str, depth: usize) -> Result<Quotat
             }
         }
     }
+    // Canonical encoding indexes a bitmap sized from captures. Validate the
+    // shape before sealing/hashing; round-trip decoding is too late here.
+    if captures.len() != consumed.len() {
+        return Err(AdapterError::field(
+            "invalid-request",
+            context,
+            "capture state length must match captures",
+        ));
+    }
     Ok(Quotation {
         code,
         captures,
