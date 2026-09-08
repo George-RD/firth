@@ -31,11 +31,19 @@ honest than a whole-file hash, which would churn on a comment.
 
 Usage: python3 tools/loop/update_smt_proof_bindings.py [--check]
 
-`--check` recomputes without writing and exits non-zero on drift.
+`--check` recomputes without writing and exits non-zero on drift. Unknown
+arguments are errors, never an instruction to enter write mode.
+
+Every translation rule needs a same-name soundness region. The established
+four rule regions and the two proof-only bridge regions remain mandatory;
+new stages must be introduced as matched rule/proof pairs. This checks the
+coverage of declared regions, not the semantic applicability of Lean proofs
+or unmarked helper dependencies.
 """
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import re
 import sys
@@ -53,6 +61,13 @@ PROOF_FIELD = "translationSoundnessProofHashes"
 
 BEGIN = re.compile(r"^-- firth:(translation-rules|translation-soundness)-begin (\S+)$")
 END = re.compile(r"^-- firth:(translation-rules|translation-soundness)-end (\S+)$")
+# This line-comment namespace is reserved for exact delimiters. Recognise
+# near-misses before ignoring ordinary text, including outside any region.
+MARKER_LIKE = re.compile(r"^\s*--\s*firth\s*:", re.IGNORECASE)
+
+REQUIRED_RULE_REGIONS = frozenset({"encoder", "serialiser", "normaliser", "vc-generator"})
+# These theorems bridge stages rather than defining another translation rule.
+REQUIRED_PROOF_ONLY_REGIONS = frozenset({"adapter", "normaliser-validity"})
 
 BINDINGS = re.compile(
     r"(def defaultSmtProofBindings : SmtProofBindings :=\n)"
@@ -71,6 +86,8 @@ def regions(source: Path, text: str) -> tuple[list[tuple[str, str]], list[tuple[
     for number, line in enumerate(text.splitlines(), start=1):
         begin = BEGIN.match(line)
         end = END.match(line)
+        if MARKER_LIKE.match(line) and not (begin or end):
+            raise SystemExit(f"{source}:{number}: malformed SMT region marker")
         if begin:
             if open_kind is not None:
                 raise SystemExit(f"{source}:{number}: a region is already open")
@@ -83,6 +100,8 @@ def regions(source: Path, text: str) -> tuple[list[tuple[str, str]], list[tuple[
             if (end.group(1), end.group(2)) != (open_kind, open_name):
                 raise SystemExit(f"{source}:{number}: region markers do not match")
             body = "\n".join(collected) + "\n"
+            if not body.strip():
+                raise SystemExit(f"{source}:{number}: region {open_name!r} is empty")
             target = rules if open_kind == "translation-rules" else proofs
             target.append((open_name or "", body))
             open_kind, open_name = None, None
@@ -119,6 +138,21 @@ def allRegions() -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
         raise SystemExit("no translation-rule region is marked")
     if not proofs:
         raise SystemExit("no translation-soundness region is marked")
+    missing_rules = REQUIRED_RULE_REGIONS - ruleNames
+    if missing_rules:
+        raise SystemExit(f"missing required translation-rule regions: {', '.join(sorted(missing_rules))}")
+    reserved_rules = ruleNames & REQUIRED_PROOF_ONLY_REGIONS
+    if reserved_rules:
+        raise SystemExit(f"proof-only regions cannot be translation rules: {', '.join(sorted(reserved_rules))}")
+    missing_bridges = REQUIRED_PROOF_ONLY_REGIONS - proofNames
+    if missing_bridges:
+        raise SystemExit(f"missing required soundness regions: {', '.join(sorted(missing_bridges))}")
+    unproved_rules = ruleNames - proofNames
+    if unproved_rules:
+        raise SystemExit(f"translation-rule regions without soundness regions: {', '.join(sorted(unproved_rules))}")
+    unexpected_proofs = proofNames - ruleNames - REQUIRED_PROOF_ONLY_REGIONS
+    if unexpected_proofs:
+        raise SystemExit(f"soundness regions without translation rules: {', '.join(sorted(unexpected_proofs))}")
     return rules, proofs
 
 
@@ -127,8 +161,10 @@ def render(field: str, hashes: list[str]) -> str:
     return f"    {field} :=\n      [{entries}]"
 
 
-def main() -> int:
-    check = "--check" in sys.argv[1:]
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+    parser.add_argument("--check", action="store_true", help="verify bindings without writing")
+    check = parser.parse_args(argv).check
     text = BINDINGS_SOURCE.read_text(encoding="utf-8")
     rules, proofs = allRegions()
 
@@ -145,9 +181,11 @@ def main() -> int:
         + render(PROOF_FIELD, proof_hashes)
         + " }\n"
     )
-    match = BINDINGS.search(text)
-    if match is None:
-        raise SystemExit(f"{BINDINGS_SOURCE}: defaultSmtProofBindings was not found")
+    matches = list(BINDINGS.finditer(text))
+    declarations = re.findall(r"^def defaultSmtProofBindings\b", text, flags=re.MULTILINE)
+    if len(matches) != 1 or len(declarations) != 1:
+        raise SystemExit(f"{BINDINGS_SOURCE}: expected exactly one defaultSmtProofBindings declaration")
+    match = matches[0]
     updated = text[: match.start()] + replacement + text[match.start(2) :]
 
     if check:
