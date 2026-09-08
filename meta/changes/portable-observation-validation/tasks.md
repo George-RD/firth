@@ -6,5 +6,5 @@
 - [x] Add regression coverage and real-host quotation-result cases.
 - [x] Run all Python regressions and record local results.
 - [x] Add per-step kernel cost projection and captured-call regressions.
-- [ ] Verify the exact candidate with full Lean/Rust/source and Cairn CI.
+- [x] Verify code candidate `5c2e504` with full Lean/Rust/source and Cairn CI run 34248449207.
 - [x] Retain broader runtime and baseline acceptance obligations as open.
