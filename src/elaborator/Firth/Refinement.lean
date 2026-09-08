@@ -1480,33 +1480,20 @@ def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
               diagnostics := [makeDiagnostic requestId obligation .deferred
                 (reasonData "external-request-ineligible")] }
         | some request =>
-            -- The checked adapter promotes here, so an `unsat` becomes evidence
-            -- only by passing through it. Everything after this point fails
-            -- closed: an answer that cannot be promoted, a record that cannot
-            -- be built, and a record that does not recheck all defer the
-            -- obligation to Lean rather than discharging it. The guards above
-            -- already establish most of what promotion re-verifies; the
-            -- repetition is what makes "every record this boundary emits is a
-            -- record that rechecks" true by construction rather than by an
-            -- argument about guards written elsewhere.
-            match checkUnsat request result with
+            -- Record construction owns promotion; there is no transferable
+            -- checked marker between this boundary and the constructor.
+            match makeDischargeRecord (obligationBinding obligation) request result with
             | .error failure =>
                 { leanQueue := [leanObligation obligation .uncheckedUnsatRejected]
                   diagnostics := [makeDiagnostic requestId obligation .deferred
                     (reasonData failure.code)] }
-            | .ok checked =>
-                match makeDischargeRecord (obligationBinding obligation) request checked with
+            | .ok record =>
+                match recheckRecord obligation record with
                 | .error failure =>
                     { leanQueue := [leanObligation obligation .dischargeRecordRejected]
                       diagnostics := [makeDiagnostic requestId obligation .deferred
                         (reasonData failure.code)] }
-                | .ok record =>
-                    match recheckRecord obligation record with
-                    | .error failure =>
-                        { leanQueue := [leanObligation obligation .dischargeRecordRejected]
-                          diagnostics := [makeDiagnostic requestId obligation .deferred
-                            (reasonData failure.code)] }
-                    | .ok _ => { dischargeRecords := [record] }
+                | .ok _ => { dischargeRecords := [record] }
     | .sat model =>
         if validatesCounterexample obligation.formula model then
           let rendered := renderCountermodel model
@@ -1523,18 +1510,23 @@ def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
           diagnostics := [makeDiagnostic requestId obligation .deferred (externalData outcome)] }
 
 
-/-- Reports a rerun through the refinement-discharge result boundary.
+/-- Reports a rerun verdict after rechecking the record's current binding.
 
-`Firth.Smt.Solver.rerunDischargeRecord` is the rerun itself: it needs `IO` and
-the pinned runner, so it lives with the runner. This is where its verdict
-becomes a pipeline result, which is what
-`spec/smt/refinement-discharge-architecture.md` §3 means by a cache hit being
-usable: only a record that rechecked *and* was re-answered is exposed, and
-every other verdict is a deferred non-success carrying its own code. -/
+`Firth.Smt.Solver.rerunDischargeRecord` owns invocation and rerun validation.
+This public formatting boundary cannot authenticate that a caller invoked it:
+`RecheckVerdict` is public data, not a proof of execution. It must nevertheless
+refuse records that do not match the current canonical obligation, even when a
+caller labels them `rechecked`. Other verdicts remain deferred non-successes. -/
 def recordRerunVerdict (requestId : String) (obligation : Obligation)
     (verdict : RecheckVerdict) : PipelineResult :=
   match verdict with
-  | .rechecked record => { dischargeRecords := [record] }
+  | .rechecked record =>
+      match recheckRecord obligation record with
+      | .ok _ => { dischargeRecords := [record] }
+      | .error failure =>
+          { leanQueue := [leanObligation obligation .dischargeRecordRejected]
+            diagnostics := [makeDiagnostic requestId obligation .deferred
+              (reasonData failure.code)] }
   | _ =>
       { leanQueue := [leanObligation obligation .dischargeRecordRejected]
         diagnostics := [makeDiagnostic requestId obligation .deferred

@@ -377,14 +377,11 @@ def rerunDischargeRecord (runner : SolverRunner) (binding : ObligationBinding)
       match ← solve runner record.profile request with
       | .error refusal => return .refused refusal
       | .ok result =>
-          match checkUnsat request result with
+          match makeDischargeRecord binding request result with
           | .error failure => return .notRechecked failure result.outcome
-          | .ok checked =>
-              match makeDischargeRecord binding request checked with
-              | .error failure => return .notRechecked failure checked.outcome
-              | .ok rebuilt =>
-                  if { rebuilt with evidenceHash := record.evidenceHash } == record then
-                    return .rechecked rebuilt
-                  else return .driftedRecord (.recordTampered "rebuild")
+          | .ok rebuilt =>
+              if { rebuilt with evidenceHash := record.evidenceHash } == record then
+                return .rechecked rebuilt
+              else return .driftedRecord (.recordTampered "rebuild")
 
 end Firth.Smt.Solver

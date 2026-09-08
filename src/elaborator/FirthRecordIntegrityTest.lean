@@ -233,10 +233,14 @@ private def rerunAnswerTests (entry : SmtQueueEntry) (record : DischargeRecord) 
 private def evidenceTests (entry : SmtQueueEntry) (record : DischargeRecord) : IO Unit := do
   let obligation := entry.obligation
   let some request := entry.request | fail "an eligible queue entry carries a request"
-  -- An unchecked unsat is not evidence, however well-formed everything else is.
+  -- Raw results pass through internal promotion; caller-selected markers do not.
   match makeDischargeRecord (obligationBinding obligation) request (pinnedResult entry) with
+  | .ok rebuilt => expectEq rebuilt record "direct construction matches the refinement boundary"
+  | .error failure => fail s!"a pinned raw result was refused: {repr failure}"
+  match makeDischargeRecord (obligationBinding obligation) request
+      { pinnedResult entry with outcome := .checkedUnsat "fabricated" } with
   | .error .notUnsat => pure ()
-  | result => fail s!"an unchecked unsat produced a record: {repr result}"
+  | result => fail s!"a fabricated checked marker produced a record: {repr result}"
   -- Nor is a result that arrives claiming to have been checked elsewhere.
   let prePromoted := recordExternalOutcome "request-a" entry
     { pinnedResult entry with outcome := .checkedUnsat "unsat" }
@@ -264,10 +268,33 @@ private def evidenceTests (entry : SmtQueueEntry) (record : DischargeRecord) : I
       record.translationSoundnessProofHashes.length)
     "no two stages share a soundness hash, so each covers its own proofs"
 
+private def rerunBoundaryTests (entry : SmtQueueEntry) (record : DischargeRecord) : IO Unit := do
+  let obligation := entry.obligation
+  let same := recordRerunVerdict "request-a" obligation (.rechecked record)
+  expectEq same.dischargeRecords [record] "a current rerun record remains reportable"
+  for (changed, expected, reason) in [
+      ({ record with obligation := { record.obligation with wordId := "another.word" } },
+        "firth.smt.record-stale", "another word"),
+      ({ record with obligation := { record.obligation with bodyHash := "sha256:changed" } },
+        "firth.smt.record-stale", "another body"),
+      ({ record with requestIdentity := "request(0:)" },
+        "firth.smt.request-mismatch", "another request"),
+      ({ record with normalisedFormulaHash := "formula(0[]0[])" },
+        "firth.smt.record-tampered", "another formula"),
+      ({ record with translationSoundnessProofHashes := [] },
+        "firth.smt.translation-drift", "missing proofs")] do
+    expectDeferred (recordRerunVerdict "request-a" obligation (.rechecked changed))
+      expected s!"a caller-selected rerun marker for {reason}"
+  expectDeferred
+    (recordRerunVerdict "request-a" { obligation with obligationId := "forged" }
+      (.rechecked record))
+    "firth.smt.record-stale" "a forged current obligation identity"
+
 def runTests : IO Unit := do
   let entry ← queueEntry
   let discharged := recordExternalOutcome "request-a" entry (pinnedResult entry)
   let record ← expectAt discharged.dischargeRecords 0 "the fixture's discharge record"
+  rerunBoundaryTests entry record
   driftTests entry record
   untranslatableTests entry record
   rerunAnswerTests entry record
