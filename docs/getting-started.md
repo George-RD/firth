@@ -169,6 +169,12 @@ Addition must stay within `0..9223372036854775807` for portable execution.
 Overflow fails instead of wrapping. The reference interpreter's natural
 numbers are unbounded; the finite VM's refusal is not evidence of agreement.
 
+The comparison gate validates every returned scalar before comparing stacks.
+It rejects malformed values, Boolean/integer payload coercions, and unsupported
+quotation results. Quotations may still be created and consumed inside a
+program, as in the conditional example above. This is not full quotation or
+execution-trace equivalence.
+
 ## Supported execution profile
 
 | Feature | Current portable runner |
@@ -178,7 +184,7 @@ numbers are unbounded; the finite VM's refusal is not evidence of agreement.
 | Primitive operations | `prim +` |
 | Definitions | Explicit stack effects, multiple words, qualified vocabulary names, recursion with finite fuel |
 | Composition | Core stack operations, quotations, `call`, `if`, named locals; matching checked effects are required |
-| Quotations as external inputs/results | Not exposed by this runner |
+| Quotations as external inputs/results | Explicitly rejected; returned bodies and captures do not yet have a shared comparison format |
 | Negative integers, text and character execution | Not implemented by the portable compiler/adapters |
 | `send`, file/network I/O, external resources | Not implemented by this portable execution path |
 | Source refinement annotations `{...}` | Rejected with `firth.refinement.unsupported-source` until source predicates and bodies are translated and checked, even when the annotation happens to be true |

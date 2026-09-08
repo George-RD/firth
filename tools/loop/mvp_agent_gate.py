@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -292,6 +293,27 @@ def build_toolchain() -> None:
         fail("toolchain: firth-vm was not built")
 
 
+def _json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """Reject duplicate fields rather than letting the last value win."""
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON field {key!r}")
+        result[key] = value
+    return result
+
+
+def _json_constant(value: str) -> None:
+    raise ValueError(f"non-finite JSON number {value}")
+
+
+def _json_float(value: str) -> float:
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"non-finite JSON number {value}")
+    return number
+
+
 def adapter(
     command: list[str], request: dict[str, Any], workspace: Path, label: str
 ) -> dict[str, Any]:
@@ -302,8 +324,9 @@ def adapter(
         timeout=ADAPTER_TIMEOUT_SECONDS,
     )
     try:
-        response = json.loads(output)
-    except json.JSONDecodeError as error:
+        response = json.loads(output, object_pairs_hook=_json_object,
+                              parse_constant=_json_constant, parse_float=_json_float)
+    except (ValueError, RecursionError) as error:
         fail(f"{label}: response is not JSON ({error})")
     if not isinstance(response, dict):
         fail(f"{label}: response is not an object")
@@ -318,6 +341,57 @@ def expect_status(response: dict[str, Any], expected: str, label: str) -> None:
         fail(f"{label}: status {response.get('status')!r}, expected {expected!r}: {detail}")
 
 
+def validate_portable_stack(stack: Any, label: str) -> None:
+    """Validate complete result values before Python's coercive equality.
+
+    Quotations are usable *inside* a program, but the two adapters do not
+    expose a shared body/capture representation for returned quotations.
+    Reject them rather than comparing incomplete transport metadata.
+    """
+    if not isinstance(stack, list):
+        fail(f"{label}: stack is not an array")
+    for index, value in enumerate(stack):
+        field = f"{label} stack[{index}]"
+        if not isinstance(value, dict) or "kind" not in value:
+            fail(f"{field}: malformed result value")
+        kind = value["kind"]
+        if kind == "quotation":
+            fail(f"{field}: unsupported quotation result; body/capture equivalence is not implemented")
+        if kind != "literal":
+            fail(f"{field}: unsupported result value kind {kind!r}")
+        if set(value) != {"kind", "literal"}:
+            fail(f"{field}: malformed result value envelope")
+        literal = value["literal"]
+        if not isinstance(literal, dict) or "type" not in literal:
+            fail(f"{field}: malformed result literal")
+        literal_type = literal["type"]
+        if literal_type not in ("nat", "bool"):
+            fail(f"{field}: unsupported result literal type {literal_type!r}")
+        if set(literal) != {"type", "value"}:
+            fail(f"{field}: malformed result literal envelope")
+        payload = literal["value"]
+        if literal_type == "nat":
+            if type(payload) is not int or not 0 <= payload <= 9223372036854775807:
+                fail(f"{field}: integer payload must be an integer from 0 to 9223372036854775807")
+        elif type(payload) is not bool:
+            fail(f"{field}: Boolean payload must be true or false")
+
+
+def validate_pure_world(reference: Any, target: Any, name: str) -> None:
+    """Check pure-world schemas without equating False or 0.0 with byte 0."""
+    reference_is_pure = (
+        isinstance(reference, dict) and set(reference) == {"ids"}
+        and isinstance(reference["ids"], list) and not reference["ids"]
+    )
+    target_is_pure = (
+        isinstance(target, dict) and set(target) == {"bytes"}
+        and isinstance(target["bytes"], list) and len(target["bytes"]) == 1
+        and type(target["bytes"][0]) is int and target["bytes"][0] == 0
+    )
+    if not reference_is_pure or not target_is_pure:
+        fail(f"{name}: effectful or malformed world observations are not supported by the portable comparison")
+
+
 def compare(reference: dict[str, Any], target: dict[str, Any], name: str,
             fuel: int = FUEL) -> None:
     """Compare terminal results and kernel costs; validate bounded traces.
@@ -325,6 +399,11 @@ def compare(reference: dict[str, Any], target: dict[str, Any], name: str,
     The two trace schemas differ. This does not assert trace equivalence or
     effectful equivalence: the portable adapter currently runs pure programs.
     """
+    if type(fuel) is not int or not 0 <= fuel <= 100000:
+        fail(f"{name}: fuel must be an integer from 0 to 100000")
+    for side, observation in (("reference", reference), ("target", target)):
+        if not isinstance(observation, dict):
+            fail(f"{name}: {side} observation is not an object")
     if reference.get("status") == "trap" and reference.get("trap") == "fuel-exhausted" \
             and target.get("status") == "trap" and target.get("trap") == "fuel-exhausted":
         # `[comparison] fuel_exhaustion = "bounded-fuel-inconclusive"`: a dual
@@ -336,8 +415,7 @@ def compare(reference: dict[str, Any], target: dict[str, Any], name: str,
             fail(f"{name}: {side} observation is incomplete")
         if observation["status"] != "success" or observation["trap"] is not None:
             fail(f"{name}: {side} did not terminate successfully: {observation['trap']}")
-        if not isinstance(observation["stack"], list):
-            fail(f"{name}: {side} stack is not an array")
+        validate_portable_stack(observation["stack"], f"{name}: {side}")
     if reference.get("status") != target.get("status"):
         fail(f"{name}: status {reference.get('status')!r} against {target.get('status')!r}")
     if reference.get("trap") != target.get("trap"):
@@ -370,8 +448,7 @@ def compare(reference: dict[str, Any], target: dict[str, Any], name: str,
             f"{name}: cost {reference_cost.get('total')!r} against "
             f"{target_cost.get('kernel')!r} (target kernel cost)"
         )
-    if reference["world_observation"] != {"ids": []} or target["world_observation"] != {"bytes": [0]}:
-        fail(f"{name}: effectful observations are not supported by the portable comparison")
+    validate_pure_world(reference["world_observation"], target["world_observation"], name)
 
 
 def initial_values(values: Any) -> list[dict[str, Any]]:

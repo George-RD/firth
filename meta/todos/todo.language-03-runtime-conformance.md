@@ -20,3 +20,16 @@ Close runtime and cross-host comparison gaps.
 ## Traceability
 
 PR #109 runtime, quotation and conformance reviews; PRD R5/R7/R8.
+
+## Portable comparison sub-slice, 8 September 2026
+
+`meta/changes/portable-observation-validation/` implements strict scalar-result
+and pure-world validation, duplicate/non-finite adapter JSON rejection, and
+explicit refusal of returned quotations whose bodies/captures lack a shared
+comparison format. Regression tests preserve internal quotation execution.
+The verification record distinguishes local Python checks from real-host CI.
+
+This parent remains open. These changes do not validate all Rust image entry
+points, reconcile all runtime review findings, authenticate compiler evidence,
+or establish full trace equivalence. Complete those acceptance criteria and
+the baseline audit before marking the parent done.

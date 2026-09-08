@@ -73,6 +73,56 @@ def quotation_ownership(usage: str) -> None:
         assert "target_program" not in result, result
 
 
+def quotation_observation(mode: str, called: bool) -> None:
+    """Real host execution, not source authorship or proof-admission evidence.
+
+    The source syntax cannot declare a quotation output boundary yet. Exercise
+    the existing structured compiler transport with an explicitly typed fixture
+    instead; its checking markers are not authenticated by this test.
+    """
+    request = compile_request("many")
+    scalar = {"kind": "lit", "value": {"type": "nat", "value": 42}}
+    if mode == "closed":
+        program = [{"kind": "quotation", "body": [scalar]}]
+    else:
+        program = [scalar, {"kind": "quote"}]
+    if called:
+        program.append({"kind": "call"})
+    request["checked_words"][0]["program"] = program
+    if not called:
+        boundary = request["erased_word_types"][0]["type"]
+        quotation = {"kind": "quotation", "input": copy.deepcopy(boundary["input"]),
+                     "output": copy.deepcopy(boundary["output"]), "usage": "many"}
+        boundary["output"] = {"row": None, "items": [quotation]}
+    rc, compiled = invoke([str(gate.LEAN_BIN / "firthCompile")], request)
+    assert rc == 0 and compiled.get("status") == "success", compiled
+    rc, target = invoke([str(gate.VM_BINARY), "vm-run"], {
+        "request_id": "quote-result", "target_program": compiled["target_program"],
+        "initial_stack": [], "image": {"image_version": 1, "gamma_version": 1},
+        "gamma_version": "0.1", "fuel": 32,
+    })
+    assert rc == 0 and target.get("status") == "success", target
+    kernel = {key: request["checked_words"][0][key]
+              for key in ("checking_state", "proof_state", "program")}
+    rc, reference = invoke([str(gate.LEAN_BIN / "firthReferenceRun")], {
+        "request_id": "quote-result", "checked_kernel": {**kernel, "gamma_version": "0.1"},
+        "initial_stack": [], "dictionary": {"main": kernel}, "gamma_version": "0.1", "fuel": 32,
+    })
+    assert rc == 0 and reference.get("status") == "success", reference
+    if called:
+        gate.compare(reference, target, f"{mode}-quotation-called", fuel=32)
+        assert target["stack"] == gate.initial_values([42]), target
+    else:
+        assert reference["stack"][0]["kind"] == "quotation", reference
+        assert target["stack"][0]["kind"] == "quotation", target
+        try:
+            gate.compare(reference, target, f"{mode}-quotation-result", fuel=32)
+        except gate.GateError as error:
+            assert "unsupported quotation result" in str(error), str(error)
+        else:
+            raise AssertionError("unsupported quotation result was accepted as agreement")
+
+
 def malformed_capture_state(captures: list[Any], consumed: list[bool], placement: str) -> None:
     quotation = {"kind": "quotation", "code": [], "captures": captures, "consumed": consumed}
     if placement == "instruction":
@@ -119,6 +169,10 @@ def main() -> int:
         checks.append((name, lambda s=source: source_refusal(s, "firth.elaboration.empty-program")))
     for usage in ("many", "linear"):
         checks.append((f"{usage} quotation ownership", lambda u=usage: quotation_ownership(u)))
+    for mode in ("closed", "captured"):
+        for called in (False, True):
+            checks.append((f"{mode} quotation: {'called' if called else 'returned'}",
+                           lambda m=mode, c=called: quotation_observation(m, c)))
     for placement in ("instruction", "literal", "nested"):
         for name, captures, consumed in (
             ("extra state", [], [True]),
@@ -132,7 +186,7 @@ def main() -> int:
         try:
             check()
             results.append({"case": name, "status": "passed"})
-        except (AssertionError, OSError, ValueError, subprocess.TimeoutExpired) as error:
+        except (AssertionError, gate.GateError, OSError, ValueError, subprocess.TimeoutExpired) as error:
             results.append({"case": name, "status": "failed", "error": str(error)})
     failed = sum(result["status"] == "failed" for result in results)
     print(json.dumps({"status": "error" if failed else "ok", "passed": len(results) - failed,
