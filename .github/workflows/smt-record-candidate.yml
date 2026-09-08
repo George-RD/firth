@@ -1,0 +1,97 @@
+name: SMT record candidate validation
+
+on:
+  push:
+    branches: [codex/smt-record-promotion-validation]
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+      - name: Verify isolated baseline
+        run: |
+          test "$GITHUB_REF" = refs/heads/codex/smt-record-promotion-validation
+          test "$(git rev-parse HEAD^)" = faf2ba7fd8075586337a8af799dbeccb452d2410
+          test "$(git diff --name-only HEAD^ HEAD)" = .github/workflows/smt-record-candidate.yml
+      - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596
+        with:
+          auto-config: 'false'
+          build: 'false'
+          test: 'false'
+          lint: 'false'
+          use-mathlib-cache: 'false'
+      - name: Decode checksum-bound review patches
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, pathlib, zlib
+          patches = {
+          'regressions': ('f9cc8e27579905d814c8691acb4ec0b8bf5776c8333f5d5c5e24c38097e541ea', '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'),
+          'implementation': ('302427911e4777e149c2a548588e3c3f0e493a500a962427805fbf564b534ae8', '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')}
+          for name, (expected, encoded) in patches.items():
+              patch = zlib.decompress(base64.b64decode(encoded, validate=True))
+              assert hashlib.sha256(patch).hexdigest() == expected, name
+              pathlib.Path('/tmp/smt-' + name + '.patch').write_bytes(patch)
+          PY
+      - name: Build regressions against unchanged implementation
+        run: |
+          git apply --check /tmp/smt-regressions.patch
+          git apply /tmp/smt-regressions.patch
+          lake build 2>&1 | tee /tmp/smt-before-build.log
+      - name: Require the two original admission failures
+        run: |
+          set +e
+          lake exe firthSmtSolverTest > /tmp/smt-before-constructor.log 2>&1
+          constructor=$?
+          lake exe firthRecordIntegrityTest > /tmp/smt-before-rerun.log 2>&1
+          rerun=$?
+          set -e
+          test "$constructor" -ne 0
+          test "$rerun" -ne 0
+          grep -F 'fabricated checked-unsat produced a record' /tmp/smt-before-constructor.log
+          grep -F 'a caller-selected rerun marker for another word: no record may be exposed' /tmp/smt-before-rerun.log
+      - name: Apply implementation and build governed modules
+        run: |
+          git apply --check /tmp/smt-implementation.patch
+          git apply /tmp/smt-implementation.patch
+          lake build 2>&1 | tee /tmp/smt-after-build.log
+          python3 tools/loop/check_zero_admit.py
+          python3 tools/loop/update_smt_proof_bindings.py --check
+          python3 tools/loop/update_proof_manifest.py
+          git diff -- src/elaborator/refinement-proof-module.sha256 | tee /tmp/smt-compiled-bindings.diff
+          python3 tools/loop/update_proof_manifest.py --check
+          lake test 2>&1 | tee /tmp/smt-after-tests.log
+      - name: Publish source candidate only to isolated branch
+        run: |
+          git diff --check
+          python3 - <<'PY'
+          import subprocess
+          expected = {'src/smt/Firth/SmtBoundary.lean', 'src/smt/Firth/SmtSolver.lean', 'src/smt/FirthSmtSolverTest.lean', 'src/elaborator/Firth/Refinement.lean', 'src/elaborator/FirthRefinementTest.lean', 'src/elaborator/FirthRecordIntegrityTest.lean', 'src/elaborator/refinement-proof-module.sha256'}
+          actual = set(subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines())
+          assert actual == expected, (actual, expected)
+          subprocess.run(['git', 'add', '--', *sorted(expected)], check=True)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git diff --cached > /tmp/smt-candidate.diff
+          git commit -m 'fix: own SMT record promotion and recheck rerun bindings'
+          git push origin HEAD:refs/heads/codex/smt-record-promotion-validation
+          git rev-parse HEAD HEAD^{tree} | tee /tmp/smt-candidate-identity.log
+      - name: Retain failing-before and passing-after evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: smt-record-promotion-evidence
+          path: /tmp/smt-*
+          retention-days: 14
+          if-no-files-found: error
