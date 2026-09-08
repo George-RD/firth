@@ -1,0 +1,89 @@
+name: Run SMT source envelope validation
+on:
+  push:
+    branches: [codex/firth-smt-source-envelope-validation-20260909]
+    paths: [.github/workflows/run-smt-source-envelope.yml]
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: bash
+    env:
+      BASE: 2e8b1c4e4bd0fcf4672efa4aefb512b1c5c74e4e
+      EVIDENCE: /tmp/firth-source-envelope-evidence
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Retain validation instructions and decode exact patch
+        run: |
+          mkdir -p "$EVIDENCE"
+          cp .github/workflows/validate-smt-source-envelope.yml "$EVIDENCE/validation-workflow.yml"
+          python3 - <<'PY' 2>&1 | tee "$EVIDENCE/transport.log"
+          import base64,gzip,hashlib,os
+          from pathlib import Path
+          evidence=Path(os.environ['EVIDENCE'])
+          text=(evidence/'validation-workflow.yml').read_text()
+          encoded=next(line.strip() for line in text.splitlines() if line.strip().startswith('H4sIA'))
+          (evidence/'transport-before.base64').write_text(encoded)
+          for before,after in [('FOLNEzOLNEz1','FOLNEz1'),('drAUUc6','drAUc6'),('NLilazE2/x','NLilazE/x')]:
+              encoded=encoded.replace(before,after)
+          (evidence/'transport-after.base64').write_text(encoded)
+          print('Encoded length:',len(encoded),flush=True)
+          data=gzip.decompress(base64.b64decode(encoded))
+          digest=hashlib.sha256(data).hexdigest()
+          print('Patch SHA-256:',digest,flush=True)
+          assert digest=='b1ff45e9696743a8b32b91ba8a131a86cf572d6f6720a5f4b0453303b736b66f'
+          (evidence/'implementation.patch').write_bytes(data)
+          old=next(line.strip() for line in text.splitlines() if line.strip().startswith('H4sIA'))
+          (evidence/'executable-workflow.yml').write_text(text.replace(old,encoded))
+          PY
+      - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596
+        with:
+          auto-config: 'false'
+          build: 'false'
+          test: 'false'
+          lint: 'false'
+          use-mathlib-cache: 'false'
+      - name: Execute all unchanged validation gates and publish only on success
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os,subprocess
+          root=Path.cwd()
+          instructions=Path(os.environ['EVIDENCE'],'executable-workflow.yml').read_text().splitlines()
+          starts=[i for i,line in enumerate(instructions) if line.startswith('      - ')]
+          subprocess.run(['git','checkout','--detach',os.environ['BASE']],check=True)
+          for left,right in zip(starts,starts[1:]+[len(instructions)]):
+              block=instructions[left:right]
+              if not block[0].startswith('      - name: '):
+                  continue
+              name=block[0].split('name: ',1)[1]
+              indices=[i for i,line in enumerate(block) if line=='        run: |']
+              if not indices:
+                  continue
+              body=block[indices[0]+1:]
+              assert all(not line.strip() or line.startswith('          ') for line in body)
+              script='\n'.join(line[10:] if line.strip() else '' for line in body)+'\n'
+              directory=next((line.split('working-directory: ',1)[1] for line in block if line.startswith('        working-directory: ')),'.')
+              env=dict(os.environ)
+              if name!='Publish verified clean candidate on a separate branch':
+                  env.pop('GH_TOKEN',None)
+              print('\n=== '+name+' ===',flush=True)
+              subprocess.run(['bash','--noprofile','--norc','-e','-o','pipefail','-c',script],cwd=root/directory,env=env,check=True)
+          PY
+      - name: Retain all evidence, including failed transport
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: smt-source-envelope-evidence
+          path: /tmp/firth-source-envelope-evidence/*
+          retention-days: 7
+          if-no-files-found: error
