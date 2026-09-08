@@ -190,19 +190,32 @@ private def testBinding : ObligationBinding :=
     sourceStopLine := 1
     sourceStopColumn := 8 }
 
-private def checkedResult (request : SmtRequest) : IO SmtResult :=
-  match checkUnsat request
-      { profile := defaultSolverProfile
-        proofBindings := request.proofBindings
-        requestIdentity := canonicalRequestIdentity request
-        outcome := .uncheckedUnsat "unsat" } with
-  | .ok result => pure result
-  | .error failure => fail s!"a pinned unsat was refused: {repr failure}"
+private def uncheckedResult (request : SmtRequest) : SmtResult :=
+  { profile := defaultSolverProfile
+    proofBindings := request.proofBindings
+    requestIdentity := canonicalRequestIdentity request
+    outcome := .uncheckedUnsat "unsat" }
 
 private def recordTests : IO Unit := do
   let request ← pinnedRequest
-  -- Promotion refuses each way it can be wrong, and only the checked adapter
-  -- can produce a checked unsat at all.
+  -- No solver is invoked: a caller can fabricate every field of this result.
+  -- The formula is explicitly false, so the marker cannot be evidence of it.
+  let falseRequest ←
+    match checkedSmtRequest defaultSolverProfile { premises := [], conclusions := [.falsity] } with
+    | .ok value => pure value
+    | .error failure => fail s!"false-formula fixture failed: {repr failure}"
+  match makeDischargeRecord testBinding falseRequest
+      { uncheckedResult falseRequest with outcome := .checkedUnsat "fabricated" } with
+  | .error .notUnsat => pure ()
+  | result => fail s!"fabricated checked-unsat produced a record: {repr result}"
+  -- Even a marker returned by the promotion helper is not a transferable token.
+  match checkUnsat request (uncheckedResult request) with
+  | .error failure => fail s!"a pinned raw result was not promoted: {repr failure}"
+  | .ok promoted =>
+      match makeDischargeRecord testBinding request promoted with
+      | .error .notUnsat => pure ()
+      | result => fail s!"a pre-promoted result produced a record: {repr result}"
+  -- Promotion refuses each way the request/result metadata can be wrong.
   for (result, expected, reason) in [
       ({ profile := { defaultSolverProfile with version := "4.0.0" }
          requestIdentity := canonicalRequestIdentity request
@@ -230,9 +243,9 @@ private def recordTests : IO Unit := do
   | .error .unpinnedRequest => pure ()
   | result => fail s!"a request that does not rebuild to itself was promoted: {repr result}"
 
-  let checked ← checkedResult request
-  match makeDischargeRecord testBinding request checked with
-  | .error failure => fail s!"a checked unsat produced no record: {repr failure}"
+  let raw := uncheckedResult request
+  match makeDischargeRecord testBinding request raw with
+  | .error failure => fail s!"a pinned raw unsat produced no record: {repr failure}"
   | .ok record =>
       expectEq record.result "unsat" "a record states the result it was created from"
       expectEq record.solverExecutableDigest defaultSolverProfile.executableDigest
@@ -266,35 +279,43 @@ private def recordTests : IO Unit := do
           record with
       | .error .recordStale => pure ()
       | result => fail s!"a record for another obligation was accepted: {repr result}"
-  -- An unchecked unsat never becomes a record, whatever else is in order.
-  match makeDischargeRecord testBinding request
-      { profile := defaultSolverProfile
-        requestIdentity := canonicalRequestIdentity request
-        outcome := .uncheckedUnsat "unsat" } with
-  | .error .notUnsat => pure ()
-  | result => fail s!"an unchecked unsat produced a record: {repr result}"
-  -- Nor does a checked result that was not checked against this request.
-  let checkedAgain ← checkedResult request
+  -- Neither pre-promoted markers nor non-unsat answers are admitted.
+  for outcome in [ExternalOutcome.checkedUnsat "unsat", .unknown, .timeout 5000,
+      .resourceExhausted, .malformed "bad", .crashed "exit 1", .sat {}] do
+    match makeDischargeRecord testBinding request { raw with outcome } with
+    | .error .notUnsat => pure ()
+    | result => fail s!"a non-admissible outcome produced a record: {repr result}"
+  -- Replaying a result across premises or conclusions must fail identity binding.
+  for formula in [{ request.formula with premises := [] },
+      { request.formula with conclusions := [.truth] }] do
+    let otherRequest ←
+      match checkedSmtRequest defaultSolverProfile formula with
+      | .ok value => pure value
+      | .error failure => fail s!"replay fixture failed: {repr failure}"
+    match makeDischargeRecord testBinding otherRequest raw with
+    | .error .requestIdentityMismatch => pure ()
+    | result => fail s!"a result replayed across formulae produced a record: {repr result}"
+  -- Raw metadata must still pass each distinct admission check.
   for (mutated, expected, reason) in [
-      ({ checkedAgain with profile := { defaultSolverProfile with version := "4.0.0" } },
+      ({ raw with profile := { defaultSolverProfile with version := "4.0.0" } },
        CheckFailure.unpinnedProfile, "a result carrying another profile"),
-      ({ checkedAgain with requestIdentity := "request(0:)" },
+      ({ raw with requestIdentity := "request(0:)" },
        .requestIdentityMismatch, "a result bound to another request"),
-      ({ checkedAgain with
+      ({ raw with
          proofBindings := { defaultSmtProofBindings with translationRuleHashes := ["sha256:x"] } },
        .proofBindingsMismatch, "a result carrying stale proof bindings")] do
     match makeDischargeRecord testBinding request mutated with
     | .error failure => expectEq failure expected s!"{reason} is refused a record"
     | .ok record => fail s!"{reason} produced a record: {repr record}"
-  match makeDischargeRecord testBinding { request with smtLib := "(check-sat)" } checkedAgain with
+  match makeDischargeRecord testBinding { request with smtLib := "(check-sat)" } raw with
   | .error .unpinnedRequest => pure ()
   | result => fail s!"a request that does not rebuild to itself produced a record: {repr result}"
 
 private def rerunTests : IO Unit := do
   let request ← pinnedRequest
-  let checked ← checkedResult request
+  let raw := uncheckedResult request
   let record ←
-    match makeDischargeRecord testBinding request checked with
+    match makeDischargeRecord testBinding request raw with
     | .ok record => pure record
     | .error failure => fail s!"could not build a record: {repr failure}"
   let runner ← stubRunner [answer "unsat"]

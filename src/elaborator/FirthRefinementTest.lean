@@ -582,18 +582,14 @@ private def runTests : IO Unit := do
   match recheckRecord forgedObligation record with
   | .error .recordStale => pure ()
   | result => fail s!"a record rechecked against a forged obligation: {repr result}"
-  -- A checked result recorded against another request names a question the
-  -- solver never answered.
-  match checkUnsat checkedRequest
+  -- Construction must revalidate the request before promoting the raw result.
+  let otherRequest := { checkedRequest with smtLib := checkedRequest.smtLib ++ "\n" }
+  match makeDischargeRecord (obligationBinding smtEntry.obligation) otherRequest
       { profile := defaultSolverProfile
         requestIdentity := canonicalRequestIdentity checkedRequest
         outcome := .uncheckedUnsat "unsat" } with
-  | .error failure => fail s!"a pinned unsat was refused: {repr failure}"
-  | .ok checked =>
-      let otherRequest := { checkedRequest with smtLib := checkedRequest.smtLib ++ "\n" }
-      match makeDischargeRecord (obligationBinding smtEntry.obligation) otherRequest checked with
-      | .error .unpinnedRequest => pure ()
-      | result => fail s!"a checked result was recorded against another request: {repr result}"
+  | .error .unpinnedRequest => pure ()
+  | result => fail s!"a result was recorded against another request: {repr result}"
 
   -- The rerun verdict is what reaches the result boundary, and only a rechecked
   -- one discharges.

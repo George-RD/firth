@@ -186,15 +186,11 @@ inductive ExternalOutcome where
   | malformed (detail : String)
   | crashed (detail : String)
   | uncheckedUnsat (evidence : String)
-  /-- An `unsat` the checked adapter has validated: pinned profile, pinned
-  request, current translation and proof bindings, and a formula inside the
-  supported fragment. `Firth.Smt.checkUnsat` is the only thing that produces
-  one, and `classifyTranscript` never does, so no solver answer carries it.
-
-  The constructor is public, so the type alone does not stop a caller from
-  writing one. Nothing downstream treats that as evidence: the refinement
-  boundary refuses a result that arrives already promoted and promotes an
-  `uncheckedUnsat` itself. -/
+  /-- A public diagnostic marker, not an authenticated proof object.
+  `checkUnsat` returns this after validating request/result metadata, but callers
+  can also construct it. Record construction and the refinement boundary refuse
+  incoming markers and own promotion of the raw result themselves. The trusted
+  solver producer, not this constructor or its string, owns the solver claim. -/
   | checkedUnsat (evidence : String)
   | sat (model : Valuation)
   deriving Repr, BEq
@@ -1159,9 +1155,10 @@ structure ObligationBinding where
 
 /-- A content-addressed SMT discharge record.
 
-Created only from a checked `unsat`, and only by `makeDischargeRecord`, which
-recomputes every derived field from the formula and the request rather than
-copying a caller's claim about them. -/
+This public wire structure is not an authenticated proof object. The production
+constructor `makeDischargeRecord` owns promotion and recomputes every derived
+field from the formula and request. Stored records still require recheck and
+rerun; their existence or content address does not authenticate a solver run. -/
 structure DischargeRecord where
   obligation : ObligationBinding
   translationRuleHashes : List String
@@ -1174,10 +1171,8 @@ structure DischargeRecord where
   solverExecutableDigest : String
   invocationOptions : List String
   profile : SolverProfile
-  /-- The solver result the record was created from, which is always `"unsat"`:
-  the spec names this field, and `makeDischargeRecord` refuses every other
-  outcome. That it was a *checked* `unsat` is carried by the record existing at
-  all, since nothing else can produce one. -/
+  /-- `makeDischargeRecord` emits only `"unsat"`. This public field can also be
+  caller-created, so it is data to recheck, not evidence of a checked run. -/
   result : String
   /-- The content address of what the solver said, unsat core included. This is
   an output rather than an input, so a recheck records it and a rerun is not
@@ -1212,8 +1207,9 @@ def CheckFailure.code : CheckFailure → String
 
 /-- Promotes an `unsat` answer to a checked one, or says why it cannot.
 
-This is the only producer of `ExternalOutcome.checkedUnsat`. Everything it
-verifies is something the adapter can establish without trusting the solver
+The returned public marker is not a capability and cannot be submitted to
+`makeDischargeRecord`. Everything verified here is something the adapter can
+establish without trusting the solver
 further than the pin allows: that the profile is the pinned one, that the
 request rebuilds to itself, that the result is bound to that request, that the
 translation and soundness bindings are current, and that the formula is inside
@@ -1249,33 +1245,21 @@ a second, unrelated artefact. -/
 def canonicalNormalisedFormula (formula : Formula) : String :=
   canonicalFormula formula
 
-/-- Builds a record from a checked `unsat`.
+/-- Promotes a raw solver result and constructs its record in one operation.
 
-Every field but the obligation binding is recomputed here rather than accepted
-from a caller, so a record cannot claim a formula, a translation, a request or
-an evidence payload it was not produced under. The binding is elaborator-owned
-and has one producer of its own.
+Incoming `checkedUnsat` markers are refused, including markers returned by a
+previous call to `checkUnsat`. Promotion and all derived fields use this exact
+request, so callers cannot bypass admission or transfer a promoted result.
 
-The result and the request arrive separately, so this repeats the bindings
-`checkUnsat` established rather than assuming they were established against
-*this* request. Without that a checked result for one request could be recorded
-against another, and the record would name a question the solver never
-answered. -/
+This checks metadata, not the authenticity of a caller-supplied transcript.
+The pinned solver producer remains responsible for the underlying `unsat`
+claim; a public string is not a Lean proof of `ScriptUnsatisfiable`. -/
 def makeDischargeRecord (binding : ObligationBinding) (request : SmtRequest)
-    (result : SmtResult) : Except CheckFailure DischargeRecord :=
-  match result.outcome with
+    (result : SmtResult) : Except CheckFailure DischargeRecord := do
+  let checked ← checkUnsat request result
+  match checked.outcome with
   | .checkedUnsat evidence =>
-      if !validSolverProfile result.profile || result.profile != request.profile then
-        .error .unpinnedProfile
-      else if !validSmtRequest request then
-        .error .unpinnedRequest
-      else if result.requestIdentity != canonicalRequestIdentity request then
-        .error .requestIdentityMismatch
-      else if !validSmtProofBindings result.proofBindings ||
-          result.proofBindings != request.proofBindings then
-        .error .proofBindingsMismatch
-      else
-      .ok
+      pure
         { obligation := binding
           translationRuleHashes := request.proofBindings.translationRuleHashes
           translationSoundnessProofHashes :=
