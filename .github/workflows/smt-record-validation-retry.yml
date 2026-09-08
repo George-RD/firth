@@ -1,0 +1,69 @@
+name: SMT record validation retry
+on:
+  push:
+    branches: [codex/smt-record-promotion-validation]
+permissions:
+  contents: write
+defaults:
+  run:
+    shell: bash
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+      - name: Check unchanged source baseline
+        run: |
+          test "$GITHUB_REF" = refs/heads/codex/smt-record-promotion-validation
+          python3 - <<'PY'
+          import subprocess
+          changed = set(subprocess.check_output(['git', 'diff', '--name-only', 'faf2ba7fd8075586337a8af799dbeccb452d2410', 'HEAD'], text=True).splitlines())
+          assert changed == {'.github/workflows/smt-record-candidate.yml', '.github/workflows/smt-record-validation-retry.yml'}, changed
+          PY
+      - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596
+        with:
+          auto-config: 'false'
+          build: 'false'
+          test: 'false'
+          lint: 'false'
+          use-mathlib-cache: 'false'
+      - name: Validate checksum-bound candidate and publish isolated result
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          source = Path('.github/workflows/smt-record-candidate.yml').read_text()
+          Path('/tmp/smt-original-workflow.txt').write_text(source)
+          scripts = {}
+          name = None
+          collecting = False
+          for line in source.splitlines():
+              if line.startswith('      - name: '):
+                  name = line.removeprefix('      - name: ')
+                  collecting = False
+              elif line == '        run: |':
+                  collecting = True
+                  scripts[name] = ''
+              elif collecting and line.startswith('          '):
+                  scripts[name] += line[10:] + '\n'
+              elif collecting:
+                  collecting = False
+          steps = ['Decode checksum-bound review patches', 'Build regressions against unchanged implementation', 'Require the two original admission failures', 'Apply implementation and build governed modules', 'Publish source candidate only to isolated branch']
+          for step in steps:
+              script = scripts[step]
+              if step == steps[0]:
+                  script = script.replace('2bNNnnx', '2bNnnx').replace('WVVNN0ue', 'WVVN0ue')
+              print('RUN:', step, flush=True)
+              subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', script], check=True)
+          PY
+      - name: Retain execution evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: smt-record-promotion-evidence
+          path: /tmp/smt-*
+          retention-days: 14
+          if-no-files-found: error
