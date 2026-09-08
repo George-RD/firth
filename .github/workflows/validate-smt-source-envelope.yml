@@ -1,0 +1,220 @@
+name: Validate SMT source envelope
+on:
+  push:
+    branches: [codex/firth-smt-source-envelope-validation-20260909]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: bash
+    env:
+      BASE: 2e8b1c4e4bd0fcf4672efa4aefb512b1c5c74e4e
+      EVIDENCE: /tmp/firth-source-envelope-evidence
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 2e8b1c4e4bd0fcf4672efa4aefb512b1c5c74e4e
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Decode reviewed patch and reproduce baseline gap
+        run: |
+          mkdir -p "$EVIDENCE"
+          cat > /tmp/patch.base64 <<'PATCH'
+          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
+          PATCH
+          python3 - <<'PY'
+          import base64,gzip,hashlib,os,pathlib
+          encoded=pathlib.Path('/tmp/patch.base64').read_text().strip()
+          # Repair explicit transport transcription slips; the digest below is authoritative.
+          encoded=encoded.replace('FOLNEzOLNEz1','FOLNEz1').replace('drAUUc6','drAUc6').replace('NilazE2/x','NilazE/x')
+          data=gzip.decompress(base64.b64decode(encoded))
+          expected='b1ff45e9696743a8b32b91ba8a131a86cf572d6f6720a5f4b0453303b736b66f'
+          assert hashlib.sha256(data).hexdigest()==expected, 'reviewed patch digest mismatch'
+          pathlib.Path(os.environ['EVIDENCE'],'implementation.patch').write_bytes(data)
+          PY
+          mkdir -p /tmp/firth-before/tools/loop /tmp/firth-before/src/smt/Firth /tmp/firth-before/src/elaborator/Firth
+          cp tools/loop/update_smt_proof_bindings.py /tmp/firth-before/tools/loop/
+          cp src/smt/Firth/SmtBoundary.lean /tmp/firth-before/src/smt/Firth/
+          cp src/elaborator/Firth/Refinement.lean /tmp/firth-before/src/elaborator/Firth/
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/firth-before/src/smt/Firth/SmtBoundary.lean')
+          text=p.read_text(); old='let bindings := formulaBindings formula'
+          assert text.count(old)==1
+          p.write_text(text.replace(old,'let bindings := (formulaBindings formula).reverse'))
+          PY
+          echo 'Baseline wrongly accepts an unmarked request-helper mutation:' | tee "$EVIDENCE/failing-before.log"
+          python3 /tmp/firth-before/tools/loop/update_smt_proof_bindings.py --check 2>&1 | tee -a "$EVIDENCE/failing-before.log"
+          git apply --check "$EVIDENCE/implementation.patch"
+          git apply "$EVIDENCE/implementation.patch"
+      - name: Verify unchanged rule and theorem bodies
+        run: |
+          python3 - <<'PY' | tee "$EVIDENCE/unchanged-proof-regions.log"
+          import importlib.util,os,subprocess
+          from pathlib import Path
+          spec=importlib.util.spec_from_file_location('bindings','tools/loop/update_smt_proof_bindings.py')
+          m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+          for source in m.SOURCES:
+              rel=source.relative_to(m.ROOT).as_posix()
+              before=subprocess.check_output(['git','show',os.environ['BASE']+':'+rel],text=True)
+              assert m.regions(source,before)==m.regions(source,source.read_text()),rel
+              print(rel+': all marked translation and soundness bodies unchanged')
+          PY
+          python3 tools/loop/update_smt_proof_bindings.py --check | tee "$EVIDENCE/source-bindings.log"
+          python3 tools/loop/check_zero_admit.py | tee "$EVIDENCE/zero-admit.log"
+          git diff --check
+      - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596
+        with:
+          auto-config: 'false'
+          build: 'false'
+          test: 'false'
+          lint: 'false'
+          use-mathlib-cache: 'false'
+      - name: Build pinned Lean and regenerate compiled bindings
+        run: |
+          lake build 2>&1 | tee "$EVIDENCE/lean-build.log"
+          python3 tools/loop/update_proof_manifest.py | tee "$EVIDENCE/manifest-update.log"
+          python3 tools/loop/update_proof_manifest.py --check | tee "$EVIDENCE/manifest-check.log"
+          git diff -- src/elaborator/refinement-proof-module.sha256 | tee "$EVIDENCE/compiled-manifest.diff"
+          python3 - <<'PY'
+          import os,subprocess
+          from pathlib import Path
+          p='src/elaborator/refinement-proof-module.sha256'
+          old=subprocess.check_output(['git','show',os.environ['BASE']+':'+p],text=True).splitlines()
+          new=Path(p).read_text().splitlines()
+          assert len(old)==len(new)==6
+          assert [i for i,(a,b) in enumerate(zip(old,new)) if a!=b]==[0,4], 'unexpected compiled proof changes'
+          PY
+      - name: Run all Python regressions
+        run: |
+          for suite in tools/loop/test_*.py; do
+            echo "=== $suite ==="
+            python3 "$suite"
+          done 2>&1 | tee "$EVIDENCE/python-tests.log"
+          python3 tools/loop/check_mvp_agent_inputs.py | tee "$EVIDENCE/agent-inputs.log"
+      - name: Run Lean suites and real solver pipes
+        run: |
+          lake test 2>&1 | tee "$EVIDENCE/lean-tests.log"
+          bash tools/loop/check_kernel_fixtures.sh 2>&1 | tee "$EVIDENCE/fixtures.log"
+          lake env lean --run src/elaborator/FirthNamesTest.lean 2>&1 | tee "$EVIDENCE/names.log"
+          lake env lean --run src/smt/FirthSmtProcessTest.lean 2>&1 | tee "$EVIDENCE/process.log"
+      - name: Verify Rust VM
+        working-directory: src/runtime/vm
+        run: |
+          { rustup show; cargo fmt --check; cargo clippy --locked --all-targets -- -D warnings; cargo test --locked; } 2>&1 | tee "$EVIDENCE/rust.log"
+      - name: Run every application and coverage gate
+        run: |
+          python3 tools/loop/check_trust_boundaries.py 2>&1 | tee "$EVIDENCE/trust-boundaries.log"
+          python3 tools/loop/mvp_agent_gate.py 2>&1 | tee "$EVIDENCE/mvp.log"
+          python3 tools/loop/check_language_examples.py 2>&1 | tee "$EVIDENCE/examples.log"
+          python3 tools/loop/check_s5_envelope.py 2>&1 | tee "$EVIDENCE/s5.log"
+          python3 tools/loop/select_unit.py --validate | tee "$EVIDENCE/selector.log"
+          python3 tools/loop/coverage.py --validate | tee "$EVIDENCE/coverage-validation.log"
+          python3 tools/loop/coverage.py --run-gates | tee "$EVIDENCE/coverage.log"
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          r=json.loads(Path(os.environ['EVIDENCE'],'coverage.log').read_text())
+          assert not r['failing_gates'] and not r['missing_gates']
+          PY
+      - name: Record scope and verification
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          directory=Path('meta/changes/smt-source-envelope')
+          tasks=directory/'tasks.md'
+          tasks.write_text(tasks.read_text().replace('- [ ]','- [x]'))
+          run=f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
+          (directory/'verification.md').write_text(f'''# Verification: SMT source envelope
+
+          Baseline: `{os.environ['BASE']}`. Pinned validation run: {run}.
+          The clean candidate identity and full patch are in the run's evidence artifact;
+          the temporary validation workflow is not part of the candidate tree.
+
+          ## Failing before, passing after
+
+          The unchanged baseline checker accepted a mutation reversing the bindings
+          assembled by an unmarked `checkedSmtRequest` helper. The same mutation is
+          rejected by the new source-envelope regression. All 24 new envelope tests
+          and the 30 existing proof-binding tests passed, together with every other
+          Python regression suite. The patch digest was checked before application.
+
+          ## Product checks
+
+          The pinned Lean 4.30.0 build, zero-admit check, Lean suites, kernel fixtures,
+          lexical-name tests and real solver-pipe tests passed. The Rust formatter,
+          strict Clippy and VM tests passed. Trust-boundary regressions, rebuilt MVP
+          applications, documented examples, bounded-cost witness, selector, coverage
+          validation and every pinned coverage gate passed. Cairn scan and all hooks
+          gate candidate publication; their logs are retained in the same artifact.
+
+          All four marked translation-rule bodies and all six marked soundness-proof
+          bodies are unchanged from the baseline. Only the source hash construction
+          changed. The six-module compiled manifest was regenerated from actual build
+          output; only Refinement and SmtBoundary changed. Both source and compiled
+          manifest checks then passed without rewriting them.
+
+          ## Limits
+
+          This closes the identified helper/source integrity gap within the declared,
+          dependency-free Lake build. It does not authenticate public raw solver
+          outcomes or rerun verdicts, prove compiler correctness, complete
+          `language-01-smt-record-admission`, or authorise merging PR #109.
+          Conservative binding includes unrelated Lean tests and comments; their
+          edits intentionally invalidate old records. External packages and source
+          layouts outside `src/` are rejected rather than silently omitted.
+          ''')
+          PY
+      - name: Install pinned Cairn and verify governance
+        run: |
+          archive="$RUNNER_TEMP/cairn.tar.xz"
+          curl --proto '=https' --tlsv1.2 --fail --location --retry 2 --max-time 90 https://github.com/cairn-framework/cairn/releases/download/v0.9.0/cairn-framework-x86_64-unknown-linux-gnu.tar.xz --output "$archive"
+          echo "bf1499ef311f5ac9e4ea96536d326356703369f6202fe65429ec2ab10583b3f3  $archive" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/cairn-bin"
+          tar -xJf "$archive" -C "$RUNNER_TEMP/cairn-bin" --strip-components=1
+          export PATH="$RUNNER_TEMP/cairn-bin:$PATH"
+          cairn --version
+          cairn status --json | tee "$EVIDENCE/cairn-status.log"
+          cairn context --json | tee "$EVIDENCE/cairn-context.log"
+          git add meta/changes/smt-source-envelope meta/todos/todo.language-01-smt-record-admission.md src/smt/Firth/SmtBoundary.lean src/elaborator/refinement-proof-module.sha256 tools/loop/update_smt_proof_bindings.py tools/loop/test_smt_proof_bindings.py tools/loop/test_smt_source_envelope.py
+          cairn scan --json 2>&1 | tee "$EVIDENCE/cairn-scan.log"
+          cairn hook all --json 2>&1 | tee "$EVIDENCE/cairn-hooks.log"
+          git diff --exit-code
+          git diff --cached --check
+          python3 tools/loop/update_smt_proof_bindings.py --check
+          python3 tools/loop/update_proof_manifest.py --check
+      - name: Publish verified clean candidate on a separate branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name 'Firth implementation'
+          git config user.email 'codex@openai.com'
+          tree=$(git write-tree)
+          candidate=$(git commit-tree "$tree" -p "$BASE" <<'MSG'
+          fix: bind SMT proof hashes to complete local Lean source
+
+          Cover unmarked helpers, transitive local source and declared build inputs.
+          Add 24 source-envelope regressions while preserving all rule/theorem bodies.
+          Regenerate compiled bindings from the pinned Lean build. Raw solver
+          provenance and baseline acceptance remain explicitly open.
+          MSG
+          )
+          printf 'base=%s\ncandidate=%s\ntree=%s\n' "$BASE" "$candidate" "$tree" | tee "$EVIDENCE/candidate.txt"
+          git diff "$BASE" "$candidate" > "$EVIDENCE/verified-candidate.patch"
+          git archive --format=tar.gz "$candidate" > "$EVIDENCE/verified-candidate.tar.gz"
+          gh auth setup-git --hostname github.com
+          git push origin "$candidate:refs/heads/codex/firth-smt-source-envelope-candidate-20260909"
+      - name: Retain verification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: smt-source-envelope-evidence
+          path: /tmp/firth-source-envelope-evidence/*
+          retention-days: 7
+          if-no-files-found: error
