@@ -56,6 +56,7 @@ jobs:
               script = scripts[step]
               if step == steps[0]:
                   script = script.replace('2bNNnnx', '2bNnnx').replace('WVVNN0ue', 'WVVN0ue')
+              script = script.replace('lake exe firthSmtSolverTest', 'lake exe smtSolverTest')
               print('RUN:', step, flush=True)
               subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', script], check=True)
           PY
