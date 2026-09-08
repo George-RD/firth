@@ -48,13 +48,24 @@ def source_tree(*, real_sources: bool = False):
         script = root / "tools/loop/update_smt_proof_bindings.py"
         script.parent.mkdir(parents=True)
         shutil.copy2(LOOP / script.name, script)
-        for source in bindings.SOURCES:
-            target = root / source.relative_to(bindings.ROOT)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            if real_sources:
+        if real_sources:
+            sources = list((bindings.ROOT / "src").rglob("*.lean"))
+            sources += [bindings.ROOT / name for name in bindings.BUILD_INPUTS]
+            for source in sources:
+                target = root / source.relative_to(bindings.ROOT)
+                target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, target)
-            else:
+        else:
+            for source in bindings.SOURCES:
+                target = root / source.relative_to(bindings.ROOT)
+                target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(fixture() if source == bindings.BINDINGS_SOURCE else "", encoding="utf-8")
+            (root / "lean-toolchain").write_text("leanprover/lean4:v4.30.0\n", encoding="utf-8")
+            (root / "lake-manifest.json").write_text('{"packages": []}\n', encoding="utf-8")
+            (root / "lakefile.toml").write_text(
+                'name = "fixture"\n[[lean_lib]]\nname = "Fixture"\nsrcDir = "src"\n',
+                encoding="utf-8",
+            )
         yield root, script, root / bindings.BINDINGS_SOURCE.relative_to(bindings.ROOT)
 
 

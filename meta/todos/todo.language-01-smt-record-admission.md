@@ -40,3 +40,18 @@ transitive translation helpers in proof-binding coverage. Do not substitute
 this bounded fix or a green finite suite for the full acceptance criteria.
 
 See `meta/changes/smt-record-promotion/` for scope and verification.
+
+## Implementation slice: complete Lean source binding
+
+The `smt-source-envelope` change binds each translation rule and soundness
+region to all Lean package sources plus the Lake configuration, dependency
+lock and toolchain pin. This includes unmarked helpers and their local
+transitive dependencies. Old records intentionally become stale. Unsupported
+source roots, third-party packages, symlinked inputs and ambiguous pin
+initializers are refused, not silently omitted.
+
+This closes the identified source-helper coverage gap for the declared,
+dependency-free Lake build. It does not establish solver-process provenance:
+matching raw `uncheckedUnsat` data and public rerun verdicts remain
+unauthenticated. The parent task remains **open** until the production runner
+boundary and its public-admission acceptance tests are complete.
