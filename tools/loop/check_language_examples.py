@@ -24,6 +24,7 @@ CASES = (
     ("double.firth", "main", [0], [0]),
     ("qualified-call.firth", "main", [41], [42]),
     ("locals-add.firth", "main", [20, 22], [42]),
+    ("quoted-value.firth", "main", [], [42]),
 )
 
 

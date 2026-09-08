@@ -132,6 +132,7 @@ That returns `[10]`. A qualified entry uses its full source name, such as
 | `examples/mvp/double.firth` | `main`, `[true, 21]` | `[true, 42]` |
 | `examples/mvp/qualified-call.firth` | `main`, `[41]` | `[42]` |
 | `examples/mvp/locals-add.firth` | `main`, `[20, 22]` | `[42]` |
+| `examples/mvp/quoted-value.firth` | `main`, `[]` | `[42]` |
 
 The doubling example uses `dup prim +`. The qualified-call example defines
 a word inside `vocab arithmetic { ... }`. The locals example uses
@@ -161,9 +162,10 @@ The default fuel budget is 4096 steps. `--fuel` accepts an integer from 0 to
 100000. Recursive definitions are permitted, but exhausting the bound does
 not prove divergence and is never accepted as a successful run. Increase the
 bound only after checking that the program should terminate. The VM and
-reference interpreter report cost differently: VM word-entry administration
-is additional overhead, so reference cost is compared with `kernel_cost`,
-not the larger `vm_cost`.
+reference interpreter report cost differently: VM word entry and capture
+restoration carry administrative target charges, so reference cost is compared
+with `kernel_cost`, not the larger `vm_cost`. Capture restoration still consumes
+VM fuel; a zero kernel charge does not make a VM instruction free to execute.
 
 Addition must stay within `0..9223372036854775807` for portable execution.
 Overflow fails instead of wrapping. The reference interpreter's natural

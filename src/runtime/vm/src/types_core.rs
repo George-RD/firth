@@ -246,9 +246,21 @@ pub struct CostReport {
     pub steps: Vec<CostStep>,
 }
 
+impl CostReport {
+    /// Project recorded VM charges onto the implemented reference cost model.
+    /// This does not alter target cost, instruction counts or fuel consumption.
+    pub fn kernel_total(&self) -> u64 {
+        self.steps
+            .iter()
+            .fold(0_u64, |total, step| total.saturating_add(step.kernel_cost))
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CostStep {
     pub cost: u64,
+    /// Kernel-comparable charge; capture restoration and word entry are zero.
+    pub kernel_cost: u64,
     pub word: String,
     pub pc: usize,
     pub image_version: u64,

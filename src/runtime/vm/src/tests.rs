@@ -7,6 +7,7 @@ include!("tests_conformance.rs");
 include!("tests_fixtures.rs");
 include!("tests_reference_conformance.rs");
 include!("tests_adapter.rs");
+include!("tests_capture_cost.rs");
 
 #[cfg(feature = "std")]
 include!("tests_image.rs");

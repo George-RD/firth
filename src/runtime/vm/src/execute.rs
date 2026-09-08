@@ -131,6 +131,13 @@ fn charge(
     }
     machine.cost.steps.push(CostStep {
         cost,
+        // PUSH_CAPTURE implements the reference interpreter's administrative
+        // S-PUSH, which currently costs zero. It still consumes VM fuel/cost.
+        kernel_cost: if word || matches!(instruction.op, Op::PushCapture) {
+            0
+        } else {
+            cost
+        },
         word: String::from(current_word),
         pc,
         image_version: image.image_version,
@@ -154,7 +161,6 @@ fn charge(
         world_observation: machine.world.observation.clone(),
         frames: machine.frames.clone(),
     });
-    let _ = instruction;
     Ok(())
 }
 
@@ -427,6 +433,7 @@ fn run_code(
                         machine.cost.word_entries += 1;
                         machine.cost.steps.push(CostStep {
                             cost: 1,
+                            kernel_cost: 0,
                             word: word.name.clone(),
                             pc: 0,
                             image_version: word_image.image_version,

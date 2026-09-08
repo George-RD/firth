@@ -74,14 +74,14 @@ pub struct ConformanceCostBreakdown {
 /// A comparable cost report.
 ///
 /// `total` is this target's `kappa_vm` charge. `kernel` is the same total
-/// without the administrative word-entry charges, which is the quantity the
-/// Lean reference `kappa` accounts for; the two differ exactly by
-/// `word_entries`.
+/// projected from recorded per-step kernel charges. Administrative word-entry
+/// and capture-restoration charges are excluded only from `kernel`, never from
+/// target cost or fuel consumption.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ConformanceCost {
     /// Total target cost.
     pub total: u64,
-    /// Total cost excluding administrative word-entry charges.
+    /// Total cost excluding administrative word-entry and capture-restoration charges.
     pub kernel: u64,
     /// The per-category split of `total`.
     pub breakdown: ConformanceCostBreakdown,
@@ -113,7 +113,7 @@ pub struct ConformanceObservation {
 pub struct ConformanceCostReference {
     /// Expected total target cost.
     pub total: u64,
-    /// Expected total cost excluding administrative word-entry charges.
+    /// Expected kernel cost excluding word-entry and capture-restoration charges.
     pub kernel: u64,
     /// Expected per-category split, when the reference fixes it.
     pub breakdown: Option<ConformanceCostBreakdown>,
@@ -223,7 +223,7 @@ pub fn render_conformance_frames(frames: &[FrameTrace]) -> String {
 fn conformance_cost(cost: &CostReport) -> ConformanceCost {
     ConformanceCost {
         total: cost.total,
-        kernel: cost.total.saturating_sub(cost.word_entries),
+        kernel: cost.kernel_total(),
         breakdown: ConformanceCostBreakdown {
             instructions: cost.instructions,
             word_entries: cost.word_entries,

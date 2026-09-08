@@ -609,18 +609,16 @@ fn trace_json(trace: &[TraceEvent], registry: &PrimitiveRegistry) -> Json {
 /// The cost report.
 ///
 /// `total` is this target's `kappa_vm` charge. `kernel` is the same total
-/// without the administrative word-entry charges, which is the quantity the
-/// Lean reference `kappa` accounts for, so `kernel` is the field a
-/// cross-host comparison uses. The two coincide exactly when the program
-/// makes no dictionary call, which is why a corpus without one never
-/// exposed the difference.
+/// projected from recorded per-step kernel charges. Administrative word entry
+/// and capture restoration do not contribute to the implemented reference
+/// model. Target charges and the existing VM fuel accounting are unchanged.
 fn cost_json(steps: usize, cost: &CostReport) -> Json {
     Json::Object(vec![
         (String::from("steps"), Json::Int(steps as i64)),
         (String::from("total"), Json::Int(cost.total as i64)),
         (
             String::from("kernel"),
-            Json::Int(cost.total.saturating_sub(cost.word_entries) as i64),
+            Json::Int(cost.kernel_total() as i64),
         ),
     ])
 }

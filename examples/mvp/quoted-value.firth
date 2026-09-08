@@ -1,0 +1,3 @@
+: main
+  ( -- result:Int^many )
+  42 quote call;
