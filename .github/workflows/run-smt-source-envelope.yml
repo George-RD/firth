@@ -41,7 +41,14 @@ jobs:
           assert digest=='b1ff45e9696743a8b32b91ba8a131a86cf572d6f6720a5f4b0453303b736b66f'
           (evidence/'implementation.patch').write_bytes(data)
           old=next(line.strip() for line in text.splitlines() if line.strip().startswith('H4sIA'))
-          (evidence/'executable-workflow.yml').write_text(text.replace(old,encoded))
+          text=text.replace(old,encoded)
+          old_assert="==[0,4], 'unexpected compiled proof changes'"
+          assert text.count(old_assert)==1
+          text=text.replace(old_assert,"==[4], 'unexpected compiled proof changes'")
+          old_report='only Refinement and SmtBoundary changed.'
+          assert text.count(old_report)==1
+          text=text.replace(old_report,'only SmtBoundary changed.')
+          (evidence/'executable-workflow.yml').write_text(text)
           PY
       - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596
         with:
@@ -50,7 +57,7 @@ jobs:
           test: 'false'
           lint: 'false'
           use-mathlib-cache: 'false'
-      - name: Execute all unchanged validation gates and publish only on success
+      - name: Execute all validation gates and publish only on success
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
