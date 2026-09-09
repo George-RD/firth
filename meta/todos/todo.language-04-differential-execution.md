@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.diffharness
-status: in_progress
+status: done
 created: 2026-09-08
 ---
 
@@ -29,7 +29,15 @@ non-success classes, retained process diagnostics and identities, replay and
 bounded same-failure shrinking. Usage and limits are in
 `src/diffharness/README.md`. The finite seed matrix is wired into repository CI.
 
-Local harness tests do not establish real language agreement. This task stays
-in progress until the exact candidate passes the real-adapter campaign and
-repository gates. It does not close SMT/compiler evidence admission, runtime
-review, baseline acceptance or the sustained S2 campaign.
+## Verification
+
+Implemented and branch-verified at `2d415d46d6a29c011cdfb9fab4eacd748ecce9ac`,
+full CI run `34309308469`. The actual adapters agreed on all 72 original seeded
+cases. The deliberately exhausted real case shrank through nine accepted
+reductions; both original and reduced records replayed the same non-passing
+outcome without toolchain drift. All three repository CI jobs passed.
+
+See `meta/changes/differential-execution/verification.md` for evidence and limits.
+This closes the bounded implementation task, not SMT/compiler evidence
+admission, runtime review, baseline acceptance or the sustained S2 campaign.
+The work is not yet merged or accepted on main.

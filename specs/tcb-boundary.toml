@@ -160,7 +160,8 @@ evidence = ["vm-conformance"]
 id = "firth.toolchain.diffharness"
 module = "firth.toolchain.diffharness"
 category = "differential-harness"
-status = "planned"
+# Bounded pure source profile only; see src/diffharness/README.md.
+status = "implemented"
 trusted = false
 [[components.outputs]]
 id = "reproducible-agreement-or-failure-artefacts"

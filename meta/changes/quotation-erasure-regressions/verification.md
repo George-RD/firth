@@ -24,7 +24,15 @@ Source, test and compiled-manifest blobs were checked against the local
 candidate before publication. The temporary validation workflow is not part
 of the product candidate and never updated any branch reference.
 
-Complete PR CI, including the new real-failure round-trip check and unchanged
-source/compiled-pin verification, remains required on the published candidate.
-This does not close SMT result authentication, compiler evidence admission,
-runtime review or baseline acceptance, and does not authorise merging PR #109.
+## Published candidate verification
+
+Complete PR CI run `34309308469` passed for
+`2d415d46d6a29c011cdfb9fab4eacd748ecce9ac`: Python, Lean/Rust/source execution
+and Cairn governance all succeeded. The original 72 seeded cases all agreed,
+and the real failure replay/shrinking check passed. Source/compiled pins were
+verified without rewriting. Artefact `10087820982` retains language diagnostics.
+
+This closes the bounded regression fix. It does not close SMT result
+authentication, compiler evidence admission, runtime review or baseline
+acceptance, and does not authorise merging PR #109. No independent correctness
+review or acceptance on merged main is claimed.

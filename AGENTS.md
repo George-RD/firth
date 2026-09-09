@@ -186,9 +186,11 @@ and hook checks.
 - Product gates are live: `lake build` / `lake test` (driver
   `firthAllTest`) and the VM crate gates from `src/runtime/vm`. The kernel
   metatheory (determinism, preservation, progress, linearity soundness,
-  cost invariance) is mechanised with zero admits; the **differential test
-  harness** (fuzzed compiler-vs-interpreter agreement) is specified and not
-  yet implemented.
+  cost invariance) is mechanised with zero admits. The **differential test
+  harness** at `src/diffharness/harness.py` executes a bounded pure source
+  campaign through the real adapters, with deterministic seeds, retained
+  failures, replay and shrinking. See `src/diffharness/README.md`. This is not
+  the sustained S2 campaign, effectful equivalence or a compiler theorem.
 - **Governed proof modules:** `lake test` authenticates the built
   `.olean` hashes of the six governed proof modules (see
   `governedProofModules` in `src/elaborator/Firth/Refinement.lean`) against

@@ -5,5 +5,5 @@
 - [x] Retain complete failure records and support identity-checked replay.
 - [x] Implement bounded same-failure shrinking with re-elaboration.
 - [x] Add adversarial harness tests and a real-adapter CI seed matrix.
-- [ ] Run all available local suites and exact-candidate repository CI.
-- [ ] Record scope, evidence and remaining baseline blockers.
+- [x] Run all available local suites and exact-candidate repository CI.
+- [x] Record scope, evidence and remaining baseline blockers.

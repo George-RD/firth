@@ -47,7 +47,7 @@ on Linux CI; native Windows support is not claimed.
 Records include generator version, seed/index, source and input, fuel, feature
 labels, Git revision, Python version, adapter/driver digests and toolchain pins.
 Successful campaigns also retain a summary with identities and feature counts.
-The original authored MVP corpus and proof bindings are not changed.
+The driver never rewrites the authored MVP corpus or proof bindings.
 
 Replay builds the local adapters and refuses changed toolchain identities by
 default. `--allow-toolchain-drift` permits a deliberate comparison after a fix;
