@@ -273,7 +273,7 @@ fn execute_report_resolved(
         image,
         &environment,
         &mut state,
-        "main",
+        &word.name,
     )?;
     Ok(ExecutionReport {
         stack: terminal_stack(state.stack, registry)?,

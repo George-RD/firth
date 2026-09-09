@@ -174,9 +174,12 @@ impl ConformanceVerdict {
     }
 }
 
-/// Renders a residual stack in the canonical bottom-to-top form shared with
-/// the Lean fixture corpus. Quotations render by usage rather than by body, so
-/// no pointer or allocation detail reaches the record.
+/// Renders a residual stack bottom-to-top. Scalar spellings retain the frozen
+/// Lean fixture form; bytes and primitive values include their full payloads.
+///
+/// Quotations still render only their usage for the legacy fixture profile.
+/// That projection does not establish body/capture equivalence; callers must
+/// not use it to certify equality of arbitrary quotation results.
 pub fn render_conformance_stack(stack: &[Value], registry: &PrimitiveRegistry) -> String {
     let mut rendered = String::new();
     for (index, value) in stack.iter().enumerate() {
@@ -186,8 +189,16 @@ pub fn render_conformance_stack(stack: &[Value], registry: &PrimitiveRegistry) -
         match value {
             Value::Int(value) => rendered.push_str(&value.to_string()),
             Value::Bool(value) => rendered.push_str(if *value { "true" } else { "false" }),
-            Value::Bytes(_) => rendered.push_str("bytes"),
-            Value::PrimitiveValue { .. } => rendered.push_str("primitive"),
+            Value::Bytes(bytes) => {
+                rendered.push_str("bytes:");
+                rendered.push_str(&render_hex(bytes));
+            }
+            Value::PrimitiveValue { tag, bytes } => {
+                rendered.push_str("primitive:");
+                rendered.push_str(&tag.to_string());
+                rendered.push(':');
+                rendered.push_str(&render_hex(bytes));
+            }
             Value::World => rendered.push_str("world"),
             Value::Quotation(quotation) => {
                 rendered.push_str(if quotation.usage(registry) == Usage::Many {
@@ -201,9 +212,10 @@ pub fn render_conformance_stack(stack: &[Value], registry: &PrimitiveRegistry) -
     rendered
 }
 
-/// Renders a residual frame stack as `word@pc` entries, `-` when empty. The
-/// code digest and capture values stay out of the rendering: they are already
-/// determined by the image and the instruction pointer.
+/// Renders the legacy residual-frame projection as `word@pc`, `-` when empty.
+/// It omits code identity, captures, saved DIP values and continuation state.
+/// Matching this projection does not establish equality of resumable frames;
+/// complete frame comparison remains a separate conformance obligation.
 pub fn render_conformance_frames(frames: &[FrameTrace]) -> String {
     if frames.is_empty() {
         return String::from("-");

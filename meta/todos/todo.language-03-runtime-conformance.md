@@ -50,7 +50,24 @@ CI still gates the product head; the parent remains open.
 
 Remaining comparison target from static review: the Rust
 `src/runtime/vm/src/conformance.rs` display renderer collapses quotation
-bodies/captures and byte/primitive payloads, while frame rendering omits resume
-state. Add public reproducers and either a justified shared normal form or
-explicit unsupported-comparison results. Python's existing portable refusal
-must not be treated as closure of the separate Rust comparison surface.
+bodies/captures, while frame rendering omits resume state. Add public
+reproducers and either a justified shared normal form or explicit
+unsupported-comparison results. Python's existing portable refusal must not
+be treated as closure of the separate Rust comparison surface.
+
+## Verified sub-slice: scalar observation payloads and named reports
+
+`meta/changes/runtime-observation-payloads/` fixes byte/primitive payload
+collisions in the Rust stack renderer and incorrect `main` labels in named
+report execution. Public-API regressions retain exact scalar representations,
+real false-agreement reproducers and report/diagnostic parity. This does not
+close quotation/frame projection losses, full trace comparison, image/patch
+proof admission, process provenance or baseline acceptance.
+
+Validation run `34378902545` reproduced exactly 13 failures on the unchanged
+runtime in both std and no_std configurations, with the positive controls
+passing. The candidate passed all 15 std / 14 no_std observation tests, the
+full 134-test Rust suite, 309 Python unit tests plus the review-gate script,
+and Cairn's strict gate. Exact source identities and limitations are in the
+change's `verification.md`. Product-head CI and merged-main acceptance remain
+separate; this parent is still open.
