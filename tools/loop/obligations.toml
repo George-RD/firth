@@ -285,3 +285,10 @@ satisfied_by = ["language-06-source-refinement-execution", "language-10-inventor
 node = "firth.toolchain.agent"
 source = "dec.usable-language-milestones M2 (bounded PRD G8/S7 pilot)"
 satisfied_by = ["language-20-agent-workflow", "language-21-docs-only-change-trial"]
+
+# Executable sub-gate of M0 compiler admission; the parent baseline remains open.
+[obligation.compiler-admission-recheck]
+node = "firth.toolchain.compiler"
+source = "dec.compiler-admission-recheck (language-02; PRD G6/R8/R9)"
+gate = "tools/loop/check_compiler_admission.py"
+satisfied_by = ["language-02-compiler-evidence"]

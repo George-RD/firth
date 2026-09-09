@@ -8,16 +8,16 @@ The `firth.compile.v1` adapter: one `firth.checked-kernel.v1` request in, one
 `firth.target-program.v1` response out, as pinned by
 `tools/loop/mvp_agent_manifest.toml`.
 
-The adapter never reconstructs a program from anything but the checked
-representation it was handed. Kernel programs are decoded with
-`Firth.ReferenceRun.decodeProgram`, the very decoder the reference interpreter
-uses, so the two hosts cannot disagree about which programs are well formed
-while claiming to be compared.
+Caller-supplied checking/proof markers are compatibility assertions, not
+proof. Every body and declared type is rechecked against the whole dictionary
+by `Lowering.compileWords`. An optional `source` envelope additionally triggers
+real re-elaboration and exact dictionary comparison before lowering. The
+source runner and differential harness always supply that envelope.
 
-Everything the target contract cannot represent fails closed: an unknown atom
-kind, an unknown dictionary word, an unknown or unimplemented primitive, a
-literal with no target value, a request member outside the schema, a duplicate
-JSON member, and a request whose evidence markers or versions are stale.
+Kernel-only compilation is supported, but does not claim source origin.
+Neither mode claims discharged source refinements or authenticates a target
+image. Response verification metadata states these distinctions explicitly.
+Malformed/unsupported transport and representations still fail closed.
 
 The response carries the target program, the body digest of every word, and
 the debug locations §5 asks for so a harness can aggregate target instructions
@@ -164,6 +164,7 @@ structure Request where
   entry : String
   words : List Lowering.CheckedWord
   atomCounts : List Nat
+  source : Option Firth.Agent.Elaborate.Request := none
 
 private def pairWords (words : List RequestWord) (types : List (String × WordType.Scheme)) :
     Except String (List Lowering.CheckedWord × List Nat) := do
@@ -183,7 +184,7 @@ private def pairWords (words : List RequestWord) (types : List (String × WordTy
 def decodeRequest (value : Json) : Except String Request := do
   let values ← object "request" value
     ["request_id", "checked_words", "erased_word_types", "gamma_version", "target_version"]
-    ["entry"]
+    ["entry", "source"]
   let requestId ← nonempty "request.request_id" =<< reqStr "request" "request_id" values
   if (← reqStr "request" "gamma_version" values) != gammaVersion then
     err "request: unsupported gamma version"
@@ -201,6 +202,8 @@ def decodeRequest (value : Json) : Except String Request := do
   if names.eraseDups.length != names.length then err "request: duplicate checked word"
   let types ← decodeTypes
     (← array "request.erased_word_types" (← required "request" "erased_word_types" values))
+  let typeNames := types.map (·.1)
+  if typeNames.eraseDups.length != typeNames.length then err "request: duplicate erased word type"
   let (checked, counts) ← pairWords words types
   let entry ← match field "entry" values with
     | some value => nonempty "request.entry" =<< str "request.entry" value
@@ -208,7 +211,16 @@ def decodeRequest (value : Json) : Except String Request := do
       | [word] => pure word.name
       | _ => err "request.entry: required for multiple checked words"
   if !names.any (· == entry) then err s!"request.entry: unknown word {entry}"
-  pure { requestId, entry, words := checked, atomCounts := counts }
+  let source : Option Firth.Agent.Elaborate.Request ← match field "source" values with
+    | none => pure none
+    | some value =>
+        let members ← object "source" value ["source_path", "source_text", "language_version"]
+        if (← reqStr "source" "language_version" members) != Firth.Agent.Elaborate.languageVersion then
+          err "source: unsupported language version"
+        let sourcePath ← nonempty "source.source_path" =<< reqStr "source" "source_path" members
+        let sourceText ← reqStr "source" "source_text" members
+        pure (some { requestId, sourcePath, sourceText })
+  pure { requestId, entry, words := checked, atomCounts := counts, source }
 
 private def quote (value : String) : String := (Json.str value).compress
 
@@ -287,8 +299,21 @@ private def debugLocationsJson (source : String) (word : Target.WordEntry) : Lis
     obj [("word", quote source), ("target_word", quote word.name),
          ("instruction", number index), ("kernel_atom", number index)]
 
+private def verificationJson (source : Option Firth.Agent.Elaborate.Request) : String :=
+  obj [("schema", quote "firth.compiler-verification.v1"),
+    ("method", quote "kernel-type-and-linearity-recheck"),
+    ("source_bound", if source.isSome then "true" else "false"),
+    ("source_sha256", match source with
+      | some request => quote (Digest.hexOfString request.sourceText)
+      | none => "null"),
+    ("gamma_version", quote gammaVersion), ("target_version", quote targetVersion),
+    ("refinements", quote "not-checked"),
+    ("image_evidence", quote "legacy-content-identifiers-not-authenticated-proofs")]
+
+
 private def successJson (requestId : String) (entry : Target.WordEntry)
-    (sources : List String) (words : List Target.WordEntry) : String :=
+    (sources : List String) (words : List Target.WordEntry)
+    (source : Option Firth.Agent.Elaborate.Request) : String :=
   let program :=
     obj [("format_version", number formatVersion),
          ("entry", quote entry.name),
@@ -300,12 +325,43 @@ private def successJson (requestId : String) (entry : Target.WordEntry)
     debugLocationsJson source word)
   obj [("request_id", quote requestId), ("status", quote "success"),
        ("target_program", program), ("word_digests", digests),
-       ("debug_locations", debug)]
+       ("debug_locations", debug), ("verification", verificationJson source)]
 
 private def failureJson (requestId : String) (error : Lowering.CompileError) : String :=
   obj [("request_id", quote requestId), ("status", quote "failure"),
        ("compile_error", obj [("code", quote error.code), ("word", quote error.word),
          ("message", quote error.message)])]
+
+/-- Re-elaborates exact source bytes without opening the diagnostic path.
+This binds all bodies and types, including unused words, to what was actually
+checked. A matching hash or public checking marker cannot substitute for it. -/
+private def verifySource (request : Request) : Except String Unit := do
+  match request.source with
+  | none => pure ()
+  | some source =>
+      let input := obj [("request_id", quote request.requestId),
+        ("source_path", quote source.sourcePath), ("source_text", quote source.sourceText),
+        ("language_version", quote Firth.Agent.Elaborate.languageVersion),
+        ("gamma_version", quote gammaVersion)]
+      let response ← Firth.Agent.Elaborate.runRequest input
+      let json ← Json.parse response
+      let values ← fields "source elaboration" json
+      if (← reqStr "source elaboration" "status" values) != "success" then
+        err "source: elaboration failed; no source-bound artefact may be compiled"
+      let checked ← required "source elaboration" "checked_words" values
+      let types ← required "source elaboration" "erased_word_types" values
+      let expected ← decodeRequest (← Json.parse (obj [
+        ("request_id", quote request.requestId), ("entry", quote request.entry),
+        ("checked_words", checked.compress), ("erased_word_types", types.compress),
+        ("gamma_version", quote gammaVersion), ("target_version", quote targetVersion)]))
+      if expected.words.length != request.words.length then
+        err "source: checked dictionary mismatch"
+      for word in request.words do
+        match expected.words.find? (·.name == word.name) with
+        | some expectedWord =>
+            if word != expectedWord then err s!"source: body/type mismatch for {word.name}"
+        | none => err s!"source: word not elaborated: {word.name}"
+
 
 /-- Compiles one decoded request.
 
@@ -313,6 +369,7 @@ The entry is a source word name, not a target name or a position. Multiword
 requests must select it explicitly. A single-word request may omit it for
 backwards compatibility because its entry is unambiguous. -/
 def compileRequest (request : Request) : Except String String := do
+  verifySource request
   match Lowering.compileWords request.words with
   | .error error => pure (failureJson request.requestId error)
   | .ok entries =>
@@ -325,7 +382,7 @@ def compileRequest (request : Request) : Except String String := do
         match (request.words.zip entries).find? (fun pair => pair.1.name == request.entry) with
         | none => err s!"request.entry: unknown word {request.entry}"
         | some (_, entry) =>
-            pure (successJson request.requestId entry (request.words.map (·.name)) entries)
+            pure (successJson request.requestId entry (request.words.map (·.name)) entries request.source)
 
 private def validateJsonMembers (input : String) : Except String Unit :=
   match Firth.Agent.rejectDuplicateMembers input with

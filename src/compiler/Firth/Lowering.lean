@@ -1,6 +1,7 @@
 import Firth.Interpreter
 import compiler.Firth.Target
 import compiler.Firth.WordType
+import agent.Firth.Agent.ElaborateAdapter
 
 /-!
 Total, deterministic lowering of a checked kernel program into target code.
@@ -49,6 +50,8 @@ inductive CompileError where
   | collidingName (word : String) (name : String)
   /-- An erased word type that could not be rendered canonically. -/
   | invalidWordType (word : String) (detail : String)
+  /-- The supplied kernel body does not have its declared type or ownership. -/
+  | checkingFailed (word : String) (detail : String)
   deriving Repr, BEq
 
 /-- The stable code a refusal reports on the wire. -/
@@ -61,13 +64,15 @@ def CompileError.code : CompileError → String
   | .invalidName .. => "firth.compile.invalid-name"
   | .collidingName .. => "firth.compile.colliding-name"
   | .invalidWordType .. => "firth.compile.invalid-word-type"
+  | .checkingFailed .. => "firth.compile.typecheck-failed"
 
 /-- The word a refusal came from. -/
 def CompileError.word : CompileError → String
   | .unsupportedLiteral word _ | .unsupportedValue word _
   | .unknownWord word _ | .unknownPrimitive word _
   | .unsupportedPrimitive word _ | .invalidName word _
-  | .collidingName word _ | .invalidWordType word _ => word
+  | .collidingName word _ | .invalidWordType word _
+  | .checkingFailed word _ => word
 
 /-- A deterministic message naming what was refused. -/
 def CompileError.message : CompileError → String
@@ -79,6 +84,7 @@ def CompileError.message : CompileError → String
   | .invalidName _ detail => s!"name cannot be mangled into a target name: {detail}"
   | .collidingName _ name => s!"two source words mangle to the same target name: {name}"
   | .invalidWordType _ detail => s!"erased word type is not canonical: {detail}"
+  | .checkingFailed _ detail => s!"kernel recheck failed: {detail}"
 
 private def hexDigits : Array Char :=
   #['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f']
@@ -152,7 +158,9 @@ private def lowerLiteral (context : Context) : Literal → Except CompileError T
 
 mutual
 
-/-- `lower(p)` for a kernel program, per the §3 table. -/
+/-- Unchecked representation helper for `lower(p)`, per the §3 table.
+This does not authenticate typing, source origin or proofs. Call `compileWords`
+for dictionary-wide type and ownership admission before emitting an image. -/
 partial def lowerProgram (context : Context) :
     Firth.Interpreter.Program → Except CompileError (List Target.Instruction)
   | .empty => .ok []
@@ -199,11 +207,13 @@ private partial def lowerAtom (context : Context) :
 
 end
 
-/-- One checked word as the compiler receives it. -/
+/-- One caller-supplied word. The historical name is not evidence of checking.
+`compileWords` rechecks this public structure on every invocation. -/
 structure CheckedWord where
   name : String
   scheme : WordType.Scheme
   program : Firth.Interpreter.Program
+  deriving BEq
 
 /-- Builds the source-to-target name map, refusing an unmanglable or colliding
 name before any lowering happens. -/
@@ -218,16 +228,64 @@ def nameMap (words : List CheckedWord) : Except CompileError (List (String × St
         mapping := mapping ++ [(word.name, mangled)]
   pure mapping
 
-/-- Lowers every checked word into a target word entry.
+private def checkingUsage : WordType.Usage → Firth.Elaborator.StackEffect.AUsage
+  | .many => .many
+  | .linear => .linear
 
-`kernelEvidenceDigest` binds the canonical encoding of the word's kernel
-program and `refinementEvidenceDigest` binds its erased word type. §7 leaves
-both payloads to the elaborator boundary and the VM only checks that neither
-is all zero, so binding them to the artefacts this compiler actually saw is
-the strongest statement it can make on its own. -/
+mutual
+  private partial def checkingType : WordType.ValueType → Firth.Elaborator.StackEffect.AType
+    | .base name usage => .base name (checkingUsage usage)
+    | .quotation input output usage =>
+        .quotation (checkingStack input) (checkingStack output) (checkingUsage usage)
+
+  private partial def checkingStack : WordType.StackType → Firth.Elaborator.StackEffect.AStack
+    | .mk row items =>
+        let initial := match row with
+          | none => Firth.Elaborator.StackEffect.AStack.empty
+          | some name => .row (.rigid name)
+        items.foldl (fun stack item => .snoc stack (checkingType item)) initial
+end
+
+private def checkingScheme (scheme : WordType.Scheme) : Firth.Elaborator.StackEffect.Scheme :=
+  { rowVariables := scheme.rowVariables
+    input := checkingStack scheme.input
+    output := checkingStack scheme.output }
+
+private def checkingSpan : Firth.Elaborator.Span :=
+  { start := { offset := 0, line := 1, column := 1 }
+    stop := { offset := 0, line := 1, column := 1 } }
+
+private def locatedProgram : Firth.Interpreter.Program → Firth.Elaborator.KernelProgram
+  | .empty => []
+  | .cons atom tail => { span := checkingSpan, atom } :: locatedProgram tail
+
+/-- Rechecks every body against the complete dictionary, never just the entry.
+All types have been rendered first, which refuses duplicate/unbound rows and
+unrepresentable quotation nesting before conversion to the real checker. -/
+private def recheckWords (words : List CheckedWord) : Except CompileError Unit := do
+  let env : Firth.Elaborator.StackEffect.Env :=
+    { Firth.Agent.Elaborate.gammaTyping with
+      word := fun name => (words.find? (·.name == name)).map (fun word => checkingScheme word.scheme) }
+  for word in words do
+    match Firth.Elaborator.StackEffect.check env (checkingScheme word.scheme)
+        (locatedProgram word.program) checkingSpan with
+    | .error diagnostic => throw (.checkingFailed word.name diagnostic.code)
+    | .ok _ => pure ()
+
+/-- Admits a dictionary by actual type/ownership checking, then emits entries.
+
+Representation checks keep their existing stable errors. No partially lowered
+entry escapes when another word fails checking. Callers cannot bypass this
+check by constructing `CheckedWord` or by writing JSON evidence markers.
+
+The target v1 evidence slots are legacy content identifiers: the first hashes
+canonical code, the second the erased type. Neither is an authenticated proof,
+and the second does not establish a refinement. The adapter reports that
+limitation separately; target-image/patch authentication remains a different
+boundary. No compiler-correctness theorem is claimed by this function. -/
 def compileWords (words : List CheckedWord) : Except CompileError (List Target.WordEntry) := do
   let mapping ← nameMap words
-  let mut entries : List Target.WordEntry := []
+  let mut prepared : List (CheckedWord × String × List Target.Instruction) := []
   for word in words do
     let context : Context := { word := word.name, words := mapping }
     let code ← lowerProgram context word.program
@@ -235,6 +293,10 @@ def compileWords (words : List CheckedWord) : Except CompileError (List Target.W
       match WordType.render word.scheme with
       | .error detail => throw (.invalidWordType word.name detail)
       | .ok rendered => pure rendered
+    prepared := prepared ++ [(word, erased, code)]
+  recheckWords words
+  let mut entries : List Target.WordEntry := []
+  for (word, erased, code) in prepared do
     let target ←
       match mapping.find? (fun entry => entry.1 == word.name) with
       | some entry => pure entry.2

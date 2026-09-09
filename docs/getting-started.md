@@ -270,3 +270,8 @@ does not imply the VM adapter implements it.
 **Fuel exhausted or VM/reference mismatch:** retain the source, inputs, entry,
 fuel and diagnostic. Treat the run as failed. Do not weaken comparison to make
 the example pass.
+
+## Compiler trust boundary
+
+See [compiler admission](compiler-admission.md) for source binding, direct
+kernel checking and the distinction between content hashes and proof.

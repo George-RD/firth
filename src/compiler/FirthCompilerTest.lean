@@ -153,11 +153,31 @@ private def entrySelectionTests : IO Unit := do
     ((multi false).replace "\"entry\":\"main\""
       "\"entry\":\"main\",\"entry\":\"helper-word\"")
 
+/-- The direct Lean admission API must not bypass the wire-level check. -/
+private def directAdmissionTests : IO Unit := do
+  let invalid : Lowering.CheckedWord :=
+    { name := "forged"
+      scheme := { rowVariables := [], input := .mk none [], output := .mk none [.base "Int" .many] }
+      program := .cons (.lit (.bool true)) .empty }
+  match Lowering.compileWords [invalid] with
+  | .error (.checkingFailed "forged" _) => pure ()
+  | .error error => fail s!"wrong direct admission failure: {repr error}"
+  | .ok _ => fail "a caller-constructed CheckedWord bypassed rechecking"
+  let valid := { invalid with name := "valid", program := .cons (.lit (.nat 42)) .empty }
+  match Lowering.compileWords [valid, invalid] with
+  | .error (.checkingFailed "forged" _) => pure ()
+  | .error error => fail s!"wrong unused-helper failure: {repr error}"
+  | .ok _ => fail "an unused invalid body escaped dictionary rechecking"
+  match Lowering.compileWords [valid] with
+  | .ok [_] => pure ()
+  | _ => fail "a valid direct kernel did not compile"
+
 def main : IO Unit := do
   encodingWitnesses
   mangleWitnesses
   wordTypeWitnesses
   entrySelectionTests
+  directAdmissionTests
 
   expectContains "literal compiles" (request "literal-int" ("[" ++ literal 42 ++ "]"))
     "\"status\":\"success\""
@@ -178,12 +198,12 @@ def main : IO Unit := do
         ++ "{\"kind\":\"quotation\",\"body\":[" ++ literal 42 ++ "]},"
         ++ "{\"kind\":\"quotation\",\"body\":[" ++ literal 0 ++ "]},{\"kind\":\"if\"}]"))
     "{\"word\":\"conditional\",\"target_word\":\"conditional\",\"instruction\":3,\"kernel_atom\":3}"
-  expectContains "every control atom lowers"
+  expectContains "forged markers cannot validate an underflowing control fixture"
     (request "control"
       "[{\"kind\":\"dup\"},{\"kind\":\"drop\"},{\"kind\":\"swap\"},{\"kind\":\"dip\"},\
         {\"kind\":\"call\"},{\"kind\":\"compose\"},{\"kind\":\"quote\"}]"
       (scheme "{\"row\":null,\"items\":[]}"))
-    "\"status\":\"success\""
+    "firth.compile.typecheck-failed"
   expectContains "the plus primitive lowers to the target registry name"
     (request "add" ("[" ++ literal 1 ++ "," ++ literal 2 ++ ",{\"kind\":\"prim\",\"name\":\"+\"}]"))
     "\"primitive\":\"addNat\""

@@ -95,6 +95,8 @@ jobs:
           cargo test --locked
       - name: Reject unchecked claims and malformed adapter input
         run: python3 tools/loop/check_trust_boundaries.py 2>&1 | tee /tmp/language-trust.log
+      - name: Recheck compiler admission and source binding
+        run: python3 tools/loop/check_compiler_admission.py --no-build 2>&1 | tee /tmp/language-compiler-admission.log
       - name: Rebuild and compare MVP applications
         run: python3 tools/loop/mvp_agent_gate.py 2>&1 | tee /tmp/language-mvp.log
       - name: Execute documented multiword programs and failure cases

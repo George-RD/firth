@@ -219,9 +219,10 @@ private def warningsJson (word : CheckedWord) : List String :=
 
 /-- Renders a successful elaboration.
 
-`checked_words` carries the evidence markers the compile and reference-run
-adapters require, so its entries are usable verbatim as their request
-members. -/
+`checked_words` carries legacy compatibility markers, not transferable proof.
+Its entries can be passed verbatim to the compile and reference-run adapters.
+The compiler independently rechecks them; source-backed callers also pass the
+original source envelope to bind these entries by fresh re-elaboration. -/
 def successJson (request : Request) (program : CheckedProgram) : Except String String := do
   let mut checked : List String := []
   let mut erased : List String := []

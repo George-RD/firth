@@ -519,12 +519,13 @@ def rebuild(entry: dict[str, Any], workspace: Path, *,
     if sorted(item.name for item in scratch.iterdir()) != [source_name]:
         fail(f"{name}: the scratch workspace holds more than the application source")
 
+    source_text = scratch_source.read_text(encoding="utf-8")
     elaboration = adapter(
         [str(LEAN_BIN / "firthElaborate")],
         {
             "request_id": name,
             "source_path": source_name,
-            "source_text": scratch_source.read_text(encoding="utf-8"),
+            "source_text": source_text,
             "language_version": LANGUAGE_VERSION,
             "gamma_version": GAMMA_VERSION,
         },
@@ -550,6 +551,8 @@ def rebuild(entry: dict[str, Any], workspace: Path, *,
             "erased_word_types": elaboration["erased_word_types"],
             "gamma_version": GAMMA_VERSION,
             "target_version": TARGET_VERSION,
+            "source": {"source_path": source_name, "source_text": source_text,
+                       "language_version": LANGUAGE_VERSION},
         },
         scratch,
         f"{name} compile",

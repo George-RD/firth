@@ -391,7 +391,9 @@ class Executor:
                     "gamma_version": gate.GAMMA_VERSION, "fuel": case.fuel})
                 compilation = call("compile", {"entry": "main", "checked_words": elaboration["checked_words"],
                     "erased_word_types": elaboration["erased_word_types"],
-                    "gamma_version": gate.GAMMA_VERSION, "target_version": gate.TARGET_VERSION})
+                    "gamma_version": gate.GAMMA_VERSION, "target_version": gate.TARGET_VERSION,
+                    "source": {"source_path": "case.firth", "source_text": case.source,
+                               "language_version": gate.LANGUAGE_VERSION}})
                 if compilation.get("status") != "success":
                     return Result("compiler-rejected", stage, records=records)
                 target = call("target", {"target_program": compilation["target_program"],
