@@ -43,6 +43,7 @@ jobs:
       - name: Build unchanged baseline and reproduce fabricated admission
         run: |
           lake build 2>&1 | tee /tmp/compiler-admission-baseline-build.log
+          lake build firthCompile
           python3 tools/loop/update_proof_manifest.py --check
           python3 tools/loop/check_compiler_admission.py --baseline --no-build 2>&1 | tee /tmp/compiler-admission-baseline.json
       - name: Apply remaining candidate and check source bindings
@@ -55,6 +56,7 @@ jobs:
       - name: Build candidate and derive compiled proof bindings
         run: |
           lake build 2>&1 | tee /tmp/compiler-admission-build.log
+          lake build firthCompile firthElaborate firthReferenceRun
           python3 tools/loop/update_proof_manifest.py
           python3 tools/loop/update_proof_manifest.py --check
           python3 tools/loop/check_zero_admit.py
