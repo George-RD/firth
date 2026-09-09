@@ -1,0 +1,93 @@
+name: Temporary quotation regression validation
+
+on:
+  push:
+    branches: [codex/firth-quotation-validation-20260909]
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Verify and apply the exact candidate patch
+        run: |
+          echo '28f18ce12e73834a5872c3f2501605193693bbf688e7dfa9ae6b780799f12b13  .github/quotation-candidate.patch' | sha256sum --check
+          git apply --check .github/quotation-candidate.patch
+          git apply .github/quotation-candidate.patch
+          python3 tools/loop/update_smt_proof_bindings.py --check
+          git diff --check
+      - name: Install pinned Lean
+        uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596
+        with:
+          auto-config: 'false'
+          build: 'false'
+          test: 'false'
+          lint: 'false'
+          use-mathlib-cache: 'false'
+      - name: Build candidate and derive compiled bindings
+        run: |
+          lake build 2>&1 | tee /tmp/quotation-build.log
+          python3 tools/loop/update_proof_manifest.py
+          python3 tools/loop/update_proof_manifest.py --check
+          python3 tools/loop/check_zero_admit.py
+      - name: Run pinned Lean suites and unchanged source campaign
+        run: |
+          lake test 2>&1 | tee /tmp/quotation-tests.log
+          python3 src/diffharness/harness.py run --seed 0 --seed 1 --seed 20260909 --cases 24 --artifacts /tmp/quotation-differential 2>&1 | tee /tmp/quotation-differential.log
+      - name: Store verified blob objects without moving any branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, subprocess, urllib.request
+          from pathlib import Path
+          files = [
+              'src/elaborator/Firth/Erasure.lean',
+              'src/elaborator/FirthErasureTest.lean',
+              'src/smt/Firth/SmtBoundary.lean',
+              'src/elaborator/refinement-proof-module.sha256',
+          ]
+          result = {'validation_commit': os.environ['GITHUB_SHA'], 'blobs': {}}
+          for name in files:
+              data = Path(name).read_bytes()
+              expected = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+              body = json.dumps({'content': data.decode('utf-8'), 'encoding': 'utf-8'}).encode()
+              request = urllib.request.Request(
+                  'https://api.github.com/repos/' + os.environ['GITHUB_REPOSITORY'] + '/git/blobs',
+                  data=body, method='POST', headers={
+                      'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+                      'Accept': 'application/vnd.github+json',
+                      'Content-Type': 'application/json',
+                      'X-GitHub-Api-Version': '2022-11-28',
+                  })
+              with urllib.request.urlopen(request, timeout=60) as response:
+                  blob = json.load(response)
+              if blob['sha'] != expected:
+                  raise RuntimeError('Git blob identity mismatch for ' + name)
+              result['blobs'][name] = {'git_sha1': expected, 'sha256': hashlib.sha256(data).hexdigest()}
+          Path('/tmp/quotation-blobs.json').write_text(json.dumps(result, sort_keys=True, indent=2) + '\n')
+          subprocess.run(['git', 'diff', '--check'], check=True)
+          print(json.dumps(result, sort_keys=True))
+          PY
+      - name: Retain candidate and validation diagnostics
+        if: always()
+        run: |
+          git diff --binary -- src/elaborator/Firth/Erasure.lean src/elaborator/FirthErasureTest.lean src/smt/Firth/SmtBoundary.lean src/elaborator/refinement-proof-module.sha256 > /tmp/quotation-candidate.patch
+          cp src/elaborator/refinement-proof-module.sha256 /tmp/quotation-compiled-manifest.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: quotation-validation
+          path: /tmp/quotation-*
+          retention-days: 7
+          if-no-files-found: error
