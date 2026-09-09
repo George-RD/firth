@@ -1,0 +1,105 @@
+name: Temporary runtime ingress validation
+on:
+  push:
+    branches: [codex/firth-ingress-validation-20260909]
+permissions:
+  contents: write
+defaults:
+  run:
+    shell: bash
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Apply the checksum-bound candidate and format tests
+        run: |
+          echo 'daeab51e72a9553d2fe1e08729b1660b19f78ea4bc2c69b26f65c0c18eb6cafc  .github/ingress-candidate.patch' | sha256sum --check
+          git apply --check .github/ingress-candidate.patch
+          git apply .github/ingress-candidate.patch
+          (cd src/runtime/vm && cargo fmt)
+          git diff --check
+          mkdir -p /tmp/ingress-validation
+          git diff > /tmp/ingress-validation/applied.diff
+      - name: Reproduce baseline defects using the unchanged runtime
+        run: |
+          git worktree add --detach /tmp/firth-ingress-baseline c34ffc85989020a5657681d3b5ba5e9751e64b82
+          cp src/runtime/vm/tests/ingress.rs /tmp/firth-ingress-baseline/src/runtime/vm/tests/
+          cp tools/loop/check_runtime_ingress.py /tmp/firth-ingress-baseline/tools/loop/
+          cd /tmp/firth-ingress-baseline
+          git diff --exit-code -- src/runtime/vm/src
+          python3 tools/loop/check_runtime_ingress.py --expect-vulnerable --artifacts /tmp/ingress-validation/before | tee /tmp/ingress-validation/before.log
+      - name: Verify corrected public APIs in std and no_std builds
+        run: |
+          python3 tools/loop/check_runtime_ingress.py --artifacts /tmp/ingress-validation/after-std | tee /tmp/ingress-validation/after-std.log
+          python3 tools/loop/check_runtime_ingress.py --no-default-features --artifacts /tmp/ingress-validation/after-core | tee /tmp/ingress-validation/after-core.log
+          cd src/runtime/vm
+          cargo fmt --check
+          cargo clippy --locked --all-targets -- -D warnings 2>&1 | tee /tmp/ingress-validation/clippy.log
+          cargo clippy --locked --no-default-features --lib -- -D warnings 2>&1 | tee /tmp/ingress-validation/clippy-core.log
+          cargo test --locked 2>&1 | tee /tmp/ingress-validation/rust.log
+      - name: Check Python suites and unchanged proof inputs
+        run: |
+          for suite in tools/loop/test_*.py; do python3 "$suite"; done 2>&1 | tee /tmp/ingress-validation/python.log
+          python3 tools/loop/check_mvp_agent_inputs.py
+          python3 tools/loop/update_smt_proof_bindings.py --check
+          python3 tools/loop/check_zero_admit.py
+          python3 tools/loop/select_unit.py --validate
+          python3 tools/loop/coverage.py --validate
+      - name: Verify governance
+        run: |
+          curl --proto '=https' --tlsv1.2 --fail --location --retry 2 --max-time 90 https://github.com/cairn-framework/cairn/releases/download/v0.9.0/cairn-framework-x86_64-unknown-linux-gnu.tar.xz --output /tmp/cairn.tar.xz
+          echo 'bf1499ef311f5ac9e4ea96536d326356703369f6202fe65429ec2ab10583b3f3  /tmp/cairn.tar.xz' | sha256sum --check
+          mkdir -p /tmp/cairn-bin
+          tar -xJf /tmp/cairn.tar.xz -C /tmp/cairn-bin --strip-components=1
+          /tmp/cairn-bin/cairn scan --json | tee /tmp/ingress-validation/scan.json
+          /tmp/cairn-bin/cairn hook all --json | tee /tmp/ingress-validation/hooks.json
+          git diff --check
+      - name: Export verified product blobs without changing refs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, urllib.request
+          from pathlib import Path
+          files = ['.github/workflows/ci.yml',
+                   'meta/changes/runtime-ingress-bounds/proposal.md',
+                   'meta/changes/runtime-ingress-bounds/design.md',
+                   'meta/changes/runtime-ingress-bounds/tasks.md',
+                   'meta/todos/todo.language-03-runtime-conformance.md',
+                   'src/runtime/vm/src/decode.rs', 'src/runtime/vm/src/image_bounds.rs',
+                   'src/runtime/vm/src/lib.rs', 'src/runtime/vm/src/resource_bounds.rs',
+                   'src/runtime/vm/src/validation.rs', 'src/runtime/vm/target-spec.md',
+                   'src/runtime/vm/tests/ingress.rs', 'tools/loop/check_runtime_ingress.py']
+          result = {'validation_commit': os.environ['GITHUB_SHA'], 'blobs': {}}
+          for name in files:
+              data = Path(name).read_bytes()
+              expected = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+              body = json.dumps({'content': data.decode(), 'encoding': 'utf-8'}).encode()
+              request = urllib.request.Request('https://api.github.com/repos/' + os.environ['GITHUB_REPOSITORY'] + '/git/blobs', data=body, method='POST', headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28'})
+              with urllib.request.urlopen(request, timeout=60) as response:
+                  blob = json.load(response)
+              if blob['sha'] != expected:
+                  raise RuntimeError('blob mismatch: ' + name)
+              result['blobs'][name] = {'git_sha1': expected, 'sha256': hashlib.sha256(data).hexdigest()}
+          Path('/tmp/ingress-validation/blobs.json').write_text(json.dumps(result, sort_keys=True, indent=2) + '\n')
+          print(json.dumps(result, sort_keys=True))
+          PY
+      - name: Retain reviewed source and diagnostics
+        if: always()
+        run: |
+          mkdir -p /tmp/ingress-validation
+          git diff > /tmp/ingress-validation/applied.diff
+          cp src/runtime/vm/tests/ingress.rs /tmp/ingress-validation/ingress.rs
+          tar -czf /tmp/ingress-validation/product-source.tar.gz .github/workflows/ci.yml meta/changes/runtime-ingress-bounds meta/todos/todo.language-03-runtime-conformance.md src/runtime/vm/src src/runtime/vm/tests/ingress.rs src/runtime/vm/target-spec.md tools/loop/check_runtime_ingress.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: runtime-ingress-validation
+          path: /tmp/ingress-validation
+          retention-days: 7
+          if-no-files-found: error

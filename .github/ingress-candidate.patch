@@ -1,0 +1,273 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 628880e..b707d4c 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -86,6 +86,10 @@ jobs:
+         run: lake env lean --run src/elaborator/FirthNamesTest.lean 2>&1 | tee /tmp/language-names.log
+       - name: Test real solver pipes
+         run: lake env lean --run src/smt/FirthSmtProcessTest.lean 2>&1 | tee /tmp/language-process.log
++      - name: Check public runtime ingress under process deadlines
++        run: |
++          python3 tools/loop/check_runtime_ingress.py --artifacts /tmp/firth-ingress-std 2>&1 | tee /tmp/language-ingress-std.log
++          python3 tools/loop/check_runtime_ingress.py --no-default-features --artifacts /tmp/firth-ingress-core 2>&1 | tee /tmp/language-ingress-core.log
+       - name: Verify Rust VM
+         working-directory: src/runtime/vm
+         run: |
+@@ -121,6 +125,7 @@ jobs:
+           path: |
+             /tmp/language-*.log
+             /tmp/firth-differential
++            /tmp/firth-ingress-*
+           retention-days: 7
+           if-no-files-found: ignore
+ 
+diff --git a/meta/todos/todo.language-03-runtime-conformance.md b/meta/todos/todo.language-03-runtime-conformance.md
+index f8d5f2b..e567455 100644
+--- a/meta/todos/todo.language-03-runtime-conformance.md
++++ b/meta/todos/todo.language-03-runtime-conformance.md
+@@ -33,3 +33,12 @@ This parent remains open. These changes do not validate all Rust image entry
+ points, reconcile all runtime review findings, authenticate compiler evidence,
+ or establish full trace equivalence. Complete those acceptance criteria and
+ the baseline audit before marking the parent done.
++
++## In progress: direct runtime ingress bounds
++
++`meta/changes/runtime-ingress-bounds/` addresses bounds on caller-created
++images and initial stacks, repeated quotation traversal, and captured-value
++depth alignment. Public-API regressions distinguish valid boundary inputs
++from oversized or malformed inputs, and a subprocess deadline checks the
++nested-code validation path. Production solver provenance, image/patch proof
++admission and complete conformance remain open; this is not baseline acceptance.
+diff --git a/src/runtime/vm/src/decode.rs b/src/runtime/vm/src/decode.rs
+index 25eae85..3dff257 100644
+--- a/src/runtime/vm/src/decode.rs
++++ b/src/runtime/vm/src/decode.rs
+@@ -207,6 +207,7 @@ pub fn execute_report_entry(
+     fuel: u64,
+     registry: &PrimitiveRegistry,
+ ) -> Result<ExecutionReport, VmError> {
++    validate_image_resource_bounds(image)?;
+     let resolver = StaticWordResolver { image };
+     let word = resolver.resolve(entry)?;
+     execute_report_resolved(word, &resolver, initial_stack, fuel, registry)
+@@ -224,9 +225,7 @@ fn execute_report_resolved(
+     if registry.version != image.gamma_version {
+         return Err(VmError::UnsupportedGamma(registry.version));
+     }
+-    for value in &initial_stack {
+-        validate_value_structure(value, 0)?;
+-    }
++    validate_initial_stack(&initial_stack)?;
+     if initial_stack
+         .iter()
+         .any(|value| !matches!(value, Value::World) && value_contains_world(value))
+@@ -337,10 +336,8 @@ pub fn execute_diagnostic_entry(
+         return diagnostic_trap(VmError::UnknownWord(String::from(entry)), empty_machine());
+     };
+     let (_, word) = resolved.parts();
+-    for value in &initial_stack {
+-        if let Err(error) = validate_value_structure(value, 0) {
+-            return diagnostic_trap(error, empty_machine());
+-        }
++    if let Err(error) = validate_initial_stack(&initial_stack) {
++        return diagnostic_trap(error, empty_machine());
+     }
+     if initial_stack
+         .iter()
+diff --git a/src/runtime/vm/src/image_bounds.rs b/src/runtime/vm/src/image_bounds.rs
+index 0d551ed..e69fdb7 100644
+--- a/src/runtime/vm/src/image_bounds.rs
++++ b/src/runtime/vm/src/image_bounds.rs
+@@ -15,51 +15,6 @@ fn validate_patch_resource_bounds(patch: &WordPatch) -> Result<(), ImageError> {
+     measure_code(&patch.code, 0, &mut size).map_err(ImageError::InvalidImage)
+ }
+ 
+-fn measure_code(code: &[Instruction], depth: usize, size: &mut usize) -> Result<(), VmError> {
+-    if depth > MAX_NESTING {
+-        return Err(VmError::NestingLimit);
+-    }
+-    if code.len() as u64 > MAX_INSTRUCTIONS {
+-        return Err(VmError::InstructionLimit);
+-    }
+-    measure_add(size, unsigned_size(code.len() as u64))?;
+-    for instruction in code {
+-        measure_add(size, 1)?;
+-        match instruction.operand.as_ref() {
+-            Some(Operand::Literal(value)) => measure_value(value, depth, size)?,
+-            Some(Operand::Quote(quotation)) => measure_quotation(quotation, depth + 1, size)?,
+-            Some(Operand::Capture(index)) => measure_add(size, unsigned_size(*index))?,
+-            Some(Operand::Word(name)) | Some(Operand::Primitive(name)) => {
+-                measure_bytes(name.len(), size)?;
+-            }
+-            None => {}
+-        }
+-    }
+-    Ok(())
+-}
+-
+-fn measure_quotation(
+-    quotation: &Quotation,
+-    depth: usize,
+-    size: &mut usize,
+-) -> Result<(), VmError> {
+-    if quotation.captures.len() as u64 > MAX_INSTRUCTIONS
+-        || quotation.consumed.len() as u64 > MAX_INSTRUCTIONS
+-    {
+-        return Err(VmError::InstructionLimit);
+-    }
+-    if quotation.consumed.len() != quotation.captures.len() {
+-        return Err(VmError::InvalidCaptureBitmap);
+-    }
+-    measure_code(&quotation.code, depth, size)?;
+-    measure_add(size, unsigned_size(quotation.captures.len() as u64))?;
+-    measure_add(size, quotation.captures.len().div_ceil(8))?;
+-    for capture in &quotation.captures {
+-        measure_value(capture, depth, size)?;
+-    }
+-    Ok(())
+-}
+-
+ fn validate_candidate_image_bounds(
+     base: &Image,
+     replacement_index: usize,
+@@ -82,57 +37,3 @@ fn validate_candidate_image_bounds(
+     }
+     measure_add(&mut size, DIGEST_BYTES * 2).map_err(ImageError::InvalidImage)
+ }
+-
+-fn measure_word(word: &WordEntry, size: &mut usize) -> Result<(), VmError> {
+-    measure_bytes(word.name.len(), size)?;
+-    measure_bytes(word.erased_word_type.len(), size)?;
+-    measure_code(&word.code, 0, size)?;
+-    measure_add(size, word.body_digest.len())?;
+-    measure_add(size, word.kernel_evidence_digest.len())?;
+-    measure_add(size, word.refinement_evidence_digest.len())?;
+-    measure_add(size, unsigned_size(word.generation))
+-}
+-
+-fn measure_value(value: &Value, depth: usize, size: &mut usize) -> Result<(), VmError> {
+-    measure_add(size, 1)?;
+-    match value {
+-        Value::Int(value) => {
+-            let zigzag = ((*value as u64) << 1) ^ ((*value >> 63) as u64);
+-            measure_add(size, unsigned_size(zigzag))
+-        }
+-        Value::Bool(_) | Value::World => {
+-            measure_add(size, usize::from(matches!(value, Value::Bool(_))))
+-        }
+-        Value::Bytes(bytes) => measure_bytes(bytes.len(), size),
+-        Value::Quotation(quotation) => measure_quotation(quotation, depth + 1, size),
+-        Value::PrimitiveValue { tag, bytes } => {
+-            measure_add(size, unsigned_size(*tag))?;
+-            measure_bytes(bytes.len(), size)
+-        }
+-    }
+-}
+-
+-fn measure_bytes(length: usize, size: &mut usize) -> Result<(), VmError> {
+-    if length > MAX_BYTES {
+-        return Err(VmError::LengthLimit);
+-    }
+-    measure_add(size, unsigned_size(length as u64))?;
+-    measure_add(size, length)
+-}
+-
+-fn measure_add(size: &mut usize, additional: usize) -> Result<(), VmError> {
+-    *size = size.checked_add(additional).ok_or(VmError::LengthLimit)?;
+-    if *size > MAX_BYTES {
+-        return Err(VmError::LengthLimit);
+-    }
+-    Ok(())
+-}
+-
+-fn unsigned_size(mut value: u64) -> usize {
+-    let mut size = 1;
+-    while value >= 0x80 {
+-        value >>= 7;
+-        size += 1;
+-    }
+-    size
+-}
+diff --git a/src/runtime/vm/src/lib.rs b/src/runtime/vm/src/lib.rs
+index df9c895..2769e55 100644
+--- a/src/runtime/vm/src/lib.rs
++++ b/src/runtime/vm/src/lib.rs
+@@ -23,6 +23,7 @@ include!("fixtures.rs");
+ include!("decode.rs");
+ include!("word_resolver.rs");
+ include!("execute.rs");
++include!("resource_bounds.rs");
+ include!("validation.rs");
+ include!("syntax.rs");
+ include!("encoding.rs");
+diff --git a/src/runtime/vm/src/validation.rs b/src/runtime/vm/src/validation.rs
+index 8ffc7cd..f8f5be4 100644
+--- a/src/runtime/vm/src/validation.rs
++++ b/src/runtime/vm/src/validation.rs
+@@ -293,6 +293,7 @@ fn pop_int_from(stack: &mut Vec<Slot>) -> Result<i64, VmError> {
+ }
+ 
+ fn validate_image(image: &Image) -> Result<(), VmError> {
++    validate_image_resource_bounds(image)?;
+     if image.format_version != FORMAT_VERSION || image.gamma_version != GAMMA_VERSION {
+         return Err(VmError::InvalidDigest);
+     }
+@@ -365,7 +366,6 @@ fn validate_code_structure(code: &[Instruction], depth: usize) -> Result<(), VmE
+             Op::PushQuote => match instruction.operand.as_ref() {
+                 Some(Operand::Quote(quotation)) => {
+                     validate_quotation_structure(quotation, depth + 1)?;
+-                    validate_code_structure(&quotation.code, depth + 1)?;
+                 }
+                 _ => return Err(VmError::StackFault),
+             },
+@@ -403,7 +403,6 @@ fn validate_value_structure(value: &Value, depth: usize) -> Result<(), VmError>
+     match value {
+         Value::Quotation(quotation) => {
+             validate_quotation_structure(quotation, depth + 1)?;
+-            validate_code_structure(&quotation.code, depth + 1)?;
+         }
+         Value::PrimitiveValue { tag, .. } if default_registry().value_usage(*tag).is_none() => {
+             return Err(VmError::InvalidPrimitiveTag);
+@@ -463,7 +462,9 @@ fn validate_quotation_structure(quotation: &Quotation, depth: usize) -> Result<(
+     }
+     validate_code_structure(&quotation.code, depth)?;
+     for capture in &quotation.captures {
+-        validate_value_structure(capture, depth + 1)?;
++        // A captured quotation increments depth in validate_value_structure,
++        // exactly as decode_value does. Its parent must not count it twice.
++        validate_value_structure(capture, depth)?;
+     }
+     Ok(())
+ }
+diff --git a/src/runtime/vm/target-spec.md b/src/runtime/vm/target-spec.md
+index 531b1fd..44076e1 100644
+--- a/src/runtime/vm/target-spec.md
++++ b/src/runtime/vm/target-spec.md
+@@ -391,3 +391,27 @@ use the project's MIT/Apache-2.0 dual-licensing posture.
+   trace, or both, by resolving the registered proposed gap.
+ - Specify the process/FFI boundary and whether external effects receive a
+   deterministic replay adapter.
++
++### Direct runtime ingress bounds
++
++The direct Rust execution and `ImageStore::new` boundaries enforce the same
++4096-element image/code/capture-vector and 1 MiB encoded-image limits as the
++byte decoder. They measure before canonical hashing. Explicit initial stacks
++have a separate 4096-value and 1 MiB canonical value-vector limit, including
++nested code, captures and capture bitmaps. Unexecuted helper bodies and input
++quotations do not bypass validation. These are admission limits, not a bound
++on all later execution, trace storage or host allocations.
++
++Quotation nesting counts each quotation once, whether it appears in code or
++as a captured value; depth 32 is admitted and depth 33 refused. Structural
++validation visits each quotation body once per pass rather than doubling work
++at every nesting level. Capture indices in initial quotations must be valid
++even when the program does not call them.
++
++Direct resource refusals use `LengthLimit`, `InstructionLimit` or
++`NestingLimit` as applicable and charge no execution cost. The encoded-input
++boundary continues to classify a wire payload over 1 MiB as `InputTooLarge`.
++Legacy infallible `seal_image`, `body_digest` and `encode_image` helpers remain
++unchecked construction/encoding operations, not admission or proof checks;
++callers must not give them malformed in-memory quotation state. Their output
++is not trusted merely because it has content digests.
