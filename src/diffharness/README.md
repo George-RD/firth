@@ -83,3 +83,7 @@ The unit suite deliberately uses fake Python subprocess adapters to test the
 driver's plumbing and hostile outputs without requiring Lean/Rust locally.
 Those tests are not compiler evidence. CI additionally executes the real
 seeded source campaign and retains its diagnostics and failure artefacts.
+`check_failure_roundtrip.py` also executes an intentionally zero-fuel case on
+the real adapters, shrinks it and replays both original and reduced records.
+It requires explicit non-passing exhaustion and matching toolchain identities;
+these expected failures are not counted as successful language executions.

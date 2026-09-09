@@ -343,6 +343,14 @@ private def quotationInferenceFuelWithFuel (fuel : Nat) (env : EffectEnv)
     | [] => 1
     | item :: rest =>
       let itemWidth := match item with
+        -- Kernel atoms bypass EffectEnv, but can still demand quotation inputs.
+        -- Counting their input arities gives a conservative finite search bound;
+        -- the actual erasure attempt and stack-effect checker remain the judges.
+        | .atom name _ => match name with
+          | "dup" | "drop" | "quote" | "call" => 1
+          | "swap" | "dip" | "compose" => 2
+          | "if" => 3
+          | _ => 0
         | .word name _ => (env.word name).map (·.input.length) |>.getD 0
         | .primitive name _ => (env.primitive name).map (·.input.length) |>.getD 0
         | .quotation body _ => quotationInferenceFuelWithFuel fuel env body
@@ -461,6 +469,8 @@ inductive ErasesAtomTo : String → Span → State → KernelProgram → State �
       (shape : state.stack = a :: rest) :
       ErasesAtomTo "quote" span state
         (atomList .quote span) { state with stack := { usage := a.usage } :: rest }
+  | dip {span : Span} {state : State} :
+      ErasesAtomTo "dip" span state (atomList .dip span) state
   | call {span : Span} {state : State} :
       ErasesAtomTo "call" span state (atomList .call span) state
   | compose {span : Span} {state : State} :
@@ -814,6 +824,10 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
               final := { state with stack := { usage := a.usage } :: rest }
               evidence := .atom (.quote stackEq) }
           | _ => .error (.effectUnderflow name span)
+        | "dip" => .ok {
+            program := atomList .dip span
+            final := state
+            evidence := .atom .dip }
         | "call" => .ok {
             program := atomList .call span
             final := state

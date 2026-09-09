@@ -126,6 +126,22 @@ def main : IO Unit := do
   | .ok result => fail s!"unexpected inferred quotation: {repr result.program}"
   | .error error => fail s!"quotation inference failed: {repr error}"
 
+  -- Kernel atoms have no EffectEnv entry. Quotation inference must still
+  -- consider their input demand, including cumulative and nested demand.
+  let quotedIdentity ← parsed ": quoted-identity ( -- ) [ dup drop ] ;"
+  expectKernelAtoms quotedIdentity [.quotation (atomProgram [.dup, .drop])]
+  let quotedSwap ← parsed ": quoted-swap ( -- ) [ swap ] ;"
+  expectKernelAtoms quotedSwap [.quotation (atomProgram [.swap])]
+  let quotedDrops ← parsed ": quoted-drops ( -- ) [ drop drop drop ] ;"
+  expectKernelAtoms quotedDrops [.quotation (atomProgram [.drop, .drop, .drop])]
+  let nestedIdentity ← parsed ": nested-identity ( -- ) [ [ dup drop ] call ] ;"
+  expectKernelAtoms nestedIdentity
+    [.quotation (atomProgram [.quotation (atomProgram [.dup, .drop]), .call])]
+  -- Explicit source dip must lower to the same kernel atom used by locals.
+  -- Its higher-order input/output types are checked in StackEffect, as for call.
+  let explicitDip ← parsed ": preserve ( a:Int^many -- a:Int^many ) [ ] dip ;"
+  expectKernelAtoms explicitDip [.quotation .empty, .dip]
+
   -- The exact Except.ok shadowing probe: once the innermost `a` is consumed,
   -- resolution must fail instead of falling through to the outer `a`.
   let exhaustedShadow ← parsed ": exhausted-shadow ( a:Int^many -- ) locals { a } { locals { a } { a } a } ;"

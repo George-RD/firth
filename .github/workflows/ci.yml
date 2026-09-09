@@ -101,6 +101,8 @@ jobs:
         run: python3 tools/loop/check_language_examples.py 2>&1 | tee /tmp/language-examples.log
       - name: Execute the seeded differential source campaign
         run: python3 src/diffharness/harness.py run --seed 0 --seed 1 --seed 20260909 --cases 24 --artifacts /tmp/firth-differential 2>&1 | tee /tmp/language-differential.log
+      - name: Replay and shrink a real explicitly exhausted case
+        run: python3 src/diffharness/check_failure_roundtrip.py --artifacts /tmp/firth-differential/roundtrip 2>&1 | tee /tmp/language-differential-roundtrip.log
       - name: Check bounded cost witness
         run: python3 tools/loop/check_s5_envelope.py 2>&1 | tee /tmp/language-s5.log
       - name: Validate active coverage and execute every pinned gate
