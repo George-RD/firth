@@ -1,0 +1,150 @@
+name: Validate runtime observation payloads
+on:
+  push:
+    branches: [verify/runtime-observation-payloads-20260909]
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write # Export immutable blobs only; never move a branch reference.
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install pinned toolchains
+        run: |
+          rustup toolchain install 1.93.0 --profile minimal --component rustfmt --component clippy
+          archive="$RUNNER_TEMP/cairn.tar.xz"
+          curl --proto '=https' --tlsv1.2 --fail --location --retry 2 --max-time 90 \
+            https://github.com/cairn-framework/cairn/releases/download/v0.9.0/cairn-framework-x86_64-unknown-linux-gnu.tar.xz \
+            --output "$archive"
+          echo "bf1499ef311f5ac9e4ea96536d326356703369f6202fe65429ec2ab10583b3f3  $archive" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/cairn-bin"
+          tar -xJf "$archive" -C "$RUNNER_TEMP/cairn-bin" --strip-components=1
+          echo "$RUNNER_TEMP/cairn-bin" >> "$GITHUB_PATH"
+      - name: Reconstruct the exact candidate and retain baseline context
+        run: |
+          mkdir -p /tmp/observation-evidence
+          gzip -dc .validation/observations.patch.gz > /tmp/observations.patch
+          echo '1a4bb19e19be491ad1c6fe7c8560d37a71ac10e70c6fadf5b633dbcf7ef9a663  /tmp/observations.patch' | sha256sum --check
+          git worktree add --detach /tmp/firth-before 0e9f5acb46402031fe1df5a9855b9cbb05fa4ad7
+          git worktree add --detach /tmp/firth-candidate 0e9f5acb46402031fe1df5a9855b9cbb05fa4ad7
+          cd /tmp/firth-before
+          cairn context --json > /tmp/observation-evidence/context.json
+          cairn status --json > /tmp/observation-evidence/status.json
+          cairn change list --json > /tmp/observation-evidence/changes.json
+          cairn neighbourhood firth.runtime.vm --include-todos --json > /tmp/observation-evidence/neighbourhood.json
+          cd /tmp/firth-candidate
+          git apply --index /tmp/observations.patch
+          rustfmt --edition 2024 src/runtime/vm/tests/observations.rs
+          cp src/runtime/vm/tests/observations.rs /tmp/firth-before/src/runtime/vm/tests/observations.rs
+          cp src/runtime/vm/tests/observations.rs /tmp/observation-evidence/observations.rs
+          git diff --exit-code -- src/smt src/elaborator src/runtime/vm/fixtures
+      - name: Reproduce each failure against the unchanged runtime
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, subprocess
+          expected = {
+              'byte_values_have_exact_lowercase_hex_payloads',
+              'primitive_values_preserve_full_unsigned_tags_and_payloads',
+              'all_single_byte_payloads_have_distinct_renderings',
+              'primitive_tags_are_not_conflated',
+              'rendering_preserves_types_stack_order_and_empty_payloads',
+              'payload_lengths_and_adjacent_value_boundaries_are_preserved',
+              'different_byte_outputs_disagree_through_public_execution',
+              'an_independent_byte_reference_agrees_with_the_execution',
+              'primitive_payloads_remain_distinct_in_real_retained_trap_stacks',
+              'named_root_reports_label_cost_events_traces_and_frames_correctly',
+              'named_nested_calls_keep_root_and_helper_attribution_separate',
+              'quotation_steps_keep_the_named_enclosing_word',
+              'named_report_and_diagnostic_execution_produce_identical_reports',
+          }
+          for label, flags, controls in [('std', [], 2), ('core', ['--no-default-features'], 1)]:
+              command = ['cargo', 'test', '--locked', *flags, '--test', 'observations', '--', '--test-threads=1']
+              run = subprocess.run(command, cwd='/tmp/firth-before/src/runtime/vm', text=True,
+                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=180)
+              pathlib.Path(f'/tmp/observation-evidence/before-{label}.log').write_text(run.stdout)
+              failed = set(re.findall(r'^test (\w+) \.\.\. FAILED$', run.stdout, re.M))
+              assert run.returncode == 101 and failed == expected, (label, run.returncode, failed, run.stdout)
+              assert f'test result: FAILED. {controls} passed; 13 failed;' in run.stdout, run.stdout
+              print(f'{label}: reproduced exactly 13 failures; {controls} controls passed')
+          PY
+      - name: Verify the corrected runtime and no_std observation boundary
+        working-directory: /tmp/firth-candidate/src/runtime/vm
+        run: |
+          cargo fmt --check
+          cargo clippy --locked --all-targets -- -D warnings 2>&1 | tee /tmp/observation-evidence/clippy.log
+          cargo clippy --locked --no-default-features --lib -- -D warnings 2>&1 | tee /tmp/observation-evidence/clippy-core.log
+          cargo test --locked 2>&1 | tee /tmp/observation-evidence/rust.log
+          cargo test --locked --no-default-features --test observations 2>&1 | tee /tmp/observation-evidence/after-core.log
+      - name: Verify Python, source bindings and governance
+        working-directory: /tmp/firth-candidate
+        run: |
+          for suite in tools/loop/test_*.py; do
+            echo "=== $suite"
+            python3 "$suite"
+          done > /tmp/observation-evidence/python.log 2>&1
+          python3 tools/loop/check_zero_admit.py
+          python3 tools/loop/update_smt_proof_bindings.py --check
+          python3 tools/loop/check_mvp_agent_inputs.py
+          python3 tools/loop/select_unit.py --validate
+          python3 tools/loop/coverage.py --validate
+          cairn scan --json > /tmp/observation-evidence/scan.json
+          cairn hook all --json > /tmp/observation-evidence/hooks.json
+          git diff --check
+          git diff --cached --check
+      - name: Export verified immutable blobs and the complete candidate
+        working-directory: /tmp/firth-candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git add src/runtime/vm/tests/observations.rs
+          git diff --cached > /tmp/observation-evidence/applied.diff
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess, urllib.request
+          paths = subprocess.check_output(['git', 'diff', '--cached', '--name-only'], text=True).splitlines()
+          allowed = {
+              'src/runtime/vm/src/conformance.rs', 'src/runtime/vm/src/decode.rs',
+              'src/runtime/vm/tests/observations.rs',
+              'meta/todos/todo.language-03-runtime-conformance.md',
+              'meta/changes/runtime-observation-payloads/design.md',
+              'meta/changes/runtime-observation-payloads/proposal.md',
+              'meta/changes/runtime-observation-payloads/tasks.md',
+          }
+          assert set(paths) == allowed, paths
+          assert not subprocess.check_output(['git', 'diff', '--name-only'], text=True).strip()
+          blobs = {}
+          for path in paths:
+              raw = pathlib.Path(path).read_bytes()
+              expected = hashlib.sha1(b'blob ' + str(len(raw)).encode() + b'\0' + raw).hexdigest()
+              request = urllib.request.Request(
+                  'https://api.github.com/repos/George-RD/firth/git/blobs',
+                  data=json.dumps({'content': raw.decode('utf-8'), 'encoding': 'utf-8'}).encode(),
+                  headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+                           'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json'},
+                  method='POST',
+              )
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  result = json.load(response)
+              assert result['sha'] == expected, path
+              blobs[path] = {'git_sha1': expected, 'sha256': hashlib.sha256(raw).hexdigest()}
+          tree = subprocess.check_output(['git', 'write-tree'], text=True).strip()
+          pathlib.Path('/tmp/observation-evidence/blobs.json').write_text(json.dumps({'blobs': blobs, 'tree': tree}, indent=2) + '\n')
+          subprocess.run(['git', 'archive', '--format=tar.gz', '--output=/tmp/observation-evidence/candidate-source.tar.gz', tree], check=True)
+          print(json.dumps({'tree': tree, 'exported_files': len(blobs)}))
+          PY
+      - name: Retain before and after evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: runtime-observation-validation
+          path: /tmp/observation-evidence
+          retention-days: 7
+          if-no-files-found: error
