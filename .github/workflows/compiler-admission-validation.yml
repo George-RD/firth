@@ -1,0 +1,140 @@
+name: Temporary compiler admission validation
+
+on:
+  push:
+    branches: [codex/firth-compiler-admission-validation-20260909]
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Reconstruct checksum-bound candidate and add only baseline probe
+        run: |
+          python3 - <<'PY'
+          import base64, gzip, hashlib
+          from pathlib import Path
+          encoded = ''.join(p.read_text() for p in sorted(Path('.github/compiler-admission-patch').glob('*.b64')))
+          patch = gzip.decompress(base64.b64decode(encoded, validate=True))
+          expected = 'b34a5f81ac1b050f870a8e2c80322b279bc8352e2c716a299da58caf95f66e72'
+          assert hashlib.sha256(patch).hexdigest() == expected, 'candidate checksum mismatch'
+          Path('/tmp/compiler-admission-input.patch').write_bytes(patch)
+          PY
+          git apply --check /tmp/compiler-admission-input.patch
+          git apply --include=tools/loop/check_compiler_admission.py /tmp/compiler-admission-input.patch
+      - name: Install pinned Lean
+        uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596
+        with:
+          auto-config: 'false'
+          build: 'false'
+          test: 'false'
+          lint: 'false'
+          use-mathlib-cache: 'false'
+      - name: Build unchanged baseline and reproduce fabricated admission
+        run: |
+          lake build 2>&1 | tee /tmp/compiler-admission-baseline-build.log
+          python3 tools/loop/update_proof_manifest.py --check
+          python3 tools/loop/check_compiler_admission.py --baseline --no-build 2>&1 | tee /tmp/compiler-admission-baseline.json
+      - name: Apply remaining candidate and check source bindings
+        run: |
+          git apply --check --exclude=tools/loop/check_compiler_admission.py /tmp/compiler-admission-input.patch
+          git apply --exclude=tools/loop/check_compiler_admission.py /tmp/compiler-admission-input.patch
+          git add -N .
+          python3 tools/loop/update_smt_proof_bindings.py --check
+          git diff --check
+      - name: Build candidate and derive compiled proof bindings
+        run: |
+          lake build 2>&1 | tee /tmp/compiler-admission-build.log
+          python3 tools/loop/update_proof_manifest.py
+          python3 tools/loop/update_proof_manifest.py --check
+          python3 tools/loop/check_zero_admit.py
+      - name: Run Python regressions
+        run: |
+          for suite in tools/loop/test_*.py; do python3 "$suite"; done 2>&1 | tee /tmp/compiler-admission-python.log
+          python3 tools/loop/check_mvp_agent_inputs.py
+      - name: Run Lean suites and reference fixtures
+        run: |
+          lake test 2>&1 | tee /tmp/compiler-admission-lean.log
+          bash tools/loop/check_kernel_fixtures.sh 2>&1 | tee /tmp/compiler-admission-fixtures.log
+          lake env lean --run src/elaborator/FirthNamesTest.lean
+          lake env lean --run src/smt/FirthSmtProcessTest.lean
+      - name: Run Rust gates
+        working-directory: src/runtime/vm
+        run: |
+          cargo fmt --check
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo test --locked
+      - name: Verify compiler admission through real public adapters
+        run: python3 tools/loop/check_compiler_admission.py --no-build 2>&1 | tee /tmp/compiler-admission-results.json
+      - name: Run unchanged execution campaigns and active gates
+        run: |
+          python3 tools/loop/check_trust_boundaries.py 2>&1 | tee /tmp/compiler-admission-trust.log
+          python3 tools/loop/mvp_agent_gate.py 2>&1 | tee /tmp/compiler-admission-mvp.log
+          python3 tools/loop/check_language_examples.py 2>&1 | tee /tmp/compiler-admission-examples.log
+          python3 src/diffharness/harness.py run --seed 0 --seed 1 --seed 20260909 --cases 24 --artifacts /tmp/compiler-admission-differential 2>&1 | tee /tmp/compiler-admission-differential.log
+          python3 tools/loop/check_s5_envelope.py 2>&1 | tee /tmp/compiler-admission-s5.log
+          python3 tools/loop/select_unit.py --validate
+          python3 tools/loop/coverage.py --validate
+          python3 tools/loop/coverage.py --run-gates | tee /tmp/compiler-admission-coverage.json
+          python3 -c 'import json,sys; r=json.load(open("/tmp/compiler-admission-coverage.json")); sys.exit(bool(r["failing_gates"] or r["missing_gates"]))'
+      - name: Verify Cairn architecture and governance
+        run: |
+          archive="$RUNNER_TEMP/cairn.tar.xz"
+          curl --proto '=https' --tlsv1.2 --fail --location --retry 2 --max-time 90 https://github.com/cairn-framework/cairn/releases/download/v0.9.0/cairn-framework-x86_64-unknown-linux-gnu.tar.xz --output "$archive"
+          echo "bf1499ef311f5ac9e4ea96536d326356703369f6202fe65429ec2ab10583b3f3  $archive" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/cairn-bin"
+          tar -xJf "$archive" -C "$RUNNER_TEMP/cairn-bin" --strip-components=1
+          "$RUNNER_TEMP/cairn-bin/cairn" scan --json 2>&1 | tee /tmp/compiler-admission-scan.log
+          "$RUNNER_TEMP/cairn-bin/cairn" hook all --json 2>&1 | tee /tmp/compiler-admission-hooks.log
+          git diff --check
+      - name: Store verified product blob objects without moving branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, subprocess, urllib.request
+          from pathlib import Path
+          paths = subprocess.check_output(['git', 'diff', '--name-only', '-z', 'HEAD']).decode().strip('\0').split('\0')
+          result = {'validation_commit': os.environ['GITHUB_SHA'], 'blobs': {}}
+          for name in paths:
+              if name.startswith('.github/compiler-admission-patch/') or name == '.github/workflows/compiler-admission-validation.yml':
+                  raise RuntimeError('temporary validation path entered product diff')
+              data = Path(name).read_bytes()
+              expected = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+              request = urllib.request.Request(
+                  'https://api.github.com/repos/' + os.environ['GITHUB_REPOSITORY'] + '/git/blobs',
+                  data=json.dumps({'content': data.decode('utf-8'), 'encoding': 'utf-8'}).encode(),
+                  method='POST', headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+                  'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json',
+                  'X-GitHub-Api-Version': '2022-11-28'})
+              with urllib.request.urlopen(request, timeout=60) as response:
+                  blob = json.load(response)
+              if blob['sha'] != expected:
+                  raise RuntimeError('blob identity mismatch: ' + name)
+              result['blobs'][name] = {'git_sha1': expected, 'sha256': hashlib.sha256(data).hexdigest()}
+          Path('/tmp/compiler-admission-blobs.json').write_text(json.dumps(result, sort_keys=True, indent=2) + '\n')
+          print(json.dumps(result, sort_keys=True))
+          PY
+      - name: Retain candidate and compiled bindings
+        if: always()
+        run: |
+          git add -N .
+          git diff --binary HEAD > /tmp/compiler-admission-final.patch
+          cp src/elaborator/refinement-proof-module.sha256 /tmp/compiler-admission-compiled-manifest.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: compiler-admission-validation
+          path: /tmp/compiler-admission-*
+          retention-days: 7
+          if-no-files-found: error
