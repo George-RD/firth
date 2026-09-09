@@ -99,6 +99,8 @@ jobs:
         run: python3 tools/loop/mvp_agent_gate.py 2>&1 | tee /tmp/language-mvp.log
       - name: Execute documented multiword programs and failure cases
         run: python3 tools/loop/check_language_examples.py 2>&1 | tee /tmp/language-examples.log
+      - name: Execute the seeded differential source campaign
+        run: python3 src/diffharness/harness.py run --seed 0 --seed 1 --seed 20260909 --cases 24 --artifacts /tmp/firth-differential 2>&1 | tee /tmp/language-differential.log
       - name: Check bounded cost witness
         run: python3 tools/loop/check_s5_envelope.py 2>&1 | tee /tmp/language-s5.log
       - name: Validate active coverage and execute every pinned gate
@@ -112,7 +114,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: language-diagnostics
-          path: /tmp/language-*.log
+          path: |
+            /tmp/language-*.log
+            /tmp/firth-differential
           retention-days: 7
           if-no-files-found: ignore
 

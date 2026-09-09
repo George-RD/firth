@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.diffharness
-status: open
+status: in_progress
 created: 2026-09-08
 ---
 
@@ -20,3 +20,16 @@ Implement the differential harness, not just its strategy.
 ## Traceability
 
 Reopens implementation missing from scope-toolchain-diffharness; diffharness-fuzz-strategy is design evidence only. PRD G6/R5/S2.
+
+## Implementation slice: executable portable source campaign
+
+`meta/changes/differential-execution/` implements a Python driver over the
+actual checked adapters, deterministic typed source generation, explicit
+non-success classes, retained process diagnostics and identities, replay and
+bounded same-failure shrinking. Usage and limits are in
+`src/diffharness/README.md`. The finite seed matrix is wired into repository CI.
+
+Local harness tests do not establish real language agreement. This task stays
+in progress until the exact candidate passes the real-adapter campaign and
+repository gates. It does not close SMT/compiler evidence admission, runtime
+review, baseline acceptance or the sustained S2 campaign.
