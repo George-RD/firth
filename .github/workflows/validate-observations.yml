@@ -42,6 +42,8 @@ jobs:
           cairn change list --json > /tmp/observation-evidence/changes.json
           cairn neighbourhood firth.runtime.vm --include-todos --json > /tmp/observation-evidence/neighbourhood.json
           cd /tmp/firth-candidate
+          # Correct new probe names to the existing ASCII identifier grammar.
+          sed -i 's/policy\.run/policy_run/g; s/policy\.helper/policy_helper/g' /tmp/observations.patch
           git apply --index /tmp/observations.patch
           rustfmt --edition 2024 src/runtime/vm/tests/observations.rs
           cp src/runtime/vm/tests/observations.rs /tmp/firth-before/src/runtime/vm/tests/observations.rs
