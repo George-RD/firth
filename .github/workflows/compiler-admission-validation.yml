@@ -46,10 +46,12 @@ jobs:
           lake build firthCompile
           python3 tools/loop/update_proof_manifest.py --check
           python3 tools/loop/check_compiler_admission.py --baseline --no-build 2>&1 | tee /tmp/compiler-admission-baseline.json
-      - name: Apply remaining candidate and check source bindings
+      - name: Apply remaining candidate and checked corrections
         run: |
           git apply --check --exclude=tools/loop/check_compiler_admission.py /tmp/compiler-admission-input.patch
           git apply --exclude=tools/loop/check_compiler_admission.py /tmp/compiler-admission-input.patch
+          sha256sum --check .github/compiler-admission-corrections.sha256
+          for correction in .github/compiler-admission-corrections/*.patch; do git apply --check "$correction"; git apply "$correction"; done
           git add -N .
           python3 tools/loop/update_smt_proof_bindings.py --check
           git diff --check
@@ -109,7 +111,7 @@ jobs:
           paths = subprocess.check_output(['git', 'diff', '--name-only', '-z', 'HEAD']).decode().strip('\0').split('\0')
           result = {'validation_commit': os.environ['GITHUB_SHA'], 'blobs': {}}
           for name in paths:
-              if name.startswith('.github/compiler-admission-patch/') or name == '.github/workflows/compiler-admission-validation.yml':
+              if name.startswith('.github/compiler-admission-') or name == '.github/workflows/compiler-admission-validation.yml':
                   raise RuntimeError('temporary validation path entered product diff')
               data = Path(name).read_bytes()
               expected = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()

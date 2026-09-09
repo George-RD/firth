@@ -1,0 +1,47 @@
+diff --git a/src/compiler/Firth/Compile.lean b/src/compiler/Firth/Compile.lean
+--- a/src/compiler/Firth/Compile.lean
++++ b/src/compiler/Firth/Compile.lean
+@@ -217,9 +217,9 @@
+         let members ← object "source" value ["source_path", "source_text", "language_version"]
+         if (← reqStr "source" "language_version" members) != Firth.Agent.Elaborate.languageVersion then
+           err "source: unsupported language version"
+-        pure (some { requestId
+-          sourcePath := ← nonempty "source.source_path" =<< reqStr "source" "source_path" members
+-          sourceText := ← reqStr "source" "source_text" members })
++        let sourcePath ← nonempty "source.source_path" =<< reqStr "source" "source_path" members
++        let sourceText ← reqStr "source" "source_text" members
++        pure (some { requestId, sourcePath, sourceText })
+   pure { requestId, entry, words := checked, atomCounts := counts, source }
+ 
+ private def quote (value : String) : String := (Json.str value).compress
+diff --git a/src/smt/Firth/SmtBoundary.lean b/src/smt/Firth/SmtBoundary.lean
+--- a/src/smt/Firth/SmtBoundary.lean
++++ b/src/smt/Firth/SmtBoundary.lean
+@@ -202,17 +202,17 @@
+ 
+ def defaultSmtProofBindings : SmtProofBindings :=
+   { translationRuleHashes :=
+-      ["sha256:57c8a8809bf796d144085b5cf94bce790ee5ac5defaa81e9c93e29fee6fbb605",
+-       "sha256:67135cb71270af7358ecbb7ee1cb1dccca77813651e2e4cb6350b6bcb3aeafe3",
+-       "sha256:13582bddb17a5a6a20bdbe8e4ef33f042da02a09625b0c3cd60e5935a06ca7bd",
+-       "sha256:de6672cd522de510cdda1b607f11dba82eafe43e42e831e4d48864a02b605ce4"]
++      ["sha256:a3762ffb3e4cda399199238dca23a05f3d391daceb7ba65e4100df73ba779b22",
++       "sha256:0fd89d8162ece8f7f64b018ead189062acc62f63631a01ac5337cb66c40c1746",
++       "sha256:181410bd0cf782b3775436f84eca654b52b2de367adb79bd0a91e9c0ac0a942f",
++       "sha256:7858bfa9607ddecc6f6efad9e1424dd935ebb7b5b7dff4031a3ba428f6a4becf"]
+     translationSoundnessProofHashes :=
+-      ["sha256:cd42affe588c3cbd506654aee64d805a73e7cef3ccc4bce9f459d57daa933501",
+-       "sha256:c2ffcf3317574d90f5248e670bfeb206f51741134626d9b42aeba34f975b93ae",
+-       "sha256:9b3795052a292d664d668ef1a92248e45019903d9d9b6ddda22899c9921501e8",
+-       "sha256:ec72ec41e83991a7043c3d51d622cb8bc6e2d00e481bfe308771e5e480eac8d3",
+-       "sha256:308be27621159a7506ca575ed7eb0700ee650b7fd749c18665f1c2db9dc5ba92",
+-       "sha256:8a674ff354082a3d8320df8af62cb02dbe253f9bc0d3a933dd773e5ac15909e4"] }
++      ["sha256:95d65c2f5157e1567bc671de242645ac5ca27b1de6b03f39464b06cb994b7256",
++       "sha256:ad92f748faa4ea3aec8926555f4c399850c4d234a7f72dca47aa007c11f4b369",
++       "sha256:1c2cc950e85b8dbcf3f45270b92e6eb7a4e05a2882f76598a7d6b72d1a788b86",
++       "sha256:5ac4d387124f862e2494da0164172f148a9b5c3fda813c600dcfc4687d4b36ab",
++       "sha256:9bdd2ecbd5a8c0f6633927b349b6e766b96b76568930c20b55779b2bfdaba554",
++       "sha256:87db1d1fc404eab1aa2d27f1e1d16179f3321d81e9128ced12a5c6f03d6b7e27"] }
+ 
+ def validSmtProofBindings (bindings : SmtProofBindings) : Bool :=
+   bindings == defaultSmtProofBindings
