@@ -293,6 +293,7 @@ fn pop_int_from(stack: &mut Vec<Slot>) -> Result<i64, VmError> {
 }
 
 fn validate_image(image: &Image) -> Result<(), VmError> {
+    validate_image_resource_bounds(image)?;
     if image.format_version != FORMAT_VERSION || image.gamma_version != GAMMA_VERSION {
         return Err(VmError::InvalidDigest);
     }
@@ -365,7 +366,6 @@ fn validate_code_structure(code: &[Instruction], depth: usize) -> Result<(), VmE
             Op::PushQuote => match instruction.operand.as_ref() {
                 Some(Operand::Quote(quotation)) => {
                     validate_quotation_structure(quotation, depth + 1)?;
-                    validate_code_structure(&quotation.code, depth + 1)?;
                 }
                 _ => return Err(VmError::StackFault),
             },
@@ -403,7 +403,6 @@ fn validate_value_structure(value: &Value, depth: usize) -> Result<(), VmError> 
     match value {
         Value::Quotation(quotation) => {
             validate_quotation_structure(quotation, depth + 1)?;
-            validate_code_structure(&quotation.code, depth + 1)?;
         }
         Value::PrimitiveValue { tag, .. } if default_registry().value_usage(*tag).is_none() => {
             return Err(VmError::InvalidPrimitiveTag);
@@ -463,7 +462,9 @@ fn validate_quotation_structure(quotation: &Quotation, depth: usize) -> Result<(
     }
     validate_code_structure(&quotation.code, depth)?;
     for capture in &quotation.captures {
-        validate_value_structure(capture, depth + 1)?;
+        // A captured quotation increments depth in validate_value_structure,
+        // exactly as decode_value does. Its parent must not count it twice.
+        validate_value_structure(capture, depth)?;
     }
     Ok(())
 }

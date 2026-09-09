@@ -33,3 +33,24 @@ This parent remains open. These changes do not validate all Rust image entry
 points, reconcile all runtime review findings, authenticate compiler evidence,
 or establish full trace equivalence. Complete those acceptance criteria and
 the baseline audit before marking the parent done.
+
+## Verified sub-slice: direct runtime ingress bounds
+
+`meta/changes/runtime-ingress-bounds/` addresses bounds on caller-created
+images and initial stacks, repeated quotation traversal, and captured-value
+depth alignment. Public-API regressions distinguish valid boundary inputs
+from oversized or malformed inputs, and a subprocess deadline checks the
+nested-code validation path. Production solver provenance, image/patch proof
+admission and complete conformance remain open; this is not baseline acceptance.
+
+Validation run `34373202388` reproduced 15 selected baseline failures and
+passed all 20 new cases in both std and no_std builds. Exact source identities,
+logs and limits are recorded in the change's `verification.md`. Ordinary PR
+CI still gates the product head; the parent remains open.
+
+Remaining comparison target from static review: the Rust
+`src/runtime/vm/src/conformance.rs` display renderer collapses quotation
+bodies/captures and byte/primitive payloads, while frame rendering omits resume
+state. Add public reproducers and either a justified shared normal form or
+explicit unsupported-comparison results. Python's existing portable refusal
+must not be treated as closure of the separate Rust comparison surface.

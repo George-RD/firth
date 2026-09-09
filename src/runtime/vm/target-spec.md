@@ -391,3 +391,27 @@ use the project's MIT/Apache-2.0 dual-licensing posture.
   trace, or both, by resolving the registered proposed gap.
 - Specify the process/FFI boundary and whether external effects receive a
   deterministic replay adapter.
+
+### Direct runtime ingress bounds
+
+The direct Rust execution and `ImageStore::new` boundaries enforce the same
+4096-element image/code/capture-vector and 1 MiB encoded-image limits as the
+byte decoder. They measure before canonical hashing. Explicit initial stacks
+have a separate 4096-value and 1 MiB canonical value-vector limit, including
+nested code, captures and capture bitmaps. Unexecuted helper bodies and input
+quotations do not bypass validation. These are admission limits, not a bound
+on all later execution, trace storage or host allocations.
+
+Quotation nesting counts each quotation once, whether it appears in code or
+as a captured value; depth 32 is admitted and depth 33 refused. Structural
+validation visits each quotation body once per pass rather than doubling work
+at every nesting level. Capture indices in initial quotations must be valid
+even when the program does not call them.
+
+Direct resource refusals use `LengthLimit`, `InstructionLimit` or
+`NestingLimit` as applicable and charge no execution cost. The encoded-input
+boundary continues to classify a wire payload over 1 MiB as `InputTooLarge`.
+Legacy infallible `seal_image`, `body_digest` and `encode_image` helpers remain
+unchecked construction/encoding operations, not admission or proof checks;
+callers must not give them malformed in-memory quotation state. Their output
+is not trusted merely because it has content digests.

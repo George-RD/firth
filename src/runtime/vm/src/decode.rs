@@ -207,6 +207,7 @@ pub fn execute_report_entry(
     fuel: u64,
     registry: &PrimitiveRegistry,
 ) -> Result<ExecutionReport, VmError> {
+    validate_image_resource_bounds(image)?;
     let resolver = StaticWordResolver { image };
     let word = resolver.resolve(entry)?;
     execute_report_resolved(word, &resolver, initial_stack, fuel, registry)
@@ -224,9 +225,7 @@ fn execute_report_resolved(
     if registry.version != image.gamma_version {
         return Err(VmError::UnsupportedGamma(registry.version));
     }
-    for value in &initial_stack {
-        validate_value_structure(value, 0)?;
-    }
+    validate_initial_stack(&initial_stack)?;
     if initial_stack
         .iter()
         .any(|value| !matches!(value, Value::World) && value_contains_world(value))
@@ -337,10 +336,8 @@ pub fn execute_diagnostic_entry(
         return diagnostic_trap(VmError::UnknownWord(String::from(entry)), empty_machine());
     };
     let (_, word) = resolved.parts();
-    for value in &initial_stack {
-        if let Err(error) = validate_value_structure(value, 0) {
-            return diagnostic_trap(error, empty_machine());
-        }
+    if let Err(error) = validate_initial_stack(&initial_stack) {
+        return diagnostic_trap(error, empty_machine());
     }
     if initial_stack
         .iter()

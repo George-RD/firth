@@ -86,6 +86,10 @@ jobs:
         run: lake env lean --run src/elaborator/FirthNamesTest.lean 2>&1 | tee /tmp/language-names.log
       - name: Test real solver pipes
         run: lake env lean --run src/smt/FirthSmtProcessTest.lean 2>&1 | tee /tmp/language-process.log
+      - name: Check public runtime ingress under process deadlines
+        run: |
+          python3 tools/loop/check_runtime_ingress.py --artifacts /tmp/firth-ingress-std 2>&1 | tee /tmp/language-ingress-std.log
+          python3 tools/loop/check_runtime_ingress.py --no-default-features --artifacts /tmp/firth-ingress-core 2>&1 | tee /tmp/language-ingress-core.log
       - name: Verify Rust VM
         working-directory: src/runtime/vm
         run: |
@@ -121,6 +125,7 @@ jobs:
           path: |
             /tmp/language-*.log
             /tmp/firth-differential
+            /tmp/firth-ingress-*
           retention-days: 7
           if-no-files-found: ignore
 

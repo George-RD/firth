@@ -23,6 +23,7 @@ include!("fixtures.rs");
 include!("decode.rs");
 include!("word_resolver.rs");
 include!("execute.rs");
+include!("resource_bounds.rs");
 include!("validation.rs");
 include!("syntax.rs");
 include!("encoding.rs");
