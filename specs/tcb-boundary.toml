@@ -116,7 +116,11 @@ evidence = ["smt-boundary"]
 id = "firth.toolchain.elaborator.cache"
 module = "firth.toolchain.elaborator"
 category = "content-addressed-cache"
-status = "planned"
+# smt-discharge-record-recheck implemented the content-addressed
+# DischargeRecord and its full recheck (SmtBoundary.recheckDischargeRecord,
+# consumed by Refinement.recheckRecord). No persistent record store exists yet,
+# so cached records are supplied by the caller and are data until rechecked.
+status = "implemented"
 trusted = false
 [[components.outputs]]
 id = "rechecked-cached-discharge-records"
@@ -143,7 +147,10 @@ trusted = false
 [[components.outputs]]
 id = "target-code-and-lowering-evidence"
 accepted_by = ["vm"]
-evidence = ["vm-conformance", "vm-fixtures"]
+# lean-test-driver runs firthCompilerTest; compiler-admission runs the built
+# firthCompile binary against the pinned admission corpus. vm-conformance and
+# vm-fixtures check the emitted target code, not the Lean compiler itself.
+evidence = ["lean-test-driver", "compiler-admission", "vm-conformance", "vm-fixtures"]
 
 [[components]]
 id = "firth.toolchain.compiler.translator"
@@ -154,7 +161,7 @@ trusted = false
 [[components.outputs]]
 id = "canonical-target-instructions"
 accepted_by = ["vm"]
-evidence = ["vm-conformance"]
+evidence = ["lean-test-driver", "vm-conformance"]
 
 [[components]]
 id = "firth.toolchain.diffharness"
@@ -194,6 +201,7 @@ evidence = ["smt-boundary"]
 id = "firth.toolchain.agent"
 module = "firth.toolchain.agent"
 category = "agent-interface"
+# Signature search results are post-mvp (scope-toolchain-signature-search).
 status = "implemented"
 trusted = false
 [[components.outputs]]
@@ -228,7 +236,8 @@ evidence = ["vm-conformance", "vm-fixtures"]
 id = "firth.runtime.image"
 module = "firth.runtime.image"
 category = "runtime-image"
-status = "planned"
+# rust-vm-dictionary-image is done and tested by vm-conformance.
+status = "implemented"
 trusted = false
 [[components.outputs]]
 id = "immutable-versioned-image-transitions"
@@ -239,7 +248,8 @@ evidence = ["vm-conformance"]
 id = "firth.runtime.patch"
 module = "firth.runtime.patch"
 category = "verified-patch-protocol"
-status = "planned"
+# VM-side admission only; evidence digests are unauthenticated content identifiers until patch-refinement-evidence-admission.
+status = "implemented"
 trusted = false
 [[components.outputs]]
 id = "evidence-bound-image-replacements"
@@ -250,6 +260,8 @@ evidence = ["lean-test-driver", "vm-conformance"]
 id = "firth.ecosystem.stdlib"
 module = "firth.ecosystem.stdlib"
 category = "standard-library"
+# stdlib/core.firth elaborates under lean-test-driver (FirthPipelineTest);
+# VM target-code evidence is pending language-12-data-and-modules.
 status = "planned"
 trusted = false
 [[components.outputs]]
@@ -325,3 +337,9 @@ id = "vm-fixtures"
 command = "tools/loop/check_kernel_fixtures.sh"
 trusted_components = ["lean-kernel", "vm"]
 evidence_paths = ["tools/loop/check_kernel_fixtures.sh", "src/runtime/vm/fixtures/kernel.tsv"]
+
+[[stages]]
+id = "compiler-admission"
+command = "python3 tools/loop/check_compiler_admission.py"
+trusted_components = ["lean-kernel"]
+evidence_paths = ["tools/loop/check_compiler_admission.py", "src/compiler"]

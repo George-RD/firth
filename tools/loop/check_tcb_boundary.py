@@ -72,6 +72,11 @@ EXPECTED_STAGES = {
         frozenset({"lean-kernel", "vm"}),
         frozenset({"tools/loop/check_kernel_fixtures.sh", "src/runtime/vm/fixtures/kernel.tsv"}),
     ),
+    "compiler-admission": (
+        "python3 tools/loop/check_compiler_admission.py",
+        frozenset({"lean-kernel"}),
+        frozenset({"tools/loop/check_compiler_admission.py", "src/compiler"}),
+    ),
 }
 EXPECTED_SOURCE_SPEC = "specs/component-spec-boundaries.md"
 EXPECTED_SOURCE_DECISION = "meta/decisions/tcb-boundary-inventory.md"

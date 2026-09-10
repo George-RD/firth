@@ -25,32 +25,32 @@ satisfied_by = ["kernel-spec-freeze", "kernel-metatheory"]
 [obligation.scope-language-surface-syntax]
 node = "firth.language.surface"
 source = "PRD 4.1 surface syntax"
-satisfied_by = ["surface-syntax-spec"]
+satisfied_by = ["surface-syntax-spec", "elaborator-parser", "elaborator-named-local-erasure"]
 
 [obligation.scope-language-type-system]
 node = "firth.language.types"
 source = "PRD 4.1 type system"
-satisfied_by = ["type-system"]
+satisfied_by = ["type-system", "elaborator-stack-effect-inference", "req-r3", "req-r4", "language-06-source-refinement-execution"]
 
 [obligation.scope-language-quotations]
 node = "firth.language.types"
 source = "PRD 4.1 quotations"
-satisfied_by = ["quotation-typing-prior-art"]
+satisfied_by = ["quotation-typing-prior-art", "elaborator-stack-effect-inference", "quotation-erasure-regressions"]
 
 [obligation.scope-language-vocabulary-layering]
 node = "firth.language.surface"
 source = "PRD 4.1 vocabulary layering"
-satisfied_by = ["scope-language-vocabulary-layering"]
+satisfied_by = ["scope-language-vocabulary-layering", "language-12-data-and-modules"]
 
 [obligation.scope-language-spec-predicates]
 node = "firth.language.types"
 source = "PRD 4.1 specification predicates"
-satisfied_by = ["specification-predicates"]
+satisfied_by = ["specification-predicates", "language-06-source-refinement-execution"]
 
 [obligation.scope-language-naming-grammar]
 node = "firth.language.surface"
 source = "PRD 4.1 naming grammar"
-satisfied_by = ["surface-syntax-spec"]
+satisfied_by = ["surface-syntax-spec", "naming-grammar-lint"]
 
 [obligation.scope-language-visibility-model]
 node = "firth.language.surface"
@@ -106,7 +106,7 @@ satisfied_by = ["rust-vm-dictionary-image"]
 [obligation.scope-runtime-patch]
 node = "firth.runtime.patch"
 source = "PRD 4.3 verified-patch protocol"
-satisfied_by = ["rust-vm-patch-protocol"]
+satisfied_by = ["rust-vm-patch-protocol", "patch-refinement-evidence-admission"]
 
 [obligation.scope-ecosystem-stdlib]
 node = "firth.ecosystem.stdlib"
@@ -122,17 +122,17 @@ satisfied_by = []
 [obligation.scope-ecosystem-specs]
 node = "firth.ecosystem.specs"
 source = "PRD 4.4 specification documents"
-satisfied_by = ["component-spec-boundaries"]
+satisfied_by = ["component-spec-boundaries", "kernel-spec-freeze", "vm-target-spec"]
 
 [obligation.req-r1]
 node = "firth.language.kernel"
 source = "PRD R1"
-satisfied_by = ["kernel-spec-freeze"]
+satisfied_by = ["kernel-spec-freeze", "kernel-minimality-evidence"]
 
 [obligation.req-r2]
 node = "firth.language.surface"
 source = "PRD R2"
-satisfied_by = ["kernel-spec-freeze", "surface-syntax-spec"]
+satisfied_by = ["kernel-spec-freeze", "surface-syntax-spec", "elaborator-named-local-erasure", "quotation-erasure-regressions"]
 
 [obligation.req-r3]
 node = "firth.toolchain.elaborator"
@@ -157,7 +157,7 @@ satisfied_by = ["rust-vm-patch-protocol", "rust-vm-lifecycle-integration", "rust
 [obligation.req-r7]
 node = "firth.runtime.patch"
 source = "PRD R7"
-satisfied_by = ["rust-vm-patch-protocol", "elaborator-refinement-discharge"]
+satisfied_by = ["rust-vm-patch-protocol", "elaborator-refinement-discharge", "patch-refinement-evidence-admission"]
 
 [obligation.req-r8]
 node = "firth.language.kernel"
@@ -192,7 +192,7 @@ satisfied_by = ["diagnostic-schema", "language-20-agent-workflow"]
 [obligation.req-r14]
 node = "firth.language.surface"
 source = "PRD R14"
-satisfied_by = ["surface-syntax-spec"]
+satisfied_by = ["surface-syntax-spec", "elaborator-named-local-erasure", "stack-depth-lint-threshold"]
 
 [obligation.req-r15]
 node = "firth.language.types"
@@ -208,7 +208,7 @@ satisfied_by = []
 [obligation.req-r17]
 node = "firth.language.surface"
 source = "PRD R17"
-satisfied_by = ["surface-syntax-spec"]
+satisfied_by = ["surface-syntax-spec", "naming-grammar-lint"]
 
 [obligation.sc-s1]
 node = "firth.language.kernel"

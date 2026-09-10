@@ -7,6 +7,7 @@ status: accepted
 date: 2026-08-08
 informed_by:
   - res.smt-solver-profile-binding
+related:
   - dec.refinement-discharge-architecture
   - dec.smt-checked-adapter-pipeline
 ---
