@@ -145,10 +145,12 @@ fn render_hex(bytes: &[u8]) -> String {
     rendered
 }
 
-fn adapter_operand_value(value: &Json, context: &str, depth: usize) -> Result<Value, AdapterError> {
-    if depth > MAX_NESTING {
-        return Err(AdapterError::field("invalid-request", context, "nesting limit"));
-    }
+// The adapter functions below recurse over the parsed document. That recursion
+// is bounded by the transport's `MAX_TRANSPORT_NESTING`, and the sealed-image
+// decoder is the sole authority on quotation depth (`MAX_NESTING`), so the
+// adapter does not count levels a second time in a different unit.
+
+fn adapter_operand_value(value: &Json, context: &str) -> Result<Value, AdapterError> {
     let kind = string(member(value, context, "kind")?, context)?;
     match kind.as_str() {
         "int" => {
@@ -170,10 +172,7 @@ fn adapter_operand_value(value: &Json, context: &str, depth: usize) -> Result<Va
             let text = string(member(value, context, "value")?, context)?;
             Ok(Value::Bytes(adapter_hex(&text, context)?))
         }
-        "quotation" => {
-            object(value, context, &["kind", "code", "captures", "consumed"])?;
-            Ok(Value::Quotation(adapter_quotation(value, context, depth)?))
-        }
+        "quotation" => Ok(Value::Quotation(adapter_quotation(value, context)?)),
         "primitive" => {
             object(value, context, &["kind", "tag", "bytes"])?;
             let tag = unsigned(member(value, context, "tag")?, context)?;
@@ -187,11 +186,23 @@ fn adapter_operand_value(value: &Json, context: &str, depth: usize) -> Result<Va
     }
 }
 
-fn adapter_quotation(value: &Json, context: &str, depth: usize) -> Result<Quotation, AdapterError> {
-    let code = adapter_code(member(value, context, "code")?, context, depth + 1)?;
+/// Decodes one quotation object, on the value path and the `push-quote`
+/// operand path alike: the same envelope, the same `kind`, and the same
+/// refusal of a capture already marked consumed, which no static quotation can
+/// carry because only an executing frame consumes a slot.
+fn adapter_quotation(value: &Json, context: &str) -> Result<Quotation, AdapterError> {
+    object(value, context, &["kind", "code", "captures", "consumed"])?;
+    if string(member(value, context, "kind")?, context)? != "quotation" {
+        return Err(AdapterError::field(
+            "invalid-request",
+            context,
+            "expected a quotation",
+        ));
+    }
+    let code = adapter_code(member(value, context, "code")?, context)?;
     let mut captures = Vec::new();
     for capture in array(member(value, context, "captures")?, context)? {
-        captures.push(adapter_operand_value(capture, context, depth + 1)?);
+        captures.push(adapter_operand_value(capture, context)?);
     }
     let mut consumed = Vec::new();
     for flag in array(member(value, context, "consumed")?, context)? {
@@ -215,6 +226,13 @@ fn adapter_quotation(value: &Json, context: &str, depth: usize) -> Result<Quotat
             "capture state length must match captures",
         ));
     }
+    if consumed.iter().any(|flag| *flag) {
+        return Err(AdapterError::field(
+            "invalid-request",
+            context,
+            "a static quotation cannot carry a consumed capture",
+        ));
+    }
     Ok(Quotation {
         code,
         captures,
@@ -222,22 +240,15 @@ fn adapter_quotation(value: &Json, context: &str, depth: usize) -> Result<Quotat
     })
 }
 
-fn adapter_code(value: &Json, context: &str, depth: usize) -> Result<Vec<Instruction>, AdapterError> {
-    if depth > MAX_NESTING {
-        return Err(AdapterError::field("invalid-request", context, "nesting limit"));
-    }
+fn adapter_code(value: &Json, context: &str) -> Result<Vec<Instruction>, AdapterError> {
     let mut code = Vec::new();
     for item in array(value, context)? {
-        code.push(adapter_instruction(item, context, depth)?);
+        code.push(adapter_instruction(item, context)?);
     }
     Ok(code)
 }
 
-fn adapter_instruction(
-    value: &Json,
-    context: &str,
-    depth: usize,
-) -> Result<Instruction, AdapterError> {
+fn adapter_instruction(value: &Json, context: &str) -> Result<Instruction, AdapterError> {
     let op = string(member(value, context, "op")?, context)?;
     let (op, operand) = match op.as_str() {
         "push-literal" => {
@@ -247,7 +258,6 @@ fn adapter_instruction(
                 Some(Operand::Literal(adapter_operand_value(
                     member(value, context, "literal")?,
                     context,
-                    depth + 1,
                 )?)),
             )
         }
@@ -258,7 +268,6 @@ fn adapter_instruction(
                 Some(Operand::Quote(adapter_quotation(
                     member(value, context, "quotation")?,
                     context,
-                    depth + 1,
                 )?)),
             )
         }
@@ -334,7 +343,7 @@ fn adapter_word_entry(value: &Json, context: &str) -> Result<WordEntry, AdapterE
     Ok(WordEntry {
         name: nonempty_string(member(value, context, "name")?, context)?,
         erased_word_type: nonempty_string(member(value, context, "erased_word_type")?, context)?,
-        code: adapter_code(member(value, context, "code")?, context, 0)?,
+        code: adapter_code(member(value, context, "code")?, context)?,
         body_digest: adapter_hex(
             &string(member(value, context, "body_digest")?, context)?,
             context,
@@ -349,350 +358,4 @@ fn adapter_word_entry(value: &Json, context: &str) -> Result<WordEntry, AdapterE
         )?,
         generation: unsigned(member(value, context, "generation")?, context)?,
     })
-}
-
-/// A value the reference adapter can also carry, so the same `initial_stack`
-/// may be sent to both hosts.
-///
-/// The frozen kernel's `unit` literal has no v0.1 target representation, and a
-/// kernel-shaped quotation would have to be lowered first, which is the
-/// compiler's job and not this adapter's. Both are refused rather than
-/// approximated.
-fn adapter_reference_value(value: &Json, context: &str) -> Result<Value, AdapterError> {
-    let kind = string(member(value, context, "kind")?, context)?;
-    match kind.as_str() {
-        "literal" => {
-            object(value, context, &["kind", "literal"])?;
-            let literal = member(value, context, "literal")?;
-            let literal_type = string(member(literal, context, "type")?, context)?;
-            match literal_type.as_str() {
-                "nat" => {
-                    object(literal, context, &["type", "value"])?;
-                    let number = unsigned(member(literal, context, "value")?, context)?;
-                    i64::try_from(number).map(Value::Int).map_err(|_| {
-                        AdapterError::field("invalid-request", context, "literal exceeds the target integer")
-                    })
-                }
-                "bool" => {
-                    object(literal, context, &["type", "value"])?;
-                    match member(literal, context, "value")? {
-                        Json::Bool(flag) => Ok(Value::Bool(*flag)),
-                        _ => Err(AdapterError::field("invalid-request", context, "expected boolean")),
-                    }
-                }
-                "unit" => Err(AdapterError::field(
-                    "unsupported-value",
-                    context,
-                    "the unit literal has no v0.1 target representation",
-                )),
-                _ => Err(AdapterError::field("invalid-request", context, "unknown literal type")),
-            }
-        }
-        "quotation" => Err(AdapterError::field(
-            "unsupported-value",
-            context,
-            "a kernel quotation must be lowered by the compiler before execution",
-        )),
-        "world" => Err(AdapterError::field(
-            "unsupported-value",
-            context,
-            "World is administrative and is never supplied as an initial value",
-        )),
-        _ => Err(AdapterError::field("invalid-request", context, "unknown value kind")),
-    }
-}
-
-/// One decoded `firth.vm-execution.v1` request.
-pub struct VmRunRequest {
-    /// Correlator echoed in the response.
-    pub request_id: String,
-    /// The image the target program was sealed into.
-    pub image: Image,
-    /// The word the run enters at.
-    pub entry: String,
-    /// Bottom-to-top initial value stack.
-    pub initial_stack: Vec<Value>,
-    /// The execution budget.
-    pub fuel: u64,
-}
-
-/// Decodes and seals a `firth.vm-execution.v1` request.
-///
-/// The word vector is sealed and encoded, then decoded again through the
-/// trusted decoder, so every digest, ordering, identifier and word-type rule
-/// in the target contract is checked by the same code path a real image takes.
-pub fn decode_vm_run_request(input: &str) -> Result<VmRunRequest, AdapterError> {
-    let json = parse_json(input).map_err(|error| {
-        AdapterError::new(error.stable_code(), "the request is not an accepted JSON document")
-    })?;
-    object(
-        &json,
-        "request",
-        &[
-            "request_id",
-            "target_program",
-            "initial_stack",
-            "image",
-            "gamma_version",
-            "fuel",
-        ],
-    )?;
-    let request_id = nonempty_string(member(&json, "request", "request_id")?, "request.request_id")?;
-    let gamma_version = string(
-        member(&json, "request", "gamma_version")?,
-        "request.gamma_version",
-    )?;
-    if gamma_version != ADAPTER_GAMMA_VERSION {
-        return Err(AdapterError::field(
-            "unsupported-gamma",
-            "request.gamma_version",
-            "unsupported gamma version",
-        ));
-    }
-    let fuel = unsigned(member(&json, "request", "fuel")?, "request.fuel")?;
-
-    let program = member(&json, "request", "target_program")?;
-    object(program, "target_program", &["format_version", "entry", "words"])?;
-    let format_version = unsigned(
-        member(program, "target_program", "format_version")?,
-        "target_program.format_version",
-    )?;
-    if format_version != u64::from(FORMAT_VERSION) {
-        return Err(AdapterError::field(
-            "unsupported-format",
-            "target_program.format_version",
-            "unsupported target format version",
-        ));
-    }
-    let entry = nonempty_string(
-        member(program, "target_program", "entry")?,
-        "target_program.entry",
-    )?;
-    let mut words = Vec::new();
-    for word in array(
-        member(program, "target_program", "words")?,
-        "target_program.words",
-    )? {
-        words.push(adapter_word_entry(word, "target_program.words")?);
-    }
-    if !words.iter().any(|word| word.name == entry) {
-        return Err(AdapterError::field(
-            "unknown-entry",
-            "target_program.entry",
-            "the entry word is not in the target program",
-        ));
-    }
-
-    let image_object = member(&json, "request", "image")?;
-    object(image_object, "image", &["image_version", "gamma_version"])?;
-    let image_version = unsigned(
-        member(image_object, "image", "image_version")?,
-        "image.image_version",
-    )?;
-    let image_gamma = unsigned(
-        member(image_object, "image", "gamma_version")?,
-        "image.gamma_version",
-    )?;
-    if image_gamma != GAMMA_VERSION {
-        return Err(AdapterError::field(
-            "unsupported-gamma",
-            "image.gamma_version",
-            "unsupported target registry version",
-        ));
-    }
-
-    let mut initial_stack = Vec::new();
-    for value in array(
-        member(&json, "request", "initial_stack")?,
-        "request.initial_stack",
-    )? {
-        initial_stack.push(adapter_reference_value(value, "request.initial_stack")?);
-    }
-
-    let sealed = seal_image(image_version, words);
-    let image = decode(&encode_image(&sealed)).map_err(|error| {
-        AdapterError::field(
-            "invalid-image",
-            "target_program",
-            error.stable_code(),
-        )
-    })?;
-
-    Ok(VmRunRequest {
-        request_id,
-        image,
-        entry,
-        initial_stack,
-        fuel,
-    })
-}
-
-fn value_json(value: &Value, registry: &PrimitiveRegistry) -> Json {
-    match value {
-        Value::Int(number) => Json::Object(vec![
-            (String::from("kind"), Json::Str(String::from("literal"))),
-            (
-                String::from("literal"),
-                Json::Object(vec![
-                    (
-                        String::from("type"),
-                        Json::Str(String::from(if *number >= 0 { "nat" } else { "int" })),
-                    ),
-                    (String::from("value"), Json::Int(*number)),
-                ]),
-            ),
-        ]),
-        Value::Bool(flag) => Json::Object(vec![
-            (String::from("kind"), Json::Str(String::from("literal"))),
-            (
-                String::from("literal"),
-                Json::Object(vec![
-                    (String::from("type"), Json::Str(String::from("bool"))),
-                    (String::from("value"), Json::Bool(*flag)),
-                ]),
-            ),
-        ]),
-        Value::Bytes(bytes) => Json::Object(vec![
-            (String::from("kind"), Json::Str(String::from("bytes"))),
-            (String::from("value"), Json::Str(render_hex(bytes))),
-        ]),
-        Value::Quotation(quotation) => Json::Object(vec![
-            (String::from("kind"), Json::Str(String::from("quotation"))),
-            (
-                String::from("usage"),
-                Json::Str(String::from(if quotation.usage(registry) == Usage::Many {
-                    "many"
-                } else {
-                    "linear"
-                })),
-            ),
-        ]),
-        Value::PrimitiveValue { tag, bytes } => Json::Object(vec![
-            (String::from("kind"), Json::Str(String::from("primitive"))),
-            (String::from("tag"), Json::Int(*tag as i64)),
-            (String::from("value"), Json::Str(render_hex(bytes))),
-        ]),
-        Value::World => Json::Object(vec![(
-            String::from("kind"),
-            Json::Str(String::from("world")),
-        )]),
-    }
-}
-
-fn stack_json(stack: &[Value], registry: &PrimitiveRegistry) -> Json {
-    Json::Array(
-        stack
-            .iter()
-            .map(|value| value_json(value, registry))
-            .collect(),
-    )
-}
-
-fn trace_json(trace: &[TraceEvent], registry: &PrimitiveRegistry) -> Json {
-    Json::Array(
-        trace
-            .iter()
-            .enumerate()
-            .map(|(index, event)| {
-                Json::Object(vec![
-                    (String::from("index"), Json::Int(index as i64)),
-                    (String::from("word"), Json::Str(event.word.clone())),
-                    (String::from("pc"), Json::Int(event.pc as i64)),
-                    (String::from("stack"), stack_json(&event.stack, registry)),
-                    (String::from("cost"), Json::Int(event.cost as i64)),
-                ])
-            })
-            .collect(),
-    )
-}
-
-/// The cost report.
-///
-/// `total` is this target's `kappa_vm` charge. `kernel` is the same total
-/// projected from recorded per-step kernel charges. Administrative word entry
-/// and capture restoration do not contribute to the implemented reference
-/// model. Target charges and the existing VM fuel accounting are unchanged.
-fn cost_json(steps: usize, cost: &CostReport) -> Json {
-    Json::Object(vec![
-        (String::from("steps"), Json::Int(steps as i64)),
-        (String::from("total"), Json::Int(cost.total as i64)),
-        (
-            String::from("kernel"),
-            Json::Int(cost.kernel_total() as i64),
-        ),
-    ])
-}
-
-fn world_json(observation: &[u8]) -> Json {
-    Json::Object(vec![(
-        String::from("bytes"),
-        Json::Array(observation.iter().map(|byte| Json::Int(i64::from(*byte))).collect()),
-    )])
-}
-
-fn observation_json(
-    request_id: &str,
-    status: &str,
-    stack: Json,
-    trace: Json,
-    cost: Json,
-    trap: Json,
-    world: Json,
-) -> Json {
-    Json::Object(vec![
-        (String::from("request_id"), Json::Str(String::from(request_id))),
-        (String::from("status"), Json::Str(String::from(status))),
-        (String::from("stack"), stack),
-        (String::from("trace"), trace),
-        (String::from("cost"), cost),
-        (String::from("trap"), trap),
-        (String::from("world_observation"), world),
-    ])
-}
-
-/// Runs one decoded request and renders its `firth.observation.v1` response.
-pub fn run_vm_request(request: &VmRunRequest, registry: &PrimitiveRegistry) -> Json {
-    match execute_diagnostic_entry(
-        &request.image,
-        &request.entry,
-        request.initial_stack.clone(),
-        request.fuel,
-        registry,
-        None,
-    ) {
-        ExecutionOutcome::Complete(report) => observation_json(
-            &request.request_id,
-            "success",
-            stack_json(&report.stack, registry),
-            trace_json(&report.trace, registry),
-            cost_json(report.trace.len(), &report.cost),
-            Json::Null,
-            world_json(report.world.observation()),
-        ),
-        ExecutionOutcome::Trap(trap) => observation_json(
-            &request.request_id,
-            "trap",
-            stack_json(&trap.stack, registry),
-            trace_json(&trap.trace, registry),
-            cost_json(trap.trace.len(), &trap.cost),
-            Json::Str(String::from(trap.code)),
-            world_json(trap.world.observation()),
-        ),
-    }
-}
-
-/// The whole `firth.vm-run.v1` adapter: request bytes in, response bytes out.
-pub fn vm_run(input: &str) -> Result<String, AdapterError> {
-    let request = decode_vm_run_request(input)?;
-    Ok(render_json(&run_vm_request(&request, &default_registry())))
-}
-
-/// Renders a refusal as the same `{"status":"error","error":...}` shape the
-/// reference-run adapter uses, with the stable code alongside it.
-pub fn render_adapter_error(error: &AdapterError) -> String {
-    render_json(&Json::Object(vec![
-        (String::from("status"), Json::Str(String::from("error"))),
-        (String::from("code"), Json::Str(error.code.clone())),
-        (String::from("error"), Json::Str(error.message.clone())),
-    ]))
 }

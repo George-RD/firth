@@ -37,6 +37,29 @@ def sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def contract_tables() -> dict[str, object]:
+    """The manifest tables `verify_contract` binds, as the real manifest states them."""
+    adapters = {
+        "elaborate": ("firth.elaborate.v1", "firth.source.v1", "firth.elaboration.v1"),
+        "compile": ("firth.compile.v1", "firth.checked-kernel.v1", "firth.target-program.v1"),
+        "reference_run": ("firth.reference-run.v1", "firth.reference-execution.v1", "firth.observation.v1"),
+        "vm_run": ("firth.vm-run.v1", "firth.vm-execution.v1", "firth.observation.v1"),
+    }
+    return {
+        "gamma": {"version": "0.1", "primitives": ["+", "send"]},
+        "entry_point": {
+            name: {"version": "0.1", "adapter": adapter, "transport": "structured-json",
+                   "request_schema": request, "response_schema": response}
+            for name, (adapter, request, response) in adapters.items()
+        },
+        "comparison": {
+            "terminal_status": True, "bottom_to_top_stack": True, "trap_classification": True,
+            "bounded_trace": True, "cost_report": True, "world_observation": True,
+            "fuel_exhaustion": "bounded-fuel-inconclusive",
+        },
+    }
+
+
 def transcript(index: int) -> str:
     paths = ["docs/firth-agent-guide.md", *INTERFACE_PATHS]
     context = "\n".join(f"- `{path}`" for path in paths)
@@ -88,7 +111,9 @@ class MvpAgentGateTests(unittest.TestCase):
 
     def manifest(self, entries: list[dict[str, object]] | None = None, **overrides: object) -> None:
         data: dict[str, object] = {
+            "language_version": "0.1",
             "guide_path": "docs/firth-agent-guide.md",
+            **contract_tables(),
             "inputs": {
                 "model_only": True,
                 "guide_path": "docs/firth-agent-guide.md",
@@ -255,6 +280,41 @@ class MvpAgentGateTests(unittest.TestCase):
                 self.manifest([self.entry(0, name=name), self.entry(1), self.entry(2)])
                 self.assert_refused("safe application name")
 
+    def test_a_manifest_that_declares_another_contract_is_refused_before_provenance(self) -> None:
+        # Provenance is sound in every case below, so each refusal is for the
+        # contract drift alone, and it happens before any transcript is read.
+        tables = contract_tables()
+        entry_points = tables["entry_point"]
+        cases: list[tuple[str, dict[str, object], str]] = [
+            ("language_version", {"language_version": "0.2"}, "language_version"),
+            ("gamma.version", {"gamma": {**tables["gamma"], "version": "0.2"}}, "gamma.version"),
+            ("gamma.primitives", {"gamma": {**tables["gamma"], "primitives": ["send"]}}, "gamma.primitives"),
+            ("comparison drift", {"comparison": {**tables["comparison"], "cost_report": False}},
+             "comparison.cost_report"),
+            ("comparison unknown key", {"comparison": {**tables["comparison"], "trace_equivalence": True}},
+             "comparison: unknown key"),
+            ("comparison missing key", {"comparison": {k: v for k, v in tables["comparison"].items()
+                                                       if k != "bounded_trace"}}, "comparison.bounded_trace"),
+            ("comparison exhaustion", {"comparison": {**tables["comparison"], "fuel_exhaustion": "agreement"}},
+             "comparison.fuel_exhaustion"),
+        ]
+        for name in entry_points:
+            for field, value in (("version", "0.2"), ("adapter", "firth.other.v1"),
+                                 ("transport", "plain-text"), ("request_schema", "firth.other.v1"),
+                                 ("response_schema", "firth.other.v1")):
+                mutated = {**entry_points, name: {**entry_points[name], field: value}}
+                cases.append((f"entry_point.{name}.{field}", {"entry_point": mutated},
+                              f"entry_point.{name}.{field}"))
+        for label, overrides, needle in cases:
+            with self.subTest(case=label):
+                self.manifest(**overrides)
+                self.assert_refused(needle)
+
+    def test_a_manifest_declaring_the_implemented_contract_reaches_provenance(self) -> None:
+        self.manifest()
+        (self.root / "docs" / "firth-agent-guide.md").write_text("# other\n", encoding="utf-8")
+        self.assert_refused("the guide has drifted")
+
 
 class ExecutionWiringTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -352,6 +412,62 @@ class ExecutionWiringTests(unittest.TestCase):
             word = {"name": "main", "program": [], **state}
             with self.subTest(state=state), self.assertRaises(self.gate.GateError):
                 self.gate.checked_dictionary({"checked_words": [word]})
+
+    def test_compare_consumes_only_the_implemented_comparison_contract(self) -> None:
+        contract = self.gate.COMPARISON_CONTRACT
+        self.assertEqual(self.gate.compare(*self.observations(), "contract", contract=contract),
+                         self.gate.TRACE_AGREED)
+        self.assertEqual(self.gate.compare(*self.observations(), "contract", contract=dict(contract)),
+                         self.gate.TRACE_AGREED)
+        mutations: list[tuple[str, dict[str, object]]] = [
+            ("comparison: unknown key", {**contract, "trace_equivalence": True}),
+            ("comparison.fuel_exhaustion", {**contract, "fuel_exhaustion": "agreement"}),
+            ("comparison: expected a table", []),
+        ]
+        for key in contract:
+            if key != "fuel_exhaustion":
+                mutations.append((f"comparison.{key}", {**contract, key: False}))
+                mutations.append((f"comparison.{key}", {**contract, key: 1}))
+            mutations.append((f"comparison.{key}: missing", {k: v for k, v in contract.items() if k != key}))
+        for needle, mutated in mutations:
+            with self.subTest(needle=needle, mutated=mutated):
+                with self.assertRaisesRegex(self.gate.GateError, needle):
+                    self.gate.compare(*self.observations(), "contract", contract=mutated)
+
+    def test_rebuild_reports_the_trace_comparison_label(self) -> None:
+        main = {"name": "main", "checking_state": "checked", "proof_state": "available",
+                "program": [{"kind": "lit", "value": {"type": "nat", "value": 42}}]}
+        elaboration = {
+            "status": "success", "checked_words": [main],
+            "kernel_programs": [{"word": "main", "program": main["program"]}],
+            "erased_word_types": [{"word": "main", "type": {"input": {"row": None, "items": []}}}],
+        }
+        literal = {"kind": "literal", "literal": {"type": "nat", "value": 42}}
+        reference = {"status": "success", "trap": None, "stack": [literal],
+                     "trace": [{"index": 0, "stack": [], "program": main["program"], "cost": 1}],
+                     "cost": {"total": 1, "steps": 1}, "world_observation": {"ids": []}}
+        target = {"status": "success", "trap": None, "stack": [literal],
+                  "trace": [{"index": 0, "word": "main", "pc": 0, "stack": [], "cost": 1,
+                             "kernel_cost": 1, "image_version": 1, "frames": []}],
+                  "cost": {"total": 1, "kernel": 1, "steps": 1}, "world_observation": {"bytes": [0]}}
+        def adapter(command, request, workspace, label):
+            if label.endswith("elaborate"):
+                return elaboration
+            if label.endswith("compile"):
+                return {"status": "success", "target_program": {"entry": "main", "words": [main]}}
+            return reference if label.endswith("reference-run") else target
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source.firth"
+            source.write_text(": main ( -- n:Int ) 42;", encoding="utf-8")
+            with patch.object(self.gate, "adapter", adapter):
+                result = self.gate.rebuild({"name": "test", "entry": "main", "source": str(source),
+                                           "source_path": "source.firth"}, root)
+        self.assertEqual(result["trace_comparison"], self.gate.TRACE_AGREED)
+        for fuel in (4097, -1, True):
+            with self.subTest(fuel=fuel), self.assertRaisesRegex(self.gate.GateError, "fuel"):
+                self.gate.rebuild({"name": "test", "entry": "main", "source": "x", "source_path": "x"},
+                                  Path("/nonexistent"), fuel=fuel)
 
 
 def render_toml(data: dict[str, object]) -> str:

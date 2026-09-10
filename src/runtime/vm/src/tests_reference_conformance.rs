@@ -55,6 +55,17 @@ fn zero_cost() -> ConformanceCostReference {
     }
 }
 
+/// The full rendering of a root `main` frame stopped at `pc` with `code` as
+/// its body: no captures, `Halt` continuation and no `DIP` in flight.
+fn root_frame(code: &[Instruction], pc: usize) -> String {
+    let mut rendered = String::from("main@");
+    rendered.push_str(&pc.to_string());
+    rendered.push(':');
+    rendered.push_str(&render_hex(&body_digest(code)));
+    rendered.push_str(":halt{}");
+    rendered
+}
+
 #[test]
 fn world_threading_agrees_on_the_hidden_observation_and_the_cost_breakdown() {
     let image = conformance_witness(vec![prim("makeWorld"), prim("consumeWorld")]);
@@ -163,7 +174,7 @@ fn primitive_faults_and_unknown_primitives_carry_their_stable_classes() {
         "unknown-primitive",
         "",
         "",
-        "main@0",
+        &root_frame(&[prim("missing")], 0),
         WorldState::new().observation().to_vec(),
         zero_cost(),
     );
@@ -181,7 +192,7 @@ fn a_stack_fault_is_classified_where_the_frozen_corpus_only_says_stuck() {
         "stack-fault",
         "",
         "",
-        "main@0",
+        &root_frame(&[instruction(Op::Drop, None)], 0),
         WorldState::new().observation().to_vec(),
         ConformanceCostReference {
             total: 0,
@@ -193,7 +204,29 @@ fn a_stack_fault_is_classified_where_the_frozen_corpus_only_says_stuck() {
         compare_conformance(&reference, &observed),
         ConformanceVerdict::Agree
     );
-    assert_eq!(observed.frames, "main@0");
+    assert_eq!(
+        observed.frames,
+        root_frame(&[instruction(Op::Drop, None)], 0)
+    );
+
+    // The legacy `main@0` spelling is a projection: equal projections are
+    // unsupported, never agreement, because the projection fixes no code
+    // digest, capture state or continuation.
+    let mut legacy = reference.clone();
+    legacy.frames = String::from("main@0");
+    let ConformanceVerdict::UnsupportedComparison(unsupported) =
+        compare_conformance(&legacy, &observed)
+    else {
+        panic!("a legacy frame projection must be unsupported")
+    };
+    assert_eq!(unsupported.len(), 1);
+    assert_eq!(unsupported[0].field, "frames");
+    let mut wrong = reference.clone();
+    wrong.frames = String::from("main@1");
+    assert!(matches!(
+        compare_conformance(&wrong, &observed),
+        ConformanceVerdict::Disagree(_)
+    ));
 }
 
 #[test]

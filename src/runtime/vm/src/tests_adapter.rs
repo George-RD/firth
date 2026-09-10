@@ -36,7 +36,7 @@ fn adapter_code_of(code: &str) -> Vec<Instruction> {
     };
     let mut instructions = Vec::new();
     for item in items {
-        instructions.push(adapter_instruction(item, "test", 0).expect("test instruction"));
+        instructions.push(adapter_instruction(item, "test").expect("test instruction"));
     }
     instructions
 }
@@ -87,13 +87,21 @@ fn the_json_grammar_accepts_and_round_trips_what_it_does_accept() {
 #[test]
 fn a_json_document_nested_past_the_bound_is_refused() {
     let mut deep = String::new();
-    for _ in 0..(MAX_NESTING + 2) {
+    for _ in 0..(MAX_TRANSPORT_NESTING + 2) {
         deep.push('[');
     }
-    for _ in 0..(MAX_NESTING + 2) {
+    for _ in 0..(MAX_TRANSPORT_NESTING + 2) {
         deep.push(']');
     }
     assert_eq!(parse_json(&deep), Err(JsonError::DepthLimit));
+    let mut bounded = String::new();
+    for _ in 0..(MAX_TRANSPORT_NESTING + 1) {
+        bounded.push('[');
+    }
+    for _ in 0..(MAX_TRANSPORT_NESTING + 1) {
+        bounded.push(']');
+    }
+    assert!(parse_json(&bounded).is_ok());
 }
 
 #[test]
@@ -127,9 +135,14 @@ fn a_literal_program_runs_and_reports_a_success_observation() {
             "trace",
             "cost",
             "trap",
-            "world_observation"
+            "world_observation",
+            "frames",
+            "trap_subcode",
+            "verification"
         ]
     );
+    assert_eq!(response.member("frames"), Some(&Json::Array(vec![])));
+    assert_eq!(response.member("trap_subcode"), Some(&Json::Null));
 }
 
 #[test]

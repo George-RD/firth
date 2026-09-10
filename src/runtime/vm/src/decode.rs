@@ -95,6 +95,11 @@ fn decode_quotation(reader: &mut Reader<'_>, depth: usize) -> Result<Quotation, 
     {
         return Err(VmError::InvalidCaptureBitmap);
     }
+    // Only an executing frame consumes a slot, and a consumed slot is never
+    // pushed back as a value, so no static or input quotation can carry one.
+    if consumed.iter().any(|flag| *flag) {
+        return Err(VmError::InvalidCaptureBitmap);
+    }
     let mut captures = Vec::with_capacity(capture_count);
     for _ in 0..capture_count {
         captures.push(decode_value(reader, depth)?);

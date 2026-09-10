@@ -158,10 +158,12 @@ python3 tools/loop/firth_run.py run examples/mvp/double.firth \
   --entry missing --stack '[21]'
 ```
 
-The default fuel budget is 4096 steps. `--fuel` accepts an integer from 0 to
-100000. Recursive definitions are permitted, but exhausting the bound does
-not prove divergence and is never accepted as a successful run. Increase the
-bound only after checking that the program should terminate. The VM and
+The default fuel budget is 4096 steps, which is also the largest budget the VM
+adapter accepts: `--fuel` accepts an integer from 0 to 4096. Recursive
+definitions are permitted, but exhausting the bound does not prove divergence
+and is never accepted as a successful run; recursion deeper than 256
+administrative frames traps with `resource-fault` on the VM alone, which is
+reported as a mismatch rather than agreement. The VM and
 reference interpreter report cost differently: VM word entry and capture
 restoration carry administrative target charges, so reference cost is compared
 with `kernel_cost`, not the larger `vm_cost`. Capture restoration still consumes
@@ -216,10 +218,16 @@ predicate written in source was translated or discharged. See the
 
 The runner checks source, compiles the checked representation, and compares
 successful terminal status, final stack and kernel-comparable cost with the
-Lean reference interpreter. It bounds each execution and validates the trace
-lengths. It does **not** establish full trace equivalence, arbitrary effect
-agreement, a universal compiler-correctness theorem or the business intent of
-the application. Non-pure world observations are refused.
+Lean reference interpreter. It bounds each execution and compares the two
+traces event by event after projecting both onto kernel-charged steps: the
+projected lengths and per-step charges must match, and when no intermediate
+stack holds a quotation every stack must be equal (`trace_comparison:
+agreed`). A program whose intermediate stacks hold quotations is labelled
+`unsupported-quotation-values` instead, which is neither a failure nor a
+claim of agreement. It does **not** compare residual programs or frames
+across hosts, establish arbitrary effect agreement, a universal
+compiler-correctness theorem or the business intent of the application.
+Non-pure world observations are refused.
 
 The low-level JSON adapters are internal pipeline boundaries. A string such
 as `"checking_state":"checked"` is not an externally authenticated proof.

@@ -97,6 +97,10 @@ jobs:
         run: |
           python3 tools/loop/check_runtime_ingress.py --artifacts /tmp/firth-ingress-std 2>&1 | tee /tmp/language-ingress-std.log
           python3 tools/loop/check_runtime_ingress.py --no-default-features --artifacts /tmp/firth-ingress-core 2>&1 | tee /tmp/language-ingress-core.log
+      - name: Check runtime execution and transport bounds under process deadlines
+        run: |
+          python3 tools/loop/check_runtime_bounds.py --artifacts /tmp/firth-ingress-bounds-std 2>&1 | tee /tmp/language-bounds-std.log
+          python3 tools/loop/check_runtime_bounds.py --no-default-features --artifacts /tmp/firth-ingress-bounds-core 2>&1 | tee /tmp/language-bounds-core.log
       - name: Verify Rust VM
         working-directory: src/runtime/vm
         run: |

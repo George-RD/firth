@@ -371,6 +371,17 @@ def main() -> int:
                         )
                         if not set(outcome_fields).issubset(schema_fields):
                             fail(f"{field}.{direction}.{outcome}: field is absent from schema")
+                # Members a response adds beyond its shared schema. Only the VM
+                # response declares them, and exactly these three.
+                expected_extensions = (
+                    ["frames", "trap_subcode", "verification"]
+                    if (name, direction) == ("vm_run", "response")
+                    else None
+                )
+                if table.get("extensions") != expected_extensions:
+                    fail(f"{field}.{direction}.extensions: unexpected response extensions")
+                if expected_extensions and set(expected_extensions) & schema_fields:
+                    fail(f"{field}.{direction}.extensions: extension shadows a schema field")
 
         applications = data.get("applications")
         if not isinstance(applications, dict) or type(applications.get("minimum")) is not int:

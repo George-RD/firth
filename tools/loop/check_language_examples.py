@@ -44,7 +44,8 @@ def main() -> int:
                     gate.fail(f"{filename}/{entry}: expected {expected}, observed {result['stack']}")
                 if index in (0, 1, 7) and result["cost"] <= result["kernel_cost"]:
                     gate.fail(f"{filename}: dictionary-call overhead was not exercised")
-                results.append({"source": filename, "entry": entry, "stack": expected})
+                results.append({"source": filename, "entry": entry, "stack": expected,
+                                "trace_comparison": result["trace_comparison"]})
 
             source = gate.ROOT / "examples/mvp/choose-increment.firth"
             refused = [

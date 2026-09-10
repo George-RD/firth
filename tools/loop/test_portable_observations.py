@@ -7,10 +7,12 @@ agent authorship. The language-examples gate separately invokes real hosts.
 from __future__ import annotations
 
 import copy
+import io
 import json
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stderr
 from pathlib import Path
 from unittest.mock import patch
 
@@ -146,10 +148,12 @@ class PortableObservationTests(unittest.TestCase):
                         gate.compare(*pair, "malformed-observation")
 
     def test_comparison_fuel_has_the_same_contract_as_execution_fuel(self) -> None:
-        for fuel in (True, False, -1, 100001, 1.0, "10", None):
+        for fuel in (True, False, -1, 4097, 100001, 1.0, "10", None):
             with self.subTest(fuel=fuel):
                 with self.assertRaisesRegex(gate.GateError, "fuel"):
                     gate.compare(*observations(), "invalid-fuel", fuel=fuel)
+        gate.compare(*observations(), "bound", fuel=4096)
+        self.assertEqual(gate.MAX_FUEL, 4096)
 
     def test_fuel_exhaustion_traps_and_overflow_never_pass(self) -> None:
         for trap in ("fuel-exhausted", "primitive-fault", "stack-fault"):
@@ -170,6 +174,146 @@ class PortableObservationTests(unittest.TestCase):
         reference["trace"] = [{"index": 0}]
         with self.assertRaisesRegex(gate.GateError, "fuel budget"):
             gate.compare(reference, target, "trace", fuel=0)
+
+
+def reference_event(index: int, stack: list, cost: int, program: list | None = None) -> dict:
+    return {"index": index, "stack": stack, "program": program or [], "cost": cost}
+
+
+def target_event(index: int, stack: list, cost: int, kernel_cost: int, word: str = "main",
+                 pc: int = 0) -> dict:
+    return {"index": index, "word": word, "pc": pc, "stack": stack, "cost": cost,
+            "kernel_cost": kernel_cost, "image_version": 1, "frames": []}
+
+
+def traced(reference_events: list, target_events: list, stack: list | None = None,
+           total: int | None = None) -> tuple[dict, dict]:
+    reference, target = observations()
+    reference["trace"], target["trace"] = reference_events, target_events
+    if stack is not None:
+        reference["stack"] = target["stack"] = copy.deepcopy(stack)
+    if total is None:
+        total = sum(event["cost"] for event in reference_events)
+    reference["cost"] = {"total": total, "steps": len(reference_events)}
+    target["cost"] = {"total": max(total, sum(e.get("cost", 0) for e in target_events)), "kernel": total,
+                      "steps": len(target_events)}
+    return reference, target
+
+
+class TraceComparisonTests(unittest.TestCase):
+    """The per-event comparison of `compare_traces`, through `compare`."""
+
+    def test_a_reordered_program_with_the_same_result_is_refused(self) -> None:
+        # `1 drop 2` and `2 1 drop` both leave [2] at kernel cost 3, and before
+        # the per-event comparison this reorder passed as agreement.
+        one, two = literal("nat", 1), literal("nat", 2)
+        reference = [reference_event(0, [], 1), reference_event(1, [one], 1), reference_event(2, [], 1)]
+        target = [target_event(0, [], 1, 1), target_event(1, [two], 1, 1, pc=1),
+                  target_event(2, [two, one], 1, 1, pc=2)]
+        with self.assertRaisesRegex(gate.TraceMismatch, "trace event 1 stack"):
+            gate.compare(*traced(reference, target, stack=[two]), "reorder")
+
+    def test_cumulative_target_charges_are_refused(self) -> None:
+        # The old adapter reported the running total [1, 2, 3] per event.
+        one, two = literal("nat", 1), literal("nat", 2)
+        reference = [reference_event(0, [], 1), reference_event(1, [one], 1), reference_event(2, [one, two], 1)]
+        cumulative = [target_event(0, [], 1, 1), target_event(1, [one], 2, 2, pc=1),
+                      target_event(2, [one, two], 3, 3, pc=2)]
+        with self.assertRaisesRegex(gate.TraceMismatch, "trace event 1 charges 1 against the VM kernel charge 2"):
+            gate.compare(*traced(reference, cumulative), "cumulative")
+        per_event = [target_event(0, [], 1, 1), target_event(1, [one], 1, 1, pc=1),
+                     target_event(2, [one, two], 1, 1, pc=2)]
+        self.assertEqual(gate.compare(*traced(reference, per_event), "per-event"), gate.TRACE_AGREED)
+
+    def test_zero_cost_pushes_and_capture_restorations_project_away(self) -> None:
+        # `42 quote call`: the reference's zero-cost S-PUSH and the VM's
+        # zero-kernel PUSH_CAPTURE both drop out; the quoted value on the
+        # intermediate stacks makes the result the explicit unsupported label.
+        value = literal("nat", 42)
+        quoted = {"kind": "quotation", "body": [{"kind": "push", "value": value}], "usage": "many"}
+        vm_quoted = {"kind": "quotation", "usage": "many", "body_digest": "00" * 32,
+                     "code": [{"op": "push-capture", "index": 0}],
+                     "captures": [{"kind": "int", "value": 42}], "consumed": [False]}
+        reference = [reference_event(0, [], 1), reference_event(1, [value], 1),
+                     reference_event(2, [quoted], 1), reference_event(3, [], 0)]
+        target = [target_event(0, [], 1, 1), target_event(1, [value], 1, 1, pc=1),
+                  target_event(2, [vm_quoted], 1, 1, pc=2), target_event(3, [], 1, 0)]
+        self.assertEqual(gate.compare(*traced(reference, target, stack=[value]), "quote-call"),
+                         gate.TRACE_UNSUPPORTED)
+        # The same projection with scalar stacks only is a full agreement.
+        reference = [reference_event(0, [], 1), reference_event(1, [value], 0), reference_event(2, [value], 1)]
+        target = [target_event(0, [], 1, 1), target_event(1, [value], 1, 0, pc=1),
+                  target_event(2, [value], 1, 1, pc=2)]
+        self.assertEqual(gate.compare(*traced(reference, target, stack=[value]), "scalar"),
+                         gate.TRACE_AGREED)
+
+    def test_quotation_values_in_intermediate_stacks_are_unsupported_not_agreement(self) -> None:
+        value = literal("nat", 1)
+        quoted = {"kind": "quotation", "body": [], "usage": "many"}
+        reference = [reference_event(0, [quoted], 1)]
+        target = [target_event(0, [quoted], 1, 1)]
+        self.assertEqual(gate.compare(*traced(reference, target), "quoted"), gate.TRACE_UNSUPPORTED)
+        # The label still requires the projected lengths and charges to match.
+        with self.assertRaisesRegex(gate.TraceMismatch, "lengths differ"):
+            gate.compare(*traced(reference, target + [target_event(1, [value], 1, 1, pc=1)], total=1), "length")
+        with self.assertRaisesRegex(gate.TraceMismatch, "charges 1 against the VM kernel charge 2"):
+            gate.compare(*traced(reference, [target_event(0, [quoted], 2, 2)]), "charge")
+
+    def test_a_trace_event_missing_its_kernel_charge_or_frames_is_malformed(self) -> None:
+        value = literal("nat", 1)
+        good = target_event(0, [], 1, 1)
+        for missing in ("kernel_cost", "frames", "image_version", "word", "pc", "stack", "cost", "index"):
+            event = {key: item for key, item in good.items() if key != missing}
+            with self.subTest(missing=missing):
+                with self.assertRaisesRegex(gate.GateError, "malformed trace event"):
+                    gate.compare(*traced([reference_event(0, [], 1)], [event]), "malformed")
+        for extra in ({**good, "extra": 1}, {**good, "kernel_cost": 2}, {**good, "kernel_cost": True},
+                      {**good, "index": 1}, {**good, "stack": None}):
+            with self.subTest(extra=extra):
+                with self.assertRaises(gate.GateError):
+                    gate.compare(*traced([reference_event(0, [], 1)], [extra]), "malformed")
+        for bad in ({"index": 0, "stack": [], "cost": 1}, {**reference_event(0, [], 1), "cost": -1},
+                    {**reference_event(0, [], 1), "index": 1}):
+            with self.subTest(bad=bad):
+                with self.assertRaises(gate.GateError):
+                    gate.compare(*traced([bad], [good]), "malformed")
+        # Malformed stack values inside a projected event are refused too.
+        with self.assertRaisesRegex(gate.GateError, "trace\\[0\\]"):
+            gate.compare(*traced([reference_event(0, [{"kind": "literal", "literal": {"type": "nat", "value": True}}], 1)],
+                                 [target_event(0, [value], 1, 1)]), "coercion")
+
+    def test_traces_that_are_not_arrays_are_refused(self) -> None:
+        for index in (0, 1):
+            pair = list(traced([], []))
+            pair[index]["trace"] = {}
+            with self.subTest(side=index), self.assertRaisesRegex(gate.GateError, "trace is not an array"):
+                gate.compare(*pair, "shape")
+
+
+class FirthRunInputTests(unittest.TestCase):
+    def test_a_deeply_nested_stack_is_refused_as_a_gate_error(self) -> None:
+        import firth_run
+        with self.assertRaisesRegex(gate.GateError, "stack: not an accepted JSON array \\(RecursionError\\)"):
+            firth_run.parse_stack("[" * 100000 + "]" * 100000)
+        with self.assertRaisesRegex(gate.GateError, "JSONDecodeError"):
+            firth_run.parse_stack("[1,")
+        self.assertEqual(firth_run.parse_stack("[1, true]"), [1, True])
+
+    def test_the_command_reports_the_refusal_without_a_toolchain(self) -> None:
+        import firth_run
+        with tempfile.NamedTemporaryFile(suffix=".firth") as source:
+            stderr = io.StringIO()
+            with patch.object(gate, "build_toolchain", side_effect=AssertionError("must not build")), \
+                    redirect_stderr(stderr):
+                code = firth_run.main(["run", source.name, "--entry", "main", "--stack", "[" * 100000 + "]" * 100000])
+            self.assertEqual(code, 1)
+            self.assertIn("RecursionError", json.loads(stderr.getvalue())["error"])
+            stderr = io.StringIO()
+            with patch.object(gate, "build_toolchain", side_effect=AssertionError("must not build")), \
+                    redirect_stderr(stderr):
+                code = firth_run.main(["run", source.name, "--entry", "main", "--fuel", "4097"])
+            self.assertEqual(code, 1)
+            self.assertIn("0 to 4096", json.loads(stderr.getvalue())["error"])
 
 
 class AdapterJsonTests(unittest.TestCase):

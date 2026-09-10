@@ -23,7 +23,8 @@
         put_unsigned(&mut code, 1);
         code.extend([2, 0]);
         put_unsigned(&mut code, 1);
-        code.push(1);
+        // An unconsumed one-slot bitmap: a set bit is refused, see below.
+        code.push(0);
         code.push(0);
         put_unsigned(&mut code, 7 << 1);
         code.extend([11, 5]);
@@ -48,7 +49,7 @@
                 operand: Some(Operand::Quote(Quotation {
                     code: vec![instruction(Op::PushCapture, Some(Operand::Capture(0)))],
                     captures: vec![Value::Int(7)],
-                    consumed: vec![true],
+                    consumed: vec![false],
                 })),
             },
             Instruction {
@@ -88,7 +89,7 @@
                 Some(Operand::Quote(Quotation {
                     code: vec![instruction(Op::PushCapture, Some(Operand::Capture(0)))],
                     captures: vec![Value::Int(7)],
-                    consumed: vec![true],
+                    consumed: vec![false],
                 })),
             ),
             instruction(Op::CallWord, Some(Operand::Word(String::from("other")))),
@@ -169,10 +170,41 @@
             Some(Operand::Quote(quote)) => {
                 assert_eq!(quote.code[0].operand, Some(Operand::Capture(0)));
                 assert_eq!(quote.captures, vec![Value::Int(7)]);
-                assert_eq!(quote.consumed, vec![true]);
+                assert_eq!(quote.consumed, vec![false]);
             }
             other => panic!("unexpected quote operand: {other:?}"),
         }
+    }
+
+    #[test]
+    fn a_static_quotation_with_a_consumed_capture_is_refused_everywhere() {
+        // Only an executing frame consumes a slot and no consumed slot is
+        // ever pushed back as a value, so a set bit has no valid origin: the
+        // wire decoder, direct execution and the input stack all refuse it.
+        let consumed = Quotation {
+            code: vec![instruction(Op::PushCapture, Some(Operand::Capture(0)))],
+            captures: vec![Value::Int(7)],
+            consumed: vec![true],
+        };
+        let image = fixture_image(vec![word(
+            "main",
+            vec![instruction(Op::PushQuote, Some(Operand::Quote(consumed.clone())))],
+        )]);
+        assert_eq!(
+            decode(&encode_image(&image)),
+            Err(VmError::InvalidCaptureBitmap)
+        );
+        assert_eq!(execute(&image), Err(VmError::InvalidCaptureBitmap));
+        assert_eq!(
+            execute_report_with_stack(
+                &fixture_image(vec![word("main", vec![])]),
+                vec![Value::Quotation(consumed)],
+                8,
+                &default_registry(),
+            )
+            .err(),
+            Some(VmError::InvalidCaptureBitmap)
+        );
     }
 
     #[test]

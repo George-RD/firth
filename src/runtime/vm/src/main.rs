@@ -1,16 +1,28 @@
 use std::env;
-use std::fs;
+use std::fs::File;
 use std::io::Read;
 use std::process::ExitCode;
 
 use firth_vm::{
-    ConformanceStatus, DEFAULT_FUEL, Value, decode, default_registry, execute, observe_image_bytes,
-    render_adapter_error, render_conformance_bytes, render_conformance_cost,
-    render_conformance_trap, smoke_image, vm_run,
+    ConformanceStatus, DEFAULT_FUEL, MAX_FUEL, MAX_INPUT_BYTES, Value, decode, default_registry,
+    execute, observe_image_bytes, render_adapter_error, render_conformance_admission,
+    render_conformance_bytes, render_conformance_cost, render_conformance_trap, smoke_image,
+    vm_run_bytes,
 };
 
 const USAGE: &str =
     "usage: firth-vm --smoke | firth-vm run <image-path> [--fuel <n>] | firth-vm vm-run";
+
+/// Reads at most one byte past the input bound, so an oversize or unbounded
+/// source is classified by the decoder as `InputTooLarge` instead of being
+/// buffered in full first.
+fn read_bounded(source: impl Read) -> std::io::Result<Vec<u8>> {
+    let mut bytes = Vec::new();
+    source
+        .take(MAX_INPUT_BYTES as u64 + 1)
+        .read_to_end(&mut bytes)?;
+    Ok(bytes)
+}
 
 fn main() -> ExitCode {
     run(env::args().skip(1))
@@ -55,7 +67,7 @@ fn run_image(args: &[String]) -> ExitCode {
     let Some((path, fuel)) = parse_run_arguments(args) else {
         return usage();
     };
-    let bytes = match fs::read(path) {
+    let bytes = match File::open(path).and_then(read_bounded) {
         Ok(bytes) => bytes,
         Err(_) => {
             eprintln!("cannot read image: {path}");
@@ -75,6 +87,10 @@ fn run_image(args: &[String]) -> ExitCode {
         render_conformance_trap(observation.trap.as_ref())
     );
     println!("cost: {}", render_conformance_cost(&observation.cost));
+    println!(
+        "admission: {}",
+        render_conformance_admission(&observation.admission)
+    );
     if observation.status == ConformanceStatus::Terminal {
         ExitCode::SUCCESS
     } else {
@@ -87,12 +103,11 @@ fn run_image(args: &[String]) -> ExitCode {
 /// classified error on stderr and exits 1, so a caller can never mistake a
 /// refusal for an observation.
 fn vm_run_adapter() -> ExitCode {
-    let mut input = String::new();
-    if std::io::stdin().read_to_string(&mut input).is_err() {
+    let Ok(input) = read_bounded(std::io::stdin().lock()) else {
         eprintln!("cannot read the request from stdin");
         return ExitCode::from(1);
-    }
-    match vm_run(&input) {
+    };
+    match vm_run_bytes(&input) {
         Ok(response) => {
             println!("{response}");
             ExitCode::SUCCESS
@@ -104,10 +119,15 @@ fn vm_run_adapter() -> ExitCode {
     }
 }
 
+/// A fuel budget above `MAX_FUEL` is a usage error, the same bound the
+/// `vm-run` adapter refuses with `invalid-request`.
 fn parse_run_arguments(args: &[String]) -> Option<(&str, u64)> {
     match args {
         [path] => Some((path.as_str(), DEFAULT_FUEL)),
-        [path, flag, fuel] if flag == "--fuel" => Some((path.as_str(), fuel.parse().ok()?)),
+        [path, flag, fuel] if flag == "--fuel" => {
+            let fuel: u64 = fuel.parse().ok()?;
+            (fuel <= MAX_FUEL).then_some((path.as_str(), fuel))
+        }
         _ => None,
     }
 }
@@ -154,6 +174,14 @@ mod tests {
     fn run_with_an_unparseable_fuel_budget_is_a_usage_error() {
         assert_eq!(
             run(arguments(&["run", "image.bin", "--fuel", "lots"])),
+            std::process::ExitCode::from(2)
+        );
+    }
+
+    #[test]
+    fn run_with_a_fuel_budget_above_the_bound_is_a_usage_error() {
+        assert_eq!(
+            run(arguments(&["run", "image.bin", "--fuel", "4097"])),
             std::process::ExitCode::from(2)
         );
     }

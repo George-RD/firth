@@ -153,6 +153,41 @@ class ComparisonTests(unittest.TestCase):
         target.update(status="trap", trap="primitive-fault")
         self.assertEqual(h.compare(reference, target, 8).kind, "portable-integer-overflow")
 
+    def test_per_event_trace_differences_have_their_own_failure_class(self):
+        one, two = h.gate.initial_values([1, 2])
+        reference, target = observations()
+        reference["trace"] = [{"index": 0, "stack": [], "program": [], "cost": 1},
+                              {"index": 1, "stack": [one], "program": [], "cost": 1},
+                              {"index": 2, "stack": [], "program": [], "cost": 1}]
+        target["trace"] = [{"index": 0, "word": "main", "pc": 0, "stack": [], "cost": 1, "kernel_cost": 1,
+                            "image_version": 1, "frames": []},
+                           {"index": 1, "word": "main", "pc": 1, "stack": [two], "cost": 1, "kernel_cost": 1,
+                            "image_version": 1, "frames": []},
+                           {"index": 2, "word": "main", "pc": 2, "stack": [two, one], "cost": 1,
+                            "kernel_cost": 1, "image_version": 1, "frames": []}]
+        reference["stack"] = target["stack"] = [two]
+        reference["cost"] = {"total": 3, "steps": 3}
+        target["cost"] = {"total": 3, "kernel": 3, "steps": 3}
+        result = h.compare(reference, target, 8)
+        self.assertEqual(result.kind, "trace-mismatch")
+        self.assertIn("trace event 1 stack", result.detail)
+        target["trace"][1]["stack"] = [one]
+        target["trace"][2]["stack"] = []
+        result = h.compare(reference, target, 8)
+        self.assertEqual((result.kind, result.trace_comparison), ("agreement", h.gate.TRACE_AGREED))
+        quoted = {"kind": "quotation", "body": [], "usage": "many"}
+        reference["trace"][1]["stack"] = target["trace"][1]["stack"] = [quoted]
+        result = h.compare(reference, target, 8)
+        self.assertEqual((result.kind, result.trace_comparison), ("agreement", h.gate.TRACE_UNSUPPORTED))
+        del target["trace"][2]["frames"]
+        self.assertEqual(h.compare(reference, target, 8).kind, "invalid-observation")
+
+    def test_fuel_is_bounded_by_the_adapter_budget(self):
+        for fuel in (4097, 100000):
+            with self.subTest(fuel=fuel), self.assertRaises(h.HarnessError):
+                h.generate(0, 0, fuel=fuel)
+        self.assertEqual(h.generate(0, 0, fuel=4096).fuel, 4096)
+
 
 class ProcessTests(unittest.TestCase):
     def invoke(self, code, **kwargs):

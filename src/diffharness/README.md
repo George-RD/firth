@@ -31,7 +31,18 @@ cost count as agreement. Raw VM cost may differ. Both hosts exhausting fuel is
 `bounded-fuel-inconclusive`, not agreement. One-sided exhaustion, traps,
 portable integer overflow, checker/compiler rejection, malformed transport and
 process failures have separate failure classes and all fail the finite gate.
-A process timeout is distinct from interpreter/VM fuel exhaustion.
+A process timeout is distinct from interpreter/VM fuel exhaustion. The fuel
+budget is bounded at 4096, the largest budget the VM adapter accepts.
+
+An agreement also compares the two traces event by event through the gate's
+`compare_traces`: both traces are projected onto kernel-charged steps, their
+lengths and per-step charges must match, and when no intermediate stack holds
+a quotation every projected stack must be equal. A projected event that
+differs is the `trace-mismatch` failure class. Every generated case starts
+with `[ ] [ dup drop ] if`, so intermediate stacks hold quotations and the
+campaign records the label `unsupported-quotation-values` in its summary's
+`trace_comparisons` rather than a stack-for-stack agreement; the label is
+neither a failure nor agreement.
 
 ## Evidence and replay
 
@@ -73,11 +84,12 @@ case failure. Exit 2 means configuration, build or replay validation failed.
 This is a small, bounded source campaign, not the sustained S2 campaign or a
 compiler-correctness proof. Generation uses typed fragment constructors, not
 an unrestricted grammar or a full kernel-term generator. Coverage counters
-count generated features, not semantic coverage or proof coverage. There is no
-claim of trace equivalence, linear World/effectful equivalence, returned
-quotation equivalence, general I/O, recursive-program generation, source
-refinement proofs or negative target-bytecode fuzzing. Existing trust-boundary
-and VM suites remain separate gates.
+count generated features, not semantic coverage or proof coverage. The trace
+comparison covers kernel-charged steps and scalar stacks only: there is no
+claim of equivalence for residual programs, quotation-valued stacks, linear
+World/effectful behaviour, returned quotations, general I/O, recursive-program
+generation, source refinement proofs or negative target-bytecode fuzzing.
+Existing trust-boundary and VM suites remain separate gates.
 
 The unit suite deliberately uses fake Python subprocess adapters to test the
 driver's plumbing and hostile outputs without requiring Lean/Rust locally.

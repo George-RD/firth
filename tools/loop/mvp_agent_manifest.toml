@@ -188,6 +188,9 @@ required = ["request_id", "target_program", "initial_stack", "image", "gamma_ver
 
 [entry_point.vm_run.response]
 required = ["request_id", "status", "stack", "trace", "cost", "trap", "world_observation"]
+# VM-only members after the shared firth.observation.v1 field list: residual
+# frames, the trap subcode and the firth.vm-verification.v1 admission label.
+extensions = ["frames", "trap_subcode", "verification"]
 
 [comparison]
 terminal_status = true

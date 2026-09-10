@@ -270,6 +270,9 @@ satisfied_by = ["mvp-agent-authoring"]
 
 # Maintainer-authorised acceptance strengthening; dec.usable-language-milestones.
 # Future implementation gates must be pinned before their task is marked done.
+# The runtime-conformance row's execution and transport bounds are additionally
+# checked under process deadlines by tools/loop/check_runtime_bounds.py, which
+# CI runs beside tools/loop/check_runtime_ingress.py in both VM configurations.
 [obligation.usable-language-baseline]
 node = "firth.governance.loop"
 source = "dec.usable-language-milestones M0 (PRD G1-G8)"

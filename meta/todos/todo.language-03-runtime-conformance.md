@@ -1,6 +1,6 @@
 ---
 node: firth.runtime.vm
-status: open
+status: done
 created: 2026-09-08
 ---
 
@@ -71,3 +71,51 @@ full 134-test Rust suite, 309 Python unit tests plus the review-gate script,
 and Cairn's strict gate. Exact source identities and limitations are in the
 change's `verification.md`. Product-head CI and merged-main acceptance remain
 separate; this parent is still open.
+
+## Implementation slice: conformance comparison closure
+
+`meta/changes/runtime-conformance-closure/` closes the comparison and
+bounding gaps that remained after the two earlier sub-slices. The Rust
+conformance renderer now renders quotations (usage, canonical body digest,
+capture slots) and residual frames (word, code digest, instruction pointer,
+continuation, saved `DIP` value, capture state) in full. A reference stated
+only as `quotation-many`, `quotation-linear` or `word@pc` is a projection:
+the comparison is `UnsupportedComparison`, never `Agree`, and the frozen
+corpus row `quote` is asserted as exactly that while the other fourteen rows
+agree in full (a single root `main@pc` frame is lifted, so row `drop-fault`
+agrees exactly). `firth.vm-run.v1` reports per-event charges and kernel
+charges, per-event and residual frames, full quotation payloads that
+round-trip through the request grammar, the trap subcode, and an explicit
+admission label in the compiler's vocabulary; `firth-vm run` prints the same
+label. The MVP gate, the differential harness and the S5 witness compare the
+two traces event by event after projecting both onto kernel-charged steps;
+scalar traces must agree stack for stack (`agreed`) and traces whose
+intermediate stacks hold quotations are labelled `unsupported-quotation-values`,
+which is neither failure nor agreement. Recursion traps deterministically at
+`MAX_CALL_DEPTH` (256 administrative frames, pinned inside a 2 MiB thread)
+with `resource-fault/call-depth-exceeded` instead of aborting the process;
+adapter and CLI fuel are bounded to 4096 and Python shares the bound. The
+per-step machine clone, the quadratic duplicate-member scan, the transport
+nesting bound, escaped surrogate pairs, both unbounded CLI reads, unchecked
+`push-quote` envelopes and pre-consumed capture bitmaps are fixed, with
+subprocess-deadline reproducers in `tools/loop/check_runtime_bounds.py`. The
+S5 gate proves both branches from both traces and refuses a one-branch
+control, and the MVP gate binds the manifest's declared contract before
+provenance.
+
+## Residual limitations
+
+- There is no cross-host quotation normal form: the reference reports a
+  kernel body and the VM a lowered body with captures, so quotation-valued
+  stacks and traces are labelled unsupported rather than compared.
+- Residual programs and frames are not compared across hosts, and trace
+  step counts, words and instruction pointers are not compared.
+- The depth cap is a hosted-VM bound the reference interpreter lacks; a
+  deeper program is a one-sided trap that disagrees by design. The iterative
+  executor that would lift the cap is future work.
+- Evidence digests remain unauthenticated content identifiers and
+  verified-patch admission remains delegated to the caller's verifier; every
+  observation surface now says so. Authenticated admission is tracked by
+  `patch-refinement-evidence-admission`.
+- This is branch verification under bounded tests, not baseline acceptance
+  on `main`.

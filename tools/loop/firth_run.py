@@ -21,8 +21,20 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument("source", type=Path)
     run.add_argument("--entry", required=True, help="source word name, for example main or app.main")
     run.add_argument("--stack", default="[]", help="JSON array of integers/booleans, bottom to top")
-    run.add_argument("--fuel", type=int, default=4096, help="finite step budget, 0 to 100000")
+    run.add_argument("--fuel", type=int, default=gate.FUEL,
+                     help=f"finite step budget, 0 to {gate.MAX_FUEL}")
     return cli
+
+
+def parse_stack(text: str) -> list:
+    """Decode the external `--stack` value, refusing anything Python's decoder
+    cannot represent as a bounded portable input, including nesting deep
+    enough to exhaust the decoder's recursion."""
+    try:
+        return json.loads(text)
+    except (ValueError, RecursionError) as error:
+        gate.fail(f"stack: not an accepted JSON array ({type(error).__name__})")
+    raise AssertionError("unreachable")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -32,10 +44,10 @@ def main(argv: list[str] | None = None) -> int:
         if not source.is_file():
             gate.fail("source: expected a UTF-8 file")
         # Reject malformed external values before invoking a toolchain.
-        stack = json.loads(args.stack) if args.command == "run" else []
+        stack = parse_stack(args.stack) if args.command == "run" else []
         gate.initial_values(stack)
-        if args.command == "run" and not 0 <= args.fuel <= 100000:
-            gate.fail("fuel: expected an integer from 0 to 100000")
+        if args.command == "run" and not 0 <= args.fuel <= gate.MAX_FUEL:
+            gate.fail(f"fuel: expected an integer from 0 to {gate.MAX_FUEL}")
         gate.build_toolchain()
         with tempfile.TemporaryDirectory(prefix="firth-run-") as directory:
             workspace = Path(directory)
@@ -66,7 +78,8 @@ def main(argv: list[str] | None = None) -> int:
                     values.append(value["literal"]["value"])
                 result = {"status": "success", "command": "run", "entry": observation["entry"],
                           "stack": values, "words": observation["words"], "fuel": observation["fuel"],
-                          "kernel_cost": observation["kernel_cost"], "vm_cost": observation["cost"]}
+                          "kernel_cost": observation["kernel_cost"], "vm_cost": observation["cost"],
+                          "trace_comparison": observation["trace_comparison"]}
         print(json.dumps(result, sort_keys=True))
         return 0
     except (gate.GateError, OSError, UnicodeError, json.JSONDecodeError) as error:

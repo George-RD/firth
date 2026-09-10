@@ -460,6 +460,11 @@ fn validate_quotation_structure(quotation: &Quotation, depth: usize) -> Result<(
             VmError::InvalidCaptureBitmap
         });
     }
+    // A consumed slot exists only inside an executing frame; a quotation that
+    // arrives with one has no valid origin (see `decode_quotation`).
+    if quotation.consumed.iter().any(|flag| *flag) {
+        return Err(VmError::InvalidCaptureBitmap);
+    }
     validate_code_structure(&quotation.code, depth)?;
     for capture in &quotation.captures {
         // A captured quotation increments depth in validate_value_structure,

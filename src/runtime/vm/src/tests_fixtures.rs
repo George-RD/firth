@@ -22,9 +22,15 @@
 
     #[test]
     fn lean_reference_fixture_vectors_agree_through_the_conformance_boundary() {
+        // The frozen corpus is unchanged. Fourteen rows fix their stacks and
+        // frames completely and must agree exactly. Row `quote` states its
+        // result only as `quotation-many`, a usage projection that fixes no
+        // body or capture, so the comparison is unsupported: asserting
+        // agreement on it would be exactly the false agreement being closed.
         let fixture = include_str!("../fixtures/kernel.tsv");
         let registry = default_registry();
         let mut rows = 0;
+        let mut unsupported_rows = Vec::new();
         for line in fixture
             .lines()
             .filter(|line| !line.is_empty() && !line.starts_with('#'))
@@ -37,15 +43,24 @@
                 64,
                 &registry,
             );
-            assert_eq!(
-                compare_conformance(&reference, &observed),
-                ConformanceVerdict::Agree,
-                "{}",
-                case.name
-            );
+            let verdict = compare_conformance(&reference, &observed);
+            if case.name == "quote" {
+                let ConformanceVerdict::UnsupportedComparison(unsupported) = &verdict else {
+                    panic!("row quote must be unsupported, not {verdict:?}");
+                };
+                assert_eq!(unsupported.len(), 1);
+                assert_eq!(unsupported[0].field, "stack");
+                assert_eq!(unsupported[0].reference, "quotation-many");
+                assert!(unsupported[0].target.starts_with("quotation:many:"));
+                assert!(!verdict.is_agreement());
+                unsupported_rows.push(case.name.clone());
+            } else {
+                assert_eq!(verdict, ConformanceVerdict::Agree, "{}", case.name);
+            }
             rows += 1;
         }
         assert_eq!(rows, 15, "the frozen corpus lost or gained a row");
+        assert_eq!(unsupported_rows, vec![String::from("quote")]);
     }
 
     fn encoded_call_image(word_name: &str, call_name: &str) -> Vec<u8> {

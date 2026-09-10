@@ -20,6 +20,13 @@ impl ImageStore {
         self.snapshot()?.lookup(name)
     }
 
+    /// Validates and atomically publishes one word replacement.
+    ///
+    /// The VM's own checks are structural (`target-spec.md` §6 hook 3). Hook
+    /// 2, the semantic verification, is whatever `verifier` says it is: the VM
+    /// binds that verdict and cannot authenticate it, so the published image
+    /// is exactly as trusted as the caller's verifier. A verifier that accepts
+    /// everything publishes anything structurally valid.
     pub fn apply_patch(
         &self,
         patch: &WordPatch,

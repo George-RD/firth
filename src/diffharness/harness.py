@@ -100,7 +100,7 @@ class Case:
         bounded_int(self.seed, 0, 2**64 - 1, "seed")
         bounded_int(self.index, 0, 1000000, "index")
         bounded_int(self.value, 0, 100, "input")
-        bounded_int(self.fuel, 0, 100000, "fuel")
+        bounded_int(self.fuel, 0, gate.MAX_FUEL, "fuel")
         if type(self.flag) is not bool or type(self.unused) is not bool:
             raise HarnessError("case flags must be Boolean")
         if len(self.steps) > 24 or len(self.prefix) > 4:
@@ -190,6 +190,10 @@ class Result:
     detail: str = ""
     records: list[dict[str, Any]] = dataclasses.field(default_factory=list)
     traps: tuple[str | None, str | None] = (None, None)
+    # The per-event trace label of an agreement: `gate.TRACE_AGREED` when the
+    # projected traces matched stack for stack, `gate.TRACE_UNSUPPORTED` when
+    # intermediate stacks held quotations and were not compared.
+    trace_comparison: str | None = None
 
     @property
     def signature(self) -> tuple[Any, ...]:
@@ -339,11 +343,15 @@ def compare(reference: Any, target: Any, fuel: int) -> Result:
         return Result("stack-mismatch")
     if reference["cost"]["total"] != target["cost"]["kernel"]:
         return Result("kernel-cost-mismatch")
+    # The gate's comparison also aligns the two traces event by event; a
+    # projected event whose charge or stack differs is its own failure class.
     try:
-        gate.compare(reference, target, "case", fuel)
+        trace_comparison = gate.compare(reference, target, "case", fuel)
+    except gate.TraceMismatch as error:
+        return Result("trace-mismatch", detail=str(error))
     except gate.GateError as error:
         return Result("invalid-observation", detail=str(error))
-    return Result("agreement")
+    return Result("agreement", trace_comparison=trace_comparison)
 
 
 class Executor:
@@ -561,6 +569,7 @@ def main(argv: list[str] | None = None) -> int:
         execute = Executor()
         counts: dict[str, int] = {}
         coverage: dict[str, int] = {}
+        trace_comparisons: dict[str, int] = {}
         artifacts = []
         replay_matches = None
         for case in cases:
@@ -569,6 +578,8 @@ def main(argv: list[str] | None = None) -> int:
                 previous = saved["result"]
                 replay_matches = result.signature == (previous["kind"], previous["stage"], *previous["traps"])
             counts[result.kind] = counts.get(result.kind, 0) + 1
+            if result.trace_comparison is not None:
+                trace_comparisons[result.trace_comparison] = trace_comparisons.get(result.trace_comparison, 0) + 1
             for feature in case.features:
                 coverage[feature] = coverage.get(feature, 0) + 1
             if result.kind != "agreement" or args.command != "run":
@@ -591,6 +602,7 @@ def main(argv: list[str] | None = None) -> int:
         ok = counts.get("agreement", 0) == len(cases)
         summary = {"status": "ok" if ok else "failed", "command": args.command,
                    "cases": len(cases), "outcomes": counts, "generated_features": coverage,
+                   "trace_comparisons": trace_comparisons,
                    "toolchain": toolchain, "toolchain_drift": drift, "artifacts": artifacts,
                    "replay_signature_matches": replay_matches,
                    "scope": "bounded pure source campaign; not compiler proof or sustained S2 evidence"}

@@ -164,6 +164,31 @@ For bounded observations, the VM serialises the complete residual frame stack
 Thus fuel exhaustion is replayable and corresponds to a definite residual
 configuration, including the saved value for `DIP`.
 
+The conformance boundary renders that configuration in full. Values and
+frames use this grammar, in which braces occur in no other alphabet:
+
+```text
+value     ::= int | "true" | "false" | "world" | "bytes:" hex
+            | "primitive:" udec ":" hex | quotation
+quotation ::= "quotation:" ("many" | "linear") ":" hex64 "{" [slot {"," slot}] "}"
+slot      ::= value | "consumed"
+frames    ::= "-" | frame {";" frame}
+frame     ::= word "@" pc ":" hex64 ":" cont "{" [slot {"," slot}] "}"
+cont      ::= "halt" | "return" | "restore-dip(" value ")"
+```
+
+`hex64` is the lowercase SHA-256 of the canonical code (the quotation's body,
+or the frame's code). `restore-dip` carries exactly the one saved value and the
+other continuations none; a frame violating that renders `invalid-frame`, which
+the executor never produces. The legacy spellings `quotation-many`,
+`quotation-linear` and `word@pc` are projections that fix no body, capture or
+continuation: a reference stated in them is compared by projecting the target
+the same way, and an equal projection is an `unsupported-comparison` verdict,
+never agreement, while a differing projection still disagrees. The frozen
+fixture row `quote` is asserted as unsupported for exactly this reason. A
+single root frame stated as `main@pc` inside the entry body is fully
+determined and is lifted to the full form before comparison.
+
 Fuel is an explicit finite execution budget. The VM checks fuel before a step;
 when none remains it returns `fuel-exhausted` with the current stack, cursor,
 image version, and trace. Fuel exhaustion is not termination and is not proof
@@ -188,6 +213,12 @@ subcode, but its cross-host class is `resource-fault`.
 Allocation failure while creating a frame, quotation, capture copy, image, or
 trace is also `resource-fault` with subcode `allocation-failure`; the VM must
 leave the prior machine or image state unchanged at the failed allocation.
+Entering an administrative frame beyond the hosted depth bound
+(`MAX_CALL_DEPTH`, 256) is `resource-fault` with subcode
+`call-depth-exceeded`: the failing instruction is charged and located, the
+entry it never made is not charged, and the residual frames are the callers in
+flight. The reference interpreter has no such bound, so a deeper program is a
+one-sided trap that disagrees by design; it never counts as agreement.
 The VM must not turn a trap into a normal value or silently continue. Trap
 payloads contain a stable code, instruction/word location, and relevant image
 version, but never host addresses or secrets.
@@ -268,6 +299,12 @@ The verified-patch protocol has these hooks, in order:
    new entry; an in-flight call retains the entry it resolved on entry.
 5. **Quiesce/reclaim:** old snapshots and code remain alive until no active
    call or retained quotation refers to them, then may be reclaimed.
+
+Hook 2 is delegated entirely to the caller-supplied verifier: the VM has no
+receipt format for elaborator evidence and cannot recompute the payloads the
+evidence digests name, so a published patched image is exactly as trusted as
+that verifier. The observation surfaces state this as
+`patch-admission=external-verifier-unauthenticated`.
 
 The active image handle is separate from a machine's retained call frames.
 Commit is all-or-nothing. Readers observe either the old or new binding, never
@@ -415,3 +452,34 @@ Legacy infallible `seal_image`, `body_digest` and `encode_image` helpers remain
 unchecked construction/encoding operations, not admission or proof checks;
 callers must not give them malformed in-memory quotation state. Their output
 is not trusted merely because it has content digests.
+
+### Execution and transport bounds
+
+The hosted executor admits at most `MAX_CALL_DEPTH` (256) administrative
+frames, trapping deterministically as described in §4 instead of exhausting
+the native stack; the bound is pinned by a test that executes exactly that
+depth inside a 2 MiB thread. The `firth.vm-run.v1` adapter and the `run`
+command refuse a fuel budget above `MAX_FUEL` (4096, the default budget), so a
+trace holds at most 4096 events of at most 256 frames each. Both readers stop
+one byte past `MAX_INPUT_BYTES` (1 MiB) and classify the buffer as
+`InputTooLarge` at zero cost. Per-step rollback restores the stack and
+truncates the append-only trace, cost and frame vectors rather than copying
+the whole machine, so a step costs the stack, not the trace so far.
+
+A quotation whose capture bitmap has a consumed bit set is refused with
+`InvalidCaptureBitmap` by the wire decoder, by direct validation and by the
+adapter: only an executing frame consumes a slot and no consumed slot is ever
+pushed back as a value. The adapter checks the same envelope on the
+`push-quote` operand path as on the value path. The JSON transport bounds
+nesting at `3 * MAX_NESTING + 8` levels, which admits every structure the
+decoder admits and leaves the decoder the sole authority on quotation depth
+(32 admitted, 33 refused); it decodes escaped surrogate pairs and refuses lone
+or inverted halves; duplicate members are detected in logarithmic time.
+
+Every observation surface carries the same admission label, stated in the
+compiler's vocabulary: `admission=structural-digest-recheck`,
+`image-evidence=legacy-content-identifiers-not-authenticated-proofs`,
+`refinements=not-checked` and `patch-admission=external-verifier-unauthenticated`.
+Image checks are structural, the evidence digests name payloads the VM never
+sees, and a published patch is exactly as trusted as the caller's verifier (§6).
+The label states this; it does not change it.

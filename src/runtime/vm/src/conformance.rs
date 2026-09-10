@@ -103,6 +103,9 @@ pub struct ConformanceObservation {
     pub trap: Option<ConformanceTrap>,
     /// The cost report.
     pub cost: ConformanceCost,
+    /// What this VM checked before executing; never a proof of anything the
+    /// elaborator owns.
+    pub admission: AdmissionLabel,
 }
 
 /// The cost half of a reference contract.
@@ -151,16 +154,38 @@ pub struct ConformanceMismatch {
     pub target: String,
 }
 
+/// One field the reference states only as a projection this target cannot be
+/// compared against in full.
+///
+/// The legacy fixture profile writes a quotation as `quotation-many` or
+/// `quotation-linear` and a frame as `word@pc`. Those spellings fix neither a
+/// body nor a capture nor a continuation, so a target whose projection matches
+/// has not been shown equal: the comparison is unsupported, never agreement.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConformanceUnsupported {
+    /// The compared field's stable name.
+    pub field: &'static str,
+    /// Why the comparison could not be completed.
+    pub reason: &'static str,
+    /// The reference contract's rendering of that field.
+    pub reference: String,
+    /// The target's full rendering of that field.
+    pub target: String,
+}
+
 /// The outcome of comparing one target observation with its reference.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConformanceVerdict {
-    /// Every field the reference fixes matched.
+    /// Every field the reference fixes matched in full.
     Agree,
     /// Both hosts spent an equivalent bounded budget. `target-spec.md` §7
     /// classifies this as `bounded-fuel-inconclusive`, never as agreement.
     BoundedFuelInconclusive,
     /// At least one fixed field differed.
     Disagree(Vec<ConformanceMismatch>),
+    /// No fixed field differed, but at least one was stated only as a
+    /// projection that cannot establish equality. Never agreement.
+    UnsupportedComparison(Vec<ConformanceUnsupported>),
 }
 
 impl ConformanceVerdict {
@@ -170,153 +195,14 @@ impl ConformanceVerdict {
             Self::Agree => "agree",
             Self::BoundedFuelInconclusive => "bounded-fuel-inconclusive",
             Self::Disagree(_) => "disagree",
+            Self::UnsupportedComparison(_) => "unsupported-comparison",
         }
     }
-}
 
-/// Renders a residual stack bottom-to-top. Scalar spellings retain the frozen
-/// Lean fixture form; bytes and primitive values include their full payloads.
-///
-/// Quotations still render only their usage for the legacy fixture profile.
-/// That projection does not establish body/capture equivalence; callers must
-/// not use it to certify equality of arbitrary quotation results.
-pub fn render_conformance_stack(stack: &[Value], registry: &PrimitiveRegistry) -> String {
-    let mut rendered = String::new();
-    for (index, value) in stack.iter().enumerate() {
-        if index != 0 {
-            rendered.push(',');
-        }
-        match value {
-            Value::Int(value) => rendered.push_str(&value.to_string()),
-            Value::Bool(value) => rendered.push_str(if *value { "true" } else { "false" }),
-            Value::Bytes(bytes) => {
-                rendered.push_str("bytes:");
-                rendered.push_str(&render_hex(bytes));
-            }
-            Value::PrimitiveValue { tag, bytes } => {
-                rendered.push_str("primitive:");
-                rendered.push_str(&tag.to_string());
-                rendered.push(':');
-                rendered.push_str(&render_hex(bytes));
-            }
-            Value::World => rendered.push_str("world"),
-            Value::Quotation(quotation) => {
-                rendered.push_str(if quotation.usage(registry) == Usage::Many {
-                    "quotation-many"
-                } else {
-                    "quotation-linear"
-                });
-            }
-        }
-    }
-    rendered
-}
-
-/// Renders the legacy residual-frame projection as `word@pc`, `-` when empty.
-/// It omits code identity, captures, saved DIP values and continuation state.
-/// Matching this projection does not establish equality of resumable frames;
-/// complete frame comparison remains a separate conformance obligation.
-pub fn render_conformance_frames(frames: &[FrameTrace]) -> String {
-    if frames.is_empty() {
-        return String::from("-");
-    }
-    let mut rendered = String::new();
-    for (index, frame) in frames.iter().enumerate() {
-        if index != 0 {
-            rendered.push(';');
-        }
-        rendered.push_str(&frame.word);
-        rendered.push('@');
-        rendered.push_str(&frame.pc.to_string());
-    }
-    rendered
-}
-
-fn conformance_cost(cost: &CostReport) -> ConformanceCost {
-    ConformanceCost {
-        total: cost.total,
-        kernel: cost.kernel_total(),
-        breakdown: ConformanceCostBreakdown {
-            instructions: cost.instructions,
-            word_entries: cost.word_entries,
-            primitives: cost.primitives,
-        },
-    }
-}
-
-/// Observes one execution of a decoded image through the conformance
-/// boundary.
-pub fn observe_image(
-    image: &Image,
-    initial_stack: Vec<Value>,
-    fuel: u64,
-    registry: &PrimitiveRegistry,
-) -> ConformanceObservation {
-    observe_image_entry(image, "main", initial_stack, fuel, registry)
-}
-
-/// Observes one execution of a named entry word through the conformance
-/// boundary.
-pub fn observe_image_entry(
-    image: &Image,
-    entry: &str,
-    initial_stack: Vec<Value>,
-    fuel: u64,
-    registry: &PrimitiveRegistry,
-) -> ConformanceObservation {
-    match execute_diagnostic_entry(image, entry, initial_stack, fuel, registry, None) {
-        ExecutionOutcome::Complete(report) => ConformanceObservation {
-            status: ConformanceStatus::Terminal,
-            stack: render_conformance_stack(&report.stack, registry),
-            frames: render_conformance_frames(&report.frames),
-            world_observation: report.world.observation().to_vec(),
-            trap: None,
-            cost: conformance_cost(&report.cost),
-        },
-        ExecutionOutcome::Trap(trap) => ConformanceObservation {
-            status: if trap.error == VmError::FuelExhausted {
-                ConformanceStatus::FuelExhausted
-            } else {
-                ConformanceStatus::Trap
-            },
-            stack: render_conformance_stack(&trap.stack, registry),
-            frames: render_conformance_frames(&trap.frames),
-            world_observation: trap.world.observation().to_vec(),
-            trap: Some(ConformanceTrap::of_error(&trap.error)),
-            cost: conformance_cost(&trap.cost),
-        },
-    }
-}
-
-/// Observes one execution of an encoded image, classifying a decode failure as
-/// a malformed-input trap.
-///
-/// `target-spec.md` §5 charges nothing for bytes that never decoded, so the
-/// cost report of a rejected image is zero in every category.
-pub fn observe_image_bytes(
-    bytes: &[u8],
-    initial_stack: Vec<Value>,
-    fuel: u64,
-    registry: &PrimitiveRegistry,
-) -> ConformanceObservation {
-    match decode(bytes) {
-        Ok(image) => observe_image(&image, initial_stack, fuel, registry),
-        Err(error) => ConformanceObservation {
-            status: ConformanceStatus::Trap,
-            stack: String::new(),
-            frames: String::from("-"),
-            world_observation: WorldState::new().observation().to_vec(),
-            trap: Some(ConformanceTrap::of_error(&error)),
-            cost: ConformanceCost {
-                total: 0,
-                kernel: 0,
-                breakdown: ConformanceCostBreakdown {
-                    instructions: 0,
-                    word_entries: 0,
-                    primitives: 0,
-                },
-            },
-        },
+    /// True only for `Agree`. An inconclusive or unsupported verdict is not
+    /// evidence that the two hosts agreed.
+    pub fn is_agreement(&self) -> bool {
+        matches!(self, Self::Agree)
     }
 }
 
@@ -330,17 +216,47 @@ pub fn parse_conformance_status(outcome: &str) -> Option<ConformanceStatus> {
     }
 }
 
+/// Lifts a legacy `main@pc` residual-frame column to the full grammar when the
+/// row fixes it completely.
+///
+/// A single root frame of the entry word is fully determined: its code is the
+/// word body, it has no captures, it runs under `Halt` at depth zero and no
+/// `DIP` is in flight, so `main@pc` with `pc` inside the body means exactly
+/// `main@pc:<body digest>:halt{}`. Any other legacy form stays a projection.
+fn lift_legacy_root_frame(case: &FixtureCase) -> String {
+    let column = case.residual_frames.as_str();
+    let Some(pc) = column.strip_prefix("main@") else {
+        return String::from(column);
+    };
+    let Ok(pc) = pc.parse::<usize>() else {
+        return String::from(column);
+    };
+    let Some(entry) = case.image.words.iter().find(|word| word.name == "main") else {
+        return String::from(column);
+    };
+    if pc >= entry.code.len() {
+        return String::from(column);
+    }
+    let mut lifted = String::from(column);
+    lifted.push(':');
+    lifted.push_str(&render_hex(&entry.body_digest));
+    lifted.push_str(":halt{}");
+    lifted
+}
+
 /// Lifts one frozen Lean fixture row into the reference contract it states.
 ///
 /// The row fixes status, canonical stack, residual frames and both cost
 /// totals. It carries no world column and does not name a trap class, so those
 /// stay unstated; a hand-written witness supplies them where they matter.
+/// A `quotation-many`/`quotation-linear` stack item is kept as the usage
+/// projection it is, which `compare_conformance` reports as unsupported.
 /// Returns `None` for an outcome column outside the frozen vocabulary.
 pub fn fixture_reference(case: &FixtureCase) -> Option<ConformanceReference> {
     Some(ConformanceReference {
         status: parse_conformance_status(&case.outcome)?,
         stack: case.final_stack.clone(),
-        frames: case.residual_frames.clone(),
+        frames: lift_legacy_root_frame(case),
         cost: ConformanceCostReference {
             total: case.target_cost,
             kernel: case.lean_cost,
@@ -351,56 +267,6 @@ pub fn fixture_reference(case: &FixtureCase) -> Option<ConformanceReference> {
     })
 }
 
-/// Renders observation bytes as a canonical comma-separated decimal list.
-pub fn render_conformance_bytes(bytes: &[u8]) -> String {
-    let mut rendered = String::new();
-    for (index, byte) in bytes.iter().enumerate() {
-        if index != 0 {
-            rendered.push(',');
-        }
-        rendered.push_str(&byte.to_string());
-    }
-    rendered
-}
-
-/// Renders a classified trap as `code` or `code/subcode`, `-` when absent.
-pub fn render_conformance_trap(trap: Option<&ConformanceTrap>) -> String {
-    match trap {
-        None => String::from("-"),
-        Some(trap) => {
-            let mut rendered = trap.code.clone();
-            if !trap.subcode.is_empty() {
-                rendered.push('/');
-                rendered.push_str(&trap.subcode);
-            }
-            rendered
-        }
-    }
-}
-
-/// Renders a cost report as `total=.. kernel=.. instructions=.. word-entries=.. primitives=..`.
-pub fn render_conformance_cost(cost: &ConformanceCost) -> String {
-    let mut rendered = String::from("total=");
-    rendered.push_str(&cost.total.to_string());
-    rendered.push_str(" kernel=");
-    rendered.push_str(&cost.kernel.to_string());
-    rendered.push_str(" instructions=");
-    rendered.push_str(&cost.breakdown.instructions.to_string());
-    rendered.push_str(" word-entries=");
-    rendered.push_str(&cost.breakdown.word_entries.to_string());
-    rendered.push_str(" primitives=");
-    rendered.push_str(&cost.breakdown.primitives.to_string());
-    rendered
-}
-
-fn render_breakdown(breakdown: ConformanceCostBreakdown) -> String {
-    let mut rendered = breakdown.instructions.to_string();
-    rendered.push(',');
-    rendered.push_str(&breakdown.word_entries.to_string());
-    rendered.push(',');
-    rendered.push_str(&breakdown.primitives.to_string());
-    rendered
-}
 
 fn mismatch(field: &'static str, reference: String, target: String) -> ConformanceMismatch {
     ConformanceMismatch {
@@ -410,12 +276,53 @@ fn mismatch(field: &'static str, reference: String, target: String) -> Conforman
     }
 }
 
+/// Compares a full target rendering with a reference that may be a legacy
+/// projection.
+///
+/// A reference in the full grammar is compared exactly. A reference in the
+/// legacy profile is compared against the target's projection: a different
+/// projection is a disagreement, an equal one is an unsupported comparison,
+/// because the projection fixes less than the target reports.
+#[allow(clippy::too_many_arguments)]
+fn compare_projected(
+    field: &'static str,
+    reason: &'static str,
+    reference: &str,
+    target: &str,
+    is_projection: fn(&str) -> bool,
+    project: fn(&str) -> String,
+    mismatches: &mut Vec<ConformanceMismatch>,
+    unsupported: &mut Vec<ConformanceUnsupported>,
+) {
+    if is_projection(reference) {
+        let projected = project(target);
+        if reference != projected {
+            mismatches.push(mismatch(field, String::from(reference), projected));
+        } else {
+            unsupported.push(ConformanceUnsupported {
+                field,
+                reason,
+                reference: String::from(reference),
+                target: String::from(target),
+            });
+        }
+    } else if reference != target {
+        mismatches.push(mismatch(field, String::from(reference), String::from(target)));
+    }
+}
+
 /// Compares one target observation with the reference contract for the same
 /// case.
 ///
 /// Dual exhaustion of an equivalent budget is `BoundedFuelInconclusive` and is
 /// never reported as agreement. A one-sided exhaustion falls through to the
 /// status comparison and disagrees, as `target-spec.md` §7 requires.
+///
+/// A reference stack that names a quotation only by its usage, or a reference
+/// frame stated only as `word@pc`, is a projection: the target is projected
+/// the same way and a difference still disagrees, but an equal projection is
+/// `UnsupportedComparison`, never `Agree`. Disagreement wins over unsupported,
+/// and unsupported wins over agreement.
 pub fn compare_conformance(
     reference: &ConformanceReference,
     target: &ConformanceObservation,
@@ -426,6 +333,7 @@ pub fn compare_conformance(
         return ConformanceVerdict::BoundedFuelInconclusive;
     }
     let mut mismatches = Vec::new();
+    let mut unsupported = Vec::new();
     if reference.status != target.status {
         mismatches.push(mismatch(
             "status",
@@ -433,20 +341,26 @@ pub fn compare_conformance(
             String::from(target.status.canonical()),
         ));
     }
-    if reference.stack != target.stack {
-        mismatches.push(mismatch(
-            "stack",
-            reference.stack.clone(),
-            target.stack.clone(),
-        ));
-    }
-    if reference.frames != target.frames {
-        mismatches.push(mismatch(
-            "frames",
-            reference.frames.clone(),
-            target.frames.clone(),
-        ));
-    }
+    compare_projected(
+        "stack",
+        "the reference states a quotation only by its usage; body and captures are not compared",
+        &reference.stack,
+        &target.stack,
+        is_usage_projection,
+        project_stack_to_usage,
+        &mut mismatches,
+        &mut unsupported,
+    );
+    compare_projected(
+        "frames",
+        "the reference states a frame only as word@pc; code, captures and continuation are not compared",
+        &reference.frames,
+        &target.frames,
+        is_frame_projection,
+        project_frames_to_legacy,
+        &mut mismatches,
+        &mut unsupported,
+    );
     if let Some(expected) = &reference.world_observation
         && expected.as_slice() != target.world_observation.as_slice()
     {
@@ -488,9 +402,11 @@ pub fn compare_conformance(
             render_breakdown(target.cost.breakdown),
         ));
     }
-    if mismatches.is_empty() {
-        ConformanceVerdict::Agree
-    } else {
+    if !mismatches.is_empty() {
         ConformanceVerdict::Disagree(mismatches)
+    } else if !unsupported.is_empty() {
+        ConformanceVerdict::UnsupportedComparison(unsupported)
+    } else {
+        ConformanceVerdict::Agree
     }
 }

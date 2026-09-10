@@ -138,7 +138,10 @@ pub fn parse_json(input: &str) -> Result<Json, JsonError> {
 }
 
 fn parse_value(reader: &mut Reader1<'_>, depth: usize) -> Result<Json, JsonError> {
-    if depth > MAX_NESTING {
+    // The transport bound is derived from the decoder's quotation depth bound
+    // (three JSON levels per quotation level plus the request envelope), so
+    // the transport never refuses a structure the decoder would admit.
+    if depth > MAX_TRANSPORT_NESTING {
         return Err(JsonError::DepthLimit);
     }
     match reader.peek().ok_or(JsonError::Malformed)? {
@@ -185,6 +188,9 @@ fn parse_array(reader: &mut Reader1<'_>, depth: usize) -> Result<Json, JsonError
 fn parse_object(reader: &mut Reader1<'_>, depth: usize) -> Result<Json, JsonError> {
     reader.expect(b'{')?;
     let mut members: Vec<(String, Json)> = Vec::new();
+    // Membership is tracked in a set so a large object costs O(n log n) to
+    // check for repeats rather than a scan of every earlier member per name.
+    let mut names: alloc::collections::BTreeSet<String> = alloc::collections::BTreeSet::new();
     reader.skip_whitespace();
     if reader.peek() == Some(b'}') {
         reader.cursor += 1;
@@ -193,7 +199,7 @@ fn parse_object(reader: &mut Reader1<'_>, depth: usize) -> Result<Json, JsonErro
     loop {
         reader.skip_whitespace();
         let name = parse_string(reader)?;
-        if members.iter().any(|(key, _)| *key == name) {
+        if !names.insert(name.clone()) {
             return Err(JsonError::DuplicateMember);
         }
         reader.skip_whitespace();
@@ -236,9 +242,26 @@ fn parse_escape(reader: &mut Reader1<'_>) -> Result<char, JsonError> {
         b't' => Ok('\t'),
         b'u' => {
             let scalar = parse_hex4(reader)?;
-            // Surrogate halves never denote a scalar value on their own; the
-            // adapter refuses them rather than substituting a replacement.
-            char::from_u32(scalar).ok_or(JsonError::Malformed)
+            match scalar {
+                // A high surrogate must be followed immediately by an escaped
+                // low surrogate; the pair denotes one supplementary scalar,
+                // which is how RFC 8259 spells characters outside the BMP.
+                0xD800..=0xDBFF => {
+                    if reader.bump() != Some(b'\\') || reader.bump() != Some(b'u') {
+                        return Err(JsonError::Malformed);
+                    }
+                    let low = parse_hex4(reader)?;
+                    if !(0xDC00..=0xDFFF).contains(&low) {
+                        return Err(JsonError::Malformed);
+                    }
+                    char::from_u32(0x10000 + ((scalar - 0xD800) << 10) + (low - 0xDC00))
+                        .ok_or(JsonError::Malformed)
+                }
+                // A lone or inverted half never denotes a scalar value; it is
+                // refused rather than replaced.
+                0xDC00..=0xDFFF => Err(JsonError::Malformed),
+                _ => char::from_u32(scalar).ok_or(JsonError::Malformed),
+            }
         }
         _ => Err(JsonError::Malformed),
     }
@@ -357,6 +380,8 @@ fn write_json_string(out: &mut String, text: &str) {
             '\n' => out.push_str("\\n"),
             '\r' => out.push_str("\\r"),
             '\t' => out.push_str("\\t"),
+            '\u{8}' => out.push_str("\\b"),
+            '\u{c}' => out.push_str("\\f"),
             control if (control as u32) < 0x20 => {
                 out.push_str("\\u");
                 for shift in [12, 8, 4, 0] {

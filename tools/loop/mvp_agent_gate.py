@@ -19,12 +19,21 @@ writing: no gate can prove a transcript was not fabricated, since the loop is
 itself a code model. What this half proves is byte-level drift detection, not
 authorship.
 
+Contract. The manifest's declared contract (language and Gamma versions, the
+four adapters with their transports and schemas, and the `[comparison]` table)
+must equal the contract this gate implements, so a manifest cannot describe a
+comparison the code does not perform.
+
 Rebuild. Each manifest-listed application is then rebuilt in a scratch
 workspace that holds only that application's source. The four pinned adapters
 run against it in turn: elaborate, compile, run on the VM, and run on the Lean
-reference interpreter. Terminal status, final stack and kernel-comparable cost are compared.
-Trace lengths are bounded; full trace equivalence is not established. The
-portable profile refuses effectful world observations.
+reference interpreter. Terminal status, final stack and kernel-comparable cost
+are compared, and the two traces are compared event by event after projecting
+both onto kernel-charged steps (`compare_traces`). A trace whose intermediate
+stacks hold quotations is labelled `unsupported-quotation-values` rather than
+compared or accepted; the residual programs, words and instruction pointers
+of trace events are not compared. The portable profile refuses effectful world
+observations.
 
 The gate is deterministic: no clock, no randomness, no network, and a fixed
 fuel budget. It is invoked by `python3 tools/loop/coverage.py --run-gates`,
@@ -57,7 +66,39 @@ GAMMA_VERSION = "0.1"
 TARGET_VERSION = "0.1"
 IMAGE_FORMAT_VERSION = 1
 TARGET_GAMMA_VERSION = 1
-FUEL = 4096
+# The VM adapter refuses a larger budget (`firth_vm::MAX_FUEL`), so every
+# caller of this module shares one bound.
+MAX_FUEL = 4096
+FUEL = MAX_FUEL
+
+# The pinned adapters and the schemas each one speaks, as the manifest must
+# declare them.
+ADAPTER_CONTRACT = {
+    "elaborate": ("firth.elaborate.v1", "firth.source.v1", "firth.elaboration.v1"),
+    "compile": ("firth.compile.v1", "firth.checked-kernel.v1", "firth.target-program.v1"),
+    "reference_run": ("firth.reference-run.v1", "firth.reference-execution.v1",
+                      "firth.observation.v1"),
+    "vm_run": ("firth.vm-run.v1", "firth.vm-execution.v1", "firth.observation.v1"),
+}
+
+# The comparison `compare` implements, keyed as the manifest's `[comparison]`
+# table declares it. Every flag names a check that cannot be disabled: a
+# contract with any other value or any other key is refused, by
+# `verify_contract` for the manifest and by `compare` for a caller.
+COMPARISON_CONTRACT = {
+    "terminal_status": True,
+    "bottom_to_top_stack": True,
+    "trap_classification": True,
+    "bounded_trace": True,
+    "cost_report": True,
+    "world_observation": True,
+    "fuel_exhaustion": "bounded-fuel-inconclusive",
+}
+
+# The two outcomes of a per-event trace comparison. Neither is a failure and
+# only the first is agreement.
+TRACE_AGREED = "agreed"
+TRACE_UNSUPPORTED = "unsupported-quotation-values"
 
 # A build must not outrun the coverage gate timeout, and an adapter that has
 # not answered in a minute is a failure rather than something to wait out.
@@ -71,6 +112,10 @@ LEAN_BIN = ROOT / ".lake" / "build" / "bin"
 
 class GateError(Exception):
     """A deterministic gate violation."""
+
+
+class TraceMismatch(GateError):
+    """The two hosts' kernel-projected traces differ at some event."""
 
 
 def fail(message: str) -> None:
@@ -103,6 +148,64 @@ def load_manifest() -> dict[str, Any]:
     except (OSError, tomllib.TOMLDecodeError) as error:
         fail(f"manifest: invalid TOML ({error})")
     raise AssertionError("unreachable")
+
+
+def check_comparison_contract(contract: Any) -> None:
+    """Refuse any comparison contract other than the one this module implements.
+
+    Extra keys, missing keys and changed values all fail: the table is bound
+    to the code, so it can neither promise a check that is not made nor turn
+    one off.
+    """
+    if not isinstance(contract, dict):
+        fail("comparison: expected a table")
+    unknown = sorted(set(contract) - set(COMPARISON_CONTRACT))
+    if unknown:
+        fail(f"comparison: unknown key {unknown[0]}")
+    for key, expected in COMPARISON_CONTRACT.items():
+        if key not in contract:
+            fail(f"comparison.{key}: missing")
+        if type(contract[key]) is not type(expected) or contract[key] != expected:
+            fail(f"comparison.{key}: declared {contract[key]!r}, implemented {expected!r}")
+
+
+def verify_contract(data: dict[str, Any]) -> None:
+    """Bind the manifest's declared contract to the one this gate implements.
+
+    Runs before provenance and before anything is executed, so a manifest that
+    declares another language or Gamma version, another adapter, transport or
+    schema, or another comparison stops the gate rather than being reported
+    against.
+    """
+    if data.get("language_version") != LANGUAGE_VERSION:
+        fail(f"language_version: expected {LANGUAGE_VERSION}")
+    gamma = data.get("gamma")
+    if not isinstance(gamma, dict):
+        fail("gamma: expected a table")
+    if gamma.get("version") != GAMMA_VERSION:
+        fail(f"gamma.version: expected {GAMMA_VERSION}")
+    primitives = gamma.get("primitives")
+    if not isinstance(primitives, list) or "+" not in primitives:
+        fail("gamma.primitives: the executable profile must declare +")
+    entry_points = data.get("entry_point")
+    if not isinstance(entry_points, dict):
+        fail("entry_point: expected a table")
+    for name, (adapter_name, request_schema, response_schema) in ADAPTER_CONTRACT.items():
+        entry = entry_points.get(name)
+        field = f"entry_point.{name}"
+        if not isinstance(entry, dict):
+            fail(f"{field}: expected a table")
+        if entry.get("version") != "0.1":
+            fail(f"{field}.version: expected 0.1")
+        if entry.get("adapter") != adapter_name:
+            fail(f"{field}.adapter: expected {adapter_name}")
+        if entry.get("transport") != "structured-json":
+            fail(f"{field}.transport: expected structured-json")
+        if entry.get("request_schema") != request_schema:
+            fail(f"{field}.request_schema: expected {request_schema}")
+        if entry.get("response_schema") != response_schema:
+            fail(f"{field}.response_schema: expected {response_schema}")
+    check_comparison_contract(data.get("comparison"))
 
 
 def verify_transcript(path: Path, entry: dict[str, Any], inputs: dict[str, Any]) -> None:
@@ -392,15 +495,103 @@ def validate_pure_world(reference: Any, target: Any, name: str) -> None:
         fail(f"{name}: effectful or malformed world observations are not supported by the portable comparison")
 
 
-def compare(reference: dict[str, Any], target: dict[str, Any], name: str,
-            fuel: int = FUEL) -> None:
-    """Compare terminal results and kernel costs; validate bounded traces.
+REFERENCE_EVENT_FIELDS = frozenset({"index", "stack", "program", "cost"})
+TARGET_EVENT_FIELDS = frozenset(
+    {"index", "word", "pc", "stack", "cost", "kernel_cost", "image_version", "frames"})
 
-    The two trace schemas differ. This does not assert trace equivalence or
-    effectful equivalence: the portable adapter currently runs pure programs.
+
+def holds_quotation(stack: list[Any]) -> bool:
+    return any(isinstance(value, dict) and value.get("kind") == "quotation" for value in stack)
+
+
+def validate_trace(trace: Any, fields: frozenset[str], charges: tuple[str, ...], label: str) -> None:
+    """Check the shape of every event before any projection reads it."""
+    if not isinstance(trace, list):
+        fail(f"{label}: trace is not an array")
+    for index, event in enumerate(trace):
+        field = f"{label} trace[{index}]"
+        if not isinstance(event, dict) or set(event) != fields:
+            fail(f"{field}: malformed trace event")
+        if type(event["index"]) is not int or event["index"] != index:
+            fail(f"{field}: event index does not match its position")
+        for key in charges:
+            if type(event[key]) is not int or event[key] < 0:
+                fail(f"{field}: {key} must be a non-negative integer")
+        if not isinstance(event["stack"], list):
+            fail(f"{field}: stack is not an array")
+    if fields is TARGET_EVENT_FIELDS:
+        for index, event in enumerate(trace):
+            if event["kernel_cost"] > event["cost"]:
+                fail(f"{label} trace[{index}]: kernel charge exceeds the target charge")
+
+
+def compare_traces(reference: dict[str, Any], target: dict[str, Any], name: str) -> str:
+    """Compare the two execution traces event by event.
+
+    Both traces record the stack before each step. The reference charges every
+    kernel atom once and its administrative push (`S-PUSH`, used by `dip`
+    restoration and by a quoted value) zero; the VM charges every instruction
+    and marks `PUSH_CAPTURE`, its implementation of that push, with a zero
+    kernel charge, while the word entry it charges separately has no trace
+    event of its own and `CALL_WORD` carries the unfold charge. Projecting the
+    reference onto events with a positive charge and the VM onto events with a
+    positive kernel charge therefore aligns the two traces one step to one
+    step: the compiler emits one instruction per atom, so after projection
+    the same kernel step sits at the same index on both sides.
+
+    The projected traces must have the same length, and at every index the
+    reference charge must equal the VM's kernel charge. When no projected
+    stack on either side holds a quotation, every stack must pass the
+    portable value validation and the two stacks at each index must be equal;
+    the result is then `TRACE_AGREED`. When any projected stack holds a
+    quotation the stacks are not compared, since the two hosts have no shared
+    quotation representation, and the result is `TRACE_UNSUPPORTED`, which is
+    neither a failure nor agreement. The residual program, the word, the
+    instruction pointer and the step count are not compared.
     """
-    if type(fuel) is not int or not 0 <= fuel <= 100000:
-        fail(f"{name}: fuel must be an integer from 0 to 100000")
+    validate_trace(reference.get("trace"), REFERENCE_EVENT_FIELDS, ("cost",),
+                   f"{name}: reference")
+    validate_trace(target.get("trace"), TARGET_EVENT_FIELDS, ("cost", "kernel_cost"),
+                   f"{name}: target")
+    projected_reference = [event for event in reference["trace"] if event["cost"] > 0]
+    projected_target = [event for event in target["trace"] if event["kernel_cost"] > 0]
+    if len(projected_reference) != len(projected_target):
+        raise TraceMismatch(
+            f"{name}: kernel-charged trace lengths differ: reference {len(projected_reference)} "
+            f"against target {len(projected_target)}"
+        )
+    for index, (left, right) in enumerate(zip(projected_reference, projected_target)):
+        if left["cost"] != right["kernel_cost"]:
+            raise TraceMismatch(
+                f"{name}: trace event {index} charges {left['cost']} against the VM kernel "
+                f"charge {right['kernel_cost']} at {right['word']}@{right['pc']}"
+            )
+    if any(holds_quotation(event["stack"]) for event in projected_reference + projected_target):
+        return TRACE_UNSUPPORTED
+    for index, (left, right) in enumerate(zip(projected_reference, projected_target)):
+        validate_portable_stack(left["stack"], f"{name}: reference trace[{index}]")
+        validate_portable_stack(right["stack"], f"{name}: target trace[{index}]")
+        if left["stack"] != right["stack"]:
+            raise TraceMismatch(
+                f"{name}: trace event {index} stack {json.dumps(left['stack'])} against "
+                f"{json.dumps(right['stack'])} at {right['word']}@{right['pc']}"
+            )
+    return TRACE_AGREED
+
+
+def compare(reference: dict[str, Any], target: dict[str, Any], name: str,
+            fuel: int = FUEL, contract: dict[str, Any] = COMPARISON_CONTRACT) -> str:
+    """Compare terminal results, kernel costs, bounded traces and world purity.
+
+    `contract` is the manifest's `[comparison]` table; only the table this
+    module implements is accepted, so no flag can weaken the comparison. The
+    traces are compared event by event by `compare_traces`, whose label
+    (`TRACE_AGREED` or `TRACE_UNSUPPORTED`) is returned. Effectful equivalence
+    is not asserted: the portable adapter currently runs pure programs.
+    """
+    check_comparison_contract(contract)
+    if type(fuel) is not int or not 0 <= fuel <= MAX_FUEL:
+        fail(f"{name}: fuel must be an integer from 0 to {MAX_FUEL}")
     for side, observation in (("reference", reference), ("target", target)):
         if not isinstance(observation, dict):
             fail(f"{name}: {side} observation is not an object")
@@ -449,6 +640,7 @@ def compare(reference: dict[str, Any], target: dict[str, Any], name: str,
             f"{target_cost.get('kernel')!r} (target kernel cost)"
         )
     validate_pure_world(reference["world_observation"], target["world_observation"], name)
+    return compare_traces(reference, target, name)
 
 
 def initial_values(values: Any) -> list[dict[str, Any]]:
@@ -507,8 +699,8 @@ def rebuild(entry: dict[str, Any], workspace: Path, *,
     name = entry["name"]
     if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", name):
         fail("application: unsafe scratch directory name")
-    if type(fuel) is not int or not 0 <= fuel <= 100000:
-        fail("fuel: expected an integer from 0 to 100000")
+    if type(fuel) is not int or not 0 <= fuel <= MAX_FUEL:
+        fail(f"fuel: expected an integer from 0 to {MAX_FUEL}")
     initial_stack = initial_values([] if stack is None else stack)
     entry_word = entry.get("entry", name)
     scratch = workspace / name
@@ -595,7 +787,7 @@ def rebuild(entry: dict[str, Any], workspace: Path, *,
     )
     expect_status(reference, "success", f"{name} reference-run")
 
-    compare(reference, vm, name, fuel)
+    trace_comparison = compare(reference, vm, name, fuel)
     return {
         "name": name,
         "entry": entry_word,
@@ -605,12 +797,14 @@ def rebuild(entry: dict[str, Any], workspace: Path, *,
         "cost": vm["cost"]["total"],
         "kernel_cost": vm["cost"]["kernel"],
         "fuel": fuel,
+        "trace_comparison": trace_comparison,
     }
 
 
 def main() -> int:
     try:
         data = load_manifest()
+        verify_contract(data)
         entries = verify_provenance(data)
         build_toolchain()
         with tempfile.TemporaryDirectory(prefix="firth-mvp-gate-") as directory:

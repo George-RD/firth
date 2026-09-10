@@ -71,9 +71,17 @@ The target v1 fields `kernel_evidence_digest` and
 compiler they hash canonical code and erased type respectively. They are
 content identifiers, not Lean proofs, solver evidence or authorisation tokens.
 The VM bootstrap loader cannot authenticate the compiler invocation from those
-bytes. Do not accept an untrusted image merely because its hashes are nonzero
-or self-consistent. Image and verified-patch admission remain separately
-tracked in `language-03-runtime-conformance` and baseline acceptance.
+bytes, and it now says so on every observation surface: `firth.vm-run.v1`
+responses carry a `verification` member with schema
+`firth.vm-verification.v1` stating `admission: structural-digest-recheck`,
+`image_evidence: legacy-content-identifiers-not-authenticated-proofs`,
+`refinements: not-checked` and
+`patch_admission: external-verifier-unauthenticated`, the same vocabulary as
+this compiler's `verification` member, and `firth-vm run` prints the same
+label. Do not accept an untrusted image merely because its hashes are nonzero
+or self-consistent. Authenticated image and verified-patch admission remain
+separately tracked (`patch-refinement-evidence-admission`) and are not part
+of baseline acceptance.
 
 The trusted checking path here includes the Lean runtime, source elaborator,
 algorithmic stack/ownership checker, compiler and their shared encoders. The
