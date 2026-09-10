@@ -73,6 +73,36 @@ def quotation_ownership(usage: str) -> None:
         assert "target_program" not in result, result
 
 
+def row_binder_agreement() -> None:
+    """The compiler's generated row names are accepted by the VM's parser.
+
+    A scheme with 25 binders reaches past the fixed 24-name table, so its
+    erased word type carries a generated name. Both hosts must admit it: the
+    compiler renders and rechecks the word, and the VM parses the type when it
+    loads and runs the image.
+    """
+    request = compile_request("many")
+    request["checked_words"][0]["program"] = [{"kind": "lit", "value": {"type": "nat", "value": 42}}]
+    rows = [f"r{index}" for index in range(25)]
+    boundary = request["erased_word_types"][0]["type"]
+    boundary["row_variables"] = rows
+    boundary["input"]["row"] = rows[-1]
+    boundary["output"]["row"] = rows[-1]
+    rc, compiled = invoke([str(gate.LEAN_BIN / "firthCompile")], request)
+    assert rc == 0 and compiled.get("status") == "success", compiled
+    erased = compiled["target_program"]["words"][0]["erased_word_type"]
+    binders = erased[len("(forall"):erased.index(";")].split(",")
+    assert len(binders) == 25 and len(set(binders)) == 25, erased
+    assert all(len(name) == 1 for name in binders), erased
+    rc, target = invoke([str(gate.VM_BINARY), "vm-run"], {
+        "request_id": "row-binders", "target_program": compiled["target_program"],
+        "initial_stack": [], "image": {"image_version": 1, "gamma_version": 1},
+        "gamma_version": "0.1", "fuel": 32,
+    })
+    assert rc == 0 and target.get("status") == "success", target
+    assert target["stack"] == gate.initial_values([42]), target
+
+
 def quotation_observation(mode: str, called: bool) -> None:
     """Real host execution, not source authorship or proof-admission evidence.
 
@@ -167,6 +197,16 @@ def main() -> int:
     for name, source in (("empty source", ""), ("whitespace source", " \n "),
                          ("empty vocabulary", "vocab empty { }")):
         checks.append((name, lambda s=source: source_refusal(s, "firth.elaboration.empty-program")))
+    # Unknown word references carry the normative resolver code from
+    # spec/surface/syntax.md; only an undeclared primitive is an unresolved
+    # effect, because nothing but the environment can say it exists.
+    for name, source in (("unknown unqualified word", ": main ( -- ) missing ;"),
+                         ("unknown qualified word", "vocab a { : id ( -- ) ; } : main ( -- ) a.missing ;"),
+                         ("unknown vocabulary prefix", ": main ( -- ) zzz.foo ;")):
+        checks.append((name, lambda s=source: source_refusal(s, "firth.name.unresolved")))
+    checks.append(("unknown primitive", lambda: source_refusal(": main ( -- ) prim nope ;",
+                                                               "firth.name.unresolved-effect")))
+    checks.append(("25 row binders agree with the VM", row_binder_agreement))
     for usage in ("many", "linear"):
         checks.append((f"{usage} quotation ownership", lambda u=usage: quotation_ownership(u)))
     for mode in ("closed", "captured"):

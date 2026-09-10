@@ -160,7 +160,7 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
   match parse source with
   | .failure errors => .failure (errors.map PipelineDiagnostic.parse)
   | .success file =>
-      match resolveNames file.declarations with
+      match resolveNames file.declarations (fun name => (config.erasureEnv.word name).isSome) with
       | .error error => .failure [.parse error]
       | .ok words =>
           if words.isEmpty then

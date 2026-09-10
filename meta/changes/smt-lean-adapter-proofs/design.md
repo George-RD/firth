@@ -41,7 +41,9 @@ ADDED:
 - `meta/decisions/smt-adapter-soundness-bridge.md`.
 
 MODIFIED:
-- `defaultSmtProofBindings`: five generated hashes replacing two literals.
+- `defaultSmtProofBindings`: generated region hashes replacing two literals.
+  Five when this unit landed (two rule regions, three soundness regions),
+  grown to ten (four and six) by `smt-adapter-integration`.
 - `src/smt/Firth/SmtBoundaryTest.lean`: nineteen audited theorems, and
   concrete witnesses for the bridge's hypotheses.
 - `src/elaborator/refinement-proof-module.sha256`: regenerated.

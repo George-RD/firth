@@ -141,6 +141,25 @@ class RegionParsingTests(unittest.TestCase):
                 bindings.regions(Path("example.lean"), region("translation-rules", "encoder", body))
 
 
+class DecisionRecordTests(unittest.TestCase):
+    """The decision record describing the binding mechanism states the region
+    counts the generator actually requires, so it cannot silently describe a
+    superseded region set."""
+
+    WORDS = {2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight"}
+
+    def test_decision_record_states_current_region_counts(self) -> None:
+        record = LOOP.parents[1] / "meta" / "decisions" / "smt-adapter-soundness-bridge.md"
+        text = " ".join(record.read_text(encoding="utf-8").split())
+        rules = len(bindings.REQUIRED_RULE_REGIONS)
+        proofs = rules + len(bindings.REQUIRED_PROOF_ONLY_REGIONS)
+        self.assertEqual((rules, proofs), (len(RULES), len(PROOFS)))
+        self.assertIn(f"{self.WORDS[rules]} translation-rule regions", text)
+        self.assertIn(f"{self.WORDS[proofs]} soundness regions", text)
+        for name in RULES + PROOFS:
+            self.assertIn(name, text)
+
+
 class RegionCoverageTests(unittest.TestCase):
     def collect(self, *texts: str):
         with tempfile.TemporaryDirectory(prefix="firth-smt-regions-") as temporary:

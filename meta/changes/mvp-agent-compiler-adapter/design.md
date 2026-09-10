@@ -42,9 +42,14 @@ for multiword requests and validated before lowering. A single-word request may
 omit it because its entry is unambiguous. Source order does not determine
 reachability: words can refer forward, backward, or recursively.
 
-`debug_locations` is an index correspondence rather than an assertion: the §3
-table emits exactly one instruction per atom, and `compileRequest` checks that
-invariant per word before it will emit a response.
+`debug_locations` is a path correspondence rather than an assertion: the §3
+table emits exactly one instruction per atom and one `PUSH_QUOTE` body per
+quotation body, so each entry carries `path` and `kernel_path`, index lists
+through every enclosing quotation body, and `compileRequest` checks that
+correspondence structurally at every depth before it will emit a response.
+Source-bound requests also carry `source_path` and the atom's span on every
+entry, taken from the compiler's own re-elaboration; a kernel-only request has
+no source to attribute a span to and reports none.
 
 ## Changes
 

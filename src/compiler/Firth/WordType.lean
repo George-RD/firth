@@ -25,6 +25,16 @@ while a target `RowName` is exactly one Unicode scalar, so binders are renamed
 positionally rather than passed through. `schemeOfEffect` already rejects
 duplicate surface binders, so a positional map is injective.
 
+Canonical row names come from `canonicalRowName`: the first 24 binders take
+the fixed Greek table every fixture and digest in the repository already uses,
+and every later binder takes one CJK Unified Ideograph counting up from
+`U+4E00`. Both ranges are single scalars that are never Unicode `White_Space`,
+never a grammar delimiter and never ASCII, so they cannot collide with a `Name`
+and the VM's `row_name` parser accepts them. The block gives 20992 further
+names; a scheme needing more is refused rather than wrapped into another
+block. `isRowName` states that predicate once and `render` checks every name it
+emits against it.
+
 An unresolved inference variable is refused rather than guessed at. A word
 whose type still mentions one was never fully checked, and emitting an
 approximation of it would put an unchecked claim into an image.
@@ -80,18 +90,51 @@ def isCanonicalIdentifier (name : String) : Bool :=
       if !(alpha byte || digit byte) then return false
     return true
 
-/-- The target `RowName` grammar: exactly one Unicode scalar. -/
-def isRowName (name : String) : Bool :=
-  name.length == 1
+/-- Unicode `White_Space`, which is what Rust's `char::is_whitespace` tests
+in the VM's `row_name` parser. Lean's `Char.isWhitespace` covers ASCII only. -/
+def isUnicodeWhitespace (c : Char) : Bool :=
+  let n := c.toNat
+  (0x9 ≤ n && n ≤ 0xD) || n == 0x20 || n == 0x85 || n == 0xA0 || n == 0x1680
+    || (0x2000 ≤ n && n ≤ 0x200A) || n == 0x2028 || n == 0x2029 || n == 0x202F
+    || n == 0x205F || n == 0x3000
 
-/-- Canonical target row names, assigned by binder position. Every entry is a
-single Unicode scalar that is neither whitespace nor a grammar delimiter. `ρ`
-comes first because it is the spec's own example and the one every fixture in
-the repository uses. -/
+/-- The scalars the VM's `row_name` parser refuses besides whitespace. -/
+def rowNameDelimiters : List Char := [',', ';', ':', '^', '(', ')', '[', ']', '-']
+
+/-- The target `RowName` grammar as `src/runtime/vm/src/syntax.rs` parses it:
+exactly one Unicode scalar that is neither `White_Space` nor a delimiter. The
+compiler additionally excludes ASCII, which the VM would otherwise read as the
+start of a `Name` in item position, so the names it emits are unambiguous. -/
+def isRowName (name : String) : Bool :=
+  match name.toList with
+  | [c] => !isUnicodeWhitespace c && !rowNameDelimiters.contains c && c.toNat ≥ 0x80
+  | _ => false
+
+/-- The fixed canonical row names for the first 24 binder positions. `ρ` comes
+first because it is the spec's own example and the one every fixture in the
+repository uses; the table is frozen because `dictionary_digest` hashes it. -/
 def canonicalRowNames : Array String :=
   #["ρ", "σ", "τ", "υ", "φ", "χ", "ψ", "ω",
     "α", "β", "γ", "δ", "ε", "ζ", "η", "θ",
     "ι", "κ", "λ", "μ", "ν", "ξ", "π", "ς"]
+
+#guard canonicalRowNames.all isRowName
+
+/-- The first scalar of the CJK Unified Ideographs block, used for binder 24. -/
+def generatedRowNameBase : Nat := 0x4E00
+
+/-- The number of scalars in that block, `U+4E00` to `U+9FFF`. -/
+def generatedRowNameCount : Nat := 0x5200
+
+/-- The most row binders one erased word type can name. -/
+def maxRowBinders : Nat := canonicalRowNames.size + generatedRowNameCount
+
+/-- The canonical target row name of binder `index`: the fixed table below 24,
+then `U+4E00 + (index - 24)`. Total, but only meaningful below
+`maxRowBinders`; `render` refuses larger schemes. -/
+def canonicalRowName (index : Nat) : String :=
+  if h : index < canonicalRowNames.size then canonicalRowNames[index]
+  else String.singleton (Char.ofNat (generatedRowNameBase + (index - canonicalRowNames.size)))
 
 /-- `MAX_WORD_TYPE_NESTING` from the VM decoder: level 32 is accepted, 33 is
 rejected as an invalid word type. -/
@@ -144,10 +187,13 @@ end
 def render (scheme : Scheme) : Except String String := do
   if scheme.rowVariables.eraseDups.length != scheme.rowVariables.length then
     throw "row binders repeat"
-  if scheme.rowVariables.length > canonicalRowNames.size then
+  if scheme.rowVariables.length > maxRowBinders then
     throw s!"more row binders than canonical target row names: {scheme.rowVariables.length}"
   let rows : List (String × String) :=
-    scheme.rowVariables.zipIdx.map (fun (name, index) => (name, canonicalRowNames[index]!))
+    scheme.rowVariables.zipIdx.map (fun (name, index) => (name, canonicalRowName index))
+  match rows.find? (fun entry => !isRowName entry.2) with
+  | some entry => throw s!"generated row name is not a target row name: {entry.2}"
+  | none => pure ()
   let binder :=
     if rows.isEmpty then ""
     else "forall" ++ String.intercalate "," (rows.map (·.2)) ++ ";"

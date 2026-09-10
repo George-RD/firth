@@ -144,6 +144,26 @@ def corpus() -> list[tuple[str, dict, str]]:
     add("schema: duplicate row binders", request([], scheme(stack(row="r"), stack(row="r"), ["r", "r"])))
     forged = request([{"kind": "push", "value": {"kind": "quotation", "body": [literal(42)], "usage": "linear"}}, {"kind": "call"}])
     add("ownership: forged stored quotation usage", forged)
+    # The VM refuses more than 4096 instructions per code vector and quotation
+    # nesting deeper than 32 (src/runtime/vm/src/lib.rs); the compiler must
+    # refuse the same programs instead of emitting an unloadable image, and
+    # must still admit the programs exactly at the bound.
+    pair = [{"kind": "dup"}, {"kind": "drop"}]
+    add("bounds: instruction count at 4096",
+        request([literal(1), literal(2), {"kind": "swap"}, {"kind": "drop"}] + pair * 2046), "kernel-success")
+    add("bounds: instruction count above 4096", request([literal(1)] + pair * 2048))
+    def nested(depth: int) -> list[dict]:
+        body = literal(1)
+        for _ in range(depth):
+            body = quotation([body])
+        return [body] + [{"kind": "call"}] * depth
+    add("bounds: quotation nesting at 32", request(nested(32)), "kernel-success")
+    add("bounds: quotation nesting above 32", request(nested(33)))
+    # Canonical row names continue past the 24 fixed Greek names, so a valid
+    # scheme with more binders compiles rather than failing as a bad type.
+    rows = [f"r{index}" for index in range(25)]
+    add("rows: 25 row binders", request([literal(42)], scheme(stack(row="r24"), stack(base(), row="r24"), rows)),
+        "kernel-success")
     return cases
 
 

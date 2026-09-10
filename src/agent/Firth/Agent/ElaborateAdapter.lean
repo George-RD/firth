@@ -212,6 +212,22 @@ private def spanJson (span : Span) : String :=
   obj [("start", obj [("line", number span.start.line), ("column", number span.start.column)]),
        ("end", obj [("line", number span.stop.line), ("column", number span.stop.column)])]
 
+/-- One span per atom, with a `body` for every quotation atom, in exactly the
+program's nesting. The compiler validates this shape against the program and
+reports the spans in its debug metadata for source-bound requests. -/
+private partial def spanTreeJson (located : LocatedKernel) : String :=
+  match located.atom with
+  | .quotation _ =>
+      obj [("start", obj [("line", number located.span.start.line),
+              ("column", number located.span.start.column)]),
+           ("end", obj [("line", number located.span.stop.line),
+              ("column", number located.span.stop.column)]),
+           ("body", arr (located.children.map spanTreeJson))]
+  | _ => spanJson located.span
+
+private def spansJson (program : KernelProgram) : String :=
+  arr (program.map spanTreeJson)
+
 private def warningsJson (word : CheckedWord) : List String :=
   word.warnings.map fun warning =>
     obj [("word", quote word.name), ("code", quote warning.code),
@@ -222,7 +238,9 @@ private def warningsJson (word : CheckedWord) : List String :=
 `checked_words` carries legacy compatibility markers, not transferable proof.
 Its entries can be passed verbatim to the compile and reference-run adapters.
 The compiler independently rechecks them; source-backed callers also pass the
-original source envelope to bind these entries by fresh re-elaboration. -/
+original source envelope to bind these entries by fresh re-elaboration. Each
+entry also carries `spans`, the source span of every atom, so the compiler can
+attribute its debug metadata to source positions. -/
 def successJson (request : Request) (program : CheckedProgram) : Except String String := do
   let mut checked : List String := []
   let mut erased : List String := []
@@ -232,7 +250,7 @@ def successJson (request : Request) (program : CheckedProgram) : Except String S
     let body := kernelProgram word.program
     checked := checked ++ [obj [("name", quote word.name),
       ("checking_state", quote "checked"), ("proof_state", quote "available"),
-      ("program", programJson body)]]
+      ("program", programJson body), ("spans", spansJson word.program)]]
     erased := erased ++ [obj [("word", quote word.name), ("type", ← schemeJson word.scheme)]]
     kernels := kernels ++ [obj [("word", quote word.name), ("program", programJson body)]]
     warnings := warnings ++ warningsJson word

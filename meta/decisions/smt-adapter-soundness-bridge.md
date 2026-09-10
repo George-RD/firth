@@ -65,13 +65,16 @@ cover. A whole-file hash would therefore have no fixed point: writing the
 hashes would change the file and so the hashes.
 
 `tools/loop/update_smt_proof_bindings.py` hashes explicitly marked regions
-instead: two translation-rule regions, the QF_LIA encoder and the SMT-LIB
-serialiser, and three soundness regions, the theorems for each of those plus
-the adapter bridge. `defaultSmtProofBindings` sits outside every marked
-region, so the generator is a fixed point, and `tools/loop/test_smt_proof_bindings.py`
-asserts that rather than assuming it. Marked regions are also more honest than
-a whole-file hash, which would churn on a comment while saying nothing about
-whether a translation rule moved.
+instead: four translation-rule regions (the typed-IR `normaliser`, the
+`vc-generator`, the QF_LIA `encoder` and the SMT-LIB `serialiser`) and six
+soundness regions (the theorems for each of those, a `normaliser-validity`
+theorem, and the `adapter` bridge). This unit landed the encoder and
+serialiser pair with the adapter bridge; `dec.smt-adapter-integration`
+extended the set to the normaliser and VC generator. `defaultSmtProofBindings`
+sits outside every marked region, so the generator is a fixed point, and
+`tools/loop/test_smt_proof_bindings.py` asserts that rather than assuming it.
+Marked regions are also more honest than a whole-file hash, which would churn
+on a comment while saying nothing about whether a translation rule moved.
 
 The alternative, normalising the hash literals out of a whole-file digest, was
 rejected: it hides which bytes are covered behind a rewriting rule.

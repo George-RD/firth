@@ -34,4 +34,11 @@ def main : IO Unit := do
   reject ": same ( -- ) ; : same ( -- ) ;" "firth.name.duplicate-canonical"
   reject "vocab a {} vocab a {}" "firth.name.duplicate-canonical"
   reject ": root ( -- ) ; vocab a { : caller ( -- ) root; }" "firth.name.unresolved"
+  -- A reference with no candidate is refused by the resolver with the
+  -- normative code, whether it is unqualified, qualified into a known
+  -- vocabulary, or qualified with a prefix that names nothing.
+  reject ": main ( -- ) missing;" "firth.name.unresolved"
+  reject "vocab a { : id ( -- ) ; } : main ( -- ) a.missing;" "firth.name.unresolved"
+  reject ": main ( -- ) zzz.foo;" "firth.name.unresolved"
+  reject "vocab a { : id ( -- ) ; } use a as lib; : main ( -- ) lib.missing;" "firth.name.unresolved"
   IO.println "all canonical name and lexical import regressions passed"

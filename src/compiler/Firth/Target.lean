@@ -25,9 +25,16 @@ it is present so the encoding is total over the frozen algebra.
 -/
 mutual
   inductive Value where
+    /-- A signed 64-bit integer. The constructor is total over `Int` because
+    the algebra is frozen, but the wire domain is `i64`: callers must respect
+    `isInt64`, since the encoder below is also total and the VM refuses the
+    ten-byte LEB128 form of anything outside that range. -/
     | int (value : Int)
     | bool (value : Bool)
     | bytes (value : ByteArray)
+    /-- `consumed` carries one flag per capture slot. The two lists must have
+    equal length; `wellFormedQuotation` checks that, matching the VM's
+    `InvalidCaptureBitmap` refusal. -/
     | quotation (code : List Instruction) (captures : List Value) (consumed : List Bool)
     | primitiveValue (tag : Nat) (value : ByteArray)
     | world
@@ -50,6 +57,99 @@ end
 
 instance : Inhabited Value := ⟨.world⟩
 instance : Inhabited Instruction := ⟨.dup⟩
+
+/-- The signed 64-bit range of a target integer (§2). -/
+def isInt64 (value : Int) : Bool :=
+  -(2 ^ 63 : Int) ≤ value && value < (2 ^ 63 : Int)
+
+/-!
+Admission bounds the VM enforces on every image, from
+`src/runtime/vm/src/lib.rs` (`MAX_INSTRUCTIONS`, `MAX_NESTING`) and
+`target-spec.md` ("Direct runtime ingress bounds"). A code or capture vector
+holds at most 4096 elements at every level, and quotation nesting is counted
+from zero at a word body: depth 32 is admitted and depth 33 refused.
+-/
+
+/-- The largest code or capture vector the VM decodes. -/
+def maxInstructions : Nat := 4096
+
+/-- The deepest quotation nesting the VM decodes. -/
+def maxNesting : Nat := 32
+
+mutual
+
+/-- Every quotation at every depth pairs each capture with exactly one
+consumed flag, which is what the VM's structural validation requires. -/
+partial def wellFormedCode : List Instruction → Bool
+  | [] => true
+  | .pushLiteral value :: rest => wellFormedValue value && wellFormedCode rest
+  | .pushQuote code captures consumed :: rest =>
+      wellFormedQuotation code captures consumed && wellFormedCode rest
+  | _ :: rest => wellFormedCode rest
+
+partial def wellFormedValue : Value → Bool
+  | .quotation code captures consumed => wellFormedQuotation code captures consumed
+  | _ => true
+
+partial def wellFormedQuotation (code : List Instruction) (captures : List Value)
+    (consumed : List Bool) : Bool :=
+  captures.length == consumed.length && wellFormedCode code && wellFormedValues captures
+
+partial def wellFormedValues : List Value → Bool
+  | [] => true
+  | value :: rest => wellFormedValue value && wellFormedValues rest
+
+end
+
+mutual
+
+/-- The first admission bound a code vector breaks, or `none`. The walk mirrors
+`resource_bounds.rs`: `depth` is the nesting level of `code` itself, every
+`PUSH_QUOTE` body and captured quotation is one level deeper, and both code and
+capture vectors are bounded at every level. -/
+partial def boundViolation (code : List Instruction) (depth : Nat := 0) : Option String :=
+  if depth > maxNesting then
+    some s!"quotation nesting depth {depth} exceeds the target bound of {maxNesting}"
+  else if code.length > maxInstructions then
+    some s!"instruction count {code.length} exceeds the target bound of {maxInstructions}"
+  else instructionViolation code depth
+
+partial def instructionViolation (code : List Instruction) (depth : Nat) : Option String :=
+  match code with
+  | [] => none
+  | .pushLiteral value :: rest =>
+      match valueViolation value depth with
+      | some detail => some detail
+      | none => instructionViolation rest depth
+  | .pushQuote body captures _ :: rest =>
+      match quotationViolation body captures (depth + 1) with
+      | some detail => some detail
+      | none => instructionViolation rest depth
+  | _ :: rest => instructionViolation rest depth
+
+partial def valueViolation (value : Value) (depth : Nat) : Option String :=
+  match value with
+  | .quotation body captures _ => quotationViolation body captures (depth + 1)
+  | _ => none
+
+partial def quotationViolation (body : List Instruction) (captures : List Value) (depth : Nat) :
+    Option String :=
+  if captures.length > maxInstructions then
+    some s!"capture count {captures.length} exceeds the target bound of {maxInstructions}"
+  else
+    match boundViolation body depth with
+    | some detail => some detail
+    | none => capturesViolation captures depth
+
+partial def capturesViolation (captures : List Value) (depth : Nat) : Option String :=
+  match captures with
+  | [] => none
+  | value :: rest =>
+      match valueViolation value depth with
+      | some detail => some detail
+      | none => capturesViolation rest depth
+
+end
 
 /-- One published word, in the shape §6 gives a `WordEntry`. -/
 structure WordEntry where

@@ -34,6 +34,9 @@ private def request (source : String) : String :=
 private def literalInt : String :=
   ": literal-int\n  ( -- result:Int^many )\n  42;\n"
 
+private def quotationCall : String :=
+  ": quoted\n  ( -- result:Int^many )\n  [ 42 ] call;\n"
+
 private def increment : String :=
   ": increment\n  (forall ρ; ρ n:Int^many -- ρ result:Int^many)\n  1 prim +;\n"
 
@@ -56,6 +59,14 @@ def main : IO Unit := do
   expectContains "kernel programs are indexed by word" (request literalInt)
     "\"kernel_programs\":[{\"word\":\"literal-int\","
   expectContains "a clean source has no warnings" (request literalInt) "\"warnings\":[]"
+  -- Every atom's source span travels with the checked word, nested exactly as
+  -- the program is, so the compiler can attribute debug metadata to source.
+  expectContains "checked words carry one span per atom" (request literalInt)
+    "\"spans\":[{\"start\":{\"line\":3,\"column\":3},\"end\":{\"line\":3,\"column\":5}}]"
+  expectContains "quotation atoms carry the spans of their body" (request quotationCall)
+    "\"body\":[{\"start\":{\"line\":3,\"column\":5},\"end\":{\"line\":3,\"column\":7}}]}"
+  expectContains "spans follow the atom after a quotation" (request quotationCall)
+    "{\"start\":{\"line\":3,\"column\":10},\"end\":{\"line\":3,\"column\":14}}]"
 
   -- The manifest's Gamma primitives resolve. Without them `prim +` fails with
   -- an unresolved effect, which is what the CLI did before this adapter.

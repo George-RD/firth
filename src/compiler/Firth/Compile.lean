@@ -22,8 +22,18 @@ Malformed/unsupported transport and representations still fail closed.
 The response carries the target program, the body digest of every word, and
 the debug locations §5 asks for so a harness can aggregate target instructions
 back to kernel atoms. Because the §3 table maps each atom to exactly one
-instruction, that mapping is an index correspondence and the adapter checks it
+instruction, and a quotation atom's body to the body of one `PUSH_QUOTE`, the
+mapping is a path correspondence: `path` indexes the target instruction
+through every enclosing quotation body and `kernel_path` the atom the same
+way. The adapter checks that correspondence structurally at every depth
 rather than asserting it.
+
+A checked word may carry an optional `spans` member, one source span per atom
+with a body per quotation atom, which the elaborate adapter emits. The member
+is validated against the program's shape. For a source-bound request the
+compiler compares it with its own re-elaboration and reports the re-elaborated
+span and `source_path` on every debug entry; a kernel-only request has no
+source to attribute a span to, so none is reported.
 -/
 
 namespace Firth.Compiler.Compile
@@ -77,6 +87,12 @@ private def array (context : String) : Json → Except String (List Json)
 private def reqStr (context name : String) (values : List (String × Json)) :
     Except String String := do
   str s!"{context}.{name}" (← required context name values)
+
+private def reqNat (context name : String) (values : List (String × Json)) :
+    Except String Nat := do
+  match (← required context name values).getNat? with
+  | .ok value => pure value
+  | .error _ => err s!"{context}.{name}: expected a non-negative integer"
 
 private def nonempty (context value : String) : Except String String :=
   if value.isEmpty then err s!"{context}: empty string" else pure value
@@ -132,53 +148,105 @@ private def decodeScheme (value : Json) : Except String WordType.Scheme := do
          input := ← decodeStackType (← required "scheme" "input" values)
          output := ← decodeStackType (← required "scheme" "output" values) }
 
+/-- One source span of a checked atom, as the elaborate adapter reports it:
+one-based line and column of a half-open range. -/
+structure AtomSpan where
+  startLine : Nat
+  startColumn : Nat
+  stopLine : Nat
+  stopColumn : Nat
+  deriving BEq, Repr
+
+/-- Spans parallel to a kernel program: one node per atom, and a body per
+quotation atom, in the same nesting as the program. -/
+inductive SpanTree where
+  | atom (span : AtomSpan)
+  | quotation (span : AtomSpan) (body : List SpanTree)
+  deriving BEq, Repr
+
+private def decodePosition (context : String) (value : Json) : Except String (Nat × Nat) := do
+  let values ← object context value ["line", "column"]
+  pure (← reqNat context "line" values, ← reqNat context "column" values)
+
+mutual
+
+  private partial def decodeSpanTree (value : Json) : Except String SpanTree := do
+    let values ← object "span" value ["start", "end"] ["body"]
+    let (startLine, startColumn) ← decodePosition "span.start" (← required "span" "start" values)
+    let (stopLine, stopColumn) ← decodePosition "span.end" (← required "span" "end" values)
+    let span : AtomSpan := { startLine, startColumn, stopLine, stopColumn }
+    match field "body" values with
+    | none => pure (.atom span)
+    | some body => pure (.quotation span (← decodeSpanTrees (← array "span.body" body)))
+
+  private partial def decodeSpanTrees : List Json → Except String (List SpanTree)
+    | [] => pure []
+    | item :: rest => do pure ((← decodeSpanTree item) :: (← decodeSpanTrees rest))
+
+end
+
+/-- Whether a span list has exactly the program's shape: one node per atom,
+a body for every quotation atom and for no other atom, at every depth. -/
+private partial def spansMatch : Firth.Interpreter.Program → List SpanTree → Bool
+  | .empty, [] => true
+  | .cons (.quotation body) tail, .quotation _ spans :: rest
+  | .cons (.push (.quotation body _)) tail, .quotation _ spans :: rest =>
+      spansMatch body spans && spansMatch tail rest
+  | .cons (.quotation _) _, _ | .cons (.push (.quotation ..)) _, _ => false
+  | .cons _ tail, .atom _ :: rest => spansMatch tail rest
+  | _, _ => false
+
 /-- A checked word exactly as the request states it, before lowering. -/
 private structure RequestWord where
   name : String
   program : Firth.Interpreter.Program
-  atoms : Nat
-
-private def countAtoms : Firth.Interpreter.Program → Nat
-  | .empty => 0
-  | .cons _ tail => 1 + countAtoms tail
+  spans : Option (List SpanTree)
 
 private def decodeCheckedWord (value : Json) : Except String RequestWord := do
   let values ← object "checked_word" value ["name", "checking_state", "proof_state", "program"]
+    ["spans"]
   if (← reqStr "checked_word" "checking_state" values) != "checked" then
     err "checked_word: checking unavailable"
   if (← reqStr "checked_word" "proof_state" values) != "available" then
     err "checked_word: proof unavailable"
   let program ← Firth.ReferenceRun.decodeProgram (← required "checked_word" "program" values)
+  let spans ← match field "spans" values with
+    | none => pure none
+    | some value =>
+        let spans ← decodeSpanTrees (← array "checked_word.spans" value)
+        if !spansMatch program spans then err "checked_word.spans: does not match the program"
+        pure (some spans)
   pure { name := ← nonempty "checked_word.name" =<< reqStr "checked_word" "name" values
          program
-         atoms := countAtoms program }
+         spans }
 
 private def decodeErasedType (value : Json) : Except String (String × WordType.Scheme) := do
   let values ← object "erased_word_type" value ["word", "type"]
   pure (← nonempty "erased_word_type.word" =<< reqStr "erased_word_type" "word" values,
         ← decodeScheme (← required "erased_word_type" "type" values))
 
-/-- One decoded `firth.checked-kernel.v1` request. -/
+/-- One decoded `firth.checked-kernel.v1` request. `spans` is parallel to
+`words`: the caller's span tree for each word, when it supplied one. -/
 structure Request where
   requestId : String
   entry : String
   words : List Lowering.CheckedWord
-  atomCounts : List Nat
+  spans : List (Option (List SpanTree))
   source : Option Firth.Agent.Elaborate.Request := none
 
 private def pairWords (words : List RequestWord) (types : List (String × WordType.Scheme)) :
-    Except String (List Lowering.CheckedWord × List Nat) := do
+    Except String (List Lowering.CheckedWord × List (Option (List SpanTree))) := do
   if words.length != types.length then
     err "erased_word_types does not cover checked_words"
   let mut checked : List Lowering.CheckedWord := []
-  let mut counts : List Nat := []
+  let mut spans : List (Option (List SpanTree)) := []
   for word in words do
     match types.find? (fun entry => entry.1 == word.name) with
     | none => throw s!"erased_word_types is missing {word.name}"
     | some (_, scheme) =>
         checked := checked ++ [{ name := word.name, scheme, program := word.program }]
-        counts := counts ++ [word.atoms]
-  pure (checked, counts)
+        spans := spans ++ [word.spans]
+  pure (checked, spans)
 
 /-- Decodes a `firth.checked-kernel.v1` request. -/
 def decodeRequest (value : Json) : Except String Request := do
@@ -204,7 +272,7 @@ def decodeRequest (value : Json) : Except String Request := do
     (← array "request.erased_word_types" (← required "request" "erased_word_types" values))
   let typeNames := types.map (·.1)
   if typeNames.eraseDups.length != typeNames.length then err "request: duplicate erased word type"
-  let (checked, counts) ← pairWords words types
+  let (checked, spans) ← pairWords words types
   let entry ← match field "entry" values with
     | some value => nonempty "request.entry" =<< str "request.entry" value
     | none => match words with
@@ -220,7 +288,7 @@ def decodeRequest (value : Json) : Except String Request := do
         let sourcePath ← nonempty "source.source_path" =<< reqStr "source" "source_path" members
         let sourceText ← reqStr "source" "source_text" members
         pure (some { requestId, sourcePath, sourceText })
-  pure { requestId, entry, words := checked, atomCounts := counts, source }
+  pure { requestId, entry, words := checked, spans, source }
 
 private def quote (value : String) : String := (Json.str value).compress
 
@@ -291,13 +359,44 @@ private def wordJson (word : Target.WordEntry) : String :=
        ("refinement_evidence_digest", quote (Digest.toHex word.refinementEvidenceDigest)),
        ("generation", number word.generation)]
 
-/-- The debug metadata §5 asks for: every target instruction back to the
-kernel atom it came from. The §3 table emits exactly one instruction per atom,
-so the correspondence is by index within the word. -/
-private def debugLocationsJson (source : String) (word : Target.WordEntry) : List String :=
-  (List.range word.code.length).map fun index =>
-    obj [("word", quote source), ("target_word", quote word.name),
-         ("instruction", number index), ("kernel_atom", number index)]
+private def pathJson (path : List Nat) : String :=
+  arr (path.map number)
+
+private def spanJson (span : AtomSpan) : String :=
+  obj [("start", obj [("line", number span.startLine), ("column", number span.startColumn)]),
+       ("end", obj [("line", number span.stopLine), ("column", number span.stopColumn)])]
+
+/-- The quotation body a target instruction carries, if any. -/
+private def instructionBody : Target.Instruction → Option (List Target.Instruction)
+  | .pushQuote code _ _ => some code
+  | .pushLiteral (.quotation code _ _) => some code
+  | _ => none
+
+/-- The debug metadata §5 asks for: every target instruction, at every depth,
+back to the kernel atom it came from. `path` and `kernel_path` are index
+lists through enclosing quotation bodies; the two are equal because the §3
+table emits one instruction per atom and one `PUSH_QUOTE` body per quotation
+body, which `correspond` has already checked. When a source is bound, each
+entry also names the source path and the atom's span. -/
+private partial def debugEntries (source target : String) (sourcePath : Option String)
+    (code : List Target.Instruction) (spans : List SpanTree) (above : List Nat) : List String :=
+  (code.zipIdx.flatMap fun (instruction, index) =>
+    let path := above ++ [index]
+    let node := spans[index]?
+    let location := match sourcePath, node with
+      | some sourcePath, some (.atom span) | some sourcePath, some (.quotation span _) =>
+          [("source_path", quote sourcePath), ("span", spanJson span)]
+      | _, _ => []
+    let entry := obj ([("word", quote source), ("target_word", quote target),
+      ("path", pathJson path), ("kernel_path", pathJson path)] ++ location)
+    let nested := match instructionBody instruction with
+      | some body =>
+          let bodySpans := match node with
+            | some (.quotation _ bodySpans) => bodySpans
+            | _ => []
+          debugEntries source target sourcePath body bodySpans path
+      | none => []
+    entry :: nested)
 
 private def verificationJson (source : Option Firth.Agent.Elaborate.Request) : String :=
   obj [("schema", quote "firth.compiler-verification.v1"),
@@ -312,17 +411,18 @@ private def verificationJson (source : Option Firth.Agent.Elaborate.Request) : S
 
 
 private def successJson (requestId : String) (entry : Target.WordEntry)
-    (sources : List String) (words : List Target.WordEntry)
+    (sources : List (String × List SpanTree)) (words : List Target.WordEntry)
     (source : Option Firth.Agent.Elaborate.Request) : String :=
   let program :=
     obj [("format_version", number formatVersion),
          ("entry", quote entry.name),
          ("words", arr (words.map wordJson))]
   let digests :=
-    obj ((sources.zip words).map fun (source, word) =>
+    obj ((sources.zip words).map fun ((source, _), word) =>
       (source, quote (Digest.toHex (Target.bodyDigest word.code))))
-  let debug := arr ((sources.zip words).flatMap fun (source, word) =>
-    debugLocationsJson source word)
+  let sourcePath := source.map (·.sourcePath)
+  let debug := arr ((sources.zip words).flatMap fun ((source, spans), word) =>
+    debugEntries source word.name sourcePath word.code spans [])
   obj [("request_id", quote requestId), ("status", quote "success"),
        ("target_program", program), ("word_digests", digests),
        ("debug_locations", debug), ("verification", verificationJson source)]
@@ -334,10 +434,14 @@ private def failureJson (requestId : String) (error : Lowering.CompileError) : S
 
 /-- Re-elaborates exact source bytes without opening the diagnostic path.
 This binds all bodies and types, including unused words, to what was actually
-checked. A matching hash or public checking marker cannot substitute for it. -/
-private def verifySource (request : Request) : Except String Unit := do
+checked. A matching hash or public checking marker cannot substitute for it.
+
+Returns the span tree of every request word in request order, taken from the
+re-elaboration. A caller-supplied span tree must agree with it exactly. Without
+a source there is nothing to attribute a span to, so every word gets none. -/
+private def verifySource (request : Request) : Except String (List (List SpanTree)) := do
   match request.source with
-  | none => pure ()
+  | none => pure (request.words.map fun _ => [])
   | some source =>
       let input := obj [("request_id", quote request.requestId),
         ("source_path", quote source.sourcePath), ("source_text", quote source.sourceText),
@@ -356,12 +460,35 @@ private def verifySource (request : Request) : Except String Unit := do
         ("gamma_version", quote gammaVersion), ("target_version", quote targetVersion)]))
       if expected.words.length != request.words.length then
         err "source: checked dictionary mismatch"
-      for word in request.words do
-        match expected.words.find? (·.name == word.name) with
-        | some expectedWord =>
+      let mut spans : List (List SpanTree) := []
+      for (word, supplied) in request.words.zip request.spans do
+        match (expected.words.zip expected.spans).find? (·.1.name == word.name) with
+        | some (expectedWord, expectedSpans) =>
             if word != expectedWord then err s!"source: body/type mismatch for {word.name}"
+            let expectedSpans := expectedSpans.getD []
+            if let some supplied := supplied then
+              if supplied != expectedSpans then err s!"source: span mismatch for {word.name}"
+            spans := spans ++ [expectedSpans]
         | none => err s!"source: word not elaborated: {word.name}"
+      pure spans
 
+/-- Checks the §3 correspondence structurally: one instruction per atom, and
+the body of a quotation atom against the body of its `PUSH_QUOTE`, at every
+depth. Any mismatch is an internal error, never a response. -/
+private partial def correspond (program : Firth.Interpreter.Program)
+    (code : List Target.Instruction) (word : String) : Except String Unit :=
+  match program, code with
+  | .empty, [] => pure ()
+  | .cons (.quotation body) tail, .pushQuote inner _ _ :: rest
+  | .cons (.push (.quotation body _)) tail, .pushQuote inner _ _ :: rest => do
+      correspond body inner word
+      correspond tail rest word
+  | .cons (.quotation _) _, _ | .cons (.push (.quotation ..)) _, _ =>
+      err s!"internal: {word} lowered a quotation atom to something other than a quotation"
+  | .cons _ _, .pushQuote .. :: _ =>
+      err s!"internal: {word} lowered a plain atom to a quotation"
+  | .cons _ tail, _ :: rest => correspond tail rest word
+  | _, _ => err s!"internal: {word} lowered a different number of instructions than atoms"
 
 /-- Compiles one decoded request.
 
@@ -369,20 +496,20 @@ The entry is a source word name, not a target name or a position. Multiword
 requests must select it explicitly. A single-word request may omit it for
 backwards compatibility because its entry is unambiguous. -/
 def compileRequest (request : Request) : Except String String := do
-  verifySource request
+  let spans ← verifySource request
   match Lowering.compileWords request.words with
   | .error error => pure (failureJson request.requestId error)
   | .ok entries =>
-      if entries.length != request.atomCounts.length then
+      if entries.length != request.words.length then
         err "internal: compiled word count does not match the request"
       else
-        for (entry, atoms) in entries.zip request.atomCounts do
-          if entry.code.length != atoms then
-            err s!"internal: {entry.name} lowered {entry.code.length} instructions for {atoms} atoms"
+        for (word, entry) in request.words.zip entries do
+          correspond word.program entry.code entry.name
         match (request.words.zip entries).find? (fun pair => pair.1.name == request.entry) with
         | none => err s!"request.entry: unknown word {request.entry}"
         | some (_, entry) =>
-            pure (successJson request.requestId entry (request.words.map (·.name)) entries request.source)
+            pure (successJson request.requestId entry
+              ((request.words.map (·.name)).zip spans) entries request.source)
 
 private def validateJsonMembers (input : String) : Except String Unit :=
   match Firth.Agent.rejectDuplicateMembers input with

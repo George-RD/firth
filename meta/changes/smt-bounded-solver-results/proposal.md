@@ -17,8 +17,9 @@ which request it answered.
 
 ## Out of scope
 
-- Promoting a checked `unsat`. `ExternalOutcome` still has no checked-unsat
-  constructor, and adding one without the record and its recheck would put an
-  unrechecked result into evidence. That is the next todo.
+- Promoting a checked `unsat`. `classifyTranscript` maps a bare `unsat` to
+  `uncheckedUnsat`; the promotion, the discharge record and its recheck are
+  delivered by the sibling `smt-discharge-record-recheck` unit and owned by
+  `smt-record-promotion`, so no result is promoted here without a record.
 - Fetching or vendoring the pinned solver. The runner refuses when it is
   absent or is not the pinned binary, with a stable code.

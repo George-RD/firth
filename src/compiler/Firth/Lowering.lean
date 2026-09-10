@@ -21,6 +21,13 @@ program never made:
   compiles to nothing and it is never a target value;
 * a primitive with no entry in the target registry.
 
+Two more refusals keep a lowered program inside what the VM will load. A
+code vector longer than `Target.maxInstructions` or a quotation nested deeper
+than `Target.maxNesting` is refused as `firth.compile.target-bound-exceeded`
+rather than emitted as an image the VM decoder would reject, and a quotation
+whose capture and consumed lists disagree in length is refused as an
+unsupported value rather than encoded with a silently truncated bitmap.
+
 Names are mangled because the two grammars differ. Firth surface words may
 contain characters such as `-` that the frozen target `Name` grammar
 (`[A-Za-z_][A-Za-z0-9_]*`) excludes, so `literal-int` cannot be a target word
@@ -52,6 +59,8 @@ inductive CompileError where
   | invalidWordType (word : String) (detail : String)
   /-- The supplied kernel body does not have its declared type or ownership. -/
   | checkingFailed (word : String) (detail : String)
+  /-- The lowered code exceeds an admission bound of the VM. -/
+  | targetBoundExceeded (word : String) (detail : String)
   deriving Repr, BEq
 
 /-- The stable code a refusal reports on the wire. -/
@@ -65,6 +74,7 @@ def CompileError.code : CompileError → String
   | .collidingName .. => "firth.compile.colliding-name"
   | .invalidWordType .. => "firth.compile.invalid-word-type"
   | .checkingFailed .. => "firth.compile.typecheck-failed"
+  | .targetBoundExceeded .. => "firth.compile.target-bound-exceeded"
 
 /-- The word a refusal came from. -/
 def CompileError.word : CompileError → String
@@ -72,7 +82,7 @@ def CompileError.word : CompileError → String
   | .unknownWord word _ | .unknownPrimitive word _
   | .unsupportedPrimitive word _ | .invalidName word _
   | .collidingName word _ | .invalidWordType word _
-  | .checkingFailed word _ => word
+  | .checkingFailed word _ | .targetBoundExceeded word _ => word
 
 /-- A deterministic message naming what was refused. -/
 def CompileError.message : CompileError → String
@@ -85,6 +95,7 @@ def CompileError.message : CompileError → String
   | .collidingName _ name => s!"two source words mangle to the same target name: {name}"
   | .invalidWordType _ detail => s!"erased word type is not canonical: {detail}"
   | .checkingFailed _ detail => s!"kernel recheck failed: {detail}"
+  | .targetBoundExceeded _ detail => s!"target admission bound exceeded: {detail}"
 
 private def hexDigits : Array Char :=
   #['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f']
@@ -151,7 +162,7 @@ private def resolveWord (context : Context) (name : String) : Except CompileErro
 private def lowerLiteral (context : Context) : Literal → Except CompileError Target.Value
   | .nat value =>
       -- The target integer is a signed 64-bit value (§2).
-      if value ≤ 9223372036854775807 then .ok (.int (Int.ofNat value))
+      if Target.isInt64 (Int.ofNat value) then .ok (.int (Int.ofNat value))
       else .error (.unsupportedLiteral context.word s!"nat literal exceeds the target integer: {value}")
   | .bool value => .ok (.bool value)
   | .unit => .error (.unsupportedLiteral context.word "unit")
@@ -289,6 +300,10 @@ def compileWords (words : List CheckedWord) : Except CompileError (List Target.W
   for word in words do
     let context : Context := { word := word.name, words := mapping }
     let code ← lowerProgram context word.program
+    if !Target.wellFormedCode code then
+      throw (.unsupportedValue word.name "quotation capture and consumed lists differ in length")
+    if let some detail := Target.boundViolation code then
+      throw (.targetBoundExceeded word.name detail)
     let erased ←
       match WordType.render word.scheme with
       | .error detail => throw (.invalidWordType word.name detail)

@@ -46,6 +46,19 @@ Successful responses include `verification` with schema
 versions. Both modes state `refinements: "not-checked"` and identify image
 evidence as unauthenticated legacy content identifiers.
 
+## Target admission bounds
+
+The VM refuses any image whose code or capture vector holds more than 4096
+elements or whose quotations nest deeper than 32 levels
+(`src/runtime/vm/src/lib.rs`, `target-spec.md` "Direct runtime ingress
+bounds"). The compiler applies the same limits after lowering and reports
+`firth.compile.target-bound-exceeded` instead of returning a target program
+the VM would refuse to load; a program exactly at either bound compiles.
+Separately, the `vm-run` JSON transport refuses any request nested deeper than
+32 JSON levels, which for `target_program.words[].code[]` binds at roughly six
+or seven quotation levels. That transport limit belongs to the runtime
+adapter and is not enforced by the compiler.
+
 ## What is not proved
 
 Type checking does not discharge application contracts, prove termination,

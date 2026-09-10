@@ -199,9 +199,27 @@ def runPipelineTests : IO Unit := do
 
 
 
+  -- An unknown word is refused by the resolver with the normative name code
+  -- before erasure can report it as an unresolved effect.
   match elaborate ": bad ( -- ) missing ;" with
-  | .failure [.erasure "bad" (.unresolvedEffect "missing" _)] => pure ()
-  | result => fail s!"expected an erasure diagnostic, got {repr result}"
+  | .failure [.parse error] =>
+      expectEq error.code "firth.name.unresolved" "unknown words are name-resolution failures"
+      expectEq error.actual (some "missing") "the unresolved reference is named"
+  | result => fail s!"expected a name diagnostic, got {repr result}"
+
+  -- A configured external word resolves, and the resolver still refuses a
+  -- name the environment does not supply.
+  match elaborateWith externalWordConfig ": bad ( -- ) missing ;" with
+  | .failure [.parse error] =>
+      expectEq error.code "firth.name.unresolved"
+        "an external environment does not accept arbitrary unknown words"
+  | result => fail s!"expected a name diagnostic under an external environment, got {repr result}"
+
+  -- An unknown primitive is still an unresolved effect: nothing but the
+  -- erasure environment can say whether a primitive exists.
+  match elaborate ": bad ( -- ) prim nope ;" with
+  | .failure [.erasure "bad" (.unresolvedEffect "nope" _)] => pure ()
+  | result => fail s!"expected an unresolved primitive effect, got {repr result}"
 
   match elaborate ": bad ( -- ) 1 ;" with
   | .failure [.stackEffect diagnostic] =>

@@ -7,11 +7,14 @@ fourth, `elaborate`, had no owner: `todo.mvp-agent-gate` required the guide,
 the examples and the compile, reference and VM adapters, but nothing required
 an executable that turns source into a checked-kernel record.
 
-The `firth` CLI prints `repr (CheckedProgram)`, a Lean pretty-print whose
-width depends on the formatter, and its failure path throws an uncaught
-exception. The manifest says so itself. It also passes no environments, so
-`prim +` fails with an unresolved effect even though the manifest's `[gamma]`
-declares the primitive.
+The `firth` CLI (`src/elaborator/FirthPipelineCli.lean`) prints
+`repr (CheckedProgram)`, a Lean pretty-print whose width depends on the
+formatter, and its failure path throws an uncaught
+`IO.userError "elaboration failed"`. When this unit was authored the
+manifest's own comment noted only that the CLI printed a Lean representation
+that did not satisfy the structured contract. The CLI also passes no
+environments, so `prim +` fails with an unresolved effect even though the
+manifest's `[gamma]` declares the primitive.
 
 Scope rerouted rather than expanded: this todo was authored as a prerequisite
 and appended to `todo.mvp-agent-gate`'s `Requires`.
