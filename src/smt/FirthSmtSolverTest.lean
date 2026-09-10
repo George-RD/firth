@@ -6,8 +6,14 @@ Behaviour tests for the bounded solver runner.
 Every case runs against an injected runner rather than a fetched binary, so
 the suite is reproducible on a host with no solver, which is the point of the
 seam. What is tested is exactly what the module owns: the refusal rules that
-run before any invocation, the total classification of a transcript, and the
-model parser.
+run before any invocation, the total classification of both the decision and
+the model transcript, the model parser, and the provenance every result and
+verdict leaves the module with. An injected runner yields `injectedRunner`
+whatever digest it reports, and `solvePinned` and `rerunPinned` are exercised
+here only as far as their refusals: the positive, record-producing branch
+needs the pinned binary, which `src/smt/FirthSmtPinnedSolverTest.lean` runs on
+the platform the pin names. Nothing here reads the environment, so the result
+does not depend on whether the host names a solver.
 -/
 
 namespace Firth.SmtSolverTest
@@ -103,12 +109,29 @@ private def parseModelTests : IO Unit := do
   match parseModel request.bindings "((define-fun i0 () Int (- 7)))" with
   | .ok model => expectEq model.integers [("x", (-7 : Int))] "a negative value parses"
   | .error error => fail s!"a negative model value was rejected: {error}"
+  match parseModel request.bindings "(model (define-fun i0 () Int 5))" with
+  | .ok model =>
+      expectEq model.integers [("x", (5 : Int))]
+        "a model keyword immediately after the opening paren is accepted"
+  | .error error => fail s!"a model keyword was rejected: {error}"
+  -- The grammar is exactly one outer list of entries and nothing else: no
+  -- bare entry, no extra wrapping, no second model, no trailing tokens, no
+  -- keyword anywhere but first, and no symbol defined twice.
   for (text, reason) in [
       ("((define-fun i9 () Int 1))", "a symbol the request never declared"),
       ("((define-fun i0 () Real 1))", "an unsupported sort"),
       ("((define-fun i0 () Int true))", "a non-integer value"),
       ("((define-fun i0 () Int", "a truncated definition"),
-      ("((define-fun i0 () Bool maybe))", "a non-boolean value")] do
+      ("((define-fun i0 () Bool maybe))", "a non-boolean value"),
+      ("((define-fun i0 () Int (- -7)))", "a signed magnitude inside a negation"),
+      ("(define-fun i0 () Int 5)", "an entry without the outer list"),
+      ("(((define-fun i0 () Int 5)))", "a doubly wrapped model"),
+      ("((define-fun i0 () Int 5)) ((define-fun i0 () Int 6))", "two models"),
+      ("((define-fun i0 () Int 5)", "an unterminated model"),
+      ("((define-fun i0 () Int 5) model)", "a model keyword after an entry"),
+      ("((define-fun i0 () Int 5) (define-fun i0 () Int 6))", "a symbol defined twice"),
+      ("", "an empty response"),
+      ("sat", "an answer where a model was expected")] do
     match parseModel request.bindings text with
     | .ok model => fail s!"{reason} was accepted as a model: {repr model}"
     | .error _ => pure ()
@@ -144,11 +167,15 @@ private def solveTests : IO Unit := do
     match ← solve runner defaultSolverProfile request with
     | .error refusal => fail s!"{message}: refused with {repr refusal}"
     | .ok result =>
-        expectEq result.outcome expected message
-        expectEq result.profile defaultSolverProfile
+        expectEq result.value.outcome expected message
+        expectEq result.value.profile defaultSolverProfile
           "every result carries the profile it was produced under"
-        expectEq result.proofBindings request.proofBindings
+        expectEq result.value.proofBindings request.proofBindings
           "every result carries the request's translation and proof bindings"
+        -- The stub reports the pinned digest and still yields the seam's
+        -- provenance: what a runner says about itself is not what happened.
+        expectEq result.provenance .injectedRunner
+          "a result from an injected runner is labelled as such, whatever it reports"
   expectOutcome [answer "unsat"] (.uncheckedUnsat "unsat")
     "an unsat answer stays unchecked"
   expectOutcome [answer "unknown"] .unknown "an unknown answer is deferred"
@@ -164,12 +191,68 @@ private def solveTests : IO Unit := do
   expectOutcome [answer "sat", { answer "" with timedOut := true }]
     (.timeout defaultSolverProfile.wallTimeMilliseconds)
     "a model run that reached its bound is a timeout, not a counterexample"
+  -- The model run is classified like the decision run before anything is
+  -- parsed: a crash, a resource limit or a changed answer is never turned into
+  -- a counterexample, and a repeated answer line is not part of the model.
+  expectOutcome [answer "sat", answer "sat\n((define-fun i0 () Int 5))" 1]
+    (.crashed "model run: exit 1")
+    "a model run that exits non-zero is a crash, not a counterexample"
+  expectOutcome [answer "sat", answer "(error \"out of memory\")\n((define-fun i0 () Int 5))"]
+    .resourceExhausted
+    "a model run that reports a resource limit is exhaustion, not a counterexample"
+  expectOutcome [answer "sat", answer "unsat"]
+    (.malformed "model run did not answer sat")
+    "a model run that no longer answers sat is malformed output"
+  expectOutcome [answer "sat", { answer "sat" with outputLimitExceeded := true }]
+    (.malformed "model run: output limit exceeded")
+    "a model run past the output bound is malformed output"
+  let repeatedSat ← stubRunner [answer "sat", answer "sat\nsat\n((define-fun i0 () Int 5))"]
+  match ← solve repeatedSat defaultSolverProfile request with
+  | .ok result =>
+      match result.value.outcome with
+      | .malformed _ => pure ()
+      | outcome => fail s!"a model run answering sat twice was accepted: {repr outcome}"
+  | .error refusal => fail s!"a model run answering sat twice was refused: {repr refusal}"
   -- A refusal is reported as a refusal, never as an outcome, so nothing an
   -- unpinned solver said can reach the record boundary.
   let impostor ← stubRunner [answer "unsat"] (digest := some "sha256:00")
   match ← solve impostor defaultSolverProfile request with
   | .error (.executableDigestMismatch _ _) => pure ()
   | result => fail s!"an unpinned executable produced a result: {repr result}"
+
+/-- `solvePinned` and `rerunPinned` are the only producers of `pinnedProcess`,
+and on this host they can only refuse: no explicit path here names the pinned
+binary, and the environment is never consulted because every call passes an
+explicit path. -/
+private def pinnedTests : IO Unit := do
+  let request ← pinnedRequest
+  expectEq unattestedProvenanceCode "firth.smt.unattested-provenance"
+    "the unattested-provenance code is the stable string the boundary reports"
+  expectEq pinnedSolverVariable "FIRTH_SMT_SOLVER"
+    "the pinned executable is named by FIRTH_SMT_SOLVER when no path is given"
+  match ← solvePinned defaultSolverProfile request (some "/nonexistent/firth-z3") with
+  | .error (.executableMissing _) => pure ()
+  | result => fail s!"a missing pinned executable produced a result: {repr result}"
+  match ← solvePinned defaultSolverProfile request (some "z3") with
+  | .error (.executableMissing _) => pure ()
+  | result => fail s!"a relative executable path was resolved: {repr result}"
+  match ← solvePinned defaultSolverProfile request (some "") with
+  | .error (.executableMissing _) => pure ()
+  | result => fail s!"an empty executable path was resolved: {repr result}"
+  expectEq (← pinnedExecutable (some "/nonexistent/firth-z3"))
+    (some (System.FilePath.mk "/nonexistent/firth-z3"))
+    "an explicit absolute path resolves to itself; only the digest pin says what is there"
+  expectEq (← pinnedExecutable (some "bin/z3")) none
+    "an explicit relative path is refused rather than searched"
+  -- Profile and request checks still run first, so a caller learns about an
+  -- unpinned profile before it learns that no solver is installed.
+  match ← solvePinned { defaultSolverProfile with version := "4.0.0" } request
+      (some "/nonexistent/firth-z3") with
+  | .error .unpinnedProfile => pure ()
+  | result => fail s!"an unpinned profile reached executable resolution: {repr result}"
+  -- The injected seam cannot be talked into the pinned provenance.
+  expectEq (injected (0 : Nat)).provenance .injectedRunner
+    "an injected value is labelled as the test seam"
 
 private def testBinding : ObligationBinding :=
   { obligationId := "obligation-1"
@@ -319,38 +402,54 @@ private def rerunTests : IO Unit := do
     | .ok record => pure record
     | .error failure => fail s!"could not build a record: {repr failure}"
   let runner ← stubRunner [answer "unsat"]
-  match ← rerunDischargeRecord runner testBinding obligationFormula record with
+  let confirmed ← rerunDischargeRecord runner testBinding obligationFormula record
+  match confirmed.value with
   | .rechecked rebuilt => expectEq rebuilt record "a recheck rebuilds the same record"
   | verdict => fail s!"a sound record failed recheck: {repr verdict}"
+  expectEq confirmed.provenance .injectedRunner
+    "a rechecked verdict from an injected runner is labelled as the test seam"
+  -- The pinned rerun resolves an executable exactly as solvePinned does, and
+  -- on this host it can only refuse; the drift check still runs first.
+  let pinnedAbsent ← rerunPinned testBinding obligationFormula record (some "/nonexistent/firth-z3")
+  match pinnedAbsent.value with
+  | .refused (.executableMissing _) => pure ()
+  | verdict => fail s!"a missing pinned executable rechecked a record: {repr verdict}"
+  match (← rerunPinned testBinding obligationFormula record (some "z3")).value with
+  | .refused (.executableMissing _) => pure ()
+  | verdict => fail s!"a relative pinned executable path was resolved: {repr verdict}"
+  match (← rerunPinned testBinding obligationFormula { record with invocationOptions := ["-in"] }
+      (some "/nonexistent/firth-z3")).value with
+  | .driftedRecord .optionDrift => pure ()
+  | verdict => fail s!"a drifted record was not rechecked before the solver was sought: {repr verdict}"
   let changedRunner ← stubRunner [answer "unknown"]
-  match ← rerunDischargeRecord changedRunner testBinding obligationFormula record with
+  match (← rerunDischargeRecord changedRunner testBinding obligationFormula record).value with
   | .notRechecked .notUnsat .unknown => pure ()
   | verdict => fail s!"a record whose answer changed was accepted: {repr verdict}"
   -- A rerun that answers sat is not the same fact as one that answers unknown,
   -- and the verdict keeps them apart.
   let satRunner ← stubRunner [answer "sat", answer "sat\n((define-fun i0 () Int 5))"]
-  match ← rerunDischargeRecord satRunner testBinding obligationFormula record with
+  match (← rerunDischargeRecord satRunner testBinding obligationFormula record).value with
   | .notRechecked .notUnsat (.sat model) =>
       expectEq model.integers [("x", (5 : Int))]
         "a rerun that answers sat carries the model it found"
   | verdict => fail s!"a rerun that disproved the obligation was collapsed: {repr verdict}"
   let impostor ← stubRunner [answer "unsat"] (digest := some "sha256:00")
-  match ← rerunDischargeRecord impostor testBinding obligationFormula record with
+  match (← rerunDischargeRecord impostor testBinding obligationFormula record).value with
   | .refused (.executableDigestMismatch _ _) => pure ()
   | verdict => fail s!"an unpinned solver rechecked a record: {repr verdict}"
   let drifted := { record with invocationOptions := ["-in"] }
-  match ← rerunDischargeRecord runner testBinding obligationFormula drifted with
+  match (← rerunDischargeRecord runner testBinding obligationFormula drifted).value with
   | .driftedRecord .optionDrift => pure ()
   | verdict => fail s!"invocation-option drift was accepted: {repr verdict}"
   let tampered := { record with normalisedFormulaHash := "formula(0[]0[])" }
-  match ← rerunDischargeRecord runner testBinding obligationFormula tampered with
+  match (← rerunDischargeRecord runner testBinding obligationFormula tampered).value with
   | .driftedRecord (.recordTampered "normalised-formula") => pure ()
   | verdict => fail s!"a tampered normalised formula was accepted: {repr verdict}"
   -- Evidence is an output, not an input. A second run that answers unsat with
   -- a different core confirms the record; the verdict carries what this run
   -- said rather than what the stored record did.
   let coredRunner ← stubRunner [answer "unsat\n(core a)"]
-  match ← rerunDischargeRecord coredRunner testBinding obligationFormula record with
+  match (← rerunDischargeRecord coredRunner testBinding obligationFormula record).value with
   | .rechecked rebuilt =>
       expectTrue (rebuilt.evidenceHash != record.evidenceHash)
         "the verdict carries the evidence this run produced"
@@ -359,7 +458,7 @@ private def rerunTests : IO Unit := do
   | verdict => fail s!"a differing unsat core was treated as drift: {repr verdict}"
   let staleSource := { record with
     obligation := { record.obligation with sourceStopColumn := 99 } }
-  match ← rerunDischargeRecord runner testBinding obligationFormula staleSource with
+  match (← rerunDischargeRecord runner testBinding obligationFormula staleSource).value with
   | .driftedRecord .recordStale => pure ()
   | verdict => fail s!"a record naming another source span was accepted: {repr verdict}"
 
@@ -369,6 +468,7 @@ def runTests : IO Unit := do
   parseModelTests
   refusalTests
   solveTests
+  pinnedTests
   recordTests
   rerunTests
   IO.println "all SMT solver runner tests passed"

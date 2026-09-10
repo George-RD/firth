@@ -37,9 +37,11 @@ REQUIRED_COMPONENT_IDS = frozenset(
 )
 SMT_REQUIRED_TERMS = {"unsat", "pinned", "content-addressed", "lean", "rechecked"}
 EXPECTED_SMT_CONDITION = (
-    "Included only for an approved profile when the pinned solver returns unsat, "
+    "Included only for an approved profile when the pinned solver process, spawned by "
+    "the toolchain with its executable digest verified against the pin, returns unsat, "
     "the input and result are content-addressed, the translation-soundness bridge "
-    "is checked by Lean, and the record is regenerated and rechecked."
+    "is checked by Lean, and the record is regenerated and rechecked; a result not "
+    "produced by that process, including one from an injected runner, is never admitted."
 )
 EXPECTED_STAGES = {
     "lean-zero-admit": (
@@ -227,6 +229,7 @@ def validate_manifest(manifest: dict[str, Any], root: Path) -> list[str]:
             "malformed",
             "crashed",
             "unchecked-unsat",
+            "unattested-provenance",
             "unsupported",
             "translation-failure",
         }

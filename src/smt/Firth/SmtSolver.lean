@@ -9,7 +9,7 @@ the solver's identity, version, executable digest, invocation options and
 resource bounds are part of the toolchain lockfile and of every discharge
 record. This module is where those become operational rather than declarative.
 
-Three properties shape the design.
+Four properties shape the design.
 
 *The invocation is refused before it happens* when anything about the pinned
 identity does not hold: an unrecognised profile, a missing executable, a
@@ -22,12 +22,28 @@ one `ExternalOutcome`, and everything that is not an answer the profile
 supports maps to a deferred outcome rather than to silence. A bare `unsat`
 maps to `uncheckedUnsat`: promoting it belongs to the checked adapter in
 `SmtBoundary`, and doing it here would put an unrechecked result into evidence.
+The second, model-fetching run is classified by the same rule as the decision
+run before its output is parsed, so a crash, a resource limit or a changed
+answer on that run is never turned into a counterexample.
 
-*The runner is injected.* `SolverRunner` is a seam, so classification, model
-parsing and the refusal rules are all testable without a fetched binary on a
-particular platform, and `lake test` stays reproducible on a host that has no
-solver at all. `processRunner` is the production implementation; nothing else
-in the module spawns a process.
+*The runner is injected, and the seam is visible in the type.* `SolverRunner`
+is a seam, so classification, model parsing and the refusal rules are all
+testable without a fetched binary on a particular platform, and `lake test`
+stays reproducible on a host that has no solver at all. `processRunner` is the
+production implementation; nothing else in the module spawns a process, and
+`solvePinned` is its only production caller. Every result and every rerun
+verdict leaves this module wrapped in `Attested`, whose constructor is private
+to this module: the wrapper says which path produced the value, and only
+`solvePinned` and `rerunPinned`, which resolve the pinned executable, verify
+its digest and spawn it in this process, produce `Provenance.pinnedProcess`.
+A caller-supplied runner, however faithfully it reports the pinned digest,
+produces `Provenance.injectedRunner`, and the refinement boundary admits a
+discharge record only from the former. The digest pin authenticates the
+binary; the sealed type authenticates that the pin was actually exercised
+here. `private` is a naming discipline rather than a proof: in-repository
+metaprogramming around the mangled constructor name is refused by
+`tools/loop/check_smt_attestation.py`, and out-of-repository Lean callers are
+outside the trusted computing base.
 
 A model is fetched by a second bounded invocation rather than by appending
 `(get-model)` to the decision script, because a solver answering `unsat` to a
@@ -70,11 +86,91 @@ structure SolverRunner where
   /-- Whether the pinned executable is present. -/
   executablePath : IO (Option String)
 
+/-- Which path in this module produced a value.
+
+The two cases are not two grades of trust in the same runner; they are two
+different producers. `pinnedProcess` means `solvePinned` or `rerunPinned`
+resolved the pinned executable, verified its digest against the pin and
+spawned it in this process. `injectedRunner` means a caller supplied the
+`SolverRunner`, or the value was wrapped by `injected`; nothing about it has
+been established here, whatever digest the runner reported. -/
+inductive Provenance where
+  /-- Produced by `solvePinned` or `rerunPinned`: a digest-verified executable,
+  spawned here. -/
+  | pinnedProcess
+  /-- Produced through a caller-supplied `SolverRunner`, or by `injected`: a
+  test seam that never admits a discharge record. -/
+  | injectedRunner
+  deriving Repr, BEq, DecidableEq
+
+/-- A value together with the provenance of the path that produced it.
+
+The constructor is private to this module, which is the one module that
+spawns the solver. Outside it a caller can read both fields and can obtain an
+`injectedRunner` value through `injected`, but cannot build a `pinnedProcess`
+value by any construction the elaborator accepts: the anonymous constructor,
+structure instance notation, the named constructor and `with` updates all fail
+to elaborate. That is what lets the refinement boundary take `provenance` as a
+statement about this process rather than as a field a caller filled in.
+
+`private` is a naming discipline: the constructor still exists under a mangled
+name, and metaprogramming could reach it. In this repository
+`tools/loop/check_smt_attestation.py` refuses such constructions, the source
+envelope binds every Lean file, and the compiled proof-module manifest binds
+the built module; Lean callers outside the repository are outside the trusted
+computing base. -/
+structure Attested (α : Type) where
+  private mk ::
+  /-- Which path produced `value`. -/
+  provenance : Provenance
+  /-- The result or verdict itself. -/
+  value : α
+  deriving Repr, BEq
+
+/-- A solver result and the provenance of the path that produced it. -/
+abbrev AttestedResult := Attested SmtResult
+
+/-- A rerun verdict and the provenance of the path that produced it. -/
+abbrev AttestedVerdict := Attested RecheckVerdict
+
+/-- Wraps a value as coming from a test seam. This is the only way outside
+this module to build an `Attested` value, and what it builds never admits a
+discharge record: the refinement boundary defers it with
+`unattestedProvenanceCode`. -/
+def injected (value : α) : Attested α := ⟨.injectedRunner, value⟩
+
+/-- The stable diagnostic code for a result that passed every metadata check
+but was not produced by the pinned process. -/
+def unattestedProvenanceCode : String := "firth.smt.unattested-provenance"
+
+/-- The environment variable that names the pinned executable when no explicit
+path is given. -/
+def pinnedSolverVariable : String := "FIRTH_SMT_SOLVER"
+
+/-- Resolves where the pinned executable is expected to be.
+
+An explicit absolute path wins. Otherwise `FIRTH_SMT_SOLVER` must hold an
+absolute path. A relative path, whether explicit or from the environment, is
+refused rather than resolved against the working directory or searched on
+`PATH`: which file is meant must not depend on where the process was started.
+Resolution says nothing about what is at the path; only the digest pin,
+verified by `verifyPin` before any invocation, authenticates what is found
+there. -/
+def pinnedExecutable (explicit : Option System.FilePath := none) :
+    IO (Option System.FilePath) := do
+  let candidate ← match explicit with
+    | some path => pure (some path)
+    | none => do
+        match ← IO.getEnv pinnedSolverVariable with
+        | some value => pure (some (System.FilePath.mk value))
+        | none => pure none
+  match candidate with
+  | some path =>
+      if path.toString.isEmpty || !path.isAbsolute then pure none else pure (some path)
+  | none => pure none
+
 private def firstLine (text : String) : String :=
   (text.splitOn "\n").headD "" |>.trim
-
-private def lines (text : String) : List String :=
-  (text.splitOn "\n").map String.trim |>.filter (fun line => !line.isEmpty)
 
 /-- Whether the transcript reports the solver giving up on a resource bound
 rather than on the problem. The pinned profile passes `-memory:` and `-T:`, so
@@ -136,14 +232,16 @@ private def tokenise (text : String) : List String :=
     |>.flatMap (fun token => (token.splitOn "\n").map String.trim)
     |>.filter (fun token => !token.isEmpty)
 
+/-- A non-empty run of decimal digits, as a natural number. -/
+private def parseDigits (token : String) : Option Nat :=
+  if token.isEmpty || !token.all Char.isDigit then none else some token.toNat!
+
+/-- A bare integer token: `digits` or `-digits`. -/
 private def parseInt (token : String) : Option Int :=
   if token.isEmpty then none
   else if token.front == '-' then
-    let digits := token.drop 1
-    if digits.isEmpty || !digits.all Char.isDigit then none
-    else some (-(Int.ofNat digits.toNat!))
-  else if token.all Char.isDigit then some (Int.ofNat token.toNat!)
-  else none
+    (parseDigits (token.drop 1).copy).map fun digits => -(Int.ofNat digits)
+  else (parseDigits token).map Int.ofNat
 
 private def sourceName (bindings : List SmtBinding) (sort : SmtSort) (symbol : String) :
     Option String :=
@@ -152,62 +250,84 @@ private def sourceName (bindings : List SmtBinding) (sort : SmtSort) (symbol : S
 
 /-- Parses a `(get-model)` response into a valuation over source names.
 
-The grammar accepted is deliberately narrow: a flat sequence of
-`(define-fun <symbol> () Int <integer>)` and
-`(define-fun <symbol> () Bool true|false)` entries, with a negative integer
-written either as `-3` or as `(- 3)`. Anything else, including a symbol the
-request never declared, is a parse failure, which the caller classifies as
-malformed output rather than as a counterexample. -/
+The grammar accepted is deliberately narrow, and it is a grammar rather than a
+scan for entries:
+
+```
+model := "(" ["model"] entry* ")" EOF
+entry := "(" "define-fun" symbol "(" ")" ("Int" int | "Bool" ("true" | "false")) ")"
+int   := digits | "-" digits | "(" "-" digits ")"
+```
+
+There is exactly one outer list; the `model` keyword some solvers emit is
+accepted only immediately after the opening paren; nothing may follow the
+closing paren; a bare delimiter anywhere else is an error rather than something
+to skip; every symbol must have been declared by the request for the sort it is
+defined at; and a symbol defined twice is an error. Anything else is a parse
+failure, which the caller classifies as malformed output rather than as a
+counterexample. -/
 def parseModel (bindings : List SmtBinding) (text : String) : Except String Valuation := do
   let mut integers : List (String × Int) := []
   let mut booleans : List (String × Bool) := []
-  let mut tokens := tokenise text
-  while !tokens.isEmpty do
+  let mut defined : List String := []
+  let opened ← match tokenise text with
+    | "(" :: rest => pure rest
+    | [] => throw "model: empty response"
+    | token :: _ => throw s!"model: expected ( but found {token}"
+  let mut tokens := match opened with
+    | "model" :: rest => rest
+    | rest => rest
+  let mut closed := false
+  while !closed do
     match tokens with
+    | ")" :: rest =>
+        closed := true
+        tokens := rest
     | "(" :: "define-fun" :: symbol :: "(" :: ")" :: sort :: rest =>
+        if defined.contains symbol then throw s!"model: {symbol} is defined twice"
+        defined := defined ++ [symbol]
         match sort with
         | "Int" =>
             let (value, rest) ←
               match rest with
               | "(" :: "-" :: digits :: ")" :: rest =>
-                  match parseInt digits with
-                  | some value => pure (-value, rest)
-                  | none => .error s!"model: {symbol} has a non-integer value"
+                  match parseDigits digits with
+                  | some magnitude => pure (-(Int.ofNat magnitude), rest)
+                  | none => throw s!"model: {symbol} has a non-integer value"
+              | "(" :: _ => throw s!"model: {symbol} has a non-integer value"
               | token :: rest =>
                   match parseInt token with
                   | some value => pure (value, rest)
-                  | none => .error s!"model: {symbol} has a non-integer value"
-              | [] => .error "model: truncated integer definition"
+                  | none => throw s!"model: {symbol} has a non-integer value"
+              | [] => throw "model: truncated integer definition"
+            let some name := sourceName bindings .integer symbol
+              | throw s!"model: {symbol} was never declared"
             match rest with
             | ")" :: rest =>
-                match sourceName bindings .integer symbol with
-                | some name =>
-                    integers := integers ++ [(name, value)]
-                    tokens := rest
-                | none => .error s!"model: {symbol} was never declared"
-            | _ => .error s!"model: {symbol} is not closed"
+                integers := integers ++ [(name, value)]
+                tokens := rest
+            | _ => throw s!"model: {symbol} is not closed"
         | "Bool" =>
+            let (flag, rest) ←
+              match rest with
+              | "true" :: rest => pure (true, rest)
+              | "false" :: rest => pure (false, rest)
+              | _ :: _ => throw s!"model: {symbol} has a non-boolean value"
+              | [] => throw "model: truncated boolean definition"
+            let some name := sourceName bindings .boolean symbol
+              | throw s!"model: {symbol} was never declared"
             match rest with
-            | value :: ")" :: rest =>
-                let flag ←
-                  if value == "true" then pure true
-                  else if value == "false" then pure false
-                  else .error s!"model: {symbol} has a non-boolean value"
-                match sourceName bindings .boolean symbol with
-                | some name =>
-                    booleans := booleans ++ [(name, flag)]
-                    tokens := rest
-                | none => .error s!"model: {symbol} was never declared"
-            | _ => .error s!"model: {symbol} is not closed"
-        | sort => .error s!"model: unsupported sort {sort}"
-    | "(" :: rest | ")" :: rest =>
-        -- The response is wrapped in one outer pair, and some solvers add a
-        -- `model` keyword. Skipping a bare delimiter keeps the parser flat.
-        tokens := rest
-    | "model" :: rest => tokens := rest
-    | token :: _ => .error s!"model: unexpected token {token}"
-    | [] => tokens := []
-  pure { integers, booleans }
+            | ")" :: rest =>
+                booleans := booleans ++ [(name, flag)]
+                tokens := rest
+            | _ => throw s!"model: {symbol} is not closed"
+        | sort => throw s!"model: unsupported sort {sort}"
+    | "(" :: "define-fun" :: _ => throw "model: truncated definition"
+    | [] => throw "model: unterminated model"
+    | token :: _ => throw s!"model: unexpected token {token}"
+  match tokens with
+  | [] => pure { integers, booleans }
+  | token :: _ => throw s!"model: unexpected token {token} after the model"
 
 /-- The host digest tools this runner is willing to use, in order. -/
 private def digestTools : List (System.FilePath × Array String) :=
@@ -315,14 +435,28 @@ def verifyPin (runner : SolverRunner) (profile : SolverProfile) (request : SmtRe
   if path.isEmpty then return .error (.executableMissing profile.solverId)
   return .ok ()
 
-/-- Runs one obligation's request against the pinned solver.
+/-- A runner standing in for a pinned executable that could not be resolved.
+
+It reports no path, so `verifyPin` refuses with `executableMissing` at the
+same point, and after the same profile and request checks, as it would for an
+injected runner whose executable is absent. It never answers. -/
+private def absentRunner : SolverRunner :=
+  { run := fun _ _ _ => pure { exitCode := 0, stdout := "", stderr := "" }
+    executableDigest := pure none
+    executablePath := pure none }
+
+/-- Runs one obligation's request through `runner` and labels the result with
+`provenance`.
 
 The pin is verified first, the decision script is run under the profile's
-bound, and only a `sat` answer costs a second invocation, whose model is
-parsed back onto the request's source names. A model that does not parse is
-malformed output, never a counterexample. -/
-def solve (runner : SolverRunner) (profile : SolverProfile) (request : SmtRequest) :
-    IO (Except Refusal SmtResult) := do
+bound, and only a `sat` answer costs a second invocation. That second run is
+classified by the same rule as the first before its output is parsed: a crash,
+a resource limit, a bound reached or an answer other than `sat` on the model
+run is reported as that, never as a counterexample, and only a `sat` answer
+has the line after it parsed as the model, onto the request's source names. A
+model that does not parse is malformed output. -/
+private def solveWith (provenance : Provenance) (runner : SolverRunner)
+    (profile : SolverProfile) (request : SmtRequest) : IO (Except Refusal AttestedResult) := do
   match ← verifyPin runner profile request with
   | .error refusal => return .error refusal
   | .ok () =>
@@ -334,24 +468,53 @@ def solve (runner : SolverRunner) (profile : SolverProfile) (request : SmtReques
         | .sat _ => do
             let modelRun ← runner.run profile.invocationOptions (modelScript request)
               profile.wallTimeMilliseconds
-            if modelRun.timedOut then
-              pure (.timeout profile.wallTimeMilliseconds)
-            else if modelRun.outputLimitExceeded then
-              pure (.malformed "model output limit exceeded")
-            else
-              let body := String.intercalate "\n"
-                ((lines modelRun.stdout).filter fun line => line != "sat")
-              match parseModel request.bindings body with
-              | .ok model => pure (.sat model)
-              | .error detail => pure (.malformed detail)
+            match classifyTranscript profile modelRun with
+            | .sat _ =>
+                -- The first line is the repeated `sat` answer; everything after
+                -- it must be the model and nothing else.
+                let body := String.intercalate "\n" ((modelRun.stdout.splitOn "\n").drop 1)
+                match parseModel request.bindings body with
+                | .ok model => pure (.sat model)
+                | .error detail => pure (.malformed detail)
+            | .timeout milliseconds => pure (.timeout milliseconds)
+            | .resourceExhausted => pure .resourceExhausted
+            | .crashed detail => pure (.crashed s!"model run: {detail}")
+            | .malformed detail => pure (.malformed s!"model run: {detail}")
+            | .uncheckedUnsat _ | .checkedUnsat _ | .unknown =>
+                pure (.malformed "model run did not answer sat")
         | outcome => pure outcome
       return .ok
-        { profile
-          proofBindings := request.proofBindings
-          requestIdentity := canonicalRequestIdentity request
-          outcome }
+        ⟨provenance,
+          { profile
+            proofBindings := request.proofBindings
+            requestIdentity := canonicalRequestIdentity request
+            outcome }⟩
 
-/-- The full recheck: revalidate every input, then re-answer the question.
+/-- Runs one obligation's request through a caller-supplied runner.
+
+This is the test seam. Whatever the runner reports about its executable, the
+result is `injectedRunner`: nothing here established that the pinned binary
+was spawned, so the refinement boundary defers it rather than publishing a
+discharge record from it. -/
+def solve (runner : SolverRunner) (profile : SolverProfile) (request : SmtRequest) :
+    IO (Except Refusal AttestedResult) :=
+  solveWith .injectedRunner runner profile request
+
+/-- Runs one obligation's request against the pinned solver process.
+
+The executable is resolved by `pinnedExecutable`, its digest is verified
+against the pin by `verifyPin`, and it is spawned by `processRunner` in this
+process. This is the only production caller of `processRunner` and, with
+`rerunPinned`, the only producer of `pinnedProcess`. An executable that cannot
+be resolved is refused as `executableMissing`, after the same profile and
+request checks an injected runner would see. -/
+def solvePinned (profile : SolverProfile) (request : SmtRequest)
+    (executable : Option System.FilePath := none) : IO (Except Refusal AttestedResult) := do
+  match ← pinnedExecutable executable with
+  | some path => solveWith .pinnedProcess (processRunner path) profile request
+  | none => solveWith .pinnedProcess absentRunner profile request
+
+/-- The full recheck through `runner`, labelled with `provenance`.
 
 `spec/smt/refinement-discharge-architecture.md` §3 is explicit that a cache
 hit needs the rerun as well as the bindings, so a record whose inputs still
@@ -369,19 +532,39 @@ pinned every input the rebuild derives from, so the rebuild reproduces them.
 It stays because it is the only check that is stated over the whole record, so
 a field added to `DischargeRecord` is compared without anyone remembering to
 add a comparison for it. -/
-def rerunDischargeRecord (runner : SolverRunner) (binding : ObligationBinding)
-    (formula : Formula) (record : DischargeRecord) : IO RecheckVerdict := do
+private def rerunWith (provenance : Provenance) (runner : SolverRunner)
+    (binding : ObligationBinding) (formula : Formula) (record : DischargeRecord) :
+    IO AttestedVerdict := do
   match recheckDischargeRecord binding formula record with
-  | .error failure => return .driftedRecord failure
+  | .error failure => return ⟨provenance, .driftedRecord failure⟩
   | .ok request =>
-      match ← solve runner record.profile request with
-      | .error refusal => return .refused refusal
+      match ← solveWith provenance runner record.profile request with
+      | .error refusal => return ⟨provenance, .refused refusal⟩
       | .ok result =>
-          match makeDischargeRecord binding request result with
-          | .error failure => return .notRechecked failure result.outcome
+          match makeDischargeRecord binding request result.value with
+          | .error failure => return ⟨provenance, .notRechecked failure result.value.outcome⟩
           | .ok rebuilt =>
               if { rebuilt with evidenceHash := record.evidenceHash } == record then
-                return .rechecked rebuilt
-              else return .driftedRecord (.recordTampered "rebuild")
+                return ⟨provenance, .rechecked rebuilt⟩
+              else return ⟨provenance, .driftedRecord (.recordTampered "rebuild")⟩
+
+/-- The full recheck through a caller-supplied runner: the test seam. Every
+drift, refusal and non-`unsat` case is reachable here on a host with no
+solver, and a `rechecked` verdict from it is `injectedRunner`, which the
+refinement boundary defers rather than admits. -/
+def rerunDischargeRecord (runner : SolverRunner) (binding : ObligationBinding)
+    (formula : Formula) (record : DischargeRecord) : IO AttestedVerdict :=
+  rerunWith .injectedRunner runner binding formula record
+
+/-- The full recheck against the pinned solver process: the other producer of
+`pinnedProcess`, resolving and verifying the executable exactly as
+`solvePinned` does. The record is rechecked against the obligation before the
+executable is consulted, so a drifted record reports its drift whether or not
+the solver is installed. -/
+def rerunPinned (binding : ObligationBinding) (formula : Formula) (record : DischargeRecord)
+    (executable : Option System.FilePath := none) : IO AttestedVerdict := do
+  match ← pinnedExecutable executable with
+  | some path => rerunWith .pinnedProcess (processRunner path) binding formula record
+  | none => rerunWith .pinnedProcess absentRunner binding formula record
 
 end Firth.Smt.Solver

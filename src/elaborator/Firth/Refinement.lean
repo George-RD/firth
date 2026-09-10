@@ -1,5 +1,6 @@
 import elaborator.Firth.StackEffect
 import smt.Firth.SmtBoundary
+import smt.Firth.SmtSolver
 import Lean.CoreM
 import Lean.Util.CollectAxioms
 import Std.Sync.Mutex
@@ -689,6 +690,10 @@ inductive LeanEscalationReason where
   | externalRequestIdentityMismatch
   /-- A checked `unsat` that did not yield a record the boundary would accept. -/
   | dischargeRecordRejected
+  /-- A result or rerun verdict that passed every metadata check and rechecks,
+  but was not produced by the pinned solver process: an injected runner or a
+  hand-built value. Matching metadata is not solver evidence. -/
+  | unattestedProvenance
   deriving Repr, BEq
 
 structure LeanProofObligation where
@@ -855,9 +860,10 @@ structure PipelineResult where
   leanQueue : List LeanProofObligation := []
   smtQueue : List SmtQueueEntry := []
   /-- Content-addressed SMT discharge records. Populated only from a checked
-  `unsat` whose record rechecks; every other external outcome leaves it empty,
-  a validated `sat` because the obligation has failed and everything else
-  because the obligation is deferred to Lean. -/
+  `unsat` whose record rechecks and whose result was produced by the pinned
+  solver process (`Firth.Smt.Solver.Provenance.pinnedProcess`); every other
+  external outcome leaves it empty, a validated `sat` because the obligation
+  has failed and everything else because the obligation is deferred to Lean. -/
   dischargeRecords : List DischargeRecord := []
   diagnostics : List RefinementDiagnostic := []
   deriving Repr, BEq
@@ -1022,6 +1028,7 @@ private def governedProofModules : List (Lean.Name × String) :=
   , (`elaborator.Firth.Erasure, "elaborator/Firth/Erasure.olean")
   , (`elaborator.Firth.Parser, "elaborator/Firth/Parser.olean")
   , (`smt.Firth.SmtBoundary, "smt/Firth/SmtBoundary.olean")
+  , (`smt.Firth.SmtSolver, "smt/Firth/SmtSolver.olean")
   , (`Firth.Interpreter, "Firth/Interpreter.olean") ]
 
 private def governedProofModuleHashes : IO (Option (List String)) := do
@@ -1436,9 +1443,25 @@ def recheckRecord (obligation : Obligation) (record : DischargeRecord) :
   if !canonicalObligationIdentity obligation then .error .recordStale
   else recheckDischargeRecord (obligationBinding obligation) obligation.formula record
 
+/-- Reports one external solver result through the refinement-discharge result
+boundary.
+
+The result arrives as `Firth.Smt.Solver.AttestedResult`, whose constructor is
+private to the module that spawns the solver, so the `provenance` field is a
+statement about which path produced the value and not a field the caller filled
+in. Every metadata guard, the promotion inside `makeDischargeRecord` and the
+recheck run on `attested.value` exactly as before and are provenance-neutral,
+so each refusal stays observable with an injected result. Provenance is
+deliberately the last gate: an `unsat` that passed every check but was not
+produced by the pinned process is deferred with
+`Firth.Smt.Solver.unattestedProvenanceCode`, and only a `pinnedProcess`
+result publishes a record. A validated `sat` is provenance-independent: a
+countermodel that refutes the obligation is a refutation whoever produced it,
+and is never evidence. -/
 def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
-    (result : SmtResult) : PipelineResult :=
+    (attested : Firth.Smt.Solver.AttestedResult) : PipelineResult :=
   let obligation := entry.obligation
+  let result := attested.value
   if !formulaWithinKernelBounds obligation.formula then
     kernelBudgetResult requestId
       (makeBudgetExceededObligation obligation.kind obligation.context)
@@ -1493,7 +1516,15 @@ def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
                     { leanQueue := [leanObligation obligation .dischargeRecordRejected]
                       diagnostics := [makeDiagnostic requestId obligation .deferred
                         (reasonData failure.code)] }
-                | .ok _ => { dischargeRecords := [record] }
+                | .ok _ =>
+                    -- The last gate: every check above is about the data, and
+                    -- matching data is not evidence that the pinned solver
+                    -- was run. Only the sealed provenance says that.
+                    if attested.provenance != .pinnedProcess then
+                      { leanQueue := [leanObligation obligation .unattestedProvenance]
+                        diagnostics := [makeDiagnostic requestId obligation .deferred
+                          (reasonData Firth.Smt.Solver.unattestedProvenanceCode)] }
+                    else { dischargeRecords := [record] }
     | .sat model =>
         if validatesCounterexample obligation.formula model then
           let rendered := renderCountermodel model
@@ -1512,22 +1543,32 @@ def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
 
 /-- Reports a rerun verdict after rechecking the record's current binding.
 
-`Firth.Smt.Solver.rerunDischargeRecord` owns invocation and rerun validation.
-This public formatting boundary cannot authenticate that a caller invoked it:
-`RecheckVerdict` is public data, not a proof of execution. It must nevertheless
-refuse records that do not match the current canonical obligation, even when a
-caller labels them `rechecked`. Other verdicts remain deferred non-successes. -/
+`Firth.Smt.Solver.rerunPinned` owns invocation and rerun validation, and
+`rerunDischargeRecord` is its injected-runner test seam. `RecheckVerdict` is
+public data, not a proof of execution, so the verdict arrives wrapped in
+`Firth.Smt.Solver.AttestedVerdict`, whose private constructor records which
+path produced it. The record is rechecked against the current canonical
+obligation first, even when the verdict labels it `rechecked`, so every drift
+stays observable with an injected verdict; then, as the last gate, only a
+`pinnedProcess` verdict publishes the record and any other is deferred with
+`Firth.Smt.Solver.unattestedProvenanceCode`. Other verdicts remain deferred
+non-successes with their own codes. -/
 def recordRerunVerdict (requestId : String) (obligation : Obligation)
-    (verdict : RecheckVerdict) : PipelineResult :=
-  match verdict with
+    (attested : Firth.Smt.Solver.AttestedVerdict) : PipelineResult :=
+  match attested.value with
   | .rechecked record =>
       match recheckRecord obligation record with
-      | .ok _ => { dischargeRecords := [record] }
+      | .ok _ =>
+          if attested.provenance != .pinnedProcess then
+            { leanQueue := [leanObligation obligation .unattestedProvenance]
+              diagnostics := [makeDiagnostic requestId obligation .deferred
+                (reasonData Firth.Smt.Solver.unattestedProvenanceCode)] }
+          else { dischargeRecords := [record] }
       | .error failure =>
           { leanQueue := [leanObligation obligation .dischargeRecordRejected]
             diagnostics := [makeDiagnostic requestId obligation .deferred
               (reasonData failure.code)] }
-  | _ =>
+  | verdict =>
       { leanQueue := [leanObligation obligation .dischargeRecordRejected]
         diagnostics := [makeDiagnostic requestId obligation .deferred
           (reasonData verdict.code)] }

@@ -192,7 +192,7 @@ and hook checks.
   failures, replay and shrinking. See `src/diffharness/README.md`. This is not
   the sustained S2 campaign, effectful equivalence or a compiler theorem.
 - **Governed proof modules:** `lake test` authenticates the built
-  `.olean` hashes of the six governed proof modules (see
+  `.olean` hashes of the seven governed proof modules (see
   `governedProofModules` in `src/elaborator/Firth/Refinement.lean`) against
   `src/elaborator/refinement-proof-module.sha256`. After changing any of
   them, run `lake build && python3 tools/loop/update_proof_manifest.py`

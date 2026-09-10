@@ -36,8 +36,8 @@ condition = "The pinned Lean kernel checks every accepted theorem, definition, t
 id = "smt-solver"
 name = "Pinned SMT solver"
 conditional = true
-condition = "Included only for an approved profile when the pinned solver returns unsat, the input and result are content-addressed, the translation-soundness bridge is checked by Lean, and the record is regenerated and rechecked."
-excluded_results = ["sat", "unknown", "timeout", "resource-exhausted", "malformed", "crashed", "unchecked-unsat", "unsupported", "translation-failure"]
+condition = "Included only for an approved profile when the pinned solver process, spawned by the toolchain with its executable digest verified against the pin, returns unsat, the input and result are content-addressed, the translation-soundness bridge is checked by Lean, and the record is regenerated and rechecked; a result not produced by that process, including one from an injected runner, is never admitted."
+excluded_results = ["sat", "unknown", "timeout", "resource-exhausted", "malformed", "crashed", "unchecked-unsat", "unattested-provenance", "unsupported", "translation-failure"]
 
 [[trusted_components]]
 id = "vm"
@@ -51,7 +51,7 @@ solver_pinned = true
 record_content_addressed = true
 translation_soundness_checked_by = "lean-kernel"
 record_rechecked = true
-excluded_results = ["sat", "unknown", "timeout", "resource-exhausted", "malformed", "crashed", "unchecked-unsat", "unsupported", "translation-failure"]
+excluded_results = ["sat", "unknown", "timeout", "resource-exhausted", "malformed", "crashed", "unchecked-unsat", "unattested-provenance", "unsupported", "translation-failure"]
 
 [[components]]
 id = "firth.language.kernel"

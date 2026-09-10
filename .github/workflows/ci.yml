@@ -78,6 +78,7 @@ jobs:
           python3 tools/loop/check_zero_admit.py
           python3 tools/loop/update_smt_proof_bindings.py --check
           python3 tools/loop/update_proof_manifest.py --check
+          python3 tools/loop/check_smt_attestation.py
       - name: Run Lean suites
         run: lake test 2>&1 | tee /tmp/language-lean-tests.log
       - name: Verify reference kernel fixtures
@@ -86,6 +87,12 @@ jobs:
         run: lake env lean --run src/elaborator/FirthNamesTest.lean 2>&1 | tee /tmp/language-names.log
       - name: Test real solver pipes
         run: lake env lean --run src/smt/FirthSmtProcessTest.lean 2>&1 | tee /tmp/language-process.log
+      - name: Refuse unpinned solver executables
+        run: lake env lean --run src/smt/FirthSmtPinnedRefusalTest.lean 2>&1 | tee /tmp/language-pinned-refusal-unset.log
+      - name: Refuse an unpinned solver named by FIRTH_SMT_SOLVER
+        env:
+          FIRTH_SMT_SOLVER: /usr/bin/python3
+        run: lake env lean --run src/smt/FirthSmtPinnedRefusalTest.lean 2>&1 | tee /tmp/language-pinned-refusal-named.log
       - name: Check public runtime ingress under process deadlines
         run: |
           python3 tools/loop/check_runtime_ingress.py --artifacts /tmp/firth-ingress-std 2>&1 | tee /tmp/language-ingress-std.log
@@ -126,6 +133,48 @@ jobs:
             /tmp/language-*.log
             /tmp/firth-differential
             /tmp/firth-ingress-*
+          retention-days: 7
+          if-no-files-found: ignore
+
+  smt-pinned-solver:
+    name: Pinned SMT solver on the pinned platform
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install pinned Lean toolchain
+        uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596
+        with:
+          auto-config: 'false'
+          build: 'false'
+          test: 'false'
+          lint: 'false'
+          use-mathlib-cache: 'false'
+      - name: Build Lean targets
+        run: lake build 2>&1 | tee /tmp/pinned-build.log
+      - name: Fetch the pinned solver and verify its digest
+        run: |
+          archive="$RUNNER_TEMP/z3-5.0.0-arm64-glibc-2.38.zip"
+          curl --proto '=https' --tlsv1.2 --fail --location --retry 3 --max-time 180 \
+            https://github.com/Z3Prover/z3/releases/download/z3-5.0.0/z3-5.0.0-arm64-glibc-2.38.zip \
+            --output "$archive"
+          echo "c9437ff7e419e715db76d20e4b2142bf60a206c8e1d2b380c0ce35dc8d07b1f4  $archive" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/pinned-solver"
+          unzip -q "$archive" -d "$RUNNER_TEMP/pinned-solver"
+          echo "6457d93236741071c91bfa2927744372e15fdb236d0116bf487aa9930a38972e  $RUNNER_TEMP/pinned-solver/z3-5.0.0-arm64-glibc-2.38/bin/z3" | sha256sum --check
+          "$RUNNER_TEMP/pinned-solver/z3-5.0.0-arm64-glibc-2.38/bin/z3" --version 2>&1 | tee /tmp/pinned-version.log
+      - name: Discharge and rerun through the pinned solver process
+        env:
+          FIRTH_SMT_SOLVER: ${{ runner.temp }}/pinned-solver/z3-5.0.0-arm64-glibc-2.38/bin/z3
+        run: lake env lean --run src/smt/FirthSmtPinnedSolverTest.lean 2>&1 | tee /tmp/pinned-solver.log
+      - name: Retain pinned solver diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pinned-solver-diagnostics
+          path: /tmp/pinned-*.log
           retention-days: 7
           if-no-files-found: ignore
 

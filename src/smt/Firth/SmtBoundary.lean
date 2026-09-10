@@ -189,8 +189,10 @@ inductive ExternalOutcome where
   /-- A public diagnostic marker, not an authenticated proof object.
   `checkUnsat` returns this after validating request/result metadata, but callers
   can also construct it. Record construction and the refinement boundary refuse
-  incoming markers and own promotion of the raw result themselves. The trusted
-  solver producer, not this constructor or its string, owns the solver claim. -/
+  incoming markers and own promotion of the raw result themselves. The solver
+  claim itself belongs to the trusted producer, `Firth.Smt.Solver.solvePinned`,
+  whose sealed `Firth.Smt.Solver.Attested` wrapper is what the refinement
+  boundary consults; neither this constructor nor its string carries it. -/
   | checkedUnsat (evidence : String)
   | sat (model : Valuation)
   deriving Repr, BEq
@@ -202,17 +204,17 @@ structure SmtProofBindings where
 
 def defaultSmtProofBindings : SmtProofBindings :=
   { translationRuleHashes :=
-      ["sha256:a3762ffb3e4cda399199238dca23a05f3d391daceb7ba65e4100df73ba779b22",
-       "sha256:0fd89d8162ece8f7f64b018ead189062acc62f63631a01ac5337cb66c40c1746",
-       "sha256:181410bd0cf782b3775436f84eca654b52b2de367adb79bd0a91e9c0ac0a942f",
-       "sha256:7858bfa9607ddecc6f6efad9e1424dd935ebb7b5b7dff4031a3ba428f6a4becf"]
+      ["sha256:45c711efaf5d15b0193c88c47f0248e7e94ccbe70ccdba8e839ced46ef2cf39e",
+       "sha256:666da8334f484e96c376d5cc9f03e0636e54e63259fcd8ca1a9ff333a82ef8d2",
+       "sha256:b690e5f0a8149b47dcae0fc2b7f14fb502cccfb4d98828250385cede296cde03",
+       "sha256:647ae702f37f0e67ddff0442c02ca9fb954365390d111c0f96bfadad76668aae"]
     translationSoundnessProofHashes :=
-      ["sha256:95d65c2f5157e1567bc671de242645ac5ca27b1de6b03f39464b06cb994b7256",
-       "sha256:ad92f748faa4ea3aec8926555f4c399850c4d234a7f72dca47aa007c11f4b369",
-       "sha256:1c2cc950e85b8dbcf3f45270b92e6eb7a4e05a2882f76598a7d6b72d1a788b86",
-       "sha256:5ac4d387124f862e2494da0164172f148a9b5c3fda813c600dcfc4687d4b36ab",
-       "sha256:9bdd2ecbd5a8c0f6633927b349b6e766b96b76568930c20b55779b2bfdaba554",
-       "sha256:87db1d1fc404eab1aa2d27f1e1d16179f3321d81e9128ced12a5c6f03d6b7e27"] }
+      ["sha256:59c38b9b378e488c984d88429c67bb442e89e2126a43802a414e0798d307e2ac",
+       "sha256:9f77f203372e88e466c4319a2e39e468d1aaedae5da881a5b8ec6850fdb055f5",
+       "sha256:293c58e7b5458b21fc9e19c25c7d17d4b5540eac5fedca0f435a4a657d634ee2",
+       "sha256:9640554595850812f350f1cba81c5e98c3b6ff66e524382f479b6bcc79b50c54",
+       "sha256:9e5f3e66d83301b1c5c8f3874dc5bdd0d951407677ac35c4c5755e075f73d8af",
+       "sha256:4ea0664686791a09f263f585f4be1b528d2609b74b68eb096caa64418c23a1b2"] }
 
 def validSmtProofBindings (bindings : SmtProofBindings) : Bool :=
   bindings == defaultSmtProofBindings
@@ -1158,7 +1160,11 @@ structure ObligationBinding where
 This public wire structure is not an authenticated proof object. The production
 constructor `makeDischargeRecord` owns promotion and recomputes every derived
 field from the formula and request. Stored records still require recheck and
-rerun; their existence or content address does not authenticate a solver run. -/
+rerun; their existence or content address does not authenticate a solver run.
+The refinement boundary publishes a record only from a result whose
+`Firth.Smt.Solver.Attested` wrapper says `Firth.Smt.Solver.solvePinned` or
+`rerunPinned` produced it; a record built here from any other result is data
+a caller holds, not a discharge the pipeline admitted. -/
 structure DischargeRecord where
   obligation : ObligationBinding
   translationRuleHashes : List String
@@ -1214,7 +1220,10 @@ further than the pin allows: that the profile is the pinned one, that the
 request rebuilds to itself, that the result is bound to that request, that the
 translation and soundness bindings are current, and that the formula is inside
 the supported fragment, which is the hypothesis
-`validUnderBinding_of_scriptUnsatisfiable` needs to be anything but vacuous. -/
+`validUnderBinding_of_scriptUnsatisfiable` needs to be anything but vacuous.
+None of this establishes that the pinned solver was run: that is what the
+`Firth.Smt.Solver.Attested` provenance from `solvePinned` says, and the
+refinement boundary consults it after these checks. -/
 def checkUnsat (request : SmtRequest) (result : SmtResult) :
     Except CheckFailure SmtResult :=
   match result.outcome with
@@ -1252,8 +1261,11 @@ previous call to `checkUnsat`. Promotion and all derived fields use this exact
 request, so callers cannot bypass admission or transfer a promoted result.
 
 This checks metadata, not the authenticity of a caller-supplied transcript.
-The pinned solver producer remains responsible for the underlying `unsat`
-claim; a public string is not a Lean proof of `ScriptUnsatisfiable`. -/
+The pinned solver producer, `Firth.Smt.Solver.solvePinned`, remains
+responsible for the underlying `unsat` claim, and the refinement boundary
+admits the record built here only when that producer's sealed
+`Firth.Smt.Solver.Attested` wrapper says it produced the result; a public
+string is not a Lean proof of `ScriptUnsatisfiable`. -/
 def makeDischargeRecord (binding : ObligationBinding) (request : SmtRequest)
     (result : SmtResult) : Except CheckFailure DischargeRecord := do
   let checked ← checkUnsat request result

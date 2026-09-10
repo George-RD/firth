@@ -13,10 +13,12 @@ stale unnoticed. None of them runs an obligation from generation through a
 solver invocation to a diagnostic, which is where the properties the
 architecture actually promises live:
 
-* a validated `unsat` becomes a content-addressed record that rechecks, and
-  nothing else does;
+* a validated `unsat` from the pinned solver process becomes a content-addressed
+  record that rechecks, and nothing else does: the same `unsat` through an
+  injected runner passes every metadata check and is still deferred, because
+  its provenance is the test seam;
 * a complete validated `sat` is a failed refinement with a deterministic
-  counterexample, and never proof evidence;
+  counterexample, and never proof evidence, whoever produced it;
 * every other answer, and every answer that cannot be trusted, is a deferred
   non-success with its own stable code;
 * the resource bounds in the pinned profile are what the invocation is given.
@@ -24,7 +26,11 @@ architecture actually promises live:
 `spec/smt/refinement-discharge-architecture.md` §3 and §4 are what those come
 from. The runner is injected, so the whole suite runs on a host with no solver:
 the pinned profile names one platform and one executable digest, so most hosts
-cannot run the pinned solver even in principle.
+cannot run the pinned solver even in principle. That is also why the positive,
+record-producing branch is not here: `src/smt/FirthSmtPinnedSolverTest.lean`
+exercises it against the pinned binary on the platform the pin names, and this
+suite asserts that an injected `unsat` is bound, rechecks and is nevertheless
+deferred with `firth.smt.unattested-provenance`.
 -/
 
 namespace Firth.AdapterIntegrationTest
@@ -128,15 +134,15 @@ private def refutableEntry : IO SmtQueueEntry := do
   | [entry] => pure entry
   | queue => fail s!"expected one refutable SMT queue entry, got {repr queue}"
 
-/-- Runs the pinned solver over a queue entry and reports the answer through
+/-- Runs the injected runner over a queue entry and reports the answer through
 the refinement-discharge result boundary, which is the path a first discharge
-actually takes. -/
+actually takes, with `solvePinned` replaced by its test seam. -/
 private def discharge (runner : SolverRunner) (entry : SmtQueueEntry) :
     IO (Except Refusal PipelineResult) := do
   let some request := entry.request | fail "an eligible queue entry carries a request"
   match ← solve runner entry.profile request with
   | .error refusal => pure (.error refusal)
-  | .ok result => pure (.ok (recordExternalOutcome "request-a" entry result))
+  | .ok attested => pure (.ok (recordExternalOutcome "request-a" entry attested))
 
 private def expectDischarged (runner : SolverRunner) (entry : SmtQueueEntry)
     (message : String) : IO PipelineResult := do
@@ -164,10 +170,27 @@ private def checkedUnsatTests : IO Unit := do
   let entry ← eligibleEntry
   let some request := entry.request | fail "an eligible queue entry carries a request"
   let (runner, seen) ← recordingRunner [answer "unsat"]
-  let result ← expectDischarged runner entry "a pinned unsat"
-  expectEq result.leanQueue.length 0 "a validated unsat does not queue the obligation for Lean"
-  expectEq result.diagnostics.length 0 "a validated unsat raises no diagnostic"
-  let record ← expectAt result.dischargeRecords 0 "the discharge record"
+  let attested ← match ← solve runner entry.profile request with
+    | .ok attested => pure attested
+    | .error refusal => fail s!"a pinned-looking unsat was refused with {repr refusal}"
+  expectEq attested.value.outcome (.uncheckedUnsat "unsat")
+    "the runner's unsat arrives unchecked"
+  expectEq attested.provenance .injectedRunner
+    "a runner reporting the pinned digest is still the test seam"
+
+  -- Through the boundary the result is bound to its request, promoted and
+  -- rechecked, and is still deferred: matching metadata is not evidence that
+  -- the pinned solver ran, and only the pinned process can say that.
+  let result := recordExternalOutcome "request-a" entry attested
+  expectDeferred result .unattestedProvenance "firth.smt.unattested-provenance"
+    "an unsat from an injected runner"
+
+  -- What the boundary would have published is what the public constructor
+  -- builds from the same result, so its bindings are asserted on that.
+  let record ← match makeDischargeRecord (obligationBinding entry.obligation) request
+      attested.value with
+    | .ok record => pure record
+    | .error failure => fail s!"a bound unsat produced no record: {repr failure}"
 
   -- The record is content-addressed: every input that determined the discharge
   -- is inside its address, so changing any of them changes the address.
@@ -277,7 +300,12 @@ private def deferredOutcomeTests : IO Unit := do
       ([answer "sat", { answer "" with timedOut := true }],
         .externalTimeout defaultSolverProfile.wallTimeMilliseconds,
         s!"external-timeout:{defaultSolverProfile.wallTimeMilliseconds}",
-        "a model run that reached its bound")] do
+        "a model run that reached its bound"),
+      ([answer "sat", answer "sat\n((define-fun i0 () Int 1))" 1], .externalCrash,
+        "external-crash", "a model run that exited non-zero after answering"),
+      ([answer "sat", answer "(error \"out of memory\")\n((define-fun i0 () Int 1))"],
+        .externalResourceExhausted, "external-resource-exhausted",
+        "a model run that reported a resource limit")] do
     let (runner, _) ← recordingRunner transcripts
     let result ← expectDischarged runner entry description
     expectDeferred result reason code description
@@ -296,8 +324,14 @@ private def untrustedResultTests : IO Unit := do
   -- An `unsat` that has not been through the checked adapter is deferred, and
   -- the reason names which binding did not hold. Since `smt-discharge-record-recheck`
   -- the adapter runs at this boundary, so "unchecked" is exactly "did not pass
-  -- one of these".
+  -- one of these". Every result here is hand-built and enters through the
+  -- injected seam; the metadata refusals come first, and a result whose
+  -- metadata is entirely right is deferred last, for its provenance.
   for (result, reason, code, description) in [
+      ({ profile := defaultSolverProfile, requestIdentity := identity
+         outcome := ExternalOutcome.uncheckedUnsat "unsat" },
+        LeanEscalationReason.unattestedProvenance, "firth.smt.unattested-provenance",
+        "a pinned-looking unsat that no pinned process produced"),
       ({ profile := { defaultSolverProfile with version := "4.0.0" }
          requestIdentity := identity, outcome := ExternalOutcome.uncheckedUnsat "unsat" },
         LeanEscalationReason.externalProfileMismatch, "external-profile-mismatch",
@@ -318,7 +352,8 @@ private def untrustedResultTests : IO Unit := do
          outcome := .checkedUnsat "unsat" },
         .dischargeRecordRejected, "firth.smt.pre-promoted-result",
         "a result that arrives already promoted")] do
-    expectDeferred (recordExternalOutcome "request-a" entry result) reason code description
+    expectDeferred (recordExternalOutcome "request-a" entry (injected result))
+      reason code description
   -- Nor does an unpinned binary get to answer at all: a refusal is not an
   -- outcome, so nothing it said reaches the boundary.
   for (digest, path, description) in [

@@ -21,7 +21,15 @@ elaborator owns the `PipelineResult` all three have to reach; a suite in
 Every case runs against an injected runner, so a host with no solver runs the
 whole suite. That is not a convenience: the pinned profile names one platform
 and one executable digest, so most hosts cannot run the pinned solver even in
-principle.
+principle. The injected runner is a test seam and never admits: a rechecked
+verdict from it, and a pinned-looking result wrapped by `injected`, pass every
+binding check and are deferred with `firth.smt.unattested-provenance`. The
+fixture record is therefore built by the public constructor from the same raw
+result the boundary would see, every drift is asserted on the deferred code it
+produces, and the positive, record-producing branch is left to
+`src/smt/FirthSmtPinnedSolverTest.lean`, which needs the pinned binary on the
+platform the pin names. `rerunPinned` is exercised here only as far as its
+refusals, with explicit paths, so the environment is never read.
 -/
 
 namespace Firth.RecordIntegrityTest
@@ -123,12 +131,12 @@ private def rerun (runner : SolverRunner) (obligation : Obligation)
 /-- Asserts that a rerun was a deferred non-success naming `code`, and that
 nothing reached the discharge boundary. -/
 private def expectDeferred (result : PipelineResult) (code : String)
-    (message : String) : IO Unit := do
+    (message : String) (reason : LeanEscalationReason := .dischargeRecordRejected) : IO Unit := do
   expectEq result.dischargeRecords.length 0 s!"{message}: no record may be exposed"
   expectEq result.leanRecords.length 0 s!"{message}: no proof record may be created"
   match result.leanQueue with
   | [queued] =>
-      expectEq queued.reason .dischargeRecordRejected s!"{message}: Lean escalation reason"
+      expectEq queued.reason reason s!"{message}: Lean escalation reason"
   | queue => fail s!"{message}: expected one Lean obligation, got {repr queue}"
   match result.diagnostics with
   | [diagnostic] =>
@@ -140,10 +148,19 @@ private def expectDeferred (result : PipelineResult) (code : String)
 private def driftTests (entry : SmtQueueEntry) (record : DischargeRecord) : IO Unit := do
   let obligation := entry.obligation
   let runner ← stubRunner [answer "unsat"]
-  -- A record that still matches is confirmed, so every refusal below is about
-  -- the mutation and not about the fixture.
-  expectEq (← rerun runner obligation record).dischargeRecords.length 1
-    "an unmutated record is confirmed by a rerun"
+  -- A record that still matches is confirmed by the rerun itself, so every
+  -- refusal below is about the mutation and not about the fixture. What the
+  -- boundary does with that confirmation is defer it: the runner is injected,
+  -- and a rechecked verdict from the test seam is not evidence.
+  let confirmed ← rerunDischargeRecord runner (obligationBinding obligation)
+    obligation.formula record
+  match confirmed.value with
+  | .rechecked rebuilt => expectEq rebuilt record "an unmutated record is confirmed by a rerun"
+  | verdict => fail s!"an unmutated record was not confirmed: {repr verdict}"
+  expectEq confirmed.provenance .injectedRunner "a rerun through the stub is the test seam"
+  expectDeferred (recordRerunVerdict "request-a" obligation confirmed)
+    "firth.smt.unattested-provenance" "a rechecked verdict from an injected runner"
+    (reason := .unattestedProvenance)
   for (mutated, code, reason) in [
       ({ record with obligation := { record.obligation with wordId := "other" } },
         "firth.smt.record-stale", "a record for another word"),
@@ -235,15 +252,21 @@ private def evidenceTests (entry : SmtQueueEntry) (record : DischargeRecord) : I
   let some request := entry.request | fail "an eligible queue entry carries a request"
   -- Raw results pass through internal promotion; caller-selected markers do not.
   match makeDischargeRecord (obligationBinding obligation) request (pinnedResult entry) with
-  | .ok rebuilt => expectEq rebuilt record "direct construction matches the refinement boundary"
+  | .ok rebuilt => expectEq rebuilt record "direct construction builds the fixture record"
   | .error failure => fail s!"a pinned raw result was refused: {repr failure}"
+  -- The boundary builds that same record from the same result and does not
+  -- publish it: the result entered through the injected seam, so it is bound,
+  -- promoted, rechecked and then deferred for its provenance.
+  expectDeferred (recordExternalOutcome "request-a" entry (injected (pinnedResult entry)))
+    "firth.smt.unattested-provenance" "a pinned-looking result no pinned process produced"
+    (reason := .unattestedProvenance)
   match makeDischargeRecord (obligationBinding obligation) request
       { pinnedResult entry with outcome := .checkedUnsat "fabricated" } with
   | .error .notUnsat => pure ()
   | result => fail s!"a fabricated checked marker produced a record: {repr result}"
   -- Nor is a result that arrives claiming to have been checked elsewhere.
   let prePromoted := recordExternalOutcome "request-a" entry
-    { pinnedResult entry with outcome := .checkedUnsat "unsat" }
+    (injected { pinnedResult entry with outcome := .checkedUnsat "unsat" })
   expectDeferred prePromoted "firth.smt.pre-promoted-result" "a pre-promoted result"
   -- Incomplete proof bindings are refused at promotion, before a record exists.
   for (bindings, reason) in [
@@ -270,8 +293,12 @@ private def evidenceTests (entry : SmtQueueEntry) (record : DischargeRecord) : I
 
 private def rerunBoundaryTests (entry : SmtQueueEntry) (record : DischargeRecord) : IO Unit := do
   let obligation := entry.obligation
-  let same := recordRerunVerdict "request-a" obligation (.rechecked record)
-  expectEq same.dischargeRecords [record] "a current rerun record remains reportable"
+  -- A current record that a caller labels rechecked passes the binding check
+  -- and is deferred for its provenance: the verdict is public data, and only
+  -- the pinned rerun can say that a pinned process produced it.
+  expectDeferred (recordRerunVerdict "request-a" obligation (injected (.rechecked record)))
+    "firth.smt.unattested-provenance" "a caller-selected rerun marker for a current record"
+    (reason := .unattestedProvenance)
   for (changed, expected, reason) in [
       ({ record with obligation := { record.obligation with wordId := "another.word" } },
         "firth.smt.record-stale", "another word"),
@@ -283,22 +310,55 @@ private def rerunBoundaryTests (entry : SmtQueueEntry) (record : DischargeRecord
         "firth.smt.record-tampered", "another formula"),
       ({ record with translationSoundnessProofHashes := [] },
         "firth.smt.translation-drift", "missing proofs")] do
-    expectDeferred (recordRerunVerdict "request-a" obligation (.rechecked changed))
+    expectDeferred (recordRerunVerdict "request-a" obligation (injected (.rechecked changed)))
       expected s!"a caller-selected rerun marker for {reason}"
   expectDeferred
     (recordRerunVerdict "request-a" { obligation with obligationId := "forged" }
-      (.rechecked record))
+      (injected (.rechecked record)))
     "firth.smt.record-stale" "a forged current obligation identity"
+
+/-- The pinned rerun is the only path that can publish a record through the
+rerun boundary, and on this host it can only refuse: every call passes an
+explicit path that names no pinned binary, so the environment is never read.
+Its provenance names the producing path, not a success; what it produced here
+is a refusal, and the boundary reports the refusal's own code. -/
+private def pinnedRefusalTests (entry : SmtQueueEntry) (record : DischargeRecord) : IO Unit := do
+  let obligation := entry.obligation
+  let missing ← rerunPinned (obligationBinding obligation) obligation.formula record
+    (some "/nonexistent/firth-z3")
+  expectEq missing.provenance .pinnedProcess
+    "a refusal from the pinned rerun is labelled with the path that produced it"
+  expectDeferred (recordRerunVerdict "request-a" obligation missing)
+    "firth.smt.executable-missing" "a pinned solver that is not installed"
+  let relative ← rerunPinned (obligationBinding obligation) obligation.formula record (some "z3")
+  expectDeferred (recordRerunVerdict "request-a" obligation relative)
+    "firth.smt.executable-missing" "a relative pinned executable path"
+  -- The record is rechecked before the executable is sought, so a drifted
+  -- record names its drift whether or not a solver is installed.
+  let drifted ← rerunPinned (obligationBinding obligation) obligation.formula
+    { record with solverExecutableDigest := "sha256:00" } (some "/nonexistent/firth-z3")
+  expectDeferred (recordRerunVerdict "request-a" obligation drifted)
+    "firth.smt.digest-drift" "a drifted record with no solver installed"
 
 def runTests : IO Unit := do
   let entry ← queueEntry
-  let discharged := recordExternalOutcome "request-a" entry (pinnedResult entry)
-  let record ← expectAt discharged.dischargeRecords 0 "the fixture's discharge record"
+  let some request := entry.request | fail "an eligible queue entry carries a request"
+  -- The fixture record is what the boundary would publish for a pinned result:
+  -- the public constructor builds it from the same raw result. The boundary
+  -- itself, given that result through the injected seam, publishes nothing.
+  let record ← match makeDischargeRecord (obligationBinding entry.obligation) request
+      (pinnedResult entry) with
+    | .ok record => pure record
+    | .error failure => fail s!"the fixture's discharge record could not be built: {repr failure}"
+  let injectedDischarge := recordExternalOutcome "request-a" entry (injected (pinnedResult entry))
+  expectEq injectedDischarge.dischargeRecords.length 0
+    "the boundary publishes no record for an injected result"
   rerunBoundaryTests entry record
   driftTests entry record
   untranslatableTests entry record
   rerunAnswerTests entry record
   evidenceTests entry record
+  pinnedRefusalTests entry record
   IO.println "all SMT record integrity tests passed"
 
 end Firth.RecordIntegrityTest
