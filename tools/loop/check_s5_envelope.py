@@ -379,7 +379,11 @@ def check_branches(
             f"structure.both_branches_taken: the VM trace never entered {handler} "
             f"(target {mangled[handler]})",
         )
-    return {"handlers": handlers, "conditions": [False, True]}
+    return {
+        "handlers": handlers,
+        "reference_conditions": sorted(reference_conditions),
+        "vm_conditions": sorted(vm_conditions),
+    }
 
 
 def check_execution(

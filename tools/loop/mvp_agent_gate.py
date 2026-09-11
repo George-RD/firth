@@ -519,10 +519,10 @@ def validate_trace(trace: Any, fields: frozenset[str], charges: tuple[str, ...],
                 fail(f"{field}: {key} must be a non-negative integer")
         if not isinstance(event["stack"], list):
             fail(f"{field}: stack is not an array")
-    if fields is TARGET_EVENT_FIELDS:
-        for index, event in enumerate(trace):
-            if event["kernel_cost"] > event["cost"]:
-                fail(f"{label} trace[{index}]: kernel charge exceeds the target charge")
+        # A kernel charge above the target charge would let the projection
+        # claim a step the target never charged for.
+        if "kernel_cost" in fields and event["kernel_cost"] > event["cost"]:
+            fail(f"{field}: kernel charge exceeds the target charge")
 
 
 def compare_traces(reference: dict[str, Any], target: dict[str, Any], name: str) -> str:
