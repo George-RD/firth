@@ -395,7 +395,8 @@ fn a_max_nesting_quotation_passes_transport_and_depth_33_is_refused_by_the_decod
             "depth {depth} with a literal operand is admitted"
         );
     }
-    // At depth 33 the sealed-image decoder, not the transport, refuses.
+    // At depth 33 with an empty innermost body the sealed-image decoder, not
+    // the transport, refuses.
     let error = vm_run(&nested_push_quote_request(MAX_NESTING + 1, "[]"))
         .expect_err("depth 33 is refused");
     assert_eq!(error.code, "invalid-image");
@@ -407,6 +408,12 @@ fn a_max_nesting_quotation_passes_transport_and_depth_33_is_refused_by_the_decod
         error.message
     );
     assert!(!error.message.contains("depth-limit"));
+    // Carrying a literal operand adds JSON depth the decoder does not count,
+    // so past 32 the transport reaches its own bound first and refuses with
+    // `depth-limit`. Either refusal is correct; admitting the program is not.
+    let error = vm_run(&nested_push_quote_request(MAX_NESTING + 1, literal))
+        .expect_err("depth 33 with a literal operand is refused");
+    assert_eq!(error.code, "depth-limit");
 }
 
 #[test]

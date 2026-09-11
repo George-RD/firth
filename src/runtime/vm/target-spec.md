@@ -472,8 +472,9 @@ adapter: only an executing frame consumes a slot and no consumed slot is ever
 pushed back as a value. The adapter checks the same envelope on the
 `push-quote` operand path as on the value path. The JSON transport bounds
 nesting at `3 * MAX_NESTING + 8` levels, which admits every structure the
-decoder admits and leaves the decoder the sole authority on quotation depth
-(32 admitted, 33 refused); it decodes escaped surrogate pairs and refuses lone
+decoder admits (32 admitted). Past that depth the transport and the decoder
+overlap, so a deeper quotation is refused by whichever sees it first and only
+the stable code differs; it decodes escaped surrogate pairs and refuses lone
 or inverted halves; duplicate members are detected in logarithmic time.
 
 Every observation surface carries the same admission label, stated in the

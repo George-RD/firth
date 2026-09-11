@@ -158,6 +158,32 @@ class SmtAttestationLintTests(unittest.TestCase):
         )
         self.assert_refused("names '_private'")
 
+    def test_representation_cast_elsewhere_is_refused(self) -> None:
+        # The route that names no constructor: a structure of the same shape,
+        # cast to the sealed type. It elaborates and yields pinnedProcess.
+        self.tree.other.write_text(
+            OTHER_FIXTURE
+            + "\nstructure Mirror (a : Type) where\n"
+            + "  provenance : Provenance\n  value : a\n"
+            + "unsafe def forged (p : Provenance) (v : Nat) : Attested Nat :="
+            + " unsafeCast (Mirror.mk p v)\n",
+            encoding="utf-8",
+        )
+        self.assert_refused("names 'unsafeCast'")
+
+    def test_unsafe_declaration_elsewhere_is_refused(self) -> None:
+        self.tree.other.write_text(
+            OTHER_FIXTURE + "\nunsafe def forged : Nat := 0\n", encoding="utf-8"
+        )
+        self.assert_refused("names 'unsafe '")
+
+    def test_implementation_replacement_elsewhere_is_refused(self) -> None:
+        self.tree.other.write_text(
+            OTHER_FIXTURE + "\n@[implemented_by forged] def safeSide : Nat := 0\n",
+            encoding="utf-8",
+        )
+        self.assert_refused("names 'implemented_by'")
+
     def test_constant_rebuild_next_to_attested_is_refused(self) -> None:
         self.tree.other.write_text(
             OTHER_FIXTURE + "\ndef forged : Attested Nat := cast (mkConst `x) ()\n", encoding="utf-8"

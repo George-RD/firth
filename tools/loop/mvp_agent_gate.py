@@ -548,6 +548,12 @@ def compare_traces(reference: dict[str, Any], target: dict[str, Any], name: str)
     quotation representation, and the result is `TRACE_UNSUPPORTED`, which is
     neither a failure nor agreement. The residual program, the word, the
     instruction pointer and the step count are not compared.
+
+    The alignment argument covers `dip`, but the stack half of the comparison
+    cannot be exercised on a `dip`: the instruction consumes a quotation, so
+    the stack before it always holds one and the trace is reported as
+    unsupported. For `dip` only the projected length and the per-event charges
+    are compared.
     """
     validate_trace(reference.get("trace"), REFERENCE_EVENT_FIELDS, ("cost",),
                    f"{name}: reference")

@@ -17,9 +17,15 @@ to publish a record. It checks, textually:
 * `SmtSolver.lean` declares `structure Attested` exactly once and it contains
   the file's only `private mk ::` line;
 * no other `.lean` file under `src/` declares a `structure Attested`, names
-  `Attested.mk`, or names `_private`; and no line mentioning `Attested` names
+  `Attested.mk` or `_private`, or reaches a value's representation directly
+  through `unsafeCast`, `lcCast`, an implementation-replacement attribute or
+  any `unsafe` declaration; and no line mentioning `Attested` names
   `Name.mkNum`, `.num 0` or `mkConst`, which are how a mangled constructor
-  would be rebuilt; `SmtSolver.lean` itself names none of those either;
+  would be rebuilt; `SmtSolver.lean` itself names none of those either.
+  The representation routes matter because they forge the sealed value
+  without naming the constructor at all: an `unsafeCast` from a structure of
+  the same shape yields a `pinnedProcess` value that the boundary would
+  publish a record for;
 * `Refinement.lean` imports `smt.Firth.SmtSolver`, takes the attested result
   and verdict types at its two boundary functions, and builds a non-empty
   `dischargeRecords := [...]` at exactly two sites, each within a few lines
@@ -48,7 +54,17 @@ SOLVER_IMPORT = "import smt.Firth.SmtSolver"
 PRIVATE_CONSTRUCTOR = re.compile(r"^\s*private mk ::\s*$")
 STRUCTURE = re.compile(r"^\s*(?:private\s+|protected\s+)?structure\s+(\S+)")
 ATTESTED_STRUCTURE = re.compile(r"^structure Attested\b")
-FORBIDDEN_ANYWHERE = ("Attested.mk", "_private")
+FORBIDDEN_ANYWHERE = (
+    "Attested.mk",
+    "_private",
+    # `unsafeCast` and the implementation-replacement attributes reach the
+    # representation directly, without naming the mangled constructor at all.
+    "unsafeCast",
+    "lcCast",
+    "implemented_by",
+    "implementedBy",
+    "unsafe ",
+)
 FORBIDDEN_NEAR_ATTESTED = ("Name.mkNum", ".num 0", "mkConst")
 RECORD_SITE = re.compile(r"dischargeRecords\s*:=\s*\[\s*[^\]\s]")
 GATE = re.compile(r"\.provenance\s*!=\s*\.pinnedProcess")

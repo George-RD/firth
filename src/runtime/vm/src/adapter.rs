@@ -146,9 +146,10 @@ fn render_hex(bytes: &[u8]) -> String {
 }
 
 // The adapter functions below recurse over the parsed document. That recursion
-// is bounded by the transport's `MAX_TRANSPORT_NESTING`, and the sealed-image
-// decoder is the sole authority on quotation depth (`MAX_NESTING`), so the
-// adapter does not count levels a second time in a different unit.
+// is bounded by the transport's `MAX_TRANSPORT_NESTING`, which admits every
+// structure the sealed-image decoder admits (`MAX_NESTING`), so the adapter
+// does not count levels a second time in a different unit. Past that depth
+// either bound refuses; which one reports it depends on the operands carried.
 
 fn adapter_operand_value(value: &Json, context: &str) -> Result<Value, AdapterError> {
     let kind = string(member(value, context, "kind")?, context)?;

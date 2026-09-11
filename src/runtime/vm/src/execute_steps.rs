@@ -137,6 +137,13 @@ fn step_dip(
     reserve_stack(machine, 1)?;
     let mut quotation = pop_quotation(machine)?;
     let protected = machine.stack.pop().ok_or(VmError::StackFault)?;
+    // The frame's own continuation, to restore once the dipped quotation has
+    // run. The root frame is `Halt`, so resetting to `Return` unconditionally
+    // would publish a residual configuration that cannot be resumed.
+    let restored = machine
+        .frames
+        .last()
+        .map_or(Continuation::Return, |frame| frame.continuation);
     if let Some(frame) = machine.frames.last_mut() {
         frame.continuation = Continuation::RestoreDip;
         frame.saved.clear();
@@ -158,7 +165,7 @@ fn step_dip(
     ensure_captures_consumed(&quotation, environment.registry)?;
     if let Some(frame) = machine.frames.last_mut() {
         frame.saved.clear();
-        frame.continuation = Continuation::Return;
+        frame.continuation = restored;
     }
     reserve_stack(machine, 1)?;
     machine.stack.push(protected);

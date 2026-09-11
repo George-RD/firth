@@ -32,8 +32,10 @@ pub const MAX_CALL_DEPTH: usize = 256;
 pub const MAX_INPUT_BYTES: usize = MAX_BYTES;
 /// The JSON nesting bound of the adapter transport. A level-`k` quotation
 /// object sits at JSON depth `3k + 3` and its literal operands at `3k + 6`, so
-/// this admits every structure the sealed-image decoder admits (`MAX_NESTING`)
-/// and leaves the decoder as the sole authority on quotation depth.
+/// this admits every structure the sealed-image decoder admits
+/// (`MAX_NESTING`). Beyond that depth the two bounds overlap: a quotation past
+/// 32 levels is refused by the transport or by the decoder depending on the
+/// operands it carries, so both refuse and only the stable code differs.
 const MAX_TRANSPORT_NESTING: usize = 3 * MAX_NESTING + 8;
 
 include!("types.rs");

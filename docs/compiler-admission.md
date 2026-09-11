@@ -54,10 +54,13 @@ elements or whose quotations nest deeper than 32 levels
 bounds"). The compiler applies the same limits after lowering and reports
 `firth.compile.target-bound-exceeded` instead of returning a target program
 the VM would refuse to load; a program exactly at either bound compiles.
-Separately, the `vm-run` JSON transport refuses any request nested deeper than
-32 JSON levels, which for `target_program.words[].code[]` binds at roughly six
-or seven quotation levels. That transport limit belongs to the runtime
-adapter and is not enforced by the compiler.
+Separately, the `vm-run` JSON transport bounds request nesting at `3 * 32 + 8`
+levels, chosen so that it admits every structure the decoder admits. A
+quotation nested beyond the decoder's 32 levels is therefore refused by
+whichever of the two sees it first, with `depth-limit` from the transport or
+`nesting-limit` from the decoder depending on the operands it carries. That
+transport limit belongs to the runtime adapter and is not enforced by the
+compiler.
 
 ## What is not proved
 

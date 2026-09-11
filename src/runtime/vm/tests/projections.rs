@@ -297,6 +297,34 @@ fn different_saved_dip_values_disagree() {
 }
 
 #[test]
+fn a_completed_dip_restores_the_frames_own_continuation() {
+    // The root frame halts. Resetting it to `return` after the dipped
+    // quotation finished published a residual configuration that cannot be
+    // resumed, and would have made the frozen corpus lift disagree with a
+    // real observation of the same program.
+    let registry = default_registry();
+    let observed = observe_image(
+        &image(vec![
+            literal(Value::Int(1)),
+            quote_of(vec![]),
+            bare(Op::Dip),
+            bare(Op::Drop),
+            bare(Op::Drop),
+        ]),
+        vec![],
+        16,
+        &registry,
+    );
+    assert_eq!(observed.status, ConformanceStatus::Trap);
+    assert!(
+        observed.frames.ends_with(":halt{}"),
+        "the root frame must still halt after a completed dip, got {}",
+        observed.frames
+    );
+    assert!(!observed.frames.contains("return"));
+}
+
+#[test]
 fn the_entry_frame_lift_matches_the_frozen_corpus_row() {
     let corpus = include_str!("../fixtures/kernel.tsv");
     let row = corpus
