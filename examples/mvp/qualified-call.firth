@@ -1,0 +1,13 @@
+vocab arithmetic {
+  : increment
+    (forall ρ; ρ n:Int^many -- ρ result:Int^many)
+    1 prim +;
+}
+
+: main
+  (forall ρ; ρ n:Int^many -- ρ result:Int^many)
+  arithmetic.increment;
+
+: unused
+  ( -- result:Int^many )
+  0;

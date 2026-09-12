@@ -109,29 +109,14 @@ fn fixture_word(name: &str, code: Vec<Instruction>) -> WordEntry {
     WordEntry {
         name: String::from(name),
         erased_word_type: String::from("(--)"),
-        body_digest: sha256(&canonical_code(&code)).to_vec(),
+        body_digest: body_digest(&code),
         code,
-        kernel_evidence_digest: sha256(&[]).to_vec(),
-        refinement_evidence_digest: sha256(&[]).to_vec(),
+        kernel_evidence_digest: evidence_digest(&[]),
+        refinement_evidence_digest: evidence_digest(&[]),
         generation: 0,
     }
 }
 
-fn fixture_image(mut words: Vec<WordEntry>) -> Image {
-    words.sort_by(|left, right| left.name.as_bytes().cmp(right.name.as_bytes()));
-    let dictionary_digest = sha256(&canonical_dictionary(&words)).to_vec();
-    Image {
-        format_version: FORMAT_VERSION,
-        image_version: 1,
-        gamma_version: GAMMA_VERSION,
-        image_digest: sha256(&canonical_image_identity(
-            FORMAT_VERSION,
-            1,
-            GAMMA_VERSION,
-            &dictionary_digest,
-        ))
-        .to_vec(),
-        dictionary_digest,
-        words,
-    }
+fn fixture_image(words: Vec<WordEntry>) -> Image {
+    seal_image(1, words)
 }

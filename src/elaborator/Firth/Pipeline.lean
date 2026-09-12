@@ -1,4 +1,5 @@
 import elaborator.Firth.Parser
+import elaborator.Firth.Names
 import elaborator.Firth.Erasure
 import elaborator.Firth.StackEffect
 import elaborator.Firth.Refinement
@@ -66,12 +67,6 @@ inductive ElaborationResult where
   | success (program : CheckedProgram)
   | failure (diagnostics : List PipelineDiagnostic)
   deriving Repr, BEq
-
-def collectWords : List Declaration → List WordDefinition
-  | [] => []
-  | .use _ :: rest => collectWords rest
-  | .word word :: rest => word :: collectWords rest
-  | .vocabulary _ declarations _ :: rest => collectWords declarations ++ collectWords rest
 
 private def signatureUsages : List StackItem → List Usage
   | [] => []
@@ -149,18 +144,39 @@ private def finishWords (config : PipelineConfig)
   | (word, _) :: _, _ => .failure [.internal word.span]
   | _, _ :: _ => .failure [.internal { start := { offset := 0, line := 1, column := 1 }, stop := { offset := 0, line := 1, column := 1 } }]
 
+/-- Source annotations are not yet translated into body-typing premises.
+Reject them before erasure can discard the predicates. An injected builder is
+an internal test seam, not evidence that the source annotation was checked. -/
+private def unsupportedSourceRefinements (word : WordDefinition) : List PipelineDiagnostic :=
+  (word.effect.input ++ word.effect.output).flatMap fun item =>
+    match item with
+    | .row .. => []
+    | .value _ type _ =>
+        type.refinements.map fun refinement =>
+          .parse { code := "firth.refinement.unsupported-source"
+                   primary := refinement.span, actual := some word.name, cause := .validation }
+
 def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResult :=
   match parse source with
   | .failure errors => .failure (errors.map PipelineDiagnostic.parse)
   | .success file =>
-      let words := collectWords file.declarations
-      let env := makeErasureEnv config words
-      match eraseWords env words with
-      | .error (word, error) => .failure [.erasure word error]
-      | .ok erased =>
-          match checkDictionary config.typingEnv (definitionsOf erased) with
-          | .error diagnostic => .failure [.stackEffect diagnostic]
-          | .ok checked => finishWords config erased checked
+      match resolveNames file.declarations (fun name => (config.erasureEnv.word name).isSome) with
+      | .error error => .failure [.parse error]
+      | .ok words =>
+          if words.isEmpty then
+            .failure [.parse { code := "firth.elaboration.empty-program"
+                               primary := file.span, cause := .validation }]
+          else
+            let unsupported := words.flatMap unsupportedSourceRefinements
+            if !unsupported.isEmpty then .failure unsupported
+            else
+              let env := makeErasureEnv config words
+              match eraseWords env words with
+              | .error (word, error) => .failure [.erasure word error]
+              | .ok erased =>
+                  match checkDictionary config.typingEnv (definitionsOf erased) with
+                  | .error diagnostic => .failure [.stackEffect diagnostic]
+                  | .ok checked => finishWords config erased checked
 
 def elaborate (source : String) : ElaborationResult := elaborateWith {} source
 

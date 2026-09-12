@@ -259,7 +259,14 @@ def runElaboratorDiagnosticTests : IO Unit := do
       | _ => fail "pipeline parser result was not a diagnostic payload"
   | _ => fail "pipeline parser result was not singular"
 
+  -- An unknown word reference carries the normative resolver code; only a
+  -- primitive the environment does not declare is an unresolved effect.
   match elaboratePipeline pipelineContext ": bad ( -- ) missing ;" with
+  | .failure [envelope] =>
+      expectValidCode "pipeline name-resolution path" "firth.name.unresolved" (encode envelope)
+  | _ => fail "pipeline name-resolution result was not singular"
+
+  match elaboratePipeline pipelineContext ": bad ( -- ) prim nope ;" with
   | .failure [envelope] =>
       expectValidCode "pipeline erasure path" "firth.name.unresolved-effect" (encode envelope)
   | _ => fail "pipeline erasure result was not singular"

@@ -7,3 +7,4 @@ __pycache__/
 *.pyc
 .lake/
 src/runtime/vm/target/
+.firth-differential/

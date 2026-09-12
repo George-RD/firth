@@ -1,0 +1,218 @@
+name: Firth CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: firth-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python regression tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Archive the exact tracked source used by this run
+        run: git archive --format=tar.gz --output=/tmp/firth-source.tar.gz HEAD
+      - name: Retain source snapshot for reproducible review
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: source-snapshot
+          path: /tmp/firth-source.tar.gz
+          retention-days: 7
+          if-no-files-found: error
+      - name: Run control-plane regression suites
+        run: |
+          python3 --version
+          for suite in tools/loop/test_*.py; do
+            python3 "$suite"
+          done
+      - name: Validate the agent input schema
+        run: python3 tools/loop/check_mvp_agent_inputs.py
+      - name: Check changed-line whitespace
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]] && [[ "$BASE_SHA" != 0000000000000000000000000000000000000000 ]]; then
+            git diff --check "$BASE_SHA" HEAD
+          else
+            git show --format= --check HEAD
+          fi
+
+  language:
+    name: Lean, Rust and source-to-execution gates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install pinned Lean toolchain
+        uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596
+        with:
+          auto-config: 'false'
+          build: 'false'
+          test: 'false'
+          lint: 'false'
+          use-mathlib-cache: 'false'
+      - name: Build Lean targets
+        run: lake build 2>&1 | tee /tmp/language-build.log
+      - name: Verify governed proof bindings without rewriting them
+        run: |
+          python3 tools/loop/check_zero_admit.py
+          python3 tools/loop/update_smt_proof_bindings.py --check
+          python3 tools/loop/update_proof_manifest.py --check
+          python3 tools/loop/check_smt_attestation.py
+      - name: Run Lean suites
+        run: lake test 2>&1 | tee /tmp/language-lean-tests.log
+      - name: Verify reference kernel fixtures
+        run: bash tools/loop/check_kernel_fixtures.sh 2>&1 | tee /tmp/language-fixtures.log
+      - name: Test canonical names and lexical imports
+        run: lake env lean --run src/elaborator/FirthNamesTest.lean 2>&1 | tee /tmp/language-names.log
+      - name: Test real solver pipes
+        run: lake env lean --run src/smt/FirthSmtProcessTest.lean 2>&1 | tee /tmp/language-process.log
+      - name: Refuse unpinned solver executables
+        run: lake env lean --run src/smt/FirthSmtPinnedRefusalTest.lean 2>&1 | tee /tmp/language-pinned-refusal-unset.log
+      - name: Refuse an unpinned solver named by FIRTH_SMT_SOLVER
+        env:
+          FIRTH_SMT_SOLVER: /usr/bin/python3
+        run: lake env lean --run src/smt/FirthSmtPinnedRefusalTest.lean 2>&1 | tee /tmp/language-pinned-refusal-named.log
+      - name: Check public runtime ingress under process deadlines
+        run: |
+          python3 tools/loop/check_runtime_ingress.py --artifacts /tmp/firth-ingress-std 2>&1 | tee /tmp/language-ingress-std.log
+          python3 tools/loop/check_runtime_ingress.py --no-default-features --artifacts /tmp/firth-ingress-core 2>&1 | tee /tmp/language-ingress-core.log
+      - name: Check runtime execution and transport bounds under process deadlines
+        run: |
+          python3 tools/loop/check_runtime_bounds.py --artifacts /tmp/firth-ingress-bounds-std 2>&1 | tee /tmp/language-bounds-std.log
+          python3 tools/loop/check_runtime_bounds.py --no-default-features --artifacts /tmp/firth-ingress-bounds-core 2>&1 | tee /tmp/language-bounds-core.log
+      - name: Verify Rust VM
+        working-directory: src/runtime/vm
+        run: |
+          rustup show
+          cargo fmt --check
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo test --locked
+      - name: Reject unchecked claims and malformed adapter input
+        run: python3 tools/loop/check_trust_boundaries.py 2>&1 | tee /tmp/language-trust.log
+      - name: Recheck compiler admission and source binding
+        run: python3 tools/loop/check_compiler_admission.py --no-build 2>&1 | tee /tmp/language-compiler-admission.log
+      - name: Rebuild and compare MVP applications
+        run: python3 tools/loop/mvp_agent_gate.py 2>&1 | tee /tmp/language-mvp.log
+      - name: Execute documented multiword programs and failure cases
+        run: python3 tools/loop/check_language_examples.py 2>&1 | tee /tmp/language-examples.log
+      - name: Execute the seeded differential source campaign
+        run: python3 src/diffharness/harness.py run --seed 0 --seed 1 --seed 20260909 --cases 24 --artifacts /tmp/firth-differential 2>&1 | tee /tmp/language-differential.log
+      - name: Replay and shrink a real explicitly exhausted case
+        run: python3 src/diffharness/check_failure_roundtrip.py --artifacts /tmp/firth-differential/roundtrip 2>&1 | tee /tmp/language-differential-roundtrip.log
+      - name: Check bounded cost witness
+        run: python3 tools/loop/check_s5_envelope.py 2>&1 | tee /tmp/language-s5.log
+      - name: Validate active coverage and execute every pinned gate
+        run: |
+          python3 tools/loop/select_unit.py --validate
+          python3 tools/loop/coverage.py --validate
+          python3 tools/loop/coverage.py --run-gates | tee /tmp/language-coverage.log
+          python3 -c 'import json,sys; r=json.load(open("/tmp/language-coverage.log")); sys.exit(bool(r["failing_gates"] or r["missing_gates"]))'
+      - name: Retain execution diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: language-diagnostics
+          path: |
+            /tmp/language-*.log
+            /tmp/firth-differential
+            /tmp/firth-ingress-*
+          retention-days: 7
+          if-no-files-found: ignore
+
+  smt-pinned-solver:
+    name: Pinned SMT solver on the pinned platform
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install pinned Lean toolchain
+        uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596
+        with:
+          auto-config: 'false'
+          build: 'false'
+          test: 'false'
+          lint: 'false'
+          use-mathlib-cache: 'false'
+      - name: Build Lean targets
+        run: lake build 2>&1 | tee /tmp/pinned-build.log
+      - name: Fetch the pinned solver and verify its digest
+        run: |
+          archive="$RUNNER_TEMP/z3-5.0.0-arm64-glibc-2.38.zip"
+          curl --proto '=https' --tlsv1.2 --fail --location --retry 3 --max-time 180 \
+            https://github.com/Z3Prover/z3/releases/download/z3-5.0.0/z3-5.0.0-arm64-glibc-2.38.zip \
+            --output "$archive"
+          echo "c9437ff7e419e715db76d20e4b2142bf60a206c8e1d2b380c0ce35dc8d07b1f4  $archive" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/pinned-solver"
+          unzip -q "$archive" -d "$RUNNER_TEMP/pinned-solver"
+          echo "6457d93236741071c91bfa2927744372e15fdb236d0116bf487aa9930a38972e  $RUNNER_TEMP/pinned-solver/z3-5.0.0-arm64-glibc-2.38/bin/z3" | sha256sum --check
+          "$RUNNER_TEMP/pinned-solver/z3-5.0.0-arm64-glibc-2.38/bin/z3" --version 2>&1 | tee /tmp/pinned-version.log
+      - name: Discharge and rerun through the pinned solver process
+        env:
+          FIRTH_SMT_SOLVER: ${{ runner.temp }}/pinned-solver/z3-5.0.0-arm64-glibc-2.38/bin/z3
+        run: lake env lean --run src/smt/FirthSmtPinnedSolverTest.lean 2>&1 | tee /tmp/pinned-solver.log
+      - name: Retain pinned solver diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pinned-solver-diagnostics
+          path: /tmp/pinned-*.log
+          retention-days: 7
+          if-no-files-found: ignore
+
+  governance:
+    name: Cairn architecture and governance gates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Install checksum-pinned Cairn 0.9.0
+        run: |
+          archive="$RUNNER_TEMP/cairn.tar.xz"
+          curl --proto '=https' --tlsv1.2 --fail --location --retry 2 --max-time 90 \
+            https://github.com/cairn-framework/cairn/releases/download/v0.9.0/cairn-framework-x86_64-unknown-linux-gnu.tar.xz \
+            --output "$archive"
+          echo "bf1499ef311f5ac9e4ea96536d326356703369f6202fe65429ec2ab10583b3f3  $archive" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/cairn-bin"
+          tar -xJf "$archive" -C "$RUNNER_TEMP/cairn-bin" --strip-components=1
+          "$RUNNER_TEMP/cairn-bin/cairn" --version
+          echo "$RUNNER_TEMP/cairn-bin" >> "$GITHUB_PATH"
+      - name: Scan declared architecture
+        run: cairn scan --json 2>&1 | tee /tmp/governance-scan.log
+      - name: Run every governance hook
+        run: cairn hook all --json 2>&1 | tee /tmp/governance-hooks.log
+      - name: Ensure checks did not rewrite tracked evidence
+        run: git diff --exit-code
+      - name: Retain governance diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: governance-diagnostics
+          path: /tmp/governance-*.log
+          retention-days: 7
+          if-no-files-found: ignore

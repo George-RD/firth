@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.compiler
-status: open
+status: done
 created: 2026-08-10
 ---
 Requires: rust-vm-implementation

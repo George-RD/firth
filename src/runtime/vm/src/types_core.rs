@@ -150,6 +150,10 @@ pub enum VmError {
     InvalidCaptureBitmap,
     InvalidCaptureIndex(u64),
     FuelExhausted,
+    /// Entering one more administrative call frame would exceed
+    /// `MAX_CALL_DEPTH`. The failing instruction is charged and located; the
+    /// residual frames are the callers that were in flight.
+    CallDepthExceeded,
     DuplicateWord,
     UnsortedWords,
     TrailingBytes,
@@ -194,7 +198,7 @@ impl VmError {
             Self::UnknownPrimitive(_) => "unknown-primitive",
             Self::TypeFault => "type-fault",
             Self::ResourceFault => "resource-fault",
-            Self::AllocationFailure => "resource-fault",
+            Self::AllocationFailure | Self::CallDepthExceeded => "resource-fault",
             Self::PrimitiveFault | Self::WorldFault => "primitive-fault",
             Self::StackFault => "stack-fault",
             Self::DuplicateWord | Self::UnsortedWords | Self::UnsupportedOperation(_) => {
@@ -204,10 +208,10 @@ impl VmError {
     }
 
     pub fn stable_subcode(&self) -> &'static str {
-        if matches!(self, Self::AllocationFailure) {
-            "allocation-failure"
-        } else {
-            ""
+        match self {
+            Self::AllocationFailure => "allocation-failure",
+            Self::CallDepthExceeded => "call-depth-exceeded",
+            _ => "",
         }
     }
 }
@@ -246,9 +250,21 @@ pub struct CostReport {
     pub steps: Vec<CostStep>,
 }
 
+impl CostReport {
+    /// Project recorded VM charges onto the implemented reference cost model.
+    /// This does not alter target cost, instruction counts or fuel consumption.
+    pub fn kernel_total(&self) -> u64 {
+        self.steps
+            .iter()
+            .fold(0_u64, |total, step| total.saturating_add(step.kernel_cost))
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CostStep {
     pub cost: u64,
+    /// Kernel-comparable charge; capture restoration and word entry are zero.
+    pub kernel_cost: u64,
     pub word: String,
     pub pc: usize,
     pub image_version: u64,
@@ -289,13 +305,19 @@ impl Default for WorldState {
     }
 }
 
+/// One pre-step observation: the stack and frames before the instruction at
+/// `word@pc` ran, plus that instruction's own charges.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TraceEvent {
     pub word: String,
     pub pc: usize,
     pub image_version: u64,
     pub stack: Vec<Value>,
+    /// This event's own target charge, never a running total.
     pub cost: u64,
+    /// This event's kernel-comparable charge: zero for `PUSH_CAPTURE`, which
+    /// implements the reference interpreter's zero-cost administrative push.
+    pub kernel_cost: u64,
     pub format_version: u16,
     pub gamma_version: u64,
     pub world_observation: Vec<u8>,
@@ -319,6 +341,44 @@ pub enum Continuation {
     Return,
     RestoreDip,
 }
+
+impl Continuation {
+    /// The canonical wire spelling of this continuation tag.
+    pub fn canonical(self) -> &'static str {
+        match self {
+            Self::Halt => "halt",
+            Self::Return => "return",
+            Self::RestoreDip => "restore-dip",
+        }
+    }
+}
+
+/// What this VM checked before executing an image, stated in the compiler's
+/// own admission vocabulary so every observation surface says the same thing.
+///
+/// Image checks are structural: digests are recomputed from content, but the
+/// two evidence digests name elaborator-owned payloads the VM never sees, so
+/// nothing here authenticates a proof. A patch is exactly as trusted as the
+/// caller's `PatchVerifier`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AdmissionLabel {
+    /// How the image was admitted.
+    pub admission: &'static str,
+    /// What the kernel and refinement evidence digests are.
+    pub image_evidence: &'static str,
+    /// Whether refinements were checked.
+    pub refinements: &'static str,
+    /// How a verified patch is admitted.
+    pub patch_admission: &'static str,
+}
+
+/// The one admission label this VM can state at M0.
+pub const VM_ADMISSION: AdmissionLabel = AdmissionLabel {
+    admission: "structural-digest-recheck",
+    image_evidence: "legacy-content-identifiers-not-authenticated-proofs",
+    refinements: "not-checked",
+    patch_admission: "external-verifier-unauthenticated",
+};
 
 pub struct PrimitiveContext<'a> {
     stack: &'a mut Vec<Slot>,

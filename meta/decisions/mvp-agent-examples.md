@@ -3,7 +3,7 @@ id: dec.mvp-agent-examples
 nodes: [firth.governance.loop, firth.toolchain.agent]
 status: accepted
 date: 2026-08-10
-informed_by: [src.mvp-agent-example-literal-int, src.mvp-agent-example-quotation-call, src.mvp-agent-example-conditional]
+informed_by: [src.mvp-agent-example-literal-int, src.mvp-agent-example-quotation-call, src.mvp-agent-example-conditional, src.mvp-agent-example-add-one]
 ---
 # MVP Agent Example Corpus
 
@@ -33,3 +33,14 @@ Keeping the corpus on the agent module makes Cairn ownership match the
 machine-facing boundary. Closed examples avoid inventing an adapter command or
 relying on a primitive implementation before the gate unit provides those
 adapters, while still exercising literals, quotations, and conditionals.
+
+## Provenance note, 9 September 2026
+
+The executable gate unit (`mvp-agent-gate`) added a fourth application,
+`examples/mvp/add-one.firth`, because the three original applications never
+reached the Gamma primitive profile. Its transcript
+`src.mvp-agent-example-add-one` is pinned in
+`tools/loop/mvp_agent_manifest.toml` like the other three and is listed here
+so the corpus's provenance is complete. The decision text above is unchanged;
+this note only records the later addition (baseline obligation audit,
+`meta/changes/baseline-obligation-audit/`).

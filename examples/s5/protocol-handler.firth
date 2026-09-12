@@ -1,0 +1,15 @@
+: handle-ping
+  (forall ρ; ρ n:Int^many -- ρ r:Int^many)
+  1 prim +;
+
+: handle-pong
+  (forall ρ; ρ n:Int^many -- ρ r:Int^many)
+  2 prim +;
+
+: dispatch
+  (forall ρ; ρ n:Int^many tag:Bool^many -- ρ r:Int^many)
+  [ handle-ping ] [ handle-pong ] if;
+
+: session
+  ( -- r:Int^many )
+  0 true dispatch false dispatch true dispatch;

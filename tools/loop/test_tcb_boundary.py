@@ -6,6 +6,7 @@ from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 import check_tcb_boundary
 
@@ -161,6 +162,39 @@ class TcbBoundaryTests(unittest.TestCase):
         manifest = deepcopy(self.manifest)
         manifest["version"] = True
         self.assert_fails_with(manifest, "version must be 1")
+
+    def test_compiler_evidence_runs_the_compiler(self) -> None:
+        # vm-conformance and vm-fixtures never execute the Lean compiler; the
+        # committed manifest must pin stages that do (PR #109 review, cubic P2).
+        compiler = next(
+            row for row in self.manifest["components"] if row["id"] == "firth.toolchain.compiler"
+        )
+        evidence = set(compiler["outputs"][0]["evidence"])
+        self.assertIn("lean-test-driver", evidence)
+        self.assertIn("compiler-admission", evidence)
+        translator = next(
+            row
+            for row in self.manifest["components"]
+            if row["id"] == "firth.toolchain.compiler.translator"
+        )
+        self.assertIn("lean-test-driver", translator["outputs"][0]["evidence"])
+        stage = next(row for row in self.manifest["stages"] if row["id"] == "compiler-admission")
+        self.assertEqual(stage["command"], "python3 tools/loop/check_compiler_admission.py")
+        self.assertEqual(stage["trusted_components"], ["lean-kernel"])
+        self.assertEqual(
+            stage["evidence_paths"], ["tools/loop/check_compiler_admission.py", "src/compiler"]
+        )
+
+    def test_compiler_admission_stage_is_pinned(self) -> None:
+        manifest = deepcopy(self.manifest)
+        manifest["stages"] = [row for row in manifest["stages"] if row["id"] != "compiler-admission"]
+        self.assert_fails_with(manifest, "missing required stages: compiler-admission")
+        self.assert_fails_with(manifest, "names unknown evidence stage: compiler-admission")
+        pinned = dict(check_tcb_boundary.EXPECTED_STAGES)
+        del pinned["compiler-admission"]
+        with patch.dict(check_tcb_boundary.EXPECTED_STAGES, pinned, clear=True):
+            self.assert_fails_with(self.manifest, "stage is not pinned: compiler-admission")
+            self.assert_fails_with(self.manifest, "unlisted stages: compiler-admission")
 
 
 if __name__ == "__main__":

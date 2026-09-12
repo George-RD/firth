@@ -1,9 +1,9 @@
 ---
 node: firth.toolchain.agent
-status: open
+status: done
 created: 2026-08-10
 ---
-Requires: mvp-agent-guide mvp-agent-examples mvp-agent-compiler-adapter mvp-agent-reference-adapter mvp-agent-vm-adapter
+Requires: mvp-agent-guide mvp-agent-examples mvp-agent-elaborate-adapter mvp-agent-compiler-adapter mvp-agent-reference-adapter mvp-agent-vm-adapter
 
 # Mvp Agent Gate
 ## Goal

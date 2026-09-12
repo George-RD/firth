@@ -1,5 +1,6 @@
 import elaborator.Firth.StackEffect
 import smt.Firth.SmtBoundary
+import smt.Firth.SmtSolver
 import Lean.CoreM
 import Lean.Util.CollectAxioms
 import Std.Sync.Mutex
@@ -30,6 +31,7 @@ def evalConjunction (valuation : Valuation) : List Predicate → Option Bool
       let restValue ← evalConjunction valuation rest
       pure (predicateValue && restValue)
 
+-- firth:translation-rules-begin normaliser
 def normaliseConjunction : List Predicate → Predicate
   | [] => .truth
   | predicate :: rest => .and predicate (normaliseConjunction rest)
@@ -37,10 +39,16 @@ def normaliseConjunction : List Predicate → Predicate
 def RefinementSet.normalise (refinement : RefinementSet) : Predicate :=
   normaliseConjunction refinement.conjuncts
 
+def normaliseFormula (formula : Formula) : Formula :=
+  { premises := [normaliseConjunction formula.premises]
+    conclusions := [normaliseConjunction formula.conclusions] }
+-- firth:translation-rules-end normaliser
+
 def RefinementSet.satisfies (valuation : Valuation) (refinement : RefinementSet) :
     Option Bool :=
   evalConjunction valuation refinement.conjuncts
 
+-- firth:translation-soundness-begin normaliser
 theorem evalPredicate_normaliseConjunction (valuation : Valuation)
     (predicates : List Predicate) :
     evalPredicate valuation (normaliseConjunction predicates) =
@@ -84,11 +92,7 @@ theorem evalConjunction_true_iff (valuation : Valuation) (predicates : List Pred
                   simp [evalConjunction, predicateResult, restResult]
               | true =>
                   simpa [evalConjunction, predicateResult, restResult] using ih
-
-def normaliseFormula (formula : Formula) : Formula :=
-  { premises := [normaliseConjunction formula.premises]
-    conclusions := [normaliseConjunction formula.conclusions] }
-
+-- firth:translation-soundness-end normaliser
 
 structure Contract where
   wordType : Scheme
@@ -223,6 +227,7 @@ private def frame (value : String) : String := s!"{value.toUTF8.size}:{value}"
 private def encodeStrings (values : List String) : String :=
   s!"{values.length}[{String.intercalate "" (values.map frame)}]"
 
+-- firth:translation-rules-begin vc-generator
 def obligationIdentity (kind : ObligationKind) (formula : Formula)
     (context : ObligationContext) : String :=
   "obligation(" ++ frame context.wordId ++ frame context.bodyHash ++
@@ -254,7 +259,9 @@ def makeObligation (kind : ObligationKind) (premises conclusions : List Predicat
 def generateVc (kind : ObligationKind) (formula : Formula)
     (context : ObligationContext) : Obligation :=
   makeObligation kind formula.premises formula.conclusions context
+-- firth:translation-rules-end vc-generator
 
+-- firth:translation-soundness-begin vc-generator
 theorem generateVc_formula (kind : ObligationKind) (formula : Formula)
     (context : ObligationContext) (withinBounds : withinKernelBounds formula = true) :
     (generateVc kind formula context).formula = formula := by
@@ -269,6 +276,7 @@ theorem generateVc_identity (kind : ObligationKind) (formula : Formula)
   have bounds : formulaWithinKernelBounds formula = true := by
     simpa [withinKernelBounds] using withinBounds
   simp [generateVc, makeObligation, bounds]
+-- firth:translation-soundness-end vc-generator
 
 
 structure TotalityTypingPremises where
@@ -412,6 +420,7 @@ def Valid (formula : Formula) : Prop :=
     (∀ predicate, predicate ∈ formula.premises → evalPredicate valuation predicate = some true) →
       ∀ predicate, predicate ∈ formula.conclusions →
         evalPredicate valuation predicate = some true
+-- firth:translation-soundness-begin normaliser-validity
 theorem valid_normaliseFormula_iff (formula : Formula) :
     Valid (normaliseFormula formula) ↔ Valid formula := by
   constructor
@@ -463,6 +472,7 @@ theorem valid_normaliseFormula_iff (formula : Formula) :
       exact original valuation originalPremises conclusion conclusionMember
     rw [evalPredicate_normaliseConjunction]
     exact (evalConjunction_true_iff valuation formula.conclusions).mpr conclusionsTrue
+-- firth:translation-soundness-end normaliser-validity
 
 
 theorem evalInt_stable (expression : IntExpr) (valuation : Valuation) (result : Int) :
@@ -677,6 +687,13 @@ inductive LeanEscalationReason where
   | externalRequestIneligible
   | externalProfileMismatch
   | externalProofMismatch
+  | externalRequestIdentityMismatch
+  /-- A checked `unsat` that did not yield a record the boundary would accept. -/
+  | dischargeRecordRejected
+  /-- A result or rerun verdict that passed every metadata check and rechecks,
+  but was not produced by the pinned solver process: an injected runner or a
+  hand-built value. Matching metadata is not solver evidence. -/
+  | unattestedProvenance
   deriving Repr, BEq
 
 structure LeanProofObligation where
@@ -842,6 +859,12 @@ structure PipelineResult where
   leanRecords : List LeanProofRecord := []
   leanQueue : List LeanProofObligation := []
   smtQueue : List SmtQueueEntry := []
+  /-- Content-addressed SMT discharge records. Populated only from a checked
+  `unsat` whose record rechecks and whose result was produced by the pinned
+  solver process (`Firth.Smt.Solver.Provenance.pinnedProcess`); every other
+  external outcome leaves it empty, a validated `sat` because the obligation
+  has failed and everything else because the obligation is deferred to Lean. -/
+  dischargeRecords : List DischargeRecord := []
   diagnostics : List RefinementDiagnostic := []
   deriving Repr, BEq
 
@@ -1005,6 +1028,7 @@ private def governedProofModules : List (Lean.Name × String) :=
   , (`elaborator.Firth.Erasure, "elaborator/Firth/Erasure.olean")
   , (`elaborator.Firth.Parser, "elaborator/Firth/Parser.olean")
   , (`smt.Firth.SmtBoundary, "smt/Firth/SmtBoundary.olean")
+  , (`smt.Firth.SmtSolver, "smt/Firth/SmtSolver.olean")
   , (`Firth.Interpreter, "Firth/Interpreter.olean") ]
 
 private def governedProofModuleHashes : IO (Option (List String)) := do
@@ -1297,8 +1321,10 @@ private def discharge (requestId : String) (obligations : List Obligation) : Pip
     { leanRecords := result.leanRecords ++ next.leanRecords
       leanQueue := result.leanQueue ++ next.leanQueue
       smtQueue := result.smtQueue ++ next.smtQueue
+      dischargeRecords := result.dischargeRecords ++ next.dischargeRecords
       diagnostics := result.diagnostics ++ next.diagnostics })
-    { leanRecords := [], leanQueue := [], smtQueue := [], diagnostics := [] }
+    { leanRecords := [], leanQueue := [], smtQueue := [], dischargeRecords := []
+      diagnostics := [] }
   { accumulated with diagnostics := sortDiagnostics accumulated.diagnostics }
 
 def checkBodyRefinements (requestId : String) (typing : BodyTypingPremises) : PipelineResult :=
@@ -1330,6 +1356,7 @@ def checkContractSubsumption (requestId : String)
             messageKey } }] }
 
 private def externalReason : ExternalOutcome → LeanEscalationReason
+  | .checkedUnsat _ => .dischargeRecordRejected
   | .unknown => .externalUnknown
   | .timeout milliseconds => .externalTimeout milliseconds
   | .resourceExhausted => .externalResourceExhausted
@@ -1339,6 +1366,7 @@ private def externalReason : ExternalOutcome → LeanEscalationReason
   | .sat _ => .invalidCountermodel
 
 private def externalData : ExternalOutcome → OpaqueData
+  | .checkedUnsat _ => reasonData "discharge-record-rejected"
   | .unknown => reasonData "external-unknown"
   | .timeout milliseconds => reasonData s!"external-timeout:{milliseconds}"
   | .resourceExhausted => reasonData "external-resource-exhausted"
@@ -1381,9 +1409,59 @@ def validSmtQueueEntry (entry : SmtQueueEntry) : Bool :=
           request.profile == entry.profile &&
           request.formula == entry.obligation.formula
 
+/-- The elaborator-owned half of a discharge record's identity. -/
+def obligationBinding (obligation : Obligation) : ObligationBinding :=
+  { obligationId := obligation.obligationId
+    wordId := obligation.context.wordId
+    bodyHash := obligation.context.bodyHash
+    erasedWordTypeHash := obligation.context.erasedWordTypeHash
+    specHash := obligation.context.specHash
+    calleeContractHashes := obligation.context.calleeContractHashes
+    predicateDefinitionHashes := obligation.context.predicateDefinitionHashes
+    vcGeneratorVersion := obligation.context.vcGeneratorVersion
+    normaliserVersion := obligation.context.normaliserVersion
+    toolchainRevision := obligation.context.toolchainRevision
+    sourcePath := obligation.context.source.path
+    sourceStartOffset := obligation.context.source.span.start.offset
+    sourceStartLine := obligation.context.source.span.start.line
+    sourceStartColumn := obligation.context.source.span.start.column
+    sourceStopOffset := obligation.context.source.span.stop.offset
+    sourceStopLine := obligation.context.source.span.stop.line
+    sourceStopColumn := obligation.context.source.span.stop.column }
+
+/-- Rechecks a record against the obligation it claims to discharge.
+
+The formula is taken from the obligation rather than from the record, so a
+record cannot outlive the verification condition it was generated for, and the
+obligation's own identity is re-derived first: a record binds an obligation id,
+so an obligation whose id is not the canonical identity of its kind, formula
+and context is not the obligation the record names. What comes back is the
+request to re-run: a record whose inputs still hold is not yet a remembered
+success. -/
+def recheckRecord (obligation : Obligation) (record : DischargeRecord) :
+    Except RecheckFailure SmtRequest :=
+  if !canonicalObligationIdentity obligation then .error .recordStale
+  else recheckDischargeRecord (obligationBinding obligation) obligation.formula record
+
+/-- Reports one external solver result through the refinement-discharge result
+boundary.
+
+The result arrives as `Firth.Smt.Solver.AttestedResult`, whose constructor is
+private to the module that spawns the solver, so the `provenance` field is a
+statement about which path produced the value and not a field the caller filled
+in. Every metadata guard, the promotion inside `makeDischargeRecord` and the
+recheck run on `attested.value` exactly as before and are provenance-neutral,
+so each refusal stays observable with an injected result. Provenance is
+deliberately the last gate: an `unsat` that passed every check but was not
+produced by the pinned process is deferred with
+`Firth.Smt.Solver.unattestedProvenanceCode`, and only a `pinnedProcess`
+result publishes a record. A validated `sat` is provenance-independent: a
+countermodel that refutes the obligation is a refutation whoever produced it,
+and is never evidence. -/
 def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
-    (result : SmtResult) : PipelineResult :=
+    (attested : Firth.Smt.Solver.AttestedResult) : PipelineResult :=
   let obligation := entry.obligation
+  let result := attested.value
   if !formulaWithinKernelBounds obligation.formula then
     kernelBudgetResult requestId
       (makeBudgetExceededObligation obligation.kind obligation.context)
@@ -1402,8 +1480,51 @@ def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
     { leanQueue := [leanObligation obligation .externalProofMismatch]
       diagnostics := [makeDiagnostic requestId obligation .deferred
         (reasonData "external-proof-mismatch")] }
+  else if match entry.request with
+      | some request => result.requestIdentity != canonicalRequestIdentity request
+      | none => true then
+    { leanQueue := [leanObligation obligation .externalRequestIdentityMismatch]
+      diagnostics := [makeDiagnostic requestId obligation .deferred
+        (reasonData "external-request-identity-mismatch")] }
   else
     match result.outcome with
+    | .checkedUnsat _ =>
+        -- Promotion is this boundary's job, not its caller's. A result that
+        -- arrives already promoted was checked by something outside this
+        -- function, and "checked somewhere" is exactly the claim a record must
+        -- not be built on, so it is refused rather than believed.
+        { leanQueue := [leanObligation obligation .dischargeRecordRejected]
+          diagnostics := [makeDiagnostic requestId obligation .deferred
+            (reasonData "firth.smt.pre-promoted-result")] }
+    | .uncheckedUnsat _ =>
+        match entry.request with
+        | none =>
+            { leanQueue := [leanObligation obligation .externalRequestIneligible]
+              diagnostics := [makeDiagnostic requestId obligation .deferred
+                (reasonData "external-request-ineligible")] }
+        | some request =>
+            -- Record construction owns promotion; there is no transferable
+            -- checked marker between this boundary and the constructor.
+            match makeDischargeRecord (obligationBinding obligation) request result with
+            | .error failure =>
+                { leanQueue := [leanObligation obligation .uncheckedUnsatRejected]
+                  diagnostics := [makeDiagnostic requestId obligation .deferred
+                    (reasonData failure.code)] }
+            | .ok record =>
+                match recheckRecord obligation record with
+                | .error failure =>
+                    { leanQueue := [leanObligation obligation .dischargeRecordRejected]
+                      diagnostics := [makeDiagnostic requestId obligation .deferred
+                        (reasonData failure.code)] }
+                | .ok _ =>
+                    -- The last gate: every check above is about the data, and
+                    -- matching data is not evidence that the pinned solver
+                    -- was run. Only the sealed provenance says that.
+                    if attested.provenance != .pinnedProcess then
+                      { leanQueue := [leanObligation obligation .unattestedProvenance]
+                        diagnostics := [makeDiagnostic requestId obligation .deferred
+                          (reasonData Firth.Smt.Solver.unattestedProvenanceCode)] }
+                    else { dischargeRecords := [record] }
     | .sat model =>
         if validatesCounterexample obligation.formula model then
           let rendered := renderCountermodel model
@@ -1419,5 +1540,37 @@ def recordExternalOutcome (requestId : String) (entry : SmtQueueEntry)
         { leanQueue := [leanObligation obligation reason]
           diagnostics := [makeDiagnostic requestId obligation .deferred (externalData outcome)] }
 
+
+/-- Reports a rerun verdict after rechecking the record's current binding.
+
+`Firth.Smt.Solver.rerunPinned` owns invocation and rerun validation, and
+`rerunDischargeRecord` is its injected-runner test seam. `RecheckVerdict` is
+public data, not a proof of execution, so the verdict arrives wrapped in
+`Firth.Smt.Solver.AttestedVerdict`, whose private constructor records which
+path produced it. The record is rechecked against the current canonical
+obligation first, even when the verdict labels it `rechecked`, so every drift
+stays observable with an injected verdict; then, as the last gate, only a
+`pinnedProcess` verdict publishes the record and any other is deferred with
+`Firth.Smt.Solver.unattestedProvenanceCode`. Other verdicts remain deferred
+non-successes with their own codes. -/
+def recordRerunVerdict (requestId : String) (obligation : Obligation)
+    (attested : Firth.Smt.Solver.AttestedVerdict) : PipelineResult :=
+  match attested.value with
+  | .rechecked record =>
+      match recheckRecord obligation record with
+      | .ok _ =>
+          if attested.provenance != .pinnedProcess then
+            { leanQueue := [leanObligation obligation .unattestedProvenance]
+              diagnostics := [makeDiagnostic requestId obligation .deferred
+                (reasonData Firth.Smt.Solver.unattestedProvenanceCode)] }
+          else { dischargeRecords := [record] }
+      | .error failure =>
+          { leanQueue := [leanObligation obligation .dischargeRecordRejected]
+            diagnostics := [makeDiagnostic requestId obligation .deferred
+              (reasonData failure.code)] }
+  | verdict =>
+      { leanQueue := [leanObligation obligation .dischargeRecordRejected]
+        diagnostics := [makeDiagnostic requestId obligation .deferred
+          (reasonData verdict.code)] }
 
 end Firth.Elaborator.Refinement

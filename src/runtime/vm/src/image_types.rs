@@ -21,6 +21,13 @@ pub struct PatchEvidence<'a> {
 }
 
 /// Authenticates external proof artefacts before the VM may publish a patch.
+///
+/// The VM delegates `target-spec.md` §6 hook 2 entirely to this trait: it has
+/// no receipt format for elaborator evidence and cannot recompute the payloads
+/// the two evidence digests name. A patched image is therefore exactly as
+/// trusted as the verifier its caller supplied, which `VM_ADMISSION` states as
+/// `patch_admission: external-verifier-unauthenticated`. Everything the VM
+/// checks itself is structural: digest binding, references, types and bounds.
 pub trait PatchVerifier {
     fn verify(&self, evidence: &PatchEvidence<'_>) -> bool;
 }

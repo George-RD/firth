@@ -118,8 +118,8 @@ For every accepted word, elaboration produces a kernel program whose inferred
 are checked using kernel rules. Refinements and predicates remain outside the
 kernel and are attached as `Spec`; each obligation is discharged by the
 approved SMT fragment or Lean, with a content-addressed record. Unsupported,
-unknown, timed-out, malformed, or unsoundly translated SMT work cannot count
-as success.
+unknown, timed-out, malformed, or unsoundly translated SMT work, and results
+not produced by the pinned solver process, cannot count as success.
 
 ### Kernel to VM and compiler
 

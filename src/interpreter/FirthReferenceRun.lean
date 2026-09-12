@@ -57,7 +57,13 @@ private def literal (value : Json) : Except String Literal := do
   | kind => err s!"unsupported literal type {kind}"
 
 mutual
-  private partial def decodeProgram (value : Json) : Except String Program := do
+  /-- Decodes the canonical JSON encoding of a kernel program.
+
+  This is public so the compile adapter can decode a checked-kernel record
+  with exactly the decoder the reference interpreter uses. Two adapters that
+  disagreed about which programs are well formed would make a differential
+  comparison meaningless. -/
+  partial def decodeProgram (value : Json) : Except String Program := do
     let items ← array "program" value
     let rec go : List Json → Except String Program
       | [] => pure .empty

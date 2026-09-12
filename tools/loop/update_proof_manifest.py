@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Regenerate the refinement proof-module manifest from built artefacts.
 
-`lake test` authenticates six governed proof modules by comparing the
+`lake test` authenticates seven governed proof modules by comparing the
 sha256 of each built `.olean` against
 `src/elaborator/refinement-proof-module.sha256` (see
 `governedProofModules` in `src/elaborator/Firth/Refinement.lean`).
@@ -28,6 +28,7 @@ GOVERNED_MODULES = [
     "elaborator/Firth/Erasure.olean",
     "elaborator/Firth/Parser.olean",
     "smt/Firth/SmtBoundary.olean",
+    "smt/Firth/SmtSolver.olean",
     "Firth/Interpreter.olean",
 ]
 

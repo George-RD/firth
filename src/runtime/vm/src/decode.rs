@@ -95,6 +95,11 @@ fn decode_quotation(reader: &mut Reader<'_>, depth: usize) -> Result<Quotation, 
     {
         return Err(VmError::InvalidCaptureBitmap);
     }
+    // Only an executing frame consumes a slot, and a consumed slot is never
+    // pushed back as a value, so no static or input quotation can carry one.
+    if consumed.iter().any(|flag| *flag) {
+        return Err(VmError::InvalidCaptureBitmap);
+    }
     let mut captures = Vec::with_capacity(capture_count);
     for _ in 0..capture_count {
         captures.push(decode_value(reader, depth)?);
@@ -196,8 +201,20 @@ pub fn execute_report_with_stack(
     fuel: u64,
     registry: &PrimitiveRegistry,
 ) -> Result<ExecutionReport, VmError> {
+    execute_report_entry(image, "main", initial_stack, fuel, registry)
+}
+
+/// Executes a named entry word with an explicit bottom-to-top initial stack.
+pub fn execute_report_entry(
+    image: &Image,
+    entry: &str,
+    initial_stack: Vec<Value>,
+    fuel: u64,
+    registry: &PrimitiveRegistry,
+) -> Result<ExecutionReport, VmError> {
+    validate_image_resource_bounds(image)?;
     let resolver = StaticWordResolver { image };
-    let word = resolver.resolve("main")?;
+    let word = resolver.resolve(entry)?;
     execute_report_resolved(word, &resolver, initial_stack, fuel, registry)
 }
 
@@ -213,9 +230,7 @@ fn execute_report_resolved(
     if registry.version != image.gamma_version {
         return Err(VmError::UnsupportedGamma(registry.version));
     }
-    for value in &initial_stack {
-        validate_value_structure(value, 0)?;
-    }
+    validate_initial_stack(&initial_stack)?;
     if initial_stack
         .iter()
         .any(|value| !matches!(value, Value::World) && value_contains_world(value))
@@ -263,7 +278,7 @@ fn execute_report_resolved(
         image,
         &environment,
         &mut state,
-        "main",
+        &word.name,
     )?;
     Ok(ExecutionReport {
         stack: terminal_stack(state.stack, registry)?,
@@ -299,6 +314,22 @@ pub fn execute_diagnostic_with_stack_budget(
     registry: &PrimitiveRegistry,
     allocation_budget: Option<usize>,
 ) -> ExecutionOutcome {
+    execute_diagnostic_entry(image, "main", initial_stack, fuel, registry, allocation_budget)
+}
+
+/// Executes a named entry word while retaining deterministic state and
+/// location information on a trap. `main` is the conventional entry; an
+/// embedding that compiled a differently named word names it here rather than
+/// wrapping it, so the cost report carries no administrative call it did not
+/// really make.
+pub fn execute_diagnostic_entry(
+    image: &Image,
+    entry: &str,
+    initial_stack: Vec<Value>,
+    fuel: u64,
+    registry: &PrimitiveRegistry,
+    allocation_budget: Option<usize>,
+) -> ExecutionOutcome {
     if let Err(error) = validate_image(image) {
         return diagnostic_trap(error, empty_machine());
     }
@@ -306,14 +337,12 @@ pub fn execute_diagnostic_with_stack_budget(
         return diagnostic_trap(VmError::UnsupportedGamma(registry.version), empty_machine());
     }
     let resolver = StaticWordResolver { image };
-    let Ok(resolved) = resolver.resolve("main") else {
-        return diagnostic_trap(VmError::UnknownWord(String::from("main")), empty_machine());
+    let Ok(resolved) = resolver.resolve(entry) else {
+        return diagnostic_trap(VmError::UnknownWord(String::from(entry)), empty_machine());
     };
     let (_, word) = resolved.parts();
-    for value in &initial_stack {
-        if let Err(error) = validate_value_structure(value, 0) {
-            return diagnostic_trap(error, empty_machine());
-        }
+    if let Err(error) = validate_initial_stack(&initial_stack) {
+        return diagnostic_trap(error, empty_machine());
     }
     if initial_stack
         .iter()
@@ -363,7 +392,7 @@ pub fn execute_diagnostic_with_stack_budget(
         image,
         &environment,
         &mut state,
-        "main",
+        entry,
     ) {
         Ok(()) => match terminal_stack(state.stack.clone(), registry) {
             Ok(stack) => ExecutionOutcome::Complete(ExecutionReport {

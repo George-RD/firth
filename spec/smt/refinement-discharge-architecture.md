@@ -124,7 +124,10 @@ The record is bound to the elaborated word and its body hash. A cache hit is
 usable only when all inputs and the solver profile match exactly. Rechecking
 recreates the formula from the typed IR, verifies the hashes and profile, and
 reruns the selected checker. A stale, missing, or mismatched record is an open
-obligation, not a cached success.
+obligation, not a cached success. A discharge is admitted only from a result
+produced by the digest-verified pinned solver process that the toolchain
+itself spawned; a result from any other producer passes the same checks and is
+still deferred, because matching metadata is not evidence that the solver ran.
 
 The v0.1 recommendation is to trust the pinned solver's `unsat` result within
 the PRD's explicit TCB allowance, while recording optional unsat cores for
@@ -197,7 +200,9 @@ record. A solver upgrade invalidates records unless a compatibility decision
 establishes identical semantics and evidence handling. The architecture does
 not mandate a particular solver before benchmarking and licence review; the
 profile and pin are mandatory. GPL-only components are not bundled, consistent
-with the PRD licensing posture.
+with the PRD licensing posture. Injected solver runners are test seams: they
+keep the refusal, classification and drift rules testable on any host, and
+they never admit a discharge.
 
 ## Open forks
 
