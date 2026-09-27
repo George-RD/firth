@@ -36,13 +36,33 @@ role = "elaborator-to-envelope-adapters"
 [gamma]
 version = "0.1"
 portable = true
-primitives = ["+", "send"]
+primitives = ["+", "-", "*", "<", "=", "send"]
 values = ["Int", "Bool", "Handle", "Bytes", "World"]
 predicates = ["positive", "nonzero", "is-open"]
 
 [gamma.primitive."+"]
 effect = "Int^many Int^many -- Int^many"
 transition = "deterministic-integer-addition"
+observation = "pure"
+
+[gamma.primitive."-"]
+effect = "Int^many Int^many -- Int^many"
+transition = "deterministic-truncating-natural-subtraction"
+observation = "pure"
+
+[gamma.primitive."*"]
+effect = "Int^many Int^many -- Int^many"
+transition = "deterministic-integer-multiplication"
+observation = "pure"
+
+[gamma.primitive."<"]
+effect = "Int^many Int^many -- Bool^many"
+transition = "deterministic-integer-less-than"
+observation = "pure"
+
+[gamma.primitive."="]
+effect = "Int^many Int^many -- Bool^many"
+transition = "deterministic-integer-equality"
 observation = "pure"
 
 [gamma.primitive.send]

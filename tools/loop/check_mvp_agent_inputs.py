@@ -169,7 +169,7 @@ def main() -> int:
             fail("gamma: expected a table")
         if gamma.get("version") != "0.1" or gamma.get("portable") is not True:
             fail("gamma: expected portable version 0.1")
-        if gamma.get("primitives") != ["+", "send"]:
+        if gamma.get("primitives") != ["+", "-", "*", "<", "=", "send"]:
             fail("gamma.primitives: unexpected profile")
         if gamma.get("values") != ["Int", "Bool", "Handle", "Bytes", "World"]:
             fail("gamma.values: unexpected profile")
@@ -179,6 +179,26 @@ def main() -> int:
             "+": {
                 "effect": "Int^many Int^many -- Int^many",
                 "transition": "deterministic-integer-addition",
+                "observation": "pure",
+            },
+            "-": {
+                "effect": "Int^many Int^many -- Int^many",
+                "transition": "deterministic-truncating-natural-subtraction",
+                "observation": "pure",
+            },
+            "*": {
+                "effect": "Int^many Int^many -- Int^many",
+                "transition": "deterministic-integer-multiplication",
+                "observation": "pure",
+            },
+            "<": {
+                "effect": "Int^many Int^many -- Bool^many",
+                "transition": "deterministic-integer-less-than",
+                "observation": "pure",
+            },
+            "=": {
+                "effect": "Int^many Int^many -- Bool^many",
+                "transition": "deterministic-integer-equality",
                 "observation": "pure",
             },
             "send": {

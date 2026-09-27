@@ -1,6 +1,5 @@
 fn add_nat(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
-    let right = context.pop_int()?;
-    let left = context.pop_int()?;
+    let (left, right) = pop_nat_pair(context)?;
     context.push_int(left.checked_add(right).ok_or(VmError::PrimitiveFault)?)
 }
 

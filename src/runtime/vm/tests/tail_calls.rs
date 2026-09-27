@@ -160,3 +160,13 @@ fn multiplication_past_the_target_integer_faults() {
     };
     assert_eq!(trap.code, "primitive-fault");
 }
+
+#[test]
+fn a_negative_operand_faults_for_every_natural_primitive() {
+    for name in ["addNat", "subNat", "mulNat", "ltNat", "eqNat"] {
+        let ExecutionOutcome::Trap(trap) = binary(name, -2, 1) else {
+            panic!("{name} accepted a negative operand")
+        };
+        assert_eq!(trap.code, "primitive-fault", "{name}");
+    }
+}
