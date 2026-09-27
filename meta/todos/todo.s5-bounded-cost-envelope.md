@@ -17,6 +17,11 @@ specification, and executed on the VM within a bounded cost envelope.
 
 ## Acceptance criteria
 
+See `docs/roadmap.md`, Goal status, row "S5". The criteria below are the
+superseded 2026 loop criteria, kept for history.
+
+## Superseded acceptance criteria (historical)
+
 - A non-trivial Firth program exists with a stated specification carrying its
   shape, its declared word types, its behaviour and its cost bound.
 - A pinned gate elaborates and compiles the program, runs it on the VM and on
@@ -27,7 +32,7 @@ specification, and executed on the VM within a bounded cost envelope.
 - The gate is deterministic and is invoked by
   `python3 tools/loop/coverage.py --run-gates`.
 
-## Verification
+## Superseded verification (historical)
 
 - `python3 tools/loop/check_s5_envelope.py`
 - `python3 tools/loop/coverage.py --run-gates`

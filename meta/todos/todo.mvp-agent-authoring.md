@@ -14,6 +14,11 @@ Discharge the MVP acceptance obligation with a machine-checked agent-facing lang
 Requires: diagnostic-schema mvp-agent-guide mvp-agent-examples mvp-agent-gate mvp-agent-coverage
 
 ## Acceptance criteria
+
+See `docs/roadmap.md`, Goal status, row "MVP agent authoring". The criteria below are the
+superseded 2026 loop criteria, kept for history.
+
+## Superseded acceptance criteria (historical)
 - Provide the agent-facing guide and the checked-in interface manifest used by the gate, with no implicit repository context.
 - Provide at least three basic applications authored by the model from only the guide and agent interface, plus the model transcript and provenance manifest required by `dec.mvp-gate-provenance`.
 - Add `tools/loop/mvp_agent_gate.py` to verify the manifest hashes, rebuild each application in an isolated workspace, elaborate and check it, compile it, run it on the VM, and compare its result with the reference interpreter.
