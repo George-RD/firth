@@ -36,7 +36,10 @@ private def namedParams (name : String) : Json :=
 
 private def stackValue (stack : Firth.Elaborator.StackEffect.AStack) : Opaque := {
   encoding := "opaque"
-  value := .mkObj [("lean_repr", .str s!"{repr stack}")] }
+  value := .mkObj [
+    ("lean_repr", .str s!"{repr stack}"),
+    ("firth", .str (Firth.Elaborator.StackEffect.renderStack stack))]
+  displayHint := some "firth" }
 
 private def opaqueJson (value : Opaque) : Json :=
   let fields := [("encoding", Json.str value.encoding), ("value", value.value)]
@@ -68,13 +71,30 @@ private def parseCauseData (error : Firth.Elaborator.ParseError) : Json :=
     | some actual => fields ++ [("actual", Json.str actual)]
   .mkObj fields
 
+private def definitionShape : String :=
+  "A definition looks like `: name (forall ρ; ρ n:Int^many -- ρ r:Int^many) body;`."
+
+/-- A plain-language sentence and a repair hint for a syntax or name error. -/
+private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
+  let actual := error.actual.map (s!"`{·}`") |>.getD "the end of the input"
+  let (message, hint) := match error.code with
+    | "firth.name.unresolved" =>
+        (s!"{actual} is not a defined word, primitive or local.",
+          "Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. " ++ definitionShape)
+    | _ =>
+        let expected := match error.expected with
+          | some expected => s!", expected `{expected}`"
+          | none => ""
+        (s!"Unexpected {actual}{expected}.", definitionShape)
+  .mkObj [("message", .str message), ("hint", .str hint)]
+
 def parserEnvelope (context : EmissionContext)
     (error : Firth.Elaborator.ParseError) : Envelope :=
   envelope context {
     code := error.code
     severity := "error"
     messageKey := messageKey error.code
-    messageParams := .mkObj []
+    messageParams := parseParams error
     location := locationFromSpan context.source error.primary
     cause := { kind := parseCause error.cause, data := parseCauseData error }
     expectedStack := none
@@ -114,6 +134,24 @@ private def erasureDiagnostic : Firth.Elaborator.ErasureError → ErasureDiagnos
   | .unsupportedAtom name span =>
       { code := "firth.elaboration.unsupported-atom", cause := "elaboration", params := namedParams name, span }
 
+private def erasureExplanation (code name : String) : String × String :=
+  match code with
+  | "firth.name.duplicate-local" =>
+      (s!"The local `{name}` is bound twice in one `locals` block.", "Give each local a different name.")
+  | "firth.name.unbound-local" =>
+      (s!"`{name}` is not a local in scope here.", "Bind it with `locals { name } { ... }`, which takes values from the top of the stack, or fix the spelling.")
+  | "firth.elaboration.unsupported-capture" =>
+      (s!"The nested `locals` block uses the outer local `{name}`.", "Pass the value in on the stack instead, or bind it in the inner block.")
+  | "firth.type.stack-underflow" =>
+      (s!"A `locals` block needs more values than the stack holds{if name.isEmpty then "" else s!" at `{name}`"}.", "`locals { a b }` takes two values from the top of the stack; make sure they are there.")
+  | "firth.name.unresolved-effect" =>
+      (s!"`prim {name}` is not a primitive.", "The available primitives are `prim +`, `prim -`, `prim *`, `prim <` and `prim =`.")
+  | "firth.linearity.copy" =>
+      (s!"The linear local `{name}` is used more than once.", "A linear value must be used exactly once.")
+  | "firth.linearity.unconsumed-resource" =>
+      (s!"The linear local `{name}` is never used.", "A linear value must be used exactly once.")
+  | _ => ("", "")
+
 def erasureEnvelope (context : EmissionContext)
     (error : Firth.Elaborator.ErasureError) : Envelope :=
   let diagnostic := erasureDiagnostic error
@@ -121,7 +159,12 @@ def erasureEnvelope (context : EmissionContext)
     code := diagnostic.code
     severity := "error"
     messageKey := messageKey diagnostic.code
-    messageParams := diagnostic.params
+    messageParams :=
+      let name := (diagnostic.params.getObjValAs? String "name").toOption.getD ""
+      match erasureExplanation diagnostic.code name with
+      | ("", _) => diagnostic.params
+      | (message, hint) => diagnostic.params.mergeObj
+          (.mkObj [("message", .str message), ("hint", .str hint)])
     location := locationFromSpan context.source diagnostic.span
     cause := { kind := diagnostic.cause }
     expectedStack := none
@@ -163,6 +206,128 @@ private def causeForCode (code : String) : String :=
   | "firth" :: "name" :: _ => "name-resolution"
   | _ => "elaboration"
 
+open Firth.Elaborator.StackEffect in
+private def plural (count : Nat) (noun : String) : String :=
+  if count == 1 then s!"1 {noun}" else s!"{count} {noun}s"
+
+open Firth.Elaborator.StackEffect in
+private def renderValues (values : List AType) : String :=
+  if values.isEmpty then "nothing" else " ".intercalate (values.map renderType)
+
+open Firth.Elaborator.StackEffect in
+/-- The first position, counted from the top, where two value lists differ. -/
+private def firstDifference (expected actual : List AType) : Option (Nat × AType × AType) :=
+  let rec go (depth : Nat) : List AType → List AType → Option (Nat × AType × AType)
+    | expectedTop :: expectedRest, actualTop :: actualRest =>
+        if renderType expectedTop == renderType actualTop then go (depth + 1) expectedRest actualRest
+        else some (depth, expectedTop, actualTop)
+    | _, _ => none
+  go 0 expected.reverse actual.reverse
+
+private def ordinalFromTop : Nat → String
+  | 0 => "the top value"
+  | 1 => "the second value from the top"
+  | 2 => "the third value from the top"
+  | depth => s!"value {depth + 1} from the top"
+
+private def capitalize (text : String) : String :=
+  match text.toList with
+  | first :: rest => String.ofList (first.toUpper :: rest)
+  | [] => text
+
+private def operandsNeeded : String → Option Nat
+  | "dup" | "drop" | "call" | "quote" => some 1
+  | "swap" | "dip" | "compose" => some 2
+  | "if" => some 3
+  | _ => none
+
+open Firth.Elaborator.StackEffect in
+/-- A plain-language sentence and a repair hint for a checker diagnostic,
+written for an author who sees only this message and the source. -/
+private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : String × String :=
+  let at_ := diagnostic.subject.getD "this operation"
+  let inWord := match diagnostic.word with
+    | some word => s!" in `{word}`"
+    | none => ""
+  let before := renderStack diagnostic.state
+  let expected := diagnostic.expected.map stackValues
+  let actual := diagnostic.actual.map stackValues
+  let rowNote := " Here ρ stands for the caller's values that this word must leave untouched."
+  match diagnostic.code, expected, actual with
+  | "firth.type.declared-effect-mismatch", some (declared, _), some (left, _) =>
+      let word := diagnostic.word.getD "this word"
+      let base := s!"`{word}` declares that it leaves {(diagnostic.expected.map renderStack).getD "?"} but its body leaves {(diagnostic.actual.map renderStack).getD "?"}."
+      if left.length > declared.length then
+        let extra := left.length - declared.length
+        (base, s!"The body leaves {plural extra "extra value"} on top ({renderValues (left.drop declared.length)}). Consume or `drop` {if extra == 1 then "it" else "them"} before the end of the word, or declare {if extra == 1 then "it" else "them"} in the signature's output." ++ rowNote)
+      else if left.length < declared.length then
+        let missing := declared.length - left.length
+        (base, s!"The body leaves {plural missing "value"} fewer than declared. Something consumes a value it should keep: copy it first with `dup`, or fix the signature." ++ rowNote)
+      else match firstDifference declared left with
+        | some (depth, want, got) =>
+            (base, s!"{capitalize (ordinalFromTop depth)} is {renderType got} but the signature says {renderType want}. Convert it or change the declared output type.")
+        | none => (base, "The stack shapes differ; compare the declared output with the body's result value by value.")
+  | "firth.type.primitive-input-mismatch", some (wanted, _), some (present, row)
+  | "firth.type.word-input-mismatch", some (wanted, _), some (present, row) =>
+      let base := s!"`{at_}`{inWord} needs {renderValues wanted} on top of the stack, but the stack before it is {before}."
+      if present.length < wanted.length && row.isSome then
+        (base, s!"`{at_}` takes {plural wanted.length "value"} but only {plural present.length "value"} {if present.length == 1 then "is" else "are"} available. Push or keep the missing input before it (for example `dup` to copy, or `over` if defined), or take it as a parameter in the signature." ++ rowNote)
+      else match firstDifference wanted present with
+        | some (depth, want, got) =>
+            (base, s!"{capitalize (ordinalFromTop depth)} is {renderType got} but `{at_}` expects {renderType want}. Check the argument order (`swap` exchanges the top two values) or the operation.")
+        | none => (base, s!"The inputs to `{at_}` do not match its signature {renderValues wanted}.")
+  | "firth.type.stack-underflow", _, _ =>
+      let count := match operandsNeeded at_ with
+        | some count => s!" needs {plural count "value"} and"
+        | none => ""
+      (s!"`{at_}`{inWord}{count} ran out of values: the stack before it is {before}.",
+        "A word can only use values declared as inputs in its signature or pushed earlier in its body. Add the missing input to the signature or push it first." ++ rowNote)
+  | "firth.type.expected-bool", _, _ =>
+      (s!"`if`{inWord} needs a Bool condition under its two quotations, but the stack before it is {before}.",
+        "Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.")
+  | "firth.type.expected-quotation", _, _ =>
+      (s!"`{at_}`{inWord} needs a quotation, but the stack before it is {before}.",
+        "Put a `[ ... ]` quotation where the operation expects one.")
+  | "firth.type.branch-mismatch", _, _ =>
+      (s!"The two branches of `if`{inWord} leave different stacks.",
+        s!"Both branches must leave the same number and types of values. Expected {(diagnostic.expected.map renderStack).getD "?"}, found {(diagnostic.actual.map renderStack).getD "?"}.")
+  | "firth.type.quotation-input-mismatch", _, _ =>
+      (s!"The quotation run by `{at_}`{inWord} does not accept the stack below it ({before}).",
+        "Check what the quotation body consumes against the values available under it.")
+  | "firth.name.unknown-word", _, _ =>
+      (s!"`{at_}`{inWord} is not a defined word.",
+        s!"Define it with `: {at_} (forall ρ; ρ in:Int^many -- ρ out:Int^many) ...;` or fix the spelling. Primitives are written `prim +`, `prim -`, `prim *`, `prim <`, `prim =`.")
+  | "firth.name.unknown-primitive", _, _ =>
+      (s!"`{at_}`{inWord} is not a primitive.",
+        "The available primitives are `prim +`, `prim -`, `prim *`, `prim <` and `prim =`.")
+  | "firth.linearity.usage-mismatch", _, _ =>
+      (s!"`{at_}`{inWord} copies or drops a value that must be used exactly once.",
+        "Linear values cannot be duplicated or dropped; pass them on instead.")
+  | code, _, _ =>
+      let detail := match diagnostic.expected, diagnostic.actual with
+        | some wanted, some found => s!" Expected {renderStack wanted}, found {renderStack found}."
+        | _, _ => ""
+      (s!"`{at_}`{inWord} failed the check {code}; the stack before it is {before}.{detail}", "")
+
+open Firth.Elaborator.StackEffect in
+private def stackEffectParams (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Json :=
+  let (message, hint) := explain diagnostic
+  let fields := [("message", Json.str message), ("state", .str (renderStack diagnostic.state))]
+  let fields := match diagnostic.word with
+    | some word => ("word", .str word) :: fields
+    | none => fields
+  let fields := match diagnostic.subject with
+    | some subject => fields ++ [("at", .str subject)]
+    | none => fields
+  let fields := match diagnostic.expected with
+    | some stack => fields ++ [("expected", .str (renderStack stack))]
+    | none => fields
+  let fields := match diagnostic.actual with
+    | some stack => fields ++ [("actual", .str (renderStack stack))]
+    | none => fields
+  let fields := if hint.isEmpty then fields else fields ++ [("hint", .str hint)]
+  .mkObj fields
+
 def stackEffectEnvelope (context : EmissionContext)
     (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Envelope :=
   let state := stackValue diagnostic.state
@@ -170,7 +335,7 @@ def stackEffectEnvelope (context : EmissionContext)
     code := diagnostic.code
     severity := "error"
     messageKey := messageKey diagnostic.code
-    messageParams := .mkObj []
+    messageParams := stackEffectParams diagnostic
     location := locationFromSpan context.source diagnostic.primary
     cause := {
       kind := causeForCode diagnostic.code
