@@ -7,8 +7,9 @@ open Firth.Interpreter
 
 def testPolicy : PrimitiveOwnershipPolicy where
   authorised := fun name consumed produced =>
-    (name ∈ ["addInt", "subInt", "mulInt", "ltInt", "eqInt", "intSeqEmpty", "intSeqLen",
-        "intSeqAt", "intSeqPush", "boolSeqEmpty", "boolSeqLen", "boolSeqAt", "boolSeqPush"] ∧
+    (name ∈ ["addInt", "subInt", "mulInt", "ltInt", "eqInt", "andBool", "orBool", "notBool",
+        "intSeqEmpty", "intSeqLen", "intSeqAt", "intSeqPush",
+        "boolSeqEmpty", "boolSeqLen", "boolSeqAt", "boolSeqPush"] ∧
       consumed = [] ∧ produced = []) ∨
     (name == "makeWorld" ∧ consumed = [] ∧ produced.length = 1) ∨
     (name == "consumeWorld" ∧ consumed.length = 1 ∧ produced = [])
@@ -1580,6 +1581,87 @@ theorem examplePrimitiveTagLift_boolSeqPush :
             (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
 
 
+theorem examplePrimitiveTagLift_andBool :
+    PrimitiveTagLift examplePolicy exampleGamma "andBool" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp [andBoolDelta] at hdelta
+  | cons top tail =>
+    cases top with
+    | quotation => simp [andBoolDelta, eraseValue] at hdelta
+    | world => simp [andBoolDelta, eraseValue] at hdelta
+    | literal rightTag rightLiteral =>
+      cases tail with
+      | nil => cases rightLiteral <;> simp [andBoolDelta, eraseValue] at hdelta
+      | cons below tail =>
+        cases below with
+        | quotation => cases rightLiteral <;> simp [andBoolDelta, eraseValue] at hdelta
+        | world => cases rightLiteral <;> simp [andBoolDelta, eraseValue] at hdelta
+        | literal leftTag leftLiteral =>
+          cases rightLiteral <;> cases leftLiteral <;> simp [andBoolDelta, eraseValue] at hdelta
+          rename_i right left
+          subst hdelta
+          exact literalPrimitiveTagLift
+            (top := [.literal rightTag (.bool right), .literal leftTag (.bool left)])
+            (out := [.literal rightTag (.bool (left && right))]) hname rfl rfl
+            (by simp [andBoolDelta, eraseValue]) .andBool
+            (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+
+theorem examplePrimitiveTagLift_orBool :
+    PrimitiveTagLift examplePolicy exampleGamma "orBool" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp [orBoolDelta] at hdelta
+  | cons top tail =>
+    cases top with
+    | quotation => simp [orBoolDelta, eraseValue] at hdelta
+    | world => simp [orBoolDelta, eraseValue] at hdelta
+    | literal rightTag rightLiteral =>
+      cases tail with
+      | nil => cases rightLiteral <;> simp [orBoolDelta, eraseValue] at hdelta
+      | cons below tail =>
+        cases below with
+        | quotation => cases rightLiteral <;> simp [orBoolDelta, eraseValue] at hdelta
+        | world => cases rightLiteral <;> simp [orBoolDelta, eraseValue] at hdelta
+        | literal leftTag leftLiteral =>
+          cases rightLiteral <;> cases leftLiteral <;> simp [orBoolDelta, eraseValue] at hdelta
+          rename_i right left
+          subst hdelta
+          exact literalPrimitiveTagLift
+            (top := [.literal rightTag (.bool right), .literal leftTag (.bool left)])
+            (out := [.literal rightTag (.bool (left || right))]) hname rfl rfl
+            (by simp [orBoolDelta, eraseValue]) .orBool
+            (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+
+theorem examplePrimitiveTagLift_notBool :
+    PrimitiveTagLift examplePolicy exampleGamma "notBool" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp [notBoolDelta] at hdelta
+  | cons top tail =>
+    cases top with
+    | quotation => simp [notBoolDelta, eraseValue] at hdelta
+    | world => simp [notBoolDelta, eraseValue] at hdelta
+    | literal tag lit =>
+      cases lit <;> simp [notBoolDelta, eraseValue] at hdelta
+      rename_i value
+      subst hdelta
+      exact literalPrimitiveTagLift (top := [.literal tag (.bool value)])
+        (out := [.literal tag (.bool (!value))]) hname rfl rfl
+        (by simp [notBoolDelta, eraseValue]) .notBool (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+
 theorem examplePrimitiveTagLift_unknown (name : Prim)
     (haddInt : name ≠ "addInt")
     (hsubInt : name ≠ "subInt")
@@ -1595,13 +1677,15 @@ theorem examplePrimitiveTagLift_unknown (name : Prim)
     (hboolSeqEmpty : name ≠ "boolSeqEmpty")
     (hboolSeqLen : name ≠ "boolSeqLen")
     (hboolSeqAt : name ≠ "boolSeqAt")
-    (hboolSeqPush : name ≠ "boolSeqPush") :
+    (hboolSeqPush : name ≠ "boolSeqPush")
+    (handBool : name ≠ "andBool") (horBool : name ≠ "orBool") (hnotBool : name ≠ "notBool") :
     PrimitiveTagLift examplePolicy exampleGamma name := by
   intro input residue nextTag specification plainInput plainOutput hname
     hinput hdelta hwellformed
   have hnone : exampleGamma.primitive name = none := by
     simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, exampleGamma, defaultGamma, haddInt, hsubInt, hmulInt, hltInt, heqInt, hmakeWorld, hconsumeWorld,
-      hintSeqEmpty, hintSeqLen, hintSeqAt, hintSeqPush, hboolSeqEmpty, hboolSeqLen, hboolSeqAt, hboolSeqPush]
+      hintSeqEmpty, hintSeqLen, hintSeqAt, hintSeqPush, hboolSeqEmpty, hboolSeqLen, hboolSeqAt, hboolSeqPush,
+      handBool, horBool, hnotBool]
   rw [hnone] at hname
   cases hname
 
@@ -1653,8 +1737,19 @@ theorem examplePrimitiveTagLift :
                             · by_cases hboolSeqPush : name = "boolSeqPush"
                               · subst name
                                 exact examplePrimitiveTagLift_boolSeqPush
-                              · exact examplePrimitiveTagLift_unknown name haddInt hsubInt hmulInt hltInt heqInt
-                                  hmakeWorld hconsumeWorld hintSeqEmpty hintSeqLen hintSeqAt hintSeqPush hboolSeqEmpty hboolSeqLen hboolSeqAt hboolSeqPush
+                              · by_cases handBool : name = "andBool"
+                                · subst name
+                                  exact examplePrimitiveTagLift_andBool
+                                · by_cases horBool : name = "orBool"
+                                  · subst name
+                                    exact examplePrimitiveTagLift_orBool
+                                  · by_cases hnotBool : name = "notBool"
+                                    · subst name
+                                      exact examplePrimitiveTagLift_notBool
+                                    · exact examplePrimitiveTagLift_unknown name haddInt hsubInt hmulInt
+                                        hltInt heqInt hmakeWorld hconsumeWorld hintSeqEmpty hintSeqLen
+                                        hintSeqAt hintSeqPush hboolSeqEmpty hboolSeqLen hboolSeqAt
+                                        hboolSeqPush handBool horBool hnotBool
 
 #print axioms filterContainsEqSelf_explicit
 #print axioms examplePrimitiveTagLift_addInt

@@ -117,10 +117,11 @@ sequence.
 | `w` | `CALL_WORD name(w)` | Resolves and runs the current definition of `w`. |
 | `prim π` | `PRIM id(π)` | Applies deterministic `delta_pi` from `Gamma`, threading hidden `WorldState` linearly. |
 
-The default registry is target Gamma version 4 (adapter `gamma_version` "0.4").
+The default registry is target Gamma version 5 (adapter `gamma_version` "0.5").
 Version 1 (adapter "0.1") had `addInt` as its only pure primitive, version 2
 ("0.2") added the other arithmetic and comparison primitives, version 3
-("0.3") added sequences, and version 4 made kernel integers signed. Changing
+("0.3") added sequences, version 4 made kernel integers signed, and version 5
+added the Boolean `and`, `or` and `not`. Changing
 the registry bumps both versions, so an image or request tagged with an older
 registry is refused rather than run under a different one. The pure
 primitives of the default registry act on signed kernel integers, carried as
@@ -133,6 +134,9 @@ target `i64` values:
 | `prim *` | `PRIM mulInt` | `Int Int -- Int`; a result past `i64` is a `primitive-fault`. |
 | `prim <` | `PRIM ltInt` | `Int Int -- Bool`. |
 | `prim =` | `PRIM eqInt` | `Int Int -- Bool`. |
+| `prim and` | `PRIM andBool` | `Bool Bool -- Bool`. |
+| `prim or` | `PRIM orBool` | `Bool Bool -- Bool`. |
+| `prim not` | `PRIM notBool` | `Bool -- Bool`. |
 | `prim seq-int.empty` | `PRIM intSeqEmpty` | `-- Seq Int`. |
 | `prim seq-int.len` | `PRIM intSeqLen` | `Seq Int -- Int`. |
 | `prim seq-int.at` | `PRIM intSeqAt` | `Seq Int Int -- Int`; a negative index, or one at or past the length, is a `primitive-fault`. |

@@ -169,7 +169,7 @@ private def decodeRequest (value : Json) : Except String Request := do
     ["request_id", "checked_kernel", "initial_stack", "dictionary", "gamma_version", "fuel"]
   let requestId ← nonempty "request_id" =<< reqStr "request" "request_id" values
   let version ← reqStr "request" "gamma_version" values
-  if version != "0.4" then err "unsupported gamma version"
+  if version != "0.5" then err "unsupported gamma version"
   let kernel ← object "checked_kernel" (← required "request" "checked_kernel" values)
     ["checking_state", "proof_state", "gamma_version", "program"]
     ["checking_state", "proof_state", "gamma_version", "program"]

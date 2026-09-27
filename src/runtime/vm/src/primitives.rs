@@ -30,6 +30,23 @@ fn eq_int(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     context.push_bool(left == right)
 }
 
+fn and_bool(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let right = context.pop_bool()?;
+    let left = context.pop_bool()?;
+    context.push_bool(left && right)
+}
+
+fn or_bool(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let right = context.pop_bool()?;
+    let left = context.pop_bool()?;
+    context.push_bool(left || right)
+}
+
+fn not_bool(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let value = context.pop_bool()?;
+    context.push_bool(!value)
+}
+
 /// The element at `index` of a sequence whose elements are `width` bytes
 /// wide. An index past the end is a primitive fault, never a default.
 fn element(bytes: &[u8], index: i64, width: usize) -> Result<&[u8], VmError> {
@@ -146,6 +163,33 @@ pub fn default_registry() -> PrimitiveRegistry {
                 cost: 1,
                 handler: eq_int,
                 input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "andBool",
+                cost: 1,
+                handler: and_bool,
+                input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "orBool",
+                cost: 1,
+                handler: or_bool,
+                input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "notBool",
+                cost: 1,
+                handler: not_bool,
+                input: &[Usage::Many],
                 output: &[Usage::Many],
                 world: false,
                 value_tags: &[],

@@ -309,6 +309,19 @@ theorem defaultGamma_int_pair {dictionary : Dictionary} {stack : Stack}
       obtain ⟨left, rfl⟩ := defaultGamma_int_literal leftType
       exact ⟨left, right, rfl⟩
 
+theorem defaultGamma_bool_pair {dictionary : Dictionary} {stack : Stack}
+    (h : StackTyping defaultGamma dictionary stack
+      (.snoc (.snoc (.row "ρ") (.base .bool .many)) (.base .bool .many))) :
+    ∃ left right, stack = [.literal (.bool right), .literal (.bool left)] := by
+  cases h with
+  | cons rightType tailType =>
+    cases tailType with
+    | cons leftType emptyType =>
+      cases emptyType
+      obtain ⟨right, rfl⟩ := defaultGamma_bool_literal rightType
+      obtain ⟨left, rfl⟩ := defaultGamma_bool_literal leftType
+      exact ⟨left, right, rfl⟩
+
 private theorem literal_stack {dictionary : Dictionary} (literal : Literal) (base : BaseType)
     (h : defaultGamma.literalType literal = some base) :
     StackTyping defaultGamma dictionary [.literal literal] (.snoc (.row "ρ") (.base base .many)) :=
@@ -338,6 +351,19 @@ theorem defaultGamma_primitivesWellFormed (dictionary : Dictionary) :
     · obtain ⟨l, r, rfl⟩ := defaultGamma_int_pair htyped
       simp only [eqIntDelta, Option.some.injEq] at hdelta; subst hdelta
       exact literal_stack _ _ rfl
+    · obtain ⟨l, r, rfl⟩ := defaultGamma_bool_pair htyped
+      simp only [andBoolDelta, Option.some.injEq] at hdelta; subst hdelta
+      exact literal_stack _ _ rfl
+    · obtain ⟨l, r, rfl⟩ := defaultGamma_bool_pair htyped
+      simp only [orBoolDelta, Option.some.injEq] at hdelta; subst hdelta
+      exact literal_stack _ _ rfl
+    · -- notBool
+      cases htyped with
+      | cons valueType emptyType =>
+        cases emptyType
+        obtain ⟨value, rfl⟩ := defaultGamma_bool_literal valueType
+        simp only [notBoolDelta, Option.some.injEq] at hdelta; subst hdelta
+        exact literal_stack _ _ rfl
     · -- intSeqEmpty
       cases htyped
       simp only [intSeqEmptyDelta, Option.some.injEq] at hdelta; subst hdelta
@@ -423,13 +449,15 @@ theorem defaultGamma_primitivesWellFormed (dictionary : Dictionary) :
     all_goals first
       | (simp at hfaults; done)
       | (obtain ⟨l, r, rfl⟩ := defaultGamma_int_pair htyped; exact ⟨_, rfl⟩)
+      | (obtain ⟨l, r, rfl⟩ := defaultGamma_bool_pair htyped; exact ⟨_, rfl⟩)
       | exact ⟨_, rfl⟩
       | (cases htyped with
          | cons seqType emptyType =>
            cases emptyType
            first
              | (obtain ⟨values, rfl⟩ := defaultGamma_intSeq_literal seqType; exact ⟨_, rfl⟩)
-             | (obtain ⟨values, rfl⟩ := defaultGamma_boolSeq_literal seqType; exact ⟨_, rfl⟩))
+             | (obtain ⟨values, rfl⟩ := defaultGamma_boolSeq_literal seqType; exact ⟨_, rfl⟩)
+             | (obtain ⟨value, rfl⟩ := defaultGamma_bool_literal seqType; exact ⟨_, rfl⟩))
       | (cases htyped with
          | cons valueType tailType =>
            cases tailType with
@@ -513,5 +541,20 @@ def progressSmokeSeqPush : Bool :=
   | _ => false
 
 #guard progressSmokeSeqPush = true
+
+/- `and`, `or` and `not` on each input. -/
+def progressSmokeBool (program : Program) : Option Bool :=
+  match run defaultGamma emptyDictionary defaultCosts 8 { stack := [], program } with
+  | .terminal { stack := [.literal (.bool value)], program := .empty } _ _ => some value
+  | _ => none
+
+def boolBinary (name : Prim) (left right : Bool) : Program :=
+  .cons (.lit (.bool left)) (.cons (.lit (.bool right)) (.cons (.prim name) .empty))
+
+#guard [false, true].all fun left => [false, true].all fun right =>
+  progressSmokeBool (boolBinary "andBool" left right) = some (left && right) &&
+    progressSmokeBool (boolBinary "orBool" left right) = some (left || right)
+#guard [false, true].all fun value =>
+  progressSmokeBool (.cons (.lit (.bool value)) (.cons (.prim "notBool") .empty)) = some (!value)
 
 end Firth.Interpreter
