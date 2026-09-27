@@ -49,10 +49,10 @@
   (forall ρ; ρ s:Seq Int^many p:Int^many q:Int^many -- ρ s:Seq Int^many p:Int^many q:Int^many t:Seq Int^many)
   [ over-si ] dip swap;
 
-\ |x - y|. `prim -` stops at 0, so one of the two differences is 0.
+\ |x - y|. ID parts are non-negative, so the difference cannot overflow.
 : distance
   (forall ρ; ρ x:Int^many y:Int^many -- ρ d:Int^many)
-  over-ii over-ii prim - [ swap prim - ] dip prim +;
+  prim - dup 0 prim < [ 0 swap prim - ] [ ] if;
 
 \ ( ids p q -- ids p q |ids[p] - ids[q]| )
 : pair-distance

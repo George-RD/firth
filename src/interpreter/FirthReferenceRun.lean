@@ -35,6 +35,8 @@ private def str (context : String) : Json → Except String String
   | .str value => pure value | _ => err s!"{context}: expected string"
 private def nat (context : String) : Json → Except String Nat
   | value => match value.getNat? with | .ok value => pure value | .error _ => err s!"{context}: expected nat"
+private def integer (context : String) : Json → Except String Int
+  | value => match value.getInt? with | .ok value => pure value | .error _ => err s!"{context}: expected int"
 private def bool (context : String) : Json → Except String Bool
   | .bool value => pure value | _ => err s!"{context}: expected bool"
 private def array (context : String) : Json → Except String (List Json)
@@ -51,12 +53,12 @@ private def usage : Json → Except String Usage
 private def literal (value : Json) : Except String Literal := do
   let values ← object "literal" value ["type", "value"] ["type"]
   match ← reqStr "literal" "type" values with
-  | "nat" => .nat <$> nat "literal.value" (← required "literal" "value" values)
+  | "int" => .int <$> integer "literal.value" (← required "literal" "value" values)
   | "bool" => .bool <$> bool "literal.value" (← required "literal" "value" values)
   | "unit" => if (field "value" values).isSome then err "unit has value" else pure .unit
   | "seq-int" => do
       let items ← array "literal.value" (← required "literal" "value" values)
-      .natSeq <$> items.mapM (nat "literal.value[]")
+      .intSeq <$> items.mapM (integer "literal.value[]")
   | "seq-bool" => do
       let items ← array "literal.value" (← required "literal" "value" values)
       .boolSeq <$> items.mapM (bool "literal.value[]")
@@ -164,7 +166,7 @@ private def decodeRequest (value : Json) : Except String Request := do
     ["request_id", "checked_kernel", "initial_stack", "dictionary", "gamma_version", "fuel"]
   let requestId ← nonempty "request_id" =<< reqStr "request" "request_id" values
   let version ← reqStr "request" "gamma_version" values
-  if version != "0.3" then err "unsupported gamma version"
+  if version != "0.4" then err "unsupported gamma version"
   let kernel ← object "checked_kernel" (← required "request" "checked_kernel" values)
     ["checking_state", "proof_state", "gamma_version", "program"]
     ["checking_state", "proof_state", "gamma_version", "program"]
@@ -244,10 +246,10 @@ mutual
     | .word name => obj [("kind", quote "word"), ("name", quote name)]
     | .prim name => obj [("kind", quote "prim"), ("name", quote name)]
   private def literalJson : Literal → String
-    | .nat value => obj [("type", quote "nat"), ("value", number value)]
+    | .int value => obj [("type", quote "int"), ("value", toString value)]
     | .bool value => obj [("type", quote "bool"), ("value", if value then "true" else "false")]
     | .unit => obj [("type", quote "unit")]
-    | .natSeq values => obj [("type", quote "seq-int"), ("value", arr (values.map number))]
+    | .intSeq values => obj [("type", quote "seq-int"), ("value", arr (values.map toString))]
     | .boolSeq values => obj [("type", quote "seq-bool"),
         ("value", arr (values.map fun value => if value then "true" else "false"))]
   private def valueJson : Value → String

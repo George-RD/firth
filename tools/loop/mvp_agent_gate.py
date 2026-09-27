@@ -62,10 +62,10 @@ MANIFEST = ROOT / "tools" / "loop" / "mvp_agent_manifest.toml"
 HASH = re.compile(r"^[0-9a-f]{64}$")
 
 LANGUAGE_VERSION = "0.1"
-GAMMA_VERSION = "0.3"
+GAMMA_VERSION = "0.4"
 TARGET_VERSION = "0.1"
 IMAGE_FORMAT_VERSION = 1
-TARGET_GAMMA_VERSION = 3
+TARGET_GAMMA_VERSION = 4
 # The VM adapter refuses a larger budget (`firth_vm::MAX_FUEL`), so every
 # caller of this module shares one bound. `FUEL` is the default budget.
 MAX_FUEL = 1_000_000
@@ -76,6 +76,7 @@ FUEL = 100_000
 MAX_TRACE_EVENTS = 4096
 # The largest portable integer, and the portable sequence literal types with
 # the source type each one carries.
+PORTABLE_INT_MIN = -9223372036854775808
 PORTABLE_INT_MAX = 9223372036854775807
 SEQUENCE_TYPES = {"seq-int": "Seq Int", "seq-bool": "Seq Bool"}
 
@@ -484,19 +485,19 @@ def validate_portable_stack(stack: Any, label: str) -> None:
         if not isinstance(literal, dict) or "type" not in literal:
             fail(f"{field}: malformed result literal")
         literal_type = literal["type"]
-        if literal_type not in ("nat", "bool", *SEQUENCE_TYPES):
+        if literal_type not in ("int", "bool", *SEQUENCE_TYPES):
             fail(f"{field}: unsupported result literal type {literal_type!r}")
         if set(literal) != {"type", "value"}:
             fail(f"{field}: malformed result literal envelope")
         payload = literal["value"]
-        if literal_type == "nat":
-            if type(payload) is not int or not 0 <= payload <= 9223372036854775807:
-                fail(f"{field}: integer payload must be an integer from 0 to 9223372036854775807")
+        if literal_type == "int":
+            if type(payload) is not int or not PORTABLE_INT_MIN <= payload <= PORTABLE_INT_MAX:
+                fail(f"{field}: integer payload must be a signed 64-bit integer")
         elif literal_type == "seq-int":
             if not isinstance(payload, list) or any(
-                    type(item) is not int or not 0 <= item <= PORTABLE_INT_MAX for item in payload):
-                fail(f"{field}: Seq Int payload must be an array of integers from 0 to "
-                     "9223372036854775807")
+                    type(item) is not int or not PORTABLE_INT_MIN <= item <= PORTABLE_INT_MAX
+                    for item in payload):
+                fail(f"{field}: Seq Int payload must be an array of signed 64-bit integers")
         elif literal_type == "seq-bool":
             if not isinstance(payload, list) or any(type(item) is not bool for item in payload):
                 fail(f"{field}: Seq Bool payload must be an array of booleans")
@@ -747,16 +748,16 @@ def initial_values(values: Any, types: list[str] | None = None) -> list[dict[str
     for index, value in enumerate(values):
         if type(value) is bool:
             kind = "bool"
-        elif type(value) is int and 0 <= value <= PORTABLE_INT_MAX:
-            kind = "nat"
+        elif type(value) is int and PORTABLE_INT_MIN <= value <= PORTABLE_INT_MAX:
+            kind = "int"
         elif isinstance(value, list) and all(type(item) is bool for item in value) and value:
             kind = "seq-bool"
         elif isinstance(value, list) and all(
-                type(item) is int and 0 <= item <= PORTABLE_INT_MAX for item in value):
+                type(item) is int and PORTABLE_INT_MIN <= item <= PORTABLE_INT_MAX for item in value):
             hint = types[index] if types is not None and index < len(types) else None
             kind = "seq-bool" if not value and hint == "seq-bool" else "seq-int"
         else:
-            fail("initial stack: use booleans, integers from 0 to 9223372036854775807, "
+            fail("initial stack: use booleans, signed 64-bit integers, "
                  "or arrays of one of those")
         encoded.append({"kind": "literal", "literal": {"type": kind, "value": value}})
     return encoded
@@ -801,7 +802,7 @@ def validate_initial_stack(elaboration: dict[str, Any], entry: str,
                 and literal["type"] == "seq-int" and literal["value"] == []:
             # An empty array takes its element type from the declared input.
             literal["type"] = "seq-bool"
-        actual = {"nat": "Int", "bool": "Bool", **SEQUENCE_TYPES}[literal["type"]]
+        actual = {"int": "Int", "bool": "Bool", **SEQUENCE_TYPES}[literal["type"]]
         if expected != {"kind": "base", "name": actual, "usage": "many"}:
             fail(f"entry {entry}: initial stack type mismatch; expected {expected}, got {actual}")
 

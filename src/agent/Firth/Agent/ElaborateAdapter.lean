@@ -36,7 +36,7 @@ open Firth.Elaborator.StackEffect
 def languageVersion : String := "0.1"
 
 /-- The `Gamma` version this adapter speaks. -/
-def gammaVersion : String := "0.3"
+def gammaVersion : String := "0.4"
 
 private def err (message : String) : Except String α := .error message
 
@@ -92,16 +92,15 @@ private def surfaceUsage : Firth.Interpreter.Usage → AUsage
   | .linear => .linear
 
 private def surfaceBase : Firth.Interpreter.BaseType → String
-  | .nat => "Int"
+  | .int => "Int"
   | .bool => "Bool"
   | .unit => "Unit"
   | .world => "World"
-  | .natSeq => "Seq Int"
+  | .intSeq => "Seq Int"
   | .boolSeq => "Seq Bool"
 
 mutual
-  /-- A kernel stack type in surface terms; the kernel's `nat` is the
-  surface `Int`. -/
+  /-- A kernel stack type in surface terms. -/
   private partial def surfaceStack : Firth.Interpreter.StackType → AStack
     | .row name => .row (.rigid name)
     | .snoc rest value => .snoc (surfaceStack rest) (surfaceValue value)
@@ -190,10 +189,10 @@ mutual
     | .prim name => obj [("kind", quote "prim"), ("name", quote name)]
 
   private def literalJson : Firth.Interpreter.Literal → String
-    | .nat value => obj [("type", quote "nat"), ("value", number value)]
+    | .int value => obj [("type", quote "int"), ("value", toString value)]
     | .bool value => obj [("type", quote "bool"), ("value", if value then "true" else "false")]
     | .unit => obj [("type", quote "unit")]
-    | .natSeq values => obj [("type", quote "seq-int"), ("value", arr (values.map number))]
+    | .intSeq values => obj [("type", quote "seq-int"), ("value", arr (values.map toString))]
     | .boolSeq values => obj [("type", quote "seq-bool"),
         ("value", arr (values.map fun value => if value then "true" else "false"))]
 

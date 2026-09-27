@@ -49,7 +49,7 @@ fn value_json(value: &Value, registry: &PrimitiveRegistry) -> Json {
                 Json::Object(vec![
                     (
                         String::from("type"),
-                        Json::Str(String::from(if *number >= 0 { "nat" } else { "int" })),
+                        Json::Str(String::from("int")),
                     ),
                     (String::from("value"), Json::Int(*number)),
                 ]),

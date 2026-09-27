@@ -17,12 +17,9 @@ fn adapter_reference_value(value: &Json, context: &str) -> Result<Value, Adapter
             let literal = member(value, context, "literal")?;
             let literal_type = string(member(literal, context, "type")?, context)?;
             match literal_type.as_str() {
-                "nat" => {
+                "int" => {
                     object(literal, context, &["type", "value"])?;
-                    let number = unsigned(member(literal, context, "value")?, context)?;
-                    i64::try_from(number).map(Value::Int).map_err(|_| {
-                        AdapterError::field("invalid-request", context, "literal exceeds the target integer")
-                    })
+                    integer(member(literal, context, "value")?, context).map(Value::Int)
                 }
                 "bool" => {
                     object(literal, context, &["type", "value"])?;
@@ -38,13 +35,7 @@ fn adapter_reference_value(value: &Json, context: &str) -> Result<Value, Adapter
                     };
                     let mut bytes = Vec::new();
                     for item in items {
-                        let number = i64::try_from(unsigned(item, context)?).map_err(|_| {
-                            AdapterError::field(
-                                "invalid-request",
-                                context,
-                                "sequence element exceeds the target integer",
-                            )
-                        })?;
+                        let number = integer(item, context)?;
                         bytes.extend_from_slice(&number.to_le_bytes());
                     }
                     Ok(Value::PrimitiveValue { tag: SEQ_INT_TAG, bytes })

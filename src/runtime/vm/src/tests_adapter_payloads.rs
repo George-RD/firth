@@ -28,8 +28,8 @@ fn nested_push_quote_request(depth: usize, innermost: &str) -> String {
          \"words\":[{{\"name\":\"main\",\"erased_word_type\":\"(--)\",\"code\":{code},\
          \"body_digest\":\"{digest}\",\"kernel_evidence_digest\":\"{evidence}\",\
          \"refinement_evidence_digest\":\"{evidence}\",\"generation\":0}}]}},\
-         \"initial_stack\":[],\"image\":{{\"image_version\":1,\"gamma_version\":3}},\
-         \"gamma_version\":\"0.3\",\"fuel\":0}}"
+         \"initial_stack\":[],\"image\":{{\"image_version\":1,\"gamma_version\":4}},\
+         \"gamma_version\":\"0.4\",\"fuel\":0}}"
     )
 }
 
@@ -208,7 +208,7 @@ fn trace_events_carry_frames_and_residual_frames_are_reported() {
     assert_eq!(
         frames[0].member("saved"),
         Some(
-            &parse_json("[{\"kind\":\"literal\",\"literal\":{\"type\":\"nat\",\"value\":4}}]")
+            &parse_json("[{\"kind\":\"literal\",\"literal\":{\"type\":\"int\",\"value\":4}}]")
                 .unwrap()
         )
     );

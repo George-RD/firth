@@ -31,7 +31,7 @@ def invoke(command: list[str], payload: dict[str, Any]) -> tuple[int, dict[str, 
 
 def source_request(source: str) -> dict[str, Any]:
     return {"request_id": "trust-source", "source_path": "trust.firth", "source_text": source,
-            "language_version": "0.1", "gamma_version": "0.3"}
+            "language_version": "0.1", "gamma_version": "0.4"}
 
 
 def source_refusal(source: str, code: str) -> None:
@@ -53,8 +53,8 @@ def source_success() -> None:
 def compile_request(usage: str) -> dict[str, Any]:
     stack = {"row": None, "items": []}
     output = {"row": None, "items": [{"kind": "base", "name": "Int", "usage": "many"}]}
-    literal = {"kind": "lit", "value": {"type": "nat", "value": 42}}
-    return {"request_id": "trust-compile", "entry": "main", "gamma_version": "0.3",
+    literal = {"kind": "lit", "value": {"type": "int", "value": 42}}
+    return {"request_id": "trust-compile", "entry": "main", "gamma_version": "0.4",
             "target_version": "0.1", "checked_words": [{"name": "main",
             "checking_state": "checked", "proof_state": "available", "program": [
                 {"kind": "push", "value": {"kind": "quotation", "body": [literal], "usage": usage}},
@@ -82,7 +82,7 @@ def row_binder_agreement() -> None:
     loads and runs the image.
     """
     request = compile_request("many")
-    request["checked_words"][0]["program"] = [{"kind": "lit", "value": {"type": "nat", "value": 42}}]
+    request["checked_words"][0]["program"] = [{"kind": "lit", "value": {"type": "int", "value": 42}}]
     rows = [f"r{index}" for index in range(25)]
     boundary = request["erased_word_types"][0]["type"]
     boundary["row_variables"] = rows
@@ -96,8 +96,8 @@ def row_binder_agreement() -> None:
     assert all(len(name) == 1 for name in binders), erased
     rc, target = invoke([str(gate.VM_BINARY), "vm-run"], {
         "request_id": "row-binders", "target_program": compiled["target_program"],
-        "initial_stack": [], "image": {"image_version": 1, "gamma_version": 3},
-        "gamma_version": "0.3", "fuel": 32,
+        "initial_stack": [], "image": {"image_version": 1, "gamma_version": 4},
+        "gamma_version": "0.4", "fuel": 32,
     })
     assert rc == 0 and target.get("status") == "success", target
     assert target["stack"] == gate.initial_values([42]), target
@@ -111,7 +111,7 @@ def quotation_observation(mode: str, called: bool) -> None:
     instead; its checking markers are not authenticated by this test.
     """
     request = compile_request("many")
-    scalar = {"kind": "lit", "value": {"type": "nat", "value": 42}}
+    scalar = {"kind": "lit", "value": {"type": "int", "value": 42}}
     if mode == "closed":
         program = [{"kind": "quotation", "body": [scalar]}]
     else:
@@ -128,15 +128,15 @@ def quotation_observation(mode: str, called: bool) -> None:
     assert rc == 0 and compiled.get("status") == "success", compiled
     rc, target = invoke([str(gate.VM_BINARY), "vm-run"], {
         "request_id": "quote-result", "target_program": compiled["target_program"],
-        "initial_stack": [], "image": {"image_version": 1, "gamma_version": 3},
-        "gamma_version": "0.3", "fuel": 32,
+        "initial_stack": [], "image": {"image_version": 1, "gamma_version": 4},
+        "gamma_version": "0.4", "fuel": 32,
     })
     assert rc == 0 and target.get("status") == "success", target
     kernel = {key: request["checked_words"][0][key]
               for key in ("checking_state", "proof_state", "program")}
     rc, reference = invoke([str(gate.LEAN_BIN / "firthReferenceRun")], {
-        "request_id": "quote-result", "checked_kernel": {**kernel, "gamma_version": "0.3"},
-        "initial_stack": [], "dictionary": {"main": kernel}, "gamma_version": "0.3", "fuel": 32,
+        "request_id": "quote-result", "checked_kernel": {**kernel, "gamma_version": "0.4"},
+        "initial_stack": [], "dictionary": {"main": kernel}, "gamma_version": "0.4", "fuel": 32,
     })
     assert rc == 0 and reference.get("status") == "success", reference
     if called:
@@ -169,7 +169,7 @@ def malformed_capture_state(captures: list[Any], consumed: list[bool], placement
             "refinement_evidence_digest": "01" * 32, "generation": 0}
     request = {"request_id": "trust-vm", "target_program": {
         "format_version": 1, "entry": "main", "words": [word]}, "initial_stack": [],
-        "image": {"image_version": 1, "gamma_version": 3}, "gamma_version": "0.3", "fuel": 32}
+        "image": {"image_version": 1, "gamma_version": 4}, "gamma_version": "0.4", "fuel": 32}
     rc, result = invoke([str(gate.VM_BINARY), "vm-run"], request)
     assert rc == 1 and result.get("status") == "error", result
     assert result.get("code") == "invalid-request", result

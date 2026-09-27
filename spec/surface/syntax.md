@@ -50,8 +50,8 @@ elements must all be integers or all Booleans (`firth.syntax.mixed-sequence`),
 and each must be a literal token, not an item to run
 (`firth.syntax.invalid-sequence-element`). `{ }` is refused
 (`firth.syntax.empty-sequence`) because it has no element type; the empty
-sequences are `prim seq-int.empty` and `prim seq-bool.empty`. As with integer
-literals, a negative element is refused by the portable profile.
+sequences are `prim seq-int.empty` and `prim seq-bool.empty`. Elements may be
+negative, as integer literals may.
 
 Comments are erased before parsing. A line comment begins with `\` and ends
 at the newline. A block comment begins with `(*` and ends with the first

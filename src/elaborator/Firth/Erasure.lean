@@ -287,10 +287,9 @@ private def focusAtoms (id : Nat) (span : Span) (stack : List StackEntry) :
   focusAtomsWithProof id span stack |>.map (fun run => (run.program, run.focused))
 
 private def literalAtom : Firth.Elaborator.Literal → Option Firth.Interpreter.Literal
-  | .integer value => if value < 0 then none else some (.nat value.toNat)
+  | .integer value => some (.int value)
   | .boolean value => some (.bool value)
-  | .integers values =>
-      if values.all (· ≥ 0) then some (.natSeq (values.map Int.toNat)) else none
+  | .integers values => some (.intSeq values)
   | .booleans values => some (.boolSeq values)
   | _ => none
 

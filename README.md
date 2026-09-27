@@ -24,14 +24,15 @@ choose which word runs.
 
 ## Current scope
 
-The portable runner handles pure programs with non-negative integer and Boolean
-inputs and results. Words, qualified vocabulary names, stack operations,
+The portable runner handles pure programs with signed 64-bit integer, Boolean
+and sequence inputs and results. Words, qualified vocabulary names, stack operations,
 quotations, conditionals and named locals can be composed within that profile.
-The only executable portable primitive is `prim +`.
+The executable portable primitives are `prim +`, `-`, `*`, `<`, `=` and the
+`seq-int.*` / `seq-bool.*` sequence operations.
 
-This is not yet a general-purpose application platform. Text, signed integer
-execution, file/network I/O, `send`, a package manager, a general-purpose standard library and
-an editor language server are not provided by this runner. The broader
+This is not yet a general-purpose application platform. Text, file/network
+I/O, `send`, a package manager, a general-purpose standard library and an
+editor language server are not provided by this runner. The broader
 language design and checker support more than the portable execution adapter.
 A small core vocabulary exists in `stdlib/core.firth`; it is not automatically
 loaded into programs. See the [support table](docs/getting-started.md#supported-execution-profile)

@@ -157,7 +157,7 @@ class SavedCaseTests(unittest.TestCase):
 
     def test_only_exact_portable_values_are_allowed_in_both_stacks(self) -> None:
         for field in ("stack", "expected_stack"):
-            for value in (-1, 2**63, 1.0, 0.0, "1", None, {}, [-1], [2**63], [1.0],
+            for value in (-2**63 - 1, 2**63, 1.0, 0.0, "1", None, {}, [-2**63 - 1], [2**63], [1.0],
                           [1, True], [[1]], ["1"]):
                 with self.subTest(field=field, value=value):
                     self.write({**self.suite, "cases": [{**self.case, field: [value]}]})
@@ -217,7 +217,7 @@ class SavedCaseTests(unittest.TestCase):
         self.assertEqual(seen, [original, original])
 
     def test_whole_suite_is_validated_before_any_case_executes(self) -> None:
-        self.write({**self.suite, "cases": [self.case, {**self.case, "name": "second", "expected_stack": [-1]}]})
+        self.write({**self.suite, "cases": [self.case, {**self.case, "name": "second", "expected_stack": [2**63]}]})
         with patch.object(gate, "rebuild", side_effect=AssertionError("must not execute")):
             self.refuse_before_build("expected_stack")
 

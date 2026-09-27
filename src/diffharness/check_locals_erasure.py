@@ -87,7 +87,7 @@ def invoke(value, stack: list) -> None:
         raise Stuck("not a quotation")
 
 
-def natural(value) -> int:
+def integer(value) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         raise Stuck("not an integer")
     return value
@@ -109,8 +109,8 @@ def step(item: tuple, stack: list, env: dict) -> None:
         del stack[len(stack) - len(names):]
         run(item[2], stack, {**env, **dict(zip(names, values))})
     elif kind == "prim":
-        right, left = natural(pop(stack)), natural(pop(stack))
-        stack.append({"+": left + right, "-": max(left - right, 0), "*": left * right,
+        right, left = integer(pop(stack)), integer(pop(stack))
+        stack.append({"+": left + right, "-": left - right, "*": left * right,
                       "<": left < right, "=": left == right}[item[1]])
     else:
         name = item[1]
@@ -185,7 +185,7 @@ class Generator:
         out = []
         for item in items:
             if item[0] == "lit":
-                out.append(("lit", self.rng.randint(0, 9)))
+                out.append(("lit", self.rng.randint(-9, 9)))
             elif item[0] == "quot":
                 out.append(("quot", self.mutated(item[1])))
             elif item[0] == "locals":
@@ -219,7 +219,7 @@ class Generator:
         pick = self.rng.choice(options)
         rng = self.rng
         if pick == "lit":
-            return [("lit", rng.randint(0, 9))]
+            return [("lit", rng.randint(-9, 9))]
         if pick == "ref":
             return [("ref", rng.choice(sorted(env)))]
         if pick == "arith":
@@ -271,7 +271,7 @@ def type_name(value) -> str | None:
 
 def program(rng: random.Random, index: int) -> tuple[str, list, list, list] | None:
     arity = rng.randint(1, 3)
-    inputs = [rng.randint(0, 9) for _ in range(arity)]
+    inputs = [rng.randint(-9, 9) for _ in range(arity)]
     names = rng.sample(NAMES, arity)
     stack = list(inputs)
     env = dict(zip(names, inputs))

@@ -24,6 +24,7 @@ import mvp_agent_gate as gate
 
 VERSION = "firth-portable-diff-v1"
 SCHEMA = "firth-differential-failure-v1"
+MIN_INT = -(2**63)
 MAX_INT = 2**63 - 1
 MAX_OUTPUT = 4 * 1024 * 1024
 MAX_ARTIFACT = 64 * 1024 * 1024
@@ -315,13 +316,14 @@ def compare(reference: Any, target: Any, fuel: int) -> Result:
     if "fuel-exhausted" in traps:
         return Result("fuel-asymmetry", traps=traps)
     if any(traps):
-        # The reference's natural integers are wider than the portable Rust
+        # The reference's unbounded integers are wider than the portable Rust
         # profile. An overflow is explicit non-success, never an agreement.
         if traps == (None, "primitive-fault") and isinstance(reference["stack"], list) \
                 and any(isinstance(v, dict) and isinstance(v.get("literal"), dict)
-                        and v["literal"].get("type") == "nat"
+                        and v["literal"].get("type") == "int"
                         and type(v["literal"].get("value")) is int
-                        and v["literal"]["value"] > MAX_INT for v in reference["stack"]):
+                        and not MIN_INT <= v["literal"]["value"] <= MAX_INT
+                        for v in reference["stack"]):
             return Result("portable-integer-overflow", traps=traps)
         return Result("runtime-trap" if traps[0] == traps[1] else "trap-mismatch", traps=traps)
     try:

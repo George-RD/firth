@@ -69,7 +69,7 @@ fn composed_capture_restorations_each_keep_their_vm_charge() {
         instruction(Op::Quote, None),
         instruction(Op::Compose, None),
         instruction(Op::Call, None),
-        prim("addNat"),
+        prim("addInt"),
     ])]);
     let observed = observe_image(&image, Vec::new(), 9, &default_registry());
     assert_eq!(observed.status, ConformanceStatus::Terminal);

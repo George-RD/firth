@@ -40,13 +40,13 @@ private def request (name program : String) (type : String := scheme intOutput) 
   "{\"request_id\":\"r1\",\"checked_words\":[{\"name\":\"" ++ name
     ++ "\",\"checking_state\":\"checked\",\"proof_state\":\"available\",\"program\":" ++ program
     ++ "}],\"erased_word_types\":[{\"word\":\"" ++ name ++ "\",\"type\":" ++ type
-    ++ "}],\"gamma_version\":\"0.3\",\"target_version\":\"0.1\"}"
+    ++ "}],\"gamma_version\":\"0.4\",\"target_version\":\"0.1\"}"
 
 /-- A source-bound request for a single word named `main`, whose kernel body
 and type must match the re-elaboration of `source`. -/
 private def sourceRequest (source program : String) (type : String := scheme intOutput) : String :=
-  (request "main" program type).replace "\"gamma_version\":\"0.3\",\"target_version\":\"0.1\"}"
-    ("\"gamma_version\":\"0.3\",\"target_version\":\"0.1\",\"source\":{\"source_path\":\"test.firth\","
+  (request "main" program type).replace "\"gamma_version\":\"0.4\",\"target_version\":\"0.1\"}"
+    ("\"gamma_version\":\"0.4\",\"target_version\":\"0.1\",\"source\":{\"source_path\":\"test.firth\","
       ++ "\"source_text\":" ++ (Lean.Json.str source).compress ++ ",\"language_version\":\"0.1\"}}")
 
 /-- Inserts a `spans` member into the single checked word of a request. -/
@@ -54,7 +54,7 @@ private def withSpans (input spans : String) : String :=
   input.replace "\"program\":" ("\"spans\":" ++ spans ++ ",\"program\":")
 
 private def literal (value : Nat) : String :=
-  "{\"kind\":\"lit\",\"value\":{\"type\":\"nat\",\"value\":" ++ toString value ++ "}}"
+  "{\"kind\":\"lit\",\"value\":{\"type\":\"int\",\"value\":" ++ toString value ++ "}}"
 
 private def quotation (body : String) : String :=
   "{\"kind\":\"quotation\",\"body\":[" ++ body ++ "]}"
@@ -258,7 +258,7 @@ private def entrySelectionTests : IO Unit := do
     (if reverse then helperWord ++ "," ++ mainWord else mainWord ++ "," ++ helperWord) ++
     "],\"erased_word_types\":[{\"word\":\"main\",\"type\":" ++ scheme intOutput ++
     "},{\"word\":\"helper-word\",\"type\":" ++ scheme intOutput ++
-    "}],\"gamma_version\":\"0.3\",\"target_version\":\"0.1\"}"
+    "}],\"gamma_version\":\"0.4\",\"target_version\":\"0.1\"}"
   for reverse in [false, true] do
     expectContains "explicit entry is independent of source order" (multi reverse)
       "\"entry\":\"main\""
@@ -289,7 +289,7 @@ private def directAdmissionTests : IO Unit := do
   | .error (.checkingFailed "forged" _) => pure ()
   | .error error => fail s!"wrong direct admission failure: {repr error}"
   | .ok _ => fail "a caller-constructed CheckedWord bypassed rechecking"
-  let valid := { invalid with name := "valid", program := .cons (.lit (.nat 42)) .empty }
+  let valid := { invalid with name := "valid", program := .cons (.lit (.int 42)) .empty }
   match Lowering.compileWords [valid, invalid] with
   | .error (.checkingFailed "forged" _) => pure ()
   | .error error => fail s!"wrong unused-helper failure: {repr error}"
@@ -386,7 +386,7 @@ def main : IO Unit := do
     "firth.compile.typecheck-failed"
   expectContains "the plus primitive lowers to the target registry name"
     (request "add" ("[" ++ literal 1 ++ "," ++ literal 2 ++ ",{\"kind\":\"prim\",\"name\":\"+\"}]"))
-    "\"primitive\":\"addNat\""
+    "\"primitive\":\"addInt\""
   expectContains "i64 max literal compiles"
     (request "max" ("[" ++ literal 9223372036854775807 ++ "]")) "\"status\":\"success\""
 
@@ -408,7 +408,7 @@ def main : IO Unit := do
     (request "s" "[{\"kind\":\"prim\",\"name\":\"send\"}]")
     "firth.compile.unsupported-primitive"
   expectContains "a target primitive name is not a language primitive"
-    (request "p" "[{\"kind\":\"prim\",\"name\":\"addNat\"}]")
+    (request "p" "[{\"kind\":\"prim\",\"name\":\"addInt\"}]")
     "firth.compile.unknown-primitive"
   expectMissing "a failure carries no target program"
     (request "u" "[{\"kind\":\"lit\",\"value\":{\"type\":\"unit\"}}]")
@@ -418,31 +418,31 @@ def main : IO Unit := do
   expectError "malformed JSON" "{"
   expectError "duplicate JSON member"
     "{\"request_id\":\"r1\",\"request_id\":\"r2\",\"checked_words\":[],\"erased_word_types\":[],\
-      \"gamma_version\":\"0.3\",\"target_version\":\"0.1\"}"
+      \"gamma_version\":\"0.4\",\"target_version\":\"0.1\"}"
   expectError "unchecked word"
     ("{\"request_id\":\"r1\",\"checked_words\":[{\"name\":\"w\",\"checking_state\":\"unchecked\",\
       \"proof_state\":\"available\",\"program\":[]}],\"erased_word_types\":[{\"word\":\"w\",\"type\":"
       ++ scheme "{\"row\":null,\"items\":[]}"
-      ++ "}],\"gamma_version\":\"0.3\",\"target_version\":\"0.1\"}")
+      ++ "}],\"gamma_version\":\"0.4\",\"target_version\":\"0.1\"}")
   expectError "unavailable proof"
     ("{\"request_id\":\"r1\",\"checked_words\":[{\"name\":\"w\",\"checking_state\":\"checked\",\
       \"proof_state\":\"deferred\",\"program\":[]}],\"erased_word_types\":[{\"word\":\"w\",\"type\":"
       ++ scheme "{\"row\":null,\"items\":[]}"
-      ++ "}],\"gamma_version\":\"0.3\",\"target_version\":\"0.1\"}")
+      ++ "}],\"gamma_version\":\"0.4\",\"target_version\":\"0.1\"}")
   expectError "unsupported gamma version"
     (("{\"request_id\":\"r1\",\"checked_words\":[],\"erased_word_types\":[],"
-      ++ "\"gamma_version\":\"0.4\",\"target_version\":\"0.1\"}"))
+      ++ "\"gamma_version\":\"0.5\",\"target_version\":\"0.1\"}"))
   expectError "unsupported target version"
     (("{\"request_id\":\"r1\",\"checked_words\":[],\"erased_word_types\":[],"
-      ++ "\"gamma_version\":\"0.3\",\"target_version\":\"0.2\"}"))
+      ++ "\"gamma_version\":\"0.4\",\"target_version\":\"0.2\"}"))
   expectError "empty request id"
     ((request "w" "[]" (scheme "{\"row\":null,\"items\":[]}")).replace "\"r1\"" "\"\"")
   expectError "unknown request member"
     ((request "w" "[]" (scheme "{\"row\":null,\"items\":[]}")).replace
-      "\"gamma_version\":\"0.3\"" "\"extra\":1,\"gamma_version\":\"0.3\"")
+      "\"gamma_version\":\"0.4\"" "\"extra\":1,\"gamma_version\":\"0.4\"")
   expectError "no checked words"
     "{\"request_id\":\"r1\",\"checked_words\":[],\"erased_word_types\":[],\
-      \"gamma_version\":\"0.3\",\"target_version\":\"0.1\"}"
+      \"gamma_version\":\"0.4\",\"target_version\":\"0.1\"}"
   expectError "erased word type missing for a checked word"
     ((request "w" "[]" (scheme "{\"row\":null,\"items\":[]}")).replace "\"word\":\"w\"" "\"word\":\"other\"")
   expectError "unknown atom kind"

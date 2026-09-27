@@ -29,7 +29,7 @@ so a test can hold a real multi-line definition. -/
 private def request (source : String) : String :=
   "{\"request_id\":\"r1\",\"source_path\":\"test.firth\",\"source_text\":"
     ++ (Lean.Json.str source).compress
-    ++ ",\"language_version\":\"0.1\",\"gamma_version\":\"0.3\"}"
+    ++ ",\"language_version\":\"0.1\",\"gamma_version\":\"0.4\"}"
 
 private def literalInt : String :=
   ": literal-int\n  ( -- result:Int^many )\n  42;\n"
@@ -51,7 +51,7 @@ def main : IO Unit := do
   expectContains "checked words carry their evidence markers" (request literalInt)
     "\"checking_state\":\"checked\",\"proof_state\":\"available\""
   expectContains "checked words carry the kernel program" (request literalInt)
-    "\"program\":[{\"kind\":\"lit\",\"value\":{\"type\":\"nat\",\"value\":42}}]"
+    "\"program\":[{\"kind\":\"lit\",\"value\":{\"type\":\"int\",\"value\":42}}]"
   expectContains "erased word types are structured, not rendered" (request literalInt)
     "\"type\":{\"row_variables\":[],\"input\":{\"row\":null,\"items\":[]}"
   expectContains "the erased output stack is bottom-to-top" (request literalInt)
@@ -94,25 +94,25 @@ def main : IO Unit := do
   expectError "malformed JSON" "{"
   expectError "duplicate JSON member"
     "{\"request_id\":\"a\",\"request_id\":\"b\",\"source_path\":\"t\",\"source_text\":\"\",\
-      \"language_version\":\"0.1\",\"gamma_version\":\"0.3\"}"
+      \"language_version\":\"0.1\",\"gamma_version\":\"0.4\"}"
   expectError "unknown member"
     "{\"request_id\":\"a\",\"source_path\":\"t\",\"source_text\":\"\",\"extra\":1,\
-      \"language_version\":\"0.1\",\"gamma_version\":\"0.3\"}"
+      \"language_version\":\"0.1\",\"gamma_version\":\"0.4\"}"
   expectError "missing member"
     "{\"request_id\":\"a\",\"source_path\":\"t\",\"language_version\":\"0.1\",\
-      \"gamma_version\":\"0.3\"}"
+      \"gamma_version\":\"0.4\"}"
   expectError "empty request id"
     "{\"request_id\":\"\",\"source_path\":\"t\",\"source_text\":\"\",\
-      \"language_version\":\"0.1\",\"gamma_version\":\"0.3\"}"
+      \"language_version\":\"0.1\",\"gamma_version\":\"0.4\"}"
   expectError "empty source path"
     "{\"request_id\":\"a\",\"source_path\":\"\",\"source_text\":\"\",\
-      \"language_version\":\"0.1\",\"gamma_version\":\"0.3\"}"
+      \"language_version\":\"0.1\",\"gamma_version\":\"0.4\"}"
   expectError "unsupported language version"
     "{\"request_id\":\"a\",\"source_path\":\"t\",\"source_text\":\"\",\
-      \"language_version\":\"0.2\",\"gamma_version\":\"0.3\"}"
+      \"language_version\":\"0.2\",\"gamma_version\":\"0.4\"}"
   expectError "unsupported gamma version"
     "{\"request_id\":\"a\",\"source_path\":\"t\",\"source_text\":\"\",\
-      \"language_version\":\"0.1\",\"gamma_version\":\"0.4\"}"
+      \"language_version\":\"0.1\",\"gamma_version\":\"0.5\"}"
 
 end Firth.ElaborateTest
 

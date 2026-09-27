@@ -193,6 +193,10 @@ def runParserTests : IO Unit := do
   match parse workedChoose with
   | .success { declarations := [.word { body := [.quotation [.literal { value := .integer 1, .. } _, .primitive "+" _] _, .quotation [] _, .atom "if" _], .. }], .. } => pure ()
   | _ => fail "choose-inc worked example AST shape"
+  match parse ": neg ( -- ) -3 { -1 0 2 } prim - ;" with
+  | .success { declarations := [.word { body := [.literal { value := .integer (-3), .. } _,
+      .literal { value := .integers [-1, 0, 2], .. } _, .primitive "-" _], .. }], .. } => pure ()
+  | _ => fail "negative literals and the minus primitive AST shape"
   match parse ": xs ( -- ) { 1 2 3 } { true false } ;" with
   | .success { declarations := [.word { body := [.literal { value := .integers [1, 2, 3], .. } _,
       .literal { value := .booleans [true, false], .. } _], .. }], .. } => pure ()

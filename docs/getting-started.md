@@ -216,11 +216,12 @@ restoration carry administrative target charges, so reference cost is compared
 with `kernel_cost`, not the larger `vm_cost`. Capture restoration still consumes
 VM fuel; a zero kernel charge does not make a VM instruction free to execute.
 
-Arithmetic works on naturals. `prim -` truncates at 0 (`3 5 prim -` is `0`).
-`prim +` and `prim *` must stay within `0..9223372036854775807` for portable
-execution; overflow fails instead of wrapping. `prim <` and `prim =` take two
-integers and push a Boolean for `if`. The reference interpreter's natural
-numbers are unbounded; the finite VM's refusal is not evidence of agreement.
+Integers are signed: `-3` is a literal and `3 5 prim -` is `-2`. `prim +`,
+`prim -` and `prim *` must stay within the signed 64-bit range
+(`-9223372036854775808..9223372036854775807`) for portable execution; overflow
+fails instead of wrapping. `prim <` and `prim =` take two integers and push a
+Boolean for `if`. The reference interpreter's integers are unbounded; the
+finite VM's refusal is not evidence of agreement.
 
 The comparison gate validates every returned scalar before comparing stacks.
 It rejects malformed values, Boolean/integer payload coercions, and unsupported
@@ -232,10 +233,10 @@ execution-trace equivalence.
 
 | Feature | Current portable runner |
 | --- | --- |
-| External inputs and final results | Non-negative integers through `9223372036854775807`, Booleans, and sequences of either as JSON arrays (`[1, 2]` is a `Seq Int`, `[true]` a `Seq Bool`; `[]` takes its type from the word's signature) |
-| Source type name for integers | `Int`; the executable literal representation is currently non-negative |
-| Primitive operations | `prim +`, `prim -` (truncates at 0), `prim *` : `Int Int -- Int`; `prim <`, `prim =` : `Int Int -- Bool`; `prim seq-int.empty`, `.len`, `.at`, `.push` and the same for `seq-bool` (see `examples/programs/README.md`) |
-| Sequences | `Seq Int` and `Seq Bool`, written `{ 1 2 3 }` or `{ true false }`; an out-of-range `at` traps with `primitive-fault` on both hosts |
+| External inputs and final results | Signed 64-bit integers, Booleans, and sequences of either as JSON arrays (`[1, 2]` is a `Seq Int`, `[true]` a `Seq Bool`; `[]` takes its type from the word's signature) |
+| Source type name for integers | `Int`, signed; literals may be negative (`-3`) |
+| Primitive operations | `prim +`, `prim -`, `prim *` : `Int Int -- Int`; `prim <`, `prim =` : `Int Int -- Bool`; `prim seq-int.empty`, `.len`, `.at`, `.push` and the same for `seq-bool` (see `examples/programs/README.md`) |
+| Sequences | `Seq Int` and `Seq Bool`, written `{ 1 2 3 }` or `{ true false }`; a negative or out-of-range `at` index traps with `primitive-fault` on both hosts |
 | Definitions | Explicit stack effects, multiple words, qualified vocabulary names, recursion with finite fuel |
 | Composition | Core stack operations, quotations, `call`, `if`, named locals (a block takes its values off the stack; a local may be used any number of times, inside `if` branches, inside quotations and inside nested blocks. A local can't be used after running a quotation whose stack effect is unknown there, such as one passed in as a value; that is refused with `firth.elaboration.untracked-local`); matching checked effects are required |
 | Quotations as external inputs/results | Explicitly rejected; returned bodies and captures do not yet have a shared comparison format |

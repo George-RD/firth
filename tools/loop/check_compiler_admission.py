@@ -32,7 +32,7 @@ def scheme(inputs: dict | None = None, outputs: dict | None = None, rows: list[s
 
 
 def literal(value: int | bool) -> dict:
-    return {"kind": "lit", "value": {"type": "bool" if type(value) is bool else "nat", "value": value}}
+    return {"kind": "lit", "value": {"type": "bool" if type(value) is bool else "int", "value": value}}
 
 
 def quotation(body: list[dict]) -> dict:
@@ -44,7 +44,7 @@ def word(name: str, program: list[dict]) -> dict:
 
 
 def request(program: list[dict], declared: dict | None = None) -> dict:
-    return {"request_id": "compiler-admission", "entry": "main", "gamma_version": "0.3",
+    return {"request_id": "compiler-admission", "entry": "main", "gamma_version": "0.4",
             "target_version": "0.1", "checked_words": [word("main", program)],
             "erased_word_types": [{"word": "main", "type": scheme() if declared is None else declared}]}
 
@@ -201,7 +201,7 @@ def evaluate(expected: str, rc: int, result: dict, payload: dict) -> bool:
     digest = hashlib.sha256(payload["source"]["source_text"].encode()).hexdigest() if source_bound else None
     return verification == {
         "schema": "firth.compiler-verification.v1", "method": "kernel-type-and-linearity-recheck",
-        "source_bound": source_bound, "source_sha256": digest, "gamma_version": "0.3",
+        "source_bound": source_bound, "source_sha256": digest, "gamma_version": "0.4",
         "target_version": "0.1", "refinements": "not-checked",
         "image_evidence": "legacy-content-identifiers-not-authenticated-proofs"}
 

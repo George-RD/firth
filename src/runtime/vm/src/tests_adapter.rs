@@ -21,7 +21,7 @@ fn adapter_request(entry: &str, code: &str, fuel: u64) -> String {
     request.push_str("\",\"refinement_evidence_digest\":\"");
     request.push_str(&evidence);
     request.push_str("\",\"generation\":0}]},\"initial_stack\":[],\"image\":{\"image_version\":1,");
-    request.push_str("\"gamma_version\":3},\"gamma_version\":\"0.3\",\"fuel\":");
+    request.push_str("\"gamma_version\":4},\"gamma_version\":\"0.4\",\"fuel\":");
     request.push_str(&fuel.to_string());
     request.push('}');
     request
@@ -116,7 +116,7 @@ fn a_literal_program_runs_and_reports_a_success_observation() {
     assert_eq!(response.member("trap"), Some(&Json::Null));
     assert_eq!(
         response.member("stack"),
-        Some(&parse_json("[{\"kind\":\"literal\",\"literal\":{\"type\":\"nat\",\"value\":42}}]").unwrap())
+        Some(&parse_json("[{\"kind\":\"literal\",\"literal\":{\"type\":\"int\",\"value\":42}}]").unwrap())
     );
     assert_eq!(
         response.member("cost"),
@@ -226,7 +226,7 @@ fn a_request_outside_the_schema_is_refused_rather_than_repaired() {
         64,
     );
     assert_eq!(
-        vm_run(&base.replace("\"gamma_version\":\"0.3\"", "\"gamma_version\":\"0.4\""))
+        vm_run(&base.replace("\"gamma_version\":\"0.4\"", "\"gamma_version\":\"0.5\""))
             .expect_err("gamma version")
             .code,
         "unsupported-gamma"
@@ -300,13 +300,13 @@ fn an_initial_stack_value_with_no_target_representation_is_refused() {
 
     let accepted = base.replace(
         "\"initial_stack\":[]",
-        "\"initial_stack\":[{\"kind\":\"literal\",\"literal\":{\"type\":\"nat\",\"value\":7}}]",
+        "\"initial_stack\":[{\"kind\":\"literal\",\"literal\":{\"type\":\"int\",\"value\":7}}]",
     );
     let response = response_of(&accepted);
     assert_eq!(member_str(&response, "status"), "success");
     assert_eq!(
         response.member("stack"),
-        Some(&parse_json("[{\"kind\":\"literal\",\"literal\":{\"type\":\"nat\",\"value\":7}}]").unwrap())
+        Some(&parse_json("[{\"kind\":\"literal\",\"literal\":{\"type\":\"int\",\"value\":7}}]").unwrap())
     );
 }
 
@@ -316,7 +316,7 @@ fn the_adapter_is_deterministic() {
         "main",
         "[{\"op\":\"push-literal\",\"literal\":{\"kind\":\"int\",\"value\":2}},\
           {\"op\":\"push-literal\",\"literal\":{\"kind\":\"int\",\"value\":40}},\
-          {\"op\":\"prim\",\"primitive\":\"addNat\"}]",
+          {\"op\":\"prim\",\"primitive\":\"addInt\"}]",
         64,
     );
     let first = vm_run(&request).expect("accepted");
@@ -325,7 +325,7 @@ fn the_adapter_is_deterministic() {
     let response = parse_json(&first).expect("document");
     assert_eq!(
         response.member("stack"),
-        Some(&parse_json("[{\"kind\":\"literal\",\"literal\":{\"type\":\"nat\",\"value\":42}}]").unwrap())
+        Some(&parse_json("[{\"kind\":\"literal\",\"literal\":{\"type\":\"int\",\"value\":42}}]").unwrap())
     );
     assert_eq!(
         response.member("cost"),

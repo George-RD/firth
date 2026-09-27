@@ -48,7 +48,7 @@ def contract_tables() -> dict[str, object]:
     }
     return {
         "gamma": {
-            "version": "0.3",
+            "version": "0.4",
             "primitives": ["+", "-", "*", "<", "=", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"],
             "primitive": {name: {"effect": "declared"} for name in ["+", "-", "*", "<", "=", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"]},
         },
@@ -439,16 +439,22 @@ class ExecutionWiringTests(unittest.TestCase):
 
     def test_input_values_distinguish_booleans_from_integers(self) -> None:
         encoded = self.gate.initial_values([True, 1])
-        self.assertEqual([value["literal"]["type"] for value in encoded], ["bool", "nat"])
-        for values in (["1"], [-1], [2**63], [None], [1.0], {}):
+        self.assertEqual([value["literal"]["type"] for value in encoded], ["bool", "int"])
+        for values in (["1"], [-2**63 - 1], [2**63], [None], [1.0], {}):
             with self.subTest(values=values), self.assertRaises(self.gate.GateError):
                 self.gate.initial_values(values)
+
+    def test_input_integers_cover_the_signed_64_bit_range(self) -> None:
+        encoded = self.gate.initial_values([-2**63, 2**63 - 1, [-1, 0, 1]])
+        self.assertEqual([value["literal"] for value in encoded], [
+            {"type": "int", "value": -2**63}, {"type": "int", "value": 2**63 - 1},
+            {"type": "seq-int", "value": [-1, 0, 1]}])
 
     def test_multiword_rebuild_preserves_entry_dictionary_and_markers(self) -> None:
         main = {"name": "main", "checking_state": "checked", "proof_state": "available",
                 "program": [{"kind": "word", "name": "helper"}]}
         helper = {"name": "helper", "checking_state": "checked", "proof_state": "available",
-                  "program": [{"kind": "lit", "value": {"type": "nat", "value": 42}}]}
+                  "program": [{"kind": "lit", "value": {"type": "int", "value": 42}}]}
         elaboration = {
             "status": "success", "checked_words": [main, helper],
             "kernel_programs": [{"word": word["name"], "program": word["program"]} for word in (main, helper)],
@@ -508,13 +514,13 @@ class ExecutionWiringTests(unittest.TestCase):
 
     def test_rebuild_reports_the_trace_comparison_label(self) -> None:
         main = {"name": "main", "checking_state": "checked", "proof_state": "available",
-                "program": [{"kind": "lit", "value": {"type": "nat", "value": 42}}]}
+                "program": [{"kind": "lit", "value": {"type": "int", "value": 42}}]}
         elaboration = {
             "status": "success", "checked_words": [main],
             "kernel_programs": [{"word": "main", "program": main["program"]}],
             "erased_word_types": [{"word": "main", "type": {"input": {"row": None, "items": []}}}],
         }
-        literal = {"kind": "literal", "literal": {"type": "nat", "value": 42}}
+        literal = {"kind": "literal", "literal": {"type": "int", "value": 42}}
         reference = {"status": "success", "trap": None, "stack": [literal],
                      "trace": [{"index": 0, "stack": [], "program": main["program"], "cost": 1}],
                      "cost": {"total": 1, "steps": 1}, "world_observation": {"ids": []}}

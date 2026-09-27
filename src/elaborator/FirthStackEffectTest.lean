@@ -95,7 +95,7 @@ private def declaration (source : String) (effects : EffectEnv) : IO Definition 
   pure { name := word.name, declared := word.effect, program := ← erased effects word, span := word.span }
 
 def runStackEffectTests : IO Unit := do
-  expectEffect "literal golden" [located 0 (.lit (.nat 7))]
+  expectEffect "literal golden" [located 0 (.lit (.int 7))]
     { input := .row (.mvar 0), output := stack (.row (.mvar 0)) [intType] }
 
   expectEffect "dup golden" [located 0 .dup]
@@ -103,18 +103,18 @@ def runStackEffectTests : IO Unit := do
       output := stack (.row (.mvar 1)) [.mvar 0 .many, .mvar 0 .many] }
 
   expectEffect "effect composition golden"
-    [located 0 (.lit (.nat 1)), located 1 (.lit (.nat 2)), located 2 (.prim "add")]
+    [located 0 (.lit (.int 1)), located 1 (.lit (.int 2)), located 2 (.prim "add")]
     { input := .row (.mvar 0), output := stack (.row (.mvar 0)) [intType] }
 
   expectCheckSuccess "swap" (scheme [intType, boolType] [boolType, intType])
     [located 0 .swap]
   expectCheckSuccess "drop many" (scheme [intType] []) [located 0 .drop]
 
-  let quoteInt := .cons (.lit (.nat 1)) .empty
+  let quoteInt := .cons (.lit (.int 1)) .empty
   expectCheckSuccess "call" (scheme [] [intType])
     [located 0 (.quotation quoteInt) [span 1 2], located 3 .call]
   expectCheckSuccess "dip" (scheme [] [intType, intType])
-    [located 0 (.lit (.nat 9)), located 2 (.quotation quoteInt) [span 3 4], located 5 .dip]
+    [located 0 (.lit (.int 9)), located 2 (.quotation quoteInt) [span 3 4], located 5 .dip]
   let quoteBool := .cons (.lit (.bool true)) .empty
   expectCheckSuccess "compose and call" (scheme [] [intType, boolType])
     [located 0 (.quotation quoteInt) [span 1 2],
@@ -134,7 +134,7 @@ def runStackEffectTests : IO Unit := do
       [.quotation (.row (.rigid "σ")) (stack (.row (.rigid "σ")) [handleType]) .linear] }
   expectCheckSuccess "quote transfers linear usage" quoteScheme [located 0 .quote]
 
-  let quoteBody := .cons (.lit (.nat 1)) .empty
+  let quoteBody := .cons (.lit (.int 1)) .empty
   expectEffect "quotation golden" [located 0 (.quotation quoteBody) [span 1 2]]
     { input := .row (.mvar 0),
       output := stack (.row (.mvar 0))
@@ -144,7 +144,7 @@ def runStackEffectTests : IO Unit := do
     literal := defaultLiteralType
     word := fun name => if name == "id" then some (scheme [] []) else none
     primitive := primitives }
-  match infer polyEnv [located 0 (.lit (.nat 3)), located 1 (.word "id")] with
+  match infer polyEnv [located 0 (.lit (.int 3)), located 1 (.word "id")] with
   | .ok effect => do
       let expected : Effect :=
         { input := .row (.mvar 0), output := stack (.row (.mvar 0)) [intType] }
@@ -154,7 +154,7 @@ def runStackEffectTests : IO Unit := do
   expectFailure "unknown word" "firth.name.unknown-word" 9
     (infer env [located 9 (.word "missing")])
   expectFailure "non-quotation call" "firth.type.expected-quotation" 4
-    (infer env [located 0 (.lit (.nat 1)), located 4 .call])
+    (infer env [located 0 (.lit (.int 1)), located 4 .call])
   expectFailure "occurs check" "firth.type.occurs-check" 5
     (infer env [located 0 .dup, located 5 .call])
 
@@ -169,25 +169,25 @@ def runStackEffectTests : IO Unit := do
   expectFailureState "if underflow keeps pre-atom stack" "firth.type.stack-underflow" 10
     oneIntState (check env oneIntInput [located 10 .ifThenElse] (span 70 71))
 
-  let badNested := .cons (.lit (.nat 1)) (.cons .call .empty)
+  let badNested := .cons (.lit (.int 1)) (.cons .call .empty)
   expectFailure "nested quotation span" "firth.type.expected-quotation" 22
     (infer env [located 20 (.quotation badNested) [span 21 22, span 22 23]])
   let inconsistentChildren := located 23 (.quotation .empty) []
-    [located 24 (.lit (.nat 1))]
+    [located 24 (.lit (.int 1))]
   expectFailure "provenance cannot change quotation semantics"
     "firth.elaboration.provenance-mismatch" 23
     (infer env [inconsistentChildren, located 25 .call])
 
   let noLiterals : Env := { primitive := primitives }
   expectFailure "literal requires Gamma" "firth.type.unknown-literal" 31
-    (infer noLiterals [located 31 (.lit (.nat 1))])
+    (infer noLiterals [located 31 (.lit (.int 1))])
   expectFailure "pushed literal requires Gamma" "firth.type.unknown-literal" 32
-    (infer noLiterals [located 32 (.push (.literal (.nat 1)))])
+    (infer noLiterals [located 32 (.push (.literal (.int 1)))])
   let linearLiterals : Env := {
     literal := fun _ => some handleType
     primitive := primitives }
   expectFailure "literal must be many" "firth.linearity.literal-not-many" 33
-    (infer linearLiterals [located 33 (.lit (.nat 1))])
+    (infer linearLiterals [located 33 (.lit (.int 1))])
 
   let forgedCapture := .cons (.push (.world 1)) .empty
   expectFailure "pushed quotation usage is checked"
@@ -200,8 +200,8 @@ def runStackEffectTests : IO Unit := do
   expectFailure "linear discard" "firth.linearity.usage-mismatch" 13
     (check env linearInput [located 13 .drop] (span 20 21))
   expectFailure "literal cannot satisfy linear output" "firth.type.declared-effect-mismatch" 30
-    (check env (exactScheme [] [handleType]) [located 0 (.lit (.nat 1))] (span 30 31))
-  match check env (exactScheme [] [handleType]) [located 0 (.lit (.nat 1))] (span 30 31) with
+    (check env (exactScheme [] [handleType]) [located 0 (.lit (.int 1))] (span 30 31))
+  match check env (exactScheme [] [handleType]) [located 0 (.lit (.int 1))] (span 30 31) with
   | .error { expected := some expected, actual := some actual, .. } => do
       expectEq expected (stack .empty [handleType]) "declared mismatch expected stack"
       expectEq actual (stack .empty [intType]) "declared mismatch actual stack"
@@ -233,7 +233,7 @@ def runStackEffectTests : IO Unit := do
   expectFailure "if rejects linear branch" "firth.linearity.usage-mismatch" 4
     (check env (scheme [boolType, handleType] []) trueLinear (span 20 21))
 
-  let intQuote := .cons (.lit (.nat 1)) .empty
+  let intQuote := .cons (.lit (.int 1)) .empty
   let boolQuote := .cons (.lit (.bool true)) .empty
   expectFailure "if branch effect mismatch" "firth.type.branch-mismatch" 8
     (infer env [located 0 (.lit (.bool true)), located 2 (.quotation intQuote) [span 3 4],
@@ -244,7 +244,7 @@ def runStackEffectTests : IO Unit := do
     (infer env [located 0 (.quotation intQuote) [span 1 2],
       located 4 (.quotation notQuote) [span 5 6], located 8 .compose])
 
-  match typedHole env rigid [located 0 (.lit (.nat 4)), located 2 (.lit (.bool true))] (span 9 9) with
+  match typedHole env rigid [located 0 (.lit (.int 4)), located 2 (.lit (.bool true))] (span 9 9) with
   | .error diagnostic => fail s!"typed hole failed: {repr diagnostic}"
   | .ok hole => do
       expectEq hole.span (span 9 9) "typed hole span"
@@ -284,7 +284,7 @@ def runStackEffectTests : IO Unit := do
     input := .row (.rigid "ρ")
     output := .row (.rigid "ρ") }
   expectFailure "declared row is universal" "firth.type.stack-underflow" 42
-    (check env universalIdentity [located 42 .drop, located 43 (.lit (.nat 1))] (span 44 45))
+    (check env universalIdentity [located 42 .drop, located 43 (.lit (.int 1))] (span 44 45))
   let distinctRows : Scheme := {
     rowVariables := ["ρ", "σ"]
     input := .row (.rigid "ρ")

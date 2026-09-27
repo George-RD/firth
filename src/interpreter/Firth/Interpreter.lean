@@ -13,12 +13,12 @@ inductive Usage where
   deriving BEq, DecidableEq, Repr
 
 inductive Literal where
-  | nat (value : Nat)
+  | int (value : Int)
   | bool (value : Bool)
   | unit
-  /-- An immutable sequence of naturals (`Seq Int` in source). Sequences are
+  /-- An immutable sequence of integers (`Seq Int` in source). Sequences are
   flat `many` data: they never hold a quotation or a linear value. -/
-  | natSeq (values : List Nat)
+  | intSeq (values : List Int)
   /-- An immutable sequence of booleans (`Seq Bool` in source). -/
   | boolSeq (values : List Bool)
   deriving BEq, DecidableEq, Repr
@@ -26,11 +26,11 @@ inductive Literal where
 abbrev Prim := String
 
 inductive BaseType where
-  | nat
+  | int
   | bool
   | unit
   | world
-  | natSeq
+  | intSeq
   | boolSeq
   deriving BEq, DecidableEq, Repr
 
@@ -146,60 +146,66 @@ structure Gamma where
   literalType : Literal → Option BaseType
   primitive : Prim → Option PrimitiveSpec
 
-def addNatDelta : Stack → Option Stack
-  | .literal (.nat right) :: .literal (.nat left) :: rest =>
-      some (.literal (.nat (left + right)) :: rest)
+def addIntDelta : Stack → Option Stack
+  | .literal (.int right) :: .literal (.int left) :: rest =>
+      some (.literal (.int (left + right)) :: rest)
   | _ => none
 
-/-- Natural-number subtraction truncates at zero, matching Lean's `Nat.sub`. -/
-def subNatDelta : Stack → Option Stack
-  | .literal (.nat right) :: .literal (.nat left) :: rest =>
-      some (.literal (.nat (left - right)) :: rest)
+def subIntDelta : Stack → Option Stack
+  | .literal (.int right) :: .literal (.int left) :: rest =>
+      some (.literal (.int (left - right)) :: rest)
   | _ => none
 
-def mulNatDelta : Stack → Option Stack
-  | .literal (.nat right) :: .literal (.nat left) :: rest =>
-      some (.literal (.nat (left * right)) :: rest)
+def mulIntDelta : Stack → Option Stack
+  | .literal (.int right) :: .literal (.int left) :: rest =>
+      some (.literal (.int (left * right)) :: rest)
   | _ => none
 
-def ltNatDelta : Stack → Option Stack
-  | .literal (.nat right) :: .literal (.nat left) :: rest =>
+def ltIntDelta : Stack → Option Stack
+  | .literal (.int right) :: .literal (.int left) :: rest =>
       some (.literal (.bool (decide (left < right))) :: rest)
   | _ => none
 
-def eqNatDelta : Stack → Option Stack
-  | .literal (.nat right) :: .literal (.nat left) :: rest =>
+def eqIntDelta : Stack → Option Stack
+  | .literal (.int right) :: .literal (.int left) :: rest =>
       some (.literal (.bool (decide (left = right))) :: rest)
   | _ => none
 
-def natSeqEmptyDelta : Stack → Option Stack
-  | rest => some (.literal (.natSeq []) :: rest)
+def intSeqEmptyDelta : Stack → Option Stack
+  | rest => some (.literal (.intSeq []) :: rest)
 
-def natSeqLenDelta : Stack → Option Stack
-  | .literal (.natSeq values) :: rest => some (.literal (.nat values.length) :: rest)
+def intSeqLenDelta : Stack → Option Stack
+  | .literal (.intSeq values) :: rest => some (.literal (.int values.length) :: rest)
   | _ => none
 
-/-- `at` faults on an index past the end; it never returns a default. -/
-def natSeqAtDelta : Stack → Option Stack
-  | .literal (.nat index) :: .literal (.natSeq values) :: rest =>
-      values[index]?.map fun value => .literal (.nat value) :: rest
+/-- The element at a signed index. A negative index, like one past the end,
+has no element. -/
+def elementAt? {α : Type} (values : List α) : Int → Option α
+  | .ofNat index => values[index]?
+  | .negSucc _ => none
+
+/-- `at` faults on an index that is negative or past the end; it never
+returns a default. -/
+def intSeqAtDelta : Stack → Option Stack
+  | .literal (.int index) :: .literal (.intSeq values) :: rest =>
+      (elementAt? values index).map fun value => .literal (.int value) :: rest
   | _ => none
 
-def natSeqPushDelta : Stack → Option Stack
-  | .literal (.nat value) :: .literal (.natSeq values) :: rest =>
-      some (.literal (.natSeq (values ++ [value])) :: rest)
+def intSeqPushDelta : Stack → Option Stack
+  | .literal (.int value) :: .literal (.intSeq values) :: rest =>
+      some (.literal (.intSeq (values ++ [value])) :: rest)
   | _ => none
 
 def boolSeqEmptyDelta : Stack → Option Stack
   | rest => some (.literal (.boolSeq []) :: rest)
 
 def boolSeqLenDelta : Stack → Option Stack
-  | .literal (.boolSeq values) :: rest => some (.literal (.nat values.length) :: rest)
+  | .literal (.boolSeq values) :: rest => some (.literal (.int values.length) :: rest)
   | _ => none
 
 def boolSeqAtDelta : Stack → Option Stack
-  | .literal (.nat index) :: .literal (.boolSeq values) :: rest =>
-      values[index]?.map fun value => .literal (.bool value) :: rest
+  | .literal (.int index) :: .literal (.boolSeq values) :: rest =>
+      (elementAt? values index).map fun value => .literal (.bool value) :: rest
   | _ => none
 
 def boolSeqPushDelta : Stack → Option Stack
@@ -216,36 +222,36 @@ def consumeWorldDelta : Stack → Option Stack
 
 def defaultGamma : Gamma :=
   { literalType := fun literal => match literal with
-      | .nat _ => some .nat
+      | .int _ => some .int
       | .bool _ => some .bool
       | .unit => some .unit
-      | .natSeq _ => some .natSeq
+      | .intSeq _ => some .intSeq
       | .boolSeq _ => some .boolSeq
     primitive := fun primitive => match primitive with
-      | "addNat" => some { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
-                           output := .snoc (.row "ρ") (.base .nat .many), delta := addNatDelta }
-      | "subNat" => some { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
-                           output := .snoc (.row "ρ") (.base .nat .many), delta := subNatDelta }
-      | "mulNat" => some { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
-                           output := .snoc (.row "ρ") (.base .nat .many), delta := mulNatDelta }
-      | "ltNat" => some { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
-                          output := .snoc (.row "ρ") (.base .bool .many), delta := ltNatDelta }
-      | "eqNat" => some { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
-                          output := .snoc (.row "ρ") (.base .bool .many), delta := eqNatDelta }
-      | "natSeqEmpty" => some { input := .row "ρ",
-                                output := .snoc (.row "ρ") (.base .natSeq .many), delta := natSeqEmptyDelta }
-      | "natSeqLen" => some { input := .snoc (.row "ρ") (.base .natSeq .many),
-                              output := .snoc (.row "ρ") (.base .nat .many), delta := natSeqLenDelta }
-      | "natSeqAt" => some { input := .snoc (.snoc (.row "ρ") (.base .natSeq .many)) (.base .nat .many),
-                             output := .snoc (.row "ρ") (.base .nat .many), delta := natSeqAtDelta,
+      | "addInt" => some { input := .snoc (.snoc (.row "ρ") (.base .int .many)) (.base .int .many),
+                           output := .snoc (.row "ρ") (.base .int .many), delta := addIntDelta }
+      | "subInt" => some { input := .snoc (.snoc (.row "ρ") (.base .int .many)) (.base .int .many),
+                           output := .snoc (.row "ρ") (.base .int .many), delta := subIntDelta }
+      | "mulInt" => some { input := .snoc (.snoc (.row "ρ") (.base .int .many)) (.base .int .many),
+                           output := .snoc (.row "ρ") (.base .int .many), delta := mulIntDelta }
+      | "ltInt" => some { input := .snoc (.snoc (.row "ρ") (.base .int .many)) (.base .int .many),
+                          output := .snoc (.row "ρ") (.base .bool .many), delta := ltIntDelta }
+      | "eqInt" => some { input := .snoc (.snoc (.row "ρ") (.base .int .many)) (.base .int .many),
+                          output := .snoc (.row "ρ") (.base .bool .many), delta := eqIntDelta }
+      | "intSeqEmpty" => some { input := .row "ρ",
+                                output := .snoc (.row "ρ") (.base .intSeq .many), delta := intSeqEmptyDelta }
+      | "intSeqLen" => some { input := .snoc (.row "ρ") (.base .intSeq .many),
+                              output := .snoc (.row "ρ") (.base .int .many), delta := intSeqLenDelta }
+      | "intSeqAt" => some { input := .snoc (.snoc (.row "ρ") (.base .intSeq .many)) (.base .int .many),
+                             output := .snoc (.row "ρ") (.base .int .many), delta := intSeqAtDelta,
                              faults := true }
-      | "natSeqPush" => some { input := .snoc (.snoc (.row "ρ") (.base .natSeq .many)) (.base .nat .many),
-                               output := .snoc (.row "ρ") (.base .natSeq .many), delta := natSeqPushDelta }
+      | "intSeqPush" => some { input := .snoc (.snoc (.row "ρ") (.base .intSeq .many)) (.base .int .many),
+                               output := .snoc (.row "ρ") (.base .intSeq .many), delta := intSeqPushDelta }
       | "boolSeqEmpty" => some { input := .row "ρ",
                                  output := .snoc (.row "ρ") (.base .boolSeq .many), delta := boolSeqEmptyDelta }
       | "boolSeqLen" => some { input := .snoc (.row "ρ") (.base .boolSeq .many),
-                               output := .snoc (.row "ρ") (.base .nat .many), delta := boolSeqLenDelta }
-      | "boolSeqAt" => some { input := .snoc (.snoc (.row "ρ") (.base .boolSeq .many)) (.base .nat .many),
+                               output := .snoc (.row "ρ") (.base .int .many), delta := boolSeqLenDelta }
+      | "boolSeqAt" => some { input := .snoc (.snoc (.row "ρ") (.base .boolSeq .many)) (.base .int .many),
                               output := .snoc (.row "ρ") (.base .bool .many), delta := boolSeqAtDelta,
                               faults := true }
       | "boolSeqPush" => some { input := .snoc (.snoc (.row "ρ") (.base .boolSeq .many)) (.base .bool .many),
@@ -260,9 +266,9 @@ def defaultGamma : Gamma :=
 the reference-run adapter and the compiler all read this one table, so the
 three hosts accept exactly the same primitive names. -/
 def surfacePrimitives : List (String × Prim) :=
-  [("+", "addNat"), ("-", "subNat"), ("*", "mulNat"), ("<", "ltNat"), ("=", "eqNat"),
-   ("seq-int.empty", "natSeqEmpty"), ("seq-int.len", "natSeqLen"),
-   ("seq-int.at", "natSeqAt"), ("seq-int.push", "natSeqPush"),
+  [("+", "addInt"), ("-", "subInt"), ("*", "mulInt"), ("<", "ltInt"), ("=", "eqInt"),
+   ("seq-int.empty", "intSeqEmpty"), ("seq-int.len", "intSeqLen"),
+   ("seq-int.at", "intSeqAt"), ("seq-int.push", "intSeqPush"),
    ("seq-bool.empty", "boolSeqEmpty"), ("seq-bool.len", "boolSeqLen"),
    ("seq-bool.at", "boolSeqAt"), ("seq-bool.push", "boolSeqPush")]
 

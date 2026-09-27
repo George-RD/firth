@@ -23,7 +23,7 @@ Run and modify an inventory-allocation component written in Firth.
   calculation with its bounds and repeated-ID checks. `run_cases.py` is the
   host, and CI runs the fixed corpus on both hosts: 50 of 53 cases pass, and
   the 3 that need a negative integer are blocked on signed `Int`. The worst
-  case cost is at most 391 + 767n + 297n(n-1)/2 kernel steps; that bound is
+  case cost is at most 391 + 767n + 264n(n-1)/2 kernel steps; that bound is
   measured, not proved. Still open: those 3 cases, the policy-change
   demonstration, and toolchain-checked properties (`language-06`).
 

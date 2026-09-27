@@ -412,9 +412,9 @@ theorem preservation (gamma : Gamma) (dictionary : Dictionary) (costs : CostTabl
                 | quotation body usage => simp [step] at successor
                 | literal literal =>
                   cases literal with
-                  | nat value => simp [step] at successor
+                  | int value => simp [step] at successor
                   | unit => simp [step] at successor
-                  | natSeq values => simp [step] at successor
+                  | intSeq values => simp [step] at successor
                   | boolSeq values => simp [step] at successor
                   | bool condition =>
                     rcases valueTyping_quotation_unpack falseTyping with
