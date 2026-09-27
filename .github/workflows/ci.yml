@@ -73,10 +73,12 @@ jobs:
           use-mathlib-cache: 'false'
       - name: Build Lean targets
         run: lake build 2>&1 | tee /tmp/language-build.log
-      - name: Check for proof escape hatches and a stale proof-module manifest
+      - name: Check proof escape hatches, proof pins and sealed SMT provenance
         run: |
           python3 tools/loop/check_zero_admit.py
+          python3 tools/loop/update_smt_proof_bindings.py --check
           python3 tools/loop/update_proof_manifest.py --check
+          python3 tools/loop/check_smt_attestation.py
       - name: Run Lean suites
         run: lake test 2>&1 | tee /tmp/language-lean-tests.log
       - name: Verify reference kernel fixtures

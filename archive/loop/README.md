@@ -21,7 +21,7 @@ belongs to the maintainer and to `docs/roadmap.md`.
 | `tools/select_unit.py`, `coverage.py`, `obligations.toml` | Todo selector, PRD obligations matrix and the `loop_exhausted_valid` completion check |
 | `tools/prepare_iteration.py`, `preflight_state.py`, `landing_gate.py`, `authority-policy.projection.json` | Per-iteration coordination, state classification and landing admission |
 | `tools/check_s5_envelope.py` | The gate that accepted the trivial S5 program |
-| `tools/update_smt_proof_bindings.py`, `check_smt_attestation.py`, `check_tcb_boundary.py`, `audit_branch_axioms.sh` | Hash pinning and provenance lints. The SMT binding hash covers every Lean file under `src/`, so any compiler edit failed CI until the hashes were regenerated |
+| `tools/check_tcb_boundary.py`, `audit_branch_axioms.sh` | TCB inventory validator and branch axiom audit |
 | `tools/test_*.py` | Tests for the above |
 | `claude/` | The `/firth-loop` command and its landing and recovery skills |
 | `docs/` | The loop runbook and recovery mandate |
@@ -34,9 +34,10 @@ never in this repository. Stopping it is a host action:
 
 `tools/loop/` still holds the runner (`firth_run.py`), the MVP gate and its
 manifest, the proof-module manifest updater (the elaborator reads that file at
-run time), and the product checks CI runs: zero-admit, kernel fixtures,
-compiler admission, trust boundaries, runtime ingress and bounds, and the
-language examples. The directory keeps its name because `src/` refers to paths
+run time), the SMT proof-binding and sealed-provenance checks (they keep
+discharge records honest about which translator produced them), and the
+product checks CI runs: zero-admit, kernel fixtures, compiler admission, trust
+boundaries, runtime ingress and bounds, and the language examples. The directory keeps its name because `src/` refers to paths
 in it.
 
 ## Reviving it

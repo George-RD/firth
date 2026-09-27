@@ -82,6 +82,8 @@ lake exe firthRecordIntegrityTest   # record drift, staleness and tampering
 lake exe firthAdapterIntegrationTest # the SMT slice end to end
 ( cd src/runtime/vm && cargo fmt --check && cargo clippy && cargo test --locked )
 python3 tools/loop/check_zero_admit.py      # no sorry/admit in Lean
+python3 tools/loop/update_smt_proof_bindings.py --check  # rerun without --check after any Lean edit
+python3 tools/loop/check_smt_attestation.py
 python3 tools/loop/firth_run.py check <file.firth>
 python3 tools/loop/firth_run.py run <file.firth> --entry <word>
 python3 tools/loop/check_language_examples.py
