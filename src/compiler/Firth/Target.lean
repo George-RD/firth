@@ -53,6 +53,8 @@ mutual
     | ifThenElse
     | callWord (name : String)
     | prim (name : String)
+    | pick (depth : Nat)
+    | roll (depth : Nat)
 end
 
 instance : Inhabited Value := ⟨.world⟩
@@ -239,6 +241,8 @@ private partial def canonicalInstruction : Instruction → ByteArray
   | .ifThenElse => ByteArray.empty.push 10
   | .callWord name => (ByteArray.empty.push 11) ++ putString name
   | .prim name => (ByteArray.empty.push 12) ++ putString name
+  | .pick depth => (ByteArray.empty.push 13) ++ putUnsigned depth
+  | .roll depth => (ByteArray.empty.push 14) ++ putUnsigned depth
 
 /-- Quotation code, then the capture count, then the consumed bitmap, then
 each capture value. -/

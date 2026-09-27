@@ -211,6 +211,8 @@ private partial def lowerAtom (context : Context) :
   | .dup => .ok [.dup]
   | .drop => .ok [.drop]
   | .swap => .ok [.swap]
+  | .pick depth => .ok [.pick depth]
+  | .roll depth => .ok [.roll depth]
   | .dip => .ok [.dip]
   | .call => .ok [.call]
   | .compose => .ok [.compose]

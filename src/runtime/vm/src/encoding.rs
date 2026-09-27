@@ -16,6 +16,8 @@ fn canonical_code(code: &[Instruction]) -> Vec<u8> {
             Op::If => 10,
             Op::CallWord => 11,
             Op::Prim => 12,
+            Op::Pick => 13,
+            Op::Roll => 14,
         });
         match instruction.operand.as_ref() {
             Some(Operand::Literal(value)) => canonical_value(&mut bytes, value),
@@ -33,7 +35,9 @@ fn canonical_code(code: &[Instruction]) -> Vec<u8> {
                     canonical_value(&mut bytes, capture);
                 }
             }
-            Some(Operand::Capture(index)) => put_unsigned(&mut bytes, *index),
+            Some(Operand::Capture(index)) | Some(Operand::Depth(index)) => {
+                put_unsigned(&mut bytes, *index)
+            }
             Some(Operand::Word(name)) | Some(Operand::Primitive(name)) => {
                 put_string(&mut bytes, name)
             }

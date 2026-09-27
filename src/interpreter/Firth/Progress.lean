@@ -107,6 +107,19 @@ theorem progress (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
                   ⟨first, tail, rfl, firstTyping, tailTyping⟩
                 refine .inl ⟨{ stack := first :: second :: tail, program := rest }, ?_⟩
                 exact ⟨costs.atom .swap, by simp [step]⟩
+        | pick depth =>
+            cases headTyping with
+            | pick h many =>
+                rcases stackTyping_pickAt stackTyping h with ⟨value, found, valueTyping⟩
+                refine .inl ⟨{ stack := value :: stack, program := rest }, ?_⟩
+                exact ⟨costs.atom (.pick depth), by simp [step, found]⟩
+        | roll depth =>
+            cases headTyping with
+            | roll h =>
+                rcases stackTyping_rollAt stackTyping h with
+                  ⟨value, tail, found, valueTyping, tailTyping⟩
+                refine .inl ⟨{ stack := value :: tail, program := rest }, ?_⟩
+                exact ⟨costs.atom (.roll depth), by simp [step, found]⟩
         | call =>
             cases headTyping with
             | call =>

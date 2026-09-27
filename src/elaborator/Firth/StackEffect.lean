@@ -271,6 +271,15 @@ private def pop (code : String) (span : Span) (diagnosticState source : AStack) 
   let state ← get
   pure (resolveStack state rest, resolveType state value)
 
+/-- Pop `count` values, top first. -/
+private def popMany (span : Span) (diagnosticState : AStack) :
+    Nat → AStack → InferM (AStack × List AType)
+  | 0, source => pure (source, [])
+  | count + 1, source => do
+      let (rest, value) ← pop "firth.type.stack-underflow" span diagnosticState source
+      let (rest, values) ← popMany span diagnosticState count rest
+      pure (rest, value :: values)
+
 /-- Unify two whole stacks, reporting the whole stacks rather than the
 innermost pair that disagreed, so a reader sees every value involved. -/
 private def unifyWhole (code : String) (span : Span) (current expected actual : AStack) :
@@ -299,6 +308,8 @@ def atomName : Atom → String
   | .dup => "dup"
   | .drop => "drop"
   | .swap => "swap"
+  | .pick depth => s!"pick {depth}"
+  | .roll depth => s!"roll {depth}"
   | .dip => "dip"
   | .call => "call"
   | .compose => "compose"
@@ -406,6 +417,19 @@ private partial def inferAtom (env : Env) (located : LocatedKernel)
       let (rest, second) ← pop "firth.type.stack-underflow" span diagnosticState current
       let (rest, first) ← pop "firth.type.stack-underflow" span diagnosticState rest
       pure (push (push rest second) first)
+  | .pick depth =>
+      let (rest, _) ← popMany span diagnosticState depth current
+      let (_, value) ← pop "firth.type.stack-underflow" span diagnosticState rest
+      requireMany span current value
+      let state ← get
+      pure (push (resolveStack state current) (resolveType state value))
+  | .roll depth =>
+      let (rest, above) ← popMany span diagnosticState depth current
+      let (rest, value) ← pop "firth.type.stack-underflow" span diagnosticState rest
+      let state ← get
+      let restored := above.foldr (fun type stack => push stack (resolveType state type))
+        (resolveStack state rest)
+      pure (push restored (resolveType state value))
   | .call =>
       let (rest, quotation) ← pop "firth.type.stack-underflow" span diagnosticState current
       let input ← freshRow

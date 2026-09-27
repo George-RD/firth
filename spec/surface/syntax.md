@@ -7,7 +7,7 @@ source language and its elaboration to the frozen kernel in
 `files/firth-kernel-spec-draft.md`. Surface syntax has no independent runtime
 semantics. After name resolution, macro expansion, and checking, every body is
 a kernel `Program` made only from `lit c`, quotation literals, the atoms
-`dup`, `drop`, `swap`, `dip`, `call`, `compose`, `quote`, `if`, a
+`dup`, `drop`, `swap`, `pick n`, `roll n`, `dip`, `call`, `compose`, `quote`, `if`, a
 dictionary word `w`, or `prim π`.
 
 The specification covers source files, vocabularies, words, literals,
@@ -338,21 +338,17 @@ unique slot identity with its usage and type, for example
 of body items and the number of future demands for each slot. A local name is a
 slot demand, not a kernel atom.
 
-For a demand of slot `x`, canonical `focus(x,S)` is defined recursively. It is
-empty when `x` is top; it is `swap` when `x` is immediately below top; and when
-the top is a protected value `v` above `x`, it emits `[focus(x,S_without_v)] dip
-swap`. The recursive quotation is constructed first, then pushed above `v`;
-`dip` runs the recursive focus below `v`, and the final `swap` moves the focused
-slot above `v`. No additional `swap` is emitted before this recursive quotation.
-For example, focusing the bottom of `[a,b,c]` emits
-`[swap] dip swap`, which is a sequence of valid kernel steps and
+For a demand of slot `x` sitting `n` places below the top of `S`, canonical
+`focus(x,S)` is empty when `n` is 0, `swap` when `n` is 1, and `roll n`
+otherwise: one kernel step that moves `x` to the top and keeps the other values
+in order. For example, focusing the bottom of `[a,b,c]` emits `roll 2` and
 leaves `[b,c,a]`. Focus never copies or discards a value.
 
 A local name is a select operation that places its slot on top for the next
 ordinary item. If a select of slot `x` is followed by further selects of `x`
-in the same body, and `x` is `many`, it first copies `x` where it sits, with
-`dup` under as many `dip`s as there are values above `x`, then emits
-`focus` of the copy (which sits directly above `x`). The copy receives a fresh
+in the same body, and `x` is `many`, it copies `x` to the top with `pick n`
+(`dup` when `n` is 0), the same as copying `x` where it sits and then focusing
+the copy, which sits directly above `x`. The copy receives a fresh
 identity and is the one selected; the original stays available. The last select
 of `x` makes no copy and focuses the original identity itself. Making one copy
 per select, rather than all copies at the first select, keeps the stack, and
@@ -389,8 +385,8 @@ select are not cleanup candidates. The stack state is updated after each
 removal. A linear slot with no select, or any slot that would need to be
 silently discarded, is an error.
 
-This is a total algorithm: the finite body is scanned once, each focus emits a
-finite number of adjacent swaps, each usage count is finite, and the
+This is a total algorithm: the finite body is scanned once, each focus and
+copy emits at most one atom, each usage count is finite, and the
 copy-per-select rule gives exactly one identity to every demand. It fails with a diagnostic if a name is absent, a required focus is not
 represented by the current typed stack, or a linear usage count is not exactly
 one. The canonical output is therefore unique and contains only kernel atoms,
@@ -438,7 +434,7 @@ or local expansion.
 
 The linter reports `LOCAL_DEPTH` when a local block declares more than four
 names and `STACK_JUGGLE` when its expansion contains more than four
-consecutive structural atoms (`dup`, `drop`, `swap`, `dip`). These are
+consecutive structural atoms (`dup`, `drop`, `swap`, `pick`, `roll`, `dip`). These are
 warnings, not typing rules. Splitting the word is recommended.
 
 ## 6. Worked elaborations
