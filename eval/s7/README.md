@@ -192,6 +192,26 @@ Results are in `runs/2026-09-27-hard/`.
   values") sent it to strip out locals and break two other tasks. A misleading
   hint costs more than no hint.
 
+## Rescore after the locals rework left PR #113
+
+The locals fixes that run 3 was scored on were taken out of PR #113 at
+`b958353`, after review found silent miscompiles in them. They will return
+as a separate PR. Every stored Firth answer from runs 2 and 3 was rescored at
+`b958353` with no new model calls. The results are in
+`runs/rescore-pr113-b958353.json`.
+
+- **Run 2 is unchanged.** All four attempts pass exactly the same tasks, so
+  its numbers stand on #113 as it will merge.
+- **Run 3 depends on the locals PR.** At `b958353`, Sonnet passes 3 of its
+  27 tasks and Haiku passes none. Every task that stopped passing is now
+  rejected by the checker (`unsupported-capture` for locals used inside `if`
+  branches, `unbound-local` for reusing the top local). None of them run and
+  give a wrong answer. These are counted as blocked on the locals PR, not as
+  model failures. The nine reference solutions are blocked the same way.
+- Run 3's table therefore holds only for a build with working locals. The
+  locals miscompile may have let a wrong answer pass at `ecd724d`, and that
+  can't be checked until the locals PR lands. Run 3 gets rescored then.
+
 ## What the three runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from
@@ -203,7 +223,8 @@ ways the checker caught but Haiku could not repair. The checker found most
 stack-shape errors before execution. Wrong answers at runtime were logic slips
 that a signature cannot catch. So the bet holds for strong models and not yet
 for weak ones, and the costs are real: Sonnet spent 20 to 100 times longer per
-Firth attempt than per Python attempt.
+Firth attempt than per Python attempt. The run 3 half of that evidence waits
+on the locals PR (see the rescore above).
 
 ## Limits and next steps
 
