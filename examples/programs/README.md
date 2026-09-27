@@ -84,7 +84,7 @@ python3 tools/loop/firth_run.py run examples/programs/sequences.firth --entry su
 ## Limits
 
 - `allocate.firth` is one step of `specs/inventory-allocation.md`; the whole
-  batch over sequences is the next milestone.
+  batch is `examples/inventory/`.
 - The trace comparison reports `unsupported-quotation-values` for these
   programs, because `if` puts quotations on the stack. Final stacks, costs and
   trace lengths are still compared.

@@ -17,6 +17,16 @@ Run and modify an inventory-allocation component written in Firth.
 - Demonstrate changing partial fulfilment to all-or-nothing while preserving other requirements, with changed-word/dependency checks and regression evidence.
 - Add an executable acceptance gate to the obligations row before setting this task done. A Python model or fixture validator is not the Firth implementation.
 
+## Progress
+
+- 27 September 2026: `examples/inventory/allocator.firth` implements the
+  calculation with its bounds and repeated-ID checks. `run_cases.py` is the
+  host, and CI runs the fixed corpus on both hosts: 50 of 53 cases pass, and
+  the 3 that need a negative integer are blocked on signed `Int`. The worst
+  case cost is at most 391 + 767n + 297n(n-1)/2 kernel steps; that bound is
+  measured, not proved. Still open: those 3 cases, the policy-change
+  demonstration, and toolchain-checked properties (`language-06`).
+
 ## Traceability
 
 PRD G8/G9/S5; dec.usable-language-milestones, first real consumer.

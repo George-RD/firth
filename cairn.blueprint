@@ -57,6 +57,7 @@ System Firth "Concatenative language elaborated through Lean 4 and compiled to a
             path "src/agent"
             path "examples/mvp"
             path "examples/programs"
+            path "examples/inventory"
         }
     }
 
