@@ -9,6 +9,12 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
+ORIGINAL_CASES = {
+    "empty-batch", "full-allocation", "partial-final", "zero-stock", "partial-oversize-first",
+    "whole-oversize-first", "whole-remainder", "whole-zero-stock", "maximum-quantity", "maximum-batch",
+    "negative-stock", "zero-quantity", "oversized-stock", "boolean-quantity", "float-quantity",
+    "unknown-member", "duplicate-id", "range-before-duplicate", "unknown-policy",
+}
 
 
 def model(value: Any) -> dict[str, Any]:
@@ -64,6 +70,24 @@ class InventoryContractTests(unittest.TestCase):
                 for allocation, request in zip(result["allocations"], case["input"]["requests"]):
                     self.assertGreaterEqual(allocation["quantity"], 0)
                     self.assertLessEqual(allocation["quantity"], request["quantity"])
+
+    def test_original_cases_retained(self) -> None:
+        # The 19 cases committed before the contract freeze may not be removed or renamed.
+        names = {case["name"] for case in self.corpus["cases"]}
+        self.assertLessEqual(ORIGINAL_CASES, names)
+
+    def test_every_error_code_and_reason_is_exercised(self) -> None:
+        codes = {case["expected"]["code"] for case in self.corpus["cases"] if case["expected"]["status"] == "error"}
+        reasons = {a["reason"] for case in self.corpus["cases"] if case["expected"]["status"] == "ok" for a in case["expected"]["allocations"]}
+        self.assertEqual(codes, {"invalid-input", "invalid-range", "duplicate-id"})
+        self.assertEqual(reasons, {"fulfilled", "partial", "out-of-stock", "insufficient-stock"})
+
+    def test_fraction_and_exponent_numbers_decode_as_non_integers(self) -> None:
+        cases = {case["name"]: case for case in self.corpus["cases"]}
+        for name in ("float-quantity", "exponent-quantity"):
+            with self.subTest(case=name):
+                self.assertIsInstance(cases[name]["input"]["requests"][0]["quantity"], float)
+        self.assertIn('"quantity":1e0', (ROOT / "specs/inventory-allocation-cases.json").read_text())
 
     def test_policy_change_and_zero_allocation_loophole(self) -> None:
         cases = {case["name"]: case for case in self.corpus["cases"]}
