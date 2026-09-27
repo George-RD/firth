@@ -4,7 +4,7 @@ status: open
 created: 2026-09-08
 ---
 
-Requires: language-04-differential-execution language-06-source-refinement-execution language-10-inventory-contract language-11-arithmetic-comparison language-12-data-and-modules
+Requires: language-04-differential-execution language-06b-program-property-proofs language-06c-proved-cost-bound language-10-inventory-contract language-11-arithmetic-comparison language-12-data-and-modules
 
 ## Goal
 
@@ -24,7 +24,8 @@ Run and modify an inventory-allocation component written in Firth.
   host, and CI runs the fixed corpus on both hosts: all 53 cases pass (the 3
   negative-input cases since signed `Int`). The worst case cost is at most
   417 + 767n + 264n(n-1)/2 kernel steps; that bound is measured, not proved.
-  Still open: toolchain-checked properties (`language-06`).
+  Still open: toolchain-checked properties and a proved cost bound
+  (`language-06b`, `language-06c`).
 - 27 September 2026: `examples/inventory/policy_change.py` changes a
   partial client (`policy-change/partial.firth`) to all-or-nothing and runs in
   CI. From the compiler's word digests and call graph it checks that only the
