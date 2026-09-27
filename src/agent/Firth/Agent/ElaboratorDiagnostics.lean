@@ -133,6 +133,10 @@ private def erasureDiagnostic : Firth.Elaborator.ErasureError → ErasureDiagnos
       { code := "firth.elaboration.unsupported-literal", cause := "elaboration", params := .mkObj [], span }
   | .unsupportedAtom name span =>
       { code := "firth.elaboration.unsupported-atom", cause := "elaboration", params := namedParams name, span }
+  | .untrackedStack name span =>
+      { code := "firth.elaboration.untracked-local", cause := "elaboration", params := namedParams name, span }
+  | .hiddenLocal name span =>
+      { code := "firth.elaboration.hidden-local", cause := "elaboration", params := namedParams name, span }
 
 private def erasureExplanation (code name : String) : String × String :=
   match code with
@@ -152,6 +156,12 @@ private def erasureExplanation (code name : String) : String × String :=
           "Split the definition into smaller named words.")
       | _ => (s!"`{name}` needs more values than the stack holds here.",
           s!"Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `{name}` and in what order.")
+  | "firth.elaboration.hidden-local" =>
+      (s!"The checker could not move the local `{name}` out of the way of the operation here.",
+        "This is a checker limit, not an error in the program: name the values the operation takes in a `locals` block, or move the code into a named word.")
+  | "firth.elaboration.untracked-local" =>
+      (s!"The local `{name}` is used after `call`, `dip` or `if` ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.",
+        "Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.")
   | "firth.name.unresolved-effect" =>
       (s!"`prim {name}` is not a primitive.", "The available primitives are `prim +`, `prim -`, `prim *`, `prim <` and `prim =`.")
   | "firth.linearity.copy" =>

@@ -35,6 +35,12 @@ inductive ErasureError where
   | usageMismatch (name : String) (span : Span)
   | unsupportedLiteral (span : Span)
   | unsupportedAtom (name : String) (span : Span)
+  /-- A local is used after `call`, `dip` or `if` ran a quotation whose stack
+  effect is not known here, so where the local sits can't be determined. -/
+  | untrackedStack (name : String) (span : Span)
+  /-- An operation would take a local that is not yet used, and it could not
+  be moved out of the way. A block's locals are off the stack for its body. -/
+  | hiddenLocal (name : String) (span : Span)
   deriving Repr, BEq
 
 structure LintWarning where
@@ -56,16 +62,25 @@ structure Slot where
   family : Nat := 0
   available : Bool := true
   expanded : Bool := false
+  /-- The stack effect of the quotation the local holds, when known, so that
+  running a selected copy keeps the tracked stack exact. -/
+  effect : Option (Nat × Nat) := none
   deriving Repr, BEq
 
 structure StackEntry where
   slot : Option Slot := none
   usage : Usage
+  /-- For a quotation built in this body: how many values it consumes and
+  produces, as inferred when it was erased. -/
+  effect : Option (Nat × Nat) := none
   deriving Repr, BEq
 
 structure State where
   stack : List StackEntry
   nextId : Nat := 0
+  /-- Set once a quotation of unknown stack effect has run: from then on the
+  tracked stack may not match the real one, so no local may be located. -/
+  untracked : Bool := false
   deriving Repr, BEq
 
 private def located (span : Span) (atom : Atom) : LocatedKernel := { span, atom }
@@ -101,11 +116,21 @@ private def duplicateName : List LocatedName → Option LocatedName
     | some duplicate => some duplicate
     | none => duplicateName xs
 
+/-- The slot named `name` of the innermost block that binds it. Blocks name
+values where they sit, so an inner block's locals can lie below an outer
+block's; scope, not stack position, decides. Families are numbered as blocks
+are entered, so the innermost block has the largest. -/
 private def firstNamedSlot (name : String) : List StackEntry → Option Slot
   | [] => none
-  | x :: xs => match x.slot with
-    | some slot => if slot.name == name then some slot else firstNamedSlot name xs
-    | none => firstNamedSlot name xs
+  | x :: xs =>
+    let deeper := firstNamedSlot name xs
+    match x.slot with
+    | some slot =>
+        if slot.name == name then match deeper with
+          | some other => if other.family > slot.family then some other else some slot
+          | none => some slot
+        else deeper
+    | none => deeper
 
 private def availableFamily (name : String) (family : Nat) : List StackEntry → Option Slot
   | [] => none
@@ -143,6 +168,64 @@ private def isFocusTarget (id : Nat) (entry : StackEntry) : Bool :=
   match entry.slot with
   | some slot => slot.id == id
   | none => false
+
+/-! Higher-order atoms move the tracked stack by the effect of the quotation
+they run. A quotation whose effect is unknown (it came from the input or a
+word) leaves the tracked stack as it was; the type checker still decides. -/
+
+/-- Runs a quotation of known effect on `stack`. Fails, rather than
+truncating, when the stack holds fewer values than the effect consumes: the
+caller then retries a quotation body with more seed values, so the effect it
+records is the body's true depth. -/
+private def applyEffect (effect : Nat × Nat) (stack : List StackEntry) :
+    Option (List StackEntry) :=
+  if stack.length < effect.1 then none
+  else some (List.replicate effect.2 { usage := .many } ++ stack.drop effect.1)
+
+/-- Both branches run on the same stack, so they must change its depth by the
+same amount; the deeper of the two inputs is consumed. -/
+private def branchEffect : Option (Nat × Nat) → Option (Nat × Nat) → Option (Nat × Nat)
+  | some (i, o), some (i', o') =>
+      if o + i' = o' + i then some (max i i', max i i' + o - i) else none
+  | _, _ => none
+
+/-- The tracked stack after a higher-order atom, and whether it is still
+exact. A quotation of unknown effect leaves the stack as it was and marks it
+inexact; a stack too short for the atom, or for the effect it runs, is an
+error. -/
+private def runKnown (effect : Option (Nat × Nat)) (stack whole : List StackEntry)
+    (wrap : List StackEntry → List StackEntry) : Option (List StackEntry × Bool) :=
+  match effect with
+  | some effect => (applyEffect effect stack).map (fun next => (wrap next, true))
+  | none => some (whole, false)
+
+private def callMove : List StackEntry → Option (List StackEntry × Bool)
+  | quotation :: rest => runKnown quotation.effect rest (quotation :: rest) id
+  | [] => none
+
+private def dipMove : List StackEntry → Option (List StackEntry × Bool)
+  | quotation :: preserved :: rest =>
+      runKnown quotation.effect rest (quotation :: preserved :: rest) (preserved :: ·)
+  | _ => none
+
+private def ifMove : List StackEntry → Option (List StackEntry × Bool)
+  | falseBranch :: trueBranch :: condition :: rest =>
+      runKnown (branchEffect trueBranch.effect falseBranch.effect) rest
+        (falseBranch :: trueBranch :: condition :: rest) id
+  | _ => none
+
+/-- The effect a quotation body records, unless running it lost track of the stack. -/
+private def bodyEffect (seedCount : Nat) (final : State) : Option (Nat × Nat) :=
+  if final.untracked then none else some (seedCount, final.stack.length)
+
+private def composeEffect : Option (Nat × Nat) → Option (Nat × Nat) → Option (Nat × Nat)
+  | some (i₁, o₁), some (i₂, o₂) => some (i₁ + (i₂ - o₁), o₂ + (o₁ - i₂))
+  | _, _ => none
+
+private def composeMove : List StackEntry → Option (List StackEntry × Bool)
+  | second :: first :: rest =>
+      some ({ usage := .many, effect := composeEffect first.effect second.effect } :: rest, true)
+  | _ => none
 
 inductive FocusRel (id : Nat) (span : Span) :
     List StackEntry → KernelProgram → List StackEntry → Prop where
@@ -224,32 +307,56 @@ private def initialState (effect : StackEffect) : State :=
     | .value _ type _ => type.usage)
   { stack := usages.map (fun usage => { usage }) }
 
+/-- A local not yet used: a name, not a value the body can see on the stack. -/
+def hiddenEntry (entry : StackEntry) : Bool :=
+  (entry.slot.map (·.available)).getD false
+
+/-- The top `count` values the body can see, top first, passing over unused
+locals: those are off the stack for the body, wherever they physically sit. -/
+def bindable : Nat → List StackEntry → List StackEntry
+  | 0, _ => []
+  | _, [] => []
+  | count + 1, entry :: rest =>
+      if hiddenEntry entry then bindable (count + 1) rest else entry :: bindable count rest
+
+/-- Replaces the values `bindable` chose with `named`, top first, in place. -/
+def nameInPlace : List StackEntry → List StackEntry → List StackEntry
+  | [], stack => stack
+  | _, [] => []
+  | name :: names, entry :: rest =>
+      if hiddenEntry entry then entry :: nameInPlace (name :: names) rest
+      else name :: nameInPlace names rest
+
 private def boundSlots (names : List LocatedName) (state : State) : List Slot :=
-  let top := state.stack.take names.length
+  let top := bindable names.length state.stack
   let slots : List Slot := (names.zip top.reverse).map (fun (name, entry) =>
     { id := 0, name := name.name, usage := entry.usage, origin := name.span,
       family := state.nextId,
-      restoredId := entry.slot.map (·.id) })
+      restoredId := entry.slot.map (·.id), effect := entry.effect })
   slots.zip (List.range slots.length) |>.map (fun (slot, index) =>
     { slot with id := state.nextId + index })
 
+/-- A block names values where they sit, so binding emits no code. -/
 private def enteredLocalState (names : List LocatedName) (state : State) : State :=
   let slots := boundSlots names state
-  let replaced := slots.reverse.map (fun slot => { slot := some slot, usage := slot.usage }) ++
-    state.stack.drop names.length
-  { stack := replaced, nextId := state.nextId + names.length }
+  let named := slots.reverse.map (fun slot =>
+      { slot := some slot, usage := slot.usage, effect := slot.effect })
+  { state with stack := nameInPlace named state.stack, nextId := state.nextId + names.length }
 
 private def localStack (names : List LocatedName) (state : State) : Except ErasureError (State × List Slot) :=
-  if state.stack.length < names.length then .error (.missingStackValue (names.head?.map (·.span) |>.getD emptySpan))
+  if (bindable names.length state.stack).length < names.length then .error (.missingStackValue (names.head?.map (·.span) |>.getD emptySpan))
   else .ok (enteredLocalState names state, boundSlots names state)
 
+/-- When a block ends its names go out of scope. Whatever is left on the stack
+of its locals has been used (cleanup dropped the rest), so it becomes an
+anonymous value; a name left on it would hide the same name of an enclosing
+block. -/
 private def restoreParents (slots : List Slot) (stack : List StackEntry) : List StackEntry :=
   stack.map fun entry => match entry.slot with
-  | some child => match slots.find? (fun slot => slot.id == child.id) with
-    | some declared => match declared.restoredId with
-      | some parent => { entry with slot := some { child with id := parent, available := false } }
-      | none => entry
-    | none => entry
+  | some child =>
+      if slots.any (fun declared => declared.family == child.family) then
+        { entry with slot := none }
+      else entry
   | none => entry
 
 private def cleanup (slots : List Slot) (state : State) : Except ErasureError (KernelProgram × State) :=
@@ -281,6 +388,24 @@ mutual
     | item :: rest => itemFuel item + itemsFuel rest + 1
 end
 
+mutual
+  private def itemNesting : Item → Nat
+    | .quotation body _ | .locals _ body _ => itemsNesting body + 1
+    | _ => 0
+
+  private def itemsNesting : List Item → Nat
+    | [] => 0
+    | item :: rest => max (itemNesting item) (itemsNesting rest)
+end
+
+/-- The recursion budget for erasing `items`. Closing a quotation over the
+locals it uses (`liftCaptures`) adds a prefix and a `locals` block around its
+body, once per enclosing quotation level, so the budget grows with nesting as
+well as size. It only bounds recursion; erasure never runs it out on a
+program the checker could accept without also running out of names. -/
+private def erasureDepth (items : List Item) : Nat :=
+  (itemsFuel items + 1) * 8 ^ (2 * itemsNesting items + 2)
+
 private def demandCountWithFuel (fuel : Nat) (name : String) (items : List Item) : Nat :=
   match fuel with
   | 0 => 0
@@ -290,11 +415,23 @@ private def demandCountWithFuel (fuel : Nat) (name : String) (items : List Item)
     | .locals names body _ :: xs =>
         (if names.any (fun binding => binding.name == name) then 0
           else demandCountWithFuel fuel name body) + demandCountWithFuel fuel name xs
-    | .quotation _ _ :: xs => demandCountWithFuel fuel name xs
+    -- A use inside a quotation is lifted out to where the quotation is built.
+    | .quotation body _ :: xs =>
+        demandCountWithFuel fuel name body + demandCountWithFuel fuel name xs
     | _ :: xs => demandCountWithFuel fuel name xs
 
 private def demandCount (name : String) (items : List Item) : Nat :=
   demandCountWithFuel (itemsFuel items) name items
+
+/-- How many uses of a local remain, counting this one. The rest of the
+block that bound it shows every later use. A local of an enclosing block may
+also be used after the inner block ends, which the inner block can't see, so
+a `many` one is always copied and the copy left over is dropped when its own
+block ends. -/
+private def useCount (slots : List Slot) (slot : Slot) (name : String) (rest : List Item) : Nat :=
+  if slots.any (fun declared => declared.family == slot.family) || slot.usage == .linear then
+    1 + demandCount name rest
+  else 2
 
 private def demandSpansWithFuel (fuel : Nat) (name : String) (items : List Item) : List Span :=
   match fuel with
@@ -306,7 +443,8 @@ private def demandSpansWithFuel (fuel : Nat) (name : String) (items : List Item)
     | .locals names body _ :: xs =>
         (if names.any (fun binding => binding.name == name) then []
           else demandSpansWithFuel fuel name body) ++ demandSpansWithFuel fuel name xs
-    | .quotation _ _ :: xs => demandSpansWithFuel fuel name xs
+    | .quotation body _ :: xs =>
+        demandSpansWithFuel fuel name body ++ demandSpansWithFuel fuel name xs
     | _ :: xs => demandSpansWithFuel fuel name xs
 
 private def demandSpans (name : String) (items : List Item) : List Span :=
@@ -322,8 +460,10 @@ private def captureScanWithFuel (fuel : Nat) (bound visible : List String)
         if bound.contains name then captureScanWithFuel fuel bound visible xs
         else if visible.contains name then some (name, span)
         else captureScanWithFuel fuel bound visible xs
+    -- Names bound inside the scanned items are lifted when their block is
+    -- erased, so they may be used from nested quotations too.
     | .quotation body _ :: xs =>
-        match captureScanWithFuel fuel [] (bound ++ visible) body with
+        match captureScanWithFuel fuel bound visible body with
         | some result => some result
         | none => captureScanWithFuel fuel bound visible xs
     | .locals names body _ :: xs =>
@@ -331,6 +471,51 @@ private def captureScanWithFuel (fuel : Nat) (bound visible : List String)
         | some result => some result
         | none => captureScanWithFuel fuel bound visible xs
     | _ :: xs => captureScanWithFuel fuel bound visible xs
+
+/-- The visible locals used in `items` and not shadowed there, first use first. -/
+private def freeNamesWithFuel (fuel : Nat) (visible shadow : List String) (items : List Item) :
+    List String :=
+  match fuel with
+  | 0 => []
+  | fuel + 1 => items.foldl (fun found item =>
+      let more := match item with
+        | .word name _ =>
+            if visible.contains name && !shadow.contains name then [name] else []
+        | .quotation body _ => freeNamesWithFuel fuel visible shadow body
+        | .locals names body _ =>
+            freeNamesWithFuel fuel visible (names.map LocatedName.name ++ shadow) body
+        | _ => []
+      found ++ more.filter (fun name => !found.contains name)) []
+
+/-- A quotation body is erased on its own, without the enclosing locals, so a
+quotation that uses them is closed over their values where it is built:
+`[ s ]` using `x` and `y` becomes `x quote y quote compose [ locals { x y }
+{ s } ] compose`. The values are selected like any other use; when the
+quotation runs it pushes them and binds them again, so `s` is erased as the
+body of an ordinary block. Every name `s` uses is bound there, including uses
+in nested quotations and blocks, and the constant prefix has the known effect
+`(0, k)`, so running the quotation keeps the tracked stack exact. -/
+private def closeQuotation (visible : List String) (fuel : Nat) (span : Span)
+    (body : List Item) : List Item :=
+  match freeNamesWithFuel fuel visible [] body with
+  | [] => [.quotation body span]
+  | first :: rest =>
+      [.word first span, .atom "quote" span] ++
+        rest.flatMap (fun name => [.word name span, .atom "quote" span, .atom "compose" span]) ++
+        [.quotation [.locals ((first :: rest).map (fun name => ({ name, span } : LocatedName)))
+          body span] span,
+         .atom "compose" span]
+
+private def liftCapturesWithFuel (fuel : Nat) (visible : List String) (items : List Item) :
+    List Item :=
+  match fuel with
+  | 0 => items
+  | fuel + 1 => items.flatMap fun item => match item with
+    | .quotation body span => closeQuotation visible fuel span body
+    | other => [other]
+
+private def liftCaptures (visible : List String) (items : List Item) : List Item :=
+  liftCapturesWithFuel (itemsFuel items) visible items
 
 private def captureIn (visible : List String) (items : List Item) : Option (String × Span) :=
   captureScanWithFuel (itemsFuel items) [] visible items
@@ -366,9 +551,29 @@ private def quotationInferenceFuel (env : EffectEnv) (items : List Item) : Nat :
    kernel program, rather than to one atom.  None of these judgements mentions
    the executable `erase` function. -/
 
+/-- A not-yet-used local among the top `count` entries. Those are the values an
+operation takes; a local there would be consumed or moved as if it were an
+ordinary stack value, which it is not in the body of its block. -/
+def hiddenIn (count : Nat) (stack : List StackEntry) : Option Slot :=
+  (stack.take count).findSome? fun entry => entry.slot.filter (·.available)
+
+/-- How many top entries an atom takes, including the values a quotation of
+known effect takes when the atom runs it. -/
+def atomReach (name : String) (stack : List StackEntry) : Nat :=
+  let inputs (entry : StackEntry) := (entry.effect.map (·.1)).getD 0
+  match name, stack with
+  | "call", quotation :: _ => 1 + inputs quotation
+  | "dip", quotation :: _ => 2 + inputs quotation
+  | "if", falseBranch :: trueBranch :: _ =>
+      3 + ((branchEffect trueBranch.effect falseBranch.effect).map (·.1)).getD 0
+  | "compose", _ | "swap", _ => 2
+  | "dup", _ | "drop", _ | "quote", _ => 1
+  | _, _ => 0
+
 inductive AppliesSignature (signature : Signature) (state : State) : State → Prop where
   | apply
       (enough : signature.input.length ≤ state.stack.length)
+      (clear : hiddenIn signature.input.length state.stack = none)
       (compatible : (signature.input.zip (state.stack.take signature.input.length)).any
         (fun (expected, actual) => expected == .many && actual.usage == .linear) = false) :
       AppliesSignature signature state
@@ -377,7 +582,7 @@ inductive AppliesSignature (signature : Signature) (state : State) : State → P
             state.stack.drop signature.input.length }
 
 inductive BindsLocals (names : List LocatedName) (state : State) : State → List Slot → Prop where
-  | bind (enough : names.length ≤ state.stack.length) :
+  | bind (enough : names.length ≤ (bindable names.length state.stack).length) :
       BindsLocals names state (enteredLocalState names state) (boundSlots names state)
 
 inductive ResolvesSlot (name : String) (stack : List StackEntry) (slot : Slot) : Prop where
@@ -404,33 +609,48 @@ inductive CleansLocals (slots : List Slot) : State → KernelProgram → State �
       (rest : CleansLocals slots { state with stack := focused.drop 1 } tail final) :
       CleansLocals slots state (focus ++ atomList .drop candidate.origin ++ tail) final
 
+/-- A use copies the local only when a later use still needs it, and makes
+one copy at a time. Copying every later use up front made the stack, and the
+code that reaches into it, grow with the number of uses. -/
 private def demandCopies (slot : Slot) (name : String) (count : Nat) (state : State) : List Slot :=
-  List.range (if slot.expanded then 0 else count - 1) |>.map (fun index =>
-    Slot.mk (state.nextId + index) name slot.usage slot.origin none slot.family true true)
+  List.range (if count > 1 then 1 else 0) |>.map (fun index =>
+    Slot.mk (state.nextId + index) name slot.usage slot.origin none slot.family true true slot.effect)
 
-private def demandProgram (span : Span) (focus : KernelProgram) (copies : List Slot) : KernelProgram :=
-  focus ++ List.replicate copies.length (located span .dup)
+/-- `dup` applied to the value `depth` places below the top, leaving the
+values above it where they are: `[dup]`, `[[dup] dip]`, `[[[dup] dip] dip]`... -/
+private def dupAtDepth (span : Span) : Nat → KernelProgram
+  | 0 => atomList .dup span
+  | depth + 1 => [locatedQuotation span (dupAtDepth span depth)] ++ atomList .dip span
+
+/-- Extra copies of a local are made where the local already sits, so values
+already selected above it keep their places. -/
+private def copyProgram (span : Span) (depth : Nat) (copies : List Slot) : KernelProgram :=
+  (List.replicate copies.length (dupAtDepth span depth)).flatten
+
+private def copyEntries (copies : List Slot) : List StackEntry :=
+  copies.reverse.map (fun fresh => { slot := some fresh, usage := fresh.usage, effect := fresh.effect })
+
+/-- The stack after `copyProgram`: the copies sit at `depth`, above the local. -/
+private def spliceCopies (depth : Nat) (copies : List Slot) (stack : List StackEntry) :
+    List StackEntry :=
+  stack.take depth ++ copyEntries copies ++ stack.drop depth
+
+/-- The value the use selects: the nearest copy, or the local itself. -/
+private def selectedId (slot : Slot) (copies : List Slot) : Nat :=
+  (copies.getLast?).map (·.id) |>.getD slot.id
 
 private def demandState (slot : Slot) (state : State) (focused : List StackEntry)
     (copies : List Slot) : State :=
-  let copied : List StackEntry := copies.reverse.map (fun fresh =>
-    { slot := some fresh, usage := fresh.usage })
-  let selected := (copies.getLast?).map (·.id) |>.getD slot.id
   { state with
     nextId := state.nextId + copies.length
-    stack := markUnavailable selected (copied ++ markExpanded slot.id focused) }
+    stack := markUnavailable (selectedId slot copies) (markExpanded slot.id focused) }
 
 inductive DemandCopiesRel (slot : Slot) (name : String) (count : Nat) (state : State) :
     List Slot → Prop where
   | generate :
       DemandCopiesRel slot name count state
-        (List.range (if slot.expanded then 0 else count - 1) |>.map (fun index =>
-          Slot.mk (state.nextId + index) name slot.usage slot.origin none slot.family true true))
-
-inductive DemandProgramRel (span : Span) (focus : KernelProgram) (copies : List Slot) :
-    KernelProgram → Prop where
-  | emit : DemandProgramRel span focus copies
-      (focus ++ List.replicate copies.length (located span .dup))
+        (List.range (if count > 1 then 1 else 0) |>.map (fun index =>
+          Slot.mk (state.nextId + index) name slot.usage slot.origin none slot.family true true slot.effect))
 
 inductive DemandStateRel (slot : Slot) (state : State) (focused : List StackEntry)
     (copies : List Slot) : State → Prop where
@@ -438,17 +658,23 @@ inductive DemandStateRel (slot : Slot) (state : State) (focused : List StackEntr
       { state with
         nextId := state.nextId + copies.length
         stack := markUnavailable ((copies.getLast?).map (·.id) |>.getD slot.id)
-          (copies.reverse.map (fun fresh => { slot := some fresh, usage := fresh.usage }) ++
-            markExpanded slot.id focused) }
+          (markExpanded slot.id focused) }
 
+/-- One use of a local: copy it in place if a later use still needs it, then
+bring the selected value to the top. -/
 inductive ExpandsDemand (slot : Slot) (name : String) (span : Span) (count : Nat)
-    (state : State) (focus : KernelProgram) (focused : List StackEntry) :
-    KernelProgram → State → Prop where
-  | expand {copies : List Slot} {program : KernelProgram} {next : State}
+    (state : State) : KernelProgram → State → Prop where
+  | expand {copies : List Slot} {depth : Nat} {focus : KernelProgram}
+      {focused : List StackEntry} {next : State}
       (copiesRule : DemandCopiesRel slot name count state copies)
-      (programRule : DemandProgramRel span focus copies program)
+      (located : state.stack.findIdx? (isFocusTarget slot.id) = some depth)
+      (focusedBy : FocusRel ((copies.getLast?).map (·.id) |>.getD slot.id) span
+        (state.stack.take depth ++
+          copies.reverse.map (fun fresh => { slot := some fresh, usage := fresh.usage, effect := fresh.effect }) ++
+          state.stack.drop depth) focus focused)
       (stateRule : DemandStateRel slot state focused copies next) :
-      ExpandsDemand slot name span count state focus focused program next
+      ExpandsDemand slot name span count state
+        ((List.replicate copies.length (dupAtDepth span depth)).flatten ++ focus) next
 
 inductive ErasesAtomTo : String → Span → State → KernelProgram → State → Prop where
   | swap {span : Span} {state : State} {a b : StackEntry} {rest : List StackEntry}
@@ -468,19 +694,50 @@ inductive ErasesAtomTo : String → Span → State → KernelProgram → State �
   | quote {span : Span} {state : State} {a : StackEntry} {rest : List StackEntry}
       (shape : state.stack = a :: rest) :
       ErasesAtomTo "quote" span state
-        (atomList .quote span) { state with stack := { usage := a.usage } :: rest }
-  | dip {span : Span} {state : State} :
-      ErasesAtomTo "dip" span state (atomList .dip span) state
-  | call {span : Span} {state : State} :
-      ErasesAtomTo "call" span state (atomList .call span) state
-  | compose {span : Span} {state : State} :
-      ErasesAtomTo "compose" span state (atomList .compose span) state
-  | ifThenElse {span : Span} {state : State} :
-      ErasesAtomTo "if" span state (atomList .ifThenElse span) state
+        (atomList .quote span)
+        { state with stack := { usage := a.usage, effect := some (0, 1) } :: rest }
+  | dip {span : Span} {state : State} {next : List StackEntry} {exact : Bool}
+      (moved : dipMove state.stack = some (next, exact)) :
+      ErasesAtomTo "dip" span state (atomList .dip span)
+        { state with stack := next, untracked := state.untracked || !exact }
+  | call {span : Span} {state : State} {next : List StackEntry} {exact : Bool}
+      (moved : callMove state.stack = some (next, exact)) :
+      ErasesAtomTo "call" span state (atomList .call span)
+        { state with stack := next, untracked := state.untracked || !exact }
+  | compose {span : Span} {state : State} {next : List StackEntry} {exact : Bool}
+      (moved : composeMove state.stack = some (next, exact)) :
+      ErasesAtomTo "compose" span state (atomList .compose span)
+        { state with stack := next, untracked := state.untracked || !exact }
+  | ifThenElse {span : Span} {state : State} {next : List StackEntry} {exact : Bool}
+      (moved : ifMove state.stack = some (next, exact)) :
+      ErasesAtomTo "if" span state (atomList .ifThenElse span)
+        { state with stack := next, untracked := state.untracked || !exact }
 
 private def NonWord : Item → Prop
   | .word _ _ => False
   | _ => True
+
+/-- `program` run under the top `count` values: `[ [ program ] dip ] dip`... -/
+def dipWrap (span : Span) : Nat → KernelProgram → KernelProgram
+  | 0, program => program
+  | count + 1, program => [locatedQuotation span (dipWrap span count program)] ++ atomList .dip span
+
+/-- Items that take values from the stack, and so may need to run beneath
+unused locals sitting on top of it. -/
+def itemSpan : Item → Span
+  | .literal _ span | .word _ span | .atom _ span | .primitive _ span
+  | .quotation _ span | .locals _ _ span => span
+
+def takesValues : Item → Bool
+  | .atom .. | .word .. | .primitive .. => true
+  | _ => false
+
+/-- How many top values an item takes. -/
+def itemReach (env : EffectEnv) (stack : List StackEntry) : Item → Nat
+  | .atom name _ => atomReach name stack
+  | .word name _ => ((env.word name).map (·.input.length)).getD 0
+  | .primitive name _ => ((env.primitive name).map (·.input.length)).getD 0
+  | _ => 0
 
 abbrev ScopeState := State
 abbrev SurfaceItem := Item
@@ -516,37 +773,59 @@ inductive ErasureRel (env : EffectEnv) :
       ErasureRel env (.item (.primitive name span) visible) state (atomList (.prim name) span) next
   | atom {name : String} {span : Span} {state next : State} {visible : List String}
       {program : KernelProgram}
+      (clear : hiddenIn (atomReach name state.stack) state.stack = none)
       (step : ErasesAtomTo name span state program next) :
       ErasureRel env (.item (.atom name span) visible) state program next
+  /-- An unused local lying among the values the item takes is moved to the
+  top first, where the item then runs beneath it. Only a name moves; the
+  values keep their order. -/
+  | raise {item : Item} {span : Span} {state next : State} {visible : List String}
+      {id : Nat} {focus program : KernelProgram} {focused : List StackEntry}
+      (named : state.stack.any (fun entry => hiddenEntry entry && isFocusTarget id entry) = true)
+      (focusedBy : FocusRel id span state.stack focus focused)
+      (itemRun : ErasureRel env (.item item visible) { state with stack := focused } program next) :
+      ErasureRel env (.item item visible) state (focus ++ program) next
+  /-- Unused locals on top are names, not values the item can see: the item
+  runs beneath them, and they stay on top. -/
+  | beneath {item : Item} {span : Span} {state next : State} {visible : List String}
+      {count : Nat} {program : KernelProgram}
+      (leading : count ≤ (state.stack.takeWhile hiddenEntry).length)
+      (itemRun : ErasureRel env (.item item visible)
+        { state with stack := state.stack.drop count } program next) :
+      ErasureRel env (.item item visible) state (dipWrap span count program)
+        { next with stack := state.stack.take count ++ next.stack }
   | quotation {body : List Item} {span : Span} {state bodyFinal : State}
       {visible : List String} {program : KernelProgram} {seedCount : Nat}
       (closed : captureIn visible body = none)
       (bodyRun : ErasureRel env (.items body visible)
         { stack := List.replicate seedCount { usage := .many } } program bodyFinal) :
       ErasureRel env (.item (.quotation body span) visible) state [locatedQuotation span program]
-        { state with stack := { usage := .many } :: state.stack }
+        { state with stack := { usage := .many, effect := bodyEffect seedCount bodyFinal } ::
+          state.stack }
   | locals {names : List LocatedName} {body : List Item} {span : Span}
       {state entered final : State} {visible : List String} {slots : List Slot}
       {program : KernelProgram}
       (unique : duplicateName names = none)
       (binding : BindsLocals names state entered slots)
       (bodyRun : ErasureRel env
-        (.localBody body slots (names.map (·.name) ++ visible)) entered program final) :
+        (.localBody (liftCaptures (names.map (·.name) ++ visible) body) slots
+          (names.map (·.name) ++ visible)) entered program final) :
       ErasureRel env (.item (.locals names body span) visible) state program final
   | localDone {state cleaned : State} {slots : List Slot} {visible : List String}
       {program : KernelProgram}
+      (tracked : (!state.untracked || !state.stack.any (cleanupCandidate slots)) = true)
       (cleanup : CleansLocals slots state program cleaned) :
       ErasureRel env (.localBody [] slots visible) state program
         { cleaned with stack := restoreParents slots cleaned.stack }
   | select {name : String} {span : Span} {rest : List Item} {state next final : State}
       {slots : List Slot} {visible : List String} {slot : Slot}
-      {focus head tail : KernelProgram} {focused : List StackEntry}
+      {head tail : KernelProgram}
       (active : (slots.any (fun declared => declared.name == name) || visible.contains name) = true)
+      (tracked : state.untracked = false)
       (resolved : ResolvesSlot name state.stack slot)
-      (linearOnce : slot.usage = .linear → 1 + demandCount name rest = 1)
-      (focusedBy : FocusRel slot.id span state.stack focus focused)
-      (expanded : ExpandsDemand slot name span (1 + demandCount name rest)
-        state focus focused head next)
+      (linearOnce : slot.usage = .linear → useCount slots slot name rest = 1)
+      (expanded : ExpandsDemand slot name span (useCount slots slot name rest)
+        state head next)
       (restRun : ErasureRel env (.localBody rest slots visible) next tail final) :
       ErasureRel env (.localBody (.word name span :: rest) slots visible)
         state (head ++ tail) final
@@ -648,31 +927,18 @@ private theorem demandCopies_correct (slot : Slot) (name : String) (count : Nat)
   rw [demandCopies]
   exact .generate
 
-private theorem demandProgram_correct (span : Span) (focus : KernelProgram)
-    (copies : List Slot) :
-    DemandProgramRel span focus copies (demandProgram span focus copies) := by
-  rw [demandProgram]
-  exact .emit
-
 private theorem demandState_correct (slot : Slot) (state : State)
     (focused : List StackEntry) (copies : List Slot) :
     DemandStateRel slot state focused copies (demandState slot state focused copies) := by
-  rw [demandState]
+  rw [demandState, selectedId]
   exact .advance
-
-private theorem demandExpansion_correct (slot : Slot) (name : String) (span : Span)
-    (count : Nat) (state : State) (focus : KernelProgram) (focused : List StackEntry) :
-    ExpandsDemand slot name span count state focus focused
-      (demandProgram span focus (demandCopies slot name count state))
-      (demandState slot state focused (demandCopies slot name count state)) := by
-  exact .expand (demandCopies_correct slot name count state)
-    (demandProgram_correct span focus (demandCopies slot name count state))
-    (demandState_correct slot state focused (demandCopies slot name count state))
 
 private def applySignatureWithProof (name : String) (span : Span) (signature : Signature)
     (state : State) : Except ErasureError { next : State // AppliesSignature signature state next } :=
   if short : state.stack.length < signature.input.length then .error (.effectUnderflow name span)
-  else
+  else match clearEq : hiddenIn signature.input.length state.stack with
+  | some slot => .error (.hiddenLocal slot.name span)
+  | none =>
     let bad := (signature.input.zip (state.stack.take signature.input.length)).any
       (fun (expected, actual) => expected == .many && actual.usage == .linear)
     if mismatch : bad = true then .error (.usageMismatch name span)
@@ -681,11 +947,11 @@ private def applySignatureWithProof (name : String) (span : Span) (signature : S
         stack := signature.output.map (fun usage => { usage }) ++
           state.stack.drop signature.input.length }
       have compatible : bad = false := bool_eq_false_of_not_true mismatch
-      .ok ⟨next, .apply (Nat.le_of_not_gt short) compatible⟩
+      .ok ⟨next, .apply (Nat.le_of_not_gt short) clearEq compatible⟩
 
 private def bindLocalsWithProof (names : List LocatedName) (state : State) :
     Except ErasureError (BindingRun names state) :=
-  if short : state.stack.length < names.length then
+  if short : (bindable names.length state.stack).length < names.length then
     .error (.missingStackValue (names.head?.map (·.span) |>.getD emptySpan))
   else .ok {
     entered := enteredLocalState names state
@@ -770,7 +1036,32 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
               final := tail.final
               evidence := .cons head.evidence tail.evidence }
 
-    | .item item visible => match item with
+    | .item item visible =>
+      let count := (state.stack.takeWhile hiddenEntry).length
+      if takesValues item && count > 0 then
+        match eraseSubjectWithProof depth env (.item item visible)
+            { state with stack := state.stack.drop count } with
+        | .error error => .error error
+        | .ok inner => .ok {
+            program := dipWrap (itemSpan item) count inner.program
+            final := { inner.final with stack := state.stack.take count ++ inner.final.stack }
+            evidence := .beneath (Nat.le_refl _) inner.evidence }
+      else match (if takesValues item then hiddenIn (itemReach env state.stack item) state.stack
+          else none) with
+      | some slot =>
+        if namedEq : state.stack.any (fun entry => hiddenEntry entry && isFocusTarget slot.id entry)
+            = true then
+          match focusEq : focusAtoms slot.id (itemSpan item) state.stack with
+          | .error error => .error error
+          | .ok (focus, focused) =>
+            match eraseSubjectWithProof depth env (.item item visible) { state with stack := focused } with
+            | .error error => .error error
+            | .ok inner => .ok {
+                program := focus ++ inner.program
+                final := inner.final
+                evidence := .raise namedEq (focusAtoms_correct _ _ _ focusEq) inner.evidence }
+        else .error (.hiddenLocal slot.name (itemSpan item))
+      | none => match item with
       | .literal literal span => match translatedEq : literalAtom literal.value with
         | none => .error (.unsupportedLiteral span)
         | some value => .ok {
@@ -793,19 +1084,21 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
               program := atomList (.prim name) span
               final := applied.val
               evidence := .primitive resolvedEq applied.property }
-      | .atom name span => match name with
+      | .atom name span => (match clearEq : hiddenIn (atomReach name state.stack) state.stack with
+      | some slot => .error (.hiddenLocal slot.name span)
+      | none => (match name with
         | "swap" => match stackEq : state.stack with
           | a :: b :: rest => .ok {
               program := atomList .swap span
               final := { state with stack := b :: a :: rest }
-              evidence := .atom (.swap stackEq) }
+              evidence := .atom clearEq (.swap stackEq) }
           | _ => .error (.effectUnderflow name span)
         | "dup" => match stackEq : state.stack with
           | a :: rest => match usageEq : a.usage with
             | .many => .ok {
                 program := atomList .dup span
                 final := { state with stack := a :: a :: rest }
-                evidence := .atom (.dup stackEq usageEq) }
+                evidence := .atom clearEq (.dup stackEq usageEq) }
             | .linear => .error (.linearCopy name span)
           | _ => .error (.effectUnderflow name span)
         | "drop" => match stackEq : state.stack with
@@ -813,7 +1106,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
             | .many => .ok {
                 program := atomList .drop span
                 final := { state with stack := rest }
-                evidence := .atom (.drop stackEq usageEq) }
+                evidence := .atom clearEq (.drop stackEq usageEq) }
             | .linear => match a.slot with
               | some slot => .error (.linearUnused slot.name span)
               | none => .error (.linearCopy name span)
@@ -821,26 +1114,34 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
         | "quote" => match stackEq : state.stack with
           | a :: rest => .ok {
               program := atomList .quote span
-              final := { state with stack := { usage := a.usage } :: rest }
-              evidence := .atom (.quote stackEq) }
+              final := { state with stack := { usage := a.usage, effect := some (0, 1) } :: rest }
+              evidence := .atom clearEq (.quote stackEq) }
           | _ => .error (.effectUnderflow name span)
-        | "dip" => .ok {
-            program := atomList .dip span
-            final := state
-            evidence := .atom .dip }
-        | "call" => .ok {
-            program := atomList .call span
-            final := state
-            evidence := .atom .call }
-        | "compose" => .ok {
-            program := atomList .compose span
-            final := state
-            evidence := .atom .compose }
-        | "if" => .ok {
-            program := atomList .ifThenElse span
-            final := state
-            evidence := .atom .ifThenElse }
-        | _ => .error (.unsupportedAtom name span)
+        | "dip" => match movedEq : dipMove state.stack with
+          | some (next, exact) => .ok {
+              program := atomList .dip span
+              final := { state with stack := next, untracked := state.untracked || !exact }
+              evidence := .atom clearEq (.dip movedEq) }
+          | none => .error (.effectUnderflow name span)
+        | "call" => match movedEq : callMove state.stack with
+          | some (next, exact) => .ok {
+              program := atomList .call span
+              final := { state with stack := next, untracked := state.untracked || !exact }
+              evidence := .atom clearEq (.call movedEq) }
+          | none => .error (.effectUnderflow name span)
+        | "compose" => match movedEq : composeMove state.stack with
+          | some (next, exact) => .ok {
+              program := atomList .compose span
+              final := { state with stack := next, untracked := state.untracked || !exact }
+              evidence := .atom clearEq (.compose movedEq) }
+          | none => .error (.effectUnderflow name span)
+        | "if" => match movedEq : ifMove state.stack with
+          | some (next, exact) => .ok {
+              program := atomList .ifThenElse span
+              final := { state with stack := next, untracked := state.untracked || !exact }
+              evidence := .atom clearEq (.ifThenElse movedEq) }
+          | none => .error (.effectUnderflow name span)
+        | _ => .error (.unsupportedAtom name span)))
       | .quotation body quotationSpan => match closedEq : captureIn visible body with
         | some (name, localSpan) => .error (.unsupportedCapture name localSpan)
         | none =>
@@ -850,7 +1151,9 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
           | .error error => .error error
           | .ok bodyRun => .ok {
               program := [locatedQuotation quotationSpan bodyRun.program]
-              final := { state with stack := { usage := .many } :: state.stack }
+              final := { state with stack :=
+                { usage := .many, effect := bodyEffect bodyRun.seedCount bodyRun.final } ::
+                  state.stack }
               evidence := .quotation closedEq bodyRun.evidence }
       | .locals names body _ => match uniqueEq : duplicateName names with
         | some duplicate => .error (.duplicateLocal duplicate.name duplicate.span)
@@ -858,7 +1161,8 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
           | .error error => .error error
           | .ok binding =>
             let nestedVisible := names.map (·.name) ++ visible
-            match eraseSubjectWithProof depth env (.localBody body binding.slots nestedVisible)
+            match eraseSubjectWithProof depth env
+                (.localBody (liftCaptures nestedVisible body) binding.slots nestedVisible)
                 binding.entered with
             | .error error => .error error
             | .ok bodyRun => .ok {
@@ -867,34 +1171,49 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                 evidence := .locals uniqueEq binding.evidence bodyRun.evidence }
 
     | .localBody items slots visible => match items with
-      | [] => match cleanupWithProof slots state with
-        | .error error => .error error
-        | .ok cleaned => .ok {
-            program := cleaned.program
-            final := { cleaned.final with stack := restoreParents slots cleaned.final.stack }
-            evidence := .localDone cleaned.evidence }
+      | [] =>
+        if trackedEq : (!state.untracked || !state.stack.any (cleanupCandidate slots)) = true then
+          match cleanupWithProof slots state with
+          | .error error => .error error
+          | .ok cleaned => .ok {
+              program := cleaned.program
+              final := { cleaned.final with stack := restoreParents slots cleaned.final.stack }
+              evidence := .localDone trackedEq cleaned.evidence }
+        else
+          let unused := (slots.find? (fun slot => state.stack.any (fun entry =>
+            cleanupCandidate slots entry && (entry.slot.map (·.id) == some slot.id)))).getD
+              (slots.head?.getD { id := 0, name := "local", usage := .many, origin := emptySpan })
+          .error (.untrackedStack unused.name unused.origin)
       | item :: rest => match item with
         | .word name localSpan =>
           if activeEq : slots.any (fun slot => slot.name == name) || visible.contains name then
-            let count := 1 + demandCount name rest
+            if untrackedEq : state.untracked = true then .error (.untrackedStack name localSpan) else
+            have trackedEq : state.untracked = false := by simpa using untrackedEq
             match resolveSlotWithProof name localSpan state.stack with
             | .error error => .error error
             | .ok selected =>
+              let count := useCount slots selected.slot name rest
               let proceed (linearOnce : selected.slot.usage = .linear → count = 1) :=
-                match focusEq : focusAtoms selected.slot.id localSpan state.stack with
+                let copies := demandCopies selected.slot name count state
+                match depthEq : state.stack.findIdx? (isFocusTarget selected.slot.id) with
+                | none => .error (.unboundLocal name localSpan)
+                | some position =>
+                match focusEq : focusAtoms (selectedId selected.slot copies) localSpan
+                    (spliceCopies position copies state.stack) with
                 | .error error => .error error
                 | .ok (focus, focused) =>
-                  let copies := demandCopies selected.slot name count state
                   let next := demandState selected.slot state focused copies
                   match eraseSubjectWithProof depth env (.localBody rest slots visible) next with
                   | .error error => .error error
                   | .ok tail => .ok {
-                      program := demandProgram localSpan focus copies ++ tail.program
+                      program := copyProgram localSpan position copies ++ focus ++ tail.program
                       final := tail.final
-                      evidence := .select activeEq selected.evidence linearOnce
-                        (focusAtoms_correct _ _ _ focusEq)
-                        (demandExpansion_correct selected.slot name localSpan count state focus focused)
-                        tail.evidence }
+                      evidence := by
+                        exact .select activeEq trackedEq selected.evidence linearOnce
+                          (.expand (demandCopies_correct selected.slot name count state) depthEq
+                            (focusAtoms_correct _ _ _ focusEq)
+                            (demandState_correct selected.slot state focused copies))
+                          tail.evidence }
               match usageEq : selected.slot.usage with
               | .many => proceed (by
                   intro linear
@@ -909,8 +1228,8 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                 else proceed (by
                   intro _
                   have positive : 0 < count := by
-                    dsimp [count]
-                    exact Nat.add_pos_left (Nat.zero_lt_succ 0) _
+                    dsimp [count, useCount]
+                    split <;> omega
                   exact Nat.le_antisymm (Nat.le_of_not_gt copied) positive)
           else match resolvedEq : env.word name with
             | none => .error (.unboundLocal name localSpan)
@@ -997,7 +1316,7 @@ private def eraseLocalBodyWithProof (depth : Nat) (env : EffectEnv) (items : Lis
 
 private def eraseItems (env : EffectEnv) (items : List Item) (state : State)
     (visible : List String) : Except ErasureError (KernelProgram × State) :=
-  eraseItemsWithProof (itemsFuel items) env items state visible |>.map
+  eraseItemsWithProof (erasureDepth items) env items state visible |>.map
     (fun run => (run.program, run.final))
 
 private def localDepthWarningsWithFuel (fuel : Nat) (items : List Item) : List LintWarning :=
@@ -1028,7 +1347,7 @@ def erase (env : EffectEnv) (effect : StackEffect) (body : List Item) : Except E
 theorem erase_sound_under (env : EffectEnv) (effect : StackEffect) (body : List Item)
     {result : ErasureResult} (success : erase env effect body = .ok result) :
     ErasesToUnder env effect body result.program := by
-  cases runEq : eraseItemsWithProof (itemsFuel body) env body (initialState effect) [] with
+  cases runEq : eraseItemsWithProof (erasureDepth body) env body (initialState effect) [] with
   | error error =>
       simp only [erase, eraseItems, runEq, Except.map] at success
       cases success

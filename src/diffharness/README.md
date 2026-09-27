@@ -99,3 +99,19 @@ seeded source campaign and retains its diagnostics and failure artefacts.
 the real adapters, shrinks it and replays both original and reduced records.
 It requires explicit non-passing exhaustion and matching toolchain identities;
 these expected failures are not counted as successful language executions.
+
+## Locals erasure
+
+`check_locals_erasure.py` tests `locals` erasure against the meaning of the
+source rather than against a second host. It generates words that use locals
+(nested blocks, shadowing, repeated uses, uses inside quotations and `if`
+branches, after `call`, `dip` and `compose`, quotations kept in locals) by
+running each program as it is built, in a small Python interpreter where a
+block takes its values off the stack and a name pushes the value bound to it.
+Each program then runs through the real elaborator, compiler and both hosts;
+the final stack must equal the interpreter's. A refusal is counted, not
+failed, but a run in which nothing is accepted fails.
+
+```sh
+python3 src/diffharness/check_locals_erasure.py --seed 0 --seed 1 --seed 2 --cases 100 --artifacts /tmp/firth-locals
+```

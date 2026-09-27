@@ -1,0 +1,4 @@
+\ Calling a quotation returned by `if` runs a value whose effect is not known.
+: nested-quotation-result
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b } { a b prim < [ [ a ] ] [ [ b ] ] if call a prim + };

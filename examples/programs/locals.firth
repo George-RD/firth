@@ -1,0 +1,41 @@
+\ The same loops written with named locals. A local can be used any number of
+\ times, inside `if` branches and inside quotations.
+
+\ Not tail recursive: the multiply runs after the recursive call returns.
+: fact
+  (forall ρ; ρ n:Int^many -- ρ r:Int^many)
+  locals { n } { n 0 prim = [ 1 ] [ n 1 prim - fact n prim * ] if };
+
+: fib-loop
+  (forall ρ; ρ a:Int^many b:Int^many n:Int^many -- ρ r:Int^many)
+  locals { a b n } { n 0 prim = [ a ] [ b a b prim + n 1 prim - fib-loop ] if };
+
+: fib
+  (forall ρ; ρ n:Int^many -- ρ r:Int^many)
+  locals { n } { 0 1 n fib-loop };
+
+\ Partial allocation, one request: left = remaining - min, allocated = min.
+: allocate-partial
+  (forall ρ; ρ remaining:Int^many requested:Int^many -- ρ left:Int^many allocated:Int^many)
+  locals { remaining requested }
+  { remaining requested prim <
+    [ 0 remaining ]
+    [ remaining requested prim - requested ] if };
+
+\ Sort three values ascending. Nested `if`s whose branches push several locals.
+: sort3
+  (forall ρ; ρ a:Int^many b:Int^many c:Int^many -- ρ x:Int^many y:Int^many z:Int^many)
+  locals { a b c }
+  { a b prim <
+    [ b c prim <
+      [ a b c ]
+      [ a c prim < [ a c b ] [ c a b ] if ] if ]
+    [ a c prim <
+      [ b a c ]
+      [ b c prim < [ b c a ] [ c b a ] if ] if ] if };
+
+\ A block's names are off the stack for its body: `swap` exchanges the two
+\ values below `a`, not `a` and the value below it.
+: swap-below
+  (forall ρ; ρ x:Int^many y:Int^many z:Int^many -- ρ p:Int^many q:Int^many)
+  locals { a } { swap };
