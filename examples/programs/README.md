@@ -29,7 +29,11 @@ A result that does not fit a signed 64-bit integer traps on the VM.
 
 A loop is a word that calls itself as its last action, directly or as the last
 action of an `if` branch. The VM runs such a call in the caller's frame, so the
-loop is bounded by the step budget (4096 steps per run), not by call depth.
+loop is bounded by the step budget (100,000 steps per run by default, up to
+1,000,000 with `--fuel`), not by call depth. `sum-to` at 7000 takes about
+91,000 kernel steps. Its trace comparison is `unsupported-quotation-values`
+(every loop runs `if` on quotation branches), so it does not exercise the
+`agreed-prefix` path, which the gate's unit tests cover.
 A recursive call followed by more work still nests and traps past 256 frames.
 
 ## Locals

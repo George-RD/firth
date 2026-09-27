@@ -20,8 +20,10 @@ use firth_vm::{
 
 /// `firth_vm::MAX_CALL_DEPTH`, by value.
 const MAX_CALL_DEPTH: usize = 256;
-/// `firth_vm::MAX_FUEL`, by value: the default budget is the largest one.
-const MAX_FUEL: u64 = DEFAULT_FUEL;
+/// The budget the gates run at by default (`firth_vm::DEFAULT_FUEL`).
+const GATE_FUEL: u64 = DEFAULT_FUEL;
+/// `firth_vm`'s per-word instruction limit, by value.
+const MAX_INSTRUCTIONS: u64 = 4096;
 
 fn literal(value: Value) -> Instruction {
     Instruction {
@@ -89,7 +91,7 @@ fn self_recursion_at_gate_fuel_traps_with_call_depth_exceeded() {
         // (A call in tail position replaces its frame instead; see
         // `tests/tail_calls.rs`.)
         let ExecutionOutcome::Trap(trap) =
-            execute_diagnostic(&image(non_tail_recursion()), MAX_FUEL, &registry)
+            execute_diagnostic(&image(non_tail_recursion()), GATE_FUEL, &registry)
         else {
             panic!("unbounded recursion must trap, not complete")
         };
@@ -126,7 +128,7 @@ fn self_recursion_at_gate_fuel_traps_with_call_depth_exceeded() {
                 operand: None,
             },
         ]);
-        let ExecutionOutcome::Trap(trap) = execute_diagnostic(&dip, MAX_FUEL, &registry) else {
+        let ExecutionOutcome::Trap(trap) = execute_diagnostic(&dip, GATE_FUEL, &registry) else {
             panic!("unbounded dip recursion must trap, not complete")
         };
         assert_eq!(trap.error.stable_subcode(), "call-depth-exceeded");
@@ -134,7 +136,7 @@ fn self_recursion_at_gate_fuel_traps_with_call_depth_exceeded() {
 
         // Cross-host, the reference has no such bound: a deeper program is a
         // one-sided trap and disagrees, never agreement.
-        let observed = observe_image(&image(non_tail_recursion()), vec![], MAX_FUEL, &registry);
+        let observed = observe_image(&image(non_tail_recursion()), vec![], GATE_FUEL, &registry);
         assert_eq!(observed.status, ConformanceStatus::Trap);
         let terminal = ConformanceReference {
             status: ConformanceStatus::Terminal,
@@ -157,17 +159,19 @@ fn self_recursion_at_gate_fuel_traps_with_call_depth_exceeded() {
 
 #[test]
 fn a_flat_word_at_gate_fuel_executes_within_the_deadline() {
-    // 4096 instructions at fuel 4096: one checkpoint per step must cost the
+    // The largest word at gate fuel: one checkpoint per step must cost the
     // stack, not the whole trace, or this is quadratic in the trace length.
-    let code: Vec<Instruction> = (0..MAX_FUEL).map(|_| literal(Value::Int(1))).collect();
+    let code: Vec<Instruction> = (0..MAX_INSTRUCTIONS)
+        .map(|_| literal(Value::Int(1)))
+        .collect();
     let ExecutionOutcome::Complete(report) =
-        execute_diagnostic(&image(code), MAX_FUEL, &default_registry())
+        execute_diagnostic(&image(code), GATE_FUEL, &default_registry())
     else {
         panic!("a flat word within fuel completes")
     };
-    assert_eq!(report.stack.len(), MAX_FUEL as usize);
-    assert_eq!(report.cost.total, MAX_FUEL);
-    assert_eq!(report.trace.len(), MAX_FUEL as usize);
+    assert_eq!(report.stack.len(), MAX_INSTRUCTIONS as usize);
+    assert_eq!(report.cost.total, MAX_INSTRUCTIONS);
+    assert_eq!(report.trace.len(), MAX_INSTRUCTIONS as usize);
 }
 
 #[test]

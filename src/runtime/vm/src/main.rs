@@ -181,7 +181,12 @@ mod tests {
     #[test]
     fn run_with_a_fuel_budget_above_the_bound_is_a_usage_error() {
         assert_eq!(
-            run(arguments(&["run", "image.bin", "--fuel", "4097"])),
+            run(arguments(&[
+                "run",
+                "image.bin",
+                "--fuel",
+                &(firth_vm::MAX_FUEL + 1).to_string()
+            ])),
             std::process::ExitCode::from(2)
         );
     }

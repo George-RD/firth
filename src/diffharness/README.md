@@ -32,7 +32,9 @@ cost count as agreement. Raw VM cost may differ. Both hosts exhausting fuel is
 portable integer overflow, checker/compiler rejection, malformed transport and
 process failures have separate failure classes and all fail the finite gate.
 A process timeout is distinct from interpreter/VM fuel exhaustion. The fuel
-budget is bounded at 4096, the largest budget the VM adapter accepts.
+budget defaults to 4096 per generated case and is bounded by the gate's
+`MAX_FUEL`, the largest budget the VM adapter accepts. Each host records at
+most `MAX_TRACE_EVENTS` (4096) trace events.
 
 An agreement also compares the two traces event by event through the gate's
 `compare_traces`: both traces are projected onto kernel-charged steps, their

@@ -433,7 +433,7 @@ fn fuel_above_max_fuel_is_refused() {
         error.message,
         "request.fuel: fuel exceeds the adapter budget"
     );
-    assert_eq!(MAX_FUEL, 4096);
+    assert_eq!(MAX_FUEL, 1_000_000);
 }
 
 #[test]
@@ -458,4 +458,26 @@ fn the_response_carries_the_admission_label() {
         panic!("frames")
     };
     assert_eq!(frames.len(), 1);
+}
+
+#[test]
+fn a_run_past_the_trace_limit_reports_every_step() {
+    // 2000 literal-drop pairs, then a quotation of 50 more pairs called:
+    // 4102 charged instructions, more than the 4096 the trace keeps. The
+    // stack stays shallow so the response stays small.
+    let pair = "{\"op\":\"push-literal\",\"literal\":{\"kind\":\"int\",\"value\":1}},\
+                {\"op\":\"drop\"}";
+    let body = vec![pair; 50].join(",");
+    let mut code = vec![pair; 2000];
+    let quote = format!(
+        "{{\"op\":\"push-quote\",\"quotation\":{{\"kind\":\"quotation\",\"code\":[{body}],\"captures\":[],\"consumed\":[]}}}}"
+    );
+    code.push(&quote);
+    code.push("{\"op\":\"call\"}");
+    let program = format!("[{}]", code.join(","));
+    // The response is larger than the test JSON reader accepts, so the cost
+    // report is read from the rendered text.
+    let rendered = vm_run(&adapter_request("main", &program, MAX_FUEL)).expect("accepted");
+    assert!(rendered.contains("\"status\":\"success\""));
+    assert!(rendered.contains("\"cost\":{\"steps\":4102,"), "{}", &rendered[rendered.len() - 400..]);
 }

@@ -488,8 +488,12 @@ The hosted executor admits at most `MAX_CALL_DEPTH` (256) administrative
 frames, trapping deterministically as described in §4 instead of exhausting
 the native stack; the bound is pinned by a test that executes exactly that
 depth inside a 2 MiB thread. The `firth.vm-run.v1` adapter and the `run`
-command refuse a fuel budget above `MAX_FUEL` (4096, the default budget), so a
-trace holds at most 4096 events of at most 256 frames each. Both readers stop
+command refuse a fuel budget above `MAX_FUEL` (1,000,000; the default budget
+is 100,000). The trace is bounded separately from fuel: an execution records
+only its first `MAX_TRACE_EVENTS` (4096) events, each of at most 256 frames,
+and later steps are executed and charged without an event. The reference
+runner keeps the same prefix, and the gate compares the two prefixes and
+labels the result `agreed-prefix`. Both readers stop
 one byte past `MAX_INPUT_BYTES` (1 MiB) and classify the buffer as
 `InputTooLarge` at zero cost. Per-step rollback restores the stack and
 truncates the append-only trace, cost and frame vectors rather than copying

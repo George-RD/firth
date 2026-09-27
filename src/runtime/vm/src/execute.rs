@@ -191,7 +191,10 @@ fn charge(
         return Err(VmError::FuelExhausted);
     }
     reserve(&mut machine.cost.steps, 1)?;
-    reserve(&mut machine.trace, 1)?;
+    let traced = machine.trace.len() < MAX_TRACE_EVENTS;
+    if traced {
+        reserve(&mut machine.trace, 1)?;
+    }
     machine.fuel -= 1;
     let cost = if primitive { primitive_cost } else { 1 };
     machine.cost.total = machine.cost.total.saturating_add(cost);
@@ -217,6 +220,9 @@ fn charge(
         image_version: image.image_version,
         primitive: primitive_name.map(String::from),
     });
+    if !traced {
+        return Ok(());
+    }
     machine.trace.push(TraceEvent {
         word: String::from(current_word),
         pc,

@@ -183,7 +183,7 @@ class ComparisonTests(unittest.TestCase):
         self.assertEqual(h.compare(reference, target, 8).kind, "invalid-observation")
 
     def test_fuel_is_bounded_by_the_adapter_budget(self):
-        for fuel in (4097, 100000):
+        for fuel in (h.gate.MAX_FUEL + 1, 10 * h.gate.MAX_FUEL):
             with self.subTest(fuel=fuel), self.assertRaises(h.HarnessError):
                 h.generate(0, 0, fuel=fuel)
         self.assertEqual(h.generate(0, 0, fuel=4096).fuel, 4096)

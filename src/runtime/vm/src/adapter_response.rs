@@ -306,7 +306,9 @@ fn verification_json() -> Json {
 /// projected from recorded per-step kernel charges. Administrative word entry
 /// and capture restoration do not contribute to the implemented reference
 /// model. Target charges and the existing VM fuel accounting are unchanged.
-fn cost_json(steps: usize, cost: &CostReport) -> Json {
+/// `steps` counts every charged instruction, including those past
+/// `MAX_TRACE_EVENTS` that have no trace event.
+fn cost_json(steps: u64, cost: &CostReport) -> Json {
     Json::Object(vec![
         (String::from("steps"), Json::Int(steps as i64)),
         (String::from("total"), Json::Int(cost.total as i64)),
@@ -368,7 +370,7 @@ pub fn run_vm_request(request: &VmRunRequest, registry: &PrimitiveRegistry) -> J
             "success",
             stack_json(&report.stack, registry),
             trace_json(&report.trace, registry),
-            cost_json(report.trace.len(), &report.cost),
+            cost_json(report.cost.instructions, &report.cost),
             Json::Null,
             world_json(report.world.observation()),
             frames_json(&report.frames, registry),
@@ -379,7 +381,7 @@ pub fn run_vm_request(request: &VmRunRequest, registry: &PrimitiveRegistry) -> J
             "trap",
             stack_json(&trap.stack, registry),
             trace_json(&trap.trace, registry),
-            cost_json(trap.trace.len(), &trap.cost),
+            cost_json(trap.cost.instructions, &trap.cost),
             Json::Str(String::from(trap.code)),
             world_json(trap.world.observation()),
             frames_json(&trap.frames, registry),

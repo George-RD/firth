@@ -201,6 +201,11 @@ private def trap (gamma : Gamma) (dictionary : Dictionary) : Config → String
     | .lit _ | .quotation _ => "type-fault"
     | _ => "stack-fault"
   | _ => "stack-fault"
+/-- The most trace entries a run records, the VM's `MAX_TRACE_EVENTS`. Later
+steps still run and are charged; only their entries are not kept, so the
+output stays bounded whatever the fuel budget. -/
+def traceLimit : Nat := 4096
+
 private def execute (request : Request) : Execution :=
   let rec go (fuel : Nat) (config : Config) (trace : List TraceEntry) (steps cost : Nat) : Execution :=
     match step request.gamma request.dictionary defaultCosts config with
@@ -208,7 +213,9 @@ private def execute (request : Request) : Execution :=
     | .stuck final => { status := "trap", trap := some (trap request.gamma request.dictionary final), config := final, trace := trace.reverse, steps, cost }
     | .stepped next charge => match fuel with
       | 0 => { status := "trap", trap := some "fuel-exhausted", config, trace := trace.reverse, steps, cost }
-      | fuel + 1 => go fuel next ({ config, cost := charge } :: trace) (steps + 1) (cost + charge)
+      | fuel + 1 =>
+        let trace := if steps < traceLimit then { config, cost := charge } :: trace else trace
+        go fuel next trace (steps + 1) (cost + charge)
   go request.fuel { stack := request.stack, program := request.program } [] 0 0
 
 private def quote (value : String) : String := (Json.str value).compress
