@@ -48,8 +48,7 @@ milestones and the tracked correctness/application work still open.
   than the executable profile documented above.
 - [Kernel specification](files/firth-kernel-spec-draft.md) and
   [VM target specification](src/runtime/vm/target-spec.md): language and target semantics.
-- [Development runbook](docs/loop-runbook.md): the governed development loop,
-  not an application-authoring tutorial.
+- [Roadmap](docs/roadmap.md): milestones and the honest status of each PRD goal.
 
 ## Verification and its limits
 
