@@ -1,0 +1,14 @@
+{
+  "model": "jev-1.13.0",
+  "counts": {
+    "stack_effect": 1
+  },
+  "tasks": {
+    "count-true": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.75,
+      "review": false
+    }
+  }
+}

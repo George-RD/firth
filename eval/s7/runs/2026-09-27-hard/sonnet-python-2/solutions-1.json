@@ -1,0 +1,11 @@
+{
+  "sort3": "def main(a, b, c):\n    lo, mid, hi = sorted([a, b, c])\n    return (lo, mid, hi)\n",
+  "median3": "def main(a, b, c):\n    return sorted([a, b, c])[1]\n",
+  "triangle-kind": "def main(a, b, c):\n    sides = sorted([a, b, c])\n    x, y, z = sides\n    if x <= 0 or x + y <= z:\n        return 0\n    if a == b == c:\n        return 1\n    if a == b or b == c or a == c:\n        return 2\n    return 3\n",
+  "divmod": "def main(a, b):\n    q = a // b\n    r = a % b\n    return (q, r)\n",
+  "isqrt": "import math\n\ndef main(n):\n    return math.isqrt(n)\n",
+  "is-prime": "def main(n):\n    if n < 2:\n        return False\n    if n < 4:\n        return True\n    if n % 2 == 0:\n        return False\n    i = 3\n    while i * i <= n:\n        if n % i == 0:\n            return False\n        i += 2\n    return True\n",
+  "digit-sum": "def main(n):\n    return sum(int(d) for d in str(abs(n)))\n",
+  "lcm": "import math\n\ndef main(a, b):\n    return a // math.gcd(a, b) * b\n",
+  "allocate": "def main(remaining, requested, whole):\n    if requested <= remaining:\n        return (remaining - requested, requested, 0)\n    if remaining == 0:\n        return (remaining, 0, 2)\n    if whole:\n        return (remaining, 0, 3)\n    return (0, remaining, 1)\n"
+}

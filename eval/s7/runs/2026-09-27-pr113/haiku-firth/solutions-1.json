@@ -1,0 +1,23 @@
+{
+  "triple": ": main\n  ( -- r:Int^many )\n  3 prim *;\n",
+  "sum3": ": main\n  ( -- r:Int^many )\n  prim + prim +;\n",
+  "times10": ": main\n  ( -- r:Int^many )\n  10 prim *;\n",
+  "affine": ": main\n  ( -- r:Int^many )\n  4 prim * 7 prim +;\n",
+  "pair-sum": ": main\n  (forall \u03c1; \u03c1 a:Int^many b:Int^many -- \u03c1 b:Int^many s:Int^many)\n  locals { a b } { b a b prim + };\n",
+  "select": ": main\n  (forall \u03c1; \u03c1 a:Int^many b:Int^many flag:Bool^many -- \u03c1 r:Int^many)\n  [ drop ] [ swap drop ] if;\n",
+  "not": ": main\n  (forall \u03c1; \u03c1 p:Bool^many -- \u03c1 r:Bool^many)\n  [ false ] [ true ] if;\n",
+  "and": ": main\n  (forall \u03c1; \u03c1 p:Bool^many q:Bool^many -- \u03c1 r:Bool^many)\n  [ [ true ] [ false ] if ] [ drop false ] if;\n",
+  "xor": ": main\n  (forall \u03c1; \u03c1 p:Bool^many q:Bool^many -- \u03c1 r:Bool^many)\n  swap [ [ false ] [ true ] if ] [ ] if;\n",
+  "majority": ": main\n  (forall \u03c1; \u03c1 p:Bool^many q:Bool^many r:Bool^many -- \u03c1 m:Bool^many)\n  locals { p q r } { \n    p [ \n      q [ true ] [ r ] if \n    ] [ \n      q [ r ] [ false ] if \n    ] if \n  };\n",
+  "count-true": ": main\n  (forall \u03c1; \u03c1 p:Bool^many q:Bool^many r:Bool^many -- \u03c1 n:Int^many)\n  locals { p q r } { \n    p [ 1 ] [ 0 ] if \n    q [ 1 ] [ 0 ] if prim + \n    r [ 1 ] [ 0 ] if prim + \n  };\n",
+  "max": ": main\n  (forall \u03c1; \u03c1 a:Int^many b:Int^many -- \u03c1 r:Int^many)\n  locals { a b } { a b prim < [ b ] [ a ] if };\n",
+  "min3": ": main\n  (forall \u03c1; \u03c1 a:Int^many b:Int^many c:Int^many -- \u03c1 r:Int^many)\n  locals { a b c } { \n    a b prim < [ a c prim < [ a ] [ c ] if ] [ b c prim < [ b ] [ c ] if ] if \n  };\n",
+  "abs-diff": ": main\n  (forall \u03c1; \u03c1 a:Int^many b:Int^many -- \u03c1 r:Int^many)\n  locals { a b } { a b prim < [ b a prim - ] [ a b prim - ] if };\n",
+  "clamp": ": main\n  (forall \u03c1; \u03c1 x:Int^many lo:Int^many hi:Int^many -- \u03c1 r:Int^many)\n  locals { x lo hi } { x lo prim < [ lo ] [ x hi prim < [ x ] [ hi ] if ] if };\n",
+  "is-even": ": main\n  (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Bool^many)\n  0;\n",
+  "sum-to": ": sum-to-helper\n  (forall \u03c1; \u03c1 n:Int^many acc:Int^many -- \u03c1 r:Int^many)\n  n 0 prim = [ acc ] [ n 1 prim - dup n prim + acc prim + sum-to-helper ] if;\n\n: main\n  (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many)\n  0 sum-to-helper;\n",
+  "factorial": ": fact-helper\n  (forall \u03c1; \u03c1 n:Int^many acc:Int^many -- \u03c1 r:Int^many)\n  n 0 prim = [ acc ] [ n 1 prim - dup acc n prim * fact-helper ] if;\n\n: main\n  (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many)\n  1 fact-helper;\n",
+  "fib": ": fib-helper\n  (forall \u03c1; \u03c1 n:Int^many a:Int^many b:Int^many -- \u03c1 r:Int^many)\n  n 0 prim = [ a ] [ n 1 prim - b a b prim + fib-helper ] if;\n\n: main\n  (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many)\n  0 1 fib-helper;\n",
+  "gcd": ": gcd-helper\n  (forall \u03c1; \u03c1 a:Int^many b:Int^many -- \u03c1 r:Int^many)\n  b 0 prim = [ a ] [ b a b prim - prim - gcd-helper ] if;\n\n: main\n  (forall \u03c1; \u03c1 a:Int^many b:Int^many -- \u03c1 r:Int^many)\n  gcd-helper;\n",
+  "power": ": power-helper\n  (forall \u03c1; \u03c1 base:Int^many exp:Int^many acc:Int^many -- \u03c1 r:Int^many)\n  exp 0 prim = [ acc ] [ exp 1 prim - acc base prim * power-helper ] if;\n\n: main\n  (forall \u03c1; \u03c1 base:Int^many exp:Int^many -- \u03c1 r:Int^many)\n  1 power-helper;\n"
+}
