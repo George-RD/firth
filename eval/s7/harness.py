@@ -167,8 +167,14 @@ def same(got: list, want: list) -> bool:
 
 
 def firth_commit() -> str:
+    """The commit being scored, with "-dirty" when files outside eval/ have uncommitted changes."""
     p = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True)
-    return p.stdout.strip() or "unknown"
+    head = p.stdout.strip()
+    if not head:
+        return "unknown"
+    dirty = subprocess.run(["git", "status", "--porcelain", "--", ".", ":(exclude)eval"],
+                           cwd=ROOT, capture_output=True, text=True).stdout.strip()
+    return head + ("-dirty" if dirty else "")
 
 
 def score(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int) -> dict:
