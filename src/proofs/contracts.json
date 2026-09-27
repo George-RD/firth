@@ -1,0 +1,5 @@
+[
+  {"theorem": "Firth.Proofs.Programs.SumTo.run_sum_to",
+   "module": "proofs.Programs.SumTo",
+   "claim": "For every n, the reference runner takes sum-to's body from n to 1 + ... + n in 14n + 10 steps at kernel cost 13n + 10."}
+]

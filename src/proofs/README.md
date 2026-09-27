@@ -51,7 +51,32 @@ Also in the library:
 `n ≥ 0` whose sum is in i64 range, `sum-to` returns `1 + ... + n` at a cost of
 exactly `13·n + 10`, the figure `firth_run.py` reports as `kernel_cost`.
 
-Proofs here are built by `lake build` and must be free of `sorry`, `admit`
-and new axioms. They are not yet recorded as evidence bound to body digests,
-and the toolchain does not yet report `contract_verified`; that is the next
-step.
+Proofs here are built by `lake build`, which has the Lean kernel check every
+declaration.
+
+## Contracts and proof records
+
+`contracts.json` lists the theorems claimed as contracts, each with its module
+and a one-line claim. The claim is a label for readers; what is checked is the
+theorem's statement. `python3 tools/loop/update_proof_records.py` audits them
+with `firthProofRecords` and writes `records.json`. The audit refuses the whole
+run if any contract:
+
+- is not a `theorem` in the named module under `proofs.`;
+- reaches, through its statement, its proof or any definition they use, an
+  axiom other than `propext`, `Classical.choice` and `Quot.sound`. This refuses
+  `sorryAx` and the auxiliary axioms `native_decide` declares;
+- reaches no exported word body.
+
+Each record lists the exported words the theorem reaches, with their current
+body digests, and an evidence id: the SHA-256 of the record's text, which
+includes a digest of the theorem's statement. `records.json` also reports
+every exported word as `contract_verified`, naming the theorems that cover it,
+or `type_checked`.
+
+CI runs the script with `--check`. It fails if any contract is refused, if a
+covered word's body digest changed since the record was written, or if the
+audit no longer refuses the fixtures in `src/prooftests/Refused.lean`.
+
+Adding a contract: prove it here, add it to `contracts.json`, then run
+`lake build` and `python3 tools/loop/update_proof_records.py`.
