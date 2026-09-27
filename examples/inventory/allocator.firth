@@ -1,0 +1,131 @@
+\ Ordered stock allocation, specs/inventory-allocation.md: the Firth side of
+\ its host/Firth split. The host has already checked JSON shape, types and ID
+\ syntax. It passes `available`, the policy (true for all-or-nothing), each
+\ request ID as four Ints computed from that ID alone (all IDs in one
+\ sequence, see `same-id`) and the quantities, all in request order. This file does the rest:
+\ the value and count bounds, repeated IDs, and the allocation itself.
+\
+\ Result codes: 0 ok, 1 invalid-range, 2 duplicate-id.
+\ Reason codes: 0 fulfilled, 1 partial, 2 out-of-stock, 3 insufficient-stock.
+
+\ True when every quantity from index i on is from 1 to 1,000,000.
+: quantities-in-range-from
+  (forall ρ; ρ qs:Seq Int^many i:Int^many -- ρ ok:Bool^many)
+  locals { qs i }
+  { i qs prim seq-int.len prim <
+    [ 0 qs i prim seq-int.at prim <
+      [ qs i prim seq-int.at 1000001 prim <
+        [ qs i 1 prim + quantities-in-range-from ]
+        [ false ] if ]
+      [ false ] if ]
+    [ true ] if };
+
+\ The value and count bounds. They share one error code, so their order
+\ does not matter.
+: in-range
+  (forall ρ; ρ available:Int^many qs:Seq Int^many -- ρ ok:Bool^many)
+  locals { available qs }
+  { available 1000001 prim <
+    [ qs prim seq-int.len 65 prim <
+      [ qs 0 quantities-in-range-from ]
+      [ false ] if ]
+    [ false ] if };
+
+\ The IDs arrive as one sequence, four Ints per request, so request k's ID is
+\ ids[4k .. 4k+3]. The repeated-ID scan compares every pair of requests,
+\ which makes it the hot loop, so it keeps its values on the stack: a local
+\ costs far more per use than a stack word here (see README.md).
+
+: over-si
+  (forall ρ; ρ a:Seq Int^many b:Int^many -- ρ a:Seq Int^many b:Int^many c:Seq Int^many)
+  [ dup ] dip swap;
+
+: over-ii
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ a:Int^many b:Int^many c:Int^many)
+  [ dup ] dip swap;
+
+\ ( ids p q -- ids p q ids )
+: third-ids
+  (forall ρ; ρ s:Seq Int^many p:Int^many q:Int^many -- ρ s:Seq Int^many p:Int^many q:Int^many t:Seq Int^many)
+  [ over-si ] dip swap;
+
+\ |x - y|. `prim -` stops at 0, so one of the two differences is 0.
+: distance
+  (forall ρ; ρ x:Int^many y:Int^many -- ρ d:Int^many)
+  over-ii over-ii prim - [ swap prim - ] dip prim +;
+
+\ ( ids p q -- ids p q |ids[p] - ids[q]| )
+: pair-distance
+  (forall ρ; ρ s:Seq Int^many p:Int^many q:Int^many -- ρ s:Seq Int^many p:Int^many q:Int^many d:Int^many)
+  third-ids [ over-ii ] dip swap prim seq-int.at
+  [ third-ids ] dip swap [ over-ii ] dip swap prim seq-int.at
+  distance;
+
+\ ( p q -- p+1 q+1 )
+: bump
+  (forall ρ; ρ p:Int^many q:Int^many -- ρ p:Int^many q:Int^many)
+  [ 1 prim + ] dip 1 prim +;
+
+\ True when the IDs at offsets p and q are equal. Leaves ids, p and q in
+\ place. Most pairs differ in their first part, so that part is tested alone;
+\ the other three distances are summed without branching, which keeps the
+\ worst case (IDs sharing their first 24 characters) close to the typical one.
+: same-id
+  (forall ρ; ρ s:Seq Int^many p:Int^many q:Int^many -- ρ s:Seq Int^many p:Int^many q:Int^many same:Bool^many)
+  pair-distance 0 prim =
+  [ bump pair-distance
+    [ bump pair-distance ] dip prim +
+    [ bump pair-distance ] dip prim +
+    [ [ 3 prim - ] dip 3 prim - ] dip
+    0 prim = ]
+  [ false ] if;
+
+\ Visits every pair of offsets p < q once, starting from (p, q), and stops at
+\ the first repeated ID.
+: repeat-from
+  (forall ρ; ρ s:Seq Int^many p:Int^many q:Int^many -- ρ found:Bool^many)
+  third-ids prim seq-int.len over-ii swap prim <
+  [ same-id [ drop drop drop true ] [ 4 prim + repeat-from ] if ]
+  [ drop over-si prim seq-int.len [ dup 8 prim + ] dip prim <
+    [ 4 prim + dup 4 prim + repeat-from ]
+    [ drop drop false ] if ] if;
+
+: has-repeat
+  (forall ρ; ρ ids:Seq Int^many -- ρ found:Bool^many)
+  0 4 repeat-from;
+
+\ One request: from the remaining stock, the requested quantity and the
+\ policy, the stock left, the quantity allocated and the reason code.
+: allocate-one
+  (forall ρ; ρ remaining:Int^many requested:Int^many whole:Bool^many -- ρ left:Int^many allocated:Int^many reason:Int^many)
+  locals { remaining requested whole }
+  { remaining 0 prim =
+    [ 0 0 2 ]
+    [ requested remaining 1 prim + prim <
+      [ remaining requested prim - requested 0 ]
+      [ whole [ remaining 0 3 ] [ 0 remaining 1 ] if ] if ] if };
+
+\ Visits requests i onward in order, subtracting each allocation before the
+\ next request, and appends each allocation and reason to the outputs.
+: allocate-from
+  (forall ρ; ρ qs:Seq Int^many whole:Bool^many remaining:Int^many i:Int^many taken:Seq Int^many reasons:Seq Int^many -- ρ left:Int^many allocated:Seq Int^many codes:Seq Int^many)
+  locals { qs whole remaining i taken reasons }
+  { i qs prim seq-int.len prim <
+    [ remaining qs i prim seq-int.at whole allocate-one
+      locals { left amount reason }
+      { qs whole left i 1 prim +
+        taken amount prim seq-int.push
+        reasons reason prim seq-int.push
+        allocate-from } ]
+    [ remaining taken reasons ] if };
+
+\ The entry. On an error the remaining stock is 0 and both sequences are
+\ empty; the host reports only the error code.
+: allocate-batch
+  (forall ρ; ρ available:Int^many whole:Bool^many ids:Seq Int^many qs:Seq Int^many -- ρ code:Int^many remaining:Int^many allocated:Seq Int^many reasons:Seq Int^many)
+  locals { available whole ids qs }
+  { available qs in-range
+    [ ids has-repeat
+      [ 2 0 prim seq-int.empty prim seq-int.empty ]
+      [ 0 qs whole available 0 prim seq-int.empty prim seq-int.empty allocate-from ] if ]
+    [ 1 0 prim seq-int.empty prim seq-int.empty ] if };
