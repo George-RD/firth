@@ -52,9 +52,9 @@ class PortableObservationTests(unittest.TestCase):
             gate.compare(reference, target, "supported", fuel=0)
 
     def test_python_boolean_integer_equality_cannot_mask_wrong_payloads(self) -> None:
-        for kind, left, right in (("nat", True, 1), ("nat", False, 0),
+        for kind, left, right in (("int", True, 1), ("int", False, 0),
                                   ("bool", True, 1), ("bool", False, 0),
-                                  ("nat", 1.0, 1), ("nat", 0.0, 0)):
+                                  ("int", 1.0, 1), ("int", 0.0, 0)):
             for a, b in ((left, right), (right, left)):
                 reference, target = observations()
                 reference["stack"] = [literal(kind, a)]
@@ -63,30 +63,30 @@ class PortableObservationTests(unittest.TestCase):
                     with self.assertRaisesRegex(gate.GateError, "payload"):
                         gate.compare(reference, target, "coercion")
 
-    def test_nat_payloads_are_exact_integers_in_the_portable_range(self) -> None:
-        for value in (True, False, -1, 2**63, 2**100, 1.0, "1", None,
+    def test_int_payloads_are_exact_integers_in_the_portable_range(self) -> None:
+        for value in (True, False, -2**63 - 1, 2**63, 2**100, 1.0, "1", None,
                       float("nan"), float("inf"), [], {}):
-            self.assert_invalid_value(literal("nat", value), "integer payload")
+            self.assert_invalid_value(literal("int", value), "integer payload")
 
     def test_boolean_payloads_are_exact_booleans(self) -> None:
         for value in (0, 1, 0.0, 1.0, "true", None, [], {}):
             self.assert_invalid_value(literal("bool", value), "Boolean payload")
 
     def test_value_envelopes_are_complete_and_have_no_extra_fields(self) -> None:
-        for value in (None, 1, True, [], {}, {"literal": {"type": "nat", "value": 1}},
+        for value in (None, 1, True, [], {}, {"literal": {"type": "int", "value": 1}},
                       {"kind": "literal"}, {"kind": "literal", "literal": None},
                       {"kind": "literal", "literal": []},
                       {"kind": "literal", "literal": {"value": 1}},
-                      {"kind": "literal", "literal": {"type": "nat"}},
-                      {**literal("nat", 1), "extra": 0},
-                      {"kind": "literal", "literal": {"type": "nat", "value": 1, "extra": 0}}):
+                      {"kind": "literal", "literal": {"type": "int"}},
+                      {**literal("int", 1), "extra": 0},
+                      {"kind": "literal", "literal": {"type": "int", "value": 1, "extra": 0}}):
             self.assert_invalid_value(value, "malformed.*value|malformed.*literal")
 
     def test_unsupported_value_kinds_never_count_as_agreement(self) -> None:
         for value in ({"kind": "world"}, {"kind": "bytes", "value": "00"},
                       {"kind": "primitive", "tag": 1, "value": "00"},
                       {"kind": "unknown"}, {"kind": []},
-                      literal("int", -1), {"kind": "literal", "literal": {"type": "unit"}},
+                      literal("nat", 1), {"kind": "literal", "literal": {"type": "unit"}},
                       literal("unknown", 1), literal([], 1)):
             self.assert_invalid_value(value, "unsupported.*value|unsupported.*literal")
 
@@ -94,7 +94,7 @@ class PortableObservationTests(unittest.TestCase):
         for value in ({"kind": "quotation", "usage": "many"},
                       {"kind": "quotation", "body": [], "usage": "many"},
                       {"kind": "quotation", "body": [{"kind": "word", "name": "one"}],
-                       "captures": [literal("nat", 1)], "usage": "many"},
+                       "captures": [literal("int", 1)], "usage": "many"},
                       {"kind": "quotation", "body": [], "usage": "linear"}):
             self.assert_invalid_value(value, "unsupported quotation result")
 
@@ -206,7 +206,7 @@ class TraceComparisonTests(unittest.TestCase):
     def test_a_reordered_program_with_the_same_result_is_refused(self) -> None:
         # `1 drop 2` and `2 1 drop` both leave [2] at kernel cost 3, and before
         # the per-event comparison this reorder passed as agreement.
-        one, two = literal("nat", 1), literal("nat", 2)
+        one, two = literal("int", 1), literal("int", 2)
         reference = [reference_event(0, [], 1), reference_event(1, [one], 1), reference_event(2, [], 1)]
         target = [target_event(0, [], 1, 1), target_event(1, [two], 1, 1, pc=1),
                   target_event(2, [two, one], 1, 1, pc=2)]
@@ -215,7 +215,7 @@ class TraceComparisonTests(unittest.TestCase):
 
     def test_cumulative_target_charges_are_refused(self) -> None:
         # The old adapter reported the running total [1, 2, 3] per event.
-        one, two = literal("nat", 1), literal("nat", 2)
+        one, two = literal("int", 1), literal("int", 2)
         reference = [reference_event(0, [], 1), reference_event(1, [one], 1), reference_event(2, [one, two], 1)]
         cumulative = [target_event(0, [], 1, 1), target_event(1, [one], 2, 2, pc=1),
                       target_event(2, [one, two], 3, 3, pc=2)]
@@ -229,7 +229,7 @@ class TraceComparisonTests(unittest.TestCase):
         # Both hosts stop recording after MAX_TRACE_EVENTS raw events. The VM's
         # zero-kernel event means its prefix projects to one event fewer, so
         # the common projected prefix is compared and labelled as a prefix.
-        one = literal("nat", 1)
+        one = literal("int", 1)
         reference = [reference_event(0, [], 1), reference_event(1, [one], 1),
                      reference_event(2, [one, one], 1)]
         target = [target_event(0, [], 1, 1), target_event(1, [one], 1, 0, pc=1),
@@ -248,7 +248,7 @@ class TraceComparisonTests(unittest.TestCase):
         # `42 quote call`: the reference's zero-cost S-PUSH and the VM's
         # zero-kernel PUSH_CAPTURE both drop out; the quoted value on the
         # intermediate stacks makes the result the explicit unsupported label.
-        value = literal("nat", 42)
+        value = literal("int", 42)
         quoted = {"kind": "quotation", "body": [{"kind": "push", "value": value}], "usage": "many"}
         vm_quoted = {"kind": "quotation", "usage": "many", "body_digest": "00" * 32,
                      "code": [{"op": "push-capture", "index": 0}],
@@ -267,7 +267,7 @@ class TraceComparisonTests(unittest.TestCase):
                          gate.TRACE_AGREED)
 
     def test_quotation_values_in_intermediate_stacks_are_unsupported_not_agreement(self) -> None:
-        value = literal("nat", 1)
+        value = literal("int", 1)
         quoted = {"kind": "quotation", "body": [], "usage": "many"}
         reference = [reference_event(0, [quoted], 1)]
         target = [target_event(0, [quoted], 1, 1)]
@@ -279,7 +279,7 @@ class TraceComparisonTests(unittest.TestCase):
             gate.compare(*traced(reference, [target_event(0, [quoted], 2, 2)]), "charge")
 
     def test_a_trace_event_missing_its_kernel_charge_or_frames_is_malformed(self) -> None:
-        value = literal("nat", 1)
+        value = literal("int", 1)
         good = target_event(0, [], 1, 1)
         for missing in ("kernel_cost", "frames", "image_version", "word", "pc", "stack", "cost", "index"):
             event = {key: item for key, item in good.items() if key != missing}
@@ -298,7 +298,7 @@ class TraceComparisonTests(unittest.TestCase):
                     gate.compare(*traced([bad], [good]), "malformed")
         # Malformed stack values inside a projected event are refused too.
         with self.assertRaisesRegex(gate.GateError, "trace\\[0\\]"):
-            gate.compare(*traced([reference_event(0, [{"kind": "literal", "literal": {"type": "nat", "value": True}}], 1)],
+            gate.compare(*traced([reference_event(0, [{"kind": "literal", "literal": {"type": "int", "value": True}}], 1)],
                                  [target_event(0, [value], 1, 1)]), "coercion")
 
     def test_traces_that_are_not_arrays_are_refused(self) -> None:

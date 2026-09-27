@@ -22,21 +22,21 @@ program produces.
 50 of the 53 cases pass: 27 run in Firth and 23 are rejected by the host's own
 checks, as the spec assigns them. 3 are **blocked**: `negative-stock`,
 `negative-quantity` and `range-before-duplicate` need a negative integer to
-reach the component, and Firth integers are naturals until signed `Int`
-lands. The spec forbids moving that bound check into the host, so the runner
+reach the component. Firth integers are now signed, but the host does not yet
+pass negative values through to the component. The spec forbids moving that bound check into the host, so the runner
 reports them as blocked instead of passing them.
 
 ## Cost
 
 For a batch of n valid requests with no repeated ID, the kernel cost is at most
 
-    391 + 767·n + 297·n(n−1)/2
+    391 + 767·n + 264·n(n−1)/2
 
-which is 648,231 at the 64-request maximum, inside the VM's 1,000,000-step fuel
+which is 581,703 at the 64-request maximum, inside the VM's 1,000,000-step fuel
 cap. `measure_cost.py` measures n = 0 to 64 on both hosts. It uses IDs sharing
 their first 24 characters, which is the slowest case for the repeated-ID
 scan, and one run for each allocation branch. For n ≥ 2 each run's cost is
-exactly `307 + b·n + 297·n(n−1)/2`, where b is 689 (out-of-stock), 756
+exactly `307 + b·n + 264·n(n−1)/2`, where b is 689 (out-of-stock), 756
 (fulfilled) or 766 (insufficient-stock), plus 78 once for the single partial
 request a batch can have. The stated bound is deliberately looser than any one
 of those: it uses the largest per-request cost and the n = 0 entry cost, so it
@@ -56,5 +56,6 @@ The toolchain does not yet check refinements or cost claims (`language-06`).
   words, and the IDs arrive as one sequence (four Ints per request) instead of
   four. The rest of the program uses locals.
 - **There is no Boolean `and` or absolute difference.** Both are written with
-  nested `if` or with `prim -`, which stops at 0.
-- **There are no negative integers** (see above).
+  nested `if`.
+- **Integers were naturals** when this was written; they are signed now, and
+  the three blocked cases (see above) are still to be unblocked.

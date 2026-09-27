@@ -53,7 +53,7 @@ def main() -> int:
                 ("missing", [41, True], "unknown checked word"),
                 ("main", [41], "input count"),
                 ("main", [True, True], "type mismatch"),
-                ("main", [-1, True], "initial stack"),
+                ("main", [-(2**63) - 1, True], "initial stack"),
             ]
             for index, (entry, stack, reason) in enumerate(refused):
                 try:
@@ -69,6 +69,8 @@ def main() -> int:
                 (": main ( -- n:Int ) true;", "elaborate"),
                 (": main ( -- ) main;", "fuel-exhausted"),
                 (": main ( -- n:Int ) 9223372036854775807 1 prim +;", "primitive-fault"),
+                (": main ( -- n:Int ) -9223372036854775808 1 prim -;", "primitive-fault"),
+                (": main ( -- n:Int ) -9223372036854775808 -1 prim *;", "primitive-fault"),
             )):
                 source = workspace / f"rejected-{index}.firth"
                 source.write_text(text, encoding="utf-8")

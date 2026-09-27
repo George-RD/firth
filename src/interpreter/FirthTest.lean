@@ -7,8 +7,8 @@ open Firth.Interpreter
 
 def testPolicy : PrimitiveOwnershipPolicy where
   authorised := fun name consumed produced =>
-    (name ∈ ["addNat", "subNat", "mulNat", "ltNat", "eqNat", "natSeqEmpty", "natSeqLen",
-        "natSeqAt", "natSeqPush", "boolSeqEmpty", "boolSeqLen", "boolSeqAt", "boolSeqPush"] ∧
+    (name ∈ ["addInt", "subInt", "mulInt", "ltInt", "eqInt", "intSeqEmpty", "intSeqLen",
+        "intSeqAt", "intSeqPush", "boolSeqEmpty", "boolSeqLen", "boolSeqAt", "boolSeqPush"] ∧
       consumed = [] ∧ produced = []) ∨
     (name == "makeWorld" ∧ consumed = [] ∧ produced.length = 1) ∨
     (name == "consumeWorld" ∧ consumed.length = 1 ∧ produced = [])
@@ -107,8 +107,8 @@ example (tag : Tag) :
 
 example (tag : Tag) :
     ∃ step : InstrumentedStep testPolicy defaultGamma emptyDictionary defaultCosts
-        { stack := [.literal tag (.nat 7)], program := .cons .dup .empty, nextTag := tag + 1 }
-        { stack := [.literal tag (.nat 7), .literal tag (.nat 7)], program := .empty,
+        { stack := [.literal tag (.int 7)], program := .cons .dup .empty, nextTag := tag + 1 }
+        { stack := [.literal tag (.int 7), .literal tag (.int 7)], program := .empty,
           nextTag := tag + 1 }, True := by
   exact ⟨.dup rfl, trivial⟩
 
@@ -411,51 +411,51 @@ theorem filterContainsEqSelf_explicit : ∀ (source candidates : Ownerships),
         intro tag htag
         exact hsubset tag (List.mem_cons_of_mem head htag)))
 
-theorem examplePrimitiveTagLift_addNat :
-    PrimitiveTagLift examplePolicy exampleGamma "addNat" := by
+theorem examplePrimitiveTagLift_addInt :
+    PrimitiveTagLift examplePolicy exampleGamma "addInt" := by
   intro input residue nextTag specification plainInput plainOutput
     hname hinput hdelta hwellformed
   have hspecification : specification =
-      { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
-        output := .snoc (.row "ρ") (.base .nat .many), delta := addNatDelta } :=
+      { input := .snoc (.snoc (.row "ρ") (.base .int .many)) (.base .int .many),
+        output := .snoc (.row "ρ") (.base .int .many), delta := addIntDelta } :=
     (Option.some.inj hname).symm
   subst specification
   subst plainInput
   cases input with
-  | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
+  | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addIntDelta] at hdelta; cases hdelta
   | cons rightValue inputTail =>
     cases rightValue with
-    | quotation rightTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
-    | world rightTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
+    | quotation rightTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addIntDelta] at hdelta; cases hdelta
+    | world rightTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addIntDelta] at hdelta; cases hdelta
     | literal rightTag rightLiteral =>
       cases rightLiteral with
-      | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
-      | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
-      | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
-      | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
-      | nat right =>
+      | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addIntDelta] at hdelta; cases hdelta
+      | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addIntDelta] at hdelta; cases hdelta
+      | intSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addIntDelta] at hdelta; cases hdelta
+      | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addIntDelta] at hdelta; cases hdelta
+      | int right =>
         cases inputTail with
-        | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
+        | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addIntDelta] at hdelta; cases hdelta
         | cons leftValue tail =>
           cases leftValue with
-          | quotation leftTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
-          | world leftTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
+          | quotation leftTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addIntDelta] at hdelta; cases hdelta
+          | world leftTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addIntDelta] at hdelta; cases hdelta
           | literal leftTag leftLiteral =>
             cases leftLiteral with
-            | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
-            | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
-            | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
-            | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
-            | nat left =>
-              simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta
+            | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addIntDelta] at hdelta; cases hdelta
+            | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addIntDelta] at hdelta; cases hdelta
+            | intSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addIntDelta] at hdelta; cases hdelta
+            | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addIntDelta] at hdelta; cases hdelta
+            | int left =>
+              simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addIntDelta] at hdelta
               have hplainOutput := Option.some.inj hdelta
               subst plainOutput
               let tailTags := taggedLinearTagsValueList tail
               have htags :
                   taggedLinearTags
-                    { stack := .literal rightTag (.nat right) ::
-                        .literal leftTag (.nat left) :: tail,
-                      program := .cons (.prim "addNat") residue,
+                    { stack := .literal rightTag (.int right) ::
+                        .literal leftTag (.int left) :: tail,
+                      program := .cons (.prim "addInt") residue,
                       nextTag := nextTag } =
                     tailTags ++ taggedLinearTagsProgram residue := by
                 simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTags, taggedLinearTagsValueList,
@@ -464,21 +464,21 @@ theorem examplePrimitiveTagLift_addNat :
                   taggedLinearTagsValueList_eq_foldr]
               unfold InstrumentedWellFormed at hwellformed
               rw [htags] at hwellformed
-              let output : AStack := .literal rightTag (.nat (left + right)) :: tail
+              let output : AStack := .literal rightTag (.int (left + right)) :: tail
               refine ⟨output, nextTag, ?_, Nat.le_refl _, ?_, ?_⟩
               · simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
               · refine ⟨
-                  { input := .snoc (.snoc (.row "ρ") (.base .nat .many))
-                      (.base .nat .many),
-                    output := .snoc (.row "ρ") (.base .nat .many),
-                    delta := addNatDelta },
-                  .literal (.nat right) :: .literal (.nat left) :: tail.map eraseValue,
-                  .literal (.nat (left + right)) :: tail.map eraseValue,
+                  { input := .snoc (.snoc (.row "ρ") (.base .int .many))
+                      (.base .int .many),
+                    output := .snoc (.row "ρ") (.base .int .many),
+                    delta := addIntDelta },
+                  .literal (.int right) :: .literal (.int left) :: tail.map eraseValue,
+                  .literal (.int (left + right)) :: tail.map eraseValue,
                   tailTags, tailTags, [], [], ?_⟩
                 refine
                   { name_resolves := hname
                     input_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, eraseValue]
-                    delta := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, addNatDelta, eraseValue]
+                    delta := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, addIntDelta, eraseValue]
                     output_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
                     input_partition := ?_
                     output_partition := ?_
@@ -500,7 +500,7 @@ theorem examplePrimitiveTagLift_addNat :
                     row_tail_retained := by
                       intro tag htag
                       exact htag
-                    stack_contract := .addNat
+                    stack_contract := .addInt
                     authorised := Or.inl ⟨by decide, rfl, rfl⟩ }
                 · intro tag
                   simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTagsValueList, taggedLinearTagsValue, tailTags]
@@ -539,51 +539,51 @@ theorem examplePrimitiveTagLift_addNat :
                     (taggedLinearTagsProgram residue) htag
 
 
-theorem examplePrimitiveTagLift_subNat :
-    PrimitiveTagLift examplePolicy exampleGamma "subNat" := by
+theorem examplePrimitiveTagLift_subInt :
+    PrimitiveTagLift examplePolicy exampleGamma "subInt" := by
   intro input residue nextTag specification plainInput plainOutput
     hname hinput hdelta hwellformed
   have hspecification : specification =
-      { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
-        output := .snoc (.row "ρ") (.base .nat .many), delta := subNatDelta } :=
+      { input := .snoc (.snoc (.row "ρ") (.base .int .many)) (.base .int .many),
+        output := .snoc (.row "ρ") (.base .int .many), delta := subIntDelta } :=
     (Option.some.inj hname).symm
   subst specification
   subst plainInput
   cases input with
-  | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+  | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subIntDelta] at hdelta; cases hdelta
   | cons rightValue inputTail =>
     cases rightValue with
-    | quotation rightTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
-    | world rightTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+    | quotation rightTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subIntDelta] at hdelta; cases hdelta
+    | world rightTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subIntDelta] at hdelta; cases hdelta
     | literal rightTag rightLiteral =>
       cases rightLiteral with
-      | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
-      | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
-      | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
-      | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
-      | nat right =>
+      | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subIntDelta] at hdelta; cases hdelta
+      | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subIntDelta] at hdelta; cases hdelta
+      | intSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subIntDelta] at hdelta; cases hdelta
+      | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subIntDelta] at hdelta; cases hdelta
+      | int right =>
         cases inputTail with
-        | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+        | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subIntDelta] at hdelta; cases hdelta
         | cons leftValue tail =>
           cases leftValue with
-          | quotation leftTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
-          | world leftTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+          | quotation leftTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subIntDelta] at hdelta; cases hdelta
+          | world leftTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subIntDelta] at hdelta; cases hdelta
           | literal leftTag leftLiteral =>
             cases leftLiteral with
-            | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
-            | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
-            | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
-            | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
-            | nat left =>
-              simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta
+            | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subIntDelta] at hdelta; cases hdelta
+            | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subIntDelta] at hdelta; cases hdelta
+            | intSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subIntDelta] at hdelta; cases hdelta
+            | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subIntDelta] at hdelta; cases hdelta
+            | int left =>
+              simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subIntDelta] at hdelta
               have hplainOutput := Option.some.inj hdelta
               subst plainOutput
               let tailTags := taggedLinearTagsValueList tail
               have htags :
                   taggedLinearTags
-                    { stack := .literal rightTag (.nat right) ::
-                        .literal leftTag (.nat left) :: tail,
-                      program := .cons (.prim "subNat") residue,
+                    { stack := .literal rightTag (.int right) ::
+                        .literal leftTag (.int left) :: tail,
+                      program := .cons (.prim "subInt") residue,
                       nextTag := nextTag } =
                     tailTags ++ taggedLinearTagsProgram residue := by
                 simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTags, taggedLinearTagsValueList,
@@ -592,21 +592,21 @@ theorem examplePrimitiveTagLift_subNat :
                   taggedLinearTagsValueList_eq_foldr]
               unfold InstrumentedWellFormed at hwellformed
               rw [htags] at hwellformed
-              let output : AStack := .literal rightTag (.nat (left - right)) :: tail
+              let output : AStack := .literal rightTag (.int (left - right)) :: tail
               refine ⟨output, nextTag, ?_, Nat.le_refl _, ?_, ?_⟩
               · simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
               · refine ⟨
-                  { input := .snoc (.snoc (.row "ρ") (.base .nat .many))
-                      (.base .nat .many),
-                    output := .snoc (.row "ρ") (.base .nat .many),
-                    delta := subNatDelta },
-                  .literal (.nat right) :: .literal (.nat left) :: tail.map eraseValue,
-                  .literal (.nat (left - right)) :: tail.map eraseValue,
+                  { input := .snoc (.snoc (.row "ρ") (.base .int .many))
+                      (.base .int .many),
+                    output := .snoc (.row "ρ") (.base .int .many),
+                    delta := subIntDelta },
+                  .literal (.int right) :: .literal (.int left) :: tail.map eraseValue,
+                  .literal (.int (left - right)) :: tail.map eraseValue,
                   tailTags, tailTags, [], [], ?_⟩
                 refine
                   { name_resolves := hname
                     input_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, eraseValue]
-                    delta := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, subNatDelta, eraseValue]
+                    delta := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, subIntDelta, eraseValue]
                     output_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
                     input_partition := ?_
                     output_partition := ?_
@@ -628,7 +628,7 @@ theorem examplePrimitiveTagLift_subNat :
                     row_tail_retained := by
                       intro tag htag
                       exact htag
-                    stack_contract := .subNat
+                    stack_contract := .subInt
                     authorised := Or.inl ⟨by decide, rfl, rfl⟩ }
                 · intro tag
                   simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTagsValueList, taggedLinearTagsValue, tailTags]
@@ -667,51 +667,51 @@ theorem examplePrimitiveTagLift_subNat :
                     (taggedLinearTagsProgram residue) htag
 
 
-theorem examplePrimitiveTagLift_mulNat :
-    PrimitiveTagLift examplePolicy exampleGamma "mulNat" := by
+theorem examplePrimitiveTagLift_mulInt :
+    PrimitiveTagLift examplePolicy exampleGamma "mulInt" := by
   intro input residue nextTag specification plainInput plainOutput
     hname hinput hdelta hwellformed
   have hspecification : specification =
-      { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
-        output := .snoc (.row "ρ") (.base .nat .many), delta := mulNatDelta } :=
+      { input := .snoc (.snoc (.row "ρ") (.base .int .many)) (.base .int .many),
+        output := .snoc (.row "ρ") (.base .int .many), delta := mulIntDelta } :=
     (Option.some.inj hname).symm
   subst specification
   subst plainInput
   cases input with
-  | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+  | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulIntDelta] at hdelta; cases hdelta
   | cons rightValue inputTail =>
     cases rightValue with
-    | quotation rightTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
-    | world rightTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+    | quotation rightTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulIntDelta] at hdelta; cases hdelta
+    | world rightTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulIntDelta] at hdelta; cases hdelta
     | literal rightTag rightLiteral =>
       cases rightLiteral with
-      | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
-      | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
-      | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
-      | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
-      | nat right =>
+      | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulIntDelta] at hdelta; cases hdelta
+      | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulIntDelta] at hdelta; cases hdelta
+      | intSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulIntDelta] at hdelta; cases hdelta
+      | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulIntDelta] at hdelta; cases hdelta
+      | int right =>
         cases inputTail with
-        | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+        | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulIntDelta] at hdelta; cases hdelta
         | cons leftValue tail =>
           cases leftValue with
-          | quotation leftTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
-          | world leftTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+          | quotation leftTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulIntDelta] at hdelta; cases hdelta
+          | world leftTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulIntDelta] at hdelta; cases hdelta
           | literal leftTag leftLiteral =>
             cases leftLiteral with
-            | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
-            | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
-            | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
-            | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
-            | nat left =>
-              simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta
+            | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulIntDelta] at hdelta; cases hdelta
+            | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulIntDelta] at hdelta; cases hdelta
+            | intSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulIntDelta] at hdelta; cases hdelta
+            | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulIntDelta] at hdelta; cases hdelta
+            | int left =>
+              simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulIntDelta] at hdelta
               have hplainOutput := Option.some.inj hdelta
               subst plainOutput
               let tailTags := taggedLinearTagsValueList tail
               have htags :
                   taggedLinearTags
-                    { stack := .literal rightTag (.nat right) ::
-                        .literal leftTag (.nat left) :: tail,
-                      program := .cons (.prim "mulNat") residue,
+                    { stack := .literal rightTag (.int right) ::
+                        .literal leftTag (.int left) :: tail,
+                      program := .cons (.prim "mulInt") residue,
                       nextTag := nextTag } =
                     tailTags ++ taggedLinearTagsProgram residue := by
                 simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTags, taggedLinearTagsValueList,
@@ -720,21 +720,21 @@ theorem examplePrimitiveTagLift_mulNat :
                   taggedLinearTagsValueList_eq_foldr]
               unfold InstrumentedWellFormed at hwellformed
               rw [htags] at hwellformed
-              let output : AStack := .literal rightTag (.nat (left * right)) :: tail
+              let output : AStack := .literal rightTag (.int (left * right)) :: tail
               refine ⟨output, nextTag, ?_, Nat.le_refl _, ?_, ?_⟩
               · simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
               · refine ⟨
-                  { input := .snoc (.snoc (.row "ρ") (.base .nat .many))
-                      (.base .nat .many),
-                    output := .snoc (.row "ρ") (.base .nat .many),
-                    delta := mulNatDelta },
-                  .literal (.nat right) :: .literal (.nat left) :: tail.map eraseValue,
-                  .literal (.nat (left * right)) :: tail.map eraseValue,
+                  { input := .snoc (.snoc (.row "ρ") (.base .int .many))
+                      (.base .int .many),
+                    output := .snoc (.row "ρ") (.base .int .many),
+                    delta := mulIntDelta },
+                  .literal (.int right) :: .literal (.int left) :: tail.map eraseValue,
+                  .literal (.int (left * right)) :: tail.map eraseValue,
                   tailTags, tailTags, [], [], ?_⟩
                 refine
                   { name_resolves := hname
                     input_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, eraseValue]
-                    delta := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, mulNatDelta, eraseValue]
+                    delta := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, mulIntDelta, eraseValue]
                     output_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
                     input_partition := ?_
                     output_partition := ?_
@@ -756,7 +756,7 @@ theorem examplePrimitiveTagLift_mulNat :
                     row_tail_retained := by
                       intro tag htag
                       exact htag
-                    stack_contract := .mulNat
+                    stack_contract := .mulInt
                     authorised := Or.inl ⟨by decide, rfl, rfl⟩ }
                 · intro tag
                   simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTagsValueList, taggedLinearTagsValue, tailTags]
@@ -795,51 +795,51 @@ theorem examplePrimitiveTagLift_mulNat :
                     (taggedLinearTagsProgram residue) htag
 
 
-theorem examplePrimitiveTagLift_ltNat :
-    PrimitiveTagLift examplePolicy exampleGamma "ltNat" := by
+theorem examplePrimitiveTagLift_ltInt :
+    PrimitiveTagLift examplePolicy exampleGamma "ltInt" := by
   intro input residue nextTag specification plainInput plainOutput
     hname hinput hdelta hwellformed
   have hspecification : specification =
-      { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
-        output := .snoc (.row "ρ") (.base .bool .many), delta := ltNatDelta } :=
+      { input := .snoc (.snoc (.row "ρ") (.base .int .many)) (.base .int .many),
+        output := .snoc (.row "ρ") (.base .bool .many), delta := ltIntDelta } :=
     (Option.some.inj hname).symm
   subst specification
   subst plainInput
   cases input with
-  | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+  | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltIntDelta] at hdelta; cases hdelta
   | cons rightValue inputTail =>
     cases rightValue with
-    | quotation rightTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
-    | world rightTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+    | quotation rightTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltIntDelta] at hdelta; cases hdelta
+    | world rightTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltIntDelta] at hdelta; cases hdelta
     | literal rightTag rightLiteral =>
       cases rightLiteral with
-      | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
-      | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
-      | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
-      | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
-      | nat right =>
+      | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltIntDelta] at hdelta; cases hdelta
+      | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltIntDelta] at hdelta; cases hdelta
+      | intSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltIntDelta] at hdelta; cases hdelta
+      | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltIntDelta] at hdelta; cases hdelta
+      | int right =>
         cases inputTail with
-        | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+        | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltIntDelta] at hdelta; cases hdelta
         | cons leftValue tail =>
           cases leftValue with
-          | quotation leftTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
-          | world leftTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+          | quotation leftTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltIntDelta] at hdelta; cases hdelta
+          | world leftTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltIntDelta] at hdelta; cases hdelta
           | literal leftTag leftLiteral =>
             cases leftLiteral with
-            | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
-            | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
-            | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
-            | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
-            | nat left =>
-              simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta
+            | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltIntDelta] at hdelta; cases hdelta
+            | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltIntDelta] at hdelta; cases hdelta
+            | intSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltIntDelta] at hdelta; cases hdelta
+            | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltIntDelta] at hdelta; cases hdelta
+            | int left =>
+              simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltIntDelta] at hdelta
               have hplainOutput := Option.some.inj hdelta
               subst plainOutput
               let tailTags := taggedLinearTagsValueList tail
               have htags :
                   taggedLinearTags
-                    { stack := .literal rightTag (.nat right) ::
-                        .literal leftTag (.nat left) :: tail,
-                      program := .cons (.prim "ltNat") residue,
+                    { stack := .literal rightTag (.int right) ::
+                        .literal leftTag (.int left) :: tail,
+                      program := .cons (.prim "ltInt") residue,
                       nextTag := nextTag } =
                     tailTags ++ taggedLinearTagsProgram residue := by
                 simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTags, taggedLinearTagsValueList,
@@ -852,17 +852,17 @@ theorem examplePrimitiveTagLift_ltNat :
               refine ⟨output, nextTag, ?_, Nat.le_refl _, ?_, ?_⟩
               · simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
               · refine ⟨
-                  { input := .snoc (.snoc (.row "ρ") (.base .nat .many))
-                      (.base .nat .many),
+                  { input := .snoc (.snoc (.row "ρ") (.base .int .many))
+                      (.base .int .many),
                     output := .snoc (.row "ρ") (.base .bool .many),
-                    delta := ltNatDelta },
-                  .literal (.nat right) :: .literal (.nat left) :: tail.map eraseValue,
+                    delta := ltIntDelta },
+                  .literal (.int right) :: .literal (.int left) :: tail.map eraseValue,
                   .literal (.bool (decide (left < right))) :: tail.map eraseValue,
                   tailTags, tailTags, [], [], ?_⟩
                 refine
                   { name_resolves := hname
                     input_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, eraseValue]
-                    delta := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, ltNatDelta, eraseValue]
+                    delta := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, ltIntDelta, eraseValue]
                     output_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
                     input_partition := ?_
                     output_partition := ?_
@@ -884,7 +884,7 @@ theorem examplePrimitiveTagLift_ltNat :
                     row_tail_retained := by
                       intro tag htag
                       exact htag
-                    stack_contract := .ltNat
+                    stack_contract := .ltInt
                     authorised := Or.inl ⟨by decide, rfl, rfl⟩ }
                 · intro tag
                   simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTagsValueList, taggedLinearTagsValue, tailTags]
@@ -923,51 +923,51 @@ theorem examplePrimitiveTagLift_ltNat :
                     (taggedLinearTagsProgram residue) htag
 
 
-theorem examplePrimitiveTagLift_eqNat :
-    PrimitiveTagLift examplePolicy exampleGamma "eqNat" := by
+theorem examplePrimitiveTagLift_eqInt :
+    PrimitiveTagLift examplePolicy exampleGamma "eqInt" := by
   intro input residue nextTag specification plainInput plainOutput
     hname hinput hdelta hwellformed
   have hspecification : specification =
-      { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
-        output := .snoc (.row "ρ") (.base .bool .many), delta := eqNatDelta } :=
+      { input := .snoc (.snoc (.row "ρ") (.base .int .many)) (.base .int .many),
+        output := .snoc (.row "ρ") (.base .bool .many), delta := eqIntDelta } :=
     (Option.some.inj hname).symm
   subst specification
   subst plainInput
   cases input with
-  | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+  | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqIntDelta] at hdelta; cases hdelta
   | cons rightValue inputTail =>
     cases rightValue with
-    | quotation rightTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
-    | world rightTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+    | quotation rightTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqIntDelta] at hdelta; cases hdelta
+    | world rightTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqIntDelta] at hdelta; cases hdelta
     | literal rightTag rightLiteral =>
       cases rightLiteral with
-      | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
-      | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
-      | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
-      | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
-      | nat right =>
+      | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqIntDelta] at hdelta; cases hdelta
+      | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqIntDelta] at hdelta; cases hdelta
+      | intSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqIntDelta] at hdelta; cases hdelta
+      | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqIntDelta] at hdelta; cases hdelta
+      | int right =>
         cases inputTail with
-        | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+        | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqIntDelta] at hdelta; cases hdelta
         | cons leftValue tail =>
           cases leftValue with
-          | quotation leftTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
-          | world leftTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+          | quotation leftTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqIntDelta] at hdelta; cases hdelta
+          | world leftTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqIntDelta] at hdelta; cases hdelta
           | literal leftTag leftLiteral =>
             cases leftLiteral with
-            | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
-            | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
-            | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
-            | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
-            | nat left =>
-              simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta
+            | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqIntDelta] at hdelta; cases hdelta
+            | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqIntDelta] at hdelta; cases hdelta
+            | intSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqIntDelta] at hdelta; cases hdelta
+            | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqIntDelta] at hdelta; cases hdelta
+            | int left =>
+              simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqIntDelta] at hdelta
               have hplainOutput := Option.some.inj hdelta
               subst plainOutput
               let tailTags := taggedLinearTagsValueList tail
               have htags :
                   taggedLinearTags
-                    { stack := .literal rightTag (.nat right) ::
-                        .literal leftTag (.nat left) :: tail,
-                      program := .cons (.prim "eqNat") residue,
+                    { stack := .literal rightTag (.int right) ::
+                        .literal leftTag (.int left) :: tail,
+                      program := .cons (.prim "eqInt") residue,
                       nextTag := nextTag } =
                     tailTags ++ taggedLinearTagsProgram residue := by
                 simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTags, taggedLinearTagsValueList,
@@ -980,17 +980,17 @@ theorem examplePrimitiveTagLift_eqNat :
               refine ⟨output, nextTag, ?_, Nat.le_refl _, ?_, ?_⟩
               · simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
               · refine ⟨
-                  { input := .snoc (.snoc (.row "ρ") (.base .nat .many))
-                      (.base .nat .many),
+                  { input := .snoc (.snoc (.row "ρ") (.base .int .many))
+                      (.base .int .many),
                     output := .snoc (.row "ρ") (.base .bool .many),
-                    delta := eqNatDelta },
-                  .literal (.nat right) :: .literal (.nat left) :: tail.map eraseValue,
+                    delta := eqIntDelta },
+                  .literal (.int right) :: .literal (.int left) :: tail.map eraseValue,
                   .literal (.bool (decide (left = right))) :: tail.map eraseValue,
                   tailTags, tailTags, [], [], ?_⟩
                 refine
                   { name_resolves := hname
                     input_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, eraseValue]
-                    delta := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, eqNatDelta, eraseValue]
+                    delta := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, eqIntDelta, eraseValue]
                     output_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
                     input_partition := ?_
                     output_partition := ?_
@@ -1012,7 +1012,7 @@ theorem examplePrimitiveTagLift_eqNat :
                     row_tail_retained := by
                       intro tag htag
                       exact htag
-                    stack_contract := .eqNat
+                    stack_contract := .eqInt
                     authorised := Or.inl ⟨by decide, rfl, rfl⟩ }
                 · intro tag
                   simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTagsValueList, taggedLinearTagsValue, tailTags]
@@ -1385,101 +1385,101 @@ theorem literalPrimitiveTagLift {name : Prim} {specification : PrimitiveSpec}
     rw [hout'] at htag
     exact hwellformed.2 tag (List.mem_append_left _ htag)
 
-theorem examplePrimitiveTagLift_natSeqEmpty :
-    PrimitiveTagLift examplePolicy exampleGamma "natSeqEmpty" := by
+theorem examplePrimitiveTagLift_intSeqEmpty :
+    PrimitiveTagLift examplePolicy exampleGamma "intSeqEmpty" := by
   intro input residue nextTag specification plainInput plainOutput
     hname hinput hdelta hwellformed
   have hspec := (Option.some.inj hname).symm
   subst specification
   subst plainInput
-  simp [natSeqEmptyDelta] at hdelta
+  simp [intSeqEmptyDelta] at hdelta
   subst hdelta
   exact literalPrimitiveTagLift (top := []) (tail := input)
-    (out := [.literal nextTag (.natSeq [])]) hname rfl rfl
-    (by simp [natSeqEmptyDelta, eraseValue]) .natSeqEmpty (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+    (out := [.literal nextTag (.intSeq [])]) hname rfl rfl
+    (by simp [intSeqEmptyDelta, eraseValue]) .intSeqEmpty (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
 
-theorem examplePrimitiveTagLift_natSeqLen :
-    PrimitiveTagLift examplePolicy exampleGamma "natSeqLen" := by
+theorem examplePrimitiveTagLift_intSeqLen :
+    PrimitiveTagLift examplePolicy exampleGamma "intSeqLen" := by
   intro input residue nextTag specification plainInput plainOutput
     hname hinput hdelta hwellformed
   have hspec := (Option.some.inj hname).symm
   subst specification
   subst plainInput
   cases input with
-  | nil => simp [natSeqLenDelta] at hdelta
+  | nil => simp [intSeqLenDelta] at hdelta
   | cons top tail =>
     cases top with
-    | quotation => simp [natSeqLenDelta, eraseValue] at hdelta
-    | world => simp [natSeqLenDelta, eraseValue] at hdelta
+    | quotation => simp [intSeqLenDelta, eraseValue] at hdelta
+    | world => simp [intSeqLenDelta, eraseValue] at hdelta
     | literal tag lit =>
-      cases lit <;> simp [natSeqLenDelta, eraseValue] at hdelta
+      cases lit <;> simp [intSeqLenDelta, eraseValue] at hdelta
       rename_i values
       subst hdelta
-      exact literalPrimitiveTagLift (top := [.literal tag (.natSeq values)])
-        (out := [.literal tag (.nat values.length)]) hname rfl rfl
-        (by simp [natSeqLenDelta, eraseValue]) .natSeqLen (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+      exact literalPrimitiveTagLift (top := [.literal tag (.intSeq values)])
+        (out := [.literal tag (.int values.length)]) hname rfl rfl
+        (by simp [intSeqLenDelta, eraseValue]) .intSeqLen (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
 
-theorem examplePrimitiveTagLift_natSeqAt :
-    PrimitiveTagLift examplePolicy exampleGamma "natSeqAt" := by
+theorem examplePrimitiveTagLift_intSeqAt :
+    PrimitiveTagLift examplePolicy exampleGamma "intSeqAt" := by
   intro input residue nextTag specification plainInput plainOutput
     hname hinput hdelta hwellformed
   have hspec := (Option.some.inj hname).symm
   subst specification
   subst plainInput
   cases input with
-  | nil => simp [natSeqAtDelta] at hdelta
+  | nil => simp [intSeqAtDelta] at hdelta
   | cons top tail =>
     cases top with
-    | quotation => simp [natSeqAtDelta, eraseValue] at hdelta
-    | world => simp [natSeqAtDelta, eraseValue] at hdelta
+    | quotation => simp [intSeqAtDelta, eraseValue] at hdelta
+    | world => simp [intSeqAtDelta, eraseValue] at hdelta
     | literal topTag topLiteral =>
       cases tail with
-      | nil => cases topLiteral <;> simp [natSeqAtDelta, eraseValue] at hdelta
+      | nil => cases topLiteral <;> simp [intSeqAtDelta, eraseValue] at hdelta
       | cons below tail =>
         cases below with
-        | quotation => cases topLiteral <;> simp [natSeqAtDelta, eraseValue] at hdelta
-        | world => cases topLiteral <;> simp [natSeqAtDelta, eraseValue] at hdelta
+        | quotation => cases topLiteral <;> simp [intSeqAtDelta, eraseValue] at hdelta
+        | world => cases topLiteral <;> simp [intSeqAtDelta, eraseValue] at hdelta
         | literal seqTag seqLiteral =>
           cases topLiteral <;> cases seqLiteral <;>
-            first | (simp [natSeqAtDelta, eraseValue] at hdelta; done) | skip
+            first | (simp [intSeqAtDelta, eraseValue] at hdelta; done) | skip
           rename_i top values
-          simp only [natSeqAtDelta, eraseValue, List.map, Option.map_eq_some_iff] at hdelta
+          simp only [intSeqAtDelta, eraseValue, List.map, Option.map_eq_some_iff] at hdelta
           obtain ⟨value, hfound, hout⟩ := hdelta
           subst hout
           exact literalPrimitiveTagLift
-            (top := [.literal topTag (.nat top), .literal seqTag (.natSeq values)])
-            (out := [.literal topTag (.nat value)]) hname rfl rfl
-            (by simp [natSeqAtDelta, eraseValue, hfound]) (.natSeqAt hfound)
+            (top := [.literal topTag (.int top), .literal seqTag (.intSeq values)])
+            (out := [.literal topTag (.int value)]) hname rfl rfl
+            (by simp [intSeqAtDelta, eraseValue, hfound]) (.intSeqAt hfound)
             (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
 
-theorem examplePrimitiveTagLift_natSeqPush :
-    PrimitiveTagLift examplePolicy exampleGamma "natSeqPush" := by
+theorem examplePrimitiveTagLift_intSeqPush :
+    PrimitiveTagLift examplePolicy exampleGamma "intSeqPush" := by
   intro input residue nextTag specification plainInput plainOutput
     hname hinput hdelta hwellformed
   have hspec := (Option.some.inj hname).symm
   subst specification
   subst plainInput
   cases input with
-  | nil => simp [natSeqPushDelta] at hdelta
+  | nil => simp [intSeqPushDelta] at hdelta
   | cons top tail =>
     cases top with
-    | quotation => simp [natSeqPushDelta, eraseValue] at hdelta
-    | world => simp [natSeqPushDelta, eraseValue] at hdelta
+    | quotation => simp [intSeqPushDelta, eraseValue] at hdelta
+    | world => simp [intSeqPushDelta, eraseValue] at hdelta
     | literal topTag topLiteral =>
       cases tail with
-      | nil => cases topLiteral <;> simp [natSeqPushDelta, eraseValue] at hdelta
+      | nil => cases topLiteral <;> simp [intSeqPushDelta, eraseValue] at hdelta
       | cons below tail =>
         cases below with
-        | quotation => cases topLiteral <;> simp [natSeqPushDelta, eraseValue] at hdelta
-        | world => cases topLiteral <;> simp [natSeqPushDelta, eraseValue] at hdelta
+        | quotation => cases topLiteral <;> simp [intSeqPushDelta, eraseValue] at hdelta
+        | world => cases topLiteral <;> simp [intSeqPushDelta, eraseValue] at hdelta
         | literal seqTag seqLiteral =>
-          cases topLiteral <;> cases seqLiteral <;> simp [natSeqPushDelta, eraseValue] at hdelta
+          cases topLiteral <;> cases seqLiteral <;> simp [intSeqPushDelta, eraseValue] at hdelta
           rename_i top values
           subst hdelta
           exact literalPrimitiveTagLift
-            (top := [.literal topTag (.nat top), .literal seqTag (.natSeq values)])
-            (out := [.literal topTag (.natSeq (values ++ [top]))]) hname rfl rfl
-            (by simp [natSeqPushDelta, eraseValue]) .natSeqPush
+            (top := [.literal topTag (.int top), .literal seqTag (.intSeq values)])
+            (out := [.literal topTag (.intSeq (values ++ [top]))]) hname rfl rfl
+            (by simp [intSeqPushDelta, eraseValue]) .intSeqPush
             (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
 
 theorem examplePrimitiveTagLift_boolSeqEmpty :
@@ -1513,7 +1513,7 @@ theorem examplePrimitiveTagLift_boolSeqLen :
       rename_i values
       subst hdelta
       exact literalPrimitiveTagLift (top := [.literal tag (.boolSeq values)])
-        (out := [.literal tag (.nat values.length)]) hname rfl rfl
+        (out := [.literal tag (.int values.length)]) hname rfl rfl
         (by simp [boolSeqLenDelta, eraseValue]) .boolSeqLen (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
 
 theorem examplePrimitiveTagLift_boolSeqAt :
@@ -1544,7 +1544,7 @@ theorem examplePrimitiveTagLift_boolSeqAt :
           obtain ⟨value, hfound, hout⟩ := hdelta
           subst hout
           exact literalPrimitiveTagLift
-            (top := [.literal topTag (.nat top), .literal seqTag (.boolSeq values)])
+            (top := [.literal topTag (.int top), .literal seqTag (.boolSeq values)])
             (out := [.literal topTag (.bool value)]) hname rfl rfl
             (by simp [boolSeqAtDelta, eraseValue, hfound]) (.boolSeqAt hfound)
             (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
@@ -1581,17 +1581,17 @@ theorem examplePrimitiveTagLift_boolSeqPush :
 
 
 theorem examplePrimitiveTagLift_unknown (name : Prim)
-    (haddNat : name ≠ "addNat")
-    (hsubNat : name ≠ "subNat")
-    (hmulNat : name ≠ "mulNat")
-    (hltNat : name ≠ "ltNat")
-    (heqNat : name ≠ "eqNat")
+    (haddInt : name ≠ "addInt")
+    (hsubInt : name ≠ "subInt")
+    (hmulInt : name ≠ "mulInt")
+    (hltInt : name ≠ "ltInt")
+    (heqInt : name ≠ "eqInt")
     (hmakeWorld : name ≠ "makeWorld")
     (hconsumeWorld : name ≠ "consumeWorld")
-    (hnatSeqEmpty : name ≠ "natSeqEmpty")
-    (hnatSeqLen : name ≠ "natSeqLen")
-    (hnatSeqAt : name ≠ "natSeqAt")
-    (hnatSeqPush : name ≠ "natSeqPush")
+    (hintSeqEmpty : name ≠ "intSeqEmpty")
+    (hintSeqLen : name ≠ "intSeqLen")
+    (hintSeqAt : name ≠ "intSeqAt")
+    (hintSeqPush : name ≠ "intSeqPush")
     (hboolSeqEmpty : name ≠ "boolSeqEmpty")
     (hboolSeqLen : name ≠ "boolSeqLen")
     (hboolSeqAt : name ≠ "boolSeqAt")
@@ -1600,47 +1600,47 @@ theorem examplePrimitiveTagLift_unknown (name : Prim)
   intro input residue nextTag specification plainInput plainOutput hname
     hinput hdelta hwellformed
   have hnone : exampleGamma.primitive name = none := by
-    simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, exampleGamma, defaultGamma, haddNat, hsubNat, hmulNat, hltNat, heqNat, hmakeWorld, hconsumeWorld,
-      hnatSeqEmpty, hnatSeqLen, hnatSeqAt, hnatSeqPush, hboolSeqEmpty, hboolSeqLen, hboolSeqAt, hboolSeqPush]
+    simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, exampleGamma, defaultGamma, haddInt, hsubInt, hmulInt, hltInt, heqInt, hmakeWorld, hconsumeWorld,
+      hintSeqEmpty, hintSeqLen, hintSeqAt, hintSeqPush, hboolSeqEmpty, hboolSeqLen, hboolSeqAt, hboolSeqPush]
   rw [hnone] at hname
   cases hname
 
 theorem examplePrimitiveTagLift :
     ∀ name, PrimitiveTagLift examplePolicy exampleGamma name := by
   intro name
-  by_cases haddNat : name = "addNat"
+  by_cases haddInt : name = "addInt"
   · subst name
-    exact examplePrimitiveTagLift_addNat
+    exact examplePrimitiveTagLift_addInt
   · by_cases hmakeWorld : name = "makeWorld"
     · subst name
       exact examplePrimitiveTagLift_makeWorld
     · by_cases hconsumeWorld : name = "consumeWorld"
       · subst name
         exact examplePrimitiveTagLift_consumeWorld
-      · by_cases hsubNat : name = "subNat"
+      · by_cases hsubInt : name = "subInt"
         · subst name
-          exact examplePrimitiveTagLift_subNat
-        · by_cases hmulNat : name = "mulNat"
+          exact examplePrimitiveTagLift_subInt
+        · by_cases hmulInt : name = "mulInt"
           · subst name
-            exact examplePrimitiveTagLift_mulNat
-          · by_cases hltNat : name = "ltNat"
+            exact examplePrimitiveTagLift_mulInt
+          · by_cases hltInt : name = "ltInt"
             · subst name
-              exact examplePrimitiveTagLift_ltNat
-            · by_cases heqNat : name = "eqNat"
+              exact examplePrimitiveTagLift_ltInt
+            · by_cases heqInt : name = "eqInt"
               · subst name
-                exact examplePrimitiveTagLift_eqNat
-              · by_cases hnatSeqEmpty : name = "natSeqEmpty"
+                exact examplePrimitiveTagLift_eqInt
+              · by_cases hintSeqEmpty : name = "intSeqEmpty"
                 · subst name
-                  exact examplePrimitiveTagLift_natSeqEmpty
-                · by_cases hnatSeqLen : name = "natSeqLen"
+                  exact examplePrimitiveTagLift_intSeqEmpty
+                · by_cases hintSeqLen : name = "intSeqLen"
                   · subst name
-                    exact examplePrimitiveTagLift_natSeqLen
-                  · by_cases hnatSeqAt : name = "natSeqAt"
+                    exact examplePrimitiveTagLift_intSeqLen
+                  · by_cases hintSeqAt : name = "intSeqAt"
                     · subst name
-                      exact examplePrimitiveTagLift_natSeqAt
-                    · by_cases hnatSeqPush : name = "natSeqPush"
+                      exact examplePrimitiveTagLift_intSeqAt
+                    · by_cases hintSeqPush : name = "intSeqPush"
                       · subst name
-                        exact examplePrimitiveTagLift_natSeqPush
+                        exact examplePrimitiveTagLift_intSeqPush
                       · by_cases hboolSeqEmpty : name = "boolSeqEmpty"
                         · subst name
                           exact examplePrimitiveTagLift_boolSeqEmpty
@@ -1653,35 +1653,35 @@ theorem examplePrimitiveTagLift :
                             · by_cases hboolSeqPush : name = "boolSeqPush"
                               · subst name
                                 exact examplePrimitiveTagLift_boolSeqPush
-                              · exact examplePrimitiveTagLift_unknown name haddNat hsubNat hmulNat hltNat heqNat
-                                  hmakeWorld hconsumeWorld hnatSeqEmpty hnatSeqLen hnatSeqAt hnatSeqPush hboolSeqEmpty hboolSeqLen hboolSeqAt hboolSeqPush
+                              · exact examplePrimitiveTagLift_unknown name haddInt hsubInt hmulInt hltInt heqInt
+                                  hmakeWorld hconsumeWorld hintSeqEmpty hintSeqLen hintSeqAt hintSeqPush hboolSeqEmpty hboolSeqLen hboolSeqAt hboolSeqPush
 
 #print axioms filterContainsEqSelf_explicit
-#print axioms examplePrimitiveTagLift_addNat
+#print axioms examplePrimitiveTagLift_addInt
 #print axioms examplePrimitiveTagLift_makeWorld
 #print axioms examplePrimitiveTagLift_consumeWorld
 #print axioms literalPrimitiveTagLift
-#print axioms examplePrimitiveTagLift_natSeqAt
+#print axioms examplePrimitiveTagLift_intSeqAt
 #print axioms examplePrimitiveTagLift_unknown
 #print axioms examplePrimitiveTagLift
 
 theorem example_backward_adequacy_primitive_step :
     ∃ annotatedAfter,
       InstrumentedStep examplePolicy exampleGamma emptyDictionary defaultCosts
-        { stack := [.literal 0 (.nat 3), .literal 1 (.nat 4)],
-          program := .cons (.prim "addNat") .empty, nextTag := 2 }
+        { stack := [.literal 0 (.int 3), .literal 1 (.int 4)],
+          program := .cons (.prim "addInt") .empty, nextTag := 2 }
         annotatedAfter ∧
       eraseAConfig annotatedAfter =
-        { stack := [.literal (.nat (4 + 3))], program := .empty } ∧
+        { stack := [.literal (.int (4 + 3))], program := .empty } ∧
       InstrumentedWellFormed annotatedAfter := by
   let annotatedBefore : AConfig :=
-    { stack := [.literal 0 (.nat 3), .literal 1 (.nat 4)],
-      program := .cons (.prim "addNat") .empty, nextTag := 2 }
+    { stack := [.literal 0 (.int 3), .literal 1 (.int 4)],
+      program := .cons (.prim "addInt") .empty, nextTag := 2 }
   let before : Config :=
-    { stack := [.literal (.nat 3), .literal (.nat 4)],
-      program := .cons (.prim "addNat") .empty }
+    { stack := [.literal (.int 3), .literal (.int 4)],
+      program := .cons (.prim "addInt") .empty }
   let after : Config :=
-    { stack := [.literal (.nat (4 + 3))], program := .empty }
+    { stack := [.literal (.int (4 + 3))], program := .empty }
   have hdictionary : AnnotatedDictionary emptyDictionary (fun _ => none) := by
     intro name entry frontier hentry
     simp [emptyDictionary] at hentry
@@ -1692,21 +1692,21 @@ theorem example_backward_adequacy_primitive_step :
     rfl
   have htyped : TypedConfig exampleGamma emptyDictionary before := by
     refine ⟨
-      .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
-      .snoc (.row "ρ") (.base .nat .many), ?_, ?_⟩
+      .snoc (.snoc (.row "ρ") (.base .int .many)) (.base .int .many),
+      .snoc (.row "ρ") (.base .int .many), ?_, ?_⟩
     · exact .cons (.literal rfl) (.cons (.literal rfl) .empty)
     · exact ProgramTyping.cons
-        (AtomTyping.prim (name := "addNat")
+        (AtomTyping.prim (name := "addInt")
           (specification :=
-            { input := .snoc (.snoc (.row "ρ") (.base .nat .many))
-                (.base .nat .many),
-              output := .snoc (.row "ρ") (.base .nat .many),
-              delta := addNatDelta }) rfl)
+            { input := .snoc (.snoc (.row "ρ") (.base .int .many))
+                (.base .int .many),
+              output := .snoc (.row "ρ") (.base .int .many),
+              delta := addIntDelta }) rfl)
         ProgramTyping.empty
   have hstep : HasSuccessor exampleGamma emptyDictionary defaultCosts before after := by
-    refine ⟨defaultCosts.primitive "addNat", ?_⟩
+    refine ⟨defaultCosts.primitive "addInt", ?_⟩
     simp only [before, after, exampleGamma, defaultGamma, defaultCosts, step,
-      addNatDelta]
+      addIntDelta]
   change ∃ annotatedAfter,
     InstrumentedStep examplePolicy exampleGamma emptyDictionary defaultCosts
       annotatedBefore annotatedAfter ∧
@@ -1794,11 +1794,11 @@ def runTest (name : String) (condition : Bool) : IO Unit :=
 def reqR9Type : WordType :=
   { rowVariables := ["ρ"]
     input := .row "ρ"
-    output := .snoc (.row "ρ") (.base .nat .many) }
+    output := .snoc (.row "ρ") (.base .int .many) }
 
 def reqR9EntryA : WordEntry :=
   { type := reqR9Type
-    body := .cons (.lit (.nat 1)) .empty }
+    body := .cons (.lit (.int 1)) .empty }
 
 def reqR9EntryB : WordEntry :=
   { type := reqR9Type
@@ -1897,7 +1897,7 @@ def main : IO Unit := do
   let gamma := defaultGamma
   let d := emptyDictionary
   let c := defaultCosts
-  let lit value := Value.literal (.nat value)
+  let lit value := Value.literal (.int value)
   let obligationA := checkedKernelWordObligation "a" reqR9Dictionary
     reqR9EntryA (by rfl) reqR9BoundaryA
   let obligationB := checkedKernelWordObligation "b" reqR9Dictionary
@@ -1922,22 +1922,22 @@ def main : IO Unit := do
   -- S-LIT, S-DUP, S-DROP, S-SWAP.
   let structural :=
     { stack := ([] : Stack),
-      program := .cons (.lit (.nat 7)) (.cons (.lit (.nat 8)) (.cons .drop .empty)) }
+      program := .cons (.lit (.int 7)) (.cons (.lit (.int 8)) (.cons .drop .empty)) }
   runTest "structural atoms"
     (expectTerminalStack [lit 7] (run gamma d c 20 structural))
   runTest "dup preserves both values"
     (expectTerminalStack [lit 7, lit 7]
-      (run gamma d c 20 { stack := [], program := .cons (.lit (.nat 7)) (.cons .dup .empty) }))
+      (run gamma d c 20 { stack := [], program := .cons (.lit (.int 7)) (.cons .dup .empty) }))
   runTest "swap preserves order"
     (expectTerminalStack [lit 7, lit 8]
-      (run gamma d c 20 { stack := [], program := (.cons (.lit (.nat 7))
-        (.cons (.lit (.nat 8)) (.cons .swap .empty))) }))
+      (run gamma d c 20 { stack := [], program := (.cons (.lit (.int 7))
+        (.cons (.lit (.int 8)) (.cons .swap .empty))) }))
   runTest "parameterised cost"
     (expectTerminalCost 3 (run gamma d { c with atom := fun _ => 3 } 10
-      { stack := [], program := .cons (.lit (.nat 0)) .empty }))
+      { stack := [], program := .cons (.lit (.int 0)) .empty }))
   -- S-QUOT, S-CALL, and S-PUSH.
   let callResult := run gamma d c 20
-    { stack := [], program := .cons (.quotation (.cons (.lit (.nat 9)) .empty))
+    { stack := [], program := .cons (.quotation (.cons (.lit (.int 9)) .empty))
         (.cons .call .empty) }
   runTest "quotation call" (expectTerminalStack [lit 9] callResult)
   let closedQuotationResult := run gamma d c 20
@@ -1954,12 +1954,12 @@ def main : IO Unit := do
     | _ => false)
   -- S-DIP preserves the value by administrative push.
   let dipResult := run gamma d c 20
-    { stack := [], program := .cons (.lit (.nat 4))
-        (.cons (.quotation (.cons (.lit (.nat 5)) .empty)) (.cons .dip .empty)) }
+    { stack := [], program := .cons (.lit (.int 4))
+        (.cons (.quotation (.cons (.lit (.int 5)) .empty)) (.cons .dip .empty)) }
   runTest "dip" (expectTerminalStack [lit 4, lit 5] dipResult)
   -- S-COMP, then S-CALL.
-  let composed := .cons (.quotation (.cons (.lit (.nat 1)) .empty))
-    (.cons (.quotation (.cons (.lit (.nat 2)) .empty)) (.cons .compose (.cons .call .empty)))
+  let composed := .cons (.quotation (.cons (.lit (.int 1)) .empty))
+    (.cons (.quotation (.cons (.lit (.int 2)) .empty)) (.cons .compose (.cons .call .empty)))
   runTest "compose" (expectTerminalStack [lit 2, lit 1]
     (run gamma d c 30 { stack := [], program := composed }))
   -- S-QUOTE captures a linear World value and records linear ownership.
@@ -1985,16 +1985,16 @@ def main : IO Unit := do
   -- S-IF-T and S-IF-F, with exact selected values.
   let ifProgram condition :=
     .cons (.lit (.bool condition))
-      (.cons (.quotation (.cons (.lit (.nat 1)) .empty))
-        (.cons (.quotation (.cons (.lit (.nat 2)) .empty)) (.cons .ifThenElse .empty)))
+      (.cons (.quotation (.cons (.lit (.int 1)) .empty))
+        (.cons (.quotation (.cons (.lit (.int 2)) .empty)) (.cons .ifThenElse .empty)))
   runTest "if true" (expectTerminalStack [lit 1]
     (run gamma d c 20 { stack := [], program := ifProgram true }))
   runTest "if false" (expectTerminalStack [lit 2]
     (run gamma d c 20 { stack := [], program := ifProgram false }))
   -- S-WORD and S-PRIM.
   let words : Dictionary := fun name =>
-    if name == "one" then some { type := { rowVariables := ["ρ"], input := .row "ρ", output := .snoc (.row "ρ") (.base .nat .many) },
-                                    body := .cons (.lit (.nat 1)) .empty }
+    if name == "one" then some { type := { rowVariables := ["ρ"], input := .row "ρ", output := .snoc (.row "ρ") (.base .int .many) },
+                                    body := .cons (.lit (.int 1)) .empty }
     else none
   runTest "dictionary word" (expectTerminalStack [lit 1]
     (run gamma words c 20 { stack := [], program := .cons (.word "one") .empty }))
@@ -2002,8 +2002,8 @@ def main : IO Unit := do
     (run gamma words { c with unfold := 4 } 20
       { stack := [], program := .cons (.word "one") .empty }))
   runTest "primitive add" (expectTerminalStack [lit 7]
-    (run gamma d c 20 { stack := [], program := (.cons (.lit (.nat 3))
-      (.cons (.lit (.nat 4)) (.cons (.prim "addNat") .empty))) }))
+    (run gamma d c 20 { stack := [], program := (.cons (.lit (.int 3))
+      (.cons (.lit (.int 4)) (.cons (.prim "addInt") .empty))) }))
   runTest "primitive world" (expectTerminalStack []
     (run gamma d c 20 { stack := [], program := (.cons (.prim "makeWorld")
       (.cons (.prim "consumeWorld") .empty)) }))
@@ -2029,10 +2029,10 @@ def main : IO Unit := do
   runTest "fuel-bounded divergence"
     (expectOutOfFuel (run gamma loopWords c 12 { stack := [], program := .cons (.word "loop") .empty }))
   let terminalOracle := runOracle gamma d c 0
-    { stack := [.world 7, .literal (.nat 3)], program := .empty }
+    { stack := [.world 7, .literal (.int 3)], program := .empty }
   runTest "oracle terminal captures residual and World state"
     (terminalOracle.status == .terminal &&
-      terminalOracle.residualStack == [.world 7, .literal (.nat 3)] &&
+      terminalOracle.residualStack == [.world 7, .literal (.int 3)] &&
       terminalOracle.residualProgram == .empty &&
       terminalOracle.worldState == [7] &&
       terminalOracle.fuelBudget == 0 &&
@@ -2048,8 +2048,8 @@ def main : IO Unit := do
     (residualProgramWorldOracle.status == .fuelExhausted &&
       residualProgramWorldOracle.worldState == [9])
   let differentTraceOracle := runOracle gamma d c 2
-    { stack := [.world 7, .literal (.nat 3)],
-      program := .cons (.lit (.nat 9)) (.cons .drop .empty) }
+    { stack := [.world 7, .literal (.int 3)],
+      program := .cons (.lit (.int 9)) (.cons .drop .empty) }
   runTest "oracle semantic equality ignores execution accounting"
     (compareOracleResults terminalOracle differentTraceOracle == .equivalent)
   let stuckOracle := runOracle gamma d c 0
@@ -2137,11 +2137,11 @@ def main : IO Unit := do
   let customGamma := { gamma with
     literalType := fun _ => none
     primitive := fun name => if name == "custom" then
-      some { input := .row "ρ", output := .snoc (.row "ρ") (.base .nat .many),
-             delta := fun stack => some (.literal (.nat 42) :: stack) }
+      some { input := .row "ρ", output := .snoc (.row "ρ") (.base .int .many),
+             delta := fun stack => some (.literal (.int 42) :: stack) }
       else none }
   runTest "Gamma controls literals" (match run customGamma d c 2
-    { stack := [], program := .cons (.lit (.nat 1)) .empty } with
+    { stack := [], program := .cons (.lit (.int 1)) .empty } with
     | .stuck _ 0 0 => true
     | _ => false)
   runTest "Gamma controls primitive delta" (expectTerminalStack [lit 42]
@@ -2153,55 +2153,55 @@ def main : IO Unit := do
     | .stuck _ 0 0 => true
     | _ => false)
   runTest "S-PUSH has zero kappa cost" (match step gamma d { c with atom := fun _ => 99 }
-    { stack := [], program := .cons (.push (.literal (.nat 9))) .empty } with
-    | .stepped { stack := [Value.literal (.nat 9)], program := .empty } 0 => true
+    { stack := [], program := .cons (.push (.literal (.int 9))) .empty } with
+    | .stepped { stack := [Value.literal (.int 9)], program := .empty } 0 => true
     | _ => false)
   runTest "one transition with one fuel" (expectTerminalStack [lit 1]
-    (run gamma d c 1 { stack := [], program := .cons (.lit (.nat 1)) .empty }))
+    (run gamma d c 1 { stack := [], program := .cons (.lit (.int 1)) .empty }))
   runTest "terminal needs no fuel"
     (match run gamma d c 0 { stack := [], program := .empty } with
      | .terminal _ 0 0 => true
      | _ => false)
   let adapter program stack fuel := runOracleAdapter gamma d program stack c fuel
   runTest "oracle adapter maps literals" (
-    (adapter (.cons (.lit (.nat 1)) .empty) [] 1).residualStack ==
-      [Value.literal (.nat 1)])
+    (adapter (.cons (.lit (.int 1)) .empty) [] 1).residualStack ==
+      [Value.literal (.int 1)])
   runTest "oracle adapter maps quotations and World captures" (
     let body := .cons (.push (.world 8)) .empty
     let result := adapter (.cons (.quotation body) .empty) [] 1
     result.status == .terminal && result.worldState == [8])
   runTest "oracle adapter maps dup drop and swap" (
     let duplicated := adapter (.cons .dup .empty)
-      [Value.literal (.nat 3)] 1
+      [Value.literal (.int 3)] 1
     let dropped := adapter (.cons .drop .empty)
-      [Value.literal (.nat 3)] 1
+      [Value.literal (.int 3)] 1
     let swapped := adapter (.cons .swap .empty)
-      [Value.literal (.nat 2), Value.literal (.nat 1)] 1
-    duplicated.residualStack == [Value.literal (.nat 3), Value.literal (.nat 3)] &&
+      [Value.literal (.int 2), Value.literal (.int 1)] 1
+    duplicated.residualStack == [Value.literal (.int 3), Value.literal (.int 3)] &&
       dropped.residualStack == [] &&
-      swapped.residualStack == [Value.literal (.nat 1), Value.literal (.nat 2)])
+      swapped.residualStack == [Value.literal (.int 1), Value.literal (.int 2)])
   runTest "oracle adapter maps dip call and compose" (
-    let first := .cons (.lit (.nat 1)) .empty
-    let second := .cons (.lit (.nat 2)) .empty
+    let first := .cons (.lit (.int 1)) .empty
+    let second := .cons (.lit (.int 2)) .empty
     let dipped := adapter (.cons .dip .empty)
-      [.quotation first .many, Value.literal (.nat 9)] 10
+      [.quotation first .many, Value.literal (.int 9)] 10
     let called := adapter (.cons .call .empty)
       [.quotation first .many] 10
     let composed := adapter (.cons .compose (.cons .call .empty))
       [.quotation second .many, .quotation first .many] 10
-    dipped.residualStack == [Value.literal (.nat 9), Value.literal (.nat 1)] &&
-      called.residualStack == [Value.literal (.nat 1)] &&
-      composed.residualStack == [Value.literal (.nat 2), Value.literal (.nat 1)])
+    dipped.residualStack == [Value.literal (.int 9), Value.literal (.int 1)] &&
+      called.residualStack == [Value.literal (.int 1)] &&
+      composed.residualStack == [Value.literal (.int 2), Value.literal (.int 1)])
   runTest "oracle adapter maps quote and conditional branches" (
-    let trueBranch := .cons (.lit (.nat 1)) .empty
-    let falseBranch := .cons (.lit (.nat 2)) .empty
+    let trueBranch := .cons (.lit (.int 1)) .empty
+    let falseBranch := .cons (.lit (.int 2)) .empty
     let quoted := adapter (.cons .quote .empty)
-      [Value.literal (.nat 4)] 1
+      [Value.literal (.int 4)] 1
     let branched := adapter (.cons .ifThenElse .empty)
       [.quotation falseBranch .many, .quotation trueBranch .many,
         Value.literal (.bool true)] 2
     quoted.status == .terminal &&
-      branched.residualStack == [Value.literal (.nat 1)])
+      branched.residualStack == [Value.literal (.int 1)])
   runTest "oracle adapter maps dictionary words and primitives" (
     let wordResult := runOracleAdapter gamma words
       (.cons (.word "one") .empty) [] c 10
@@ -2209,14 +2209,14 @@ def main : IO Unit := do
       atom := fun _ => 3
       primitive := fun _ => 5 }
     let primitiveResult := runOracleAdapter gamma d
-      (.cons (.lit (.nat 3)) (.cons (.lit (.nat 4))
-        (.cons (.prim "addNat") .empty))) [] tunedCosts 10
+      (.cons (.lit (.int 3)) (.cons (.lit (.int 4))
+        (.cons (.prim "addInt") .empty))) [] tunedCosts 10
     let customResult := runOracleAdapter customGamma d
       (.cons (.prim "custom") .empty) [] c 1
-    wordResult.residualStack == [Value.literal (.nat 1)] &&
-      primitiveResult.residualStack == [Value.literal (.nat 7)] &&
+    wordResult.residualStack == [Value.literal (.int 1)] &&
+      primitiveResult.residualStack == [Value.literal (.int 7)] &&
       primitiveResult.cost == 11 &&
-      customResult.residualStack == [Value.literal (.nat 42)])
+      customResult.residualStack == [Value.literal (.int 42)])
   runTest "oracle adapter preserves residuals and linear World state" (
     let initial := [Value.world 7]
     let result := runOracleAdapter gamma d .empty initial c 0

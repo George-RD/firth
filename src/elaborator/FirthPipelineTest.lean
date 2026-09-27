@@ -134,7 +134,7 @@ def runPipelineTests : IO Unit := do
       expectEq (exchange.program.map (·.atom)) [.swap]
         "core exchange-int lowers to swap"
       expectEq (exampleWord.program.map (·.atom))
-        [.lit (.nat 7), .word "core.duplicate-int", .word "core.discard-int", .word "core.identity"]
+        [.lit (.int 7), .word "core.duplicate-int", .word "core.discard-int", .word "core.identity"]
         "core example uses the checked vocabulary words"
   | .success program => fail s!"unexpected core vocabulary words: {program.words.map (·.name)}"
   | .failure diagnostics => fail s!"core vocabulary failed: {repr diagnostics}"
@@ -164,8 +164,8 @@ def runPipelineTests : IO Unit := do
       ": choose ( b:Bool^many -- x:Int^many ) [ 1 ] [ 2 ] if ;" with
   | .success { words := [word] } =>
       match word.program.map (·.atom) with
-      | [Atom.quotation (Program.cons (Atom.lit (.nat 1)) Program.empty),
-          Atom.quotation (Program.cons (Atom.lit (.nat 2)) Program.empty),
+      | [Atom.quotation (Program.cons (Atom.lit (.int 1)) Program.empty),
+          Atom.quotation (Program.cons (Atom.lit (.int 2)) Program.empty),
           Atom.ifThenElse] => pure ()
       | atoms => fail s!"quotation branch lowering changed: {repr atoms}"
   | result => fail s!"quotation branch inference failed: {repr result}"
@@ -233,7 +233,7 @@ def runPipelineTests : IO Unit := do
   | result => fail s!"expected a parse diagnostic, got {repr result}"
   match elaborate ": one ( -- x:Int ) 1 ;" with
   | .success { words := [word] } =>
-      expectEq (word.program.map (·.atom)) [.lit (.nat 1)]
+      expectEq (word.program.map (·.atom)) [.lit (.int 1)]
         "literal source lowers to the expected kernel atom"
   | result => fail s!"checked kernel output failed: {repr result}"
 

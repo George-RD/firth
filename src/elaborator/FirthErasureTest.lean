@@ -191,9 +191,9 @@ def main : IO Unit := do
   expectKernelAtoms repeated
     [.dup, .quotation (atomProgram [.dup]), .dip, .swap,
       .quotation (atomProgram [.swap]), .dip, .swap]
-  expectKernelAtoms shadow [.lit (.nat 1), .drop, .swap, .swap, .drop]
+  expectKernelAtoms shadow [.lit (.int 1), .drop, .swap, .swap, .drop]
   expectKernelAtoms inferred
-    [.quotation (atomProgram [.lit (.nat 1), .lit (.nat 2), .prim "+"])]
+    [.quotation (atomProgram [.lit (.int 1), .lit (.int 2), .prim "+"])]
 
   -- Nested quotations may use a local: it is lifted out innermost first.
   let nested ← parsed ": nested ( a:Int^many -- q:Quote^many ) locals { a } { [ [ a ] ] } ;"

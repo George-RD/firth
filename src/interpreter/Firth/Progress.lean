@@ -15,10 +15,10 @@ has exactly one exception: such a primitive faulting on its typed input.
 def LiteralTypingSound (gamma : Gamma) : Prop :=
   ∀ literal base, gamma.literalType literal = some base →
     match literal, base with
-    | .nat _, .nat => True
+    | .int _, .int => True
     | .bool _, .bool => True
     | .unit, .unit => True
-    | .natSeq _, .natSeq => True
+    | .intSeq _, .intSeq => True
     | .boolSeq _, .boolSeq => True
     | _, _ => False
 
@@ -181,11 +181,11 @@ theorem progress (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
                         let chosen := if condition then trueBody else falseBody
                         refine .inl ⟨{ stack := tail, program := chosen.append rest }, ?_⟩
                         exact ⟨costs.atom .ifThenElse, by simp [step, chosen]⟩
-                  | nat value =>
+                  | int value =>
                     cases conditionTyping with
                     | literal conditionType =>
                       exact False.elim (by
-                        have h := literalTypingSound (.nat value) .bool conditionType
+                        have h := literalTypingSound (.int value) .bool conditionType
                         simp at h)
                   | unit =>
                     cases conditionTyping with
@@ -193,11 +193,11 @@ theorem progress (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
                       exact False.elim (by
                         have h := literalTypingSound .unit .bool conditionType
                         simp at h)
-                  | natSeq values =>
+                  | intSeq values =>
                     cases conditionTyping with
                     | literal conditionType =>
                       exact False.elim (by
-                        have h := literalTypingSound (.natSeq values) .bool conditionType
+                        have h := literalTypingSound (.intSeq values) .bool conditionType
                         simp at h)
                   | boolSeq values =>
                     cases conditionTyping with
@@ -231,17 +231,17 @@ theorem progress (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
                           by simp [step, h, deltaEq]⟩
 
 
-theorem defaultGamma_nat_literal {dictionary : Dictionary} {value : Value}
-    (h : ValueTyping defaultGamma dictionary value (.base .nat .many)) :
-    ∃ n, value = .literal (.nat n) := by
+theorem defaultGamma_int_literal {dictionary : Dictionary} {value : Value}
+    (h : ValueTyping defaultGamma dictionary value (.base .int .many)) :
+    ∃ n, value = .literal (.int n) := by
   cases h with
   | literal hlit =>
     rename_i literal
     cases literal with
-    | nat n => exact ⟨n, rfl⟩
+    | int n => exact ⟨n, rfl⟩
     | bool _ => simp [defaultGamma] at hlit
     | unit => simp [defaultGamma] at hlit
-    | natSeq _ => simp [defaultGamma] at hlit
+    | intSeq _ => simp [defaultGamma] at hlit
     | boolSeq _ => simp [defaultGamma] at hlit
 
 theorem defaultGamma_bool_literal {dictionary : Dictionary} {value : Value}
@@ -252,20 +252,20 @@ theorem defaultGamma_bool_literal {dictionary : Dictionary} {value : Value}
     rename_i literal
     cases literal with
     | bool b => exact ⟨b, rfl⟩
-    | nat _ => simp [defaultGamma] at hlit
+    | int _ => simp [defaultGamma] at hlit
     | unit => simp [defaultGamma] at hlit
-    | natSeq _ => simp [defaultGamma] at hlit
+    | intSeq _ => simp [defaultGamma] at hlit
     | boolSeq _ => simp [defaultGamma] at hlit
 
-theorem defaultGamma_natSeq_literal {dictionary : Dictionary} {value : Value}
-    (h : ValueTyping defaultGamma dictionary value (.base .natSeq .many)) :
-    ∃ values, value = .literal (.natSeq values) := by
+theorem defaultGamma_intSeq_literal {dictionary : Dictionary} {value : Value}
+    (h : ValueTyping defaultGamma dictionary value (.base .intSeq .many)) :
+    ∃ values, value = .literal (.intSeq values) := by
   cases h with
   | literal hlit =>
     rename_i literal
     cases literal with
-    | natSeq values => exact ⟨values, rfl⟩
-    | nat _ => simp [defaultGamma] at hlit
+    | intSeq values => exact ⟨values, rfl⟩
+    | int _ => simp [defaultGamma] at hlit
     | bool _ => simp [defaultGamma] at hlit
     | unit => simp [defaultGamma] at hlit
     | boolSeq _ => simp [defaultGamma] at hlit
@@ -278,22 +278,22 @@ theorem defaultGamma_boolSeq_literal {dictionary : Dictionary} {value : Value}
     rename_i literal
     cases literal with
     | boolSeq values => exact ⟨values, rfl⟩
-    | nat _ => simp [defaultGamma] at hlit
+    | int _ => simp [defaultGamma] at hlit
     | bool _ => simp [defaultGamma] at hlit
     | unit => simp [defaultGamma] at hlit
-    | natSeq _ => simp [defaultGamma] at hlit
+    | intSeq _ => simp [defaultGamma] at hlit
 
-theorem defaultGamma_nat_pair {dictionary : Dictionary} {stack : Stack}
+theorem defaultGamma_int_pair {dictionary : Dictionary} {stack : Stack}
     (h : StackTyping defaultGamma dictionary stack
-      (.snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many))) :
-    ∃ left right, stack = [.literal (.nat right), .literal (.nat left)] := by
+      (.snoc (.snoc (.row "ρ") (.base .int .many)) (.base .int .many))) :
+    ∃ left right, stack = [.literal (.int right), .literal (.int left)] := by
   cases h with
   | cons rightType tailType =>
     cases tailType with
     | cons leftType emptyType =>
       cases emptyType
-      obtain ⟨right, rfl⟩ := defaultGamma_nat_literal rightType
-      obtain ⟨left, rfl⟩ := defaultGamma_nat_literal leftType
+      obtain ⟨right, rfl⟩ := defaultGamma_int_literal rightType
+      obtain ⟨left, rfl⟩ := defaultGamma_int_literal leftType
       exact ⟨left, right, rfl⟩
 
 private theorem literal_stack {dictionary : Dictionary} (literal : Literal) (base : BaseType)
@@ -310,55 +310,55 @@ theorem defaultGamma_primitivesWellFormed (dictionary : Dictionary) :
   · intro name specification stack result hname htyped hdelta
     simp only [defaultGamma] at hname
     split at hname <;> cases hname
-    · obtain ⟨l, r, rfl⟩ := defaultGamma_nat_pair htyped
-      simp only [addNatDelta, Option.some.injEq] at hdelta; subst hdelta
+    · obtain ⟨l, r, rfl⟩ := defaultGamma_int_pair htyped
+      simp only [addIntDelta, Option.some.injEq] at hdelta; subst hdelta
       exact literal_stack _ _ rfl
-    · obtain ⟨l, r, rfl⟩ := defaultGamma_nat_pair htyped
-      simp only [subNatDelta, Option.some.injEq] at hdelta; subst hdelta
+    · obtain ⟨l, r, rfl⟩ := defaultGamma_int_pair htyped
+      simp only [subIntDelta, Option.some.injEq] at hdelta; subst hdelta
       exact literal_stack _ _ rfl
-    · obtain ⟨l, r, rfl⟩ := defaultGamma_nat_pair htyped
-      simp only [mulNatDelta, Option.some.injEq] at hdelta; subst hdelta
+    · obtain ⟨l, r, rfl⟩ := defaultGamma_int_pair htyped
+      simp only [mulIntDelta, Option.some.injEq] at hdelta; subst hdelta
       exact literal_stack _ _ rfl
-    · obtain ⟨l, r, rfl⟩ := defaultGamma_nat_pair htyped
-      simp only [ltNatDelta, Option.some.injEq] at hdelta; subst hdelta
+    · obtain ⟨l, r, rfl⟩ := defaultGamma_int_pair htyped
+      simp only [ltIntDelta, Option.some.injEq] at hdelta; subst hdelta
       exact literal_stack _ _ rfl
-    · obtain ⟨l, r, rfl⟩ := defaultGamma_nat_pair htyped
-      simp only [eqNatDelta, Option.some.injEq] at hdelta; subst hdelta
+    · obtain ⟨l, r, rfl⟩ := defaultGamma_int_pair htyped
+      simp only [eqIntDelta, Option.some.injEq] at hdelta; subst hdelta
       exact literal_stack _ _ rfl
-    · -- natSeqEmpty
+    · -- intSeqEmpty
       cases htyped
-      simp only [natSeqEmptyDelta, Option.some.injEq] at hdelta; subst hdelta
+      simp only [intSeqEmptyDelta, Option.some.injEq] at hdelta; subst hdelta
       exact literal_stack _ _ rfl
-    · -- natSeqLen
+    · -- intSeqLen
       cases htyped with
       | cons seqType emptyType =>
         cases emptyType
-        obtain ⟨values, rfl⟩ := defaultGamma_natSeq_literal seqType
-        simp only [natSeqLenDelta, Option.some.injEq] at hdelta; subst hdelta
+        obtain ⟨values, rfl⟩ := defaultGamma_intSeq_literal seqType
+        simp only [intSeqLenDelta, Option.some.injEq] at hdelta; subst hdelta
         exact literal_stack _ _ rfl
-    · -- natSeqAt
+    · -- intSeqAt
       cases htyped with
       | cons indexType tailType =>
         cases tailType with
         | cons seqType emptyType =>
           cases emptyType
-          obtain ⟨index, rfl⟩ := defaultGamma_nat_literal indexType
-          obtain ⟨values, rfl⟩ := defaultGamma_natSeq_literal seqType
-          simp only [natSeqAtDelta] at hdelta
-          cases hat : values[index]? with
+          obtain ⟨index, rfl⟩ := defaultGamma_int_literal indexType
+          obtain ⟨values, rfl⟩ := defaultGamma_intSeq_literal seqType
+          simp only [intSeqAtDelta] at hdelta
+          cases hat : elementAt? values index with
           | none => simp [hat] at hdelta
           | some value =>
             simp only [hat, Option.map_some, Option.some.injEq] at hdelta; subst hdelta
             exact literal_stack _ _ rfl
-    · -- natSeqPush
+    · -- intSeqPush
       cases htyped with
       | cons valueType tailType =>
         cases tailType with
         | cons seqType emptyType =>
           cases emptyType
-          obtain ⟨value, rfl⟩ := defaultGamma_nat_literal valueType
-          obtain ⟨values, rfl⟩ := defaultGamma_natSeq_literal seqType
-          simp only [natSeqPushDelta, Option.some.injEq] at hdelta; subst hdelta
+          obtain ⟨value, rfl⟩ := defaultGamma_int_literal valueType
+          obtain ⟨values, rfl⟩ := defaultGamma_intSeq_literal seqType
+          simp only [intSeqPushDelta, Option.some.injEq] at hdelta; subst hdelta
           exact literal_stack _ _ rfl
     · -- boolSeqEmpty
       cases htyped
@@ -377,10 +377,10 @@ theorem defaultGamma_primitivesWellFormed (dictionary : Dictionary) :
         cases tailType with
         | cons seqType emptyType =>
           cases emptyType
-          obtain ⟨index, rfl⟩ := defaultGamma_nat_literal indexType
+          obtain ⟨index, rfl⟩ := defaultGamma_int_literal indexType
           obtain ⟨values, rfl⟩ := defaultGamma_boolSeq_literal seqType
           simp only [boolSeqAtDelta] at hdelta
-          cases hat : values[index]? with
+          cases hat : elementAt? values index with
           | none => simp [hat] at hdelta
           | some value =>
             simp only [hat, Option.map_some, Option.some.injEq] at hdelta; subst hdelta
@@ -409,13 +409,13 @@ theorem defaultGamma_primitivesWellFormed (dictionary : Dictionary) :
     split at hname <;> cases hname
     all_goals first
       | (simp at hfaults; done)
-      | (obtain ⟨l, r, rfl⟩ := defaultGamma_nat_pair htyped; exact ⟨_, rfl⟩)
+      | (obtain ⟨l, r, rfl⟩ := defaultGamma_int_pair htyped; exact ⟨_, rfl⟩)
       | exact ⟨_, rfl⟩
       | (cases htyped with
          | cons seqType emptyType =>
            cases emptyType
            first
-             | (obtain ⟨values, rfl⟩ := defaultGamma_natSeq_literal seqType; exact ⟨_, rfl⟩)
+             | (obtain ⟨values, rfl⟩ := defaultGamma_intSeq_literal seqType; exact ⟨_, rfl⟩)
              | (obtain ⟨values, rfl⟩ := defaultGamma_boolSeq_literal seqType; exact ⟨_, rfl⟩))
       | (cases htyped with
          | cons valueType tailType =>
@@ -423,8 +423,8 @@ theorem defaultGamma_primitivesWellFormed (dictionary : Dictionary) :
            | cons seqType emptyType =>
              cases emptyType
              first
-               | (obtain ⟨value, rfl⟩ := defaultGamma_nat_literal valueType
-                  obtain ⟨values, rfl⟩ := defaultGamma_natSeq_literal seqType
+               | (obtain ⟨value, rfl⟩ := defaultGamma_int_literal valueType
+                  obtain ⟨values, rfl⟩ := defaultGamma_intSeq_literal seqType
                   exact ⟨_, rfl⟩)
                | (obtain ⟨value, rfl⟩ := defaultGamma_bool_literal valueType
                   obtain ⟨values, rfl⟩ := defaultGamma_boolSeq_literal seqType
@@ -454,7 +454,7 @@ theorem defaultGamma_typeSafety (dictionary : Dictionary) (costs : CostTable)
 /-- The primitives that may fault are exactly the two sequence indexes. -/
 theorem defaultGamma_faulting_primitives (name : Prim) (specification : PrimitiveSpec)
     (h : defaultGamma.primitive name = some specification) (faults : specification.faults = true) :
-    name = "natSeqAt" ∨ name = "boolSeqAt" := by
+    name = "intSeqAt" ∨ name = "boolSeqAt" := by
   simp only [defaultGamma] at h
   split at h <;> cases h <;> simp_all
 
@@ -462,8 +462,8 @@ theorem defaultGamma_faulting_primitives (name : Prim) (specification : Primitiv
    compiling the module, keeping progress smoke coverage next to the proof. -/
 def progressSmokeLiteral : Bool :=
   match step defaultGamma emptyDictionary defaultCosts
-      { stack := [], program := .cons (.lit (.nat 7)) .empty } with
-  | .stepped { stack := [.literal (.nat 7)], program := .empty } 1 => true
+      { stack := [], program := .cons (.lit (.int 7)) .empty } with
+  | .stepped { stack := [.literal (.int 7)], program := .empty } 1 => true
   | _ => false
 
 #guard progressSmokeLiteral = true
@@ -471,31 +471,32 @@ def progressSmokeLiteral : Bool :=
 def progressSmokeQuotationCall : Bool :=
   match run defaultGamma emptyDictionary defaultCosts 8
       { stack := [], program :=
-          .cons (.quotation (.cons (.lit (.nat 9)) .empty))
+          .cons (.quotation (.cons (.lit (.int 9)) .empty))
             (.cons .call .empty) } with
-  | .terminal { stack := [.literal (.nat 9)], program := .empty } _ _ => true
+  | .terminal { stack := [.literal (.int 9)], program := .empty } _ _ => true
   | _ => false
 
 #guard progressSmokeQuotationCall = true
 
 /- `{ 4 5 } 1 at` reads the second element; `{ 4 5 } 2 at` is a primitive
-   fault, never a default value. -/
-def progressSmokeSeqAt (index : Nat) : Option Nat :=
+   fault, never a default value, and so is a negative index. -/
+def progressSmokeSeqAt (index : Int) : Option Int :=
   match run defaultGamma emptyDictionary defaultCosts 8
       { stack := [], program :=
-          .cons (.lit (.natSeq [4, 5])) (.cons (.lit (.nat index)) (.cons (.prim "natSeqAt") .empty)) } with
-  | .terminal { stack := [.literal (.nat value)], program := .empty } _ _ => some value
+          .cons (.lit (.intSeq [4, 5])) (.cons (.lit (.int index)) (.cons (.prim "intSeqAt") .empty)) } with
+  | .terminal { stack := [.literal (.int value)], program := .empty } _ _ => some value
   | _ => none
 
 #guard progressSmokeSeqAt 1 = some 5
 #guard progressSmokeSeqAt 2 = none
+#guard progressSmokeSeqAt (-1) = none
 
 def progressSmokeSeqPush : Bool :=
   match run defaultGamma emptyDictionary defaultCosts 8
       { stack := [], program :=
           .cons (.prim "boolSeqEmpty") (.cons (.lit (.bool true)) (.cons (.prim "boolSeqPush")
             (.cons (.prim "boolSeqLen") .empty))) } with
-  | .terminal { stack := [.literal (.nat 1)], program := .empty } _ _ => true
+  | .terminal { stack := [.literal (.int 1)], program := .empty } _ _ => true
   | _ => false
 
 #guard progressSmokeSeqPush = true

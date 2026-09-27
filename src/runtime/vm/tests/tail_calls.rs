@@ -1,4 +1,4 @@
-//! Tail calls and the natural-number primitives, through the public API.
+//! Tail calls and the integer primitives, through the public API.
 //!
 //! A `CALL`, `IF` or `CALL_WORD` that is the last instruction of a frame
 //! replaces that frame, so loops written as tail recursion run in constant
@@ -66,9 +66,9 @@ fn countdown() -> Image {
     image(vec![
         op(Op::Dup),
         int(0),
-        prim("eqNat"),
+        prim("eqInt"),
         quote(vec![]),
-        quote(vec![int(1), prim("subNat"), call_main()]),
+        quote(vec![int(1), prim("subInt"), call_main()]),
         op(Op::If),
     ])
 }
@@ -142,30 +142,40 @@ fn result(outcome: ExecutionOutcome) -> Value {
 }
 
 #[test]
-fn natural_primitives_match_the_reference_definitions() {
-    assert_eq!(result(binary("subNat", 7, 3)), Value::Int(4));
-    // Natural subtraction truncates at zero, as Lean's `Nat.sub` does.
-    assert_eq!(result(binary("subNat", 3, 7)), Value::Int(0));
-    assert_eq!(result(binary("mulNat", 6, 7)), Value::Int(42));
-    assert_eq!(result(binary("ltNat", 2, 3)), Value::Bool(true));
-    assert_eq!(result(binary("ltNat", 3, 3)), Value::Bool(false));
-    assert_eq!(result(binary("eqNat", 3, 3)), Value::Bool(true));
-    assert_eq!(result(binary("eqNat", 3, 4)), Value::Bool(false));
+fn integer_primitives_match_the_reference_definitions() {
+    assert_eq!(result(binary("subInt", 7, 3)), Value::Int(4));
+    // Subtraction is signed, as Lean's `Int.sub` is; it no longer truncates.
+    assert_eq!(result(binary("subInt", 3, 7)), Value::Int(-4));
+    assert_eq!(result(binary("addInt", -2, 1)), Value::Int(-1));
+    assert_eq!(result(binary("mulInt", -6, 7)), Value::Int(-42));
+    assert_eq!(result(binary("ltInt", -3, 2)), Value::Bool(true));
+    assert_eq!(result(binary("mulInt", 6, 7)), Value::Int(42));
+    assert_eq!(result(binary("ltInt", 2, 3)), Value::Bool(true));
+    assert_eq!(result(binary("ltInt", 3, 3)), Value::Bool(false));
+    assert_eq!(result(binary("eqInt", 3, 3)), Value::Bool(true));
+    assert_eq!(result(binary("eqInt", 3, 4)), Value::Bool(false));
 }
 
 #[test]
 fn multiplication_past_the_target_integer_faults() {
-    let ExecutionOutcome::Trap(trap) = binary("mulNat", i64::MAX, 2) else {
+    let ExecutionOutcome::Trap(trap) = binary("mulInt", i64::MAX, 2) else {
         panic!("overflow must trap")
     };
     assert_eq!(trap.code, "primitive-fault");
 }
 
 #[test]
-fn a_negative_operand_faults_for_every_natural_primitive() {
-    for name in ["addNat", "subNat", "mulNat", "ltNat", "eqNat"] {
-        let ExecutionOutcome::Trap(trap) = binary(name, -2, 1) else {
-            panic!("{name} accepted a negative operand")
+fn arithmetic_past_either_end_of_the_target_integer_faults() {
+    for (name, left, right) in [
+        ("addInt", i64::MAX, 1),
+        ("addInt", i64::MIN, -1),
+        ("subInt", i64::MIN, 1),
+        ("subInt", i64::MAX, -1),
+        ("mulInt", i64::MIN, -1),
+        ("mulInt", i64::MIN, 2),
+    ] {
+        let ExecutionOutcome::Trap(trap) = binary(name, left, right) else {
+            panic!("{name} {left} {right} must trap")
         };
         assert_eq!(trap.code, "primitive-fault", "{name}");
     }

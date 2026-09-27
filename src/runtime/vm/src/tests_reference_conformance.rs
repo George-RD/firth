@@ -156,7 +156,7 @@ fn primitive_faults_and_unknown_primitives_carry_their_stable_classes() {
     let overflow = conformance_witness(vec![
         push_int(i64::MAX),
         push_int(1),
-        prim("addNat"),
+        prim("addInt"),
     ]);
     let observed = observe_image(&overflow, Vec::new(), 64, &default_registry());
     assert_eq!(observed.status, ConformanceStatus::Trap);
@@ -313,7 +313,7 @@ fn a_one_sided_exhaustion_disagrees_rather_than_being_inconclusive() {
 
 #[test]
 fn a_mismatched_cost_breakdown_is_reported_even_when_the_totals_agree() {
-    let image = conformance_witness(vec![push_int(2), push_int(40), prim("addNat")]);
+    let image = conformance_witness(vec![push_int(2), push_int(40), prim("addInt")]);
     let observed = observe_image(&image, Vec::new(), 64, &default_registry());
     assert_eq!(observed.stack, "42");
     let reference = ConformanceReference {
@@ -340,7 +340,7 @@ fn a_mismatched_cost_breakdown_is_reported_even_when_the_totals_agree() {
 
 #[test]
 fn observations_are_deterministic_and_independent_of_the_allocation_budget() {
-    let image = conformance_witness(vec![push_int(2), push_int(40), prim("addNat")]);
+    let image = conformance_witness(vec![push_int(2), push_int(40), prim("addInt")]);
     let first = observe_image(&image, Vec::new(), 64, &default_registry());
     let second = observe_image(&image, Vec::new(), 64, &default_registry());
     assert_eq!(first, second);

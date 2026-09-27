@@ -45,10 +45,19 @@
     {"source": "sequences.firth", "entry": "element", "stack": [[7, 8, 9], 1], "expect": [8]},
     {"source": "sequences.firth", "entry": "element", "stack": [[7, 8, 9], 2305843009213693951], "expect_trap": "primitive-fault"},
     {"source": "sequences.firth", "entry": "element", "stack": [[7, 8, 9], 9223372036854775807], "expect_trap": "primitive-fault"},
+    {"source": "signed.firth", "entry": "diff", "stack": [3, 5], "expect": [-2]},
+    {"source": "signed.firth", "entry": "diff", "stack": [-4, -9], "expect": [5]},
+    {"source": "signed.firth", "entry": "diff", "stack": [-1, 9223372036854775807], "expect": [-9223372036854775808]},
+    {"source": "signed.firth", "entry": "abs", "stack": [-12], "expect": [12]},
+    {"source": "signed.firth", "entry": "abs", "stack": [7], "expect": [7]},
+    {"source": "signed.firth", "entry": "minimum", "stack": [[4, -2, 9, -8, 0]], "expect": [-8]},
+    {"source": "signed.firth", "entry": "minimum", "stack": [[-9223372036854775808, 9223372036854775807]], "expect": [-9223372036854775808]},
+    {"source": "signed.firth", "entry": "offsets", "stack": [], "expect": [[-3, 0, 5, -7]]},
+    {"source": "signed.firth", "entry": "element", "stack": [[7, 8, 9], -1], "expect_trap": "primitive-fault"},
+    {"source": "signed.firth", "entry": "element", "stack": [[7, 8, 9], -9223372036854775808], "expect_trap": "primitive-fault"},
     {"source": "refused/call-unknown-effect.firth", "entry": "call-unknown-effect", "stack": [100, 5, 3], "expect_error": "firth.elaboration.untracked-local"},
     {"source": "refused/dip-unknown-effect.firth", "entry": "dip-unknown-effect", "stack": [5, 3], "expect_error": "firth.elaboration.untracked-local"},
     {"source": "refused/nested-quotation-result.firth", "entry": "nested-quotation-result", "stack": [5, 3], "expect_error": "firth.elaboration.untracked-local"},
-    {"source": "refused/negative-sequence.firth", "entry": "negative-sequence", "stack": [], "expect_error": "firth.elaboration.unsupported-literal"},
     {"source": "refused/reserved-type-name.firth", "entry": "reserved-type-name", "stack": [], "expect_error": "firth.compile.invalid-word-type"}
   ]
 }

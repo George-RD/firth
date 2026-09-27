@@ -136,8 +136,8 @@
         for (tag, bytes, accepted) in [
             (SEQ_INT_TAG, 7_i64.to_le_bytes().to_vec(), true),
             (SEQ_BOOL_TAG, vec![0, 1], true),
+            (SEQ_INT_TAG, (-1_i64).to_le_bytes().to_vec(), true),
             (SEQ_INT_TAG, vec![7], false),
-            (SEQ_INT_TAG, (-1_i64).to_le_bytes().to_vec(), false),
             (SEQ_BOOL_TAG, vec![2], false),
             (99, vec![], false),
         ] {
@@ -175,14 +175,14 @@
     fn sequence_indexes_past_the_end_fault_at_every_magnitude() {
         let ints: Vec<u8> = [7_i64, 8, 9].iter().flat_map(|v| v.to_le_bytes()).collect();
         assert_eq!(
-            run_sequence_primitive(SEQ_INT_TAG, ints.clone(), Value::Int(2), "natSeqAt"),
+            run_sequence_primitive(SEQ_INT_TAG, ints.clone(), Value::Int(2), "intSeqAt"),
             Ok(vec![Value::Int(9)])
         );
         // 2^61 - 1 is the largest index whose byte offset fits a usize but
         // whose end does not; it once overflowed and panicked.
         for index in [3, (1_i64 << 61) - 1, 1_i64 << 61, i64::MAX, -1] {
             assert_eq!(
-                run_sequence_primitive(SEQ_INT_TAG, ints.clone(), Value::Int(index), "natSeqAt"),
+                run_sequence_primitive(SEQ_INT_TAG, ints.clone(), Value::Int(index), "intSeqAt"),
                 Err(VmError::PrimitiveFault),
                 "Seq Int at {index}"
             );
@@ -195,12 +195,16 @@
     }
 
     #[test]
-    fn pushing_a_negative_integer_onto_a_sequence_faults() {
+    fn negative_integers_push_onto_and_read_back_from_a_sequence() {
+        let pushed = run_sequence_primitive(SEQ_INT_TAG, vec![], Value::Int(i64::MIN), "intSeqPush")
+            .expect("push a negative element");
+        let [Value::PrimitiveValue { tag, bytes }] = pushed.as_slice() else {
+            panic!("push leaves one sequence: {pushed:?}")
+        };
         assert_eq!(
-            run_sequence_primitive(SEQ_INT_TAG, vec![], Value::Int(-1), "natSeqPush"),
-            Err(VmError::PrimitiveFault)
+            run_sequence_primitive(*tag, bytes.clone(), Value::Int(0), "intSeqAt"),
+            Ok(vec![Value::Int(i64::MIN)])
         );
-        assert!(run_sequence_primitive(SEQ_INT_TAG, vec![], Value::Int(0), "natSeqPush").is_ok());
     }
 
     #[test]

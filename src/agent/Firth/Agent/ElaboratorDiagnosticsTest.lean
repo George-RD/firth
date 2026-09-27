@@ -128,7 +128,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
     .row (.rigid "rho")
   let inferredHoleProgram : Firth.Elaborator.KernelProgram := [{
     span := span 5 1 2
-    atom := .lit (.nat 7) }]
+    atom := .lit (.int 7) }]
   match Firth.Elaborator.StackEffect.typedHole
       { literal := Firth.Elaborator.StackEffect.defaultLiteralType }
       inferredHoleInput inferredHoleProgram (span 5 3 3) with

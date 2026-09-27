@@ -17,7 +17,7 @@
 
 /// The language-level `Gamma` version this adapter speaks, matching the
 /// reference-run adapter's `gamma_version` check.
-pub const ADAPTER_GAMMA_VERSION: &str = "0.3";
+pub const ADAPTER_GAMMA_VERSION: &str = "0.4";
 
 /// Why a request was refused before any execution happened.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -97,6 +97,13 @@ fn unsigned(value: &Json, context: &str) -> Result<u64, AdapterError> {
             context,
             "expected a non-negative integer",
         )),
+    }
+}
+
+fn integer(value: &Json, context: &str) -> Result<i64, AdapterError> {
+    match value {
+        Json::Int(number) => Ok(*number),
+        _ => Err(AdapterError::field("invalid-request", context, "expected an integer")),
     }
 }
 

@@ -247,26 +247,26 @@ theorem run_agrees_with_terminal_trace
                 Nat.add_assoc]
 
 def executableCostChecks : List Bool :=
-  [ chargedCost defaultCosts (.lit (.nat 1)) == 1,
+  [ chargedCost defaultCosts (.lit (.int 1)) == 1,
     chargedCost { defaultCosts with atom := fun _ => 7 }
       (.quotation .empty) == 7,
     chargedCost { defaultCosts with primitive := fun _ => 5 } (.prim "p") == 5,
     chargedCost { defaultCosts with unfold := 4 } (.word "w") == 4,
     chargedCost { defaultCosts with atom := fun _ => 99 }
-      (.push (.literal (.nat 1))) == 0 ]
+      (.push (.literal (.int 1))) == 0 ]
 
 example : executableCostChecks.all id = true := by decide
 
 def executableTraceCostChecks : List Bool :=
   [ match run defaultGamma emptyDictionary defaultCosts 10
       { stack := [],
-        program := .cons (.quotation (.cons (.lit (.nat 1)) .empty))
+        program := .cons (.quotation (.cons (.lit (.int 1)) .empty))
           (.cons .call .empty) } with
     | .terminal _ _ cost => cost == 3
     | _ => false,
     match run defaultGamma emptyDictionary
       { defaultCosts with atom := fun _ => 99 } 10
-      { stack := [], program := .cons (.push (.literal (.nat 1))) .empty } with
+      { stack := [], program := .cons (.push (.literal (.int 1))) .empty } with
     | .terminal _ _ cost => cost == 0
     | _ => false ]
 
@@ -528,8 +528,8 @@ def executableCostClaimChecks : List Bool :=
     !costClaimSupported (.named "unregistered") ]
 
 def literalCostTrace : Trace defaultGamma emptyDictionary defaultCosts
-    { stack := [], program := .cons (.lit (.nat 1)) .empty }
-    { stack := [.literal (.nat 1)], program := .empty } :=
+    { stack := [], program := .cons (.lit (.int 1)) .empty }
+    { stack := [.literal (.int 1)], program := .empty } :=
   .cons 1 (by rfl) (.nil _)
 
 def executableDerivedCostClaimChecks : List Bool :=

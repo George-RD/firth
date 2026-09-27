@@ -5,10 +5,10 @@ namespace Firth.Interpreter
 def one (atom : Atom) : Program := .cons atom .empty
 
 def renderValue : Value → String
-  | .literal (.nat value) => s!"{value}"
+  | .literal (.int value) => s!"{value}"
   | .literal (.bool value) => if value then "true" else "false"
   | .literal .unit => "unit"
-  | .literal (.natSeq values) => s!"seq-int:{String.intercalate ";" (values.map toString)}"
+  | .literal (.intSeq values) => s!"seq-int:{String.intercalate ";" (values.map toString)}"
   | .literal (.boolSeq values) =>
       s!"seq-bool:{String.intercalate ";" (values.map fun value => if value then "true" else "false")}"
   | .quotation _ usage => if usage == .many then "quotation-many" else "quotation-linear"
@@ -19,10 +19,10 @@ def renderStack (stack : Stack) : String :=
 
 mutual
 def renderAtom : Atom → String
-  | .lit (.nat value) => s!"pushi:{value}"
+  | .lit (.int value) => s!"pushi:{value}"
   | .lit (.bool value) => s!"pushb:{value}"
   | .lit .unit => "pushu"
-  | .lit (.natSeq values) => s!"pushv:{renderValue (.literal (.natSeq values))}"
+  | .lit (.intSeq values) => s!"pushv:{renderValue (.literal (.intSeq values))}"
   | .lit (.boolSeq values) => s!"pushv:{renderValue (.literal (.boolSeq values))}"
   | .push value => s!"pushv:{renderValue value}"
   | .quotation body => s!"pushq:[{renderProgram body}]"
@@ -60,51 +60,51 @@ def emit (name dictionary targetCost : String) (dictionaryValue : Dictionary) (c
 
 def wordDictionary : Dictionary := fun name =>
   if name == "one" then
-    some { type := { rowVariables := ["ρ"], input := .row "ρ", output := .snoc (.row "ρ") (.base .nat .many) }, body := one (.lit (.nat 1)) }
+    some { type := { rowVariables := ["ρ"], input := .row "ρ", output := .snoc (.row "ρ") (.base .int .many) }, body := one (.lit (.int 1)) }
   else none
 
 def imageDictionary (value : Nat) : Dictionary := fun name =>
   if name == "value" then
-    some { type := { rowVariables := ["ρ"], input := .row "ρ", output := .snoc (.row "ρ") (.base .nat .many) }, body := one (.lit (.nat value)) }
+    some { type := { rowVariables := ["ρ"], input := .row "ρ", output := .snoc (.row "ρ") (.base .int .many) }, body := one (.lit (.int value)) }
   else none
 
 def main : IO Unit := do
   emit "dup" "-" "1" emptyDictionary
-    { stack := [.literal (.nat 7)], program := one .dup }
+    { stack := [.literal (.int 7)], program := one .dup }
   emit "drop" "-" "1" emptyDictionary
-    { stack := [.literal (.nat 7)], program := one .drop }
+    { stack := [.literal (.int 7)], program := one .drop }
   emit "drop-fault" "-" "0" emptyDictionary
     { stack := [], program := one .drop }
   emit "swap" "-" "1" emptyDictionary
-    { stack := [.literal (.nat 2), .literal (.nat 1)], program := one .swap }
+    { stack := [.literal (.int 2), .literal (.int 1)], program := one .swap }
   emit "dip" "-" "4" emptyDictionary
-    { stack := [], program := .cons (.lit (.nat 4))
-        (.cons (.quotation (one (.lit (.nat 5)))) (one .dip)) }
+    { stack := [], program := .cons (.lit (.int 4))
+        (.cons (.quotation (one (.lit (.int 5)))) (one .dip)) }
   emit "call" "-" "3" emptyDictionary
-    { stack := [], program := .cons (.quotation (one (.lit (.nat 9)))) (one .call) }
+    { stack := [], program := .cons (.quotation (one (.lit (.int 9)))) (one .call) }
   emit "compose" "-" "6" emptyDictionary
-    { stack := [], program := .cons (.quotation (one (.lit (.nat 1))))
-        (.cons (.quotation (one (.lit (.nat 2))))
+    { stack := [], program := .cons (.quotation (one (.lit (.int 1))))
+        (.cons (.quotation (one (.lit (.int 2))))
           (.cons .compose (one .call))) }
   emit "quote" "-" "1" emptyDictionary
-    { stack := [.literal (.nat 7)], program := one .quote }
+    { stack := [.literal (.int 7)], program := one .quote }
   emit "if-true" "-" "5" emptyDictionary
     { stack := [], program := .cons (.lit (.bool true))
-        (.cons (.quotation (one (.lit (.nat 1))))
-          (.cons (.quotation (one (.lit (.nat 2)))) (one .ifThenElse))) }
+        (.cons (.quotation (one (.lit (.int 1))))
+          (.cons (.quotation (one (.lit (.int 2)))) (one .ifThenElse))) }
   emit "if-false" "-" "5" emptyDictionary
     { stack := [], program := .cons (.lit (.bool false))
-        (.cons (.quotation (one (.lit (.nat 1))))
-          (.cons (.quotation (one (.lit (.nat 2)))) (one .ifThenElse))) }
+        (.cons (.quotation (one (.lit (.int 1))))
+          (.cons (.quotation (one (.lit (.int 2)))) (one .ifThenElse))) }
   emit "word" "one=pushi:1" "3" wordDictionary
     { stack := [], program := one (.word "one") }
   emit "dictionary-before-redefinition" "value=pushi:1" "3" (imageDictionary 1)
     { stack := [], program := one (.word "value") }
   emit "dictionary-after-redefinition" "value=pushi:2" "3" (imageDictionary 2)
     { stack := [], program := one (.word "value") }
-  emit "addNat" "-" "3" emptyDictionary
-    { stack := [], program := .cons (.lit (.nat 3))
-        (.cons (.lit (.nat 4)) (one (.prim "addNat"))) }
+  emit "addInt" "-" "3" emptyDictionary
+    { stack := [], program := .cons (.lit (.int 3))
+        (.cons (.lit (.int 4)) (one (.prim "addInt"))) }
   emit "world" "-" "2" emptyDictionary
     { stack := [], program := .cons (.prim "makeWorld") (one (.prim "consumeWorld")) }
 

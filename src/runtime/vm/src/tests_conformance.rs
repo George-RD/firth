@@ -62,7 +62,7 @@
             vec![
                 instruction(Op::PushLiteral, Some(Operand::Literal(Value::Int(2)))),
                 instruction(Op::PushLiteral, Some(Operand::Literal(Value::Int(40)))),
-                instruction(Op::Prim, Some(Operand::Primitive(String::from("addNat")))),
+                instruction(Op::Prim, Some(Operand::Primitive(String::from("addInt")))),
                 instruction(
                     Op::Prim,
                     Some(Operand::Primitive(String::from("makeWorld"))),

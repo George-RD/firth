@@ -1,37 +1,32 @@
-fn add_nat(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
-    let (left, right) = pop_nat_pair(context)?;
+fn add_int(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let (left, right) = pop_int_pair(context)?;
     context.push_int(left.checked_add(right).ok_or(VmError::PrimitiveFault)?)
 }
 
-/// Pops the two natural operands of a binary primitive, `left` below `right`.
-/// Kernel values are naturals, so a negative target integer is a fault.
-fn pop_nat_pair(context: &mut PrimitiveContext<'_>) -> Result<(i64, i64), VmError> {
+/// Pops the two integer operands of a binary primitive, `left` below `right`.
+fn pop_int_pair(context: &mut PrimitiveContext<'_>) -> Result<(i64, i64), VmError> {
     let right = context.pop_int()?;
     let left = context.pop_int()?;
-    if left < 0 || right < 0 {
-        return Err(VmError::PrimitiveFault);
-    }
     Ok((left, right))
 }
 
-/// Natural subtraction truncates at zero, as the reference `subNat` does.
-fn sub_nat(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
-    let (left, right) = pop_nat_pair(context)?;
-    context.push_int(if left > right { left - right } else { 0 })
+fn sub_int(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let (left, right) = pop_int_pair(context)?;
+    context.push_int(left.checked_sub(right).ok_or(VmError::PrimitiveFault)?)
 }
 
-fn mul_nat(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
-    let (left, right) = pop_nat_pair(context)?;
+fn mul_int(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let (left, right) = pop_int_pair(context)?;
     context.push_int(left.checked_mul(right).ok_or(VmError::PrimitiveFault)?)
 }
 
-fn lt_nat(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
-    let (left, right) = pop_nat_pair(context)?;
+fn lt_int(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let (left, right) = pop_int_pair(context)?;
     context.push_bool(left < right)
 }
 
-fn eq_nat(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
-    let (left, right) = pop_nat_pair(context)?;
+fn eq_int(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let (left, right) = pop_int_pair(context)?;
     context.push_bool(left == right)
 }
 
@@ -46,16 +41,16 @@ fn element(bytes: &[u8], index: i64, width: usize) -> Result<&[u8], VmError> {
         .ok_or(VmError::PrimitiveFault)
 }
 
-fn nat_seq_empty(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+fn int_seq_empty(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     context.push_primitive(SEQ_INT_TAG, Vec::new())
 }
 
-fn nat_seq_len(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+fn int_seq_len(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     let bytes = context.pop_primitive(SEQ_INT_TAG)?;
     context.push_int(i64::try_from(bytes.len() / 8).map_err(|_| VmError::PrimitiveFault)?)
 }
 
-fn nat_seq_at(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+fn int_seq_at(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     let index = context.pop_int()?;
     let bytes = context.pop_primitive(SEQ_INT_TAG)?;
     let mut word = [0u8; 8];
@@ -63,12 +58,8 @@ fn nat_seq_at(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     context.push_int(i64::from_le_bytes(word))
 }
 
-fn nat_seq_push(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+fn int_seq_push(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     let value = context.pop_int()?;
-    // Elements are naturals, like every kernel integer.
-    if value < 0 {
-        return Err(VmError::PrimitiveFault);
-    }
     let mut bytes = context.pop_primitive(SEQ_INT_TAG)?;
     reserve(&mut bytes, 8)?;
     bytes.extend_from_slice(&value.to_le_bytes());
@@ -115,81 +106,81 @@ pub fn default_registry() -> PrimitiveRegistry {
         version: GAMMA_VERSION,
         definitions: vec![
             PrimitiveDefinition {
-                name: "addNat",
+                name: "addInt",
                 cost: 1,
-                handler: add_nat,
+                handler: add_int,
                 input: &[Usage::Many, Usage::Many],
                 output: &[Usage::Many],
                 world: false,
                 value_tags: &[],
             },
             PrimitiveDefinition {
-                name: "subNat",
+                name: "subInt",
                 cost: 1,
-                handler: sub_nat,
+                handler: sub_int,
                 input: &[Usage::Many, Usage::Many],
                 output: &[Usage::Many],
                 world: false,
                 value_tags: &[],
             },
             PrimitiveDefinition {
-                name: "mulNat",
+                name: "mulInt",
                 cost: 1,
-                handler: mul_nat,
+                handler: mul_int,
                 input: &[Usage::Many, Usage::Many],
                 output: &[Usage::Many],
                 world: false,
                 value_tags: &[],
             },
             PrimitiveDefinition {
-                name: "ltNat",
+                name: "ltInt",
                 cost: 1,
-                handler: lt_nat,
+                handler: lt_int,
                 input: &[Usage::Many, Usage::Many],
                 output: &[Usage::Many],
                 world: false,
                 value_tags: &[],
             },
             PrimitiveDefinition {
-                name: "eqNat",
+                name: "eqInt",
                 cost: 1,
-                handler: eq_nat,
+                handler: eq_int,
                 input: &[Usage::Many, Usage::Many],
                 output: &[Usage::Many],
                 world: false,
                 value_tags: &[],
             },
             PrimitiveDefinition {
-                name: "natSeqEmpty",
+                name: "intSeqEmpty",
                 cost: 1,
-                handler: nat_seq_empty,
+                handler: int_seq_empty,
                 input: &[],
                 output: &[Usage::Many],
                 world: false,
                 value_tags: &[(SEQ_INT_TAG, Usage::Many)],
             },
             PrimitiveDefinition {
-                name: "natSeqLen",
+                name: "intSeqLen",
                 cost: 1,
-                handler: nat_seq_len,
+                handler: int_seq_len,
                 input: &[Usage::Many],
                 output: &[Usage::Many],
                 world: false,
                 value_tags: &[],
             },
             PrimitiveDefinition {
-                name: "natSeqAt",
+                name: "intSeqAt",
                 cost: 1,
-                handler: nat_seq_at,
+                handler: int_seq_at,
                 input: &[Usage::Many, Usage::Many],
                 output: &[Usage::Many],
                 world: false,
                 value_tags: &[],
             },
             PrimitiveDefinition {
-                name: "natSeqPush",
+                name: "intSeqPush",
                 cost: 1,
-                handler: nat_seq_push,
+                handler: int_seq_push,
                 input: &[Usage::Many, Usage::Many],
                 output: &[Usage::Many],
                 world: false,

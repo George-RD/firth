@@ -38,11 +38,11 @@ ID_PATTERN = re.compile(r"[A-Za-z0-9_-]{1,32}")
 INT64 = range(-(2**63), 2**63)
 # Worst-case kernel cost for a batch of n requests, from measure_cost.py:
 # 391 to enter and validate an empty batch, at most 767 per request (the
-# partial branch; fulfilled is 756), and 297 per pair of requests for the
-# repeated-ID scan. At n = 64 that is 648,231, inside the VM's 1,000,000-step
+# partial branch; fulfilled is 756), and 264 per pair of requests for the
+# repeated-ID scan. At n = 64 that is 581,703, inside the VM's 1,000,000-step
 # fuel cap. Every corpus run is checked against it.
 def cost_bound(n: int) -> int:
-    return 391 + 767 * n + 297 * n * (n - 1) // 2
+    return 391 + 767 * n + 264 * n * (n - 1) // 2
 
 
 REASONS = ["fulfilled", "partial", "out-of-stock", "insufficient-stock"]

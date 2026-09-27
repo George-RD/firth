@@ -19,20 +19,20 @@ private def expectError (name input : String) : IO Unit := do
   | .error _ => pure ()
 
 private def request (program stack : String) (fuel : Nat := 8) : String :=
-  "{\"request_id\":\"request-1\",\"checked_kernel\":{\"checking_state\":\"checked\",\"proof_state\":\"available\",\"gamma_version\":\"0.3\",\"program\":"
-    ++ program ++ "},\"initial_stack\":" ++ stack ++ ",\"dictionary\":{},\"gamma_version\":\"0.3\",\"fuel\":"
+  "{\"request_id\":\"request-1\",\"checked_kernel\":{\"checking_state\":\"checked\",\"proof_state\":\"available\",\"gamma_version\":\"0.4\",\"program\":"
+    ++ program ++ "},\"initial_stack\":" ++ stack ++ ",\"dictionary\":{},\"gamma_version\":\"0.4\",\"fuel\":"
     ++ toString fuel ++ "}"
 
 private def validRequest (program : String) (fuel : Nat := 8) : String :=
   request program "[]" fuel
 
 def main : IO Unit := do
-  expectContains "literal execution" (validRequest "[{\"kind\":\"lit\",\"value\":{\"type\":\"nat\",\"value\":7}}]")
+  expectContains "literal execution" (validRequest "[{\"kind\":\"lit\",\"value\":{\"type\":\"int\",\"value\":7}}]")
     "\"status\":\"success\""
-  expectContains "literal stack" (validRequest "[{\"kind\":\"lit\",\"value\":{\"type\":\"nat\",\"value\":7}}]")
+  expectContains "literal stack" (validRequest "[{\"kind\":\"lit\",\"value\":{\"type\":\"int\",\"value\":7}}]")
     "\"value\":7"
   expectContains "quotation execution"
-    (validRequest "[{\"kind\":\"quotation\",\"body\":[{\"kind\":\"lit\",\"value\":{\"type\":\"nat\",\"value\":9}}]},{\"kind\":\"call\"}]")
+    (validRequest "[{\"kind\":\"quotation\",\"body\":[{\"kind\":\"lit\",\"value\":{\"type\":\"int\",\"value\":9}}]},{\"kind\":\"call\"}]")
     "\"steps\":3"
   expectError "unknown word rejected"
     (validRequest "[{\"kind\":\"word\",\"name\":\"missing\"}]")
@@ -42,24 +42,33 @@ def main : IO Unit := do
     (request "[]" "[{\"kind\":\"quotation\",\"body\":[{\"kind\":\"word\",\"name\":\"missing\"}]}]")
   expectContains "declared plus primitive executes"
     (request "[{\"kind\":\"prim\",\"name\":\"+\"}]"
-      "[{\"kind\":\"literal\",\"literal\":{\"type\":\"nat\",\"value\":2}},{\"kind\":\"literal\",\"literal\":{\"type\":\"nat\",\"value\":3}}]")
+      "[{\"kind\":\"literal\",\"literal\":{\"type\":\"int\",\"value\":2}},{\"kind\":\"literal\",\"literal\":{\"type\":\"int\",\"value\":3}}]")
     "\"value\":5"
+  expectContains "subtraction goes below zero"
+    (request "[{\"kind\":\"prim\",\"name\":\"-\"}]"
+      "[{\"kind\":\"literal\",\"literal\":{\"type\":\"int\",\"value\":3}},{\"kind\":\"literal\",\"literal\":{\"type\":\"int\",\"value\":5}}]")
+    "\"value\":-2"
+  expectContains "negative literal executes"
+    (validRequest "[{\"kind\":\"lit\",\"value\":{\"type\":\"int\",\"value\":-7}}]")
+    "\"value\":-7"
+  expectError "the old nat literal type is refused"
+    (validRequest "[{\"kind\":\"lit\",\"value\":{\"type\":\"nat\",\"value\":7}}]")
   expectError "internal primitive name rejected"
-    (validRequest "[{\"kind\":\"prim\",\"name\":\"addNat\"}]")
+    (validRequest "[{\"kind\":\"prim\",\"name\":\"addInt\"}]")
   expectContains "bottom-to-top initial stack"
     (request "[{\"kind\":\"drop\"}]"
-      "[{\"kind\":\"literal\",\"literal\":{\"type\":\"nat\",\"value\":1}},{\"kind\":\"literal\",\"literal\":{\"type\":\"nat\",\"value\":2}}]")
+      "[{\"kind\":\"literal\",\"literal\":{\"type\":\"int\",\"value\":1}},{\"kind\":\"literal\",\"literal\":{\"type\":\"int\",\"value\":2}}]")
     "\"value\":1"
   expectError "tag-inapplicable field rejected"
     (validRequest "[{\"kind\":\"dup\",\"name\":\"unexpected\"}]")
   expectContains "fuel trap"
-    (validRequest "[{\"kind\":\"lit\",\"value\":{\"type\":\"nat\",\"value\":7}}]" 0)
+    (validRequest "[{\"kind\":\"lit\",\"value\":{\"type\":\"int\",\"value\":7}}]" 0)
     "\"trap\":\"fuel-exhausted\""
   expectError "malformed JSON" "{"
   expectError "unchecked kernel"
-    "{\"request_id\":\"request-1\",\"checked_kernel\":{\"checking_state\":\"unchecked\",\"proof_state\":\"available\",\"gamma_version\":\"0.3\",\"program\":[]},\"initial_stack\":[],\"dictionary\":{},\"gamma_version\":\"0.3\",\"fuel\":1}"
+    "{\"request_id\":\"request-1\",\"checked_kernel\":{\"checking_state\":\"unchecked\",\"proof_state\":\"available\",\"gamma_version\":\"0.4\",\"program\":[]},\"initial_stack\":[],\"dictionary\":{},\"gamma_version\":\"0.4\",\"fuel\":1}"
   expectError "unsupported Gamma"
-    "{\"request_id\":\"request-1\",\"checked_kernel\":{\"checking_state\":\"checked\",\"proof_state\":\"available\",\"gamma_version\":\"0.4\",\"program\":[]},\"initial_stack\":[],\"dictionary\":{},\"gamma_version\":\"0.4\",\"fuel\":1}"
+    "{\"request_id\":\"request-1\",\"checked_kernel\":{\"checking_state\":\"checked\",\"proof_state\":\"available\",\"gamma_version\":\"0.5\",\"program\":[]},\"initial_stack\":[],\"dictionary\":{},\"gamma_version\":\"0.5\",\"fuel\":1}"
 
 end Firth.ReferenceRunTest
 

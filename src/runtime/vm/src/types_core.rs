@@ -1,5 +1,5 @@
 pub const FORMAT_VERSION: u16 = 1;
-pub const GAMMA_VERSION: u64 = 3;
+pub const GAMMA_VERSION: u64 = 4;
 /// The registry tag of a `Seq Int` value: each element as eight little-endian
 /// bytes of a two's-complement 64-bit integer.
 pub const SEQ_INT_TAG: u64 = 2;
@@ -10,12 +10,8 @@ pub const SEQ_BOOL_TAG: u64 = 3;
 /// Values with other known tags carry no byte-level invariant here.
 pub fn canonical_primitive_bytes(tag: u64, bytes: &[u8]) -> bool {
     match tag {
-        // Each element is a non-negative little-endian i64: the kernel's
-        // sequence elements are naturals.
-        SEQ_INT_TAG => {
-            bytes.len().is_multiple_of(8)
-                && bytes.chunks_exact(8).all(|word| word[7] & 0x80 == 0)
-        }
+        // Each element is a little-endian two's-complement i64.
+        SEQ_INT_TAG => bytes.len().is_multiple_of(8),
         SEQ_BOOL_TAG => bytes.iter().all(|byte| *byte <= 1),
         _ => true,
     }
@@ -508,27 +504,27 @@ pub struct PrimitiveDefinition {
 impl PrimitiveDefinition {
     pub fn signature(&self) -> PrimitiveSignature {
         match self.name {
-            "addNat" | "subNat" | "mulNat" => PrimitiveSignature {
+            "addInt" | "subInt" | "mulInt" => PrimitiveSignature {
                 input: &[PrimitiveType::Int, PrimitiveType::Int],
                 output: &[PrimitiveType::Int],
             },
-            "ltNat" | "eqNat" => PrimitiveSignature {
+            "ltInt" | "eqInt" => PrimitiveSignature {
                 input: &[PrimitiveType::Int, PrimitiveType::Int],
                 output: &[PrimitiveType::Bool],
             },
-            "natSeqEmpty" => PrimitiveSignature {
+            "intSeqEmpty" => PrimitiveSignature {
                 input: &[],
                 output: &[PrimitiveType::IntSeq],
             },
-            "natSeqLen" => PrimitiveSignature {
+            "intSeqLen" => PrimitiveSignature {
                 input: &[PrimitiveType::IntSeq],
                 output: &[PrimitiveType::Int],
             },
-            "natSeqAt" => PrimitiveSignature {
+            "intSeqAt" => PrimitiveSignature {
                 input: &[PrimitiveType::IntSeq, PrimitiveType::Int],
                 output: &[PrimitiveType::Int],
             },
-            "natSeqPush" => PrimitiveSignature {
+            "intSeqPush" => PrimitiveSignature {
                 input: &[PrimitiveType::IntSeq, PrimitiveType::Int],
                 output: &[PrimitiveType::IntSeq],
             },

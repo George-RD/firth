@@ -357,52 +357,52 @@ structure PrimitiveOwnershipPolicy where
 variable {policy : PrimitiveOwnershipPolicy}
 
 inductive PrimitiveStackContract : Prim → AStack → AStack → Prop where
-  | addNat {rightTag leftTag outputTag : Tag} {right left : Nat} {rest : AStack} :
-      PrimitiveStackContract "addNat"
-        (.literal rightTag (.nat right) :: .literal leftTag (.nat left) :: rest)
-        (.literal outputTag (.nat (left + right)) :: rest)
-  | subNat {rightTag leftTag outputTag : Tag} {right left : Nat} {rest : AStack} :
-      PrimitiveStackContract "subNat"
-        (.literal rightTag (.nat right) :: .literal leftTag (.nat left) :: rest)
-        (.literal outputTag (.nat (left - right)) :: rest)
-  | mulNat {rightTag leftTag outputTag : Tag} {right left : Nat} {rest : AStack} :
-      PrimitiveStackContract "mulNat"
-        (.literal rightTag (.nat right) :: .literal leftTag (.nat left) :: rest)
-        (.literal outputTag (.nat (left * right)) :: rest)
-  | ltNat {rightTag leftTag outputTag : Tag} {right left : Nat} {rest : AStack} :
-      PrimitiveStackContract "ltNat"
-        (.literal rightTag (.nat right) :: .literal leftTag (.nat left) :: rest)
+  | addInt {rightTag leftTag outputTag : Tag} {right left : Int} {rest : AStack} :
+      PrimitiveStackContract "addInt"
+        (.literal rightTag (.int right) :: .literal leftTag (.int left) :: rest)
+        (.literal outputTag (.int (left + right)) :: rest)
+  | subInt {rightTag leftTag outputTag : Tag} {right left : Int} {rest : AStack} :
+      PrimitiveStackContract "subInt"
+        (.literal rightTag (.int right) :: .literal leftTag (.int left) :: rest)
+        (.literal outputTag (.int (left - right)) :: rest)
+  | mulInt {rightTag leftTag outputTag : Tag} {right left : Int} {rest : AStack} :
+      PrimitiveStackContract "mulInt"
+        (.literal rightTag (.int right) :: .literal leftTag (.int left) :: rest)
+        (.literal outputTag (.int (left * right)) :: rest)
+  | ltInt {rightTag leftTag outputTag : Tag} {right left : Int} {rest : AStack} :
+      PrimitiveStackContract "ltInt"
+        (.literal rightTag (.int right) :: .literal leftTag (.int left) :: rest)
         (.literal outputTag (.bool (decide (left < right))) :: rest)
-  | eqNat {rightTag leftTag outputTag : Tag} {right left : Nat} {rest : AStack} :
-      PrimitiveStackContract "eqNat"
-        (.literal rightTag (.nat right) :: .literal leftTag (.nat left) :: rest)
+  | eqInt {rightTag leftTag outputTag : Tag} {right left : Int} {rest : AStack} :
+      PrimitiveStackContract "eqInt"
+        (.literal rightTag (.int right) :: .literal leftTag (.int left) :: rest)
         (.literal outputTag (.bool (decide (left = right))) :: rest)
-  | natSeqEmpty {outputTag : Tag} {rest : AStack} :
-      PrimitiveStackContract "natSeqEmpty" rest (.literal outputTag (.natSeq []) :: rest)
-  | natSeqLen {seqTag outputTag : Tag} {values : List Nat} {rest : AStack} :
-      PrimitiveStackContract "natSeqLen"
-        (.literal seqTag (.natSeq values) :: rest)
-        (.literal outputTag (.nat values.length) :: rest)
-  | natSeqAt {indexTag seqTag outputTag : Tag} {index value : Nat} {values : List Nat}
-      {rest : AStack} (found : values[index]? = some value) :
-      PrimitiveStackContract "natSeqAt"
-        (.literal indexTag (.nat index) :: .literal seqTag (.natSeq values) :: rest)
-        (.literal outputTag (.nat value) :: rest)
-  | natSeqPush {valueTag seqTag outputTag : Tag} {value : Nat} {values : List Nat}
+  | intSeqEmpty {outputTag : Tag} {rest : AStack} :
+      PrimitiveStackContract "intSeqEmpty" rest (.literal outputTag (.intSeq []) :: rest)
+  | intSeqLen {seqTag outputTag : Tag} {values : List Int} {rest : AStack} :
+      PrimitiveStackContract "intSeqLen"
+        (.literal seqTag (.intSeq values) :: rest)
+        (.literal outputTag (.int values.length) :: rest)
+  | intSeqAt {indexTag seqTag outputTag : Tag} {index value : Int} {values : List Int}
+      {rest : AStack} (found : elementAt? values index = some value) :
+      PrimitiveStackContract "intSeqAt"
+        (.literal indexTag (.int index) :: .literal seqTag (.intSeq values) :: rest)
+        (.literal outputTag (.int value) :: rest)
+  | intSeqPush {valueTag seqTag outputTag : Tag} {value : Int} {values : List Int}
       {rest : AStack} :
-      PrimitiveStackContract "natSeqPush"
-        (.literal valueTag (.nat value) :: .literal seqTag (.natSeq values) :: rest)
-        (.literal outputTag (.natSeq (values ++ [value])) :: rest)
+      PrimitiveStackContract "intSeqPush"
+        (.literal valueTag (.int value) :: .literal seqTag (.intSeq values) :: rest)
+        (.literal outputTag (.intSeq (values ++ [value])) :: rest)
   | boolSeqEmpty {outputTag : Tag} {rest : AStack} :
       PrimitiveStackContract "boolSeqEmpty" rest (.literal outputTag (.boolSeq []) :: rest)
   | boolSeqLen {seqTag outputTag : Tag} {values : List Bool} {rest : AStack} :
       PrimitiveStackContract "boolSeqLen"
         (.literal seqTag (.boolSeq values) :: rest)
-        (.literal outputTag (.nat values.length) :: rest)
-  | boolSeqAt {indexTag seqTag outputTag : Tag} {index : Nat} {value : Bool}
-      {values : List Bool} {rest : AStack} (found : values[index]? = some value) :
+        (.literal outputTag (.int values.length) :: rest)
+  | boolSeqAt {indexTag seqTag outputTag : Tag} {index : Int} {value : Bool}
+      {values : List Bool} {rest : AStack} (found : elementAt? values index = some value) :
       PrimitiveStackContract "boolSeqAt"
-        (.literal indexTag (.nat index) :: .literal seqTag (.boolSeq values) :: rest)
+        (.literal indexTag (.int index) :: .literal seqTag (.boolSeq values) :: rest)
         (.literal outputTag (.bool value) :: rest)
   | boolSeqPush {valueTag seqTag outputTag : Tag} {value : Bool} {values : List Bool}
       {rest : AStack} :
@@ -2560,13 +2560,13 @@ theorem backward_adequacy
                                           | quotation tag body usage => cases conditionTyping
                                           | literal conditionTag literal =>
                                             cases literal with
-                                            | nat value =>
+                                            | int value =>
                                                 simp [eraseAConfig, eraseProgram, eraseAtom,
                                                   eraseValue, step] at hstep
                                             | unit =>
                                                 simp [eraseAConfig, eraseProgram, eraseAtom,
                                                   eraseValue, step] at hstep
-                                            | natSeq values =>
+                                            | intSeq values =>
                                                 simp [eraseAConfig, eraseProgram, eraseAtom,
                                                   eraseValue, step] at hstep
                                             | boolSeq values =>

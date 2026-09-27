@@ -1,0 +1,34 @@
+\ Signed integers: literals may be negative, and `prim -` goes below zero
+\ instead of stopping at 0. A result past the signed 64-bit range traps on the
+\ VM; the reference's integers are unbounded, so the gate reports overflow as a
+\ disagreement rather than a result (`0 -9223372036854775808 prim -` does).
+
+: diff
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  prim -;
+
+: abs
+  (forall ρ; ρ n:Int^many -- ρ r:Int^many)
+  locals { n } { n 0 prim < [ 0 n prim - ] [ n ] if };
+
+\ The smallest element of a non-empty sequence.
+: minimum-from
+  (forall ρ; ρ xs:Seq Int^many best:Int^many i:Int^many -- ρ r:Int^many)
+  locals { xs best i }
+  { i xs prim seq-int.len prim <
+    [ xs
+      xs i prim seq-int.at best prim < [ xs i prim seq-int.at ] [ best ] if
+      i 1 prim + minimum-from ]
+    [ best ] if };
+
+: minimum
+  (forall ρ; ρ xs:Seq Int^many -- ρ r:Int^many)
+  locals { xs } { xs xs 0 prim seq-int.at 1 minimum-from };
+
+: offsets
+  (forall ρ; ρ -- ρ r:Seq Int^many)
+  { -3 0 5 } -7 prim seq-int.push;
+
+: element
+  (forall ρ; ρ xs:Seq Int^many i:Int^many -- ρ r:Int^many)
+  prim seq-int.at;

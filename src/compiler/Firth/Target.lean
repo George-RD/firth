@@ -68,11 +68,11 @@ def seqIntTag : Nat := 2
 def seqBoolTag : Nat := 3
 
 /-- The canonical bytes of a `Seq Int`: each element as eight little-endian
-bytes. Elements must satisfy `isInt64`; naturals below 2^63 encode as their
-two's-complement form. -/
-def seqIntBytes (values : List Nat) : ByteArray :=
-  ⟨(values.flatMap fun value => (List.range 8).map fun index =>
-    UInt8.ofNat ((value / 256 ^ index) % 256)).toArray⟩
+bytes in two's complement. Elements must satisfy `isInt64`. -/
+def seqIntBytes (values : List Int) : ByteArray :=
+  ⟨(values.flatMap fun value =>
+    let word := (value % (2 ^ 64 : Int)).toNat
+    (List.range 8).map fun index => UInt8.ofNat ((word / 256 ^ index) % 256)).toArray⟩
 
 /-- The canonical bytes of a `Seq Bool`: one byte, 0 or 1, per element. -/
 def seqBoolBytes (values : List Bool) : ByteArray :=

@@ -12,11 +12,11 @@ python3 tools/loop/firth_run.py run examples/programs/factorial.firth --entry fa
 
 ## Primitives
 
-Numbers are naturals; `Int` in a signature never holds a negative value.
+Integers are signed 64-bit values; a literal may be negative (`-3`).
 
 ```
 a b prim +    \ Int Int -- Int
-a b prim -    \ Int Int -- Int   (truncates at 0: 3 5 prim - gives 0)
+a b prim -    \ Int Int -- Int   (3 5 prim - gives -2)
 a b prim *    \ Int Int -- Int
 a b prim <    \ Int Int -- Bool
 a b prim =    \ Int Int -- Bool
@@ -69,9 +69,9 @@ xs i prim seq-int.at       \ Seq Int Int -- Int
 xs x prim seq-int.push     \ Seq Int Int -- Seq Int
 ```
 
-`seq-bool.empty`, `.len`, `.at` and `.push` are the same for `Seq Bool`. An
-index at or past the length traps with `primitive-fault` on both hosts; `at`
-never returns a default. A case with `expect_trap` checks that: both hosts
+`seq-bool.empty`, `.len`, `.at` and `.push` are the same for `Seq Bool`. A
+negative index, or one at or past the length, traps with `primitive-fault`
+on both hosts; `at` never returns a default. A case with `expect_trap` checks that: both hosts
 must stop with that trap at the same stack and kernel cost. `{ }` is refused
 because it has no element type; write `prim seq-int.empty`. On the command
 line and in `cases.json` a sequence is a JSON array, and `[]` takes its type

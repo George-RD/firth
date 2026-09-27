@@ -80,7 +80,7 @@ class GenerationTests(unittest.TestCase):
     def test_invalid_recipes_are_refused(self):
         recipe = h.generate(0, 0).payload()
         mutations = ({"extra": "x"}, {"flag": 1}, {"value": False}, {"unused": 1},
-                     {"prefix": [-1]}, {"prefix": [None]}, {"prefix": [1] * 5},
+                     {"prefix": [2**63]}, {"prefix": [None]}, {"prefix": [1] * 5},
                      {"steps": {}}, {"steps": [{"op": "eval", "a": 0, "b": 0, "flag": False}]},
                      {"steps": [{"op": [], "a": 0, "b": 0, "flag": False}]},
                      {"steps": [{"op": "add", "a": True, "b": 0, "flag": False}]})
@@ -108,9 +108,9 @@ class ComparisonTests(unittest.TestCase):
         self.assertEqual(h.compare(reference, target, 8).kind, "agreement")
 
     def test_invalid_values_and_python_coercions_cannot_agree(self):
-        for value in (True, False, 1.0, -1, h.MAX_INT + 1, "1", None):
+        for value in (True, False, 1.0, h.MIN_INT - 1, h.MAX_INT + 1, "1", None):
             reference, target = observations()
-            reference["stack"] = [{"kind": "literal", "literal": {"type": "nat", "value": value}}]
+            reference["stack"] = [{"kind": "literal", "literal": {"type": "int", "value": value}}]
             target["stack"] = copy.deepcopy(reference["stack"])
             self.assertEqual(h.compare(reference, target, 8).kind, "invalid-observation")
 
@@ -149,7 +149,7 @@ class ComparisonTests(unittest.TestCase):
 
     def test_target_integer_overflow_is_explicit(self):
         reference, target = observations()
-        reference["stack"] = [{"kind": "literal", "literal": {"type": "nat", "value": h.MAX_INT + 1}}]
+        reference["stack"] = [{"kind": "literal", "literal": {"type": "int", "value": h.MAX_INT + 1}}]
         target.update(status="trap", trap="primitive-fault")
         self.assertEqual(h.compare(reference, target, 8).kind, "portable-integer-overflow")
 

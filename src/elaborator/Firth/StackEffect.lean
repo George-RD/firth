@@ -288,10 +288,10 @@ private def surfacePrimitiveName (name : String) : String :=
 
 /-- The surface spelling of a kernel atom, for diagnostics. -/
 def atomName : Atom → String
-  | .lit (.nat value) => toString value
+  | .lit (.int value) => toString value
   | .lit (.bool value) => if value then "true" else "false"
   | .lit .unit => "unit"
-  | .lit (.natSeq values) => "{ " ++ String.intercalate " " (values.map toString) ++ " }"
+  | .lit (.intSeq values) => "{ " ++ String.intercalate " " (values.map toString) ++ " }"
   | .lit (.boolSeq values) =>
       "{ " ++ String.intercalate " " (values.map fun value => if value then "true" else "false") ++ " }"
   | .push _ => "value"
@@ -333,10 +333,10 @@ private def instantiate (scheme : Scheme) : InferM Effect := do
   pure { input := replaceRigid rows scheme.input, output := replaceRigid rows scheme.output }
 
 def defaultLiteralType : Firth.Interpreter.Literal → Option AType
-  | .nat _ => some (.base "Int" .many)
+  | .int _ => some (.base "Int" .many)
   | .bool _ => some (.base "Bool" .many)
   | .unit => some (.base "Unit" .many)
-  | .natSeq _ => some (.base "Seq Int" .many)
+  | .intSeq _ => some (.base "Seq Int" .many)
   | .boolSeq _ => some (.base "Seq Bool" .many)
 
 private def algorithmicUsage : Firth.Interpreter.Usage → AUsage

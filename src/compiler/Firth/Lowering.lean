@@ -159,16 +159,16 @@ private def resolveWord (context : Context) (name : String) : Except CompileErro
   | none => .error (.unknownWord context.word name)
 
 private def lowerLiteral (context : Context) : Literal → Except CompileError Target.Value
-  | .nat value =>
+  | .int value =>
       -- The target integer is a signed 64-bit value (§2).
-      if Target.isInt64 (Int.ofNat value) then .ok (.int (Int.ofNat value))
-      else .error (.unsupportedLiteral context.word s!"nat literal exceeds the target integer: {value}")
+      if Target.isInt64 value then .ok (.int value)
+      else .error (.unsupportedLiteral context.word s!"int literal exceeds the target integer: {value}")
   | .bool value => .ok (.bool value)
   | .unit => .error (.unsupportedLiteral context.word "unit")
-  | .natSeq values =>
+  | .intSeq values =>
       -- A sequence is the registry's primitive value `seq-int` (§2): each
       -- element is a little-endian two's-complement 64-bit integer.
-      match values.find? (fun value => !Target.isInt64 (Int.ofNat value)) with
+      match values.find? (fun value => !Target.isInt64 value) with
       | some value => .error (.unsupportedLiteral context.word
           s!"sequence element exceeds the target integer: {value}")
       | none => .ok (.primitiveValue Target.seqIntTag (Target.seqIntBytes values))
