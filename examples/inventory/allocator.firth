@@ -25,9 +25,11 @@
 : in-range
   (forall ρ; ρ available:Int^many qs:Seq Int^many -- ρ ok:Bool^many)
   locals { available qs }
-  { available 1000001 prim <
-    [ qs prim seq-int.len 65 prim <
-      [ qs 0 quantities-in-range-from ]
+  { -1 available prim <
+    [ available 1000001 prim <
+      [ qs prim seq-int.len 65 prim <
+        [ qs 0 quantities-in-range-from ]
+        [ false ] if ]
       [ false ] if ]
     [ false ] if };
 
