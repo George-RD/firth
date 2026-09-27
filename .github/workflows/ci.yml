@@ -118,6 +118,8 @@ jobs:
         run: python3 tools/loop/check_language_examples.py 2>&1 | tee /tmp/language-examples.log
       - name: Run example programs on both hosts against expected results
         run: python3 examples/programs/check_programs.py 2>&1 | tee /tmp/language-programs.log
+      - name: Run the inventory allocator against the fixed acceptance corpus
+        run: python3 examples/inventory/run_cases.py 2>&1 | tee /tmp/language-inventory.log
       - name: Compare locals erasure against direct locals semantics
         run: python3 src/diffharness/check_locals_erasure.py --seed 0 --seed 1 --seed 2 --cases 100 --artifacts /tmp/firth-locals 2>&1 | tee /tmp/language-locals.log
       - name: Execute the seeded differential source campaign
