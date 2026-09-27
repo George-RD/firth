@@ -48,8 +48,7 @@ milestones and the tracked correctness/application work still open.
   than the executable profile documented above.
 - [Kernel specification](files/firth-kernel-spec-draft.md) and
   [VM target specification](src/runtime/vm/target-spec.md): language and target semantics.
-- [Development runbook](docs/loop-runbook.md): the governed development loop,
-  not an application-authoring tutorial.
+- [Roadmap](docs/roadmap.md): milestones and the honest status of each PRD goal.
 
 ## Verification and its limits
 
@@ -84,7 +83,7 @@ python3 tools/loop/mvp_agent_gate.py
 python3 tools/loop/check_language_examples.py
 ```
 
-For changes to governed code, also run the proof manifest and Cairn checks in
+For changes to governed code, also run the proof manifest check in
 [AGENTS.md](AGENTS.md). Do not rewrite expected results or proof pins to conceal
 a failing gate.
 
@@ -102,6 +101,7 @@ a failing gate.
 | `tools/loop/firth_run.py` | Source checking and execution command |
 | `spec/`, `specs/`, `files/` | Specifications and design material |
 | `cairn.blueprint`, `meta/` | Architecture and development provenance |
+| `archive/loop/` | Frozen autonomous-loop machinery, kept for reference |
 
 ## Licence
 

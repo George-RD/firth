@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""The pinned MVP acceptance gate.
+"""Regression gate for the pinned example corpus.
 
-`dec.mvp-completion` clause 4, as amended by `dec.mvp-gate-provenance`, defines
-the MVP as a working language an AI can use, via the agent guide, to build and
-run basic applications. This gate is the executable half of that claim. It has
-two jobs and fails closed on both.
+This gate checks that the manifest-listed example applications still build and
+run with matching VM and reference results. It is not evidence of machine
+authorship or of PRD S5/S7: `dec.loop-freeze` superseded that reading, and
+`docs/roadmap.md` defines what would count. It has two jobs and fails closed on
+both.
 
 Provenance. Before anything is executed it verifies
 `tools/loop/mvp_agent_manifest.toml`: the guide and every pinned interface file
@@ -36,9 +37,8 @@ of trace events are not compared. The portable profile refuses effectful world
 observations.
 
 The gate is deterministic: no clock, no randomness, no network, and a fixed
-fuel budget. It is invoked by `python3 tools/loop/coverage.py --run-gates`,
-which discards its output and kills it after a timeout, so every failure path
-here also returns a non-zero exit code.
+fuel budget. CI runs it directly, and every failure path returns a non-zero
+exit code.
 """
 
 from __future__ import annotations

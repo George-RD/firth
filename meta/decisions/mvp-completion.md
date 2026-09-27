@@ -1,10 +1,13 @@
 ---
 id: dec.mvp-completion
 nodes: [firth.governance, firth.governance.loop]
-status: accepted
+status: superseded
 related: [dec.loop-autonomy]
 date: 2026-08-08
 ---
+
+> Superseded on 2026-09-27 by `dec.loop-freeze` (`meta/decisions/loop-freeze.md`). The loop is frozen, and `docs/roadmap.md` defines done.
+
 # MVP Completion Profile
 
 ## Context
