@@ -1,5 +1,6 @@
 import Firth.CostInvariance
 import FirthReferenceRun
+import Lean.Elab.Tactic
 
 /-!
 A program logic for kernel programs, with cost.
@@ -431,6 +432,413 @@ theorem runs_boolSeq_push (values : List Bool) (value : Bool) (tail : Stack) :
       (.literal (.boolSeq (values ++ [value])) :: tail) 1 (costs.primitive "seq-bool.push") :=
   runs_prim (adapter_prim (kernel := "boolSeqPush") rfl rfl) rfl
 
+/-- `seq-int.at` at an index given as an `Int`, as arithmetic on the stack
+leaves it: the index must be non-negative and inside the sequence. -/
+theorem runs_intSeq_at_int {values : List Int} {index : Int} {value : Int} (tail : Stack)
+    (hIndex : 0 ≤ index) (h : values[index.toNat]? = some value) :
+    Runs adapterGamma dictionary costs (.cons (.prim "seq-int.at") .empty)
+      (.literal (.int index) :: .literal (.intSeq values) :: tail)
+      (.literal (.int value) :: tail) 1 (costs.primitive "seq-int.at") := by
+  have := runs_intSeq_at (dictionary := dictionary) (costs := costs) tail h
+  rwa [Int.toNat_of_nonneg hIndex] at this
+
+/-- `seq-bool.at` at an index given as an `Int`. -/
+theorem runs_boolSeq_at_int {values : List Bool} {index : Int} {value : Bool} (tail : Stack)
+    (hIndex : 0 ≤ index) (h : values[index.toNat]? = some value) :
+    Runs adapterGamma dictionary costs (.cons (.prim "seq-bool.at") .empty)
+      (.literal (.int index) :: .literal (.boolSeq values) :: tail)
+      (.literal (.bool value) :: tail) 1 (costs.primitive "seq-bool.at") := by
+  have := runs_boolSeq_at (dictionary := dictionary) (costs := costs) tail h
+  rwa [Int.toNat_of_nonneg hIndex] at this
+
 end Primitives
+
+/-!
+## Overflow
+
+The VM's integers are signed 64-bit and `+`, `-` and `*` trap on overflow,
+while the reference interpreter's `Int` is unbounded. `int64Gamma` is the
+reference registry with those three primitives faulting outside the i64 range,
+as the VM's do. A `Runs` fact under `int64Gamma` therefore also says that no
+arithmetic step overflowed, and `Runs.of_int64` recovers the same fact under
+`adapterGamma`. Literals need no check: the compiler refuses an out-of-range
+literal, and `seq-int.len` of a sequence the VM can hold fits in i64.
+-/
+
+section Overflow
+open Firth.ReferenceRun
+variable {dictionary : Dictionary} {costs : CostTable}
+
+/-- The VM's signed 64-bit range. -/
+def InInt64 (value : Int) : Prop := -9223372036854775808 ≤ value ∧ value ≤ 9223372036854775807
+
+instance (value : Int) : Decidable (InInt64 value) := by
+  unfold InInt64; exact inferInstance
+
+/-- A binary integer primitive that faults when its result leaves i64. -/
+def checkedIntDelta (operation : Int → Int → Int) : Stack → Option Stack
+  | .literal (.int right) :: .literal (.int left) :: rest =>
+      if InInt64 (operation left right) then
+        some (.literal (.int (operation left right)) :: rest)
+      else none
+  | _ => none
+
+/-- The delta `int64Gamma` gives a surface primitive whose reference delta is
+`delta`. -/
+def int64Delta (primitive : Prim) (delta : Stack → Option Stack) : Stack → Option Stack :=
+  if primitive = "+" then checkedIntDelta (· + ·)
+  else if primitive = "-" then checkedIntDelta (· - ·)
+  else if primitive = "*" then checkedIntDelta (· * ·)
+  else delta
+
+def int64Gamma : Gamma :=
+  { adapterGamma with
+    primitive := fun primitive => (adapterGamma.primitive primitive).map fun specification =>
+      { specification with delta := int64Delta primitive specification.delta } }
+
+private theorem int64Delta_sound {primitive : Prim} {specification : PrimitiveSpec}
+    (hSpec : adapterGamma.primitive primitive = some specification)
+    {before after : Stack} (h : int64Delta primitive specification.delta before = some after) :
+    specification.delta before = some after := by
+  unfold int64Delta at h
+  split at h
+  · subst primitive
+    have : specification.delta = addIntDelta := by
+      simp [adapterGamma, kernelPrimitive, surfacePrimitives, defaultGamma] at hSpec
+      rw [← hSpec]
+    rw [this]
+    unfold checkedIntDelta at h
+    split at h
+    · split at h <;> simp_all [addIntDelta]
+    · simp at h
+  split at h
+  · subst primitive
+    have : specification.delta = subIntDelta := by
+      simp [adapterGamma, kernelPrimitive, surfacePrimitives, defaultGamma] at hSpec
+      rw [← hSpec]
+    rw [this]
+    unfold checkedIntDelta at h
+    split at h
+    · split at h <;> simp_all [subIntDelta]
+    · simp at h
+  split at h
+  · subst primitive
+    have : specification.delta = mulIntDelta := by
+      simp [adapterGamma, kernelPrimitive, surfacePrimitives, defaultGamma] at hSpec
+      rw [← hSpec]
+    rw [this]
+    unfold checkedIntDelta at h
+    split at h
+    · split at h <;> simp_all [mulIntDelta]
+    · simp at h
+  exact h
+
+/-- Every step `int64Gamma` takes, `adapterGamma` takes identically. -/
+theorem step_of_int64 {config next : Config} {cost : Nat}
+    (h : step int64Gamma dictionary costs config = .stepped next cost) :
+    step adapterGamma dictionary costs config = .stepped next cost := by
+  rcases config with ⟨stack, program⟩
+  cases program with
+  | empty => simp [step] at h
+  | cons atom rest =>
+      cases atom with
+      | prim primitive =>
+          simp only [step] at h ⊢
+          cases hSpec : adapterGamma.primitive primitive with
+          | none => simp [int64Gamma, hSpec] at h
+          | some specification =>
+              simp only [int64Gamma, hSpec, Option.map_some] at h
+              cases hDelta : int64Delta primitive specification.delta stack with
+              | none => simp [hDelta] at h
+              | some result =>
+                  simp only [hDelta] at h
+                  simp [int64Delta_sound hSpec hDelta, h]
+      | _ => simpa [step, int64Gamma] using h
+
+theorem Reaches.of_int64 {start finish : Config} {steps cost : Nat}
+    (h : Reaches int64Gamma dictionary costs start finish steps cost) :
+    Reaches adapterGamma dictionary costs start finish steps cost := by
+  rcases h with ⟨trace, hLength, hCost⟩
+  subst hLength hCost
+  induction trace with
+  | nil config => exact Reaches.refl config
+  | cons stepCost stepProof tail ih =>
+      simpa [traceLength, traceCost] using Reaches.head (step_of_int64 stepProof) ih
+
+/-- A run with no overflow is a run of the reference interpreter. -/
+theorem Runs.of_int64 {program : Program} {before after : Stack} {steps cost : Nat}
+    (h : Runs int64Gamma dictionary costs program before after steps cost) :
+    Runs adapterGamma dictionary costs program before after steps cost :=
+  fun rest => (h rest).of_int64
+
+private theorem int64_prim {primitive : Prim} {specification : PrimitiveSpec}
+    (hSpec : adapterGamma.primitive primitive = some specification) :
+    int64Gamma.primitive primitive =
+      some { specification with delta := int64Delta primitive specification.delta } := by
+  simp [int64Gamma, hSpec]
+
+theorem runs_add_int64 {left right : Int} (tail : Stack) (hRange : InInt64 (left + right)) :
+    Runs int64Gamma dictionary costs (.cons (.prim "+") .empty)
+      (.literal (.int right) :: .literal (.int left) :: tail)
+      (.literal (.int (left + right)) :: tail) 1 (costs.primitive "+") :=
+  runs_prim (int64_prim rfl) (by simp [int64Delta, checkedIntDelta, hRange])
+
+theorem runs_sub_int64 {left right : Int} (tail : Stack) (hRange : InInt64 (left - right)) :
+    Runs int64Gamma dictionary costs (.cons (.prim "-") .empty)
+      (.literal (.int right) :: .literal (.int left) :: tail)
+      (.literal (.int (left - right)) :: tail) 1 (costs.primitive "-") :=
+  runs_prim (int64_prim rfl) (by simp [int64Delta, checkedIntDelta, hRange])
+
+theorem runs_mul_int64 {left right : Int} (tail : Stack) (hRange : InInt64 (left * right)) :
+    Runs int64Gamma dictionary costs (.cons (.prim "*") .empty)
+      (.literal (.int right) :: .literal (.int left) :: tail)
+      (.literal (.int (left * right)) :: tail) 1 (costs.primitive "*") :=
+  runs_prim (int64_prim rfl) (by simp [int64Delta, checkedIntDelta, hRange])
+
+private theorem single_step {gamma : Gamma} {start finish : Config}
+    (trace : Trace gamma dictionary costs start finish) (h : traceLength trace = 1) :
+    ∃ stepCost, step gamma dictionary costs start = .stepped finish stepCost ∧
+      traceCost trace = stepCost := by
+  cases trace with
+  | nil => simp [traceLength] at h
+  | cons stepCost stepProof tail =>
+      cases tail with
+      | nil => exact ⟨stepCost, stepProof, by simp [traceCost]⟩
+      | cons => simp [traceLength] at h
+
+/-- Any other primitive step proved under `adapterGamma` holds under
+`int64Gamma` unchanged. -/
+theorem runs_prim_int64 {primitive : Prim} {before after : Stack} {cost : Nat}
+    (hOther : primitive ≠ "+" ∧ primitive ≠ "-" ∧ primitive ≠ "*")
+    (h : Runs adapterGamma dictionary costs (.cons (.prim primitive) .empty) before after 1 cost) :
+    Runs int64Gamma dictionary costs (.cons (.prim primitive) .empty) before after 1 cost := by
+  intro rest
+  rcases h rest with ⟨trace, hLength, hCost⟩
+  rcases single_step trace hLength with ⟨stepCost, stepProof, hTrace⟩
+  rw [hTrace] at hCost
+  subst hCost
+  have hStep : step int64Gamma dictionary costs
+      { stack := before, program := (Program.cons (.prim primitive) .empty).append rest } =
+      .stepped { stack := after, program := rest } stepCost := by
+    simp only [Program.append, step] at stepProof ⊢
+    cases hSpec : adapterGamma.primitive primitive with
+    | none => simp [hSpec] at stepProof
+    | some specification =>
+        simp only [hSpec] at stepProof
+        simpa [int64Gamma, hSpec, int64Delta, hOther.1, hOther.2.1, hOther.2.2] using stepProof
+  simpa using Reaches.head hStep (Reaches.refl (gamma := int64Gamma) (dictionary := dictionary)
+    (costs := costs) { stack := after, program := rest })
+
+end Overflow
+
+/-!
+## Costs, conditions and upper bounds
+
+`defaultCosts` charges 1 for every atom, primitive and unfold; the simp lemmas
+below say so, and `runs_arith` closes the step and cost equations a chain of
+rules leaves behind.
+-/
+
+@[simp] theorem defaultCosts_atom (atom : Atom) : defaultCosts.atom atom = 1 := rfl
+@[simp] theorem defaultCosts_primitive (primitive : Prim) :
+    defaultCosts.primitive primitive = 1 := rfl
+@[simp] theorem defaultCosts_unfold : defaultCosts.unfold = 1 := rfl
+
+/-- Closes a step or cost equation or inequality under `defaultCosts`. -/
+macro "runs_arith" : tactic =>
+  `(tactic| ((try simp only [defaultCosts_atom, defaultCosts_primitive, defaultCosts_unfold]) <;>
+    omega))
+
+section Bounds
+variable {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
+
+/-- `if` on a condition known to be true. -/
+theorem runs_if_of_true {condition : Bool} (hCondition : condition = true)
+    {trueBranch falseBranch : Program} {usage₁ usage₂ : Usage}
+    {tail after : Stack} {steps cost : Nat}
+    (h : Runs gamma dictionary costs trueBranch tail after steps cost) :
+    Runs gamma dictionary costs (.cons .ifThenElse .empty)
+      (.quotation falseBranch usage₂ :: .quotation trueBranch usage₁ ::
+        .literal (.bool condition) :: tail) after (steps + 1) (costs.atom .ifThenElse + cost) := by
+  subst hCondition
+  exact runs_if_true h
+
+/-- `if` on a condition known to be false. -/
+theorem runs_if_of_false {condition : Bool} (hCondition : condition = false)
+    {trueBranch falseBranch : Program} {usage₁ usage₂ : Usage}
+    {tail after : Stack} {steps cost : Nat}
+    (h : Runs gamma dictionary costs falseBranch tail after steps cost) :
+    Runs gamma dictionary costs (.cons .ifThenElse .empty)
+      (.quotation falseBranch usage₂ :: .quotation trueBranch usage₁ ::
+        .literal (.bool condition) :: tail) after (steps + 1) (costs.atom .ifThenElse + cost) := by
+  subst hCondition
+  exact runs_if_false h
+
+/-- `program` takes `before` to `after` in at most `maxSteps` transitions
+charging at most `maxCost`. This is the form for words whose exact cost depends
+on the data; `Runs.within` and `RunsWithin.weaken` move between the two. -/
+def RunsWithin (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
+    (program : Program) (before after : Stack) (maxSteps maxCost : Nat) : Prop :=
+  ∃ steps cost, Runs gamma dictionary costs program before after steps cost ∧
+    steps ≤ maxSteps ∧ cost ≤ maxCost
+
+theorem Runs.within {program : Program} {before after : Stack} {steps cost : Nat}
+    (h : Runs gamma dictionary costs program before after steps cost) :
+    RunsWithin gamma dictionary costs program before after steps cost :=
+  ⟨steps, cost, h, Nat.le_refl _, Nat.le_refl _⟩
+
+theorem RunsWithin.weaken {program : Program} {before after : Stack}
+    {maxSteps maxCost maxSteps' maxCost' : Nat}
+    (h : RunsWithin gamma dictionary costs program before after maxSteps maxCost)
+    (hSteps : maxSteps ≤ maxSteps') (hCost : maxCost ≤ maxCost') :
+    RunsWithin gamma dictionary costs program before after maxSteps' maxCost' := by
+  rcases h with ⟨steps, cost, h, hs, hc⟩
+  exact ⟨steps, cost, h, Nat.le_trans hs hSteps, Nat.le_trans hc hCost⟩
+
+theorem RunsWithin.congr_stacks {program : Program} {before after before' after' : Stack}
+    {maxSteps maxCost : Nat}
+    (h : RunsWithin gamma dictionary costs program before after maxSteps maxCost)
+    (hBefore : before = before') (hAfter : after = after') :
+    RunsWithin gamma dictionary costs program before' after' maxSteps maxCost := by
+  subst hBefore hAfter
+  exact h
+
+theorem runsWithin_append {first second : Program} {before middle after : Stack}
+    {steps₁ cost₁ steps₂ cost₂ : Nat}
+    (left : RunsWithin gamma dictionary costs first before middle steps₁ cost₁)
+    (right : RunsWithin gamma dictionary costs second middle after steps₂ cost₂) :
+    RunsWithin gamma dictionary costs (first.append second) before after
+      (steps₁ + steps₂) (cost₁ + cost₂) := by
+  rcases left with ⟨s₁, c₁, h₁, hs₁, hc₁⟩
+  rcases right with ⟨s₂, c₂, h₂, hs₂, hc₂⟩
+  exact ⟨s₁ + s₂, c₁ + c₂, runs_append h₁ h₂, Nat.add_le_add hs₁ hs₂, Nat.add_le_add hc₁ hc₂⟩
+
+theorem runsWithin_cons {atom : Atom} {tail : Program} {before middle after : Stack}
+    {steps₁ cost₁ steps₂ cost₂ : Nat}
+    (head : RunsWithin gamma dictionary costs (.cons atom .empty) before middle steps₁ cost₁)
+    (rest : RunsWithin gamma dictionary costs tail middle after steps₂ cost₂) :
+    RunsWithin gamma dictionary costs (.cons atom tail) before after
+      (steps₁ + steps₂) (cost₁ + cost₂) :=
+  runsWithin_append (first := .cons atom .empty) head rest
+
+theorem runsWithin_word {name : String} {entry : WordEntry} {before after : Stack}
+    {maxSteps maxCost : Nat} (hEntry : dictionary name = some entry)
+    (h : RunsWithin gamma dictionary costs entry.body before after maxSteps maxCost) :
+    RunsWithin gamma dictionary costs (.cons (.word name) .empty) before after
+      (maxSteps + 1) (costs.unfold + maxCost) := by
+  rcases h with ⟨steps, cost, h, hs, hc⟩
+  exact ⟨steps + 1, costs.unfold + cost, runs_word hEntry h, by omega, by omega⟩
+
+theorem runsWithin_call {body : Program} {usage : Usage} {tail after : Stack}
+    {maxSteps maxCost : Nat}
+    (h : RunsWithin gamma dictionary costs body tail after maxSteps maxCost) :
+    RunsWithin gamma dictionary costs (.cons .call .empty) (.quotation body usage :: tail) after
+      (maxSteps + 1) (costs.atom .call + maxCost) := by
+  rcases h with ⟨steps, cost, h, hs, hc⟩
+  exact ⟨steps + 1, costs.atom .call + cost, runs_call h, by omega, by omega⟩
+
+theorem runsWithin_dip {body : Program} {usage : Usage} {value : Value} {tail after : Stack}
+    {maxSteps maxCost : Nat}
+    (h : RunsWithin gamma dictionary costs body tail after maxSteps maxCost) :
+    RunsWithin gamma dictionary costs (.cons .dip .empty) (.quotation body usage :: value :: tail)
+      (value :: after) (maxSteps + 2) (costs.atom .dip + maxCost) := by
+  rcases h with ⟨steps, cost, h, hs, hc⟩
+  exact ⟨steps + 2, costs.atom .dip + cost, runs_dip h, by omega, by omega⟩
+
+theorem runsWithin_if {condition : Bool} {trueBranch falseBranch : Program}
+    {usage₁ usage₂ : Usage} {tail after : Stack} {maxSteps maxCost : Nat}
+    (h : RunsWithin gamma dictionary costs (if condition then trueBranch else falseBranch)
+      tail after maxSteps maxCost) :
+    RunsWithin gamma dictionary costs (.cons .ifThenElse .empty)
+      (.quotation falseBranch usage₂ :: .quotation trueBranch usage₁ ::
+        .literal (.bool condition) :: tail) after
+      (maxSteps + 1) (costs.atom .ifThenElse + maxCost) := by
+  rcases h with ⟨steps, cost, h, hs, hc⟩
+  exact ⟨steps + 1, costs.atom .ifThenElse + cost, runs_if h, by omega, by omega⟩
+
+/-- Adequacy for bounds: with at least `maxSteps` fuel, `run` terminates on
+`after` within both bounds. -/
+theorem run_of_runsWithin {program : Program} {before after : Stack} {maxSteps maxCost : Nat}
+    (h : RunsWithin gamma dictionary costs program before after maxSteps maxCost)
+    {fuel : Nat} (hFuel : maxSteps ≤ fuel) :
+    ∃ steps cost, steps ≤ maxSteps ∧ cost ≤ maxCost ∧
+      run gamma dictionary costs fuel { stack := before, program := program } =
+        .terminal { stack := after, program := .empty } steps cost := by
+  rcases h with ⟨steps, cost, h, hs, hc⟩
+  refine ⟨steps, cost, hs, hc, ?_⟩
+  have := run_of_runs h (fuel - steps)
+  rwa [Nat.add_sub_cancel' (Nat.le_trans hs hFuel)] at this
+
+end Bounds
+
+/-!
+## Straight-line chains
+
+`runs_chain` proves a `Runs` goal for a straight-line program by applying one
+rule per atom: the structural atoms, literals, the arithmetic, comparison and
+sequence-length primitives, `dip` and `call` of a literal quotation, `if` on a
+condition `rfl`, `decide` or an assumption settles, and any word call or atom
+for which a matching `Runs` hypothesis is in context. It then closes the step
+and cost equations with `runs_arith`. Whatever it cannot settle, such as a
+stack that is only equal up to arithmetic, is left as a goal.
+-/
+
+/-- One rule of a chain; fails when no rule applies. -/
+macro "runs_atom" : tactic => `(tactic| first
+  | exact runs_empty _
+  | apply runs_cons (by assumption)
+  | apply runs_cons (runs_dup _ _)
+  | apply runs_cons (runs_drop _ _)
+  | apply runs_cons (runs_swap _ _ _)
+  | apply runs_cons (runs_quote _ _)
+  | apply runs_cons (runs_compose _ _ _ _ _)
+  | apply runs_cons (runs_push _ _)
+  | apply runs_cons (runs_quotation _ _)
+  | apply runs_cons (runs_literal_int _ _)
+  | apply runs_cons (runs_literal_bool _ _)
+  | apply runs_cons (runs_add _ _ _)
+  | apply runs_cons (runs_sub _ _ _)
+  | apply runs_cons (runs_mul _ _ _)
+  | apply runs_cons (runs_lt _ _ _)
+  | apply runs_cons (runs_eq _ _ _)
+  | apply runs_cons (runs_intSeq_empty _)
+  | apply runs_cons (runs_intSeq_len _ _)
+  | apply runs_cons (runs_intSeq_push _ _ _)
+  | apply runs_cons (runs_boolSeq_empty _)
+  | apply runs_cons (runs_boolSeq_len _ _)
+  | apply runs_cons (runs_boolSeq_push _ _ _)
+  | apply runs_cons (runs_dip ?_)
+  | apply runs_cons (runs_call ?_)
+  | apply runs_cons (runs_if_of_true (by first | rfl | decide | assumption | simp_all) ?_)
+  | apply runs_cons (runs_if_of_false (by first | rfl | decide | assumption | simp_all) ?_))
+
+open Lean Elab Tactic Meta in
+/-- Unfolds the named program in a `Runs` goal, such as an exported
+`«w».body`, into its atoms. Does nothing when the program is already atoms. -/
+elab "runs_expand" : tactic => withMainContext do
+  let goal ← getMainGoal
+  let target ← instantiateMVars (← goal.getType)
+  let args := target.getAppArgs
+  if h : 3 < args.size then
+    if let .const name _ := args[3].getAppFn then
+      replaceMainGoal [← goal.deltaTarget (· == name)]
+
+/-- Proves `Runs (.cons (.word name) .empty) …` by unfolding that one call
+through its dictionary entry and chaining its body. Calls inside the body are
+not unfolded; they need `Runs` hypotheses, so recursion stays explicit. -/
+macro "runs_unfold" : tactic => `(tactic| (
+  apply Runs.congr
+  · apply runs_word (by rfl)
+    dsimp only
+    runs_expand
+    repeat' runs_atom
+  all_goals try runs_arith))
+
+/-- Proves a straight-line `Runs` goal; see the section comment. -/
+macro "runs_chain" : tactic => `(tactic| (
+  apply Runs.congr
+  · runs_expand
+    repeat' runs_atom
+  all_goals try runs_arith))
 
 end Firth.Logic

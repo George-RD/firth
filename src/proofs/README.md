@@ -15,7 +15,26 @@ per kernel atom, sequencing (`runs_cons`, `runs_append`), `runs_if`,
 `runs_dip`, `runs_call`, `runs_word`, one lemma per primitive under the
 reference runner's registry, and `induction_on_measure` for recursion.
 `run_of_runs` turns a `Runs` fact into the value the reference interpreter's
-`run` returns.
+`run` returns. Each export states `«w».entry`, the dictionary entry a call to
+`w` unfolds through.
+
+Also in the library:
+
+- `RunsWithin … maxSteps maxCost`, the upper-bound form for words whose exact
+  cost depends on the data, with the same rules and `run_of_runsWithin`;
+- `runs_if_of_true` and `runs_if_of_false`, which take the condition as an
+  equation;
+- `runs_intSeq_at_int` and `runs_boolSeq_at_int`, for an index computed as an
+  `Int`;
+- `int64Gamma`, the registry with `+`, `-` and `*` faulting outside i64 as the
+  VM's do. Prove under it with `runs_add_int64` and friends, and
+  `Runs.of_int64` gives the same fact under the reference registry, now with
+  no overflow on the way;
+- tactics: `runs_chain` proves a straight-line body one atom at a time,
+  `runs_unfold` does the same through one word call, and `runs_arith` closes
+  the step and cost arithmetic under `defaultCosts`. Word calls inside a
+  body are discharged only from `Runs` hypotheses in context, so recursion
+  stays explicit.
 
 `Programs/SumTo.lean` is the worked example: for every `n`, `sum-to` returns
 `1 + ... + n` at a cost of exactly `13·n + 10`, the figure `firth_run.py`

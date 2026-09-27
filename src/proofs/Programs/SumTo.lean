@@ -34,12 +34,6 @@ theorem two_mul_triangle (n : Nat) : 2 * triangle n = n * (n + 1) := by
       push_cast
       grind
 
-private theorem sumAcc_entry :
-    dictionary "sum-acc" = some { type := adapterWordType, body := «sum-acc».body } := rfl
-
-private theorem sumTo_entry :
-    dictionary "sum-to" = some { type := adapterWordType, body := «sum-to».body } := rfl
-
 /-- `sum-acc` adds `1 + ... + n` to the accumulator below `n`. -/
 theorem sum_acc (n : Nat) (acc : Int) (tail : Stack) :
     Runs adapterGamma dictionary defaultCosts (.cons (.word "sum-acc") .empty)
@@ -55,7 +49,7 @@ theorem sum_acc (n : Nat) (acc : Int) (tail : Stack) :
           runs_cons (runs_if (condition := decide ((0 : Int) = 0))
             (by simpa using runs_cons (runs_drop _ _) (runs_empty _))) (runs_empty _)).congr
           (by simp) (by simp [defaultCosts])
-      exact ((runs_word sumAcc_entry body).congr (by simp) (by simp [defaultCosts])).congr_stacks
+      exact ((runs_word «sum-acc».entry body).congr (by simp) (by simp [defaultCosts])).congr_stacks
         (by simp) (by simp [triangle])
   | succ n ih =>
       have recurse := ih (acc + (n + 1))
@@ -80,7 +74,7 @@ theorem sum_acc (n : Nat) (acc : Int) (tail : Stack) :
           runs_cons (runs_quotation _ _) <|
           runs_cons (runs_if (by simpa using branch)) (runs_empty _)).congr
           (by omega) (by simp [defaultCosts]; omega)
-      exact ((runs_word sumAcc_entry body).congr (by omega) (by simp [defaultCosts]; omega)).congr_stacks
+      exact ((runs_word «sum-acc».entry body).congr (by omega) (by simp [defaultCosts]; omega)).congr_stacks
         rfl (by simp [triangle]; grind)
 
 /-- The body of `sum-to` leaves `1 + ... + n`, charging `13·n + 10`. This is
@@ -89,16 +83,17 @@ what the reference runner executes for the entry word, and the figure
 theorem sum_to_body (n : Nat) (tail : Stack) :
     Runs adapterGamma dictionary defaultCosts «sum-to».body
       (.literal (.int n) :: tail) (.literal (.int (triangle n)) :: tail)
-      (14 * n + 10) (13 * n + 10) :=
-  ((runs_cons (runs_literal_int 0 _) <| runs_cons (runs_swap _ _ _) <| sum_acc n 0 tail).congr
-    (by omega) (by simp [defaultCosts]; omega)).congr_stacks rfl (by simp)
+      (14 * n + 10) (13 * n + 10) := by
+  have loop := sum_acc n 0 tail
+  refine Runs.congr_stacks (after := .literal (.int (0 + triangle n)) :: tail) ?_ rfl (by simp)
+  runs_chain
 
 /-- A call to `sum-to` costs one more, for the unfold. -/
 theorem sum_to (n : Nat) (tail : Stack) :
     Runs adapterGamma dictionary defaultCosts (.cons (.word "sum-to") .empty)
       (.literal (.int n) :: tail) (.literal (.int (triangle n)) :: tail)
       (14 * n + 11) (13 * n + 11) :=
-  (runs_word sumTo_entry (sum_to_body n tail)).congr (by omega) (by simp [defaultCosts]; omega)
+  (runs_word «sum-to».entry (sum_to_body n tail)).congr (by omega) (by simp [defaultCosts]; omega)
 
 /-- The reference runner, given at least `14·n + 10` fuel, returns exactly
 that for the entry body. -/
