@@ -377,6 +377,38 @@ inductive PrimitiveStackContract : Prim → AStack → AStack → Prop where
       PrimitiveStackContract "eqNat"
         (.literal rightTag (.nat right) :: .literal leftTag (.nat left) :: rest)
         (.literal outputTag (.bool (decide (left = right))) :: rest)
+  | natSeqEmpty {outputTag : Tag} {rest : AStack} :
+      PrimitiveStackContract "natSeqEmpty" rest (.literal outputTag (.natSeq []) :: rest)
+  | natSeqLen {seqTag outputTag : Tag} {values : List Nat} {rest : AStack} :
+      PrimitiveStackContract "natSeqLen"
+        (.literal seqTag (.natSeq values) :: rest)
+        (.literal outputTag (.nat values.length) :: rest)
+  | natSeqAt {indexTag seqTag outputTag : Tag} {index value : Nat} {values : List Nat}
+      {rest : AStack} (found : values[index]? = some value) :
+      PrimitiveStackContract "natSeqAt"
+        (.literal indexTag (.nat index) :: .literal seqTag (.natSeq values) :: rest)
+        (.literal outputTag (.nat value) :: rest)
+  | natSeqPush {valueTag seqTag outputTag : Tag} {value : Nat} {values : List Nat}
+      {rest : AStack} :
+      PrimitiveStackContract "natSeqPush"
+        (.literal valueTag (.nat value) :: .literal seqTag (.natSeq values) :: rest)
+        (.literal outputTag (.natSeq (values ++ [value])) :: rest)
+  | boolSeqEmpty {outputTag : Tag} {rest : AStack} :
+      PrimitiveStackContract "boolSeqEmpty" rest (.literal outputTag (.boolSeq []) :: rest)
+  | boolSeqLen {seqTag outputTag : Tag} {values : List Bool} {rest : AStack} :
+      PrimitiveStackContract "boolSeqLen"
+        (.literal seqTag (.boolSeq values) :: rest)
+        (.literal outputTag (.nat values.length) :: rest)
+  | boolSeqAt {indexTag seqTag outputTag : Tag} {index : Nat} {value : Bool}
+      {values : List Bool} {rest : AStack} (found : values[index]? = some value) :
+      PrimitiveStackContract "boolSeqAt"
+        (.literal indexTag (.nat index) :: .literal seqTag (.boolSeq values) :: rest)
+        (.literal outputTag (.bool value) :: rest)
+  | boolSeqPush {valueTag seqTag outputTag : Tag} {value : Bool} {values : List Bool}
+      {rest : AStack} :
+      PrimitiveStackContract "boolSeqPush"
+        (.literal valueTag (.bool value) :: .literal seqTag (.boolSeq values) :: rest)
+        (.literal outputTag (.boolSeq (values ++ [value])) :: rest)
   | makeWorld {tag : Tag} {rest : AStack} :
       PrimitiveStackContract "makeWorld" rest (.world tag 0 :: rest)
   | consumeWorld {tag : Tag} {payload : Nat} {rest : AStack} :
@@ -2532,6 +2564,12 @@ theorem backward_adequacy
                                                 simp [eraseAConfig, eraseProgram, eraseAtom,
                                                   eraseValue, step] at hstep
                                             | unit =>
+                                                simp [eraseAConfig, eraseProgram, eraseAtom,
+                                                  eraseValue, step] at hstep
+                                            | natSeq values =>
+                                                simp [eraseAConfig, eraseProgram, eraseAtom,
+                                                  eraseValue, step] at hstep
+                                            | boolSeq values =>
                                                 simp [eraseAConfig, eraseProgram, eraseAtom,
                                                   eraseValue, step] at hstep
                                             | bool condition =>

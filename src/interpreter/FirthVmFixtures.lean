@@ -8,6 +8,9 @@ def renderValue : Value → String
   | .literal (.nat value) => s!"{value}"
   | .literal (.bool value) => if value then "true" else "false"
   | .literal .unit => "unit"
+  | .literal (.natSeq values) => s!"seq-int:{String.intercalate ";" (values.map toString)}"
+  | .literal (.boolSeq values) =>
+      s!"seq-bool:{String.intercalate ";" (values.map fun value => if value then "true" else "false")}"
   | .quotation _ usage => if usage == .many then "quotation-many" else "quotation-linear"
   | .world _ => "world"
 
@@ -19,6 +22,8 @@ def renderAtom : Atom → String
   | .lit (.nat value) => s!"pushi:{value}"
   | .lit (.bool value) => s!"pushb:{value}"
   | .lit .unit => "pushu"
+  | .lit (.natSeq values) => s!"pushv:{renderValue (.literal (.natSeq values))}"
+  | .lit (.boolSeq values) => s!"pushv:{renderValue (.literal (.boolSeq values))}"
   | .push value => s!"pushv:{renderValue value}"
   | .quotation body => s!"pushq:[{renderProgram body}]"
   | .dup => "dup"

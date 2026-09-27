@@ -21,7 +21,7 @@ fn adapter_request(entry: &str, code: &str, fuel: u64) -> String {
     request.push_str("\",\"refinement_evidence_digest\":\"");
     request.push_str(&evidence);
     request.push_str("\",\"generation\":0}]},\"initial_stack\":[],\"image\":{\"image_version\":1,");
-    request.push_str("\"gamma_version\":2},\"gamma_version\":\"0.2\",\"fuel\":");
+    request.push_str("\"gamma_version\":3},\"gamma_version\":\"0.3\",\"fuel\":");
     request.push_str(&fuel.to_string());
     request.push('}');
     request
@@ -226,7 +226,7 @@ fn a_request_outside_the_schema_is_refused_rather_than_repaired() {
         64,
     );
     assert_eq!(
-        vm_run(&base.replace("\"gamma_version\":\"0.2\"", "\"gamma_version\":\"0.3\""))
+        vm_run(&base.replace("\"gamma_version\":\"0.3\"", "\"gamma_version\":\"0.4\""))
             .expect_err("gamma version")
             .code,
         "unsupported-gamma"

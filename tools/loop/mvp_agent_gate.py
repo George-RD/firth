@@ -62,10 +62,10 @@ MANIFEST = ROOT / "tools" / "loop" / "mvp_agent_manifest.toml"
 HASH = re.compile(r"^[0-9a-f]{64}$")
 
 LANGUAGE_VERSION = "0.1"
-GAMMA_VERSION = "0.2"
+GAMMA_VERSION = "0.3"
 TARGET_VERSION = "0.1"
 IMAGE_FORMAT_VERSION = 1
-TARGET_GAMMA_VERSION = 2
+TARGET_GAMMA_VERSION = 3
 # The VM adapter refuses a larger budget (`firth_vm::MAX_FUEL`), so every
 # caller of this module shares one bound. `FUEL` is the default budget.
 MAX_FUEL = 1_000_000
@@ -74,6 +74,10 @@ FUEL = 100_000
 # and the reference runner's `traceLimit`); later steps run and are charged
 # but not traced, so a long run is compared on its trace prefix.
 MAX_TRACE_EVENTS = 4096
+# The largest portable integer, and the portable sequence literal types with
+# the source type each one carries.
+PORTABLE_INT_MAX = 9223372036854775807
+SEQUENCE_TYPES = {"seq-int": "Seq Int", "seq-bool": "Seq Bool"}
 
 # The pinned adapters and the schemas each one speaks, as the manifest must
 # declare them.
@@ -113,7 +117,7 @@ ADAPTER_TIMEOUT_SECONDS = 60
 LEAN_ADAPTERS = ("firthElaborate", "firthCompile", "firthReferenceRun")
 # The primitives the portable elaborator, compiler and VM all execute
 # (`surfacePrimitives` in src/interpreter/Firth/Interpreter.lean).
-PORTABLE_PRIMITIVES = ("+", "-", "*", "<", "=")
+PORTABLE_PRIMITIVES = ("+", "-", "*", "<", "=", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push")
 VM_BINARY = ROOT / "src" / "runtime" / "vm" / "target" / "debug" / "firth-vm"
 LEAN_BIN = ROOT / ".lake" / "build" / "bin"
 
@@ -480,7 +484,7 @@ def validate_portable_stack(stack: Any, label: str) -> None:
         if not isinstance(literal, dict) or "type" not in literal:
             fail(f"{field}: malformed result literal")
         literal_type = literal["type"]
-        if literal_type not in ("nat", "bool"):
+        if literal_type not in ("nat", "bool", *SEQUENCE_TYPES):
             fail(f"{field}: unsupported result literal type {literal_type!r}")
         if set(literal) != {"type", "value"}:
             fail(f"{field}: malformed result literal envelope")
@@ -488,6 +492,14 @@ def validate_portable_stack(stack: Any, label: str) -> None:
         if literal_type == "nat":
             if type(payload) is not int or not 0 <= payload <= 9223372036854775807:
                 fail(f"{field}: integer payload must be an integer from 0 to 9223372036854775807")
+        elif literal_type == "seq-int":
+            if not isinstance(payload, list) or any(
+                    type(item) is not int or not 0 <= item <= PORTABLE_INT_MAX for item in payload):
+                fail(f"{field}: Seq Int payload must be an array of integers from 0 to "
+                     "9223372036854775807")
+        elif literal_type == "seq-bool":
+            if not isinstance(payload, list) or any(type(item) is not bool for item in payload):
+                fail(f"{field}: Seq Bool payload must be an array of booleans")
         elif type(payload) is not bool:
             fail(f"{field}: Boolean payload must be true or false")
 
@@ -611,8 +623,36 @@ def compare_traces(reference: dict[str, Any], target: dict[str, Any], name: str)
     return TRACE_PREFIX_AGREED if truncated else TRACE_AGREED
 
 
+def without_faulting_step(target: dict[str, Any], name: str) -> dict[str, Any]:
+    """The VM observation at a trap, less the instruction that faulted.
+
+    The VM charges an instruction before running it and keeps that charge when
+    it faults (`target-spec.md` §5), so its last trace event and part of its
+    kernel cost belong to the faulting step. The reference interpreter stops
+    in the state before a step that has no successor and charges nothing for
+    it. Removing that one event and its charge lines the two up. A trace cut
+    at `MAX_TRACE_EVENTS` has lost the faulting event, so it cannot be lined
+    up and fails.
+    """
+    trace = target.get("trace")
+    cost = target.get("cost")
+    if not isinstance(trace, list) or not trace or len(trace) >= MAX_TRACE_EVENTS:
+        fail(f"{name}: target trace does not end at the faulting instruction")
+    last = trace[-1]
+    if not isinstance(last, dict) or not isinstance(cost, dict) or any(
+            type(value) is not int for value in (last.get("cost"), last.get("kernel_cost"),
+                                                 cost.get("total"), cost.get("kernel"))):
+        fail(f"{name}: target trap event or cost report is malformed")
+    if last["kernel_cost"] <= 0:
+        fail(f"{name}: the target's faulting instruction has no kernel charge")
+    return {**target, "trace": trace[:-1],
+            "cost": {**cost, "total": cost["total"] - last["cost"],
+                     "kernel": cost["kernel"] - last["kernel_cost"]}}
+
+
 def compare(reference: dict[str, Any], target: dict[str, Any], name: str,
-            fuel: int = FUEL, contract: dict[str, Any] = COMPARISON_CONTRACT) -> str:
+            fuel: int = FUEL, contract: dict[str, Any] = COMPARISON_CONTRACT,
+            expected_trap: str | None = None) -> str:
     """Compare terminal results, kernel costs, bounded traces and world purity.
 
     `contract` is the manifest's `[comparison]` table; only the table this
@@ -621,8 +661,17 @@ def compare(reference: dict[str, Any], target: dict[str, Any], name: str,
     (`TRACE_AGREED`, `TRACE_PREFIX_AGREED` or `TRACE_UNSUPPORTED`) is
     returned. Effectful equivalence is not asserted: the portable adapter
     currently runs pure programs.
+
+    With `expected_trap`, both hosts must stop with that trap instead of
+    terminating. The stacks at the trap, costs and traces are then compared
+    as for a successful run, after `without_faulting_step` removes the VM's
+    charge for the instruction that faulted. Fuel exhaustion is never an
+    expected trap.
     """
     check_comparison_contract(contract)
+    if expected_trap is not None and (not isinstance(expected_trap, str)
+                                      or expected_trap in ("", "fuel-exhausted")):
+        fail(f"{name}: {expected_trap!r} cannot be an expected trap")
     if type(fuel) is not int or not 0 <= fuel <= MAX_FUEL:
         fail(f"{name}: fuel must be an integer from 0 to {MAX_FUEL}")
     for side, observation in (("reference", reference), ("target", target)):
@@ -637,7 +686,11 @@ def compare(reference: dict[str, Any], target: dict[str, Any], name: str,
         required = {"status", "trap", "stack", "trace", "cost", "world_observation"}
         if not required.issubset(observation):
             fail(f"{name}: {side} observation is incomplete")
-        if observation["status"] != "success" or observation["trap"] is not None:
+        if expected_trap is not None:
+            if observation["status"] != "trap" or observation["trap"] != expected_trap:
+                fail(f"{name}: {side} did not trap with {expected_trap}: "
+                     f"{observation['status']} {observation['trap']}")
+        elif observation["status"] != "success" or observation["trap"] is not None:
             fail(f"{name}: {side} did not terminate successfully: {observation['trap']}")
         validate_portable_stack(observation["stack"], f"{name}: {side}")
     if reference.get("status") != target.get("status"):
@@ -655,6 +708,8 @@ def compare(reference: dict[str, Any], target: dict[str, Any], name: str,
             fail(f"{name}: {side} trace is not an array")
         if len(trace) > min(fuel, MAX_TRACE_EVENTS):
             fail(f"{name}: {side} trace is not bounded by the fuel budget and the trace limit")
+    if expected_trap is not None:
+        target = without_faulting_step(target, name)
     reference_cost = reference.get("cost")
     target_cost = target.get("cost")
     if not isinstance(reference_cost, dict) or not isinstance(target_cost, dict):
@@ -676,20 +731,38 @@ def compare(reference: dict[str, Any], target: dict[str, Any], name: str,
     return compare_traces(reference, target, name)
 
 
-def initial_values(values: Any) -> list[dict[str, Any]]:
-    """Encode portable input values once for both execution adapters."""
+def initial_values(values: Any, types: list[str] | None = None) -> list[dict[str, Any]]:
+    """Encode portable input values once for both execution adapters.
+
+    A JSON array is a sequence: `seq-int` when its elements are integers and
+    `seq-bool` when they are booleans. An empty array has no element type of
+    its own; it takes the literal type at the same position in `types` when
+    that is a sequence type, and is `seq-int` otherwise.
+    """
     if not isinstance(values, list):
         fail("initial stack: expected a JSON array")
     encoded = []
-    for value in values:
+    for index, value in enumerate(values):
         if type(value) is bool:
             kind = "bool"
-        elif type(value) is int and 0 <= value <= 9223372036854775807:
+        elif type(value) is int and 0 <= value <= PORTABLE_INT_MAX:
             kind = "nat"
+        elif isinstance(value, list) and all(type(item) is bool for item in value) and value:
+            kind = "seq-bool"
+        elif isinstance(value, list) and all(
+                type(item) is int and 0 <= item <= PORTABLE_INT_MAX for item in value):
+            hint = types[index] if types is not None and index < len(types) else None
+            kind = "seq-bool" if not value and hint == "seq-bool" else "seq-int"
         else:
-            fail("initial stack: use booleans or integers from 0 to 9223372036854775807")
+            fail("initial stack: use booleans, integers from 0 to 9223372036854775807, "
+                 "or arrays of one of those")
         encoded.append({"kind": "literal", "literal": {"type": kind, "value": value}})
     return encoded
+
+
+def literal_types(stack: list[dict[str, Any]]) -> list[str]:
+    """The literal type at each position of an encoded stack."""
+    return [value.get("literal", {}).get("type", "") for value in stack]
 
 
 def checked_dictionary(elaboration: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -721,14 +794,23 @@ def validate_initial_stack(elaboration: dict[str, Any], entry: str,
         fail(f"entry {entry}: initial stack does not match its declared input count")
     suffix = stack[len(stack) - len(items):] if items else []
     for expected, value in zip(items, suffix):
-        actual = "Int" if value["literal"]["type"] == "nat" else "Bool"
+        literal = value["literal"]
+        if expected == {"kind": "base", "name": "Seq Bool", "usage": "many"} \
+                and literal["type"] == "seq-int" and literal["value"] == []:
+            # An empty array takes its element type from the declared input.
+            literal["type"] = "seq-bool"
+        actual = {"nat": "Int", "bool": "Bool", **SEQUENCE_TYPES}[literal["type"]]
         if expected != {"kind": "base", "name": actual, "usage": "many"}:
             fail(f"entry {entry}: initial stack type mismatch; expected {expected}, got {actual}")
 
 
 def rebuild(entry: dict[str, Any], workspace: Path, *,
-            stack: list[Any] | None = None, fuel: int = FUEL) -> dict[str, Any]:
-    """Rebuilds one application in a workspace holding only its source."""
+            stack: list[Any] | None = None, fuel: int = FUEL,
+            expected_trap: str | None = None) -> dict[str, Any]:
+    """Rebuilds one application in a workspace holding only its source.
+
+    With `expected_trap`, both hosts must stop with that trap (see `compare`).
+    """
     name = entry["name"]
     if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", name):
         fail("application: unsafe scratch directory name")
@@ -800,7 +882,8 @@ def rebuild(entry: dict[str, Any], workspace: Path, *,
         scratch,
         f"{name} vm-run",
     )
-    expect_status(vm, "success", f"{name} vm-run")
+    run_status = "success" if expected_trap is None else "trap"
+    expect_status(vm, run_status, f"{name} vm-run")
 
     reference = adapter(
         [str(LEAN_BIN / "firthReferenceRun")],
@@ -818,9 +901,9 @@ def rebuild(entry: dict[str, Any], workspace: Path, *,
         scratch,
         f"{name} reference-run",
     )
-    expect_status(reference, "success", f"{name} reference-run")
+    expect_status(reference, run_status, f"{name} reference-run")
 
-    trace_comparison = compare(reference, vm, name, fuel)
+    trace_comparison = compare(reference, vm, name, fuel, expected_trap=expected_trap)
     return {
         "name": name,
         "entry": entry_word,
@@ -830,6 +913,7 @@ def rebuild(entry: dict[str, Any], workspace: Path, *,
         "cost": vm["cost"]["total"],
         "kernel_cost": vm["cost"]["kernel"],
         "fuel": fuel,
+        "trap": vm["trap"],
         "trace_comparison": trace_comparison,
     }
 

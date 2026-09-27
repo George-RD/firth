@@ -148,7 +148,9 @@ def test_suite(path: Path, fuel: int) -> dict:
                               vm_cost=observation["cost"],
                               trace_comparison=observation["trace_comparison"])
                 # Compare typed literals, not Python scalars (True == 1).
-                if observation["stack"] != gate.initial_values(case["expected_stack"]):
+                expected = gate.initial_values(case["expected_stack"],
+                                               gate.literal_types(observation["stack"]))
+                if observation["stack"] != expected:
                     gate.fail("expected stack does not match the observed typed stack")
                 result["status"] = "passed"
             except (gate.GateError, OSError, UnicodeError) as error:
@@ -198,11 +200,8 @@ def main(argv: list[str] | None = None) -> int:
                      "source": str(source), "source_path": source.name},
                     workspace, stack=stack, fuel=args.fuel,
                 )
-                values = []
-                for value in observation["stack"]:
-                    if value.get("kind") != "literal" or value.get("literal", {}).get("type") not in ("nat", "bool"):
-                        gate.fail("result: this runner only exposes integer and Boolean results")
-                    values.append(value["literal"]["value"])
+                gate.validate_portable_stack(observation["stack"], "result")
+                values = [value["literal"]["value"] for value in observation["stack"]]
                 result = {"status": "success", "command": "run", "entry": observation["entry"],
                           "stack": values, "words": observation["words"], "fuel": observation["fuel"],
                           "kernel_cost": observation["kernel_cost"], "vm_cost": observation["cost"],

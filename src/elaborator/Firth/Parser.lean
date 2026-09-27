@@ -33,6 +33,10 @@ inductive Literal where
   | boolean (value : Bool)
   | character (value : Char)
   | string (value : String)
+  /-- `{ 1 2 3 }`: a non-empty sequence literal of integers. -/
+  | integers (values : List Int)
+  /-- `{ true false }`: a non-empty sequence literal of booleans. -/
+  | booleans (values : List Bool)
   deriving Repr, BEq
 
 inductive TokenKind where
@@ -338,7 +342,19 @@ private def parseRefinement (p : Parser) (opening : Token) : Except ParseError (
       if badComma then .error (err "firth.syntax.invalid-refinement" (eofSpan stop) .validation)
       else .ok ({ span := mkSpan opening.span.start stop, tokens }, q)
 
-private def parseType (p : Parser) (name : String) (nameSpan : Span) : Except ParseError (TypeExpr × Parser) :=
+private def parseType (p₀ : Parser) (name₀ : String) (nameSpan₀ : Span) : Except ParseError (TypeExpr × Parser) :=
+  -- `Seq Int` and `Seq Bool` name the two sequence types; the element type
+  -- is part of the name, since the checker's base types are names.
+  let (p, name, nameSpan) : Parser × String × Span :=
+    if name₀ == "Seq" then
+      match current p₀ with
+      | some t => match t.kind with
+        | .identifier elem =>
+            if elem == "Int" || elem == "Bool" then (bump p₀, s!"Seq {elem}", mkSpan nameSpan₀.start t.span.stop)
+            else (p₀, name₀, nameSpan₀)
+        | _ => (p₀, name₀, nameSpan₀)
+      | none => (p₀, name₀, nameSpan₀)
+    else (p₀, name₀, nameSpan₀)
   let parseUsage (q : Parser) : Except ParseError (Usage × Parser × Position) :=
     match current q with
     | some caret => if isSymbol "^" caret then
@@ -455,9 +471,38 @@ private partial def parseItem (p : Parser) : Except ParseError (Item × Parser) 
       | .symbol "[" => parseItems (bump p) "]" |>.map (fun (xs, after, close) => (.quotation xs (mkSpan t.span.start close.stop), after))
       | .identifier "prim" => parsePrimitiveName (bump p) |>.map (fun (n, s, after) => (.primitive n (mkSpan t.span.start s.stop), after))
       | .identifier "locals" => parseLocals p t
+      | .symbol "{" => parseSequence p t
       | .identifier name => if name ∈ ["dup", "drop", "swap", "dip", "call", "compose", "quote", "if"] then .ok ((.atom name t.span), bump p) else
           parseName p true |>.map (fun (n, s, after) => (.word n s, after))
       | _ => .error (err "firth.syntax.invalid-item" t.span .grammar)
+/-- `{ 1 2 3 }` or `{ true false }`: every element a literal of one type. An
+empty sequence has no element type here; it is written `prim seq-int.empty`. -/
+private partial def parseSequence (p : Parser) (start : Token) : Except ParseError (Item × Parser) :=
+  let rec elements (fuel : Nat) (r : Parser) (acc : List Literal) :
+      Except ParseError (List Literal × Parser × Span) :=
+    if fuel = 0 then expected r "}" else
+    match current r with
+    | none => expected r "}"
+    | some t =>
+      if isSymbol "}" t then .ok (acc.reverse, bump r, t.span) else
+      match literalOf t.kind with
+      | some (.integer value) => elements (fuel - 1) (bump r) (.integer value :: acc)
+      | some (.boolean value) => elements (fuel - 1) (bump r) (.boolean value :: acc)
+      | _ => .error (err "firth.syntax.invalid-sequence-element" t.span .validation
+          (some "an integer or boolean literal") (some (kindText t.kind)))
+  elements (remaining (bump p) + 1) (bump p) [] >>= fun (values, after, close) =>
+    let span := mkSpan start.span.start close.stop
+    let ints := values.filterMap fun | .integer v => some v | _ => none
+    let bools := values.filterMap fun | .boolean v => some v | _ => none
+    if values.isEmpty then
+      .error (err "firth.syntax.empty-sequence" span .validation (some "at least one element") none)
+    else if ints.length == values.length then
+      .ok (.literal { span, value := .integers ints } span, after)
+    else if bools.length == values.length then
+      .ok (.literal { span, value := .booleans bools } span, after)
+    else
+      .error (err "firth.syntax.mixed-sequence" span .validation (some "elements of one type") none)
+
 private partial def parseLocals (p : Parser) (start : Token) : Except ParseError (Item × Parser) :=
   takeSymbol (bump p) "{" >>= fun q =>
     let rec names (fuel : Nat) (r : Parser) (acc : List LocatedName) : Except ParseError (List LocatedName × Parser × Span) :=

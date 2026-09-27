@@ -16,6 +16,11 @@ inductive Literal where
   | nat (value : Nat)
   | bool (value : Bool)
   | unit
+  /-- An immutable sequence of naturals (`Seq Int` in source). Sequences are
+  flat `many` data: they never hold a quotation or a linear value. -/
+  | natSeq (values : List Nat)
+  /-- An immutable sequence of booleans (`Seq Bool` in source). -/
+  | boolSeq (values : List Bool)
   deriving BEq, DecidableEq, Repr
 
 abbrev Prim := String
@@ -25,6 +30,8 @@ inductive BaseType where
   | bool
   | unit
   | world
+  | natSeq
+  | boolSeq
   deriving BEq, DecidableEq, Repr
 
 mutual
@@ -129,6 +136,11 @@ structure PrimitiveSpec where
   input : StackType
   output : StackType
   delta : Stack → Option Stack
+  /-- A partial primitive may fault on a well-typed stack (an out-of-range
+  sequence index); `delta` is then `none` and execution stops with a
+  primitive fault. Every other primitive must be total on its typed input,
+  and progress is stated with that exception only. -/
+  faults : Bool := false
 
 structure Gamma where
   literalType : Literal → Option BaseType
@@ -160,6 +172,41 @@ def eqNatDelta : Stack → Option Stack
       some (.literal (.bool (decide (left = right))) :: rest)
   | _ => none
 
+def natSeqEmptyDelta : Stack → Option Stack
+  | rest => some (.literal (.natSeq []) :: rest)
+
+def natSeqLenDelta : Stack → Option Stack
+  | .literal (.natSeq values) :: rest => some (.literal (.nat values.length) :: rest)
+  | _ => none
+
+/-- `at` faults on an index past the end; it never returns a default. -/
+def natSeqAtDelta : Stack → Option Stack
+  | .literal (.nat index) :: .literal (.natSeq values) :: rest =>
+      values[index]?.map fun value => .literal (.nat value) :: rest
+  | _ => none
+
+def natSeqPushDelta : Stack → Option Stack
+  | .literal (.nat value) :: .literal (.natSeq values) :: rest =>
+      some (.literal (.natSeq (values ++ [value])) :: rest)
+  | _ => none
+
+def boolSeqEmptyDelta : Stack → Option Stack
+  | rest => some (.literal (.boolSeq []) :: rest)
+
+def boolSeqLenDelta : Stack → Option Stack
+  | .literal (.boolSeq values) :: rest => some (.literal (.nat values.length) :: rest)
+  | _ => none
+
+def boolSeqAtDelta : Stack → Option Stack
+  | .literal (.nat index) :: .literal (.boolSeq values) :: rest =>
+      values[index]?.map fun value => .literal (.bool value) :: rest
+  | _ => none
+
+def boolSeqPushDelta : Stack → Option Stack
+  | .literal (.bool value) :: .literal (.boolSeq values) :: rest =>
+      some (.literal (.boolSeq (values ++ [value])) :: rest)
+  | _ => none
+
 def makeWorldDelta : Stack → Option Stack
   | rest => some (.world 0 :: rest)
 
@@ -172,6 +219,8 @@ def defaultGamma : Gamma :=
       | .nat _ => some .nat
       | .bool _ => some .bool
       | .unit => some .unit
+      | .natSeq _ => some .natSeq
+      | .boolSeq _ => some .boolSeq
     primitive := fun primitive => match primitive with
       | "addNat" => some { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
                            output := .snoc (.row "ρ") (.base .nat .many), delta := addNatDelta }
@@ -183,6 +232,24 @@ def defaultGamma : Gamma :=
                           output := .snoc (.row "ρ") (.base .bool .many), delta := ltNatDelta }
       | "eqNat" => some { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
                           output := .snoc (.row "ρ") (.base .bool .many), delta := eqNatDelta }
+      | "natSeqEmpty" => some { input := .row "ρ",
+                                output := .snoc (.row "ρ") (.base .natSeq .many), delta := natSeqEmptyDelta }
+      | "natSeqLen" => some { input := .snoc (.row "ρ") (.base .natSeq .many),
+                              output := .snoc (.row "ρ") (.base .nat .many), delta := natSeqLenDelta }
+      | "natSeqAt" => some { input := .snoc (.snoc (.row "ρ") (.base .natSeq .many)) (.base .nat .many),
+                             output := .snoc (.row "ρ") (.base .nat .many), delta := natSeqAtDelta,
+                             faults := true }
+      | "natSeqPush" => some { input := .snoc (.snoc (.row "ρ") (.base .natSeq .many)) (.base .nat .many),
+                               output := .snoc (.row "ρ") (.base .natSeq .many), delta := natSeqPushDelta }
+      | "boolSeqEmpty" => some { input := .row "ρ",
+                                 output := .snoc (.row "ρ") (.base .boolSeq .many), delta := boolSeqEmptyDelta }
+      | "boolSeqLen" => some { input := .snoc (.row "ρ") (.base .boolSeq .many),
+                               output := .snoc (.row "ρ") (.base .nat .many), delta := boolSeqLenDelta }
+      | "boolSeqAt" => some { input := .snoc (.snoc (.row "ρ") (.base .boolSeq .many)) (.base .nat .many),
+                              output := .snoc (.row "ρ") (.base .bool .many), delta := boolSeqAtDelta,
+                              faults := true }
+      | "boolSeqPush" => some { input := .snoc (.snoc (.row "ρ") (.base .boolSeq .many)) (.base .bool .many),
+                                output := .snoc (.row "ρ") (.base .boolSeq .many), delta := boolSeqPushDelta }
       | "makeWorld" => some { input := .row "ρ",
                                output := .snoc (.row "ρ") (.base .world .linear), delta := makeWorldDelta }
       | "consumeWorld" => some { input := .snoc (.row "ρ") (.base .world .linear),
@@ -193,7 +260,11 @@ def defaultGamma : Gamma :=
 the reference-run adapter and the compiler all read this one table, so the
 three hosts accept exactly the same primitive names. -/
 def surfacePrimitives : List (String × Prim) :=
-  [("+", "addNat"), ("-", "subNat"), ("*", "mulNat"), ("<", "ltNat"), ("=", "eqNat")]
+  [("+", "addNat"), ("-", "subNat"), ("*", "mulNat"), ("<", "ltNat"), ("=", "eqNat"),
+   ("seq-int.empty", "natSeqEmpty"), ("seq-int.len", "natSeqLen"),
+   ("seq-int.at", "natSeqAt"), ("seq-int.push", "natSeqPush"),
+   ("seq-bool.empty", "boolSeqEmpty"), ("seq-bool.len", "boolSeqLen"),
+   ("seq-bool.at", "boolSeqAt"), ("seq-bool.push", "boolSeqPush")]
 
 def kernelPrimitive (surface : String) : Option Prim :=
   (surfacePrimitives.find? (·.1 == surface)).map (·.2)

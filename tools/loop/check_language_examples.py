@@ -41,7 +41,7 @@ def main() -> int:
                     {"name": f"case-{index}", "entry": entry, "source": str(source), "source_path": filename},
                     workspace, stack=stack,
                 )
-                if result["stack"] != gate.initial_values(expected):
+                if result["stack"] != gate.initial_values(expected, gate.literal_types(result["stack"])):
                     gate.fail(f"{filename}/{entry}: expected {expected}, observed {result['stack']}")
                 if index in (0, 1, 7) and result["cost"] <= result["kernel_cost"]:
                     gate.fail(f"{filename}: dictionary-call overhead was not exercised")

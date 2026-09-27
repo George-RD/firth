@@ -7,7 +7,9 @@ namespace Firth.Interpreter
 The executable `Gamma` type is intentionally permissive, so progress carries
 the specification's literal-signature well-formedness condition explicitly.
 Likewise, primitive totality is a premise because `PrimitiveSpec.delta` is
-represented as an `Option` in the unchecked interpreter.
+represented as an `Option` in the unchecked interpreter. A primitive declared
+with `faults := true` (a sequence index) is exempt from totality, so progress
+has exactly one exception: such a primitive faulting on its typed input.
 -/
 
 def LiteralTypingSound (gamma : Gamma) : Prop :=
@@ -16,11 +18,14 @@ def LiteralTypingSound (gamma : Gamma) : Prop :=
     | .nat _, .nat => True
     | .bool _, .bool => True
     | .unit, .unit => True
+    | .natSeq _, .natSeq => True
+    | .boolSeq _, .boolSeq => True
     | _, _ => False
 
 def PrimitivesTotal (gamma : Gamma) (dictionary : Dictionary) : Prop :=
   ∀ name specification stack,
     gamma.primitive name = some specification →
+    specification.faults = false →
     StackTyping gamma dictionary stack specification.input →
     ∃ result, specification.delta stack = some result
 
@@ -30,6 +35,15 @@ def PrimitivesWellFormed (gamma : Gamma) (dictionary : Dictionary) : Prop :=
 theorem defaultGamma_literalTypingSound : LiteralTypingSound defaultGamma := by
   intro literal base h
   cases literal <;> simp [defaultGamma] at h ⊢ <;> subst base <;> trivial
+
+/-- The one way a well-typed configuration may stop before its program ends:
+its next atom is a primitive declared `faults := true` whose delta refused the
+stack, and the interpreter is stuck there (a primitive fault). -/
+def PrimitiveFault (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
+    (config : Config) : Prop :=
+  ∃ name specification rest, config.program = .cons (.prim name) rest ∧
+    gamma.primitive name = some specification ∧ specification.faults = true ∧
+    step gamma dictionary costs config = .stuck config
 
 theorem progress (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
     (literalTypingSound : LiteralTypingSound gamma)
@@ -41,7 +55,8 @@ theorem progress (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
        when it needs the body's typing derivation. -/
     TypedConfig gamma dictionary config →
       config.program ≠ .empty →
-      ∃ next, HasSuccessor gamma dictionary costs config next := by
+      (∃ next, HasSuccessor gamma dictionary costs config next) ∨
+        PrimitiveFault gamma dictionary costs config := by
   intro configTyping nonterminal
   rcases config with ⟨stack, program⟩
   rcases configTyping with ⟨stackType, outputType, stackTyping, programTyping⟩
@@ -54,12 +69,12 @@ theorem progress (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
         | lit literal =>
             cases headTyping with
             | lit h =>
-                refine ⟨{ stack := .literal literal :: stack, program := rest }, ?_⟩
+                refine .inl ⟨{ stack := .literal literal :: stack, program := rest }, ?_⟩
                 exact ⟨costs.atom (.lit literal), by simp [step, h]⟩
         | push value =>
             cases headTyping with
             | push h =>
-                refine ⟨{ stack := value :: stack, program := rest }, ?_⟩
+                refine .inl ⟨{ stack := value :: stack, program := rest }, ?_⟩
                 exact ⟨0, by simp [step]⟩
         | quotation body =>
             cases headTyping with
@@ -67,21 +82,21 @@ theorem progress (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
                 let next : Config :=
                   { stack := (Value.quotation body (programUsage body)) :: stack,
                     program := rest }
-                refine ⟨next, ?_⟩
+                refine .inl ⟨next, ?_⟩
                 exact ⟨costs.atom (.quotation body), by simp [next, step]⟩
         | dup =>
             cases headTyping with
             | dup h =>
                 rcases stackTyping_snoc_inv stackTyping with
                   ⟨value, tail, rfl, valueTyping, tailTyping⟩
-                refine ⟨{ stack := value :: value :: tail, program := rest }, ?_⟩
+                refine .inl ⟨{ stack := value :: value :: tail, program := rest }, ?_⟩
                 exact ⟨costs.atom .dup, by simp [step]⟩
         | drop =>
             cases headTyping with
             | drop h =>
                 rcases stackTyping_snoc_inv stackTyping with
                   ⟨value, tail, rfl, valueTyping, tailTyping⟩
-                refine ⟨{ stack := tail, program := rest }, ?_⟩
+                refine .inl ⟨{ stack := tail, program := rest }, ?_⟩
                 exact ⟨costs.atom .drop, by simp [step]⟩
         | swap =>
             cases headTyping with
@@ -90,7 +105,7 @@ theorem progress (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
                   ⟨second, tail₁, rfl, secondTyping, tailTyping⟩
                 rcases stackTyping_snoc_inv tailTyping with
                   ⟨first, tail, rfl, firstTyping, tailTyping⟩
-                refine ⟨{ stack := first :: second :: tail, program := rest }, ?_⟩
+                refine .inl ⟨{ stack := first :: second :: tail, program := rest }, ?_⟩
                 exact ⟨costs.atom .swap, by simp [step]⟩
         | call =>
             cases headTyping with
@@ -99,7 +114,7 @@ theorem progress (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
                   ⟨quotation, tail, rfl, quotationTyping, tailTyping⟩
                 rcases valueTyping_quotation_unpack quotationTyping with
                   ⟨body, rfl, usageEq, bodyTyping⟩
-                refine ⟨{ stack := tail, program := body.append rest }, ?_⟩
+                refine .inl ⟨{ stack := tail, program := body.append rest }, ?_⟩
                 exact ⟨costs.atom .call, by simp [step]⟩
         | dip =>
             cases headTyping with
@@ -112,7 +127,7 @@ theorem progress (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
                   ⟨body, rfl, usageEq, bodyTyping⟩
                 let next : Config :=
                   { stack := tail, program := body.append (.cons (.push value) rest) }
-                refine ⟨next, ?_⟩
+                refine .inl ⟨next, ?_⟩
                 exact ⟨costs.atom .dip, by simp [next, step]⟩
         | compose =>
             cases headTyping with
@@ -129,7 +144,7 @@ theorem progress (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
                   { stack := (Value.quotation (first.append second)
                       (usageMeet (programUsage first) (programUsage second))) :: tail,
                     program := rest }
-                refine ⟨next, ?_⟩
+                refine .inl ⟨next, ?_⟩
                 exact ⟨costs.atom .compose, by simp [next, step,
                   compose_usage_runtime_eq]⟩
         | quote =>
@@ -140,7 +155,7 @@ theorem progress (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
                 let next : Config :=
                   { stack := (Value.quotation (.cons (.push value) .empty)
                       (quotationUsage value)) :: tail, program := rest }
-                refine ⟨next, ?_⟩
+                refine .inl ⟨next, ?_⟩
                 exact ⟨costs.atom .quote, by simp [next, step]⟩
         | ifThenElse =>
             cases headTyping with
@@ -164,7 +179,7 @@ theorem progress (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
                         rcases valueTyping_quotation_unpack trueTyping with
                           ⟨trueBody, rfl, trueUsageEq, trueBodyTyping⟩
                         let chosen := if condition then trueBody else falseBody
-                        refine ⟨{ stack := tail, program := chosen.append rest }, ?_⟩
+                        refine .inl ⟨{ stack := tail, program := chosen.append rest }, ?_⟩
                         exact ⟨costs.atom .ifThenElse, by simp [step, chosen]⟩
                   | nat value =>
                     cases conditionTyping with
@@ -178,18 +193,42 @@ theorem progress (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
                       exact False.elim (by
                         have h := literalTypingSound .unit .bool conditionType
                         simp at h)
+                  | natSeq values =>
+                    cases conditionTyping with
+                    | literal conditionType =>
+                      exact False.elim (by
+                        have h := literalTypingSound (.natSeq values) .bool conditionType
+                        simp at h)
+                  | boolSeq values =>
+                    cases conditionTyping with
+                    | literal conditionType =>
+                      exact False.elim (by
+                        have h := literalTypingSound (.boolSeq values) .bool conditionType
+                        simp at h)
         | word name =>
             cases headTyping with
             | word h =>
                 rcases h with ⟨entry, entryEq, entryInput, entryOutput⟩
-                refine ⟨{ stack := stack, program := entry.body.append rest }, ?_⟩
+                refine .inl ⟨{ stack := stack, program := entry.body.append rest }, ?_⟩
                 exact ⟨costs.unfold, by simp [step, entryEq]⟩
         | prim name =>
             cases headTyping with
             | prim h =>
-                rcases primitivesWellFormed.2 name _ stack h stackTyping with ⟨result, deltaEq⟩
-                refine ⟨{ stack := result, program := rest }, ?_⟩
-                exact ⟨costs.primitive name, by simp [step, h, deltaEq]⟩
+                rename_i specification
+                cases faults : specification.faults with
+                | false =>
+                    rcases primitivesWellFormed.2 name _ stack h faults stackTyping with
+                      ⟨result, deltaEq⟩
+                    exact .inl ⟨{ stack := result, program := rest },
+                      costs.primitive name, by simp [step, h, deltaEq]⟩
+                | true =>
+                    cases deltaEq : specification.delta stack with
+                    | some result =>
+                        exact .inl ⟨{ stack := result, program := rest },
+                          costs.primitive name, by simp [step, h, deltaEq]⟩
+                    | none =>
+                        exact .inr ⟨name, specification, rest, rfl, h, faults,
+                          by simp [step, h, deltaEq]⟩
 
 
 theorem defaultGamma_nat_literal {dictionary : Dictionary} {value : Value}
@@ -202,6 +241,47 @@ theorem defaultGamma_nat_literal {dictionary : Dictionary} {value : Value}
     | nat n => exact ⟨n, rfl⟩
     | bool _ => simp [defaultGamma] at hlit
     | unit => simp [defaultGamma] at hlit
+    | natSeq _ => simp [defaultGamma] at hlit
+    | boolSeq _ => simp [defaultGamma] at hlit
+
+theorem defaultGamma_bool_literal {dictionary : Dictionary} {value : Value}
+    (h : ValueTyping defaultGamma dictionary value (.base .bool .many)) :
+    ∃ b, value = .literal (.bool b) := by
+  cases h with
+  | literal hlit =>
+    rename_i literal
+    cases literal with
+    | bool b => exact ⟨b, rfl⟩
+    | nat _ => simp [defaultGamma] at hlit
+    | unit => simp [defaultGamma] at hlit
+    | natSeq _ => simp [defaultGamma] at hlit
+    | boolSeq _ => simp [defaultGamma] at hlit
+
+theorem defaultGamma_natSeq_literal {dictionary : Dictionary} {value : Value}
+    (h : ValueTyping defaultGamma dictionary value (.base .natSeq .many)) :
+    ∃ values, value = .literal (.natSeq values) := by
+  cases h with
+  | literal hlit =>
+    rename_i literal
+    cases literal with
+    | natSeq values => exact ⟨values, rfl⟩
+    | nat _ => simp [defaultGamma] at hlit
+    | bool _ => simp [defaultGamma] at hlit
+    | unit => simp [defaultGamma] at hlit
+    | boolSeq _ => simp [defaultGamma] at hlit
+
+theorem defaultGamma_boolSeq_literal {dictionary : Dictionary} {value : Value}
+    (h : ValueTyping defaultGamma dictionary value (.base .boolSeq .many)) :
+    ∃ values, value = .literal (.boolSeq values) := by
+  cases h with
+  | literal hlit =>
+    rename_i literal
+    cases literal with
+    | boolSeq values => exact ⟨values, rfl⟩
+    | nat _ => simp [defaultGamma] at hlit
+    | bool _ => simp [defaultGamma] at hlit
+    | unit => simp [defaultGamma] at hlit
+    | natSeq _ => simp [defaultGamma] at hlit
 
 theorem defaultGamma_nat_pair {dictionary : Dictionary} {stack : Stack}
     (h : StackTyping defaultGamma dictionary stack
@@ -222,7 +302,8 @@ private theorem literal_stack {dictionary : Dictionary} (literal : Literal) (bas
   .cons (.literal h) .empty
 
 /-- The shipped primitive table satisfies both premises of progress and
-preservation: every primitive is total on, and preserves, its declared stack. -/
+preservation: every primitive preserves its declared stack, and every
+primitive not declared `faults := true` is total on it. -/
 theorem defaultGamma_primitivesWellFormed (dictionary : Dictionary) :
     PrimitivesWellFormed defaultGamma dictionary := by
   constructor
@@ -244,6 +325,76 @@ theorem defaultGamma_primitivesWellFormed (dictionary : Dictionary) :
     · obtain ⟨l, r, rfl⟩ := defaultGamma_nat_pair htyped
       simp only [eqNatDelta, Option.some.injEq] at hdelta; subst hdelta
       exact literal_stack _ _ rfl
+    · -- natSeqEmpty
+      cases htyped
+      simp only [natSeqEmptyDelta, Option.some.injEq] at hdelta; subst hdelta
+      exact literal_stack _ _ rfl
+    · -- natSeqLen
+      cases htyped with
+      | cons seqType emptyType =>
+        cases emptyType
+        obtain ⟨values, rfl⟩ := defaultGamma_natSeq_literal seqType
+        simp only [natSeqLenDelta, Option.some.injEq] at hdelta; subst hdelta
+        exact literal_stack _ _ rfl
+    · -- natSeqAt
+      cases htyped with
+      | cons indexType tailType =>
+        cases tailType with
+        | cons seqType emptyType =>
+          cases emptyType
+          obtain ⟨index, rfl⟩ := defaultGamma_nat_literal indexType
+          obtain ⟨values, rfl⟩ := defaultGamma_natSeq_literal seqType
+          simp only [natSeqAtDelta] at hdelta
+          cases hat : values[index]? with
+          | none => simp [hat] at hdelta
+          | some value =>
+            simp only [hat, Option.map_some, Option.some.injEq] at hdelta; subst hdelta
+            exact literal_stack _ _ rfl
+    · -- natSeqPush
+      cases htyped with
+      | cons valueType tailType =>
+        cases tailType with
+        | cons seqType emptyType =>
+          cases emptyType
+          obtain ⟨value, rfl⟩ := defaultGamma_nat_literal valueType
+          obtain ⟨values, rfl⟩ := defaultGamma_natSeq_literal seqType
+          simp only [natSeqPushDelta, Option.some.injEq] at hdelta; subst hdelta
+          exact literal_stack _ _ rfl
+    · -- boolSeqEmpty
+      cases htyped
+      simp only [boolSeqEmptyDelta, Option.some.injEq] at hdelta; subst hdelta
+      exact literal_stack _ _ rfl
+    · -- boolSeqLen
+      cases htyped with
+      | cons seqType emptyType =>
+        cases emptyType
+        obtain ⟨values, rfl⟩ := defaultGamma_boolSeq_literal seqType
+        simp only [boolSeqLenDelta, Option.some.injEq] at hdelta; subst hdelta
+        exact literal_stack _ _ rfl
+    · -- boolSeqAt
+      cases htyped with
+      | cons indexType tailType =>
+        cases tailType with
+        | cons seqType emptyType =>
+          cases emptyType
+          obtain ⟨index, rfl⟩ := defaultGamma_nat_literal indexType
+          obtain ⟨values, rfl⟩ := defaultGamma_boolSeq_literal seqType
+          simp only [boolSeqAtDelta] at hdelta
+          cases hat : values[index]? with
+          | none => simp [hat] at hdelta
+          | some value =>
+            simp only [hat, Option.map_some, Option.some.injEq] at hdelta; subst hdelta
+            exact literal_stack _ _ rfl
+    · -- boolSeqPush
+      cases htyped with
+      | cons valueType tailType =>
+        cases tailType with
+        | cons seqType emptyType =>
+          cases emptyType
+          obtain ⟨value, rfl⟩ := defaultGamma_bool_literal valueType
+          obtain ⟨values, rfl⟩ := defaultGamma_boolSeq_literal seqType
+          simp only [boolSeqPushDelta, Option.some.injEq] at hdelta; subst hdelta
+          exact literal_stack _ _ rfl
     · cases htyped
       simp only [makeWorldDelta, Option.some.injEq] at hdelta; subst hdelta
       exact .cons .world .empty
@@ -253,29 +404,59 @@ theorem defaultGamma_primitivesWellFormed (dictionary : Dictionary) :
         cases worldType
         simp only [consumeWorldDelta, Option.some.injEq] at hdelta; subst hdelta
         exact .empty
-  · intro name specification stack hname htyped
+  · intro name specification stack hname hfaults htyped
     simp only [defaultGamma] at hname
     split at hname <;> cases hname
     all_goals first
+      | (simp at hfaults; done)
       | (obtain ⟨l, r, rfl⟩ := defaultGamma_nat_pair htyped; exact ⟨_, rfl⟩)
       | exact ⟨_, rfl⟩
+      | (cases htyped with
+         | cons seqType emptyType =>
+           cases emptyType
+           first
+             | (obtain ⟨values, rfl⟩ := defaultGamma_natSeq_literal seqType; exact ⟨_, rfl⟩)
+             | (obtain ⟨values, rfl⟩ := defaultGamma_boolSeq_literal seqType; exact ⟨_, rfl⟩))
+      | (cases htyped with
+         | cons valueType tailType =>
+           cases tailType with
+           | cons seqType emptyType =>
+             cases emptyType
+             first
+               | (obtain ⟨value, rfl⟩ := defaultGamma_nat_literal valueType
+                  obtain ⟨values, rfl⟩ := defaultGamma_natSeq_literal seqType
+                  exact ⟨_, rfl⟩)
+               | (obtain ⟨value, rfl⟩ := defaultGamma_bool_literal valueType
+                  obtain ⟨values, rfl⟩ := defaultGamma_boolSeq_literal seqType
+                  exact ⟨_, rfl⟩))
       | (cases htyped with
          | cons worldType emptyType => cases emptyType; cases worldType; exact ⟨_, rfl⟩)
 
 /-- Type safety for the shipped primitive table: a well-typed configuration
-under a well-typed dictionary either has finished or steps to a configuration
-that is again well typed. No premise about primitives remains. -/
+under a well-typed dictionary either has finished, steps to a configuration
+that is again well typed, or stops at a sequence index out of range (the only
+primitives declared `faults := true`). No premise about primitives remains. -/
 theorem defaultGamma_typeSafety (dictionary : Dictionary) (costs : CostTable)
     (dictionaryWellTyped : DictionaryWellTyped defaultGamma dictionary) {config : Config}
     (configTyping : TypedConfig defaultGamma dictionary config)
     (nonterminal : config.program ≠ .empty) :
-    ∃ next, HasSuccessor defaultGamma dictionary costs config next ∧
-      TypedConfig defaultGamma dictionary next := by
+    (∃ next, HasSuccessor defaultGamma dictionary costs config next ∧
+      TypedConfig defaultGamma dictionary next) ∨
+      PrimitiveFault defaultGamma dictionary costs config := by
   have wellFormed := defaultGamma_primitivesWellFormed dictionary
-  obtain ⟨next, successor⟩ := progress defaultGamma dictionary costs
-    defaultGamma_literalTypingSound dictionaryWellTyped wellFormed configTyping nonterminal
-  exact ⟨next, successor,
-    preservation defaultGamma dictionary costs dictionaryWellTyped wellFormed.1 configTyping successor⟩
+  rcases progress defaultGamma dictionary costs
+    defaultGamma_literalTypingSound dictionaryWellTyped wellFormed configTyping nonterminal with
+    ⟨next, successor⟩ | fault
+  · exact .inl ⟨next, successor,
+      preservation defaultGamma dictionary costs dictionaryWellTyped wellFormed.1 configTyping successor⟩
+  · exact .inr fault
+
+/-- The primitives that may fault are exactly the two sequence indexes. -/
+theorem defaultGamma_faulting_primitives (name : Prim) (specification : PrimitiveSpec)
+    (h : defaultGamma.primitive name = some specification) (faults : specification.faults = true) :
+    name = "natSeqAt" ∨ name = "boolSeqAt" := by
+  simp only [defaultGamma] at h
+  split at h <;> cases h <;> simp_all
 
 /- These guards execute representative well-typed transition shapes while
    compiling the module, keeping progress smoke coverage next to the proof. -/
@@ -296,5 +477,27 @@ def progressSmokeQuotationCall : Bool :=
   | _ => false
 
 #guard progressSmokeQuotationCall = true
+
+/- `{ 4 5 } 1 at` reads the second element; `{ 4 5 } 2 at` is a primitive
+   fault, never a default value. -/
+def progressSmokeSeqAt (index : Nat) : Option Nat :=
+  match run defaultGamma emptyDictionary defaultCosts 8
+      { stack := [], program :=
+          .cons (.lit (.natSeq [4, 5])) (.cons (.lit (.nat index)) (.cons (.prim "natSeqAt") .empty)) } with
+  | .terminal { stack := [.literal (.nat value)], program := .empty } _ _ => some value
+  | _ => none
+
+#guard progressSmokeSeqAt 1 = some 5
+#guard progressSmokeSeqAt 2 = none
+
+def progressSmokeSeqPush : Bool :=
+  match run defaultGamma emptyDictionary defaultCosts 8
+      { stack := [], program :=
+          .cons (.prim "boolSeqEmpty") (.cons (.lit (.bool true)) (.cons (.prim "boolSeqPush")
+            (.cons (.prim "boolSeqLen") .empty))) } with
+  | .terminal { stack := [.literal (.nat 1)], program := .empty } _ _ => true
+  | _ => false
+
+#guard progressSmokeSeqPush = true
 
 end Firth.Interpreter

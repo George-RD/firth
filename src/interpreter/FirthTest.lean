@@ -7,7 +7,9 @@ open Firth.Interpreter
 
 def testPolicy : PrimitiveOwnershipPolicy where
   authorised := fun name consumed produced =>
-    (name ∈ ["addNat", "subNat", "mulNat", "ltNat", "eqNat"] ∧ consumed = [] ∧ produced = []) ∨
+    (name ∈ ["addNat", "subNat", "mulNat", "ltNat", "eqNat", "natSeqEmpty", "natSeqLen",
+        "natSeqAt", "natSeqPush", "boolSeqEmpty", "boolSeqLen", "boolSeqAt", "boolSeqPush"] ∧
+      consumed = [] ∧ produced = []) ∨
     (name == "makeWorld" ∧ consumed = [] ∧ produced.length = 1) ∨
     (name == "consumeWorld" ∧ consumed.length = 1 ∧ produced = [])
 
@@ -429,6 +431,8 @@ theorem examplePrimitiveTagLift_addNat :
       cases rightLiteral with
       | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
       | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
+      | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
+      | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
       | nat right =>
         cases inputTail with
         | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
@@ -440,6 +444,8 @@ theorem examplePrimitiveTagLift_addNat :
             cases leftLiteral with
             | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
             | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
+            | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
+            | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta; cases hdelta
             | nat left =>
               simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, addNatDelta] at hdelta
               have hplainOutput := Option.some.inj hdelta
@@ -553,6 +559,8 @@ theorem examplePrimitiveTagLift_subNat :
       cases rightLiteral with
       | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
       | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+      | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+      | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
       | nat right =>
         cases inputTail with
         | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
@@ -564,6 +572,8 @@ theorem examplePrimitiveTagLift_subNat :
             cases leftLiteral with
             | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
             | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+            | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+            | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
             | nat left =>
               simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta
               have hplainOutput := Option.some.inj hdelta
@@ -677,6 +687,8 @@ theorem examplePrimitiveTagLift_mulNat :
       cases rightLiteral with
       | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
       | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+      | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+      | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
       | nat right =>
         cases inputTail with
         | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
@@ -688,6 +700,8 @@ theorem examplePrimitiveTagLift_mulNat :
             cases leftLiteral with
             | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
             | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+            | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+            | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
             | nat left =>
               simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta
               have hplainOutput := Option.some.inj hdelta
@@ -801,6 +815,8 @@ theorem examplePrimitiveTagLift_ltNat :
       cases rightLiteral with
       | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
       | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+      | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+      | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
       | nat right =>
         cases inputTail with
         | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
@@ -812,6 +828,8 @@ theorem examplePrimitiveTagLift_ltNat :
             cases leftLiteral with
             | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
             | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+            | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+            | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
             | nat left =>
               simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta
               have hplainOutput := Option.some.inj hdelta
@@ -925,6 +943,8 @@ theorem examplePrimitiveTagLift_eqNat :
       cases rightLiteral with
       | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
       | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+      | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+      | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
       | nat right =>
         cases inputTail with
         | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
@@ -936,6 +956,8 @@ theorem examplePrimitiveTagLift_eqNat :
             cases leftLiteral with
             | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
             | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+            | natSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+            | boolSeq _ => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
             | nat left =>
               simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta
               have hplainOutput := Option.some.inj hdelta
@@ -1295,6 +1317,269 @@ theorem examplePrimitiveTagLift_consumeWorld :
           (List.mem_append_left residueTags (by simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, tailTags] using htag)))
 
 
+/-- A primitive that replaces literal values on top of the stack by literal
+values touches no linear tag: every tag below is retained unchanged, none is
+consumed and none is produced. The sequence primitives are instances. -/
+theorem literalPrimitiveTagLift {name : Prim} {specification : PrimitiveSpec}
+    {top out tail : AStack} {residue : AProgram} {nextTag : Tag}
+    (hname : exampleGamma.primitive name = some specification)
+    (htop : taggedLinearTagsValueList top = [])
+    (hout : taggedLinearTagsValueList out = [])
+    (hdelta : specification.delta ((top ++ tail).map eraseValue) =
+      some ((out ++ tail).map eraseValue))
+    (hcontract : PrimitiveStackContract name (top ++ tail) (out ++ tail))
+    (hauthorised : examplePolicy.authorised name [] [])
+    (hwellformed : InstrumentedWellFormed
+      { stack := top ++ tail, program := .cons (.prim name) residue, nextTag := nextTag }) :
+    ∃ output nextTag',
+      output.map eraseValue = (out ++ tail).map eraseValue ∧ nextTag ≤ nextTag' ∧
+      (∃ specification plainInput plainOutput rowTail retained consumed produced,
+        PrimitiveTagContract examplePolicy exampleGamma name (top ++ tail) output residue
+          specification plainInput plainOutput rowTail retained consumed produced
+          nextTag nextTag') ∧
+      (∀ tag, tag ∈ taggedLinearTagsValueList output → tag < nextTag') := by
+  have happend : ∀ a b : AStack, taggedLinearTagsValueList (a ++ b) =
+      taggedLinearTagsValueList a ++ taggedLinearTagsValueList b := by
+    intro a b
+    simp [taggedLinearTagsValueList_eq_flatMap, List.flatMap_append]
+  let tailTags := taggedLinearTagsValueList tail
+  have hin : taggedLinearTagsValueList (top ++ tail) = tailTags := by
+    rw [happend, htop]; rfl
+  have hout' : taggedLinearTagsValueList (out ++ tail) = tailTags := by
+    rw [happend, hout]; rfl
+  have htags : taggedLinearTags
+      { stack := top ++ tail, program := .cons (.prim name) residue, nextTag := nextTag } =
+      tailTags ++ taggedLinearTagsProgram residue := by
+    simp only [taggedLinearTags, taggedLinearTagsProgram, taggedLinearTagsAtom,
+      List.nil_append]
+    rw [← taggedLinearTagsValueList_eq_foldr, hin]
+  unfold InstrumentedWellFormed at hwellformed
+  rw [htags] at hwellformed
+  refine ⟨out ++ tail, nextTag, rfl, Nat.le_refl _, ?_, ?_⟩
+  · refine ⟨specification, (top ++ tail).map eraseValue, (out ++ tail).map eraseValue,
+      tailTags, tailTags, [], [], ?_⟩
+    exact
+      { name_resolves := hname
+        input_erases := rfl
+        delta := hdelta
+        output_erases := rfl
+        input_partition := by intro tag; rw [hin]; simp
+        output_partition := by intro tag; rw [hout']; simp
+        retained_nodup := (nodup_append_constructive.mp hwellformed.1).1
+        consumed_nodup := List.nodup_nil
+        produced_nodup := List.nodup_nil
+        retained_exact := by intro tag; rw [hin, hout']; simp
+        consumed_exact := by intro tag; rw [hin, hout']; simp
+        produced_exact := by intro tag; rw [hin, hout']; simp
+        retained_unchanged := by
+          rw [hin, hout']
+          exact (filterContainsEqSelf_explicit _ tailTags (fun tag htag => htag)).symm
+        consumed_absent := by intro tag htag; cases htag
+        produced_fresh := by intro tag htag; cases htag
+        output_residue_nodup := by rw [hout']; exact hwellformed.1
+        frontier_monotone := Nat.le_refl _
+        row_tail_retained := fun tag htag => htag
+        stack_contract := hcontract
+        authorised := hauthorised }
+  · intro tag htag
+    rw [hout'] at htag
+    exact hwellformed.2 tag (List.mem_append_left _ htag)
+
+theorem examplePrimitiveTagLift_natSeqEmpty :
+    PrimitiveTagLift examplePolicy exampleGamma "natSeqEmpty" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  simp [natSeqEmptyDelta] at hdelta
+  subst hdelta
+  exact literalPrimitiveTagLift (top := []) (tail := input)
+    (out := [.literal nextTag (.natSeq [])]) hname rfl rfl
+    (by simp [natSeqEmptyDelta, eraseValue]) .natSeqEmpty (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+
+theorem examplePrimitiveTagLift_natSeqLen :
+    PrimitiveTagLift examplePolicy exampleGamma "natSeqLen" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp [natSeqLenDelta] at hdelta
+  | cons top tail =>
+    cases top with
+    | quotation => simp [natSeqLenDelta, eraseValue] at hdelta
+    | world => simp [natSeqLenDelta, eraseValue] at hdelta
+    | literal tag lit =>
+      cases lit <;> simp [natSeqLenDelta, eraseValue] at hdelta
+      rename_i values
+      subst hdelta
+      exact literalPrimitiveTagLift (top := [.literal tag (.natSeq values)])
+        (out := [.literal tag (.nat values.length)]) hname rfl rfl
+        (by simp [natSeqLenDelta, eraseValue]) .natSeqLen (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+
+theorem examplePrimitiveTagLift_natSeqAt :
+    PrimitiveTagLift examplePolicy exampleGamma "natSeqAt" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp [natSeqAtDelta] at hdelta
+  | cons top tail =>
+    cases top with
+    | quotation => simp [natSeqAtDelta, eraseValue] at hdelta
+    | world => simp [natSeqAtDelta, eraseValue] at hdelta
+    | literal topTag topLiteral =>
+      cases tail with
+      | nil => cases topLiteral <;> simp [natSeqAtDelta, eraseValue] at hdelta
+      | cons below tail =>
+        cases below with
+        | quotation => cases topLiteral <;> simp [natSeqAtDelta, eraseValue] at hdelta
+        | world => cases topLiteral <;> simp [natSeqAtDelta, eraseValue] at hdelta
+        | literal seqTag seqLiteral =>
+          cases topLiteral <;> cases seqLiteral <;>
+            first | (simp [natSeqAtDelta, eraseValue] at hdelta; done) | skip
+          rename_i top values
+          simp only [natSeqAtDelta, eraseValue, List.map, Option.map_eq_some_iff] at hdelta
+          obtain ⟨value, hfound, hout⟩ := hdelta
+          subst hout
+          exact literalPrimitiveTagLift
+            (top := [.literal topTag (.nat top), .literal seqTag (.natSeq values)])
+            (out := [.literal topTag (.nat value)]) hname rfl rfl
+            (by simp [natSeqAtDelta, eraseValue, hfound]) (.natSeqAt hfound)
+            (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+
+theorem examplePrimitiveTagLift_natSeqPush :
+    PrimitiveTagLift examplePolicy exampleGamma "natSeqPush" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp [natSeqPushDelta] at hdelta
+  | cons top tail =>
+    cases top with
+    | quotation => simp [natSeqPushDelta, eraseValue] at hdelta
+    | world => simp [natSeqPushDelta, eraseValue] at hdelta
+    | literal topTag topLiteral =>
+      cases tail with
+      | nil => cases topLiteral <;> simp [natSeqPushDelta, eraseValue] at hdelta
+      | cons below tail =>
+        cases below with
+        | quotation => cases topLiteral <;> simp [natSeqPushDelta, eraseValue] at hdelta
+        | world => cases topLiteral <;> simp [natSeqPushDelta, eraseValue] at hdelta
+        | literal seqTag seqLiteral =>
+          cases topLiteral <;> cases seqLiteral <;> simp [natSeqPushDelta, eraseValue] at hdelta
+          rename_i top values
+          subst hdelta
+          exact literalPrimitiveTagLift
+            (top := [.literal topTag (.nat top), .literal seqTag (.natSeq values)])
+            (out := [.literal topTag (.natSeq (values ++ [top]))]) hname rfl rfl
+            (by simp [natSeqPushDelta, eraseValue]) .natSeqPush
+            (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+
+theorem examplePrimitiveTagLift_boolSeqEmpty :
+    PrimitiveTagLift examplePolicy exampleGamma "boolSeqEmpty" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  simp [boolSeqEmptyDelta] at hdelta
+  subst hdelta
+  exact literalPrimitiveTagLift (top := []) (tail := input)
+    (out := [.literal nextTag (.boolSeq [])]) hname rfl rfl
+    (by simp [boolSeqEmptyDelta, eraseValue]) .boolSeqEmpty (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+
+theorem examplePrimitiveTagLift_boolSeqLen :
+    PrimitiveTagLift examplePolicy exampleGamma "boolSeqLen" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp [boolSeqLenDelta] at hdelta
+  | cons top tail =>
+    cases top with
+    | quotation => simp [boolSeqLenDelta, eraseValue] at hdelta
+    | world => simp [boolSeqLenDelta, eraseValue] at hdelta
+    | literal tag lit =>
+      cases lit <;> simp [boolSeqLenDelta, eraseValue] at hdelta
+      rename_i values
+      subst hdelta
+      exact literalPrimitiveTagLift (top := [.literal tag (.boolSeq values)])
+        (out := [.literal tag (.nat values.length)]) hname rfl rfl
+        (by simp [boolSeqLenDelta, eraseValue]) .boolSeqLen (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+
+theorem examplePrimitiveTagLift_boolSeqAt :
+    PrimitiveTagLift examplePolicy exampleGamma "boolSeqAt" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp [boolSeqAtDelta] at hdelta
+  | cons top tail =>
+    cases top with
+    | quotation => simp [boolSeqAtDelta, eraseValue] at hdelta
+    | world => simp [boolSeqAtDelta, eraseValue] at hdelta
+    | literal topTag topLiteral =>
+      cases tail with
+      | nil => cases topLiteral <;> simp [boolSeqAtDelta, eraseValue] at hdelta
+      | cons below tail =>
+        cases below with
+        | quotation => cases topLiteral <;> simp [boolSeqAtDelta, eraseValue] at hdelta
+        | world => cases topLiteral <;> simp [boolSeqAtDelta, eraseValue] at hdelta
+        | literal seqTag seqLiteral =>
+          cases topLiteral <;> cases seqLiteral <;>
+            first | (simp [boolSeqAtDelta, eraseValue] at hdelta; done) | skip
+          rename_i top values
+          simp only [boolSeqAtDelta, eraseValue, List.map, Option.map_eq_some_iff] at hdelta
+          obtain ⟨value, hfound, hout⟩ := hdelta
+          subst hout
+          exact literalPrimitiveTagLift
+            (top := [.literal topTag (.nat top), .literal seqTag (.boolSeq values)])
+            (out := [.literal topTag (.bool value)]) hname rfl rfl
+            (by simp [boolSeqAtDelta, eraseValue, hfound]) (.boolSeqAt hfound)
+            (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+
+theorem examplePrimitiveTagLift_boolSeqPush :
+    PrimitiveTagLift examplePolicy exampleGamma "boolSeqPush" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp [boolSeqPushDelta] at hdelta
+  | cons top tail =>
+    cases top with
+    | quotation => simp [boolSeqPushDelta, eraseValue] at hdelta
+    | world => simp [boolSeqPushDelta, eraseValue] at hdelta
+    | literal topTag topLiteral =>
+      cases tail with
+      | nil => cases topLiteral <;> simp [boolSeqPushDelta, eraseValue] at hdelta
+      | cons below tail =>
+        cases below with
+        | quotation => cases topLiteral <;> simp [boolSeqPushDelta, eraseValue] at hdelta
+        | world => cases topLiteral <;> simp [boolSeqPushDelta, eraseValue] at hdelta
+        | literal seqTag seqLiteral =>
+          cases topLiteral <;> cases seqLiteral <;> simp [boolSeqPushDelta, eraseValue] at hdelta
+          rename_i top values
+          subst hdelta
+          exact literalPrimitiveTagLift
+            (top := [.literal topTag (.bool top), .literal seqTag (.boolSeq values)])
+            (out := [.literal topTag (.boolSeq (values ++ [top]))]) hname rfl rfl
+            (by simp [boolSeqPushDelta, eraseValue]) .boolSeqPush
+            (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+
+
 theorem examplePrimitiveTagLift_unknown (name : Prim)
     (haddNat : name ≠ "addNat")
     (hsubNat : name ≠ "subNat")
@@ -1302,12 +1587,21 @@ theorem examplePrimitiveTagLift_unknown (name : Prim)
     (hltNat : name ≠ "ltNat")
     (heqNat : name ≠ "eqNat")
     (hmakeWorld : name ≠ "makeWorld")
-    (hconsumeWorld : name ≠ "consumeWorld") :
+    (hconsumeWorld : name ≠ "consumeWorld")
+    (hnatSeqEmpty : name ≠ "natSeqEmpty")
+    (hnatSeqLen : name ≠ "natSeqLen")
+    (hnatSeqAt : name ≠ "natSeqAt")
+    (hnatSeqPush : name ≠ "natSeqPush")
+    (hboolSeqEmpty : name ≠ "boolSeqEmpty")
+    (hboolSeqLen : name ≠ "boolSeqLen")
+    (hboolSeqAt : name ≠ "boolSeqAt")
+    (hboolSeqPush : name ≠ "boolSeqPush") :
     PrimitiveTagLift examplePolicy exampleGamma name := by
   intro input residue nextTag specification plainInput plainOutput hname
     hinput hdelta hwellformed
   have hnone : exampleGamma.primitive name = none := by
-    simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, exampleGamma, defaultGamma, haddNat, hsubNat, hmulNat, hltNat, heqNat, hmakeWorld, hconsumeWorld]
+    simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, exampleGamma, defaultGamma, haddNat, hsubNat, hmulNat, hltNat, heqNat, hmakeWorld, hconsumeWorld,
+      hnatSeqEmpty, hnatSeqLen, hnatSeqAt, hnatSeqPush, hboolSeqEmpty, hboolSeqLen, hboolSeqAt, hboolSeqPush]
   rw [hnone] at hname
   cases hname
 
@@ -1335,13 +1629,39 @@ theorem examplePrimitiveTagLift :
             · by_cases heqNat : name = "eqNat"
               · subst name
                 exact examplePrimitiveTagLift_eqNat
-              · exact examplePrimitiveTagLift_unknown name haddNat hsubNat hmulNat hltNat heqNat
-                  hmakeWorld hconsumeWorld
+              · by_cases hnatSeqEmpty : name = "natSeqEmpty"
+                · subst name
+                  exact examplePrimitiveTagLift_natSeqEmpty
+                · by_cases hnatSeqLen : name = "natSeqLen"
+                  · subst name
+                    exact examplePrimitiveTagLift_natSeqLen
+                  · by_cases hnatSeqAt : name = "natSeqAt"
+                    · subst name
+                      exact examplePrimitiveTagLift_natSeqAt
+                    · by_cases hnatSeqPush : name = "natSeqPush"
+                      · subst name
+                        exact examplePrimitiveTagLift_natSeqPush
+                      · by_cases hboolSeqEmpty : name = "boolSeqEmpty"
+                        · subst name
+                          exact examplePrimitiveTagLift_boolSeqEmpty
+                        · by_cases hboolSeqLen : name = "boolSeqLen"
+                          · subst name
+                            exact examplePrimitiveTagLift_boolSeqLen
+                          · by_cases hboolSeqAt : name = "boolSeqAt"
+                            · subst name
+                              exact examplePrimitiveTagLift_boolSeqAt
+                            · by_cases hboolSeqPush : name = "boolSeqPush"
+                              · subst name
+                                exact examplePrimitiveTagLift_boolSeqPush
+                              · exact examplePrimitiveTagLift_unknown name haddNat hsubNat hmulNat hltNat heqNat
+                                  hmakeWorld hconsumeWorld hnatSeqEmpty hnatSeqLen hnatSeqAt hnatSeqPush hboolSeqEmpty hboolSeqLen hboolSeqAt hboolSeqPush
 
 #print axioms filterContainsEqSelf_explicit
 #print axioms examplePrimitiveTagLift_addNat
 #print axioms examplePrimitiveTagLift_makeWorld
 #print axioms examplePrimitiveTagLift_consumeWorld
+#print axioms literalPrimitiveTagLift
+#print axioms examplePrimitiveTagLift_natSeqAt
 #print axioms examplePrimitiveTagLift_unknown
 #print axioms examplePrimitiveTagLift
 

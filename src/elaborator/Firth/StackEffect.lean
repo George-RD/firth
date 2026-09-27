@@ -291,6 +291,9 @@ def atomName : Atom → String
   | .lit (.nat value) => toString value
   | .lit (.bool value) => if value then "true" else "false"
   | .lit .unit => "unit"
+  | .lit (.natSeq values) => "{ " ++ String.intercalate " " (values.map toString) ++ " }"
+  | .lit (.boolSeq values) =>
+      "{ " ++ String.intercalate " " (values.map fun value => if value then "true" else "false") ++ " }"
   | .push _ => "value"
   | .quotation _ => "[ ... ]"
   | .dup => "dup"
@@ -333,6 +336,8 @@ def defaultLiteralType : Firth.Interpreter.Literal → Option AType
   | .nat _ => some (.base "Int" .many)
   | .bool _ => some (.base "Bool" .many)
   | .unit => some (.base "Unit" .many)
+  | .natSeq _ => some (.base "Seq Int" .many)
+  | .boolSeq _ => some (.base "Seq Bool" .many)
 
 private def algorithmicUsage : Firth.Interpreter.Usage → AUsage
   | .many => .many

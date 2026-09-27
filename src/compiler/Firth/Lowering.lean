@@ -165,6 +165,14 @@ private def lowerLiteral (context : Context) : Literal → Except CompileError T
       else .error (.unsupportedLiteral context.word s!"nat literal exceeds the target integer: {value}")
   | .bool value => .ok (.bool value)
   | .unit => .error (.unsupportedLiteral context.word "unit")
+  | .natSeq values =>
+      -- A sequence is the registry's primitive value `seq-int` (§2): each
+      -- element is a little-endian two's-complement 64-bit integer.
+      match values.find? (fun value => !Target.isInt64 (Int.ofNat value)) with
+      | some value => .error (.unsupportedLiteral context.word
+          s!"sequence element exceeds the target integer: {value}")
+      | none => .ok (.primitiveValue Target.seqIntTag (Target.seqIntBytes values))
+  | .boolSeq values => .ok (.primitiveValue Target.seqBoolTag (Target.seqBoolBytes values))
 
 mutual
 

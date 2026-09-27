@@ -19,8 +19,8 @@ private def expectError (name input : String) : IO Unit := do
   | .error _ => pure ()
 
 private def request (program stack : String) (fuel : Nat := 8) : String :=
-  "{\"request_id\":\"request-1\",\"checked_kernel\":{\"checking_state\":\"checked\",\"proof_state\":\"available\",\"gamma_version\":\"0.2\",\"program\":"
-    ++ program ++ "},\"initial_stack\":" ++ stack ++ ",\"dictionary\":{},\"gamma_version\":\"0.2\",\"fuel\":"
+  "{\"request_id\":\"request-1\",\"checked_kernel\":{\"checking_state\":\"checked\",\"proof_state\":\"available\",\"gamma_version\":\"0.3\",\"program\":"
+    ++ program ++ "},\"initial_stack\":" ++ stack ++ ",\"dictionary\":{},\"gamma_version\":\"0.3\",\"fuel\":"
     ++ toString fuel ++ "}"
 
 private def validRequest (program : String) (fuel : Nat := 8) : String :=
@@ -57,9 +57,9 @@ def main : IO Unit := do
     "\"trap\":\"fuel-exhausted\""
   expectError "malformed JSON" "{"
   expectError "unchecked kernel"
-    "{\"request_id\":\"request-1\",\"checked_kernel\":{\"checking_state\":\"unchecked\",\"proof_state\":\"available\",\"gamma_version\":\"0.2\",\"program\":[]},\"initial_stack\":[],\"dictionary\":{},\"gamma_version\":\"0.2\",\"fuel\":1}"
+    "{\"request_id\":\"request-1\",\"checked_kernel\":{\"checking_state\":\"unchecked\",\"proof_state\":\"available\",\"gamma_version\":\"0.3\",\"program\":[]},\"initial_stack\":[],\"dictionary\":{},\"gamma_version\":\"0.3\",\"fuel\":1}"
   expectError "unsupported Gamma"
-    "{\"request_id\":\"request-1\",\"checked_kernel\":{\"checking_state\":\"checked\",\"proof_state\":\"available\",\"gamma_version\":\"0.3\",\"program\":[]},\"initial_stack\":[],\"dictionary\":{},\"gamma_version\":\"0.3\",\"fuel\":1}"
+    "{\"request_id\":\"request-1\",\"checked_kernel\":{\"checking_state\":\"checked\",\"proof_state\":\"available\",\"gamma_version\":\"0.4\",\"program\":[]},\"initial_stack\":[],\"dictionary\":{},\"gamma_version\":\"0.4\",\"fuel\":1}"
 
 end Firth.ReferenceRunTest
 

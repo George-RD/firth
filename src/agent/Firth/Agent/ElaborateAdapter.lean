@@ -36,7 +36,7 @@ open Firth.Elaborator.StackEffect
 def languageVersion : String := "0.1"
 
 /-- The `Gamma` version this adapter speaks. -/
-def gammaVersion : String := "0.2"
+def gammaVersion : String := "0.3"
 
 private def err (message : String) : Except String α := .error message
 
@@ -96,6 +96,8 @@ private def surfaceBase : Firth.Interpreter.BaseType → String
   | .bool => "Bool"
   | .unit => "Unit"
   | .world => "World"
+  | .natSeq => "Seq Int"
+  | .boolSeq => "Seq Bool"
 
 mutual
   /-- A kernel stack type in surface terms; the kernel's `nat` is the
@@ -191,6 +193,9 @@ mutual
     | .nat value => obj [("type", quote "nat"), ("value", number value)]
     | .bool value => obj [("type", quote "bool"), ("value", if value then "true" else "false")]
     | .unit => obj [("type", quote "unit")]
+    | .natSeq values => obj [("type", quote "seq-int"), ("value", arr (values.map number))]
+    | .boolSeq values => obj [("type", quote "seq-bool"),
+        ("value", arr (values.map fun value => if value then "true" else "false"))]
 
   private def valueJson : Firth.Interpreter.Value → String
     | .literal value => obj [("kind", quote "literal"), ("literal", literalJson value)]

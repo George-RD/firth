@@ -62,6 +62,22 @@ instance : Inhabited Instruction := ⟨.dup⟩
 def isInt64 (value : Int) : Bool :=
   -(2 ^ 63 : Int) ≤ value && value < (2 ^ 63 : Int)
 
+/-- The registry tag of a `Seq Int` value (`PrimitiveValue`, §2). -/
+def seqIntTag : Nat := 2
+/-- The registry tag of a `Seq Bool` value. -/
+def seqBoolTag : Nat := 3
+
+/-- The canonical bytes of a `Seq Int`: each element as eight little-endian
+bytes. Elements must satisfy `isInt64`; naturals below 2^63 encode as their
+two's-complement form. -/
+def seqIntBytes (values : List Nat) : ByteArray :=
+  ⟨(values.flatMap fun value => (List.range 8).map fun index =>
+    UInt8.ofNat ((value / 256 ^ index) % 256)).toArray⟩
+
+/-- The canonical bytes of a `Seq Bool`: one byte, 0 or 1, per element. -/
+def seqBoolBytes (values : List Bool) : ByteArray :=
+  ⟨(values.map fun value => if value then (1 : UInt8) else 0).toArray⟩
+
 /-!
 Admission bounds the VM enforces on every image, from
 `src/runtime/vm/src/lib.rs` (`MAX_INSTRUCTIONS`, `MAX_NESTING`) and

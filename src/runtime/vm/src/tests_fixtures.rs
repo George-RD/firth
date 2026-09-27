@@ -109,7 +109,7 @@
     }
 
     #[test]
-    fn push_literal_rejects_quotation_and_primitive_values() {
+    fn push_literal_accepts_only_scalars_and_canonical_sequences() {
         let image = test_image(vec![word(
             "main",
             vec![instruction(
@@ -128,8 +128,32 @@
             .iter()
             .position(|byte| *byte == 0)
             .expect("literal opcode");
-        bytes[literal_tag + 1] = 4;
+        bytes[literal_tag + 1] = 3;
         assert_eq!(decode(&bytes), Err(VmError::InvalidLiteralEncoding));
+
+        // Of the primitive values only sequences, in their canonical
+        // encoding, are literals.
+        for (tag, bytes, accepted) in [
+            (SEQ_INT_TAG, 7_i64.to_le_bytes().to_vec(), true),
+            (SEQ_BOOL_TAG, vec![0, 1], true),
+            (SEQ_INT_TAG, vec![7], false),
+            (SEQ_BOOL_TAG, vec![2], false),
+            (99, vec![], false),
+        ] {
+            let image = test_image(vec![word(
+                "main",
+                vec![instruction(
+                    Op::PushLiteral,
+                    Some(Operand::Literal(Value::PrimitiveValue { tag, bytes })),
+                )],
+            )]);
+            let result = execute(&image);
+            if accepted {
+                assert!(result.is_ok(), "{tag}: {result:?}");
+            } else {
+                assert_eq!(result, Err(VmError::InvalidLiteralEncoding), "{tag}");
+            }
+        }
     }
 
     #[test]

@@ -109,8 +109,9 @@ sequence.
 | `w` | `CALL_WORD name(w)` | Resolves and runs the current definition of `w`. |
 | `prim π` | `PRIM id(π)` | Applies deterministic `delta_pi` from `Gamma`, threading hidden `WorldState` linearly. |
 
-The default registry is target Gamma version 2 (adapter `gamma_version` "0.2").
-Version 1 (adapter "0.1") had `addNat` as its only pure primitive; adding one
+The default registry is target Gamma version 3 (adapter `gamma_version` "0.3").
+Version 1 (adapter "0.1") had `addNat` as its only pure primitive and version 2
+("0.2") added the other arithmetic and comparison primitives; adding one
 bumps both versions, so an image or request tagged with an older registry is
 refused rather than run under a different one. The pure primitives of the
 default registry act on kernel naturals, carried as non-negative target
@@ -123,6 +124,25 @@ integers (a negative operand is a `primitive-fault`):
 | `prim *` | `PRIM mulNat` | `Int Int -- Int`; a result past `i64` is a `primitive-fault`. |
 | `prim <` | `PRIM ltNat` | `Int Int -- Bool`. |
 | `prim =` | `PRIM eqNat` | `Int Int -- Bool`. |
+| `prim seq-int.empty` | `PRIM natSeqEmpty` | `-- Seq Int`. |
+| `prim seq-int.len` | `PRIM natSeqLen` | `Seq Int -- Int`. |
+| `prim seq-int.at` | `PRIM natSeqAt` | `Seq Int Int -- Int`; an index at or past the length is a `primitive-fault`. |
+| `prim seq-int.push` | `PRIM natSeqPush` | `Seq Int Int -- Seq Int`; appends at the end. |
+| `prim seq-bool.empty` | `PRIM boolSeqEmpty` | `-- Seq Bool`. |
+| `prim seq-bool.len` | `PRIM boolSeqLen` | `Seq Bool -- Int`. |
+| `prim seq-bool.at` | `PRIM boolSeqAt` | `Seq Bool Int -- Bool`; an index at or past the length is a `primitive-fault`. |
+| `prim seq-bool.push` | `PRIM boolSeqPush` | `Seq Bool Bool -- Seq Bool`; appends at the end. |
+
+Sequences are `many` registry values. A `Seq Int` is `PrimitiveValue(2,
+bytes)` holding each element as an 8-byte little-endian `i64`; a `Seq Bool` is
+`PrimitiveValue(3, bytes)` holding one byte, 0 or 1, per element. Any other
+byte length or byte value is not canonical and is refused. Every sequence
+primitive costs 1. `PUSH_LITERAL` accepts a canonical sequence as well as the
+scalar literals, so `{ 1 2 3 }` compiles to one instruction; no other primitive
+value is a literal. The kernel treats an out-of-range `at` as a primitive with
+no successor (its `faults` flag), so the progress theorem allows a stuck
+configuration only at such a primitive, and the VM traps there instead of
+returning a default.
 
 The table is total over the frozen atom grammar. A compiler must reject an
 unknown atom, unresolved word, or primitive outside `Gamma` before execution;

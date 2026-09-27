@@ -7,6 +7,8 @@ hosts' results, costs and traces. This script only adds the expected final
 stack, so a program that both hosts agree on but that computes the wrong
 answer still fails. A case with `expect_error` must be refused with that
 diagnostic code, so a program that must not compile can't start running.
+A case with `expect_trap` must stop with that trap on both hosts, at the same
+stack and cost.
 """
 from __future__ import annotations
 
@@ -33,6 +35,7 @@ def main() -> int:
                     {"name": f"case-{index}", "entry": case["entry"],
                      "source": str(HERE / case["source"]), "source_path": case["source"]},
                     Path(directory), stack=case["stack"],
+                    expected_trap=case.get("expect_trap"),
                 )
             except gate.GateError as error:
                 expected_error = case.get("expect_error")
@@ -47,6 +50,9 @@ def main() -> int:
             failures += 1
             continue
         stack = [value["literal"]["value"] for value in observation["stack"]]
+        if "expect_trap" in case:
+            print(f"ok   {label} -> both hosts trapped with {observation['trap']}")
+            continue
         if stack != case["expect"]:
             print(f"FAIL {label}: expected {case['expect']}, both hosts gave {stack}")
             failures += 1

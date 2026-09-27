@@ -48,9 +48,9 @@ def contract_tables() -> dict[str, object]:
     }
     return {
         "gamma": {
-            "version": "0.2",
-            "primitives": ["+", "-", "*", "<", "=", "send"],
-            "primitive": {name: {"effect": "declared"} for name in ["+", "-", "*", "<", "=", "send"]},
+            "version": "0.3",
+            "primitives": ["+", "-", "*", "<", "=", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"],
+            "primitive": {name: {"effect": "declared"} for name in ["+", "-", "*", "<", "=", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"]},
         },
         "entry_point": {
             name: {"version": "0.1", "adapter": adapter, "transport": "structured-json",
@@ -372,6 +372,64 @@ class ExecutionWiringTests(unittest.TestCase):
             observation.update(status="trap", trap="fuel-exhausted")
         with self.assertRaisesRegex(self.gate.GateError, "inconclusive"):
             self.gate.compare(reference, target, "bounded")
+
+    def trapped_observations(self):
+        """`2 prim seq-int.at` on a two-element sequence: one literal, then a fault."""
+        reference, target = self.observations()
+        values = self.gate.initial_values([[7, 8]])
+        at_fault = values + self.gate.initial_values([2])
+        reference.update(status="trap", trap="primitive-fault", stack=at_fault,
+                         cost={"total": 1, "steps": 1},
+                         trace=[{"index": 0, "stack": values, "program": [], "cost": 1}])
+
+        def event(index, stack):
+            return {"index": index, "word": "third", "pc": index, "stack": stack, "cost": 1,
+                    "kernel_cost": 1, "image_version": 1, "frames": []}
+
+        # The VM charged the faulting `PRIM` and recorded its event.
+        target.update(status="trap", trap="primitive-fault", stack=at_fault,
+                      cost={"total": 2, "kernel": 2, "steps": 2},
+                      trace=[event(0, values), event(1, at_fault)])
+        return reference, target
+
+    def test_an_expected_trap_agrees_without_the_vm_faulting_step(self) -> None:
+        reference, target = self.trapped_observations()
+        self.assertEqual(self.gate.compare(reference, target, "trap",
+                                           expected_trap="primitive-fault"),
+                         self.gate.TRACE_AGREED)
+        with self.assertRaisesRegex(self.gate.GateError, "did not terminate successfully"):
+            self.gate.compare(reference, target, "trap")
+        with self.assertRaisesRegex(self.gate.GateError, "did not trap with type-fault"):
+            self.gate.compare(reference, target, "trap", expected_trap="type-fault")
+
+    def test_an_expected_trap_still_compares_stacks_and_costs(self) -> None:
+        reference, target = self.trapped_observations()
+        target["cost"]["kernel"] = 3
+        target["cost"]["total"] = 3
+        with self.assertRaisesRegex(self.gate.GateError, "kernel cost"):
+            self.gate.compare(reference, target, "trap", expected_trap="primitive-fault")
+        reference, target = self.trapped_observations()
+        target["stack"] = target["stack"][:1]
+        with self.assertRaisesRegex(self.gate.GateError, "residual stack"):
+            self.gate.compare(reference, target, "trap", expected_trap="primitive-fault")
+
+    def test_an_expected_trap_needs_the_faulting_event(self) -> None:
+        reference, target = self.trapped_observations()
+        target["trace"] = []
+        with self.assertRaisesRegex(self.gate.GateError, "faulting instruction"):
+            self.gate.compare(reference, target, "trap", expected_trap="primitive-fault")
+        reference, target = self.trapped_observations()
+        target["trace"] = target["trace"][-1:] * self.gate.MAX_TRACE_EVENTS
+        with self.assertRaisesRegex(self.gate.GateError, "faulting instruction"):
+            self.gate.compare(reference, target, "trap", expected_trap="primitive-fault",
+                              fuel=self.gate.MAX_FUEL)
+
+    def test_fuel_exhaustion_is_never_an_expected_trap(self) -> None:
+        reference, target = self.trapped_observations()
+        for value in ("fuel-exhausted", ""):
+            with self.subTest(value=value), self.assertRaisesRegex(
+                    self.gate.GateError, "cannot be an expected trap"):
+                self.gate.compare(reference, target, "trap", expected_trap=value)
 
     def test_input_values_distinguish_booleans_from_integers(self) -> None:
         encoded = self.gate.initial_values([True, 1])

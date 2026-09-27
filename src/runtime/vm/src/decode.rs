@@ -168,7 +168,20 @@ fn decode_literal(reader: &mut Reader<'_>) -> Result<Value, VmError> {
             value => Err(VmError::InvalidBoolean(value)),
         },
         2 => Ok(Value::Bytes(reader.bytes()?.to_vec())),
-        3 | 4 => Err(VmError::InvalidLiteralEncoding),
+        // Sequence literals (`{ 1 2 3 }`) are the only primitive values an
+        // image may carry as literals; see `is_literal`.
+        4 => {
+            let tag = reader.unsigned()?;
+            let value = Value::PrimitiveValue {
+                tag,
+                bytes: reader.bytes()?.to_vec(),
+            };
+            if !is_literal(&value) {
+                return Err(VmError::InvalidLiteralEncoding);
+            }
+            Ok(value)
+        }
+        3 => Err(VmError::InvalidLiteralEncoding),
         tag => Err(VmError::InvalidValueTag(tag)),
     }
 }
