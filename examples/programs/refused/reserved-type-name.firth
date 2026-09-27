@@ -1,0 +1,8 @@
+\ `SeqInt` and `SeqBool` are how the target spells `Seq Int` and `Seq Bool`,
+\ so a source type with either name is refused: otherwise a word over an
+\ opaque `SeqInt` and one over `Seq Int` would compile to the same type.
+: keep
+  (forall ρ; ρ x:SeqInt^many -- ρ x:SeqInt^many)
+  ;
+
+: reserved-type-name ( -- ) ;

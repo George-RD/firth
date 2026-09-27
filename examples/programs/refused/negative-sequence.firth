@@ -1,0 +1,5 @@
+\ Integers are naturals: a sequence literal with a negative element is refused,
+\ as a negative integer literal is.
+: negative-sequence
+  (forall ρ; ρ -- ρ r:Int^many)
+  { 1 -2 } 0 prim seq-int.at;

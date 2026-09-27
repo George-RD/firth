@@ -44,6 +44,15 @@ literals inside quotations are checked recursively. A linear resource can enter
 a program only from an input, dictionary word, or primitive result, never from
 a replayable literal.
 
+A sequence literal `{ 1 2 3 }` or `{ true false }` elaborates to one `lit c`
+whose value is the whole sequence, of type `Seq Int` or `Seq Bool`. Its
+elements must all be integers or all Booleans (`firth.syntax.mixed-sequence`),
+and each must be a literal token, not an item to run
+(`firth.syntax.invalid-sequence-element`). `{ }` is refused
+(`firth.syntax.empty-sequence`) because it has no element type; the empty
+sequences are `prim seq-int.empty` and `prim seq-bool.empty`. As with integer
+literals, a negative element is refused by the portable profile.
+
 Comments are erased before parsing. A line comment begins with `\` and ends
 at the newline. A block comment begins with `(*` and ends with the first
 `*)`; block comments do not nest. Comment delimiters inside strings and
@@ -58,8 +67,10 @@ errors.
     use-declaration = "use" , name , [ "as" , word-name ] , ";" ;
     word-definition = ":" , word-name , stack-effect , body , ";" ;
     body            = { item } ;
-    item            = literal | quotation | kernel-atom | primitive | name
-                    | local-block ;
+    item            = literal | sequence | quotation | kernel-atom | primitive
+                    | name | local-block ;
+    sequence        = "{" , integer , { integer } , "}"
+                    | "{" , boolean , { boolean } , "}" ;
     quotation       = "[" , { item } , "]" ;
     primitive        = "prim" , name ;
     local-block     = "locals" , "{" , word-name , { word-name } , "}" ,
@@ -270,7 +281,8 @@ The chosen v0.1 annotation is a parenthesised effect at the word boundary:
                        stack-items , "--" , stack-items , ")" ;
     stack-items      = [ stack-item , { stack-item } ] ;
     stack-item       = row-name | ( word-name , ":" , type-expression ) ;
-    type-expression  = type-name , [ "^" , ( "many" | "linear" ) ] ,
+    type-expression  = ( type-name | "Seq" , ( "Int" | "Bool" ) ) ,
+                       [ "^" , ( "many" | "linear" ) ] ,
                        [ "{" , predicate , { "," , predicate } , "}" ] ;
 
 Every row variable must be explicitly bound by the prenex `forall` clause. A

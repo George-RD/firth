@@ -32,8 +32,23 @@
     {"source": "quotations.firth", "entry": "compose-then-local", "stack": [100, 5, 3], "expect": [100, 3]},
     {"source": "quotations.firth", "entry": "add-step-twice", "stack": [10, 3], "expect": [16]},
     {"source": "quotations.firth", "entry": "dup-dip-then-local", "stack": [100, 5, 3], "expect": [100, 3]},
+    {"source": "sequences.firth", "entry": "sum", "stack": [[4, 5, 6]], "expect": [15]},
+    {"source": "sequences.firth", "entry": "sum", "stack": [[]], "expect": [0]},
+    {"source": "sequences.firth", "entry": "range", "stack": [5], "expect": [[0, 1, 2, 3, 4]]},
+    {"source": "sequences.firth", "entry": "range", "stack": [0], "expect": [[]]},
+    {"source": "sequences.firth", "entry": "count", "stack": [[true, false, true, true]], "expect": [3]},
+    {"source": "sequences.firth", "entry": "count", "stack": [[]], "expect": [0]},
+    {"source": "sequences.firth", "entry": "literal-sum", "stack": [], "expect": [60]},
+    {"source": "sequences.firth", "entry": "literal-mask", "stack": [], "expect": [[true, false, true, true]]},
+    {"source": "sequences.firth", "entry": "third", "stack": [[7, 8, 9]], "expect": [9]},
+    {"source": "sequences.firth", "entry": "third", "stack": [[7, 8]], "expect_trap": "primitive-fault"},
+    {"source": "sequences.firth", "entry": "element", "stack": [[7, 8, 9], 1], "expect": [8]},
+    {"source": "sequences.firth", "entry": "element", "stack": [[7, 8, 9], 2305843009213693951], "expect_trap": "primitive-fault"},
+    {"source": "sequences.firth", "entry": "element", "stack": [[7, 8, 9], 9223372036854775807], "expect_trap": "primitive-fault"},
     {"source": "refused/call-unknown-effect.firth", "entry": "call-unknown-effect", "stack": [100, 5, 3], "expect_error": "firth.elaboration.untracked-local"},
     {"source": "refused/dip-unknown-effect.firth", "entry": "dip-unknown-effect", "stack": [5, 3], "expect_error": "firth.elaboration.untracked-local"},
-    {"source": "refused/nested-quotation-result.firth", "entry": "nested-quotation-result", "stack": [5, 3], "expect_error": "firth.elaboration.untracked-local"}
+    {"source": "refused/nested-quotation-result.firth", "entry": "nested-quotation-result", "stack": [5, 3], "expect_error": "firth.elaboration.untracked-local"},
+    {"source": "refused/negative-sequence.firth", "entry": "negative-sequence", "stack": [], "expect_error": "firth.elaboration.unsupported-literal"},
+    {"source": "refused/reserved-type-name.firth", "entry": "reserved-type-name", "stack": [], "expect_error": "firth.compile.invalid-word-type"}
   ]
 }

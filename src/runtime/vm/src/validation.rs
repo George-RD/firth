@@ -277,6 +277,14 @@ fn slot_matches_type(slot: &Slot, kind: PrimitiveType) -> bool {
     match kind {
         PrimitiveType::Int => matches!(slot, Slot::Value(Value::Int(_))),
         PrimitiveType::Bool => matches!(slot, Slot::Value(Value::Bool(_))),
+        PrimitiveType::IntSeq => matches!(
+            slot,
+            Slot::Value(Value::PrimitiveValue { tag: SEQ_INT_TAG, .. })
+        ),
+        PrimitiveType::BoolSeq => matches!(
+            slot,
+            Slot::Value(Value::PrimitiveValue { tag: SEQ_BOOL_TAG, .. })
+        ),
         PrimitiveType::Bytes => matches!(slot, Slot::Value(Value::Bytes(_))),
         PrimitiveType::Quotation => matches!(slot, Slot::Value(Value::Quotation(_))),
         PrimitiveType::World => matches!(slot, Slot::WorldMarker),
@@ -407,6 +415,9 @@ fn validate_value_structure(value: &Value, depth: usize) -> Result<(), VmError> 
         Value::PrimitiveValue { tag, .. } if default_registry().value_usage(*tag).is_none() => {
             return Err(VmError::InvalidPrimitiveTag);
         }
+        Value::PrimitiveValue { tag, bytes } if !canonical_primitive_bytes(*tag, bytes) => {
+            return Err(VmError::InvalidPrimitiveTag);
+        }
         Value::PrimitiveValue { .. } => {}
         Value::Int(_) | Value::Bool(_) | Value::Bytes(_) | Value::World => {}
     }
@@ -474,6 +485,15 @@ fn validate_quotation_structure(quotation: &Quotation, depth: usize) -> Result<(
     Ok(())
 }
 
+/// A value an instruction may push as a literal: a scalar, or a sequence
+/// (`{ 1 2 3 }`) in its canonical encoding. No other primitive value, and
+/// no quotation, is a literal.
 fn is_literal(value: &Value) -> bool {
-    matches!(value, Value::Int(_) | Value::Bool(_) | Value::Bytes(_))
+    match value {
+        Value::Int(_) | Value::Bool(_) | Value::Bytes(_) => true,
+        Value::PrimitiveValue { tag, bytes } => {
+            matches!(*tag, SEQ_INT_TAG | SEQ_BOOL_TAG) && canonical_primitive_bytes(*tag, bytes)
+        }
+        _ => false,
+    }
 }

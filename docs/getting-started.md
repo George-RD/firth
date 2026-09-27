@@ -161,8 +161,8 @@ not the current working directory. Every case names its entry explicitly.
 
 A suite must have 1 to 128 cases with unique non-empty names, fit within
 1,048,576 UTF-8 bytes, and use at most 256 values per input or expected stack.
-Both stacks use the portable integers and Booleans listed below; `true` never
-matches `1`. Unknown or duplicate JSON fields, invalid values and empty suites
+Both stacks use the portable integers, Booleans and sequences listed below;
+`true` never matches `1`. Unknown or duplicate JSON fields, invalid values and empty suites
 are rejected before a build. Absolute source paths are not accepted. Relative
 paths such as `../src/component.firth` are supported.
 
@@ -232,9 +232,10 @@ execution-trace equivalence.
 
 | Feature | Current portable runner |
 | --- | --- |
-| External inputs and final results | Non-negative integers through `9223372036854775807`, and Booleans |
+| External inputs and final results | Non-negative integers through `9223372036854775807`, Booleans, and sequences of either as JSON arrays (`[1, 2]` is a `Seq Int`, `[true]` a `Seq Bool`; `[]` takes its type from the word's signature) |
 | Source type name for integers | `Int`; the executable literal representation is currently non-negative |
-| Primitive operations | `prim +`, `prim -` (truncates at 0), `prim *` : `Int Int -- Int`; `prim <`, `prim =` : `Int Int -- Bool` |
+| Primitive operations | `prim +`, `prim -` (truncates at 0), `prim *` : `Int Int -- Int`; `prim <`, `prim =` : `Int Int -- Bool`; `prim seq-int.empty`, `.len`, `.at`, `.push` and the same for `seq-bool` (see `examples/programs/README.md`) |
+| Sequences | `Seq Int` and `Seq Bool`, written `{ 1 2 3 }` or `{ true false }`; an out-of-range `at` traps with `primitive-fault` on both hosts |
 | Definitions | Explicit stack effects, multiple words, qualified vocabulary names, recursion with finite fuel |
 | Composition | Core stack operations, quotations, `call`, `if`, named locals (a block takes its values off the stack; a local may be used any number of times, inside `if` branches, inside quotations and inside nested blocks. A local can't be used after running a quotation whose stack effect is unknown there, such as one passed in as a value; that is refused with `firth.elaboration.untracked-local`); matching checked effects are required |
 | Quotations as external inputs/results | Explicitly rejected; returned bodies and captures do not yet have a shared comparison format |

@@ -1,7 +1,7 @@
 # Example programs
 
-Small programs that use arithmetic, comparison, conditionals and tail-recursive
-loops. `check_programs.py` runs every case in `cases.json` through the checker
+Small programs that use arithmetic, comparison, conditionals, tail-recursive
+loops and sequences. `check_programs.py` runs every case in `cases.json` through the checker
 and compiler, then on both the VM and the reference interpreter, and fails
 unless both hosts agree and produce the expected stack.
 
@@ -55,10 +55,36 @@ where the local sits afterwards, so it refuses the program with
 inline, like `[ 1 prim + ] call` or `[ 1 prim + ] [ ] compose call`, are fine
 (`quotations.firth`). The programs under `refused/` must be rejected.
 
+## Sequences
+
+`Seq Int` and `Seq Bool` hold any number of integers or Booleans. They are
+ordinary values: a sequence can be used any number of times, and `push`
+returns a new one. `sequences.firth` sums, counts, builds a range and indexes.
+
+```
+{ 1 2 3 }                  \ -- Seq Int      (a literal; { true false } is a Seq Bool)
+prim seq-int.empty         \ -- Seq Int
+xs prim seq-int.len        \ Seq Int -- Int
+xs i prim seq-int.at       \ Seq Int Int -- Int
+xs x prim seq-int.push     \ Seq Int Int -- Seq Int
+```
+
+`seq-bool.empty`, `.len`, `.at` and `.push` are the same for `Seq Bool`. An
+index at or past the length traps with `primitive-fault` on both hosts; `at`
+never returns a default. A case with `expect_trap` checks that: both hosts
+must stop with that trap at the same stack and kernel cost. `{ }` is refused
+because it has no element type; write `prim seq-int.empty`. On the command
+line and in `cases.json` a sequence is a JSON array, and `[]` takes its type
+from the word's signature:
+
+```sh
+python3 tools/loop/firth_run.py run examples/programs/sequences.firth --entry sum --stack '[[4, 5, 6]]'
+```
+
 ## Limits
 
-- `allocate.firth` is one step of `specs/inventory-allocation.md`. The whole
-  batch needs a sequence type, which the language does not have yet.
+- `allocate.firth` is one step of `specs/inventory-allocation.md`; the whole
+  batch over sequences is the next milestone.
 - The trace comparison reports `unsupported-quotation-values` for these
   programs, because `if` puts quotations on the stack. Final stacks, costs and
   trace lengths are still compared.

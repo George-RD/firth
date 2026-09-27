@@ -42,7 +42,7 @@ open Lean
 open Firth.Compiler
 
 /-- The language `Gamma` version this adapter speaks. -/
-def gammaVersion : String := "0.2"
+def gammaVersion : String := "0.3"
 
 /-- The target contract version this adapter compiles to. -/
 def targetVersion : String := "0.1"

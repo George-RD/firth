@@ -35,6 +35,70 @@ fn eq_nat(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     context.push_bool(left == right)
 }
 
+/// The element at `index` of a sequence whose elements are `width` bytes
+/// wide. An index past the end is a primitive fault, never a default.
+fn element(bytes: &[u8], index: i64, width: usize) -> Result<&[u8], VmError> {
+    let index = usize::try_from(index).map_err(|_| VmError::PrimitiveFault)?;
+    let start = index.checked_mul(width).ok_or(VmError::PrimitiveFault)?;
+    let end = start.checked_add(width).ok_or(VmError::PrimitiveFault)?;
+    bytes
+        .get(start..end)
+        .ok_or(VmError::PrimitiveFault)
+}
+
+fn nat_seq_empty(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    context.push_primitive(SEQ_INT_TAG, Vec::new())
+}
+
+fn nat_seq_len(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let bytes = context.pop_primitive(SEQ_INT_TAG)?;
+    context.push_int(i64::try_from(bytes.len() / 8).map_err(|_| VmError::PrimitiveFault)?)
+}
+
+fn nat_seq_at(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let index = context.pop_int()?;
+    let bytes = context.pop_primitive(SEQ_INT_TAG)?;
+    let mut word = [0u8; 8];
+    word.copy_from_slice(element(&bytes, index, 8)?);
+    context.push_int(i64::from_le_bytes(word))
+}
+
+fn nat_seq_push(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let value = context.pop_int()?;
+    // Elements are naturals, like every kernel integer.
+    if value < 0 {
+        return Err(VmError::PrimitiveFault);
+    }
+    let mut bytes = context.pop_primitive(SEQ_INT_TAG)?;
+    reserve(&mut bytes, 8)?;
+    bytes.extend_from_slice(&value.to_le_bytes());
+    context.push_primitive(SEQ_INT_TAG, bytes)
+}
+
+fn bool_seq_empty(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    context.push_primitive(SEQ_BOOL_TAG, Vec::new())
+}
+
+fn bool_seq_len(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let bytes = context.pop_primitive(SEQ_BOOL_TAG)?;
+    context.push_int(i64::try_from(bytes.len()).map_err(|_| VmError::PrimitiveFault)?)
+}
+
+fn bool_seq_at(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let index = context.pop_int()?;
+    let bytes = context.pop_primitive(SEQ_BOOL_TAG)?;
+    let byte = element(&bytes, index, 1)?[0];
+    context.push_bool(byte == 1)
+}
+
+fn bool_seq_push(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let value = context.pop_bool()?;
+    let mut bytes = context.pop_primitive(SEQ_BOOL_TAG)?;
+    reserve(&mut bytes, 1)?;
+    bytes.push(u8::from(value));
+    context.push_primitive(SEQ_BOOL_TAG, bytes)
+}
+
 fn make_world(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     context.make_world()?;
     reserve(&mut context.world.observation, 1)?;
@@ -90,6 +154,78 @@ pub fn default_registry() -> PrimitiveRegistry {
                 name: "eqNat",
                 cost: 1,
                 handler: eq_nat,
+                input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "natSeqEmpty",
+                cost: 1,
+                handler: nat_seq_empty,
+                input: &[],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[(SEQ_INT_TAG, Usage::Many)],
+            },
+            PrimitiveDefinition {
+                name: "natSeqLen",
+                cost: 1,
+                handler: nat_seq_len,
+                input: &[Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "natSeqAt",
+                cost: 1,
+                handler: nat_seq_at,
+                input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "natSeqPush",
+                cost: 1,
+                handler: nat_seq_push,
+                input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "boolSeqEmpty",
+                cost: 1,
+                handler: bool_seq_empty,
+                input: &[],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[(SEQ_BOOL_TAG, Usage::Many)],
+            },
+            PrimitiveDefinition {
+                name: "boolSeqLen",
+                cost: 1,
+                handler: bool_seq_len,
+                input: &[Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "boolSeqAt",
+                cost: 1,
+                handler: bool_seq_at,
+                input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "boolSeqPush",
+                cost: 1,
+                handler: bool_seq_push,
                 input: &[Usage::Many, Usage::Many],
                 output: &[Usage::Many],
                 world: false,

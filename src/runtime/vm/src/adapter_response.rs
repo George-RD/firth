@@ -2,7 +2,45 @@
 // values, traces, frames and the verification label, rendered from the
 // execution report. Request decoding lives in `adapter.rs`.
 
+/// A sequence as the portable literal both hosts report: `seq-int` elements
+/// are integers, `seq-bool` elements booleans.
+fn sequence_json(tag: u64, bytes: &[u8]) -> Option<Json> {
+    let (kind, items) = match tag {
+        SEQ_INT_TAG if bytes.len().is_multiple_of(8) => (
+            "seq-int",
+            bytes
+                .chunks_exact(8)
+                .map(|chunk| {
+                    let mut word = [0u8; 8];
+                    word.copy_from_slice(chunk);
+                    Json::Int(i64::from_le_bytes(word))
+                })
+                .collect(),
+        ),
+        SEQ_BOOL_TAG => (
+            "seq-bool",
+            bytes.iter().map(|byte| Json::Bool(*byte == 1)).collect(),
+        ),
+        _ => return None,
+    };
+    Some(Json::Object(vec![
+        (String::from("kind"), Json::Str(String::from("literal"))),
+        (
+            String::from("literal"),
+            Json::Object(vec![
+                (String::from("type"), Json::Str(String::from(kind))),
+                (String::from("value"), Json::Array(items)),
+            ]),
+        ),
+    ]))
+}
+
 fn value_json(value: &Value, registry: &PrimitiveRegistry) -> Json {
+    if let Value::PrimitiveValue { tag, bytes } = value
+        && let Some(sequence) = sequence_json(*tag, bytes)
+    {
+        return sequence;
+    }
     match value {
         Value::Int(number) => Json::Object(vec![
             (String::from("kind"), Json::Str(String::from("literal"))),

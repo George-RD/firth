@@ -140,6 +140,19 @@ def canonicalRowName (index : Nat) : String :=
 rejected as an invalid word type. -/
 def maxQuotationNesting : Nat := 32
 
+/-- The target spelling of a checked base type name. The two sequence types
+are written `Seq Int` and `Seq Bool` in source and `SeqInt` and `SeqBool` in
+the target, whose type names are identifiers. A source type written `SeqInt`
+or `SeqBool` is refused (`isReservedTargetTypeName`), so the mapping stays
+injective and two different source types never render the same. -/
+def targetTypeName : String → String
+  | "Seq Int" => "SeqInt"
+  | "Seq Bool" => "SeqBool"
+  | name => name
+
+def isReservedTargetTypeName (source : String) : Bool :=
+  source == "SeqInt" || source == "SeqBool"
+
 private def renderUsage : Usage → String
   | .many => "^many"
   | .linear => "^linear"
@@ -148,8 +161,11 @@ mutual
 
 private partial def renderValueType (rows : List (String × String)) (depth : Nat) :
     ValueType → Except String String
-  | .base name usage =>
-      if isCanonicalIdentifier name then .ok (name ++ renderUsage usage)
+  | .base source usage =>
+      let name := targetTypeName source
+      if isReservedTargetTypeName source then
+        .error s!"type name {source} is reserved for the target spelling of a sequence type"
+      else if isCanonicalIdentifier name then .ok (name ++ renderUsage usage)
       else .error s!"type name is not a canonical target identifier: {name}"
   | .quotation input output usage => do
       if depth ≥ maxQuotationNesting then

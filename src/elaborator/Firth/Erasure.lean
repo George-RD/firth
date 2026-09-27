@@ -289,6 +289,9 @@ private def focusAtoms (id : Nat) (span : Span) (stack : List StackEntry) :
 private def literalAtom : Firth.Elaborator.Literal → Option Firth.Interpreter.Literal
   | .integer value => if value < 0 then none else some (.nat value.toNat)
   | .boolean value => some (.bool value)
+  | .integers values =>
+      if values.all (· ≥ 0) then some (.natSeq (values.map Int.toNat)) else none
+  | .booleans values => some (.boolSeq values)
   | _ => none
 
 private def applySignature (name : String) (span : Span) (signature : Signature) (state : State) : Except ErasureError State :=

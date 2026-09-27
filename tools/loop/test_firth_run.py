@@ -155,12 +155,20 @@ class SavedCaseTests(unittest.TestCase):
             stream.write(b" ")
         self.refuse_before_build("exceeds")
 
-    def test_only_exact_portable_scalars_are_allowed_in_both_stacks(self) -> None:
+    def test_only_exact_portable_values_are_allowed_in_both_stacks(self) -> None:
         for field in ("stack", "expected_stack"):
-            for value in (-1, 2**63, 1.0, 0.0, "1", None, [], {}):
+            for value in (-1, 2**63, 1.0, 0.0, "1", None, {}, [-1], [2**63], [1.0],
+                          [1, True], [[1]], ["1"]):
                 with self.subTest(field=field, value=value):
                     self.write({**self.suite, "cases": [{**self.case, field: [value]}]})
                     self.refuse_before_build(field)
+
+    def test_sequences_are_arrays_of_one_element_type(self) -> None:
+        for field in ("stack", "expected_stack"):
+            for value in ([], [0, 2**63 - 1], [True, False]):
+                with self.subTest(field=field, value=value):
+                    self.write({**self.suite, "cases": [{**self.case, field: [value]}]})
+                    runner.load_suite(self.path)
 
     def test_both_stacks_must_be_arrays(self) -> None:
         for field in ("stack", "expected_stack"):

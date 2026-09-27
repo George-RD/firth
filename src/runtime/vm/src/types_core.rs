@@ -1,5 +1,25 @@
 pub const FORMAT_VERSION: u16 = 1;
-pub const GAMMA_VERSION: u64 = 2;
+pub const GAMMA_VERSION: u64 = 3;
+/// The registry tag of a `Seq Int` value: each element as eight little-endian
+/// bytes of a two's-complement 64-bit integer.
+pub const SEQ_INT_TAG: u64 = 2;
+/// The registry tag of a `Seq Bool` value: one byte, 0 or 1, per element.
+pub const SEQ_BOOL_TAG: u64 = 3;
+
+/// Whether `bytes` is the canonical encoding of a registry value with `tag`.
+/// Values with other known tags carry no byte-level invariant here.
+pub fn canonical_primitive_bytes(tag: u64, bytes: &[u8]) -> bool {
+    match tag {
+        // Each element is a non-negative little-endian i64: the kernel's
+        // sequence elements are naturals.
+        SEQ_INT_TAG => {
+            bytes.len().is_multiple_of(8)
+                && bytes.chunks_exact(8).all(|word| word[7] & 0x80 == 0)
+        }
+        SEQ_BOOL_TAG => bytes.iter().all(|byte| *byte <= 1),
+        _ => true,
+    }
+}
 
 /// The ownership class assigned by the kernel type system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -402,6 +422,30 @@ impl PrimitiveContext<'_> {
         Ok(())
     }
 
+    pub fn pop_bool(&mut self) -> Result<bool, VmError> {
+        match self.stack.pop().ok_or(VmError::StackFault)? {
+            Slot::Value(Value::Bool(value)) => Ok(value),
+            Slot::Value(_) => Err(VmError::TypeFault),
+            Slot::WorldMarker => Err(VmError::ResourceFault),
+        }
+    }
+
+    /// Pops a registry value with `tag`, returning its canonical bytes.
+    pub fn pop_primitive(&mut self, tag: u64) -> Result<Vec<u8>, VmError> {
+        match self.stack.pop().ok_or(VmError::StackFault)? {
+            Slot::Value(Value::PrimitiveValue { tag: found, bytes }) if found == tag => Ok(bytes),
+            Slot::Value(_) => Err(VmError::TypeFault),
+            Slot::WorldMarker => Err(VmError::ResourceFault),
+        }
+    }
+
+    pub fn push_primitive(&mut self, tag: u64, bytes: Vec<u8>) -> Result<(), VmError> {
+        reserve(self.stack, 1)?;
+        self.stack
+            .push(Slot::Value(Value::PrimitiveValue { tag, bytes }));
+        Ok(())
+    }
+
     pub fn make_world(&mut self) -> Result<(), VmError> {
         if self.world.active {
             return Err(VmError::WorldFault);
@@ -434,6 +478,10 @@ pub type PrimitiveHandler = for<'a> fn(&mut PrimitiveContext<'a>) -> Result<(), 
 pub enum PrimitiveType {
     Int,
     Bool,
+    /// `PrimitiveValue` with `SEQ_INT_TAG`.
+    IntSeq,
+    /// `PrimitiveValue` with `SEQ_BOOL_TAG`.
+    BoolSeq,
     Bytes,
     Quotation,
     World,
@@ -467,6 +515,38 @@ impl PrimitiveDefinition {
             "ltNat" | "eqNat" => PrimitiveSignature {
                 input: &[PrimitiveType::Int, PrimitiveType::Int],
                 output: &[PrimitiveType::Bool],
+            },
+            "natSeqEmpty" => PrimitiveSignature {
+                input: &[],
+                output: &[PrimitiveType::IntSeq],
+            },
+            "natSeqLen" => PrimitiveSignature {
+                input: &[PrimitiveType::IntSeq],
+                output: &[PrimitiveType::Int],
+            },
+            "natSeqAt" => PrimitiveSignature {
+                input: &[PrimitiveType::IntSeq, PrimitiveType::Int],
+                output: &[PrimitiveType::Int],
+            },
+            "natSeqPush" => PrimitiveSignature {
+                input: &[PrimitiveType::IntSeq, PrimitiveType::Int],
+                output: &[PrimitiveType::IntSeq],
+            },
+            "boolSeqEmpty" => PrimitiveSignature {
+                input: &[],
+                output: &[PrimitiveType::BoolSeq],
+            },
+            "boolSeqLen" => PrimitiveSignature {
+                input: &[PrimitiveType::BoolSeq],
+                output: &[PrimitiveType::Int],
+            },
+            "boolSeqAt" => PrimitiveSignature {
+                input: &[PrimitiveType::BoolSeq, PrimitiveType::Int],
+                output: &[PrimitiveType::Bool],
+            },
+            "boolSeqPush" => PrimitiveSignature {
+                input: &[PrimitiveType::BoolSeq, PrimitiveType::Bool],
+                output: &[PrimitiveType::BoolSeq],
             },
             "makeWorld" => PrimitiveSignature {
                 input: &[],

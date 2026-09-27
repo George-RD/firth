@@ -31,6 +31,44 @@ fn adapter_reference_value(value: &Json, context: &str) -> Result<Value, Adapter
                         _ => Err(AdapterError::field("invalid-request", context, "expected boolean")),
                     }
                 }
+                "seq-int" => {
+                    object(literal, context, &["type", "value"])?;
+                    let Json::Array(items) = member(literal, context, "value")? else {
+                        return Err(AdapterError::field("invalid-request", context, "expected array"));
+                    };
+                    let mut bytes = Vec::new();
+                    for item in items {
+                        let number = i64::try_from(unsigned(item, context)?).map_err(|_| {
+                            AdapterError::field(
+                                "invalid-request",
+                                context,
+                                "sequence element exceeds the target integer",
+                            )
+                        })?;
+                        bytes.extend_from_slice(&number.to_le_bytes());
+                    }
+                    Ok(Value::PrimitiveValue { tag: SEQ_INT_TAG, bytes })
+                }
+                "seq-bool" => {
+                    object(literal, context, &["type", "value"])?;
+                    let Json::Array(items) = member(literal, context, "value")? else {
+                        return Err(AdapterError::field("invalid-request", context, "expected array"));
+                    };
+                    let mut bytes = Vec::new();
+                    for item in items {
+                        match item {
+                            Json::Bool(flag) => bytes.push(u8::from(*flag)),
+                            _ => {
+                                return Err(AdapterError::field(
+                                    "invalid-request",
+                                    context,
+                                    "expected boolean",
+                                ));
+                            }
+                        }
+                    }
+                    Ok(Value::PrimitiveValue { tag: SEQ_BOOL_TAG, bytes })
+                }
                 "unit" => Err(AdapterError::field(
                     "unsupported-value",
                     context,

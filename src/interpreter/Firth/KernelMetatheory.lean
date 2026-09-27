@@ -414,6 +414,8 @@ theorem preservation (gamma : Gamma) (dictionary : Dictionary) (costs : CostTabl
                   cases literal with
                   | nat value => simp [step] at successor
                   | unit => simp [step] at successor
+                  | natSeq values => simp [step] at successor
+                  | boolSeq values => simp [step] at successor
                   | bool condition =>
                     rcases valueTyping_quotation_unpack falseTyping with
                       ⟨falseBody, rfl, falseUsageEq, falseBodyTyping⟩

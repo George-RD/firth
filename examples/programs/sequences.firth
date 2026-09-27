@@ -1,0 +1,60 @@
+\ Sequences: `Seq Int` and `Seq Bool` values, `{ ... }` literals and the
+\ `seq-int.*` / `seq-bool.*` primitives. A sequence is an ordinary value: it
+\ can be used any number of times, and `push` returns a new sequence.
+
+: sum-from
+  (forall ρ; ρ xs:Seq Int^many acc:Int^many i:Int^many -- ρ r:Int^many)
+  locals { xs acc i }
+  { i xs prim seq-int.len prim <
+    [ xs acc xs i prim seq-int.at prim + i 1 prim + sum-from ]
+    [ acc ] if };
+
+: sum
+  (forall ρ; ρ xs:Seq Int^many -- ρ r:Int^many)
+  0 0 sum-from;
+
+\ The numbers 0 .. n-1, built one `push` at a time.
+: range-from
+  (forall ρ; ρ xs:Seq Int^many i:Int^many n:Int^many -- ρ r:Seq Int^many)
+  locals { xs i n }
+  { i n prim <
+    [ xs i prim seq-int.push i 1 prim + n range-from ]
+    [ xs ] if };
+
+: range
+  (forall ρ; ρ n:Int^many -- ρ r:Seq Int^many)
+  locals { n } { prim seq-int.empty 0 n range-from };
+
+\ How many flags are set.
+: count-from
+  (forall ρ; ρ flags:Seq Bool^many acc:Int^many i:Int^many -- ρ r:Int^many)
+  locals { flags acc i }
+  { i flags prim seq-bool.len prim <
+    [ flags
+      flags i prim seq-bool.at [ acc 1 prim + ] [ acc ] if
+      i 1 prim + count-from ]
+    [ acc ] if };
+
+: count
+  (forall ρ; ρ flags:Seq Bool^many -- ρ r:Int^many)
+  0 0 count-from;
+
+\ Literals: the sum of a fixed table and the flags set in a fixed mask.
+: literal-sum
+  (forall ρ; ρ -- ρ r:Int^many)
+  { 10 20 30 } sum;
+
+: literal-mask
+  (forall ρ; ρ -- ρ r:Seq Bool^many)
+  { true false true } true prim seq-bool.push;
+
+\ The third element. A shorter sequence traps with `primitive-fault` on both
+\ hosts; `at` never returns a default value.
+: third
+  (forall ρ; ρ xs:Seq Int^many -- ρ r:Int^many)
+  2 prim seq-int.at;
+
+\ Any index at or past the length traps, however large.
+: element
+  (forall ρ; ρ xs:Seq Int^many i:Int^many -- ρ r:Int^many)
+  prim seq-int.at;

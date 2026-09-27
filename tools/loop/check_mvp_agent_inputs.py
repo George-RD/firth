@@ -167,11 +167,11 @@ def main() -> int:
         gamma = data.get("gamma")
         if not isinstance(gamma, dict):
             fail("gamma: expected a table")
-        if gamma.get("version") != "0.2" or gamma.get("portable") is not True:
-            fail("gamma: expected portable version 0.2")
-        if gamma.get("primitives") != ["+", "-", "*", "<", "=", "send"]:
+        if gamma.get("version") != "0.3" or gamma.get("portable") is not True:
+            fail("gamma: expected portable version 0.3")
+        if gamma.get("primitives") != ["+", "-", "*", "<", "=", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"]:
             fail("gamma.primitives: unexpected profile")
-        if gamma.get("values") != ["Int", "Bool", "Handle", "Bytes", "World"]:
+        if gamma.get("values") != ["Int", "Bool", "Seq Int", "Seq Bool", "Handle", "Bytes", "World"]:
             fail("gamma.values: unexpected profile")
         if gamma.get("predicates") != ["positive", "nonzero", "is-open"]:
             fail("gamma.predicates: unexpected profile")
@@ -199,6 +199,46 @@ def main() -> int:
             "=": {
                 "effect": "Int^many Int^many -- Bool^many",
                 "transition": "deterministic-integer-equality",
+                "observation": "pure",
+            },
+            "seq-int.empty": {
+                "effect": "-- Seq Int^many",
+                "transition": "deterministic-empty-sequence",
+                "observation": "pure",
+            },
+            "seq-int.len": {
+                "effect": "Seq Int^many -- Int^many",
+                "transition": "deterministic-sequence-length",
+                "observation": "pure",
+            },
+            "seq-int.at": {
+                "effect": "Seq Int^many Int^many -- Int^many",
+                "transition": "deterministic-sequence-index-faulting-out-of-range",
+                "observation": "pure",
+            },
+            "seq-int.push": {
+                "effect": "Seq Int^many Int^many -- Seq Int^many",
+                "transition": "deterministic-sequence-append",
+                "observation": "pure",
+            },
+            "seq-bool.empty": {
+                "effect": "-- Seq Bool^many",
+                "transition": "deterministic-empty-sequence",
+                "observation": "pure",
+            },
+            "seq-bool.len": {
+                "effect": "Seq Bool^many -- Int^many",
+                "transition": "deterministic-sequence-length",
+                "observation": "pure",
+            },
+            "seq-bool.at": {
+                "effect": "Seq Bool^many Int^many -- Bool^many",
+                "transition": "deterministic-sequence-index-faulting-out-of-range",
+                "observation": "pure",
+            },
+            "seq-bool.push": {
+                "effect": "Seq Bool^many Bool^many -- Seq Bool^many",
+                "transition": "deterministic-sequence-append",
                 "observation": "pure",
             },
             "send": {

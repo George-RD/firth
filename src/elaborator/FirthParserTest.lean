@@ -193,6 +193,22 @@ def runParserTests : IO Unit := do
   match parse workedChoose with
   | .success { declarations := [.word { body := [.quotation [.literal { value := .integer 1, .. } _, .primitive "+" _] _, .quotation [] _, .atom "if" _], .. }], .. } => pure ()
   | _ => fail "choose-inc worked example AST shape"
+  match parse ": xs ( -- ) { 1 2 3 } { true false } ;" with
+  | .success { declarations := [.word { body := [.literal { value := .integers [1, 2, 3], .. } _,
+      .literal { value := .booleans [true, false], .. } _], .. }], .. } => pure ()
+  | _ => fail "sequence literal AST shape"
+  match parse ": xs ( -- ) [ { 4 } ] ;" with
+  | .success { declarations := [.word { body := [.quotation [.literal { value := .integers [4], .. } _] _], .. }], .. } => pure ()
+  | _ => fail "sequence literal inside a quotation"
+  -- `Int` followed by `:` labels the next stack item; it is not an element type.
+  match parse ": xs ( x:Seq Int:Bool -- x:Seq Int:Bool ) ;" with
+  | .success { declarations := [.word { effect := { input := [.value "x" { name := "Seq", .. } _, .value "Int" { name := "Bool", .. } _], .. }, .. }], .. } => pure ()
+  | _ => fail "Seq followed by a labelled item"
+  expectFailure ": xs ( -- ) { } ;" "firth.syntax.empty-sequence"
+  expectFailure ": xs ( -- ) { 1 true } ;" "firth.syntax.mixed-sequence"
+  expectFailure ": xs ( -- ) { 1 dup } ;" "firth.syntax.invalid-sequence-element"
+  expectFailure ": xs ( -- ) { { 1 } } ;" "firth.syntax.invalid-sequence-element"
+  expectFailure ": xs ( -- ) { 1 2 " "firth.syntax.unexpected-eof"
   match parse workedLocals with
   | .success { declarations := [.word { body := [.locals [{ name := "a", span := _ }, { name := "b", span := _ }] [.word "a" _, .word "b" _, .primitive "+" _] _], .. }], .. } => pure ()
   | _ => fail "add-top-two worked example AST shape"
