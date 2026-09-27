@@ -76,8 +76,7 @@ private def expectErrorAt (word : WordDefinition) (expected : ErasureError → B
           | .duplicateLocal _ actual | .unboundLocal _ actual | .unsupportedCapture _ actual
           | .missingStackValue actual | .linearCopy _ actual | .linearUnused _ actual
           | .unresolvedEffect _ actual | .effectUnderflow _ actual | .unsupportedLiteral actual
-          | .unsupportedAtom _ actual | .usageMismatch _ actual
-          | .untrackedStack _ actual => actual
+          | .unsupportedAtom _ actual | .usageMismatch _ actual => actual
         if actual == span then pure () else fail s!"span mismatch for {repr error}: {repr actual} != {repr span}"
       else fail s!"wrong error: {repr error}"
   | .ok _ => fail "expected erasure failure"
@@ -99,19 +98,9 @@ def main : IO Unit := do
   | .ok _ => fail "focus fixture emitted no kernel"
   | .error error => fail s!"focus provenance failed: {repr error}"
 
-  -- A use copies the local only while later uses remain, one copy at a time;
-  -- the last use moves the local itself.
+  -- Every demand selects the most recently produced remaining identity.
   let repeated ← parsed ": repeated ( a:Int^many -- ) locals { a } { a a a } ;"
-  expectShapes repeated ["dup", "[dup]", "dip", "swap", "[swap]", "dip", "swap"]
-
-  -- A later use of a local that is not on top copies it where it sits, so the
-  -- value selected before it keeps its place: a b + b + is a + b + b.
-  let reuse ← parsed ": reuse ( a:Int^many b:Int^many -- r:Int^many ) locals { a b } { a b prim + b prim + } ;"
-  expectShapes reuse ["swap", "[dup]", "dip", "swap", "prim:+", "swap", "prim:+"]
-
-  -- A quotation may use a local: the value is quoted and composed in.
-  let captured ← parsed ": captured ( a:Int^many -- q:Quote^many ) locals { a } { [ a 1 prim + ] } ;"
-  expectShapes captured ["[]", "swap", "quote", "compose", "[lit,prim:+]", "compose"]
+  expectShapes repeated ["dup", "dup", "swap", "[swap]", "dip", "swap"]
 
   let quoted ← parsed ": quoted ( a:Int^many -- q:Quote^many ) locals { a } { [ 1 ] } ;"
   expectShapes quoted ["[lit]", "swap", "drop"]
@@ -176,23 +165,15 @@ def main : IO Unit := do
   expectKernelAtoms deepFocus
     [.quotation (atomProgram [.swap]), .dip, .swap, .swap, .drop, .swap, .drop]
   expectKernelAtoms repeated
-    [.dup, .quotation (atomProgram [.dup]), .dip, .swap,
-      .quotation (atomProgram [.swap]), .dip, .swap]
+    [.dup, .dup, .swap, .quotation (atomProgram [.swap]), .dip, .swap]
   expectKernelAtoms shadow [.drop]
   expectKernelAtoms inferred
     [.quotation (atomProgram [.lit (.nat 1), .lit (.nat 2), .prim "+"])]
 
-  -- Nested quotations may use a local: it is lifted out innermost first.
-  let nested ← parsed ": nested ( a:Int^many -- q:Quote^many ) locals { a } { [ [ a ] ] } ;"
-  match erase arithmetic nested.effect nested.body with
-  | .ok _ => pure ()
-  | .error error => fail s!"nested capture failed: {repr error}"
-
-  -- A locals block inside a quotation is not lifted, so a use of an outer
-  -- local there is still refused, and the diagnostic keeps the use span.
-  let capture ← parsed ": capture ( a:Int^many -- ) locals { a } { [ 1 locals { b } { a b prim + } ] } ;"
+  -- Capture is checked recursively and the diagnostic retains the child use span.
+  let capture ← parsed ": capture ( a:Int^many -- ) locals { a } { [ [ a ] ] } ;"
   let captureSpan := match capture.body with
-    | [.locals _ [.quotation [_, .locals _ [.word _ span, _, _] _] _] _] => span
+    | [.locals _ [.quotation [.quotation [.word _ span] _] _] _] => span
     | _ => panic! "capture fixture changed"
   expectErrorAt capture (fun error => match error with
     | .unsupportedCapture name _ => name == "a"

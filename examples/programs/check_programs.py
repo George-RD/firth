@@ -5,8 +5,7 @@ Each case is checked, compiled and executed through the same portable
 toolchain as `tools/loop/firth_run.py run`; the gate there compares the two
 hosts' results, costs and traces. This script only adds the expected final
 stack, so a program that both hosts agree on but that computes the wrong
-answer still fails. A case with `expect_error` must be refused with that
-diagnostic code, so a program that must not compile can't start running.
+answer still fails.
 """
 from __future__ import annotations
 
@@ -35,17 +34,9 @@ def main() -> int:
                     Path(directory), stack=case["stack"],
                 )
             except gate.GateError as error:
-                expected_error = case.get("expect_error")
-                if expected_error and f"'code': '{expected_error}'" in str(error):
-                    print(f"ok   {label} -> refused with {expected_error}")
-                else:
-                    print(f"FAIL {label}: {str(error)[:300]}")
-                    failures += 1
+                print(f"FAIL {label}: {str(error)[:300]}")
+                failures += 1
                 continue
-        if "expect_error" in case:
-            print(f"FAIL {label}: expected {case['expect_error']}, but it ran")
-            failures += 1
-            continue
         stack = [value["literal"]["value"] for value in observation["stack"]]
         if stack != case["expect"]:
             print(f"FAIL {label}: expected {case['expect']}, both hosts gave {stack}")

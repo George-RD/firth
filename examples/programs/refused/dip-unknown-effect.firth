@@ -1,4 +1,0 @@
-\ `[ call ] dip` runs a quotation of unknown effect under the top value.
-: dip-unknown-effect
-  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
-  locals { a b } { a [ 10 prim + ] dup [ call ] dip call b prim - };

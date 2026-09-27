@@ -34,19 +34,9 @@ A recursive call followed by more work still nests and traps past 256 frames.
 
 ## Locals
 
-`locals { a b } { ... }` names the top values. Inside the block a name can be
-used any number of times, inside `if` branches, and inside quotations (the
-value is captured when the quotation is built). `locals.firth` has factorial,
-Fibonacci and an allocation step written this way. A `locals` block nested
-inside a quotation still cannot use the outer block's names.
-
-A local can't be used after `call`, `dip` or `if` runs a quotation whose stack
-effect isn't known at that point: a quotation passed in as a value, one
-returned by another quotation, or `[ call ]` itself. The checker can't tell
-where the local sits afterwards, so it refuses the program with
-`firth.elaboration.untracked-local` rather than guess. Quotations written
-inline, like `[ 1 prim + ] call` or `[ 1 prim + ] [ ] compose call`, are fine
-(`quotations.firth`). The programs under `refused/` must be rejected this way.
+These programs keep their values on the stack with `dup`, `swap`, `over` and
+`dip`. `locals` blocks behave as on main; using a local more than once, inside
+an `if` branch or inside a quotation is being reworked in a separate change.
 
 ## Limits
 

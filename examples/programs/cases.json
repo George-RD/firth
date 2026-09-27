@@ -1,5 +1,5 @@
 {
-  "comment": "Each case runs on the VM and the reference interpreter; both must finish with `expect` (bottom to top). A case with `expect_error` must instead be refused with that diagnostic code.",
+  "comment": "Each case runs on the VM and the reference interpreter; both must finish with `expect` (bottom to top).",
   "cases": [
     {"source": "factorial.firth", "entry": "fact", "stack": [0], "expect": [1]},
     {"source": "factorial.firth", "entry": "fact", "stack": [5], "expect": [120]},
@@ -15,21 +15,6 @@
     {"source": "allocate.firth", "entry": "allocate", "stack": [0, 2, false], "expect": [0, 0, 2]},
     {"source": "allocate.firth", "entry": "allocate", "stack": [5, 7, true], "expect": [5, 0, 3]},
     {"source": "allocate.firth", "entry": "allocate", "stack": [5, 3, true], "expect": [2, 3, 0]},
-    {"source": "allocate.firth", "entry": "allocate", "stack": [0, 3, true], "expect": [0, 0, 2]},
-    {"source": "locals.firth", "entry": "fact", "stack": [0], "expect": [1]},
-    {"source": "locals.firth", "entry": "fact", "stack": [10], "expect": [3628800]},
-    {"source": "locals.firth", "entry": "fib", "stack": [0], "expect": [0]},
-    {"source": "locals.firth", "entry": "fib", "stack": [20], "expect": [6765]},
-    {"source": "locals.firth", "entry": "allocate-partial", "stack": [10, 2], "expect": [8, 2]},
-    {"source": "locals.firth", "entry": "allocate-partial", "stack": [5, 7], "expect": [0, 5]},
-    {"source": "locals.firth", "entry": "sort3", "stack": [1, 2, 3], "expect": [1, 2, 3]},
-    {"source": "locals.firth", "entry": "sort3", "stack": [3, 2, 1], "expect": [1, 2, 3]},
-    {"source": "locals.firth", "entry": "sort3", "stack": [2, 3, 1], "expect": [1, 2, 3]},
-    {"source": "locals.firth", "entry": "sort3", "stack": [3, 1, 2], "expect": [1, 2, 3]},
-    {"source": "quotations.firth", "entry": "call-then-local", "stack": [100, 5, 3], "expect": [100, 3]},
-    {"source": "quotations.firth", "entry": "compose-then-local", "stack": [100, 5, 3], "expect": [100, 3]},
-    {"source": "refused/call-unknown-effect.firth", "entry": "call-unknown-effect", "stack": [100, 5, 3], "expect_error": "firth.elaboration.untracked-local"},
-    {"source": "refused/dip-unknown-effect.firth", "entry": "dip-unknown-effect", "stack": [5, 3], "expect_error": "firth.elaboration.untracked-local"},
-    {"source": "refused/nested-quotation-result.firth", "entry": "nested-quotation-result", "stack": [5, 3], "expect_error": "firth.elaboration.untracked-local"}
+    {"source": "allocate.firth", "entry": "allocate", "stack": [0, 3, true], "expect": [0, 0, 2]}
   ]
 }

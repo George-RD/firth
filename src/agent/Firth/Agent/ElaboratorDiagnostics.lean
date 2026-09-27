@@ -133,8 +133,6 @@ private def erasureDiagnostic : Firth.Elaborator.ErasureError → ErasureDiagnos
       { code := "firth.elaboration.unsupported-literal", cause := "elaboration", params := .mkObj [], span }
   | .unsupportedAtom name span =>
       { code := "firth.elaboration.unsupported-atom", cause := "elaboration", params := namedParams name, span }
-  | .untrackedStack name span =>
-      { code := "firth.elaboration.untracked-local", cause := "elaboration", params := namedParams name, span }
 
 private def erasureExplanation (code name : String) : String × String :=
   match code with
@@ -145,10 +143,15 @@ private def erasureExplanation (code name : String) : String × String :=
   | "firth.elaboration.unsupported-capture" =>
       (s!"The nested `locals` block uses the outer local `{name}`.", "Pass the value in on the stack instead, or bind it in the inner block.")
   | "firth.type.stack-underflow" =>
-      (s!"A `locals` block needs more values than the stack holds{if name.isEmpty then "" else s!" at `{name}`"}.", "`locals { a b }` takes two values from the top of the stack; make sure they are there.")
-  | "firth.elaboration.untracked-local" =>
-      (s!"The local `{name}` is used after `call`, `dip` or `if` ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.",
-        "Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.")
+      match name with
+      | "" => ("A `locals` block or an operation here needs more values than the stack holds.",
+          "`locals { x y z }` takes one value from the top of the stack for each name. Words can only use their declared inputs, values pushed earlier in the body, and locals.")
+      | "quotation" => ("The checker could not work out how many values a quotation here uses.",
+          "Check that every word inside the quotation has its inputs available. If the program is correct, this is a checker limit: move the quotation's body into a named word.")
+      | "erasure-depth" => ("This definition is nested too deeply for the checker.",
+          "Split the definition into smaller named words.")
+      | _ => (s!"`{name}` needs more values than the stack holds here.",
+          s!"Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `{name}` and in what order.")
   | "firth.name.unresolved-effect" =>
       (s!"`prim {name}` is not a primitive.", "The available primitives are `prim +`, `prim -`, `prim *`, `prim <` and `prim =`.")
   | "firth.linearity.copy" =>

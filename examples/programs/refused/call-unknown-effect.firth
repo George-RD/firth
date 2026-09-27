@@ -1,6 +1,0 @@
-\ `[ call ]` runs whatever quotation it is given, so its effect is unknown
-\ here and `b` cannot be located afterwards. This must be refused, not guessed:
-\ it once ran and returned [3, 0] instead of [100, 3].
-: call-unknown-effect
-  (forall ρ; ρ z:Int^many a:Int^many b:Int^many -- ρ z:Int^many r:Int^many)
-  locals { a b } { a [ 1 prim + ] [ call ] call b prim - };
