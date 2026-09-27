@@ -154,6 +154,7 @@ def exportModule (sourcePath sourceText moduleName : String) : Except String Str
   let mut sections : List String := []
   let mut dictionary : List String := []
   let mut listed : List String := []
+  let mut entries : List String := []
   for word in words do
     let ident ← identifier word.name
     sections := sections ++ [s!"namespace {ident}
@@ -171,6 +172,9 @@ def erasedType : String := {quote word.erasedType}
 end {ident}
 "]
     dictionary := dictionary ++ [s!"  | {quote word.name} => some \{ type := adapterWordType, body := {ident}.body }"]
+    entries := entries ++ [s!"theorem {ident}.entry :
+    dictionary {quote word.name} = some \{ type := adapterWordType, body := {ident}.body } := rfl
+"]
     listed := listed ++ [s!"  ({quote word.name}, {ident}.body, {ident}.bodyDigest)"]
   let namespaceName := s!"Firth.Exports.{moduleName}"
   pure s!"import FirthReferenceRun
@@ -206,6 +210,9 @@ def dictionary : Dictionary
 {"\n".intercalate dictionary}
   | _ => none
 
+/-! Each word's dictionary entry, which a proof unfolding a call to it needs. -/
+
+{"\n".intercalate entries}
 end {namespaceName}
 "
 
