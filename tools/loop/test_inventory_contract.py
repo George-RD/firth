@@ -2,6 +2,7 @@
 """Validate the independent consumer specification, NOT a Firth implementation."""
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import unittest
@@ -15,6 +16,8 @@ ORIGINAL_CASES = {
     "negative-stock", "zero-quantity", "oversized-stock", "boolean-quantity", "float-quantity",
     "unknown-member", "duplicate-id", "range-before-duplicate", "unknown-policy",
 }
+# SHA-256 of those 19 cases, in file order, as canonical JSON (sorted keys, no spaces).
+ORIGINAL_CASES_SHA256 = "25cc791046bca2c04483e323d6333c6459f9904b59055f589cea96745655d6eb"
 
 
 def model(value: Any) -> dict[str, Any]:
@@ -73,8 +76,12 @@ class InventoryContractTests(unittest.TestCase):
 
     def test_original_cases_retained(self) -> None:
         # The 19 cases committed before the contract freeze may not be removed or renamed.
+        # Their inputs and expected outputs are pinned too, not just their names.
         names = {case["name"] for case in self.corpus["cases"]}
         self.assertLessEqual(ORIGINAL_CASES, names)
+        original = [case for case in self.corpus["cases"] if case["name"] in ORIGINAL_CASES]
+        digest = hashlib.sha256(json.dumps(original, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        self.assertEqual(digest, ORIGINAL_CASES_SHA256)
 
     def test_every_error_code_and_reason_is_exercised(self) -> None:
         codes = {case["expected"]["code"] for case in self.corpus["cases"] if case["expected"]["status"] == "error"}
