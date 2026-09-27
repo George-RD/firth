@@ -245,8 +245,8 @@ fn literal_request(fuel: u64) -> String {
          \"code\":[{{\"op\":\"push-literal\",\"literal\":{{\"kind\":\"int\",\"value\":42}}}}],\
          \"body_digest\":\"{digest}\",\"kernel_evidence_digest\":\"{evidence}\",\
          \"refinement_evidence_digest\":\"{evidence}\",\"generation\":0}}]}},\
-         \"initial_stack\":[],\"image\":{{\"image_version\":1,\"gamma_version\":1}},\
-         \"gamma_version\":\"0.1\",\"fuel\":{fuel}}}"
+         \"initial_stack\":[],\"image\":{{\"image_version\":1,\"gamma_version\":2}},\
+         \"gamma_version\":\"0.2\",\"fuel\":{fuel}}}"
     )
 }
 
@@ -318,19 +318,28 @@ fn vm_run_stops_reading_stdin_at_the_input_bound() {
 fn vm_run_reports_call_depth_exceeded_for_a_self_recursive_program() {
     // Before the depth cap this request overflowed the native stack and the
     // process died with SIGABRT instead of answering.
-    let digest = hex(&firth_vm::body_digest(&[firth_vm::Instruction {
-        op: firth_vm::Op::CallWord,
-        operand: Some(firth_vm::Operand::Word("main".to_owned())),
-    }]));
+    // `: main main 42 ;` keeps the recursive call out of tail position; a
+    // call in tail position replaces its frame and would run out of fuel.
+    let digest = hex(&firth_vm::body_digest(&[
+        firth_vm::Instruction {
+            op: firth_vm::Op::CallWord,
+            operand: Some(firth_vm::Operand::Word("main".to_owned())),
+        },
+        firth_vm::Instruction {
+            op: firth_vm::Op::PushLiteral,
+            operand: Some(firth_vm::Operand::Literal(firth_vm::Value::Int(42))),
+        },
+    ]));
     let evidence = hex(&firth_vm::evidence_digest(&[]));
     let request = format!(
         "{{\"request_id\":\"recursion\",\"target_program\":{{\"format_version\":1,\
          \"entry\":\"main\",\"words\":[{{\"name\":\"main\",\"erased_word_type\":\"(--)\",\
-         \"code\":[{{\"op\":\"call-word\",\"name\":\"main\"}}],\
+         \"code\":[{{\"op\":\"call-word\",\"name\":\"main\"}},\
+         {{\"op\":\"push-literal\",\"literal\":{{\"kind\":\"int\",\"value\":42}}}}],\
          \"body_digest\":\"{digest}\",\"kernel_evidence_digest\":\"{evidence}\",\
          \"refinement_evidence_digest\":\"{evidence}\",\"generation\":0}}]}},\
-         \"initial_stack\":[],\"image\":{{\"image_version\":1,\"gamma_version\":1}},\
-         \"gamma_version\":\"0.1\",\"fuel\":4096}}"
+         \"initial_stack\":[],\"image\":{{\"image_version\":1,\"gamma_version\":2}},\
+         \"gamma_version\":\"0.2\",\"fuel\":4096}}"
     );
     let mut child = spawn_vm_run();
     child

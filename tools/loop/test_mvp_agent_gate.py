@@ -15,6 +15,7 @@ import io
 from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
 import json
+import re
 import shutil
 import tempfile
 import unittest
@@ -46,7 +47,11 @@ def contract_tables() -> dict[str, object]:
         "vm_run": ("firth.vm-run.v1", "firth.vm-execution.v1", "firth.observation.v1"),
     }
     return {
-        "gamma": {"version": "0.1", "primitives": ["+", "send"]},
+        "gamma": {
+            "version": "0.2",
+            "primitives": ["+", "-", "*", "<", "=", "send"],
+            "primitive": {name: {"effect": "declared"} for name in ["+", "-", "*", "<", "=", "send"]},
+        },
         "entry_point": {
             name: {"version": "0.1", "adapter": adapter, "transport": "structured-json",
                    "request_schema": request, "response_schema": response}
@@ -287,8 +292,11 @@ class MvpAgentGateTests(unittest.TestCase):
         entry_points = tables["entry_point"]
         cases: list[tuple[str, dict[str, object], str]] = [
             ("language_version", {"language_version": "0.2"}, "language_version"),
-            ("gamma.version", {"gamma": {**tables["gamma"], "version": "0.2"}}, "gamma.version"),
+            ("gamma.version", {"gamma": {**tables["gamma"], "version": "0.1"}}, "gamma.version"),
             ("gamma.primitives", {"gamma": {**tables["gamma"], "primitives": ["send"]}}, "gamma.primitives"),
+            ("gamma.primitives", {"gamma": {**tables["gamma"], "primitives": ["+", "send"]}},
+             "gamma.primitives"),
+            ("gamma.primitive", {"gamma": {**tables["gamma"], "primitive": {}}}, "gamma.primitive"),
             ("comparison drift", {"comparison": {**tables["comparison"], "cost_report": False}},
              "comparison.cost_report"),
             ("comparison unknown key", {"comparison": {**tables["comparison"], "trace_equivalence": True}},
@@ -490,6 +498,9 @@ def render_toml(data: dict[str, object]) -> str:
 
     lines: list[str] = []
 
+    def key_part(key: str) -> str:
+        return key if re.fullmatch(r"[A-Za-z0-9_-]+", key) else json.dumps(key)
+
     def table(prefix: str, values: dict[str, object]) -> None:
         simple = {
             key: value
@@ -502,7 +513,7 @@ def render_toml(data: dict[str, object]) -> str:
             lines.append(f"{key} = {scalar(value)}")
         lines.append("")
         for key, value in values.items():
-            name = f"{prefix}.{key}" if prefix else key
+            name = f"{prefix}.{key_part(key)}" if prefix else key_part(key)
             if isinstance(value, dict):
                 table(name, value)
             elif is_table_array(value):

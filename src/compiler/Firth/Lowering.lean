@@ -136,16 +136,15 @@ def mangle (name : String) : Except String String := Id.run do
 
 /-- The target primitive implementing a language primitive.
 
-The language registry pinned by `tools/loop/mvp_agent_manifest.toml` declares
-`+` and `send`. `+` is the target's `addNat`; `send` is declared but has no
-v0.1 target implementation, so it is refused here rather than lowered to
-something that would run. This registry deliberately matches the reference
-interpreter's adapter registry, so the two hosts accept exactly the same
-programs. -/
+The arithmetic and comparison primitives come from the interpreter's
+`surfacePrimitives` table, the same table the reference-run adapter reads, so
+the two hosts accept exactly the same programs. `send` is declared by the
+language registry but has no target implementation, so it is refused here
+rather than lowered to something that would run. -/
 def targetPrimitive (name : String) : Option (Option String) :=
-  if name == "+" then some (some "addNat")
-  else if name == "send" then some none
-  else none
+  match Firth.Interpreter.kernelPrimitive name with
+  | some kernel => some (some kernel)
+  | none => if name == "send" then some none else none
 
 /-- The lowering environment: the word being lowered, for error attribution,
 and the mangled name of every word the request defines. -/

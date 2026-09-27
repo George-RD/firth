@@ -191,6 +191,92 @@ theorem progress (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
                 refine ⟨{ stack := result, program := rest }, ?_⟩
                 exact ⟨costs.primitive name, by simp [step, h, deltaEq]⟩
 
+
+theorem defaultGamma_nat_literal {dictionary : Dictionary} {value : Value}
+    (h : ValueTyping defaultGamma dictionary value (.base .nat .many)) :
+    ∃ n, value = .literal (.nat n) := by
+  cases h with
+  | literal hlit =>
+    rename_i literal
+    cases literal with
+    | nat n => exact ⟨n, rfl⟩
+    | bool _ => simp [defaultGamma] at hlit
+    | unit => simp [defaultGamma] at hlit
+
+theorem defaultGamma_nat_pair {dictionary : Dictionary} {stack : Stack}
+    (h : StackTyping defaultGamma dictionary stack
+      (.snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many))) :
+    ∃ left right, stack = [.literal (.nat right), .literal (.nat left)] := by
+  cases h with
+  | cons rightType tailType =>
+    cases tailType with
+    | cons leftType emptyType =>
+      cases emptyType
+      obtain ⟨right, rfl⟩ := defaultGamma_nat_literal rightType
+      obtain ⟨left, rfl⟩ := defaultGamma_nat_literal leftType
+      exact ⟨left, right, rfl⟩
+
+private theorem literal_stack {dictionary : Dictionary} (literal : Literal) (base : BaseType)
+    (h : defaultGamma.literalType literal = some base) :
+    StackTyping defaultGamma dictionary [.literal literal] (.snoc (.row "ρ") (.base base .many)) :=
+  .cons (.literal h) .empty
+
+/-- The shipped primitive table satisfies both premises of progress and
+preservation: every primitive is total on, and preserves, its declared stack. -/
+theorem defaultGamma_primitivesWellFormed (dictionary : Dictionary) :
+    PrimitivesWellFormed defaultGamma dictionary := by
+  constructor
+  · intro name specification stack result hname htyped hdelta
+    simp only [defaultGamma] at hname
+    split at hname <;> cases hname
+    · obtain ⟨l, r, rfl⟩ := defaultGamma_nat_pair htyped
+      simp only [addNatDelta, Option.some.injEq] at hdelta; subst hdelta
+      exact literal_stack _ _ rfl
+    · obtain ⟨l, r, rfl⟩ := defaultGamma_nat_pair htyped
+      simp only [subNatDelta, Option.some.injEq] at hdelta; subst hdelta
+      exact literal_stack _ _ rfl
+    · obtain ⟨l, r, rfl⟩ := defaultGamma_nat_pair htyped
+      simp only [mulNatDelta, Option.some.injEq] at hdelta; subst hdelta
+      exact literal_stack _ _ rfl
+    · obtain ⟨l, r, rfl⟩ := defaultGamma_nat_pair htyped
+      simp only [ltNatDelta, Option.some.injEq] at hdelta; subst hdelta
+      exact literal_stack _ _ rfl
+    · obtain ⟨l, r, rfl⟩ := defaultGamma_nat_pair htyped
+      simp only [eqNatDelta, Option.some.injEq] at hdelta; subst hdelta
+      exact literal_stack _ _ rfl
+    · cases htyped
+      simp only [makeWorldDelta, Option.some.injEq] at hdelta; subst hdelta
+      exact .cons .world .empty
+    · cases htyped with
+      | cons worldType emptyType =>
+        cases emptyType
+        cases worldType
+        simp only [consumeWorldDelta, Option.some.injEq] at hdelta; subst hdelta
+        exact .empty
+  · intro name specification stack hname htyped
+    simp only [defaultGamma] at hname
+    split at hname <;> cases hname
+    all_goals first
+      | (obtain ⟨l, r, rfl⟩ := defaultGamma_nat_pair htyped; exact ⟨_, rfl⟩)
+      | exact ⟨_, rfl⟩
+      | (cases htyped with
+         | cons worldType emptyType => cases emptyType; cases worldType; exact ⟨_, rfl⟩)
+
+/-- Type safety for the shipped primitive table: a well-typed configuration
+under a well-typed dictionary either has finished or steps to a configuration
+that is again well typed. No premise about primitives remains. -/
+theorem defaultGamma_typeSafety (dictionary : Dictionary) (costs : CostTable)
+    (dictionaryWellTyped : DictionaryWellTyped defaultGamma dictionary) {config : Config}
+    (configTyping : TypedConfig defaultGamma dictionary config)
+    (nonterminal : config.program ≠ .empty) :
+    ∃ next, HasSuccessor defaultGamma dictionary costs config next ∧
+      TypedConfig defaultGamma dictionary next := by
+  have wellFormed := defaultGamma_primitivesWellFormed dictionary
+  obtain ⟨next, successor⟩ := progress defaultGamma dictionary costs
+    defaultGamma_literalTypingSound dictionaryWellTyped wellFormed configTyping nonterminal
+  exact ⟨next, successor,
+    preservation defaultGamma dictionary costs dictionaryWellTyped wellFormed.1 configTyping successor⟩
+
 /- These guards execute representative well-typed transition shapes while
    compiling the module, keeping progress smoke coverage next to the proof. -/
 def progressSmokeLiteral : Bool :=

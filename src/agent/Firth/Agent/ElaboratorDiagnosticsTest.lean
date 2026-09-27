@@ -54,7 +54,10 @@ private def expectValidCode (name expectedCode source : String) : IO Unit := do
 private def expectedStackState (stack : Firth.Elaborator.StackEffect.AStack) : Lean.Json :=
   .mkObj [
     ("encoding", .str "opaque"),
-    ("value", .mkObj [("lean_repr", .str s!"{repr stack}")])]
+    ("value", .mkObj [
+      ("lean_repr", .str s!"{repr stack}"),
+      ("firth", .str (Firth.Elaborator.StackEffect.renderStack stack))]),
+    ("display_hint", .str "firth")]
 
 private def expectCauseState (name source : String)
     (expected : Firth.Elaborator.StackEffect.AStack) : IO Unit :=
@@ -89,7 +92,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
   let erasureJson := encodeErasureError (context "erasure-1")
     (.linearUnused "handle" (span 3 1 7))
   expectValidCode "erasure adapter" "firth.linearity.unconsumed-resource" erasureJson
-  if erasureJson.contains "\"message_params\":{\"name\":\"handle\"}" then pure ()
+  if erasureJson.contains "\"message_params\":{\"hint\":" && erasureJson.contains "\"name\":\"handle\"" then pure ()
   else fail "erasure adapter omitted the local name"
 
   let warningJson := encodeErasureWarning (context "warning-1") {
@@ -275,6 +278,19 @@ def runElaboratorDiagnosticTests : IO Unit := do
   | .failure [envelope] =>
       expectValidCode "pipeline stack-effect path"
         "firth.type.declared-effect-mismatch" (encode envelope)
+      -- The message names the word and both whole stacks, and the hint says
+      -- how many values are left over, so an author can repair it unaided.
+      let emitted := encode envelope
+      if emitted.contains "declares that it leaves (empty) but its body leaves Int" &&
+          emitted.contains "1 extra value on top (Int)" &&
+          emitted.contains "\"word\":\"bad\"" then pure ()
+      else fail s!"pipeline stack-effect message was not explanatory: {emitted}"
   | _ => fail "pipeline stack-effect result was not singular"
+
+  match elaboratePipeline pipelineContext ": bad ( -- ) missing ;" with
+  | .failure [envelope] =>
+      if (encode envelope).contains "`missing` is not a defined word" then pure ()
+      else fail "pipeline name-resolution message did not name the word"
+  | _ => fail "pipeline name-resolution result was not singular"
 
 end Firth.Agent.Test

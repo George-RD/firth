@@ -1,0 +1,78 @@
+{
+  "model": "jev-1.13.0",
+  "counts": {
+    "missing_primitive": 11,
+    "toolchain": 3,
+    "stack_effect": 1
+  },
+  "tasks": {
+    "and": {
+      "mode": "toolchain",
+      "by": "jev",
+      "confidence": 0.29,
+      "review": true
+    },
+    "xor": {
+      "mode": "toolchain",
+      "by": "jev",
+      "confidence": 0.53,
+      "review": true
+    },
+    "majority": {
+      "mode": "toolchain",
+      "by": "jev",
+      "confidence": 0.52,
+      "review": true
+    },
+    "count-true": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.7,
+      "review": false
+    },
+    "max": {
+      "mode": "missing_primitive",
+      "by": "rule"
+    },
+    "min3": {
+      "mode": "missing_primitive",
+      "by": "rule"
+    },
+    "abs-diff": {
+      "mode": "missing_primitive",
+      "by": "rule"
+    },
+    "clamp": {
+      "mode": "missing_primitive",
+      "by": "rule"
+    },
+    "is-even": {
+      "mode": "missing_primitive",
+      "by": "rule"
+    },
+    "sum-to": {
+      "mode": "missing_primitive",
+      "by": "rule"
+    },
+    "factorial": {
+      "mode": "missing_primitive",
+      "by": "rule"
+    },
+    "fib": {
+      "mode": "missing_primitive",
+      "by": "rule"
+    },
+    "gcd": {
+      "mode": "missing_primitive",
+      "by": "rule"
+    },
+    "power": {
+      "mode": "missing_primitive",
+      "by": "rule"
+    },
+    "collatz-steps": {
+      "mode": "missing_primitive",
+      "by": "rule"
+    }
+  }
+}

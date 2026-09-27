@@ -1,0 +1,76 @@
+{
+  "model": "jev-1.13.0",
+  "counts": {
+    "stack_effect": 7,
+    "logic": 3,
+    "stack_order": 1
+  },
+  "tasks": {
+    "majority": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.64,
+      "review": true
+    },
+    "count-true": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.72,
+      "review": false
+    },
+    "max": {
+      "mode": "logic",
+      "by": "jev",
+      "confidence": 0.49,
+      "review": true
+    },
+    "min3": {
+      "mode": "stack_order",
+      "by": "jev",
+      "confidence": 0.36,
+      "review": true
+    },
+    "abs-diff": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.82,
+      "review": false
+    },
+    "clamp": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.61,
+      "review": true
+    },
+    "is-even": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.94,
+      "review": false
+    },
+    "fib": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.78,
+      "review": false
+    },
+    "gcd": {
+      "mode": "logic",
+      "by": "jev",
+      "confidence": 0.49,
+      "review": true
+    },
+    "power": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.77,
+      "review": false
+    },
+    "collatz-steps": {
+      "mode": "logic",
+      "by": "jev",
+      "confidence": 0.53,
+      "review": true
+    }
+  }
+}

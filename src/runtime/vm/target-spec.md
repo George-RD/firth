@@ -109,6 +109,21 @@ sequence.
 | `w` | `CALL_WORD name(w)` | Resolves and runs the current definition of `w`. |
 | `prim π` | `PRIM id(π)` | Applies deterministic `delta_pi` from `Gamma`, threading hidden `WorldState` linearly. |
 
+The default registry is target Gamma version 2 (adapter `gamma_version` "0.2").
+Version 1 (adapter "0.1") had `addNat` as its only pure primitive; adding one
+bumps both versions, so an image or request tagged with an older registry is
+refused rather than run under a different one. The pure primitives of the
+default registry act on kernel naturals, carried as non-negative target
+integers (a negative operand is a `primitive-fault`):
+
+| Source | Target | Effect |
+| --- | --- | --- |
+| `prim +` | `PRIM addNat` | `Int Int -- Int`; a result past `i64` is a `primitive-fault`. |
+| `prim -` | `PRIM subNat` | `Int Int -- Int`; truncates at zero, as the kernel's `Nat` subtraction does. |
+| `prim *` | `PRIM mulNat` | `Int Int -- Int`; a result past `i64` is a `primitive-fault`. |
+| `prim <` | `PRIM ltNat` | `Int Int -- Bool`. |
+| `prim =` | `PRIM eqNat` | `Int Int -- Bool`. |
+
 The table is total over the frozen atom grammar. A compiler must reject an
 unknown atom, unresolved word, or primitive outside `Gamma` before execution;
 such rejection is distinct from a VM trap. `CALL_WORD` must not inline a word
@@ -153,6 +168,20 @@ kernel rewrite. `DIP` uses `RestoreDip` to retain the protected value or
 position. `CALL_WORD` enters with `Return` to its caller; `CALL` and `IF` use
 `Return`; the entry program uses `Halt`. All continuation tags and transitions
 are fixed by this paragraph.
+
+Tail transfers. A `CALL`, `IF` or `CALL_WORD` that is the last instruction of
+its frame's code does not push a frame: the finished frame is replaced by the
+target, which keeps the finished frame's continuation. `CALL_WORD` is still
+charged its entry; `CALL` and `IF` are charged as usual. A frame whose code
+owns linear captures never gives up its frame this way, and a quotation that
+owns linear captures is never a tail target, so every linear capture is still
+checked when the code that owns it ends. A tail quotation keeps its other
+captures. The kernel rewrite is unchanged (the reference
+interpreter's `S-CALL`, `S-IF` and `S-WORD` concatenate the body onto an empty
+remainder), so costs and stacks agree step for step; only the administrative
+frame stack differs, and it no longer grows with tail recursion. A loop
+written as a tail-recursive word therefore ends on data or on fuel, never on
+the depth bound below.
 
 At terminal state, hidden `WorldMarker` positions are removed from the
 reported stack. Any other linear resource left in the administrative stack is
@@ -214,7 +243,7 @@ Allocation failure while creating a frame, quotation, capture copy, image, or
 trace is also `resource-fault` with subcode `allocation-failure`; the VM must
 leave the prior machine or image state unchanged at the failed allocation.
 Entering an administrative frame beyond the hosted depth bound
-(`MAX_CALL_DEPTH`, 256) is `resource-fault` with subcode
+(`MAX_CALL_DEPTH`, 256; tail transfers enter none) is `resource-fault` with subcode
 `call-depth-exceeded`: the failing instruction is charged and located, the
 entry it never made is not charged, and the residual frames are the callers in
 flight. The reference interpreter has no such bound, so a deeper program is a

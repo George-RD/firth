@@ -1,0 +1,142 @@
+{
+  "firth_commit": "b958353d0123817c260dbe9d991b8011b89292a3",
+  "note": "Stored solutions rescored on PR #113 after the locals rework was split out of it. 'blocked_on_locals' lists tasks that passed at the original scoring commit and are now rejected by the checker with a locals diagnostic. Rescore when the locals PR lands.",
+  "attempts": {
+    "2026-09-27-hard/haiku-firth-1/results-1.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "passed_then": 1,
+      "passed_now": 0,
+      "blocked_on_locals": {
+        "allocate": "firth.elaboration.unsupported-capture"
+      }
+    },
+    "2026-09-27-hard/haiku-firth-1/results-2.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "passed_then": 1,
+      "passed_now": 0,
+      "blocked_on_locals": {
+        "allocate": "firth.elaboration.unsupported-capture"
+      }
+    },
+    "2026-09-27-hard/haiku-firth-2/results-1.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "passed_then": 0,
+      "passed_now": 0,
+      "blocked_on_locals": {}
+    },
+    "2026-09-27-hard/haiku-firth-2/results-2.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "passed_then": 2,
+      "passed_now": 0,
+      "blocked_on_locals": {
+        "divmod": "firth.elaboration.unsupported-capture",
+        "median3": "firth.elaboration.unsupported-capture"
+      }
+    },
+    "2026-09-27-hard/haiku-firth-3/results-1.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "passed_then": 4,
+      "passed_now": 0,
+      "blocked_on_locals": {
+        "divmod": "firth.elaboration.unsupported-capture",
+        "lcm": "firth.elaboration.unsupported-capture",
+        "median3": "firth.elaboration.unsupported-capture",
+        "sort3": "firth.elaboration.unsupported-capture"
+      }
+    },
+    "2026-09-27-hard/haiku-firth-3/results-2.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "passed_then": 3,
+      "passed_now": 0,
+      "blocked_on_locals": {
+        "divmod": "firth.elaboration.unsupported-capture",
+        "lcm": "firth.elaboration.unsupported-capture",
+        "median3": "firth.elaboration.unsupported-capture"
+      }
+    },
+    "2026-09-27-hard/sonnet-firth-1/results-1.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "passed_then": 9,
+      "passed_now": 2,
+      "blocked_on_locals": {
+        "allocate": "firth.elaboration.unsupported-capture",
+        "digit-sum": "firth.elaboration.unsupported-capture",
+        "divmod": "firth.elaboration.unsupported-capture",
+        "is-prime": "firth.elaboration.unsupported-capture",
+        "isqrt": "firth.elaboration.unsupported-capture",
+        "lcm": "firth.elaboration.unsupported-capture",
+        "triangle-kind": "firth.elaboration.unsupported-capture"
+      }
+    },
+    "2026-09-27-hard/sonnet-firth-2/results-1.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "passed_then": 9,
+      "passed_now": 0,
+      "blocked_on_locals": {
+        "allocate": "firth.elaboration.unsupported-capture",
+        "digit-sum": "firth.elaboration.unsupported-capture",
+        "divmod": "firth.elaboration.unsupported-capture",
+        "is-prime": "firth.elaboration.unsupported-capture",
+        "isqrt": "firth.elaboration.unsupported-capture",
+        "lcm": "firth.elaboration.unsupported-capture",
+        "median3": "firth.elaboration.unsupported-capture",
+        "sort3": "firth.elaboration.unsupported-capture",
+        "triangle-kind": "firth.elaboration.unsupported-capture"
+      }
+    },
+    "2026-09-27-hard/sonnet-firth-2/results-2.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "passed_then": 9,
+      "passed_now": 1,
+      "blocked_on_locals": {
+        "allocate": "firth.elaboration.unsupported-capture",
+        "digit-sum": "firth.elaboration.unsupported-capture",
+        "divmod": "firth.elaboration.unsupported-capture",
+        "is-prime": "firth.elaboration.unsupported-capture",
+        "isqrt": "firth.elaboration.unsupported-capture",
+        "lcm": "firth.elaboration.unsupported-capture",
+        "median3": "firth.elaboration.unsupported-capture",
+        "triangle-kind": "firth.name.unbound-local"
+      }
+    },
+    "2026-09-27-hard/sonnet-firth-3/results-1.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "passed_then": 8,
+      "passed_now": 0,
+      "blocked_on_locals": {
+        "allocate": "firth.elaboration.unsupported-capture",
+        "digit-sum": "firth.elaboration.unsupported-capture",
+        "divmod": "firth.elaboration.unsupported-capture",
+        "is-prime": "firth.elaboration.unsupported-capture",
+        "isqrt": "firth.elaboration.unsupported-capture",
+        "median3": "firth.elaboration.unsupported-capture",
+        "sort3": "firth.elaboration.unsupported-capture",
+        "triangle-kind": "firth.elaboration.unsupported-capture"
+      }
+    },
+    "2026-09-27-pr113/haiku-firth/results-1.json": {
+      "scored_at": "42f00a7f0b56c094a2f888771c9cdf680b11af4e",
+      "passed_then": 5,
+      "passed_now": 5,
+      "blocked_on_locals": {}
+    },
+    "2026-09-27-pr113/haiku-firth/results-2.json": {
+      "scored_at": "42f00a7f0b56c094a2f888771c9cdf680b11af4e",
+      "passed_then": 11,
+      "passed_now": 11,
+      "blocked_on_locals": {}
+    },
+    "2026-09-27-pr113/sonnet-firth/results-1.json": {
+      "scored_at": "42f00a7f0b56c094a2f888771c9cdf680b11af4e",
+      "passed_then": 20,
+      "passed_now": 20,
+      "blocked_on_locals": {}
+    },
+    "2026-09-27-pr113/sonnet-firth/results-2.json": {
+      "scored_at": "42f00a7f0b56c094a2f888771c9cdf680b11af4e",
+      "passed_then": 21,
+      "passed_now": 21,
+      "blocked_on_locals": {}
+    }
+  }
+}

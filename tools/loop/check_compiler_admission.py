@@ -44,7 +44,7 @@ def word(name: str, program: list[dict]) -> dict:
 
 
 def request(program: list[dict], declared: dict | None = None) -> dict:
-    return {"request_id": "compiler-admission", "entry": "main", "gamma_version": "0.1",
+    return {"request_id": "compiler-admission", "entry": "main", "gamma_version": "0.2",
             "target_version": "0.1", "checked_words": [word("main", program)],
             "erased_word_types": [{"word": "main", "type": scheme() if declared is None else declared}]}
 
@@ -129,7 +129,7 @@ def corpus() -> list[tuple[str, dict, str]]:
     add("schema: invented source evidence", changed)
     for field in ("gamma_version", "target_version"):
         changed = request([literal(42)])
-        changed[field] = "0.2"
+        changed[field] = "0.1" if field == "gamma_version" else "0.2"
         add("schema: stale " + field, changed)
     changed = request([literal(42)])
     changed["checked_words"][0]["proof_state"] = "deferred"
@@ -201,7 +201,7 @@ def evaluate(expected: str, rc: int, result: dict, payload: dict) -> bool:
     digest = hashlib.sha256(payload["source"]["source_text"].encode()).hexdigest() if source_bound else None
     return verification == {
         "schema": "firth.compiler-verification.v1", "method": "kernel-type-and-linearity-recheck",
-        "source_bound": source_bound, "source_sha256": digest, "gamma_version": "0.1",
+        "source_bound": source_bound, "source_sha256": digest, "gamma_version": "0.2",
         "target_version": "0.1", "refinements": "not-checked",
         "image_evidence": "legacy-content-identifiers-not-authenticated-proofs"}
 

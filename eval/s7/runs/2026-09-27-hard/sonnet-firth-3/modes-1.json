@@ -1,0 +1,12 @@
+{
+  "model": "jev-1.13.0",
+  "counts": {
+    "resource_limit": 1
+  },
+  "tasks": {
+    "lcm": {
+      "mode": "resource_limit",
+      "by": "rule"
+    }
+  }
+}

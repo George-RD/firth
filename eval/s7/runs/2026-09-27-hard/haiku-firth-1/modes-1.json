@@ -1,0 +1,58 @@
+{
+  "model": "jev-1.13.0",
+  "counts": {
+    "toolchain": 4,
+    "invented_syntax": 2,
+    "missing_primitive": 2
+  },
+  "tasks": {
+    "sort3": {
+      "mode": "toolchain",
+      "by": "jev",
+      "confidence": 0.58,
+      "review": true
+    },
+    "median3": {
+      "mode": "toolchain",
+      "by": "jev",
+      "confidence": 0.57,
+      "review": true
+    },
+    "triangle-kind": {
+      "mode": "toolchain",
+      "by": "jev",
+      "confidence": 0.62,
+      "review": true
+    },
+    "divmod": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.35,
+      "review": true
+    },
+    "isqrt": {
+      "mode": "toolchain",
+      "by": "jev",
+      "confidence": 0.36,
+      "review": true
+    },
+    "is-prime": {
+      "mode": "missing_primitive",
+      "by": "jev",
+      "confidence": 0.48,
+      "review": true
+    },
+    "digit-sum": {
+      "mode": "missing_primitive",
+      "by": "jev",
+      "confidence": 0.45,
+      "review": true
+    },
+    "lcm": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.54,
+      "review": true
+    }
+  }
+}

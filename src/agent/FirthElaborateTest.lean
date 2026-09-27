@@ -29,7 +29,7 @@ so a test can hold a real multi-line definition. -/
 private def request (source : String) : String :=
   "{\"request_id\":\"r1\",\"source_path\":\"test.firth\",\"source_text\":"
     ++ (Lean.Json.str source).compress
-    ++ ",\"language_version\":\"0.1\",\"gamma_version\":\"0.1\"}"
+    ++ ",\"language_version\":\"0.1\",\"gamma_version\":\"0.2\"}"
 
 private def literalInt : String :=
   ": literal-int\n  ( -- result:Int^many )\n  42;\n"
@@ -94,25 +94,25 @@ def main : IO Unit := do
   expectError "malformed JSON" "{"
   expectError "duplicate JSON member"
     "{\"request_id\":\"a\",\"request_id\":\"b\",\"source_path\":\"t\",\"source_text\":\"\",\
-      \"language_version\":\"0.1\",\"gamma_version\":\"0.1\"}"
+      \"language_version\":\"0.1\",\"gamma_version\":\"0.2\"}"
   expectError "unknown member"
     "{\"request_id\":\"a\",\"source_path\":\"t\",\"source_text\":\"\",\"extra\":1,\
-      \"language_version\":\"0.1\",\"gamma_version\":\"0.1\"}"
+      \"language_version\":\"0.1\",\"gamma_version\":\"0.2\"}"
   expectError "missing member"
     "{\"request_id\":\"a\",\"source_path\":\"t\",\"language_version\":\"0.1\",\
-      \"gamma_version\":\"0.1\"}"
+      \"gamma_version\":\"0.2\"}"
   expectError "empty request id"
     "{\"request_id\":\"\",\"source_path\":\"t\",\"source_text\":\"\",\
-      \"language_version\":\"0.1\",\"gamma_version\":\"0.1\"}"
+      \"language_version\":\"0.1\",\"gamma_version\":\"0.2\"}"
   expectError "empty source path"
     "{\"request_id\":\"a\",\"source_path\":\"\",\"source_text\":\"\",\
-      \"language_version\":\"0.1\",\"gamma_version\":\"0.1\"}"
+      \"language_version\":\"0.1\",\"gamma_version\":\"0.2\"}"
   expectError "unsupported language version"
     "{\"request_id\":\"a\",\"source_path\":\"t\",\"source_text\":\"\",\
-      \"language_version\":\"0.2\",\"gamma_version\":\"0.1\"}"
+      \"language_version\":\"0.2\",\"gamma_version\":\"0.2\"}"
   expectError "unsupported gamma version"
     "{\"request_id\":\"a\",\"source_path\":\"t\",\"source_text\":\"\",\
-      \"language_version\":\"0.1\",\"gamma_version\":\"0.2\"}"
+      \"language_version\":\"0.1\",\"gamma_version\":\"0.3\"}"
 
 end Firth.ElaborateTest
 

@@ -53,6 +53,10 @@ structure Diagnostic where
   state : AStack
   expected : Option AStack := none
   actual : Option AStack := none
+  /-- The source operation that failed, such as `prim +` or `dup`. -/
+  subject : Option String := none
+  /-- The definition whose body was being checked. -/
+  word : Option String := none
   deriving Repr, BEq, Nonempty
 
 structure TypedHole where
@@ -267,6 +271,39 @@ private def pop (code : String) (span : Span) (diagnosticState source : AStack) 
   let state ← get
   pure (resolveStack state rest, resolveType state value)
 
+/-- Unify two whole stacks, reporting the whole stacks rather than the
+innermost pair that disagreed, so a reader sees every value involved. -/
+private def unifyWhole (code : String) (span : Span) (current expected actual : AStack) :
+    InferM Unit := do
+  let before ← get
+  tryCatch (unifyStack code span current expected actual) fun diagnostic =>
+    throw { diagnostic with
+      expected := some (resolveStack before expected)
+      actual := some (resolveStack before actual) }
+
+private def surfacePrimitiveName (name : String) : String :=
+  match surfacePrimitives.find? (·.2 == name) with
+  | some (surface, _) => s!"prim {surface}"
+  | none => s!"prim {name}"
+
+/-- The surface spelling of a kernel atom, for diagnostics. -/
+def atomName : Atom → String
+  | .lit (.nat value) => toString value
+  | .lit (.bool value) => if value then "true" else "false"
+  | .lit .unit => "unit"
+  | .push _ => "value"
+  | .quotation _ => "[ ... ]"
+  | .dup => "dup"
+  | .drop => "drop"
+  | .swap => "swap"
+  | .dip => "dip"
+  | .call => "call"
+  | .compose => "compose"
+  | .quote => "quote"
+  | .ifThenElse => "if"
+  | .word name => name
+  | .prim name => surfacePrimitiveName name
+
 private def replaceRigid (rows : List (String × AStack)) : AStack → AStack
   | .empty => .empty
   | .row (.mvar id) => .row (.mvar id)
@@ -421,21 +458,23 @@ private partial def inferAtom (env : Env) (located : LocatedKernel)
       | none => failAt "firth.name.unknown-word" span current
       | some scheme => do
           let effect ← instantiate scheme
-          unifyStack "firth.type.word-input-mismatch" span current effect.input current
+          unifyWhole "firth.type.word-input-mismatch" span current effect.input current
           let state ← get
           pure (resolveStack state effect.output)
   | .prim name => match env.primitive name with
       | none => failAt "firth.name.unknown-primitive" span current
       | some scheme => do
           let effect ← instantiate scheme
-          unifyStack "firth.type.primitive-input-mismatch" span current effect.input current
+          unifyWhole "firth.type.primitive-input-mismatch" span current effect.input current
           let state ← get
           pure (resolveStack state effect.output)
 
 private partial def inferSequence (env : Env) : KernelProgram → AStack → InferM (AStack × AStack)
   | [], input => pure (input, input)
   | item :: rest, input => do
-      let next ← inferAtom env item input
+      let next ← tryCatch (inferAtom env item input) fun diagnostic =>
+        throw (if diagnostic.subject.isSome then diagnostic
+          else { diagnostic with subject := some (atomName item.atom) })
       match rest with
       | [] => pure (input, next)
       | _ =>
@@ -458,7 +497,7 @@ def check (env : Env) (scheme : Scheme) (program : KernelProgram)
   runEffect do
     let declared : Effect := { input := scheme.input, output := scheme.output }
     let (_, actual) ← inferSequence env program declared.input
-    unifyStack "firth.type.declared-effect-mismatch" boundary actual declared.output actual
+    unifyWhole "firth.type.declared-effect-mismatch" boundary actual declared.output actual
     pure declared
 
 private def stackFromItems (bound : List String)
@@ -555,9 +594,43 @@ def checkDictionary (gamma : Env) (definitions : List Definition) :
         match scheme with
         | none => .error { code := "firth.name.unknown-word", primary := definition.span, state := .empty }
         | some declared =>
-            let _ ← check env declared definition.program definition.declared.span
+            let _ ← (check env declared definition.program definition.declared.span).mapError
+              fun diagnostic => { diagnostic with word := some definition.name }
             let tail ← checkAll rest
             pure ({ name := definition.name, effect := declared } :: tail)
   checkAll definitions
+
+private def renderUsage : AUsage → String
+  | .linear => "^linear"
+  | _ => ""
+
+private def renderRow : Row → String
+  | .rigid name => name
+  | .mvar _ => ".."
+
+mutual
+  /-- Render a type in source notation, such as `Int` or `[ ρ Int -- ρ Bool ]`. -/
+  partial def renderType : AType → String
+    | .base name usage => name ++ renderUsage usage
+    | .quotation input output usage =>
+        s!"[ {renderStack input} -- {renderStack output} ]{renderUsage usage}"
+    | .mvar id usage => s!"?t{id}{renderUsage usage}"
+
+  /-- Render a stack bottom to top in source notation, such as `ρ Int Bool`. -/
+  partial def renderStack : AStack → String
+    | .empty => "(empty)"
+    | .row row => renderRow row
+    | .snoc .empty value => renderType value
+    | .snoc rest value => renderStack rest ++ " " ++ renderType value
+end
+
+/-- The values above a stack's row variable, bottom first, and whether the
+stack bottoms out in a row variable (the caller's untouched stack). -/
+def stackValues : AStack → List AType × Option Row
+  | .empty => ([], none)
+  | .row row => ([], some row)
+  | .snoc rest value =>
+      let (values, row) := stackValues rest
+      (values ++ [value], row)
 
 end Firth.Elaborator.StackEffect

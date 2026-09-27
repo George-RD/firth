@@ -1,0 +1,53 @@
+{
+  "model": "jev-1.13.0",
+  "counts": {
+    "logic": 3,
+    "stack_effect": 2,
+    "invented_syntax": 1,
+    "toolchain": 1
+  },
+  "tasks": {
+    "sort3": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.87,
+      "review": false
+    },
+    "triangle-kind": {
+      "mode": "toolchain",
+      "by": "jev",
+      "confidence": 0.56,
+      "review": true
+    },
+    "isqrt": {
+      "mode": "logic",
+      "by": "jev",
+      "confidence": 0.71,
+      "review": false
+    },
+    "is-prime": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.87,
+      "review": false
+    },
+    "digit-sum": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.92,
+      "review": false
+    },
+    "lcm": {
+      "mode": "logic",
+      "by": "jev",
+      "confidence": 0.94,
+      "review": false
+    },
+    "allocate": {
+      "mode": "logic",
+      "by": "jev",
+      "confidence": 0.52,
+      "review": true
+    }
+  }
+}

@@ -1,0 +1,2039 @@
+{
+  "lang": "firth",
+  "tasks": {
+    "triple": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            4
+          ],
+          "expected": [
+            12
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            12
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            3
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            21
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            21
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1000
+          ],
+          "expected": [
+            3000
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            3000
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            123456
+          ],
+          "expected": [
+            370368
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            370368
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 5,
+      "hidden_total": 5
+    },
+    "sum3": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            1,
+            2,
+            3
+          ],
+          "expected": [
+            6
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            6
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            0,
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            5,
+            0,
+            9
+          ],
+          "expected": [
+            14
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            14
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            10,
+            20,
+            30
+          ],
+          "expected": [
+            60
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            60
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1,
+            1,
+            999
+          ],
+          "expected": [
+            1001
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1001
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "times10": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            3
+          ],
+          "expected": [
+            30
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            30
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            10
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            42
+          ],
+          "expected": [
+            420
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            420
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            999
+          ],
+          "expected": [
+            9990
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            9990
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "affine": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            11
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            11
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            7
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            2
+          ],
+          "expected": [
+            15
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            15
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            47
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            47
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            250
+          ],
+          "expected": [
+            1007
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1007
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "pair-sum": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            2,
+            5
+          ],
+          "expected": [
+            5,
+            7
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            5,
+            7
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            0
+          ],
+          "expected": [
+            0,
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0,
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1,
+            0
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0,
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            1
+          ],
+          "expected": [
+            1,
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1,
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            13,
+            29
+          ],
+          "expected": [
+            29,
+            42
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            29,
+            42
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "select": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            7,
+            9,
+            true
+          ],
+          "expected": [
+            7
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            7
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            7,
+            9,
+            false
+          ],
+          "expected": [
+            9
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            9
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            5,
+            true
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            5,
+            false
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            5
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            3,
+            3,
+            true
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            3
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "not": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            true
+          ],
+          "expected": [
+            false
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            false
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            true
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            true
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 2,
+      "hidden_total": 2
+    },
+    "and": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            true,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            true,
+            true
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            true
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            false,
+            true
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            false,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            true,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "xor": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            true,
+            false
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            true
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            true,
+            true
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            false,
+            true
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            true
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            false,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            true,
+            false
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            true
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "majority": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            true,
+            false,
+            true
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unbound-local\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_lo",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            false,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unbound-local\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_lo",
+          "pass": false
+        },
+        {
+          "input": [
+            true,
+            true,
+            false
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unbound-local\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_lo",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            true,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unbound-local\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_lo",
+          "pass": false
+        },
+        {
+          "input": [
+            true,
+            true,
+            true
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unbound-local\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_lo",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            false,
+            true
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unbound-local\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_lo",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            true,
+            true
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unbound-local\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_lo",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "count-true": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            true,
+            false,
+            true
+          ],
+          "expected": [
+            2
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            2
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            false,
+            false,
+            false
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            true,
+            true,
+            true
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            3
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            false,
+            true,
+            false
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            true,
+            true,
+            false
+          ],
+          "expected": [
+            2
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            2
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "max": {
+      "needs": [
+        "cmp"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            3,
+            8
+          ],
+          "expected": [
+            8
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            8
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            8,
+            3
+          ],
+          "expected": [
+            8
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            8
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            5,
+            5
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            5
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            100,
+            99
+          ],
+          "expected": [
+            100
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            100
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            7
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            7
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 5,
+      "hidden_total": 5
+    },
+    "min3": {
+      "needs": [
+        "cmp"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            4,
+            2,
+            9
+          ],
+          "expected": [
+            2
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            2
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1,
+            2,
+            3
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            3,
+            2,
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            2,
+            3,
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            5,
+            5,
+            5
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            5
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            9,
+            9
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 5,
+      "hidden_total": 5
+    },
+    "abs-diff": {
+      "needs": [
+        "cmp",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            3,
+            10
+          ],
+          "expected": [
+            7
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            7
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            10,
+            3
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            7
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            7,
+            7
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            1000
+          ],
+          "expected": [
+            1000
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1000
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "clamp": {
+      "needs": [
+        "cmp"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            15,
+            0,
+            10
+          ],
+          "expected": [
+            10
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            10
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            5,
+            0,
+            10
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            5
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            3,
+            10
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            3
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            10,
+            10,
+            10
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            10
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            11,
+            2,
+            11
+          ],
+          "expected": [
+            11
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            11
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            99,
+            5,
+            7
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            7
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 5,
+      "hidden_total": 5
+    },
+    "is-even": {
+      "needs": [
+        "cmp",
+        "loop",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            6
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            true
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            true
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            40
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            true
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            41
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 5,
+      "hidden_total": 5
+    },
+    "sum-to": {
+      "needs": [
+        "cmp",
+        "loop",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            4
+          ],
+          "expected": [
+            10
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            10
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            55
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            55
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            30
+          ],
+          "expected": [
+            465
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            465
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "factorial": {
+      "needs": [
+        "cmp",
+        "loop",
+        "mul",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            4
+          ],
+          "expected": [
+            24
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            24
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            5
+          ],
+          "expected": [
+            120
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            120
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            5040
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            5040
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "fib": {
+      "needs": [
+        "cmp",
+        "loop",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            6
+          ],
+          "expected": [
+            8
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            8
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            2
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            55
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            55
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            20
+          ],
+          "expected": [
+            6765
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            6765
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 5,
+      "hidden_total": 5
+    },
+    "gcd": {
+      "needs": [
+        "cmp",
+        "loop",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            12,
+            18
+          ],
+          "expected": [
+            6
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            6
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            7,
+            5
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            9,
+            3
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            3
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1,
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            48,
+            36
+          ],
+          "expected": [
+            12
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            12
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            17,
+            51
+          ],
+          "expected": [
+            17
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            17
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 5,
+      "hidden_total": 5
+    },
+    "power": {
+      "needs": [
+        "cmp",
+        "loop",
+        "mul",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            3,
+            4
+          ],
+          "expected": [
+            81
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            81
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            2,
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            3
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            2,
+            10
+          ],
+          "expected": [
+            1024
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1024
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            5,
+            3
+          ],
+          "expected": [
+            125
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            125
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 5,
+      "hidden_total": 5
+    },
+    "collatz-steps": {
+      "needs": [
+        "cmp",
+        "loop",
+        "mul",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            6
+          ],
+          "expected": [
+            8
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            8
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            2
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            3
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            7
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            16
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "trap fuel-exhausted: {\"error\": \"application vm-run: status 'trap', expected 'success': {'request_id': 'application', 'status': 'trap', 'stack': [{'kind': 'literal', 'literal': {'type': 'nat', 'value': 14}}, {'kind': 'literal', 'literal': {'type': 'nat', 'value': 4}}, {'kind': 'literal', 'literal': {'type': 'nat', 'value': 2}}, {'kind': 'literal', 'literal': {'type': 'nat', 'value': 2}}], 'trace': [{'index': 0, 'word': 'main', 'pc': 0, 'stack': [{'kind': 'literal', 'literal': {'type': 'nat', 'value': 7}}], 'cost': 1, 'kernel_cost': 1, 'image_version': 1, 'frames': [{'word': 'main', 'pc': 0, 'code_digest': 'da6ffed0d93e751ca5bb2a096551003aadcd493c56e9178e4f0919503cef0555', 'continuation': 'halt', 'saved': [], 'captures': [], 'consumed': []}]}, {'index': 1, 'word': 'main', 'pc': 1, 'stack': [{'kind': 'literal', 'literal': {'type': 'nat', 'value': 7}}, {'kind': 'quotation', 'usage': 'many', 'body_digest': '67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450', 'code': [{'op': 'push-literal', 'literal': {'kind': 'int', 'value': 0}}], 'captures': [], 'consumed': []}], 'cost': 1, 'kernel_cost': 1, 'image_version': 1, 'frames': [{'word': 'main', 'pc': 1, 'code_digest': 'da6ffed0d93e751ca5bb2a096551003aadcd493c56e9178e4f0919503cef0555', 'continuation': 'halt', 'saved': [], 'captures': [], 'consumed': []}]}, {'index': 2, 'word': 'main', 'pc': 0, 'stack': [], 'cost': 1, 'kernel_cost': 1, 'image_version': 1, 'frames': [{'word': 'main', 'pc': 1, 'code_digest': 'da6ffed0d93e751ca5bb2a096551003aadcd493c56e9178e4f0919503cef0555', 'continuation': 'restore-dip', 'saved': [{'kind': 'literal', 'literal': {'type': 'nat', 'value': 7}}], 'captures': [], 'consumed': []}, {'word': 'main', 'pc': 0, 'code_digest': '67abdd721024f0ff4e0b3f4c2fc13bc5bad42d0b7851d456d88d203d15aaa450', 'continuation': 'return', 'saved': [], 'captures': [], 'consumed': []}]}, {'index': 3, 'word': 'main', 'pc': 2, 'stack': [{'kind': 'literal', 'literal': {'type': 'nat', 'value': 0}}, {'kind': 'literal', 'literal': {'type': '",
+          "pass": false
+        },
+        {
+          "input": [
+            12
+          ],
+          "expected": [
+            9
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            9
+          ],
+          "pass": true
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 4,
+      "hidden_total": 5
+    }
+  },
+  "label": "firth sonnet r1",
+  "firth_commit": "42f00a7f0b56c094a2f888771c9cdf680b11af4e",
+  "prompt_docs": [
+    "docs/getting-started.md",
+    "docs/firth-agent-guide.md",
+    "eval/s7/docs/primitives-pr113.md"
+  ],
+  "metadata_note": "firth_commit and prompt_docs were added after scoring; errors were compacted from the raw runner output."
+}

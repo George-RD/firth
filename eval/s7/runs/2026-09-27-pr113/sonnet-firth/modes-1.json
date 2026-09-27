@@ -1,0 +1,19 @@
+{
+  "model": "jev-1.13.0",
+  "counts": {
+    "invented_syntax": 1,
+    "resource_limit": 1
+  },
+  "tasks": {
+    "majority": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.37,
+      "review": true
+    },
+    "collatz-steps": {
+      "mode": "resource_limit",
+      "by": "rule"
+    }
+  }
+}

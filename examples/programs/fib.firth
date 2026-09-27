@@ -1,0 +1,11 @@
+\ Iterative Fibonacci: F(0) = 0, F(1) = 1. `fib-loop` keeps F(k) and
+\ F(k+1) under a countdown and recurses in tail position.
+: fib
+  (forall ρ; ρ n:Int^many -- ρ r:Int^many)
+  0 swap 1 swap fib-loop;
+
+: fib-loop
+  (forall ρ; ρ a:Int^many b:Int^many n:Int^many -- ρ r:Int^many)
+  dup 0 prim =
+  [ drop drop ]
+  [ 1 prim - [ dup [ prim + ] dip swap ] dip fib-loop ] if;

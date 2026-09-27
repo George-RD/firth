@@ -114,7 +114,9 @@ private def marker (context : String) (values : List (String × Json)) : Except 
 private def adapterGamma : Gamma :=
   { defaultGamma with
     primitive := fun primitive =>
-      if primitive == "+" then defaultGamma.primitive "addNat" else none }
+      match kernelPrimitive primitive with
+      | some kernel => defaultGamma.primitive kernel
+      | none => none }
 
 private def decodeDictionary (value : Json) : Except String (Dictionary × List Program) := do
   let entries ← fields "dictionary" value
@@ -156,7 +158,7 @@ private def decodeRequest (value : Json) : Except String Request := do
     ["request_id", "checked_kernel", "initial_stack", "dictionary", "gamma_version", "fuel"]
   let requestId ← nonempty "request_id" =<< reqStr "request" "request_id" values
   let version ← reqStr "request" "gamma_version" values
-  if version != "0.1" then err "unsupported gamma version"
+  if version != "0.2" then err "unsupported gamma version"
   let kernel ← object "checked_kernel" (← required "request" "checked_kernel" values)
     ["checking_state", "proof_state", "gamma_version", "program"]
     ["checking_state", "proof_state", "gamma_version", "program"]
