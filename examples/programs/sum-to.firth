@@ -1,0 +1,10 @@
+\ Sum of 1..n with an accumulator; the loop is a tail-recursive word.
+: sum-to
+  (forall ρ; ρ n:Int^many -- ρ r:Int^many)
+  0 swap sum-acc;
+
+: sum-acc
+  (forall ρ; ρ acc:Int^many n:Int^many -- ρ r:Int^many)
+  dup 0 prim =
+  [ drop ]
+  [ dup 1 prim - [ prim + ] dip sum-acc ] if;

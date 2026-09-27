@@ -306,13 +306,16 @@ fn quotation_steps_keep_the_named_enclosing_word() {
                 op: Op::Call,
                 operand: None,
             },
+            // Keeps the call out of tail position, so the quotation runs in a
+            // nested frame rather than replacing the word's frame.
+            literal(Value::Int(9)),
         ],
         vec![],
     );
     let report =
         execute_report_entry(&image, "policy_run", vec![], 8, &default_registry()).unwrap();
-    assert_eq!(report.stack, vec![Value::Int(8)]);
-    assert_eq!(report.cost.steps.len(), 3);
+    assert_eq!(report.stack, vec![Value::Int(8), Value::Int(9)]);
+    assert_eq!(report.cost.steps.len(), 4);
     assert!(
         report
             .cost

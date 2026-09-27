@@ -93,7 +93,8 @@ private def intMany : AType := .base "Int" .many
 signature. Only the ownership classes matter at erasure time. -/
 def gammaErasure : EffectEnv :=
   { primitive := fun name =>
-      if name == "+" then some { input := [.many, .many], output := [.many] }
+      if (Firth.Interpreter.kernelPrimitive name).isSome then
+        some { input := [.many, .many], output := [.many] }
       else if name == "send" then some { input := [.linear, .linear, .linear], output := [.linear] }
       else none }
 
@@ -102,10 +103,14 @@ def gammaErasure : EffectEnv :=
 def gammaTyping : Env :=
   { literal := defaultLiteralType
     primitive := fun name =>
-      if name == "+" then
+      if name == "+" || name == "-" || name == "*" then
         some { rowVariables := ["ρ"]
                input := .snoc (.snoc rowTail intMany) intMany
                output := .snoc rowTail intMany }
+      else if name == "<" || name == "=" then
+        some { rowVariables := ["ρ"]
+               input := .snoc (.snoc rowTail intMany) intMany
+               output := .snoc rowTail (.base "Bool" .many) }
       else if name == "send" then
         some { rowVariables := ["ρ"]
                input := .snoc (.snoc (.snoc rowTail (.base "World" .linear))

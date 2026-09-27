@@ -4,6 +4,38 @@ fn add_nat(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     context.push_int(left.checked_add(right).ok_or(VmError::PrimitiveFault)?)
 }
 
+/// Pops the two natural operands of a binary primitive, `left` below `right`.
+/// Kernel values are naturals, so a negative target integer is a fault.
+fn pop_nat_pair(context: &mut PrimitiveContext<'_>) -> Result<(i64, i64), VmError> {
+    let right = context.pop_int()?;
+    let left = context.pop_int()?;
+    if left < 0 || right < 0 {
+        return Err(VmError::PrimitiveFault);
+    }
+    Ok((left, right))
+}
+
+/// Natural subtraction truncates at zero, as the reference `subNat` does.
+fn sub_nat(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let (left, right) = pop_nat_pair(context)?;
+    context.push_int(if left > right { left - right } else { 0 })
+}
+
+fn mul_nat(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let (left, right) = pop_nat_pair(context)?;
+    context.push_int(left.checked_mul(right).ok_or(VmError::PrimitiveFault)?)
+}
+
+fn lt_nat(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let (left, right) = pop_nat_pair(context)?;
+    context.push_bool(left < right)
+}
+
+fn eq_nat(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let (left, right) = pop_nat_pair(context)?;
+    context.push_bool(left == right)
+}
+
 fn make_world(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     context.make_world()?;
     reserve(&mut context.world.observation, 1)?;
@@ -23,6 +55,42 @@ pub fn default_registry() -> PrimitiveRegistry {
                 name: "addNat",
                 cost: 1,
                 handler: add_nat,
+                input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "subNat",
+                cost: 1,
+                handler: sub_nat,
+                input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "mulNat",
+                cost: 1,
+                handler: mul_nat,
+                input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "ltNat",
+                cost: 1,
+                handler: lt_nat,
+                input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "eqNat",
+                cost: 1,
+                handler: eq_nat,
                 input: &[Usage::Many, Usage::Many],
                 output: &[Usage::Many],
                 world: false,

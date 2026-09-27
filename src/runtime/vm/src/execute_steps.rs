@@ -213,12 +213,18 @@ fn step_quote(machine: &mut Machine) -> Result<(), VmError> {
     Ok(())
 }
 
-fn step_if(
-    image: &Image,
+fn top_is_capture_free_quotation(machine: &Machine) -> bool {
+    matches!(
+        machine.stack.last(),
+        Some(Slot::Value(Value::Quotation(quotation))) if quotation.captures.is_empty()
+    )
+}
+
+/// Pops the condition and both branches and returns the chosen branch.
+fn take_if_branch(
     environment: &ExecutionEnvironment<'_>,
     machine: &mut Machine,
-    current_word: &str,
-) -> Result<(), VmError> {
+) -> Result<Quotation, VmError> {
     let false_branch = pop_quotation(machine)?;
     let true_branch = pop_quotation(machine)?;
     let condition = match machine.stack.pop().ok_or(VmError::StackFault)? {
@@ -230,7 +236,26 @@ fn step_if(
     {
         return Err(VmError::ResourceFault);
     }
-    let mut branch = if condition { true_branch } else { false_branch };
+    Ok(if condition { true_branch } else { false_branch })
+}
+
+fn step_if(
+    image: &Image,
+    environment: &ExecutionEnvironment<'_>,
+    machine: &mut Machine,
+    current_word: &str,
+) -> Result<(), VmError> {
+    let branch = take_if_branch(environment, machine)?;
+    run_branch(branch, image, environment, machine, current_word)
+}
+
+fn run_branch(
+    mut branch: Quotation,
+    image: &Image,
+    environment: &ExecutionEnvironment<'_>,
+    machine: &mut Machine,
+    current_word: &str,
+) -> Result<(), VmError> {
     run_code(
         &branch.code,
         &mut branch.captures,
@@ -242,11 +267,15 @@ fn step_if(
     )
 }
 
-fn step_call_word(
+/// Resolves a word and charges its entry. A nested entry adds a frame, so it
+/// is refused past `MAX_CALL_DEPTH` before being charged; a tail entry
+/// replaces the current frame and needs no depth check.
+fn enter_word<'x>(
     instruction: &Instruction,
-    environment: &ExecutionEnvironment<'_>,
+    environment: &ExecutionEnvironment<'x>,
     machine: &mut Machine,
-) -> Result<(), VmError> {
+    nested: bool,
+) -> Result<ResolvedWord<'x>, VmError> {
     let Some(Operand::Word(name)) = instruction.operand.as_ref() else {
         return Err(VmError::StackFault);
     };
@@ -254,7 +283,9 @@ fn step_call_word(
     let (word_image, word) = resolved.parts();
     // A frame that will be refused is not an entry, so it is not charged
     // as one.
-    ensure_call_depth(machine)?;
+    if nested {
+        ensure_call_depth(machine)?;
+    }
     reserve(&mut machine.cost.steps, 1)?;
     machine.cost.total = machine.cost.total.saturating_add(1);
     machine.cost.word_entries += 1;
@@ -266,6 +297,16 @@ fn step_call_word(
         image_version: word_image.image_version,
         primitive: None,
     });
+    Ok(resolved)
+}
+
+fn step_call_word(
+    instruction: &Instruction,
+    environment: &ExecutionEnvironment<'_>,
+    machine: &mut Machine,
+) -> Result<(), VmError> {
+    let resolved = enter_word(instruction, environment, machine, true)?;
+    let (word_image, word) = resolved.parts();
     run_code(
         &word.code,
         &mut [],

@@ -244,32 +244,27 @@ fn charge(
 // of nesting, which keeps `MAX_CALL_DEPTH` administrative frames inside a
 // small native stack in an unoptimised build.
 
-fn run_code(
+/// A control transfer in tail position. Once it is taken the current frame
+/// has nothing left to run, so `run_code` replaces that frame with the target
+/// instead of nesting a new one; tail-recursive words run in constant frames.
+enum Tail<'x> {
+    Quote(Quotation),
+    Word(ResolvedWord<'x>),
+}
+
+fn run_code<'x>(
     code: &[Instruction],
     captures: &mut [Value],
     consumed: &mut [bool],
     image: &Image,
-    environment: &ExecutionEnvironment<'_>,
+    environment: &ExecutionEnvironment<'x>,
     machine: &mut Machine,
     current_word: &str,
 ) -> Result<(), VmError> {
     ensure_call_depth(machine)?;
     let frame_depth = machine.frames.len();
-    reserve(&mut machine.frames, 1)?;
-    machine.frames.push(FrameTrace {
-        word: String::from(current_word),
-        pc: 0,
-        code_digest: sha256(&canonical_code(code)).to_vec(),
-        captures: consumed.to_vec(),
-        capture_values: captures.to_vec(),
-        saved: Vec::new(),
-        continuation: if frame_depth == 0 {
-            Continuation::Halt
-        } else {
-            Continuation::Return
-        },
-    });
-    let result = run_frame(
+    push_frame(machine, current_word, code, captures, consumed)?;
+    let tail = run_frame(
         code,
         captures,
         consumed,
@@ -277,22 +272,108 @@ fn run_code(
         environment,
         machine,
         current_word,
-    );
-    if result.is_ok() {
-        machine.frames.truncate(frame_depth);
+        captures.is_empty(),
+    )?;
+    machine.frames.truncate(frame_depth);
+    match tail {
+        None => Ok(()),
+        Some(tail) => run_tail_chain(*tail, image, environment, machine, current_word),
     }
-    result
 }
 
-fn run_frame(
+fn push_frame(
+    machine: &mut Machine,
+    word: &str,
+    code: &[Instruction],
+    captures: &[Value],
+    consumed: &[bool],
+) -> Result<(), VmError> {
+    let continuation = if machine.frames.is_empty() {
+        Continuation::Halt
+    } else {
+        Continuation::Return
+    };
+    reserve(&mut machine.frames, 1)?;
+    machine.frames.push(FrameTrace {
+        word: String::from(word),
+        pc: 0,
+        code_digest: sha256(&canonical_code(code)).to_vec(),
+        captures: consumed.to_vec(),
+        capture_values: captures.to_vec(),
+        saved: Vec::new(),
+        continuation,
+    });
+    Ok(())
+}
+
+/// Runs tail targets in the frame slot the finished frame gave up. It is a
+/// separate function so that its state is on the native stack only while a
+/// tail chain runs, not on every nested call (see the note above).
+#[inline(never)]
+fn run_tail_chain<'x>(
+    first: Tail<'x>,
+    image: &Image,
+    environment: &ExecutionEnvironment<'x>,
+    machine: &mut Machine,
+    current_word: &str,
+) -> Result<(), VmError> {
+    let frame_depth = machine.frames.len();
+    // A tail word replaces the word (and its image); a tail quotation
+    // replaces only the code and keeps the enclosing word, exactly as a
+    // nested `call` would attribute it. Tail quotations are capture-free.
+    let mut word: Option<ResolvedWord<'x>> = None;
+    let mut next = Some(first);
+    while let Some(target) = next.take() {
+        let quote = match target {
+            Tail::Quote(quote) => Some(quote),
+            Tail::Word(resolved) => {
+                word = Some(resolved);
+                None
+            }
+        };
+        let (frame_image, frame_word, frame_code): (&Image, &str, &[Instruction]) =
+            match (&word, &quote) {
+                (Some(resolved), None) => {
+                    let (word_image, entry) = resolved.parts();
+                    (word_image, entry.name.as_str(), &entry.code)
+                }
+                (Some(resolved), Some(quote)) => {
+                    let (word_image, entry) = resolved.parts();
+                    (word_image, entry.name.as_str(), &quote.code)
+                }
+                (None, Some(quote)) => (image, current_word, &quote.code),
+                (None, None) => return Err(VmError::StackFault),
+            };
+        push_frame(machine, frame_word, frame_code, &[], &[])?;
+        next = run_frame(
+            frame_code,
+            &mut [],
+            &mut [],
+            frame_image,
+            environment,
+            machine,
+            frame_word,
+            true,
+        )?
+        .map(|tail| *tail);
+        machine.frames.truncate(frame_depth);
+    }
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_frame<'x>(
     code: &[Instruction],
     captures: &mut [Value],
     consumed: &mut [bool],
     image: &Image,
-    environment: &ExecutionEnvironment<'_>,
+    environment: &ExecutionEnvironment<'x>,
     machine: &mut Machine,
     current_word: &str,
-) -> Result<(), VmError> {
+    allow_tail: bool,
+) -> Result<Option<Box<Tail<'x>>>, VmError> {
+    let last = code.len().saturating_sub(1);
+    let mut tail = None;
     for (pc, instruction) in code.iter().enumerate() {
         if let Some(frame) = machine.frames.last_mut() {
             frame.pc = pc;
@@ -312,6 +393,7 @@ fn run_frame(
             machine,
             current_word,
             &mut undo,
+            allow_tail && pc == last,
         );
         if matches!(instruction_result, Err(VmError::AllocationFailure))
             && let Some(undo) = undo.take()
@@ -325,26 +407,60 @@ fn run_frame(
             captures.clone_from_slice(&captures_checkpoint);
             consumed.copy_from_slice(&consumed_checkpoint);
         }
-        instruction_result?;
+        tail = instruction_result?;
     }
-    Ok(())
+    Ok(tail)
+}
+
+/// Dispatches a `CALL`, `IF` or `CALL_WORD` in tail position. Only
+/// capture-free quotations become tail targets: a quotation that owns
+/// captures keeps its own frame so they are checked when it ends.
+#[inline(never)]
+fn step_tail<'x>(
+    instruction: &Instruction,
+    image: &Image,
+    environment: &ExecutionEnvironment<'x>,
+    machine: &mut Machine,
+    current_word: &str,
+) -> Result<Option<Box<Tail<'x>>>, VmError> {
+    match instruction.op {
+        Op::Call if top_is_capture_free_quotation(machine) => {
+            Ok(Some(Box::new(Tail::Quote(pop_quotation(machine)?))))
+        }
+        Op::Call => step_call(image, environment, machine, current_word).map(|()| None),
+        Op::If => {
+            let branch = take_if_branch(environment, machine)?;
+            if branch.captures.is_empty() {
+                Ok(Some(Box::new(Tail::Quote(branch))))
+            } else {
+                run_branch(branch, image, environment, machine, current_word).map(|()| None)
+            }
+        }
+        _ => Ok(Some(Box::new(Tail::Word(enter_word(
+            instruction,
+            environment,
+            machine,
+            false,
+        )?)))),
+    }
 }
 
 /// Charges, validates and dispatches one instruction. A validation failure
 /// undoes the charge (`target-spec.md` §5: a failed instruction reports its
 /// cost only if it passed validation) but keeps the recorded location.
 #[allow(clippy::too_many_arguments)]
-fn step(
+fn step<'x>(
     instruction: &Instruction,
     pc: usize,
     captures: &mut [Value],
     consumed: &mut [bool],
     image: &Image,
-    environment: &ExecutionEnvironment<'_>,
+    environment: &ExecutionEnvironment<'x>,
     machine: &mut Machine,
     current_word: &str,
     undo: &mut Option<Checkpoint>,
-) -> Result<(), VmError> {
+    tail: bool,
+) -> Result<Option<Box<Tail<'x>>>, VmError> {
     let primitive_name = match instruction.operand.as_ref() {
         Some(Operand::Primitive(name)) => Some(name.as_str()),
         _ => None,
@@ -383,18 +499,28 @@ fn step(
         return Err(error);
     }
     match instruction.op {
-        Op::PushLiteral => step_push_literal(instruction, machine),
-        Op::PushQuote => step_push_quote(instruction, pc, environment, machine, current_word),
-        Op::PushCapture => step_push_capture(instruction, captures, consumed, environment, machine),
-        Op::Dup => step_dup(environment, machine),
-        Op::Drop => step_drop(environment, machine),
-        Op::Swap => step_swap(machine),
-        Op::Call => step_call(image, environment, machine, current_word),
-        Op::Dip => step_dip(image, environment, machine, current_word),
-        Op::Compose => step_compose(machine),
-        Op::Quote => step_quote(machine),
-        Op::If => step_if(image, environment, machine, current_word),
-        Op::CallWord => step_call_word(instruction, environment, machine),
-        Op::Prim => step_prim(instruction, environment, machine),
+        Op::Call | Op::If | Op::CallWord if tail => step_tail(
+            instruction,
+            image,
+            environment,
+            machine,
+            current_word,
+        ),
+        _ => match instruction.op {
+            Op::PushLiteral => step_push_literal(instruction, machine),
+            Op::PushQuote => step_push_quote(instruction, pc, environment, machine, current_word),
+            Op::PushCapture => step_push_capture(instruction, captures, consumed, environment, machine),
+            Op::Dup => step_dup(environment, machine),
+            Op::Drop => step_drop(environment, machine),
+            Op::Swap => step_swap(machine),
+            Op::Call => step_call(image, environment, machine, current_word),
+            Op::Dip => step_dip(image, environment, machine, current_word),
+            Op::Compose => step_compose(machine),
+            Op::Quote => step_quote(machine),
+            Op::If => step_if(image, environment, machine, current_word),
+            Op::CallWord => step_call_word(instruction, environment, machine),
+            Op::Prim => step_prim(instruction, environment, machine),
+        }
+        .map(|()| None),
     }
 }

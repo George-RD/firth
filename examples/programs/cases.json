@@ -1,0 +1,20 @@
+{
+  "comment": "Each case runs on the VM and the reference interpreter; both must finish with `stack` (bottom to top).",
+  "cases": [
+    {"source": "factorial.firth", "entry": "fact", "stack": [0], "expect": [1]},
+    {"source": "factorial.firth", "entry": "fact", "stack": [5], "expect": [120]},
+    {"source": "factorial.firth", "entry": "fact", "stack": [20], "expect": [2432902008176640000]},
+    {"source": "fib.firth", "entry": "fib", "stack": [0], "expect": [0]},
+    {"source": "fib.firth", "entry": "fib", "stack": [1], "expect": [1]},
+    {"source": "fib.firth", "entry": "fib", "stack": [10], "expect": [55]},
+    {"source": "fib.firth", "entry": "fib", "stack": [90], "expect": [2880067194370816120]},
+    {"source": "sum-to.firth", "entry": "sum-to", "stack": [100], "expect": [5050]},
+    {"source": "sum-to.firth", "entry": "sum-to", "stack": [150], "expect": [11325]},
+    {"source": "allocate.firth", "entry": "allocate", "stack": [10, 2, false], "expect": [8, 2, 0]},
+    {"source": "allocate.firth", "entry": "allocate", "stack": [5, 7, false], "expect": [0, 5, 1]},
+    {"source": "allocate.firth", "entry": "allocate", "stack": [0, 2, false], "expect": [0, 0, 2]},
+    {"source": "allocate.firth", "entry": "allocate", "stack": [5, 7, true], "expect": [5, 0, 3]},
+    {"source": "allocate.firth", "entry": "allocate", "stack": [5, 3, true], "expect": [2, 3, 0]},
+    {"source": "allocate.firth", "entry": "allocate", "stack": [0, 3, true], "expect": [0, 0, 2]}
+  ]
+}
