@@ -167,7 +167,7 @@ private def isRowName (s : String) : Bool :=
   | _ => false
 private def reserved (s : String) : Bool :=
   ["true", "false", "many", "linear", "forall", "vocab", "use", "as", "export", "locals", "prim",
-   "dup", "drop", "swap", "dip", "call", "compose", "quote", "if"].contains s
+   "dup", "drop", "swap", "pick", "roll", "dip", "call", "compose", "quote", "if"].contains s
 private def validWordName (s : String) : Bool := isWordName s && !reserved s
 
 private def validQualifiedName (s : String) : Bool :=

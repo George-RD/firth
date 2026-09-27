@@ -35,7 +35,8 @@ Implementations may accept Unicode aliases in tooling, but canonical source uses
 the grammar above. `true` and `false` are reserved Boolean literals;
 `many`, `linear`, `forall`, `vocab`, `use`, `export`, `locals`,
 `prim`, and kernel atom names are reserved in their syntactic positions. A
-word name may not be a keyword or kernel atom.
+word name may not be a keyword or kernel atom, `pick` and `roll` included,
+although source does not spell those two directly: named locals erase to them.
 
 An integer, character, string, or Boolean token elaborates to `lit c`, with
 its type looked up in Γ. Literals must have a `many` base type. A declaration
