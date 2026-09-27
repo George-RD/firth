@@ -1,0 +1,113 @@
+{
+  "model": "jev-1.13.0",
+  "counts": {
+    "stack_effect": 6,
+    "invented_syntax": 6,
+    "toolchain": 4,
+    "missing_primitive": 1
+  },
+  "tasks": {
+    "triple": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.75,
+      "review": false
+    },
+    "sum3": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.81,
+      "review": false
+    },
+    "times10": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.78,
+      "review": false
+    },
+    "affine": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.5,
+      "review": true
+    },
+    "majority": {
+      "mode": "toolchain",
+      "by": "jev",
+      "confidence": 0.49,
+      "review": true
+    },
+    "count-true": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.61,
+      "review": true
+    },
+    "max": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.31,
+      "review": true
+    },
+    "min3": {
+      "mode": "toolchain",
+      "by": "jev",
+      "confidence": 0.41,
+      "review": true
+    },
+    "abs-diff": {
+      "mode": "toolchain",
+      "by": "jev",
+      "confidence": 0.46,
+      "review": true
+    },
+    "clamp": {
+      "mode": "toolchain",
+      "by": "jev",
+      "confidence": 0.57,
+      "review": true
+    },
+    "is-even": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.91,
+      "review": false
+    },
+    "sum-to": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.71,
+      "review": false
+    },
+    "factorial": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.64,
+      "review": true
+    },
+    "fib": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.73,
+      "review": false
+    },
+    "gcd": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.75,
+      "review": false
+    },
+    "power": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.68,
+      "review": true
+    },
+    "collatz-steps": {
+      "mode": "missing_primitive",
+      "by": "jev",
+      "confidence": 0.38,
+      "review": true
+    }
+  }
+}

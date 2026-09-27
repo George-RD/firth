@@ -65,7 +65,7 @@ def shape(task: Task, lang: str) -> str:
             f"Example: main({ex_in}) returns {ex_out if len(task.outputs) == 1 else '(' + ex_out + ')'}.")
 
 
-def prompt(tasks: list[Task], lang: str) -> str:
+def prompt(tasks: list[Task], lang: str, extra_docs: tuple[str, ...] = ()) -> str:
     parts = []
     if lang == "firth":
         parts.append(
@@ -78,6 +78,8 @@ def prompt(tasks: list[Task], lang: str) -> str:
             "answer from the documentation alone.\n")
         for doc in FIRTH_DOCS:
             parts.append(f"<document path=\"{doc}\">\n{(ROOT / doc).read_text()}\n</document>\n")
+        for doc in extra_docs:
+            parts.append(f"<document path=\"{Path(doc).name}\">\n{Path(doc).read_text()}\n</document>\n")
         fence = "firth"
     else:
         parts.append(
@@ -116,7 +118,10 @@ def run_firth(source: str, args: tuple) -> dict:
         Path(path).unlink()
     if p.returncode == 0:
         return {"ok": True, "stack": json.loads(p.stdout)["stack"]}
-    return {"ok": False, "error": (p.stderr.strip() or p.stdout.strip())[:2000]}
+    text = p.stderr.strip() or p.stdout.strip()
+    # A VM trap class (e.g. fuel-exhausted) sits deep in a long payload; keep it visible.
+    trap = re.search(r"'trap': '([^']+)'", text)
+    return {"ok": False, "error": (f"trap {trap.group(1)}: " if trap else "") + text[:2000]}
 
 
 PY_DRIVER = """
@@ -220,6 +225,8 @@ def main() -> int:
     sub = cli.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("prompt"); p.add_argument("--lang", required=True, choices=["firth", "python"])
     p.add_argument("--tier", default="all")
+    p.add_argument("--extra-doc", action="append", default=[],
+                   help="extra document appended after the repo docs, e.g. a primitives supplement")
     e = sub.add_parser("extract"); e.add_argument("--lang"); e.add_argument("answer", type=Path)
     s = sub.add_parser("score"); s.add_argument("--lang", required=True, choices=["firth", "python"])
     s.add_argument("solutions", type=Path); s.add_argument("--tier", default="all")
@@ -230,7 +237,7 @@ def main() -> int:
     rep = sub.add_parser("report"); rep.add_argument("results", type=Path, nargs="+")
     a = cli.parse_args()
     if a.cmd == "prompt":
-        print(prompt(select(a.tier), a.lang).rstrip("\n"))
+        print(prompt(select(a.tier), a.lang, tuple(a.extra_doc)).rstrip("\n"))
     elif a.cmd == "extract":
         print(json.dumps(extract(a.answer.read_text()), indent=2))
     elif a.cmd == "score":

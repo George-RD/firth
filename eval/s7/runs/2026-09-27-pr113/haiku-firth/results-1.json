@@ -1,0 +1,1783 @@
+{
+  "lang": "firth",
+  "tasks": {
+    "triple": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            4
+          ],
+          "expected": [
+            12
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp2g23xqw6.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp1g62ybp9.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp2qlq79xt.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            21
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmpkyfnorih.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            1000
+          ],
+          "expected": [
+            3000
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp0kdc95uz.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            123456
+          ],
+          "expected": [
+            370368
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp9jxact4p.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "sum3": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            1,
+            2,
+            3
+          ],
+          "expected": [
+            6
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '+'}, 'location': {'path': 'tmpiomljrg3.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 9}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            0,
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '+'}, 'location': {'path': 'tmp60ustepg.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 9}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            5,
+            0,
+            9
+          ],
+          "expected": [
+            14
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '+'}, 'location': {'path': 'tmpu8igr396.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 9}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            10,
+            20,
+            30
+          ],
+          "expected": [
+            60
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '+'}, 'location': {'path': 'tmpnfw4arcb.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 9}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            1,
+            1,
+            999
+          ],
+          "expected": [
+            1001
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '+'}, 'location': {'path': 'tmpx26hefsp.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 9}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "times10": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            3
+          ],
+          "expected": [
+            30
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmpnk3cmo2b.firth', 'range': {'start': {'line': 3, 'column': 6}, 'end': {'line': 3, 'column': 12}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp3i3qf89r.firth', 'range': {'start': {'line': 3, 'column': 6}, 'end': {'line': 3, 'column': 12}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmpwn46i1nz.firth', 'range': {'start': {'line': 3, 'column': 6}, 'end': {'line': 3, 'column': 12}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            42
+          ],
+          "expected": [
+            420
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp26yrisk1.firth', 'range': {'start': {'line': 3, 'column': 6}, 'end': {'line': 3, 'column': 12}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            999
+          ],
+          "expected": [
+            9990
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp24n7qevm.firth', 'range': {'start': {'line': 3, 'column': 6}, 'end': {'line': 3, 'column': 12}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "affine": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            11
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmpa1q03gs5.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp5vegyaxj.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            2
+          ],
+          "expected": [
+            15
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp0q7lmw4a.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            47
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmpsr3lxcia.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            250
+          ],
+          "expected": [
+            1007
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp2ck06ccq.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "pair-sum": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            2,
+            5
+          ],
+          "expected": [
+            5,
+            7
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            5,
+            7
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            0
+          ],
+          "expected": [
+            0,
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0,
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1,
+            0
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0,
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            1
+          ],
+          "expected": [
+            1,
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1,
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            13,
+            29
+          ],
+          "expected": [
+            29,
+            42
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            29,
+            42
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "select": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            7,
+            9,
+            true
+          ],
+          "expected": [
+            7
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            7
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            7,
+            9,
+            false
+          ],
+          "expected": [
+            9
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            9
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            5,
+            true
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            5,
+            false
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            5
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            3,
+            3,
+            true
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            3
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "not": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            true
+          ],
+          "expected": [
+            false
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            false
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            true
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            true
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 2,
+      "hidden_total": 2
+    },
+    "and": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            true,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            true,
+            true
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            true
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            false,
+            true
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            false,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            true,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "xor": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            true,
+            false
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            true
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            true,
+            true
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            false,
+            true
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            true
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            false,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            true,
+            false
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            true
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "majority": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            true,
+            false,
+            true
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmp32la_ykv.firth', 'range': {'start': {'line': 5, 'column': 7}, 'end': {'line': 5, 'column': 8}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            false,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmpwtfj604q.firth', 'range': {'start': {'line': 5, 'column': 7}, 'end': {'line': 5, 'column': 8}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            true,
+            true,
+            false
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmpskpo81_u.firth', 'range': {'start': {'line': 5, 'column': 7}, 'end': {'line': 5, 'column': 8}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            true,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmps2nr5k9b.firth', 'range': {'start': {'line': 5, 'column': 7}, 'end': {'line': 5, 'column': 8}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            true,
+            true,
+            true
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmpyupr907d.firth', 'range': {'start': {'line': 5, 'column': 7}, 'end': {'line': 5, 'column': 8}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            false,
+            true
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmpsjww9cs7.firth', 'range': {'start': {'line': 5, 'column': 7}, 'end': {'line': 5, 'column': 8}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            true,
+            true
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmpa4l9ief9.firth', 'range': {'start': {'line': 5, 'column': 7}, 'end': {'line': 5, 'column': 8}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "count-true": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            true,
+            false,
+            true
+          ],
+          "expected": [
+            2
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_input_mismatch', 'message_params': {}, 'location': {'path': 'tmpf8mchg_x.firth', 'range': {'start': {'line': 5, 'column': 5}, 'end': {'line': 5, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 19))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 10 (Firth.Elaborator.StackEffect.AUsage.mvar 11)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 9 (Firth.Elaborator.StackEffect.AUsage.mvar 10)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 12 (Firth.Elaborator.StackEffect.AUsage.mvar 13)))\\\\n      (Firth.Elaborator.StackEffect.AType.mvar 16 (Firth.Elaborator.StackEffect.AUsage.mvar 18)))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elab",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            false,
+            false
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_input_mismatch', 'message_params': {}, 'location': {'path': 'tmpmepghwf_.firth', 'range': {'start': {'line': 5, 'column': 5}, 'end': {'line': 5, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 19))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 10 (Firth.Elaborator.StackEffect.AUsage.mvar 11)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 9 (Firth.Elaborator.StackEffect.AUsage.mvar 10)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 12 (Firth.Elaborator.StackEffect.AUsage.mvar 13)))\\\\n      (Firth.Elaborator.StackEffect.AType.mvar 16 (Firth.Elaborator.StackEffect.AUsage.mvar 18)))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elab",
+          "pass": false
+        },
+        {
+          "input": [
+            true,
+            true,
+            true
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_input_mismatch', 'message_params': {}, 'location': {'path': 'tmpq833lnpg.firth', 'range': {'start': {'line': 5, 'column': 5}, 'end': {'line': 5, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 19))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 10 (Firth.Elaborator.StackEffect.AUsage.mvar 11)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 9 (Firth.Elaborator.StackEffect.AUsage.mvar 10)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 12 (Firth.Elaborator.StackEffect.AUsage.mvar 13)))\\\\n      (Firth.Elaborator.StackEffect.AType.mvar 16 (Firth.Elaborator.StackEffect.AUsage.mvar 18)))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elab",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            true,
+            false
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_input_mismatch', 'message_params': {}, 'location': {'path': 'tmptcnsewp2.firth', 'range': {'start': {'line': 5, 'column': 5}, 'end': {'line': 5, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 19))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 10 (Firth.Elaborator.StackEffect.AUsage.mvar 11)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 9 (Firth.Elaborator.StackEffect.AUsage.mvar 10)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 12 (Firth.Elaborator.StackEffect.AUsage.mvar 13)))\\\\n      (Firth.Elaborator.StackEffect.AType.mvar 16 (Firth.Elaborator.StackEffect.AUsage.mvar 18)))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elab",
+          "pass": false
+        },
+        {
+          "input": [
+            true,
+            true,
+            false
+          ],
+          "expected": [
+            2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_input_mismatch', 'message_params': {}, 'location': {'path': 'tmpdn45eydz.firth', 'range': {'start': {'line': 5, 'column': 5}, 'end': {'line': 5, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 19))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 10 (Firth.Elaborator.StackEffect.AUsage.mvar 11)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 9 (Firth.Elaborator.StackEffect.AUsage.mvar 10)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 12 (Firth.Elaborator.StackEffect.AUsage.mvar 13)))\\\\n      (Firth.Elaborator.StackEffect.AType.mvar 16 (Firth.Elaborator.StackEffect.AUsage.mvar 18)))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elab",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "max": {
+      "needs": [
+        "cmp"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            3,
+            8
+          ],
+          "expected": [
+            8
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmphneyyjws.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            8,
+            3
+          ],
+          "expected": [
+            8
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmp5xlm1iit.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmp1alkz938.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            5,
+            5
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmp87fha45r.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            100,
+            99
+          ],
+          "expected": [
+            100
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmprmy22lg3.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            7
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmpq6hm_buf.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "min3": {
+      "needs": [
+        "cmp"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            4,
+            2,
+            9
+          ],
+          "expected": [
+            2
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'a'}, 'location': {'path': 'tmp2hmx99xk.firth', 'range': {'start': {'line': 4, 'column': 18}, 'end': {'line': 4, 'column': 19}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            1,
+            2,
+            3
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'a'}, 'location': {'path': 'tmpszwtcftr.firth', 'range': {'start': {'line': 4, 'column': 18}, 'end': {'line': 4, 'column': 19}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            3,
+            2,
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'a'}, 'location': {'path': 'tmpol2btfo6.firth', 'range': {'start': {'line': 4, 'column': 18}, 'end': {'line': 4, 'column': 19}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            2,
+            3,
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'a'}, 'location': {'path': 'tmpxrjx1b12.firth', 'range': {'start': {'line': 4, 'column': 18}, 'end': {'line': 4, 'column': 19}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            5,
+            5,
+            5
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'a'}, 'location': {'path': 'tmptxxyn6va.firth', 'range': {'start': {'line': 4, 'column': 18}, 'end': {'line': 4, 'column': 19}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            9,
+            9
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'a'}, 'location': {'path': 'tmpspc7ul_e.firth', 'range': {'start': {'line': 4, 'column': 18}, 'end': {'line': 4, 'column': 19}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "abs-diff": {
+      "needs": [
+        "cmp",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            3,
+            10
+          ],
+          "expected": [
+            7
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmpewrmolxv.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            10,
+            3
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmpjebltfhk.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmpkjvppd_1.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            7,
+            7
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmpmwmaqmwo.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            1000
+          ],
+          "expected": [
+            1000
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmpwksry6xw.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "clamp": {
+      "needs": [
+        "cmp"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            15,
+            0,
+            10
+          ],
+          "expected": [
+            10
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'lo'}, 'location': {'path': 'tmplb_eu5sg.firth', 'range': {'start': {'line': 3, 'column': 38}, 'end': {'line': 3, 'column': 40}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            5,
+            0,
+            10
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'lo'}, 'location': {'path': 'tmpc8radnb2.firth', 'range': {'start': {'line': 3, 'column': 38}, 'end': {'line': 3, 'column': 40}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            3,
+            10
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'lo'}, 'location': {'path': 'tmp3mg_4cfa.firth', 'range': {'start': {'line': 3, 'column': 38}, 'end': {'line': 3, 'column': 40}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            10,
+            10,
+            10
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'lo'}, 'location': {'path': 'tmps6fmwu0x.firth', 'range': {'start': {'line': 3, 'column': 38}, 'end': {'line': 3, 'column': 40}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            11,
+            2,
+            11
+          ],
+          "expected": [
+            11
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'lo'}, 'location': {'path': 'tmpianfq2lx.firth', 'range': {'start': {'line': 3, 'column': 38}, 'end': {'line': 3, 'column': 40}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            99,
+            5,
+            7
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'lo'}, 'location': {'path': 'tmp3y5ilz6q.firth', 'range': {'start': {'line': 3, 'column': 38}, 'end': {'line': 3, 'column': 40}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "is-even": {
+      "needs": [
+        "cmp",
+        "loop",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            6
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmprbqsx3l1.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 44}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmps48zencu.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 44}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmprn2ts0yx.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 44}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpdo5i6s7d.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 44}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            40
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmp3y1zz988.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 44}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            41
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpx3gdyd3o.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 44}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "sum-to": {
+      "needs": [
+        "cmp",
+        "loop",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            4
+          ],
+          "expected": [
+            10
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpne0_9eo2.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmprz8_yru5.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpvebw4dpu.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            55
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpo7fpzeyo.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            30
+          ],
+          "expected": [
+            465
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpo7ew_3y6.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "factorial": {
+      "needs": [
+        "cmp",
+        "loop",
+        "mul",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            4
+          ],
+          "expected": [
+            24
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmp9gka5z1o.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmppjhezaxo.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmp6_bat4ww.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            5
+          ],
+          "expected": [
+            120
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpuiap6nav.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            5040
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpqebt0a5f.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "fib": {
+      "needs": [
+        "cmp",
+        "loop",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            6
+          ],
+          "expected": [
+            8
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmp1zr8v776.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmp72oq53_4.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpc88qmf9j.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            2
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmp8_0rmuwu.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            55
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmp3_1m8zar.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            20
+          ],
+          "expected": [
+            6765
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpw6hvvedc.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "gcd": {
+      "needs": [
+        "cmp",
+        "loop",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            12,
+            18
+          ],
+          "expected": [
+            6
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmp1ipzd3tl.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'b'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            7,
+            5
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpi246_3jt.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'b'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            9,
+            3
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpa03ggiag.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'b'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            1,
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpv1jcnov0.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'b'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            48,
+            36
+          ],
+          "expected": [
+            12
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpegr_yxtl.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'b'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            17,
+            51
+          ],
+          "expected": [
+            17
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmp55u80e21.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'b'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "power": {
+      "needs": [
+        "cmp",
+        "loop",
+        "mul",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            3,
+            4
+          ],
+          "expected": [
+            81
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpq5giura0.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'exp'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            2,
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpj9zy236a.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'exp'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpmj2lyjod.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'exp'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            3
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpmc_0pll1.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'exp'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            2,
+            10
+          ],
+          "expected": [
+            1024
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpg02d238d.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'exp'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            5,
+            3
+          ],
+          "expected": [
+            125
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpoy5948tj.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'exp'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "collatz-steps": {
+      "needs": [
+        "cmp",
+        "loop",
+        "mul",
+        "sub"
+      ],
+      "submitted": false,
+      "cases": [],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 0
+    }
+  },
+  "label": "firth haiku r1"
+}

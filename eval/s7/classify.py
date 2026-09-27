@@ -11,6 +11,8 @@ are marked for a human to check.
 A task whose capabilities are not all in --available is labelled
 missing_primitive by rule, without asking Jev: in the first run Jev labelled
 those confidently as stack_effect because the checker's diagnostic dominated.
+A failure whose error mentions fuel, resource-fault or overflow is labelled
+resource_limit by rule, so runtime limits are counted apart from mistakes.
 
 Auth: TYPESAFE_API_KEY if set; in the cloud environment the proxy injects it.
 """
@@ -91,6 +93,12 @@ def main() -> int:
             continue
         if not BY_ID[tid].needs <= available:
             out[tid] = {"mode": "missing_primitive", "by": "rule"}
+            continue
+        errors = " ".join(c.get("error", "") for c in r["cases"] if not c["pass"])
+        if re.search(r"fuel|resource-fault|overflow", errors):
+            # The step budget or a VM limit stopped the run: a harness/runtime limit,
+            # counted apart from authoring mistakes.
+            out[tid] = {"mode": "resource_limit", "by": "rule"}
             continue
         ans = ask(describe(tid, solutions.get(tid, ""), r))
         out[tid] = {"mode": ans["choice"], "by": "jev", "confidence": round(ans["confidence"], 3),
