@@ -1,10 +1,12 @@
 ---
 node: firth.runtime.vm
-status: done
+status: open
 created: 2026-09-03
 ---
 
 # S5 bounded cost envelope witness
+
+> Reopened 2026-09-27 (dec.loop-freeze). The witness program adds 1, 2 and 1, which is not the non-trivial program PRD S5 asks for. The gate it names is archived. Acceptance is now in `docs/roadmap.md`, Goal status, S5.
 
 Requires: rust-vm-implementation mvp-agent-compiler-adapter mvp-agent-vm-adapter mvp-agent-elaborate-adapter
 

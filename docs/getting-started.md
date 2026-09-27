@@ -247,7 +247,6 @@ lake test
 (cd src/runtime/vm && cargo fmt --check && \
   cargo clippy --locked --all-targets -- -D warnings && cargo test --locked)
 python3 tools/loop/test_mvp_agent_gate.py
-python3 tools/loop/test_mvp_agent_coverage.py
 python3 tools/loop/mvp_agent_gate.py
 python3 tools/loop/check_language_examples.py
 ```

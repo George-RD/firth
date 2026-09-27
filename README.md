@@ -84,7 +84,7 @@ python3 tools/loop/mvp_agent_gate.py
 python3 tools/loop/check_language_examples.py
 ```
 
-For changes to governed code, also run the proof manifest and Cairn checks in
+For changes to governed code, also run the proof manifest check in
 [AGENTS.md](AGENTS.md). Do not rewrite expected results or proof pins to conceal
 a failing gate.
 
@@ -102,6 +102,7 @@ a failing gate.
 | `tools/loop/firth_run.py` | Source checking and execution command |
 | `spec/`, `specs/`, `files/` | Specifications and design material |
 | `cairn.blueprint`, `meta/` | Architecture and development provenance |
+| `archive/loop/` | Frozen autonomous-loop machinery, kept for reference |
 
 ## Licence
 

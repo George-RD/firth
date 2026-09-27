@@ -1,10 +1,12 @@
 ---
 node: firth.toolchain.agent
-status: done
+status: open
 created: 2026-08-10
 ---
 
 # MVP agent authoring
+
+> Reopened 2026-09-27 (dec.loop-freeze). The corpus is four three-line programs with unverified transcripts and no measured pass rate. The MVP gate remains a regression check, not authorship evidence. Acceptance is now in `docs/roadmap.md`, Goal status, MVP agent authoring.
 
 ## Goal
 Discharge the MVP acceptance obligation with a machine-checked agent-facing language guide, minimal example applications, and a pinned gate proving that a code model can use only the guide and agent interface to build and run basic Firth applications.

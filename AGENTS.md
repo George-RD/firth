@@ -16,7 +16,7 @@ source lives under `src/` (Lean components plus the Rust VM crate), and the
 architecture is governed by [cairn](https://github.com/cairn-framework/cairn).
 `cairn.blueprint` declares the real 22-node architecture: four product
 containers (Language, Toolchain, Runtime, Ecosystem) plus the Governance
-container for loop machinery.
+container for the frozen loop machinery.
 
 ## Architecture & Data Flow
 
@@ -58,65 +58,42 @@ combinator. Effects are modelled by a linear `World` base type in the signature
 | Path | Purpose |
 | --- | --- |
 | `files/` | Design specs. `firth-prd.md` (PRD v0.1), `firth-kernel-spec-draft.md` (kernel calculus). |
-| `cairn.blueprint` | Declared 22-node architecture: four product containers plus Governance and loop paths. |
+| `cairn.blueprint` | Declared 22-node architecture: four product containers plus Governance (the frozen loop is under `archive/`). |
 | `cairn.config.yaml` | Cairn config (`ignore: [target]`). |
 | `meta/` | Cairn artefacts. `todos/` and `contracts/` exist; `decisions/`, `research/`, `sources/`, `changes/` are created on demand. |
 | `.cairn/` | Cairn state plus its authoritative guide `.cairn/AGENTS.md`. |
 | `.claude/skills/` | Cairn dev-loop skills (see below). |
 | `src/` | Lean components (`interpreter`, `elaborator`, `agent`, `smt`) and the Rust VM crate at `src/runtime/vm`. |
 
+## Current focus (read first)
+
+The autonomous loop and its gate machinery are **frozen** as of 27 September
+2026 (`archive/loop/README.md`). Do not revive it, extend it, or add new
+governance, evidence or attestation tooling unless the maintainer asks.
+Work goes to the language itself: see `docs/roadmap.md`, especially
+"Goal status", which says which PRD goals are honestly met and which are open.
+
 ## Development Commands
 
-The root Lake package builds the Lean components (`testDriver` is
-`firthAllTest`), the Rust VM crate lives at `src/runtime/vm`, and the
-control-plane tooling is operational:
-
 ```sh
-cairn status          # project summary: nodes, findings, backlog. Start here.
-cairn context         # structural overview of nodes/edges/findings
-cairn change list     # active change proposals
-cairn get <id>        # inspect a module (IDs are dotted, see cairn.blueprint)
-cairn neighbourhood <id>
-cairn decisions / cairn research / cairn sources <id>   # provenance chain
-cairn scan            # run before committing; zero findings is the target
-cairn hook all        # strict gate; exit 0 means the commit is safe
-python3 tools/loop/test_select_unit.py
-python3 tools/loop/test_coverage.py
-python3 tools/loop/test_driver_tokens.py
-python3 tools/loop/test_review_gate.py
-python3 tools/loop/test_mvp_agent_gate.py
-python3 tools/loop/test_mvp_agent_coverage.py
-python3 tools/loop/test_smt_proof_bindings.py
-python3 tools/loop/update_smt_proof_bindings.py --check
-python3 tools/loop/mvp_agent_gate.py
-python3 tools/loop/select_unit.py --validate
-python3 tools/loop/coverage.py --validate
-
 lake build
 lake test            # driver: firthAllTest
 lake exe firthRecordIntegrityTest   # record drift, staleness and tampering
 lake exe firthAdapterIntegrationTest # the SMT slice end to end
 ( cd src/runtime/vm && cargo fmt --check && cargo clippy && cargo test --locked )
-! rg -n '\b(sorry|admit)\b' src
+python3 tools/loop/check_zero_admit.py      # no sorry/admit in Lean
+python3 tools/loop/firth_run.py check <file.firth>
+python3 tools/loop/firth_run.py run <file.firth> --entry <word>
+python3 tools/loop/check_language_examples.py
+python3 tools/loop/mvp_agent_gate.py
+for t in tools/loop/test_*.py; do python3 "$t"; done
 git diff --check
 ```
 
-For the autonomous loop launch contract and maintainer preflight, read
-[`docs/loop-runbook.md`](docs/loop-runbook.md). It defines the required
-`origin/main` publication, invocation, terminal tokens, and smoke checks.
-Unattended operation and in-loop decision authority are governed by
-`meta/decisions/loop-autonomy.md` (dec.loop-autonomy): decisions are typed,
-the goal layer is immutable to the loop, and `LOOP EXHAUSTED` with
-`tools/loop/coverage.py` reporting `loop_exhausted_valid: true` is completion
-of the active profile in `tools/loop/obligations.toml` (dec.mvp-completion:
-`mvp` = a working language an AI can use, via the agent guide, to build and
-run basic applications; post-mvp rows stay visible as roadmap).
-
-`--json` is accepted by every command for machine-readable output. The
-product gates are live: `lake build` and `lake test` at the root, and the
-VM crate gates (`cargo fmt --check`, `cargo clippy`, `cargo test --locked`)
-from `src/runtime/vm` (no root Cargo manifest exists), alongside Cairn scan
-and hook checks.
+`tools/loop/` keeps its name for now because `src/` refers to paths in it;
+everything left there is a product check or the runner, not loop machinery.
+Cairn (`cairn status`, `cairn scan`, `cairn hook all`) still describes the
+architecture, but its CI job now runs only on manual dispatch.
 
 ## Code Conventions & Common Patterns
 
@@ -163,18 +140,11 @@ and hook checks.
 
 ## Testing & QA
 
-- Control-plane tests live in `tools/loop/test_select_unit.py`,
-  `tools/loop/test_coverage.py` and `tools/loop/test_mvp_agent_gate.py`; all
-  use temporary synthetic trees and never read the real tracker in fixtures.
-  `tools/loop/test_mvp_agent_coverage.py` is the exception by design: it pins
-  the live bindings between the obligations matrix, the manifest and the
-  pinned gate, and catches a stale acceptance hash without a toolchain.
-- **The pinned MVP gate** is `tools/loop/mvp_agent_gate.py`. It verifies the
-  provenance manifest before executing anything, then rebuilds every
-  manifest-listed application in a scratch workspace holding only that
-  application's source, running elaborate, compile, VM and reference-run and
-  comparing the two observations. `python3 tools/loop/coverage.py --run-gates`
-  invokes it, and a failure holds `loop_exhausted_valid` false.
+- **The MVP gate** is `tools/loop/mvp_agent_gate.py`. It verifies the
+  provenance manifest, then rebuilds every manifest-listed application in a
+  scratch workspace, running elaborate, compile, VM and reference-run and
+  comparing the two observations. `tools/loop/test_mvp_agent_gate.py` covers
+  its fail-closed behaviour with synthetic trees.
 - **Record integrity** is covered by `firthRecordIntegrityTest`, which drives
   every way a discharge record can go stale, drift or be edited through the
   real rerun and the real refinement-discharge result boundary. It uses an
@@ -198,9 +168,8 @@ and hook checks.
   them, run `lake build && python3 tools/loop/update_proof_manifest.py`
   to regenerate the manifest (`--check` verifies); otherwise the gate
   fails with "refinement proof-module hash is unavailable".
-- **Before committing:** run `cairn scan` (target: zero findings) and
-  `cairn hook all` (strict gate; exit 0 means safe). New/moved files must be
-  reachable from a blueprint module `path` or cairn will flag them.
+- **Before committing:** run the development commands above. New or moved
+  files should stay reachable from a blueprint module `path`.
 
 ## The Cairn Development Loop
 

@@ -12,9 +12,29 @@ honestly. This is a testable interpretation of PRD G8/G9, not a new syntax or
 orchestration project. The first consumer is a pure inventory allocator inside
 an ordinary host application.
 
-The obligations matrix and `meta/todos/` remain the work authority. This page
-explains their order. `coverage.py --run-gates` reports the active work and
-executable gates; an empty queue alone never establishes product acceptance.
+This page and the maintainer are the work authority. The autonomous loop,
+its obligations matrix and its completion check were frozen on 27 September
+2026 (`dec.loop-freeze`, `archive/loop/README.md`). `meta/todos/` is a record
+of tasks, not a definition of done.
+
+## Goal status
+
+Checked on 27 September 2026 against `main` at c6b1a19. "Met" means the PRD's
+own wording is satisfied, not a narrowed reading of it.
+
+| Goal | Status | What honestly done looks like |
+| --- | --- | --- |
+| S1. Kernel metatheory, zero admits | Met | Preservation, progress and determinism are proved in Lean with no `sorry` or `admit` (`check_zero_admit.py`). This covers the kernel calculus, not the surface elaborator. |
+| S2. No compiler/reference divergence under sustained fuzzing | Open | The harness exists but runs 24 seeded cases over a language whose only primitive is `+`. Done is a retained campaign over the whole executable language (arithmetic, comparison, recursion, data) at a stated scale with zero divergences. |
+| S3. Verified live patch end to end | Open | Not demonstrated. Deliberately after M1. |
+| S4. Self-hosted standard library | Open | `stdlib/core.firth` is 21 lines. Done is a library written in Firth that the M1 component actually uses, checked by the toolchain. |
+| S5. Non-trivial program, verified to a spec, run in a cost bound | **Reopened** | Previously "met" by a program that adds 1, 2 and 1. Done is the M1 inventory allocator (or a program of the same weight): it iterates over a bounded collection using arithmetic and comparison, its stated properties (conservation, no over-allocation, the fulfilment policy) are checked by the toolchain, not only by tests, and it runs on the VM with results matching the reference interpreter inside a cost bound stated as a function of input size. Until source refinements are executable (`language-06`), the fixed independent corpus is the check and that gap is stated. |
+| S6. Third-party VM reimplementation | Open | Needs an outside party. Not a near-term goal. |
+| S7. Measured machine authorship | Open | See the next row. Full S7 also needs the same tasks in a mainstream language as the baseline, and a materially higher pass rate in Firth. |
+| MVP agent authoring | **Reopened** | Previously "met" by four three-line programs with unverified transcripts. Done is a fixed task set written before any trial (about 20 tasks, several at allocator weight), attempted by a fresh-context model given only the guide and the diagnostics loop, several attempts per task. A pass means check, run and expected outputs all agree. Report the pass rate with retained transcripts naming the model and date. A low rate is an acceptable result; an unmeasured one is not. |
+
+The MVP gate (`tools/loop/mvp_agent_gate.py`) stays as a regression check that
+the example corpus still builds and runs. It is not evidence for S5 or S7.
 
 ## Milestones and acceptance
 
@@ -75,9 +95,7 @@ before ending the session. It must not survive only in a PR comment.
 
 Record these separately: implemented, verified at a commit, merged, and
 accepted on main. A branch-local `done` status is not a landed release.
-The existing `mvp` profile remains active, with the concrete consumer and agent
-pilot added by the maintainer-authorised milestone decision. Original
-post-mvp rows remain visible; do not switch to `full` just to grow the queue.
+Only the maintainer moves a goal in the table above to "Met".
 
 The acceptance specification and expected results are not writable targets for
 an implementation agent trying to get green tests. Changes require a reviewed
