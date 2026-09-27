@@ -1,0 +1,20 @@
+\ Locals used after running a quotation whose stack effect is known where it
+\ runs. `b` must still be found under the result: z stays below, r = (a+1) - b.
+: call-then-local
+  (forall ρ; ρ z:Int^many a:Int^many b:Int^many -- ρ z:Int^many r:Int^many)
+  locals { a b } { a [ 1 prim + ] call b prim - };
+
+: compose-then-local
+  (forall ρ; ρ z:Int^many a:Int^many b:Int^many -- ρ z:Int^many r:Int^many)
+  locals { a b } { a [ 1 prim + ] [ ] compose call b prim - };
+
+\ A locals block inside a quotation using the enclosing block's local `step`.
+: add-step-twice
+  (forall ρ; ρ x:Int^many step:Int^many -- ρ r:Int^many)
+  locals { x step } { x [ locals { v } { v step prim + } ] dup compose call };
+
+\ The body's inner `dip` needs a value below its own seeds. The tracker once
+\ truncated here instead of widening the body, and ran this as [3, 0].
+: dup-dip-then-local
+  (forall ρ; ρ z:Int^many a:Int^many b:Int^many -- ρ z:Int^many r:Int^many)
+  locals { a b } { a 1 [ dup [ prim + ] dip drop ] call b prim - };

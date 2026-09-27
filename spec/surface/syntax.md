@@ -337,18 +337,35 @@ For example, focusing the bottom of `[a,b,c]` emits
 leaves `[b,c,a]`. Focus never copies or discards a value.
 
 A local name is a select operation that places its slot on top for the next
-ordinary item. If a slot has `d` total selects, the first select emits
-`focus(x,S)` followed by exactly `d - 1` `dup` atoms, provided `x` is `many`.
-The original and each resulting copy receive distinct identities in production
-order. Every select always uses the most recently produced identity that remains
-available in `S`, including the first select; consequently, the original
-identity is selected last. This agrees with `dup` leaving its newly produced
-copy on top. A selected identity is marked used and removed from the available
-set immediately, so consecutive demands select distinct identities. A used
-identity never becomes available again; an ordinary word or primitive may
-consume it or leave it on `S` according to its declared stack effect. For
-`d = 1` no `dup` is emitted. A linear slot must have exactly one select and is
-never passed to `dup`. Ordinary words and primitives then apply their declared
+ordinary item. If a select of slot `x` is followed by further selects of `x`
+in the same body, and `x` is `many`, it first copies `x` where it sits, with
+`dup` under as many `dip`s as there are values above `x`, then emits
+`focus` of the copy (which sits directly above `x`). The copy receives a fresh
+identity and is the one selected; the original stays available. The last select
+of `x` makes no copy and focuses the original identity itself. Making one copy
+per select, rather than all copies at the first select, keeps the stack, and
+therefore every later focus, as shallow as the locals in scope. A selected
+identity is marked used and removed from the available set immediately, so
+consecutive demands select distinct identities. A used identity never becomes
+available again; an ordinary word or primitive may consume it or leave it on
+`S` according to its declared stack effect. An identity that is still
+available is a name, not a stack value: the body sees only the values that are
+not unused locals, as if the block had taken its values off the stack. A
+nested block binds the top values the body can see, naming them where they
+sit, so binding emits no code. An atom, word or primitive runs on the values
+the body can see: unused locals lying among the values it takes are first
+moved to the top with `focus`, and it then runs beneath the unused locals on
+top, as `[ item ] dip` once per local. For example, in
+`locals { a } { 1 prim + }` the `1` is added to the value below `a`: the
+expansion is `1 swap [prim +] dip`, not `1 prim +`, which would add it to `a`. A name refers to
+the innermost block that binds it, whatever the stack positions. The last
+select counts every later select in the same block, including those inside
+nested blocks and quotations. A select of an enclosing block's `many` local
+always copies, because the inner block can't see uses after it ends; cleanup
+of the enclosing block drops the copy left over. When a block ends, whatever
+is left of its locals has been used and becomes anonymous, so its names no
+longer shadow the enclosing ones. A linear slot must have exactly one select
+and is never copied. Ordinary words and primitives then apply their declared
 stack effects to `S`, consuming and producing fresh slot identities as
 appropriate. The kernel type checker validates every transition.
 
@@ -362,8 +379,7 @@ silently discarded, is an error.
 
 This is a total algorithm: the finite body is scanned once, each focus emits a
 finite number of adjacent swaps, each usage count is finite, and the
-most-recently-produced remaining copy rule gives exactly one identity to every
-demand. It fails with a diagnostic if a name is absent, a required focus is not
+copy-per-select rule gives exactly one identity to every demand. It fails with a diagnostic if a name is absent, a required focus is not
 represented by the current typed stack, or a linear usage count is not exactly
 one. The canonical output is therefore unique and contains only kernel atoms,
 dictionary words, primitives, and recursively constructed quotation literals.
@@ -381,6 +397,25 @@ expansion total, with no search or implementation-defined choice.
 
 The expansion is checked normally, so locals cannot bypass stack, usage, or
 refinement checking.
+
+A quotation literal records the stack effect of its body as a pair (values
+taken, values left) when every step of the body has a known effect. The body
+is erased against the smallest number of anonymous input values for which no
+step lacks inputs, so the pair is exact. `quote` gives `(0, 1)`; `compose`
+combines the two pairs; `if` uses its branches' common effect. `call`, `dip`
+and `if` then move `S` by that effect, and fail when `S` holds fewer values
+than it takes rather than truncating. A quotation whose effect is not known
+(one passed in, or produced by a word) leaves `S` inexact from there on: a
+later select or cleanup of a local fails with
+`firth.elaboration.untracked-local` rather than guess where the local is.
+
+A quotation inside a block may use the block's locals, and those of enclosing
+blocks. Its body is erased on its own, so the quotation is closed over the
+locals it uses where it is built: `[ s ]` using `x` and `y` becomes
+`x quote y quote compose [ locals { x y } { s } ] compose`. The values are
+selected like any other use; when the quotation runs it pushes them and binds
+them again, so `s` is erased as the body of an ordinary block, and the
+constant prefix has the known effect `(0, 2)`.
 
 The same algorithm is applied recursively to every nested quotation or local
 block. Each body is erased against its own typed symbolic stack, and each local

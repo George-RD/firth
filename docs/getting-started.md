@@ -233,7 +233,7 @@ execution-trace equivalence.
 | Source type name for integers | `Int`; the executable literal representation is currently non-negative |
 | Primitive operations | `prim +`, `prim -` (truncates at 0), `prim *` : `Int Int -- Int`; `prim <`, `prim =` : `Int Int -- Bool` |
 | Definitions | Explicit stack effects, multiple words, qualified vocabulary names, recursion with finite fuel |
-| Composition | Core stack operations, quotations, `call`, `if`, named locals; matching checked effects are required |
+| Composition | Core stack operations, quotations, `call`, `if`, named locals (a block takes its values off the stack; a local may be used any number of times, inside `if` branches, inside quotations and inside nested blocks. A local can't be used after running a quotation whose stack effect is unknown there, such as one passed in as a value; that is refused with `firth.elaboration.untracked-local`); matching checked effects are required |
 | Quotations as external inputs/results | Explicitly rejected; returned bodies and captures do not yet have a shared comparison format |
 | Negative integers, text and character execution | Not implemented by the portable compiler/adapters |
 | `send`, file/network I/O, external resources | Not implemented by this portable execution path |
