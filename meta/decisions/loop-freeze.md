@@ -2,7 +2,8 @@
 id: dec.loop-freeze
 nodes: [firth.governance, firth.governance.loop]
 status: accepted
-related: [dec.loop-autonomy, dec.mvp-completion, dec.mvp-gate-provenance]
+supersedes: [dec.loop-autonomy, dec.mvp-completion]
+related: [dec.mvp-gate-provenance]
 date: 2026-09-27
 ---
 # Freeze the autonomous loop and reopen downgraded goals
