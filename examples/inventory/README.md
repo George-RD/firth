@@ -10,6 +10,7 @@ as four Ints, and turning the result codes back into JSON.
 ```sh
 python3 examples/inventory/run_cases.py          # the 53 fixed cases
 python3 examples/inventory/measure_cost.py       # cost against batch size
+python3 examples/inventory/policy_change.py      # the partial to all-or-nothing change
 ```
 
 Every case that reaches Firth runs on the VM and the reference interpreter,
@@ -46,6 +47,40 @@ path.
 This bound is measured and explained by the program's structure, not proved.
 The toolchain does not yet check refinements or cost claims (`language-06`).
 
+## Changing the policy
+
+The spec's maintenance task changes a partial-fulfilment client to
+all-or-nothing while preserving conservation, order, input validation and
+later fulfilment. `policy-change/partial.firth` is that client before the
+change and `policy-change/all-or-nothing.firth` after it. Each defines one word,
+`reserve`, which supplies the policy and calls `allocate-batch`. The change is
+one token, `false` to `true`, because the spec makes the policy an input to the
+component; nothing in `allocator.firth` changes.
+
+`policy_change.py` checks that claim, and the behaviour, with what the
+toolchain produces:
+
+- **Changed words and dependents.** It elaborates and compiles both programs,
+  compares every word's body digest and erased type from the compiler, and
+  follows `call-word` edges in the compiled program. It fails unless `reserve`
+  is the only changed word and no word depends on it; the 14 allocator words
+  keep their digests. Both programs share `allocator.firth`, so that
+  comparison alone cannot see an allocator edit; an allocator change is its
+  own change, gated by `run_cases.py` and `measure_cost.py`. To show the check
+  is not vacuous, the script also compiles a mutant whose `allocate-one` gains
+  a no-op, and fails unless it reports `allocate-one` changed with
+  `allocate-from` and `allocate-batch` as dependents.
+- **Regression.** Each of the 30 cases that reach Firth runs through both
+  clients on the VM and the reference interpreter, 60 runs in all. Where the
+  case's policy is the client's, the result must equal the corpus's fixed
+  output. Otherwise it must equal the independently tested model in
+  `tools/loop/test_inventory_contract.py` and keep the spec's properties
+  (conservation, IDs and order, no request over its quantity, the policy's own
+  rule). Validation errors come out the same under both clients, and the
+  paired `partial-oversize-first` and `whole-oversize-first` cases show the
+  behaviour change. Every run stays within the cost bound plus the 6 steps
+  `reserve` adds.
+
 ## What the language needed
 
 - **Locals were expensive in hot loops.** A local cost tens of kernel steps
@@ -57,5 +92,8 @@ The toolchain does not yet check refinements or cost claims (`language-06`).
   pair was already hand-written and is unchanged.
 - **There is no Boolean `and` or absolute difference.** Both are written with
   nested `if`.
+- **There are no imports.** `vocab` groups words inside one file, but a
+  client cannot name `allocator.firth` from another file, so `policy_change.py` builds each program by putting the allocator's
+  source before the client's.
 - **Integers were naturals** when this was first written. Since signed `Int`
   landed, the stock's lower bound is an ordinary `-1 available prim <` check.

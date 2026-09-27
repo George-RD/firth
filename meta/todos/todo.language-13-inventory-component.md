@@ -24,8 +24,15 @@ Run and modify an inventory-allocation component written in Firth.
   host, and CI runs the fixed corpus on both hosts: all 53 cases pass (the 3
   negative-input cases since signed `Int`). The worst case cost is at most
   417 + 767n + 264n(n-1)/2 kernel steps; that bound is measured, not proved.
-  Still open: the policy-change demonstration and toolchain-checked
-  properties (`language-06`).
+  Still open: toolchain-checked properties (`language-06`).
+- 27 September 2026: `examples/inventory/policy_change.py` changes a
+  partial client (`policy-change/partial.firth`) to all-or-nothing and runs in
+  CI. From the compiler's word digests and call graph it checks that only the
+  client word `reserve` changed and nothing depends on it. It runs all 30
+  Firth-reaching cases through both clients on both hosts, against the corpus
+  where the policy matches and the tested model plus the spec's properties
+  where it does not. Firth has no imports, so each program is the allocator's
+  source followed by the client's.
 
 ## Traceability
 
