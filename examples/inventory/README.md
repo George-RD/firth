@@ -64,9 +64,12 @@ toolchain produces:
   compares every word's body digest and erased type from the compiler, and
   follows `call-word` edges in the compiled program. It fails unless `reserve`
   is the only changed word and no word depends on it; the 14 allocator words
-  keep their digests. Editing any allocator word makes it fail: changing
-  `allocate-one` reports `allocate-one` changed, with `allocate-from` and
-  `allocate-batch` as its dependents.
+  keep their digests. Both programs share `allocator.firth`, so that
+  comparison alone cannot see an allocator edit; an allocator change is its
+  own change, gated by `run_cases.py` and `measure_cost.py`. To show the check
+  is not vacuous, the script also compiles a mutant whose `allocate-one` gains
+  a no-op, and fails unless it reports `allocate-one` changed with
+  `allocate-from` and `allocate-batch` as dependents.
 - **Regression.** Each of the 30 cases that reach Firth runs through both
   clients on the VM and the reference interpreter, 60 runs in all. Where the
   case's policy is the client's, the result must equal the corpus's fixed

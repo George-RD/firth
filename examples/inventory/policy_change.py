@@ -15,7 +15,9 @@ Two checks, both against what the toolchain itself produces:
    type differs; its dependents are every word that reaches it through
    `call-word` in the compiled target program. The check fails unless exactly
    `reserve` changed, nothing depends on it, and every allocator word keeps its
-   digest and type.
+   digest and type. Both programs share `allocator.firth`, so the script also
+   compiles a mutant with one allocator word edited and fails unless that
+   word and its callers are reported: the check can see an allocator change.
 2. Regression evidence. Every corpus case that reaches Firth runs through both
    clients on the VM and the reference interpreter, which must agree
    (`mvp_agent_gate.rebuild`). When a case's policy is the client's, the result
@@ -51,19 +53,20 @@ CHANGED = {ENTRY}
 # `reserve` puts the policy under the IDs and quantities, then calls
 # `allocate-batch`: the kernel steps it adds to every run.
 CLIENT_COST = 6
+MUTANT_EDIT = ("[ remaining requested prim - requested 0 ]",
+               "[ remaining requested prim - requested 0 prim + 0 ]")
+MUTANT_IMPACT = ({"allocate-one", "reserve"}, {"allocate-from", "allocate-batch"})
 
 
 def program_text(policy: str) -> str:
     return host.SOURCE.read_text(encoding="utf-8") + "\n" + CLIENTS[policy].read_text(encoding="utf-8")
 
 
-def compile_program(policy: str, workspace: Path) -> dict[str, Any]:
+def compile_program(name: str, text: str, workspace: Path) -> dict[str, Any]:
     """The toolchain's own view of one program: digests, types and calls."""
-    name = f"compile-{policy}"
     scratch = workspace / name
     scratch.mkdir()
     source_name = "inventory-client.firth"
-    text = program_text(policy)
     (scratch / source_name).write_text(text, encoding="utf-8")
     elaboration = gate.adapter(
         [str(gate.LEAN_BIN / "firthElaborate")],
@@ -91,6 +94,21 @@ def compile_program(policy: str, workspace: Path) -> dict[str, Any]:
              for word in target}
     types = {by_source[word["name"]]: word["erased_word_type"] for word in target}
     return {"digests": compiled["word_digests"], "types": types, "calls": calls}
+
+
+def mutant_text() -> str:
+    """The after program with an allocator word edited as well.
+
+    Both programs share `allocator.firth`, so on its own the comparison above
+    cannot see an allocator edit: this change touches only the client, and
+    any allocator change is reviewed and gated as its own change. The mutant
+    shows the check is not vacuous: it adds a no-op to `allocate-one`'s
+    fulfilled branch, and the check must report that word and its callers.
+    """
+    text = program_text("all-or-nothing")
+    if MUTANT_EDIT[0] not in text:
+        raise SystemExit(f"mutant: {MUTANT_EDIT[0]!r} is no longer in allocate-one; update MUTANT_EDIT")
+    return text.replace(*MUTANT_EDIT, 1)
 
 
 def calls_in(code: list[dict[str, Any]]) -> set[str]:
@@ -178,12 +196,19 @@ def main() -> int:
     failed = False
     with tempfile.TemporaryDirectory(prefix="firth-policy-change-") as directory:
         workspace = Path(directory)
-        before, after = (compile_program(policy, workspace) for policy in CLIENTS)
+        before, after = (compile_program(f"compile-{policy}", program_text(policy), workspace)
+                         for policy in CLIENTS)
         impact = change_impact(before, after)
         print(f"changed words: {impact['changed']}; dependents: {impact['dependents']}; "
               f"unchanged: {len(impact['unchanged'])} words")
         if set(impact["changed"]) != CHANGED or impact["dependents"]:
             print("fail: the change reaches beyond the client word")
+            failed = True
+        detected = change_impact(before, compile_program(
+            "compile-mutant", mutant_text(), workspace))
+        print(f"mutant: changed {detected['changed']}; dependents {detected['dependents']}")
+        if (set(detected["changed"]), set(detected["dependents"])) != MUTANT_IMPACT:
+            print("fail: the impact check missed an allocator edit")
             failed = True
         programs = {}
         for policy in CLIENTS:
