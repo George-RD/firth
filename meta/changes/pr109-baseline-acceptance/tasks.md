@@ -5,6 +5,6 @@
 - [x] Audit active-profile obligations and open implementation todos.
 - [x] Run the complete gate set on the candidate and record the counts.
 - [x] Record candidate verification with commit identities.
-- [ ] Rerun acceptance on merged main and record landed acceptance with the
-      main commit id. This cannot be done on a branch; the todo stays open
-      until it is.
+- [x] Rerun acceptance on merged main and record landed acceptance with the
+      main commit id. The completed post-merge run and retained coverage are
+      recorded in `landed-main.md`.

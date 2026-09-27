@@ -17,12 +17,6 @@ git clone https://github.com/George-RD/firth.git
 cd firth
 ```
 
-Until PR #109 is merged, its runner is on this branch:
-
-```sh
-git checkout claude/firth-workflow-orchestration-rmqipj
-```
-
 The checked-in pins select Lean `leanprover/lean4:v4.30.0` and Rust `1.93.0`.
 Do not substitute an arbitrary Lean version: proof-module identities are
 verified against the pinned build. Rust's pin includes rustfmt and clippy.
@@ -140,6 +134,51 @@ a word inside `vocab arithmetic { ... }`. The locals example uses
 than a runtime environment. See the frozen
 [agent language guide](firth-agent-guide.md) for the wider grammar and
 ownership model; the support table below takes precedence for this runner.
+
+## Saved regression tests
+
+The same public runner can check saved input/output cases against both the VM
+and reference interpreter:
+
+```sh
+python3 tools/loop/firth_run.py test examples/mvp/choose-increment.tests.json
+```
+
+A suite uses the following format. `source` is relative to the suite file,
+not the current working directory. Every case names its entry explicitly.
+
+```json
+{
+  "schema": "firth.tests.v1",
+  "source": "choose-increment.firth",
+  "cases": [
+    {"name": "increment when true", "entry": "main", "stack": [41, true], "expected_stack": [42]},
+    {"name": "keep value when false", "entry": "main", "stack": [41, false], "expected_stack": [41]},
+    {"name": "call helper directly", "entry": "increment", "stack": [9], "expected_stack": [10]}
+  ]
+}
+```
+
+A suite must have 1 to 128 cases with unique non-empty names, fit within
+1,048,576 UTF-8 bytes, and use at most 256 values per input or expected stack.
+Both stacks use the portable integers and Booleans listed below; `true` never
+matches `1`. Unknown or duplicate JSON fields, invalid values and empty suites
+are rejected before a build. Absolute source paths are not accepted. Relative
+paths such as `../src/component.firth` are supported.
+
+The toolchain builds once per suite. Each case then checks and compiles the
+source in a separate scratch workspace, compares both hosts, and checks the
+expected stack. A failure does not skip later cases. `--fuel` has the same
+bounds as `run` and applies separately to every case. Exhaustion is a failure,
+not a passing test. Version 1 does not support expected-error cases or skips.
+
+A completed suite prints one `firth.test-results.v1` JSON report to stdout with
+`status`, `passed`, `failed` and ordered `cases`. Its exit code is `0` only when
+all cases pass, otherwise `1`. Invalid input or a setup/build failure instead
+prints a JSON error to stderr and exits `1`; command usage errors exit `2`.
+Each completed execution retains its `trace_comparison` label. A matching
+expected stack does not upgrade unsupported quotation-trace comparison to
+agreement, prove a source contract or establish compiler correctness.
 
 ## Errors and finite execution
 
@@ -261,7 +300,9 @@ python3 tools/loop/check_language_examples.py
 
 `check_language_examples.py` exercises the examples, both conditional paths,
 word ordering, row preservation, external input failures, a type error, fuel
-exhaustion and overflow. It also invokes the documented check/run commands.
+exhaustion and overflow. It also invokes the documented check/run/test commands
+and runs saved suites covering expected results, typed mismatches and failure
+continuation.
 These fixtures test implementation behaviour; they are not presented as a
 fresh independent-agent benchmark. The original four authored examples keep
 their separate source and transcript provenance in the MVP manifest.
