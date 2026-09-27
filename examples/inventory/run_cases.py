@@ -8,10 +8,8 @@ into JSON. Everything else (bounds, repeated IDs and the allocation) runs in
 `allocator.firth` on the VM and the reference interpreter, which must agree
 (`mvp_agent_gate.rebuild`). The result must equal the corpus's fixed expected
 output; the corpus is never rewritten from what the program produces.
-
-A case that needs a negative integer to reach the component is reported as
-blocked: Firth integers are naturals until signed Int lands, and the spec
-forbids moving that bound check into the host.
+Negative integers reach the component as they are: the lower bounds are
+Firth's checks, not the host's.
 """
 from __future__ import annotations
 
@@ -37,20 +35,16 @@ ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-"
 ID_PATTERN = re.compile(r"[A-Za-z0-9_-]{1,32}")
 INT64 = range(-(2**63), 2**63)
 # Worst-case kernel cost for a batch of n requests, from measure_cost.py:
-# 391 to enter and validate an empty batch, at most 767 per request (the
+# 417 to enter and validate an empty batch, at most 767 per request (the
 # partial branch; fulfilled is 756), and 264 per pair of requests for the
-# repeated-ID scan. At n = 64 that is 581,703, inside the VM's 1,000,000-step
+# repeated-ID scan. At n = 64 that is 581,729, inside the VM's 1,000,000-step
 # fuel cap. Every corpus run is checked against it.
 def cost_bound(n: int) -> int:
-    return 391 + 767 * n + 264 * n * (n - 1) // 2
+    return 417 + 767 * n + 264 * n * (n - 1) // 2
 
 
 REASONS = ["fulfilled", "partial", "out-of-stock", "insufficient-stock"]
 ERRORS = {1: "invalid-range", 2: "duplicate-id"}
-
-
-class Blocked(Exception):
-    """The case needs a value the component cannot receive yet."""
 
 
 def error(code: str) -> dict[str, str]:
@@ -87,8 +81,6 @@ def host_decode(value: Any) -> dict[str, str] | list[Any]:
     integers = [available] + [request["quantity"] for request in requests]
     if any(number not in INT64 for number in integers):
         return error("invalid-range")
-    if any(number < 0 for number in integers):
-        raise Blocked("a negative integer must reach the component; needs signed Int")
     ids = [encode_id(request["id"]) for request in requests]
     return [available, policy == "all-or-nothing",
             [part for parts in ids for part in parts],
@@ -106,10 +98,7 @@ def host_encode(requests: list[dict[str, Any]], stack: list[Any]) -> dict[str, A
 
 def run_case(index: int, case: dict[str, Any]) -> dict[str, Any]:
     result: dict[str, Any] = {"name": case["name"]}
-    try:
-        decoded = host_decode(case["input"])
-    except Blocked as reason:
-        return result | {"outcome": "blocked", "detail": str(reason)}
+    decoded = host_decode(case["input"])
     if isinstance(decoded, dict):
         actual, result["ran"] = decoded, "host"
     else:
@@ -146,8 +135,8 @@ def main() -> int:
         where = f" [{result['ran']}]" if "ran" in result else ""
         extra = f": {result.get('detail') or result.get('actual')}" if result["outcome"] != "pass" else ""
         print(f"{result['outcome']:7} {result['name']}{where}{cost}{extra}")
-    counts = {outcome: sum(r["outcome"] == outcome for r in results) for outcome in ("pass", "fail", "blocked")}
-    print(f"{counts['pass']} pass, {counts['fail']} fail, {counts['blocked']} blocked of {len(results)}")
+    counts = {outcome: sum(r["outcome"] == outcome for r in results) for outcome in ("pass", "fail")}
+    print(f"{counts['pass']} pass, {counts['fail']} fail of {len(results)}")
     if args.json:
         args.json.write_text(json.dumps(results, indent=1) + "\n", encoding="utf-8")
     return 1 if counts["fail"] else 0
