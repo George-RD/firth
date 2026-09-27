@@ -187,10 +187,12 @@ fn run_honours_an_explicit_fuel_budget() {
     assert!(report.contains("trap: fuel-exhausted\n"), "{report}");
 
     // The CLI shares the adapter's fuel bound: above it is a usage error.
-    let output = firth_vm(&["run", &path, "--fuel", "4097"]);
+    let above = (firth_vm::MAX_FUEL + 1).to_string();
+    let output = firth_vm(&["run", &path, "--fuel", &above]);
     assert_eq!(output.status.code(), Some(2));
     assert_eq!(output.stderr, USAGE);
-    let output = firth_vm(&["run", &path, "--fuel", "4096"]);
+    let at = firth_vm::MAX_FUEL.to_string();
+    let output = firth_vm(&["run", &path, "--fuel", &at]);
     assert!(output.status.success());
 }
 
@@ -387,7 +389,7 @@ fn vm_run_reports_call_depth_exceeded_for_a_self_recursive_program() {
 
 #[test]
 fn vm_run_accepts_a_request_exactly_at_the_fuel_bound_and_refuses_the_next() {
-    for (fuel, accepted) in [(4096, true), (4097, false)] {
+    for (fuel, accepted) in [(firth_vm::MAX_FUEL, true), (firth_vm::MAX_FUEL + 1, false)] {
         let mut child = spawn_vm_run();
         child
             .stdin

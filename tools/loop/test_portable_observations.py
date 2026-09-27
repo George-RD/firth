@@ -148,12 +148,12 @@ class PortableObservationTests(unittest.TestCase):
                         gate.compare(*pair, "malformed-observation")
 
     def test_comparison_fuel_has_the_same_contract_as_execution_fuel(self) -> None:
-        for fuel in (True, False, -1, 4097, 100001, 1.0, "10", None):
+        for fuel in (True, False, -1, gate.MAX_FUEL + 1, 10 * gate.MAX_FUEL, 1.0, "10", None):
             with self.subTest(fuel=fuel):
                 with self.assertRaisesRegex(gate.GateError, "fuel"):
                     gate.compare(*observations(), "invalid-fuel", fuel=fuel)
-        gate.compare(*observations(), "bound", fuel=4096)
-        self.assertEqual(gate.MAX_FUEL, 4096)
+        gate.compare(*observations(), "bound", fuel=gate.MAX_FUEL)
+        self.assertEqual((gate.FUEL, gate.MAX_FUEL, gate.MAX_TRACE_EVENTS), (100_000, 1_000_000, 4096))
 
     def test_fuel_exhaustion_traps_and_overflow_never_pass(self) -> None:
         for trap in ("fuel-exhausted", "primitive-fault", "stack-fault"):
@@ -224,6 +224,25 @@ class TraceComparisonTests(unittest.TestCase):
         per_event = [target_event(0, [], 1, 1), target_event(1, [one], 1, 1, pc=1),
                      target_event(2, [one, two], 1, 1, pc=2)]
         self.assertEqual(gate.compare(*traced(reference, per_event), "per-event"), gate.TRACE_AGREED)
+
+    def test_traces_at_the_limit_are_compared_on_their_common_prefix(self) -> None:
+        # Both hosts stop recording after MAX_TRACE_EVENTS raw events. The VM's
+        # zero-kernel event means its prefix projects to one event fewer, so
+        # the common projected prefix is compared and labelled as a prefix.
+        one = literal("nat", 1)
+        reference = [reference_event(0, [], 1), reference_event(1, [one], 1),
+                     reference_event(2, [one, one], 1)]
+        target = [target_event(0, [], 1, 1), target_event(1, [one], 1, 0, pc=1),
+                  target_event(2, [one], 1, 1, pc=2)]
+        with patch.object(gate, "MAX_TRACE_EVENTS", 3):
+            self.assertEqual(gate.compare(*traced(reference, target, total=5), "prefix"),
+                             gate.TRACE_PREFIX_AGREED)
+            target[2] = target_event(2, [one, one], 1, 1, pc=2)
+            with self.assertRaisesRegex(gate.TraceMismatch, "trace event 1 stack"):
+                gate.compare(*traced(reference, target, total=5), "prefix-mismatch")
+            with self.assertRaisesRegex(gate.GateError, "trace limit"):
+                gate.compare(*traced(reference + [reference_event(3, [], 1)], target, total=5),
+                             "over-limit")
 
     def test_zero_cost_pushes_and_capture_restorations_project_away(self) -> None:
         # `42 quote call`: the reference's zero-cost S-PUSH and the VM's
@@ -311,9 +330,9 @@ class FirthRunInputTests(unittest.TestCase):
             stderr = io.StringIO()
             with patch.object(gate, "build_toolchain", side_effect=AssertionError("must not build")), \
                     redirect_stderr(stderr):
-                code = firth_run.main(["run", source.name, "--entry", "main", "--fuel", "4097"])
+                code = firth_run.main(["run", source.name, "--entry", "main", "--fuel", str(gate.MAX_FUEL + 1)])
             self.assertEqual(code, 1)
-            self.assertIn("0 to 4096", json.loads(stderr.getvalue())["error"])
+            self.assertIn(f"0 to {gate.MAX_FUEL}", json.loads(stderr.getvalue())["error"])
 
 
 class AdapterJsonTests(unittest.TestCase):

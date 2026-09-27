@@ -197,8 +197,11 @@ python3 tools/loop/firth_run.py run examples/mvp/double.firth \
   --entry missing --stack '[21]'
 ```
 
-The default fuel budget is 4096 steps, which is also the largest budget the VM
-adapter accepts: `--fuel` accepts an integer from 0 to 4096. Recursive
+The default fuel budget is 100,000 steps, and `--fuel` accepts an integer from
+0 to 1,000,000 (the largest budget the VM adapter accepts). Each host records
+only the first 4096 trace events; later steps still run and are charged, the
+final stack and kernel cost are compared in full, and the trace comparison is
+then reported as `agreed-prefix` rather than `agreed`. Recursive
 definitions are permitted, but exhausting the bound does not prove divergence
 and is never accepted as a successful run. A call in last position (a word
 call, `call` or `if` as the final instruction of a word or quotation body) is a

@@ -472,7 +472,7 @@ class ExecutionWiringTests(unittest.TestCase):
                 result = self.gate.rebuild({"name": "test", "entry": "main", "source": str(source),
                                            "source_path": "source.firth"}, root)
         self.assertEqual(result["trace_comparison"], self.gate.TRACE_AGREED)
-        for fuel in (4097, -1, True):
+        for fuel in (self.gate.MAX_FUEL + 1, -1, True):
             with self.subTest(fuel=fuel), self.assertRaisesRegex(self.gate.GateError, "fuel"):
                 self.gate.rebuild({"name": "test", "entry": "main", "source": "x", "source_path": "x"},
                                   Path("/nonexistent"), fuel=fuel)

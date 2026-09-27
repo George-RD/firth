@@ -407,13 +407,49 @@ fn observations_never_contain_an_invalid_frame() {
 }
 
 #[test]
+fn a_run_past_the_trace_limit_keeps_the_trace_prefix_and_charges_every_step() {
+    // `main` fills one word's worth of stack, then tail-calls `more`, which
+    // fills another: twice the trace limit in steps.
+    let fill =
+        |count: usize| -> Vec<Instruction> { (0..count).map(|_| literal(Value::Int(1))).collect() };
+    let mut main = fill(firth_vm::MAX_TRACE_EVENTS - 1);
+    main.push(Instruction {
+        op: Op::CallWord,
+        operand: Some(Operand::Word("more".to_owned())),
+    });
+    let image = seal_image(
+        1,
+        vec![
+            word("main", main),
+            word("more", fill(firth_vm::MAX_TRACE_EVENTS)),
+        ],
+    );
+    let firth_vm::ExecutionOutcome::Complete(report) =
+        firth_vm::execute_diagnostic(&image, firth_vm::DEFAULT_FUEL, &default_registry())
+    else {
+        panic!("the run completes within the default budget")
+    };
+    let steps = 2 * firth_vm::MAX_TRACE_EVENTS - 1;
+    assert_eq!(report.stack.len(), steps);
+    assert_eq!(report.trace.len(), firth_vm::MAX_TRACE_EVENTS);
+    assert_eq!(report.cost.instructions, steps as u64 + 1);
+    assert!(report.cost.total > firth_vm::MAX_TRACE_EVENTS as u64);
+    assert_eq!(report.trace[0].stack.len(), 0);
+    assert_eq!(
+        report.trace[firth_vm::MAX_TRACE_EVENTS - 1].stack.len(),
+        firth_vm::MAX_TRACE_EVENTS - 1
+    );
+}
+
+#[test]
 fn the_execution_bounds_are_pinned_by_value() {
     // `tests/bounds.rs` names these by value so it also compiles against the
     // unchanged runtime for the gate's baseline mode; this ties the values to
     // the crate constants.
     assert_eq!(firth_vm::MAX_CALL_DEPTH, 256);
-    assert_eq!(firth_vm::MAX_FUEL, firth_vm::DEFAULT_FUEL);
-    assert_eq!(firth_vm::MAX_FUEL, 4096);
+    assert_eq!(firth_vm::DEFAULT_FUEL, 100_000);
+    assert_eq!(firth_vm::MAX_FUEL, 1_000_000);
+    assert_eq!(firth_vm::MAX_TRACE_EVENTS, 4096);
     assert_eq!(firth_vm::MAX_INPUT_BYTES, 1 << 20);
     assert_eq!(
         firth_vm::VmError::CallDepthExceeded.stable_code(),

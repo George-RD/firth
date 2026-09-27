@@ -433,7 +433,7 @@ fn fuel_above_max_fuel_is_refused() {
         error.message,
         "request.fuel: fuel exceeds the adapter budget"
     );
-    assert_eq!(MAX_FUEL, 4096);
+    assert_eq!(MAX_FUEL, 1_000_000);
 }
 
 #[test]

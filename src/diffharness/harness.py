@@ -333,7 +333,7 @@ def compare(reference: Any, target: Any, fuel: int) -> Result:
             cost = observation["cost"]
             if not isinstance(cost, dict) or any(type(cost.get(k)) is not int or cost[k] < 0 for k in keys):
                 raise gate.GateError(f"{side}: invalid cost")
-            if not isinstance(observation["trace"], list) or len(observation["trace"]) > fuel:
+            if not isinstance(observation["trace"], list) or len(observation["trace"]) > min(fuel, gate.MAX_TRACE_EVENTS):
                 raise gate.GateError(f"{side}: invalid trace")
         if target["cost"]["kernel"] > target["cost"]["total"]:
             raise gate.GateError("target: kernel cost exceeds total")

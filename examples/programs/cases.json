@@ -10,6 +10,7 @@
     {"source": "fib.firth", "entry": "fib", "stack": [90], "expect": [2880067194370816120]},
     {"source": "sum-to.firth", "entry": "sum-to", "stack": [100], "expect": [5050]},
     {"source": "sum-to.firth", "entry": "sum-to", "stack": [150], "expect": [11325]},
+    {"source": "sum-to.firth", "entry": "sum-to", "stack": [7000], "expect": [24503500]},
     {"source": "allocate.firth", "entry": "allocate", "stack": [10, 2, false], "expect": [8, 2, 0]},
     {"source": "allocate.firth", "entry": "allocate", "stack": [5, 7, false], "expect": [0, 5, 1]},
     {"source": "allocate.firth", "entry": "allocate", "stack": [0, 2, false], "expect": [0, 0, 2]},

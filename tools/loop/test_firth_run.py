@@ -179,12 +179,12 @@ class SavedCaseTests(unittest.TestCase):
             runner.load_suite(self.path)
 
     def test_invalid_fuel_is_refused_before_build(self) -> None:
-        for fuel in ("-1", "4097"):
+        for fuel in ("-1", str(gate.MAX_FUEL + 1)):
             with patch.object(gate, "build_toolchain", side_effect=AssertionError("must not build")):
                 code, result, error = self.invoke("--fuel", fuel)
             self.assertEqual(code, 1)
             self.assertIsNone(result)
-            self.assertIn("0 to 4096", error["error"])
+            self.assertIn(f"0 to {gate.MAX_FUEL}", error["error"])
         for fuel in (True, 1.0, None):
             with self.assertRaises(gate.GateError):
                 runner.test_suite(self.path, fuel)

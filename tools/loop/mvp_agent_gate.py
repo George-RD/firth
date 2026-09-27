@@ -67,9 +67,13 @@ TARGET_VERSION = "0.1"
 IMAGE_FORMAT_VERSION = 1
 TARGET_GAMMA_VERSION = 2
 # The VM adapter refuses a larger budget (`firth_vm::MAX_FUEL`), so every
-# caller of this module shares one bound.
-MAX_FUEL = 4096
-FUEL = MAX_FUEL
+# caller of this module shares one bound. `FUEL` is the default budget.
+MAX_FUEL = 1_000_000
+FUEL = 100_000
+# Both hosts record at most this many trace events (`firth_vm::MAX_TRACE_EVENTS`
+# and the reference runner's `traceLimit`); later steps run and are charged
+# but not traced, so a long run is compared on its trace prefix.
+MAX_TRACE_EVENTS = 4096
 
 # The pinned adapters and the schemas each one speaks, as the manifest must
 # declare them.
@@ -99,6 +103,7 @@ COMPARISON_CONTRACT = {
 # only the first is agreement.
 TRACE_AGREED = "agreed"
 TRACE_UNSUPPORTED = "unsupported-quotation-values"
+TRACE_PREFIX_AGREED = "agreed-prefix"
 
 # A build must not outrun the coverage gate timeout, and an adapter that has
 # not answered in a minute is a failure rather than something to wait out.
@@ -556,6 +561,12 @@ def compare_traces(reference: dict[str, Any], target: dict[str, Any], name: str)
     neither a failure nor agreement. The residual program, the word, the
     instruction pointer and the step count are not compared.
 
+    A run longer than `MAX_TRACE_EVENTS` steps is traced only up to that
+    many raw events on each host. When either trace is at the limit, the
+    projected traces are cut to their common length before comparison and a
+    match is `TRACE_PREFIX_AGREED`; the final stack and kernel cost are still
+    compared in full by `compare`.
+
     The alignment argument covers `dip`, but the stack half of the comparison
     cannot be exercised on a `dip`: the instruction consumes a quotation, so
     the stack before it always holds one and the trace is reported as
@@ -568,7 +579,15 @@ def compare_traces(reference: dict[str, Any], target: dict[str, Any], name: str)
                    f"{name}: target")
     projected_reference = [event for event in reference["trace"] if event["cost"] > 0]
     projected_target = [event for event in target["trace"] if event["kernel_cost"] > 0]
-    if len(projected_reference) != len(projected_target):
+    # A trace that reached the limit is a prefix: the hosts stop recording
+    # after the same number of raw events, not projected ones, so compare the
+    # common projected prefix and report it as such.
+    truncated = MAX_TRACE_EVENTS in (len(reference["trace"]), len(target["trace"]))
+    if truncated:
+        common = min(len(projected_reference), len(projected_target))
+        projected_reference = projected_reference[:common]
+        projected_target = projected_target[:common]
+    elif len(projected_reference) != len(projected_target):
         raise TraceMismatch(
             f"{name}: kernel-charged trace lengths differ: reference {len(projected_reference)} "
             f"against target {len(projected_target)}"
@@ -589,7 +608,7 @@ def compare_traces(reference: dict[str, Any], target: dict[str, Any], name: str)
                 f"{name}: trace event {index} stack {json.dumps(left['stack'])} against "
                 f"{json.dumps(right['stack'])} at {right['word']}@{right['pc']}"
             )
-    return TRACE_AGREED
+    return TRACE_PREFIX_AGREED if truncated else TRACE_AGREED
 
 
 def compare(reference: dict[str, Any], target: dict[str, Any], name: str,
@@ -633,8 +652,8 @@ def compare(reference: dict[str, Any], target: dict[str, Any], name: str,
         trace = observation.get("trace")
         if not isinstance(trace, list):
             fail(f"{name}: {side} trace is not an array")
-        if len(trace) > fuel:
-            fail(f"{name}: {side} trace is not bounded by the fuel budget")
+        if len(trace) > min(fuel, MAX_TRACE_EVENTS):
+            fail(f"{name}: {side} trace is not bounded by the fuel budget and the trace limit")
     reference_cost = reference.get("cost")
     target_cost = target.get("cost")
     if not isinstance(reference_cost, dict) or not isinstance(target_cost, dict):

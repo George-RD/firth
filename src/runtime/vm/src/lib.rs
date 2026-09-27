@@ -16,11 +16,16 @@ const MAX_BYTES: usize = 1 << 20;
 const MAX_NESTING: usize = 32;
 const MAX_WORD_TYPE_NESTING: usize = 32;
 const DIGEST_BYTES: usize = 32;
-pub const DEFAULT_FUEL: u64 = MAX_INSTRUCTIONS;
-/// The largest fuel budget the adapter and the CLI accept. Every pinned gate
-/// runs at or below it, and with `MAX_CALL_DEPTH` it bounds the trace to
-/// `MAX_FUEL` events of at most `MAX_CALL_DEPTH` frames each.
-pub const MAX_FUEL: u64 = DEFAULT_FUEL;
+pub const DEFAULT_FUEL: u64 = 100_000;
+/// The largest fuel budget the adapter and the CLI accept. Execution cost
+/// grows with the budget, but the trace does not: see `MAX_TRACE_EVENTS`.
+pub const MAX_FUEL: u64 = 1_000_000;
+/// The most trace events an execution records. Later steps still run, are
+/// charged and are counted in the cost report; only their events are not
+/// kept, so a trace holds at most `MAX_TRACE_EVENTS` events of at most
+/// `MAX_CALL_DEPTH` frames each whatever the fuel budget. The reference
+/// interpreter keeps the same prefix, and the gate compares the two prefixes.
+pub const MAX_TRACE_EVENTS: usize = 4096;
 /// The deepest administrative call-frame stack the hosted executor admits.
 /// Entering one more frame traps with `resource-fault/call-depth-exceeded`
 /// instead of exhausting the native stack. This is a hosted-VM bound that the
