@@ -69,8 +69,8 @@ def describe(tid: str, source: str, r: dict) -> str:
     if bad is None:
         outcome = "No answer was submitted."
     elif not bad["ok"]:
-        code = re.search(r"'code': '([^']+)'", bad["error"])
-        outcome = (f"Running it failed with diagnostic {code.group(1) if code else 'unknown'}: "
+        code = re.search(r"'code': '([^']+)'|^code: (\S+)", bad["error"], re.M)
+        outcome = (f"Running it failed with diagnostic {(code.group(1) or code.group(2)) if code else 'unknown'}: "
                    f"{bad['error'][:800]}")
     else:
         outcome = f"On input {bad['input']} it returned {bad['stack']}; expected {bad['expected']}."

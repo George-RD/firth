@@ -20,7 +20,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int Int Int ] [ .. Int Int Int -- .. Int Int Int ]', 'word': 'main'}, 'location': {'path': 'tmpwmvtoyue.firth', 'range': {'start': {'line': 33, 'column': 5}, 'end': {'line': 33, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int Int Int ] [ .. Int Int Int -- .. Int Int Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 104))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -36,7 +36,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int Int Int ] [ .. Int Int Int -- .. Int Int Int ]', 'word': 'main'}, 'location': {'path': 'tmpmantk32g.firth', 'range': {'start': {'line': 33, 'column': 5}, 'end': {'line': 33, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int Int Int ] [ .. Int Int Int -- .. Int Int Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 104))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -52,7 +52,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int Int Int ] [ .. Int Int Int -- .. Int Int Int ]', 'word': 'main'}, 'location': {'path': 'tmpj5qa0wwx.firth', 'range': {'start': {'line': 33, 'column': 5}, 'end': {'line': 33, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int Int Int ] [ .. Int Int Int -- .. Int Int Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 104))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -68,7 +68,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int Int Int ] [ .. Int Int Int -- .. Int Int Int ]', 'word': 'main'}, 'location': {'path': 'tmpctradchh.firth', 'range': {'start': {'line': 33, 'column': 5}, 'end': {'line': 33, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int Int Int ] [ .. Int Int Int -- .. Int Int Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 104))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -84,7 +84,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int Int Int ] [ .. Int Int Int -- .. Int Int Int ]', 'word': 'main'}, 'location': {'path': 'tmpgjs9qtpx.firth', 'range': {'start': {'line': 33, 'column': 5}, 'end': {'line': 33, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int Int Int ] [ .. Int Int Int -- .. Int Int Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 104))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -100,7 +100,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int Int Int ] [ .. Int Int Int -- .. Int Int Int ]', 'word': 'main'}, 'location': {'path': 'tmp2swfjdq6.firth', 'range': {'start': {'line': 33, 'column': 5}, 'end': {'line': 33, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int Int Int ] [ .. Int Int Int -- .. Int Int Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 104))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -116,7 +116,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int Int Int ] [ .. Int Int Int -- .. Int Int Int ]', 'word': 'main'}, 'location': {'path': 'tmpmfddc4fl.firth', 'range': {'start': {'line': 33, 'column': 5}, 'end': {'line': 33, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int Int Int ] [ .. Int Int Int -- .. Int Int Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 104))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         }
       ],
@@ -141,7 +141,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'word': 'main'}, 'location': {'path': 'tmphfropl4r.firth', 'range': {'start': {'line': 25, 'column': 5}, 'end': {'line': 25, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 104))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.St",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -155,7 +155,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'word': 'main'}, 'location': {'path': 'tmpdu3wtxxs.firth', 'range': {'start': {'line': 25, 'column': 5}, 'end': {'line': 25, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 104))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.St",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -169,7 +169,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'word': 'main'}, 'location': {'path': 'tmp50a9zq9m.firth', 'range': {'start': {'line': 25, 'column': 5}, 'end': {'line': 25, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 104))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.St",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -183,7 +183,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'word': 'main'}, 'location': {'path': 'tmpok5l0cts.firth', 'range': {'start': {'line': 25, 'column': 5}, 'end': {'line': 25, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 104))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.St",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -197,7 +197,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'word': 'main'}, 'location': {'path': 'tmpaqxu100x.firth', 'range': {'start': {'line': 25, 'column': 5}, 'end': {'line': 25, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 104))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.St",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -211,7 +211,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'word': 'main'}, 'location': {'path': 'tmpkiieaglb.firth', 'range': {'start': {'line': 25, 'column': 5}, 'end': {'line': 25, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 104))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.St",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         }
       ],
@@ -237,7 +237,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'word': 'main'}, 'location': {'path': 'tmp3rmbiszn.firth', 'range': {'start': {'line': 68, 'column': 5}, 'end': {'line': 68, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 22))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.Sta",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -251,7 +251,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'word': 'main'}, 'location': {'path': 'tmpqhey36v1.firth', 'range': {'start': {'line': 68, 'column': 5}, 'end': {'line': 68, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 22))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.Sta",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -265,7 +265,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'word': 'main'}, 'location': {'path': 'tmppcl3ia5l.firth', 'range': {'start': {'line': 68, 'column': 5}, 'end': {'line': 68, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 22))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.Sta",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -279,7 +279,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'word': 'main'}, 'location': {'path': 'tmp6j295ddu.firth', 'range': {'start': {'line': 68, 'column': 5}, 'end': {'line': 68, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 22))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.Sta",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -293,7 +293,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'word': 'main'}, 'location': {'path': 'tmpz9vyvnp_.firth', 'range': {'start': {'line': 68, 'column': 5}, 'end': {'line': 68, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 22))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.Sta",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -307,7 +307,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'word': 'main'}, 'location': {'path': 'tmpiyf9ansb.firth', 'range': {'start': {'line': 68, 'column': 5}, 'end': {'line': 68, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 22))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.Sta",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -321,7 +321,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'word': 'main'}, 'location': {'path': 'tmp6fqx72hi.firth', 'range': {'start': {'line': 68, 'column': 5}, 'end': {'line': 68, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 22))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.Sta",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -335,7 +335,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'word': 'main'}, 'location': {'path': 'tmpsyenk8w_.firth', 'range': {'start': {'line': 68, 'column': 5}, 'end': {'line': 68, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 22))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.Sta",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         },
         {
@@ -349,7 +349,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int Int Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.', 'message': 'The two branches of `if` in `main` leave different stacks.', 'state': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'word': 'main'}, 'location': {'path': 'tmpat8bxdmt.firth', 'range': {'start': {'line': 68, 'column': 5}, 'end': {'line': 68, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. Int Int Int -- .. Int ] [ .. Int Int Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 22))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.Sta",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: \\u03c1\nactual: .. Int Int Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int Int Int.",
           "pass": false
         }
       ],
@@ -376,7 +376,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmp8kleapjs.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 19, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -390,7 +390,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpi87lb0jk.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 19, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -404,7 +404,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpmh6z7d3j.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 19, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -418,7 +418,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmp4r196l29.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 19, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -432,7 +432,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmp0d9sn2cn.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 19, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -446,7 +446,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmp91yt7ppo.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 19, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         }
       ],
@@ -471,7 +471,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmp87jnfx5g.firth', 'range': {'start': {'line': 2, 'column': 44}, 'end': {'line': 17, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -483,7 +483,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmp_t2ck9hz.firth', 'range': {'start': {'line': 2, 'column': 44}, 'end': {'line': 17, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -495,7 +495,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpos2wrfop.firth', 'range': {'start': {'line': 2, 'column': 44}, 'end': {'line': 17, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -507,7 +507,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmp26s2fq6g.firth', 'range': {'start': {'line': 2, 'column': 44}, 'end': {'line': 17, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -519,7 +519,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpprbo8s7i.firth', 'range': {'start': {'line': 2, 'column': 44}, 'end': {'line': 17, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -531,7 +531,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpxgh2xkv2.firth', 'range': {'start': {'line': 2, 'column': 44}, 'end': {'line': 17, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -543,7 +543,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpir_xen_e.firth', 'range': {'start': {'line': 2, 'column': 44}, 'end': {'line': 17, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -555,7 +555,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmp_32amlmm.firth', 'range': {'start': {'line': 2, 'column': 44}, 'end': {'line': 17, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         }
       ],
@@ -580,7 +580,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmph9oykr78.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 53, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -592,7 +592,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmp_a6a4e7r.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 53, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -604,7 +604,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmppz2bojyx.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 53, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -616,7 +616,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpqpmwdbtd.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 53, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -628,7 +628,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpgs3cftbg.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 53, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -640,7 +640,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpwnbb4k9n.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 53, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -652,7 +652,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpgwjhqjfk.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 53, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -664,7 +664,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpo4fpfkmz.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 53, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         }
       ],
@@ -689,7 +689,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpf4krco2l.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 37, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -701,7 +701,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpy027uq9i.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 37, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -713,7 +713,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpuv70ywdw.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 37, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -725,7 +725,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmp3kfaplds.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 37, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -737,7 +737,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpkvdftgic.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 37, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -749,7 +749,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpf_gj_j0f.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 37, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         }
       ],
@@ -776,7 +776,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpx0ufx8of.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 36, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -789,7 +789,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmphjv6bhoy.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 36, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -802,7 +802,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpnsgkf6cu.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 36, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -815,7 +815,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpcd09c0gi.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 36, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -828,7 +828,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpiqi2ha57.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 36, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -841,7 +841,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpzrojnely.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 36, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         }
       ],
@@ -1022,5 +1022,12 @@
       "hidden_total": 7
     }
   },
-  "label": "haiku-firth-1 try2"
+  "label": "haiku-firth-1 try2",
+  "firth_commit": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+  "prompt_docs": [
+    "docs/getting-started.md",
+    "docs/firth-agent-guide.md",
+    "eval/s7/docs/primitives-pr113.md"
+  ],
+  "metadata_note": "firth_commit and prompt_docs were added after scoring; errors were compacted from the raw runner output."
 }

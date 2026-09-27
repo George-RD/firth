@@ -1154,5 +1154,8 @@
       "hidden_total": 7
     }
   },
-  "label": "haiku-python-3 try1"
+  "label": "haiku-python-3 try1",
+  "firth_commit": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+  "prompt_docs": [],
+  "metadata_note": "firth_commit and prompt_docs were added after scoring; errors were compacted from the raw runner output."
 }

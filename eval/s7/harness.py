@@ -122,10 +122,22 @@ def run_firth(source: str, args: tuple) -> dict:
         Path(path).unlink()
     if p.returncode == 0:
         return {"ok": True, "stack": json.loads(p.stdout)["stack"]}
-    text = p.stderr.strip() or p.stdout.strip()
-    # A VM trap class (e.g. fuel-exhausted) sits deep in a long payload; keep it visible.
+    return {"ok": False, "error": compact(p.stderr.strip() or p.stdout.strip())}
+
+
+def compact(text: str) -> str:
+    """Keep what a reader needs from a runner failure: the VM trap class, which sits
+    deep in a long payload, and the checker's code, message and hint. The raw
+    envelope can run to tens of kilobytes."""
+    if text.startswith("trap ") or text.startswith("code: "):
+        return text  # already compacted
     trap = re.search(r"'trap': '([^']+)'", text)
-    return {"ok": False, "error": (f"trap {trap.group(1)}: " if trap else "") + text[:2000]}
+    head = f"trap {trap.group(1)}\n" if trap else ""
+    body = readable(text)
+    if body is text:
+        code = re.search(r"'code': '([^']+)'", text)
+        body = (f"code: {code.group(1)}\n" if code else "") + text[:300]
+    return head + body
 
 
 PY_DRIVER = """
@@ -152,6 +164,11 @@ def same(got: list, want: list) -> bool:
     # Booleans and integers must not coerce into each other (True == 1 in Python).
     return len(got) == len(want) and all(
         type(g) is type(w) and g == w for g, w in zip(got, want))
+
+
+def firth_commit() -> str:
+    p = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True)
+    return p.stdout.strip() or "unknown"
 
 
 def score(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int) -> dict:
@@ -244,6 +261,8 @@ def main() -> int:
     s = sub.add_parser("score"); s.add_argument("--lang", required=True, choices=["firth", "python"])
     s.add_argument("solutions", type=Path); s.add_argument("--tier", default="all")
     s.add_argument("--label"); s.add_argument("--jobs", type=int, default=4)
+    s.add_argument("--prompt-docs", default="",
+                   help="the documents the author's prompt was built from, recorded in the result")
     r = sub.add_parser("repair"); r.add_argument("--lang", required=True)
     r.add_argument("solutions", type=Path); r.add_argument("results", type=Path)
     r.add_argument("--tier", default="all")
@@ -255,7 +274,8 @@ def main() -> int:
         print(json.dumps(extract(a.answer.read_text()), indent=2))
     elif a.cmd == "score":
         res = score(json.loads(a.solutions.read_text()), a.lang, select(a.tier), a.jobs)
-        res["label"] = a.label
+        res.update(label=a.label, firth_commit=firth_commit(),
+                   prompt_docs=[d for d in a.prompt_docs.split(",") if d])
         print(json.dumps(res, indent=2))
     elif a.cmd == "repair":
         print(repair(json.loads(a.solutions.read_text()), json.loads(a.results.read_text()),

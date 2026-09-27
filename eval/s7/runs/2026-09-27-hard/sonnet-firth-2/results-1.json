@@ -1154,5 +1154,12 @@
       "hidden_total": 7
     }
   },
-  "label": "sonnet-firth-2 try1"
+  "label": "sonnet-firth-2 try1",
+  "firth_commit": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+  "prompt_docs": [
+    "docs/getting-started.md",
+    "docs/firth-agent-guide.md",
+    "eval/s7/docs/primitives-pr113.md"
+  ],
+  "metadata_note": "firth_commit and prompt_docs were added after scoring; errors were compacted from the raw runner output."
 }

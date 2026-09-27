@@ -2044,5 +2044,8 @@
       "hidden_total": 5
     }
   },
-  "label": "python sonnet r1"
+  "label": "python sonnet r1",
+  "firth_commit": "c6b1a19c5a94eacf13d2b9679b2bbbf1eba33ff7",
+  "prompt_docs": [],
+  "metadata_note": "firth_commit and prompt_docs were added after scoring; errors were compacted from the raw runner output."
 }

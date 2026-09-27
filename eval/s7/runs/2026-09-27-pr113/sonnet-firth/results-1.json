@@ -778,7 +778,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_local', 'message_params': {'name': 'q'}, 'location': {'path': 'tmpa_w86x14.firth', 'range': {'start': {'line': 11, 'column': 30}, 'end': {'line': 11, 'column': 31}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unbound-local\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_lo",
           "pass": false
         },
         {
@@ -792,7 +792,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_local', 'message_params': {'name': 'q'}, 'location': {'path': 'tmp022l2ebq.firth', 'range': {'start': {'line': 11, 'column': 30}, 'end': {'line': 11, 'column': 31}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unbound-local\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_lo",
           "pass": false
         },
         {
@@ -806,7 +806,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_local', 'message_params': {'name': 'q'}, 'location': {'path': 'tmp1w7cdo3h.firth', 'range': {'start': {'line': 11, 'column': 30}, 'end': {'line': 11, 'column': 31}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unbound-local\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_lo",
           "pass": false
         },
         {
@@ -820,7 +820,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_local', 'message_params': {'name': 'q'}, 'location': {'path': 'tmpu64_ox1s.firth', 'range': {'start': {'line': 11, 'column': 30}, 'end': {'line': 11, 'column': 31}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unbound-local\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_lo",
           "pass": false
         },
         {
@@ -834,7 +834,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_local', 'message_params': {'name': 'q'}, 'location': {'path': 'tmpqkqvu9hb.firth', 'range': {'start': {'line': 11, 'column': 30}, 'end': {'line': 11, 'column': 31}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unbound-local\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_lo",
           "pass": false
         },
         {
@@ -848,7 +848,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_local', 'message_params': {'name': 'q'}, 'location': {'path': 'tmpuo7a151b.firth', 'range': {'start': {'line': 11, 'column': 30}, 'end': {'line': 11, 'column': 31}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unbound-local\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_lo",
           "pass": false
         },
         {
@@ -862,7 +862,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_local', 'message_params': {'name': 'q'}, 'location': {'path': 'tmpm90kmrzo.firth', 'range': {'start': {'line': 11, 'column': 30}, 'end': {'line': 11, 'column': 31}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unbound-local\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unbound-local', 'severity': 'error', 'message_key': 'diagnostic.unbound_lo",
           "pass": false
         }
       ],
@@ -2028,5 +2028,12 @@
       "hidden_total": 5
     }
   },
-  "label": "firth sonnet r1"
+  "label": "firth sonnet r1",
+  "firth_commit": "42f00a7f0b56c094a2f888771c9cdf680b11af4e",
+  "prompt_docs": [
+    "docs/getting-started.md",
+    "docs/firth-agent-guide.md",
+    "eval/s7/docs/primitives-pr113.md"
+  ],
+  "metadata_note": "firth_commit and prompt_docs were added after scoring; errors were compacted from the raw runner output."
 }

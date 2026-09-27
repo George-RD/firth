@@ -50,9 +50,17 @@ python3 eval/s7/classify.py solutions.json results.json --available add > modes.
 ```
 
 The author model is run separately, as a sub-agent told to read only the
-prompt file and to use no other tool. The transcripts were checked afterwards:
-each author read the prompt file and wrote its answer, and did nothing else.
-This is an instruction plus an audit, not a sandbox.
+prompt file and to use no other tool. Each run directory keeps a trimmed
+transcript (`transcript.json`): the model name, start and finish times, and
+every tool call the author made, with written content reduced to a hash of
+the `answer-*.md` next to it. In all 18 author sessions the only files read
+were the prompt and repair files, and the only files written were the
+answers. This is an instruction plus an audit, not a sandbox.
+
+Each `results-*.json` records `firth_commit` (the build it was scored on) and
+`prompt_docs` (the documents the author's prompt was built from). Failure
+messages are kept in compact form: the VM trap class, and the checker's code,
+message, expected and actual stacks and hint.
 
 ## Run 1: 27 September 2026, `prim +` only
 
@@ -161,7 +169,7 @@ Results are in `runs/2026-09-27-hard/`.
 | Sonnet 5, three attempts | 9, 9, 8 | 9, 9, 8 | 9, 9, 9 |
 | Haiku 4.5, three attempts | 1, 0, 4 | 1, 2, 3 | 9, 9, 9 |
 
-- **Sonnet matched Python.** Its one miss in 27 was a correct `lcm` that ran
+- **Sonnet matched Python except for one step-budget failure.** Its one miss in 27 was a correct `lcm` that ran
   out of steps on an input Python handles instantly (`resource_limit`). One
   attempt first scored 7/9 on `a8c3337` because correct nested `if`s inside
   `locals` hit a checker bug; after the Language core fix both passed
@@ -187,7 +195,8 @@ Results are in `runs/2026-09-27-hard/`.
 ## What the three runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from
-the docs alone. Sonnet was at Python's level on every task set, and its only
+the docs alone. Sonnet was at Python's level on every task set except for one step-budget
+failure, and its only
 failures were checker bugs and the step budget. They did not carry a weaker
 model: Haiku wrote correct Python every time and mostly failed in Firth, in
 ways the checker caught but Haiku could not repair. The checker found most

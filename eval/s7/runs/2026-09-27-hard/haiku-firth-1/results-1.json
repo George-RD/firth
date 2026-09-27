@@ -376,7 +376,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpfmmma6xu.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 19, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -390,7 +390,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpr83in0rg.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 19, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -404,7 +404,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpyg04o8ka.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 19, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -418,7 +418,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpl5c70guc.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 19, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -432,7 +432,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpfyz0sv8o.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 19, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -446,7 +446,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpiryvde4_.firth', 'range': {'start': {'line': 2, 'column': 55}, 'end': {'line': 19, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         }
       ],
@@ -471,7 +471,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpvjjalh4x.firth', 'range': {'start': {'line': 2, 'column': 44}, 'end': {'line': 17, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -483,7 +483,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmp3e6ukzs8.firth', 'range': {'start': {'line': 2, 'column': 44}, 'end': {'line': 17, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -495,7 +495,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpn9t8j6hj.firth', 'range': {'start': {'line': 2, 'column': 44}, 'end': {'line': 17, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -507,7 +507,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpatq3g6s6.firth', 'range': {'start': {'line': 2, 'column': 44}, 'end': {'line': 17, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -519,7 +519,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpnnb5y26w.firth', 'range': {'start': {'line': 2, 'column': 44}, 'end': {'line': 17, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -531,7 +531,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpox707mwc.firth', 'range': {'start': {'line': 2, 'column': 44}, 'end': {'line': 17, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -543,7 +543,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmpk1icw6od.firth', 'range': {'start': {'line': 2, 'column': 44}, 'end': {'line': 17, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -555,7 +555,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.syntax.overlong-character', 'severity': 'error', 'message_key': 'diagnostic.overlong_character', 'message_params': {'hint': 'A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': 'Unexpected the end of the input.'}, 'location': {'path': 'tmp03xfgbs3.firth', 'range': {'start': {'line': 2, 'column': 44}, 'end': {'line': 17, 'column': 1}}}, 'cause': {'kind': 'validation', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.syntax.overlong-character\nmessage: Unexpected the end of the input.\nhint: A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         }
       ],
@@ -580,7 +580,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmplb_fw62w.firth', 'range': {'start': {'line': 9, 'column': 11}, 'end': {'line': 9, 'column': 17}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -592,7 +592,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpzsyyukva.firth', 'range': {'start': {'line': 9, 'column': 11}, 'end': {'line': 9, 'column': 17}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -604,7 +604,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmp8sb4y2_s.firth', 'range': {'start': {'line': 9, 'column': 11}, 'end': {'line': 9, 'column': 17}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -616,7 +616,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpsgp3ml2f.firth', 'range': {'start': {'line': 9, 'column': 11}, 'end': {'line': 9, 'column': 17}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -628,7 +628,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpfs8k2ukq.firth', 'range': {'start': {'line': 9, 'column': 11}, 'end': {'line': 9, 'column': 17}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -640,7 +640,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmppxf0p09z.firth', 'range': {'start': {'line': 9, 'column': 11}, 'end': {'line': 9, 'column': 17}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -652,7 +652,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpz7fxax55.firth', 'range': {'start': {'line': 9, 'column': 11}, 'end': {'line': 9, 'column': 17}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -664,7 +664,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmp5d1j3c0w.firth', 'range': {'start': {'line': 9, 'column': 11}, 'end': {'line': 9, 'column': 17}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         }
       ],
@@ -689,7 +689,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmp23avthc5.firth', 'range': {'start': {'line': 7, 'column': 12}, 'end': {'line': 7, 'column': 18}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -701,7 +701,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpk_25i01x.firth', 'range': {'start': {'line': 7, 'column': 12}, 'end': {'line': 7, 'column': 18}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -713,7 +713,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpcdx0078f.firth', 'range': {'start': {'line': 7, 'column': 12}, 'end': {'line': 7, 'column': 18}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -725,7 +725,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmple_dibl2.firth', 'range': {'start': {'line': 7, 'column': 12}, 'end': {'line': 7, 'column': 18}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -737,7 +737,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmp7wxq8max.firth', 'range': {'start': {'line': 7, 'column': 12}, 'end': {'line': 7, 'column': 18}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -749,7 +749,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpip6a62r5.firth', 'range': {'start': {'line': 7, 'column': 12}, 'end': {'line': 7, 'column': 18}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         }
       ],
@@ -776,7 +776,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpbdwzgdze.firth', 'range': {'start': {'line': 7, 'column': 11}, 'end': {'line': 7, 'column': 17}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -789,7 +789,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpufbkdl3x.firth', 'range': {'start': {'line': 7, 'column': 11}, 'end': {'line': 7, 'column': 17}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -802,7 +802,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpit73iw7t.firth', 'range': {'start': {'line': 7, 'column': 11}, 'end': {'line': 7, 'column': 17}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -815,7 +815,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpoh9x0efa.firth', 'range': {'start': {'line': 7, 'column': 11}, 'end': {'line': 7, 'column': 17}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -828,7 +828,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpo083ecpn.firth', 'range': {'start': {'line': 7, 'column': 11}, 'end': {'line': 7, 'column': 17}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -841,7 +841,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`divmod` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpdh7go37i.firth', 'range': {'start': {'line': 7, 'column': 11}, 'end': {'line': 7, 'column': 17}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'divmod'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `divmod` is not a defined word, primitive or local.\nactual: divmod\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         }
       ],
@@ -1022,5 +1022,12 @@
       "hidden_total": 7
     }
   },
-  "label": "haiku-firth-1 try1"
+  "label": "haiku-firth-1 try1",
+  "firth_commit": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+  "prompt_docs": [
+    "docs/getting-started.md",
+    "docs/firth-agent-guide.md",
+    "eval/s7/docs/primitives-pr113.md"
+  ],
+  "metadata_note": "firth_commit and prompt_docs were added after scoring; errors were compacted from the raw runner output."
 }

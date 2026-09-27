@@ -141,7 +141,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`sort3` is not a defined word, primitive or local.'}, 'location': {'path': 'tmp5wkqnd88.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 8}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'sort3'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `sort3` is not a defined word, primitive or local.\nactual: sort3\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -155,7 +155,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`sort3` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpv5nsk1vy.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 8}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'sort3'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `sort3` is not a defined word, primitive or local.\nactual: sort3\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -169,7 +169,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`sort3` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpwbdndb99.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 8}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'sort3'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `sort3` is not a defined word, primitive or local.\nactual: sort3\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -183,7 +183,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`sort3` is not a defined word, primitive or local.'}, 'location': {'path': 'tmp3ok1d0yo.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 8}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'sort3'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `sort3` is not a defined word, primitive or local.\nactual: sort3\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -197,7 +197,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`sort3` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpvdt1i90s.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 8}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'sort3'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `sort3` is not a defined word, primitive or local.\nactual: sort3\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -211,7 +211,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`sort3` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpqoeo8h7x.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 8}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'sort3'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `sort3` is not a defined word, primitive or local.\nactual: sort3\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         }
       ],
@@ -237,7 +237,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`sort3` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpu8_9bqwu.firth', 'range': {'start': {'line': 19, 'column': 17}, 'end': {'line': 19, 'column': 22}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'sort3'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `sort3` is not a defined word, primitive or local.\nactual: sort3\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -251,7 +251,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`sort3` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpi80qqw3s.firth', 'range': {'start': {'line': 19, 'column': 17}, 'end': {'line': 19, 'column': 22}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'sort3'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `sort3` is not a defined word, primitive or local.\nactual: sort3\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -265,7 +265,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`sort3` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpcg1q9s2f.firth', 'range': {'start': {'line': 19, 'column': 17}, 'end': {'line': 19, 'column': 22}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'sort3'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `sort3` is not a defined word, primitive or local.\nactual: sort3\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -279,7 +279,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`sort3` is not a defined word, primitive or local.'}, 'location': {'path': 'tmp9c46ww3j.firth', 'range': {'start': {'line': 19, 'column': 17}, 'end': {'line': 19, 'column': 22}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'sort3'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `sort3` is not a defined word, primitive or local.\nactual: sort3\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -293,7 +293,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`sort3` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpilcyrtaa.firth', 'range': {'start': {'line': 19, 'column': 17}, 'end': {'line': 19, 'column': 22}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'sort3'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `sort3` is not a defined word, primitive or local.\nactual: sort3\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -307,7 +307,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`sort3` is not a defined word, primitive or local.'}, 'location': {'path': 'tmphuf5wsrm.firth', 'range': {'start': {'line': 19, 'column': 17}, 'end': {'line': 19, 'column': 22}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'sort3'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `sort3` is not a defined word, primitive or local.\nactual: sort3\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -321,7 +321,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`sort3` is not a defined word, primitive or local.'}, 'location': {'path': 'tmp5ge68u1f.firth', 'range': {'start': {'line': 19, 'column': 17}, 'end': {'line': 19, 'column': 22}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'sort3'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `sort3` is not a defined word, primitive or local.\nactual: sort3\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -335,7 +335,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`sort3` is not a defined word, primitive or local.'}, 'location': {'path': 'tmp6_1kqz3s.firth', 'range': {'start': {'line': 19, 'column': 17}, 'end': {'line': 19, 'column': 22}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'sort3'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `sort3` is not a defined word, primitive or local.\nactual: sort3\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -349,7 +349,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`sort3` is not a defined word, primitive or local.'}, 'location': {'path': 'tmp75_gw4_s.firth', 'range': {'start': {'line': 19, 'column': 17}, 'end': {'line': 19, 'column': 22}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'sort3'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `sort3` is not a defined word, primitive or local.\nactual: sort3\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         }
       ],
@@ -471,7 +471,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`n` is not a defined word, primitive or local.'}, 'location': {'path': 'tmp_xwk56fo.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -483,7 +483,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`n` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpxwhrnxmz.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -495,7 +495,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`n` is not a defined word, primitive or local.'}, 'location': {'path': 'tmp7_ddtqf9.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -507,7 +507,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`n` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpixuxtaoy.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -519,7 +519,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`n` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpbqsldppl.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -531,7 +531,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`n` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpu6txfs9k.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -543,7 +543,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`n` is not a defined word, primitive or local.'}, 'location': {'path': 'tmplpjram47.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -555,7 +555,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`n` is not a defined word, primitive or local.'}, 'location': {'path': 'tmp96u4cu0w.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         }
       ],
@@ -580,7 +580,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-compose-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_compose_mismatch', 'message_params': {'actual': 'Bool', 'at': 'compose', 'expected': 'Int', 'message': '`compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is \\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]. Expected Int, found Bool.', 'state': '\\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]', 'word': 'is-prime'}, 'location': {'path': 'tmpd_2iiawb.firth', 'range': {'start': {'line': 8, 'column': 5}, 'end': {'line': 17, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.quotation\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 2))\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 2))\\\\n ",
+          "error": "code: firth.type.quotation-compose-mismatch\nmessage: `compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is \\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]. Expected Int, found Bool.\nexpected: Int\nactual: Bool",
           "pass": false
         },
         {
@@ -592,7 +592,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-compose-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_compose_mismatch', 'message_params': {'actual': 'Bool', 'at': 'compose', 'expected': 'Int', 'message': '`compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is \\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]. Expected Int, found Bool.', 'state': '\\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]', 'word': 'is-prime'}, 'location': {'path': 'tmp28rpeeo4.firth', 'range': {'start': {'line': 8, 'column': 5}, 'end': {'line': 17, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.quotation\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 2))\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 2))\\\\n ",
+          "error": "code: firth.type.quotation-compose-mismatch\nmessage: `compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is \\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]. Expected Int, found Bool.\nexpected: Int\nactual: Bool",
           "pass": false
         },
         {
@@ -604,7 +604,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-compose-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_compose_mismatch', 'message_params': {'actual': 'Bool', 'at': 'compose', 'expected': 'Int', 'message': '`compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is \\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]. Expected Int, found Bool.', 'state': '\\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]', 'word': 'is-prime'}, 'location': {'path': 'tmp_ep8c38b.firth', 'range': {'start': {'line': 8, 'column': 5}, 'end': {'line': 17, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.quotation\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 2))\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 2))\\\\n ",
+          "error": "code: firth.type.quotation-compose-mismatch\nmessage: `compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is \\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]. Expected Int, found Bool.\nexpected: Int\nactual: Bool",
           "pass": false
         },
         {
@@ -616,7 +616,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-compose-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_compose_mismatch', 'message_params': {'actual': 'Bool', 'at': 'compose', 'expected': 'Int', 'message': '`compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is \\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]. Expected Int, found Bool.', 'state': '\\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]', 'word': 'is-prime'}, 'location': {'path': 'tmpd8gwjsnl.firth', 'range': {'start': {'line': 8, 'column': 5}, 'end': {'line': 17, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.quotation\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 2))\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 2))\\\\n ",
+          "error": "code: firth.type.quotation-compose-mismatch\nmessage: `compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is \\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]. Expected Int, found Bool.\nexpected: Int\nactual: Bool",
           "pass": false
         },
         {
@@ -628,7 +628,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-compose-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_compose_mismatch', 'message_params': {'actual': 'Bool', 'at': 'compose', 'expected': 'Int', 'message': '`compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is \\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]. Expected Int, found Bool.', 'state': '\\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]', 'word': 'is-prime'}, 'location': {'path': 'tmpyy70sfld.firth', 'range': {'start': {'line': 8, 'column': 5}, 'end': {'line': 17, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.quotation\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 2))\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 2))\\\\n ",
+          "error": "code: firth.type.quotation-compose-mismatch\nmessage: `compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is \\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]. Expected Int, found Bool.\nexpected: Int\nactual: Bool",
           "pass": false
         },
         {
@@ -640,7 +640,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-compose-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_compose_mismatch', 'message_params': {'actual': 'Bool', 'at': 'compose', 'expected': 'Int', 'message': '`compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is \\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]. Expected Int, found Bool.', 'state': '\\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]', 'word': 'is-prime'}, 'location': {'path': 'tmpznjxu5ju.firth', 'range': {'start': {'line': 8, 'column': 5}, 'end': {'line': 17, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.quotation\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 2))\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 2))\\\\n ",
+          "error": "code: firth.type.quotation-compose-mismatch\nmessage: `compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is \\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]. Expected Int, found Bool.\nexpected: Int\nactual: Bool",
           "pass": false
         },
         {
@@ -652,7 +652,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-compose-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_compose_mismatch', 'message_params': {'actual': 'Bool', 'at': 'compose', 'expected': 'Int', 'message': '`compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is \\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]. Expected Int, found Bool.', 'state': '\\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]', 'word': 'is-prime'}, 'location': {'path': 'tmpwsp59i2t.firth', 'range': {'start': {'line': 8, 'column': 5}, 'end': {'line': 17, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.quotation\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 2))\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 2))\\\\n ",
+          "error": "code: firth.type.quotation-compose-mismatch\nmessage: `compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is \\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]. Expected Int, found Bool.\nexpected: Int\nactual: Bool",
           "pass": false
         },
         {
@@ -664,7 +664,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-compose-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_compose_mismatch', 'message_params': {'actual': 'Bool', 'at': 'compose', 'expected': 'Int', 'message': '`compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is \\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]. Expected Int, found Bool.', 'state': '\\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]', 'word': 'is-prime'}, 'location': {'path': 'tmp4luft97p.firth', 'range': {'start': {'line': 8, 'column': 5}, 'end': {'line': 17, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.quotation\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 2))\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 2))\\\\n ",
+          "error": "code: firth.type.quotation-compose-mismatch\nmessage: `compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is \\u03c1 Bool [ .. -- .. Int ] [ .. -- .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] Int ] [ .. Bool [ .. -- .. Bool ] [ .. -- .. Int Int ] Int -- .. Bool ]. Expected Int, found Bool.\nexpected: Int\nactual: Bool",
           "pass": false
         }
       ],
@@ -689,7 +689,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`n` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpl6edttmx.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -701,7 +701,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`n` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpts276ci6.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -713,7 +713,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`n` is not a defined word, primitive or local.'}, 'location': {'path': 'tmp4ff6ib5p.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -725,7 +725,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`n` is not a defined word, primitive or local.'}, 'location': {'path': 'tmp_nhn87xy.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -737,7 +737,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`n` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpsvgoyxld.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         },
         {
@@ -749,7 +749,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {'hint': 'Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.', 'message': '`n` is not a defined word, primitive or local.'}, 'location': {'path': 'tmpy4dbfa5k.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. A definition looks like `: name (forall \\u03c1; \\u03c1 n:Int^many -- \\u03c1 r:Int^many) body;`.",
           "pass": false
         }
       ],
@@ -776,7 +776,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int.', 'message': 'The two branches of `if` in `lcm` leave different stacks.', 'state': '\\u03c1 Bool [ \\u03c1 -- \\u03c1 Int ] [ .. Int -- .. Int ]', 'word': 'lcm'}, 'location': {'path': 'tmpm68hg4wi.firth', 'range': {'start': {'line': 15, 'column': 5}, 'end': {'line': 15, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ \\u03c1 -- \\u03c1 Int ] [ .. Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 193))\\\\n      (Firth.Elaborator.StackEffect.A",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `lcm` leave different stacks.\nexpected: \\u03c1\nactual: .. Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int.",
           "pass": false
         },
         {
@@ -789,7 +789,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int.', 'message': 'The two branches of `if` in `lcm` leave different stacks.', 'state': '\\u03c1 Bool [ \\u03c1 -- \\u03c1 Int ] [ .. Int -- .. Int ]', 'word': 'lcm'}, 'location': {'path': 'tmp9bkn9m29.firth', 'range': {'start': {'line': 15, 'column': 5}, 'end': {'line': 15, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ \\u03c1 -- \\u03c1 Int ] [ .. Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 193))\\\\n      (Firth.Elaborator.StackEffect.A",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `lcm` leave different stacks.\nexpected: \\u03c1\nactual: .. Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int.",
           "pass": false
         },
         {
@@ -802,7 +802,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int.', 'message': 'The two branches of `if` in `lcm` leave different stacks.', 'state': '\\u03c1 Bool [ \\u03c1 -- \\u03c1 Int ] [ .. Int -- .. Int ]', 'word': 'lcm'}, 'location': {'path': 'tmpq1yo5frj.firth', 'range': {'start': {'line': 15, 'column': 5}, 'end': {'line': 15, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ \\u03c1 -- \\u03c1 Int ] [ .. Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 193))\\\\n      (Firth.Elaborator.StackEffect.A",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `lcm` leave different stacks.\nexpected: \\u03c1\nactual: .. Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int.",
           "pass": false
         },
         {
@@ -815,7 +815,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int.', 'message': 'The two branches of `if` in `lcm` leave different stacks.', 'state': '\\u03c1 Bool [ \\u03c1 -- \\u03c1 Int ] [ .. Int -- .. Int ]', 'word': 'lcm'}, 'location': {'path': 'tmpkow7inhb.firth', 'range': {'start': {'line': 15, 'column': 5}, 'end': {'line': 15, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ \\u03c1 -- \\u03c1 Int ] [ .. Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 193))\\\\n      (Firth.Elaborator.StackEffect.A",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `lcm` leave different stacks.\nexpected: \\u03c1\nactual: .. Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int.",
           "pass": false
         },
         {
@@ -828,7 +828,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int.', 'message': 'The two branches of `if` in `lcm` leave different stacks.', 'state': '\\u03c1 Bool [ \\u03c1 -- \\u03c1 Int ] [ .. Int -- .. Int ]', 'word': 'lcm'}, 'location': {'path': 'tmp4k6mjtph.firth', 'range': {'start': {'line': 15, 'column': 5}, 'end': {'line': 15, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ \\u03c1 -- \\u03c1 Int ] [ .. Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 193))\\\\n      (Firth.Elaborator.StackEffect.A",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `lcm` leave different stacks.\nexpected: \\u03c1\nactual: .. Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int.",
           "pass": false
         },
         {
@@ -841,7 +841,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.branch-mismatch', 'severity': 'error', 'message_key': 'diagnostic.branch_mismatch', 'message_params': {'actual': '.. Int', 'at': 'if', 'expected': '\\u03c1', 'hint': 'Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int.', 'message': 'The two branches of `if` in `lcm` leave different stacks.', 'state': '\\u03c1 Bool [ \\u03c1 -- \\u03c1 Int ] [ .. Int -- .. Int ]', 'word': 'lcm'}, 'location': {'path': 'tmpbcjl2hxx.firth', 'range': {'start': {'line': 15, 'column': 5}, 'end': {'line': 15, 'column': 7}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'display_hint': 'firth', 'encoding': 'opaque', 'value': {'firth': '\\u03c1 Bool [ \\u03c1 -- \\u03c1 Int ] [ .. Int -- .. Int ]', 'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 193))\\\\n      (Firth.Elaborator.StackEffect.A",
+          "error": "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `lcm` leave different stacks.\nexpected: \\u03c1\nactual: .. Int\nhint: Both branches must leave the same number and types of values. Expected \\u03c1, found .. Int.",
           "pass": false
         }
       ],
@@ -990,5 +990,12 @@
       "hidden_total": 7
     }
   },
-  "label": "haiku-firth-2 try1"
+  "label": "haiku-firth-2 try1",
+  "firth_commit": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+  "prompt_docs": [
+    "docs/getting-started.md",
+    "docs/firth-agent-guide.md",
+    "eval/s7/docs/primitives-pr113.md"
+  ],
+  "metadata_note": "firth_commit and prompt_docs were added after scoring; errors were compacted from the raw runner output."
 }

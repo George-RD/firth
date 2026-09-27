@@ -991,7 +991,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '>'}, 'location': {'path': 'tmpupm2rkip.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1004,7 +1004,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '>'}, 'location': {'path': 'tmpx6vcl_cg.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1017,7 +1017,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '>'}, 'location': {'path': 'tmpsh21vw8o.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1030,7 +1030,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '>'}, 'location': {'path': 'tmpmc_qmcii.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1043,7 +1043,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '>'}, 'location': {'path': 'tmpa64aab1w.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1056,7 +1056,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '>'}, 'location': {'path': 'tmp9my6e8ot.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         }
       ],
@@ -1081,7 +1081,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '<'}, 'location': {'path': 'tmp7ejqkcly.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1095,7 +1095,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '<'}, 'location': {'path': 'tmphahaeu4m.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1109,7 +1109,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '<'}, 'location': {'path': 'tmp69vmreyj.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1123,7 +1123,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '<'}, 'location': {'path': 'tmpegkjeiy7.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1137,7 +1137,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '<'}, 'location': {'path': 'tmple39vn_l.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1151,7 +1151,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '<'}, 'location': {'path': 'tmppjlsqb0n.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         }
       ],
@@ -1176,7 +1176,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '>'}, 'location': {'path': 'tmpha0vq7jc.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1189,7 +1189,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '>'}, 'location': {'path': 'tmprcjjv0ux.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1202,7 +1202,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '>'}, 'location': {'path': 'tmpk9_eldzl.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1215,7 +1215,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '>'}, 'location': {'path': 'tmpz0x4a9cx.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1228,7 +1228,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '>'}, 'location': {'path': 'tmpejslbd_d.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         }
       ],
@@ -1253,7 +1253,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '>'}, 'location': {'path': 'tmpafcgoxnu.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1267,7 +1267,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '>'}, 'location': {'path': 'tmpk4jbjt7c.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1281,7 +1281,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '>'}, 'location': {'path': 'tmpsrj0r1k3.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1295,7 +1295,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '>'}, 'location': {'path': 'tmpwtzoq4nn.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1309,7 +1309,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '>'}, 'location': {'path': 'tmp8eg6zwbm.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1323,7 +1323,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '>'}, 'location': {'path': 'tmp77h6xobv.firth', 'range': {'start': {'line': 7, 'column': 13}, 'end': {'line': 7, 'column': 19}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         }
       ],
@@ -1348,7 +1348,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': 'mod'}, 'location': {'path': 'tmpd77lzbmu.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 13}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1360,7 +1360,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': 'mod'}, 'location': {'path': 'tmpscmjs7q9.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 13}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1372,7 +1372,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': 'mod'}, 'location': {'path': 'tmp45d_otlj.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 13}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1384,7 +1384,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': 'mod'}, 'location': {'path': 'tmp9t6r5jwz.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 13}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1396,7 +1396,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': 'mod'}, 'location': {'path': 'tmppwn56rsw.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 13}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1408,7 +1408,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': 'mod'}, 'location': {'path': 'tmpts21t9yp.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 13}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         }
       ],
@@ -1433,7 +1433,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpxupzbwn1.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1445,7 +1445,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmp177pbfbo.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1457,7 +1457,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpl5qql54g.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1469,7 +1469,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpr8j0lzv4.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1481,7 +1481,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpmxo72_i1.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         }
       ],
@@ -1507,7 +1507,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmp7qi1buwd.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1519,7 +1519,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpqqakonfp.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1531,7 +1531,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmp60g0hmdi.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1543,7 +1543,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpafl_v6fc.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1555,7 +1555,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpodgstrgu.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         }
       ],
@@ -1580,7 +1580,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpn9f_mjjp.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1592,7 +1592,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpgblxbsm3.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1604,7 +1604,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmp624vz8wy.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1616,7 +1616,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmp6tuwd_7u.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1628,7 +1628,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmp6mnu5n9i.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1640,7 +1640,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpyys1lmft.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         }
       ],
@@ -1666,7 +1666,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpt4h7yux9.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1679,7 +1679,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpx4rl8dv5.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1692,7 +1692,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmp4moq6afe.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1705,7 +1705,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpe988nd5u.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1718,7 +1718,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmp6wqe_0oy.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1731,7 +1731,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpyyd76j1c.firth', 'range': {'start': {'line': 3, 'column': 9}, 'end': {'line': 3, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         }
       ],
@@ -1758,7 +1758,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmprp7n_rvg.firth', 'range': {'start': {'line': 7, 'column': 9}, 'end': {'line': 7, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1771,7 +1771,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpn9prrrax.firth', 'range': {'start': {'line': 7, 'column': 9}, 'end': {'line': 7, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1784,7 +1784,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpmw87axkn.firth', 'range': {'start': {'line': 7, 'column': 9}, 'end': {'line': 7, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1797,7 +1797,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmp7n09wks8.firth', 'range': {'start': {'line': 7, 'column': 9}, 'end': {'line': 7, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1810,7 +1810,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpnz5blioz.firth', 'range': {'start': {'line': 7, 'column': 9}, 'end': {'line': 7, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1823,7 +1823,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpjdb4so8w.firth', 'range': {'start': {'line': 7, 'column': 9}, 'end': {'line': 7, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         }
       ],
@@ -1849,7 +1849,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpjdm42oj9.firth', 'range': {'start': {'line': 7, 'column': 9}, 'end': {'line': 7, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1861,7 +1861,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpifp6do8g.firth', 'range': {'start': {'line': 7, 'column': 9}, 'end': {'line': 7, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1873,7 +1873,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpky_3btof.firth', 'range': {'start': {'line': 7, 'column': 9}, 'end': {'line': 7, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1885,7 +1885,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmp3dufxtk3.firth', 'range': {'start': {'line': 7, 'column': 9}, 'end': {'line': 7, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1897,7 +1897,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpv_58nzao.firth', 'range': {'start': {'line': 7, 'column': 9}, 'end': {'line': 7, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         },
         {
@@ -1909,7 +1909,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unresolved_effect', 'message_params': {'name': '='}, 'location': {'path': 'tmpl_v3p4ps.firth', 'range': {'start': {'line': 7, 'column': 9}, 'end': {'line': 7, 'column': 15}}}, 'cause': {'kind': 'name-resolution', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved-effect\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved-effect', 'severity': 'error', 'message_key': 'diagnostic.unreso",
           "pass": false
         }
       ],
@@ -1918,5 +1918,11 @@
       "hidden_total": 5
     }
   },
-  "label": "firth sonnet r1"
+  "label": "firth sonnet r1",
+  "firth_commit": "c6b1a19c5a94eacf13d2b9679b2bbbf1eba33ff7",
+  "prompt_docs": [
+    "docs/getting-started.md",
+    "docs/firth-agent-guide.md"
+  ],
+  "metadata_note": "firth_commit and prompt_docs were added after scoring; errors were compacted from the raw runner output."
 }

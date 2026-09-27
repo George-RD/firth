@@ -16,7 +16,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp2g23xqw6.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         },
         {
@@ -28,7 +28,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp1g62ybp9.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         },
         {
@@ -40,7 +40,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp2qlq79xt.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         },
         {
@@ -52,7 +52,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmpkyfnorih.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         },
         {
@@ -64,7 +64,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp0kdc95uz.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         },
         {
@@ -76,7 +76,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp9jxact4p.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         }
       ],
@@ -101,7 +101,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '+'}, 'location': {'path': 'tmpiomljrg3.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 9}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         },
         {
@@ -115,7 +115,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '+'}, 'location': {'path': 'tmp60ustepg.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 9}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         },
         {
@@ -129,7 +129,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '+'}, 'location': {'path': 'tmpu8igr396.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 9}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         },
         {
@@ -143,7 +143,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '+'}, 'location': {'path': 'tmpnfw4arcb.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 9}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         },
         {
@@ -157,7 +157,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '+'}, 'location': {'path': 'tmpx26hefsp.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 9}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         }
       ],
@@ -180,7 +180,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmpnk3cmo2b.firth', 'range': {'start': {'line': 3, 'column': 6}, 'end': {'line': 3, 'column': 12}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         },
         {
@@ -192,7 +192,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp3i3qf89r.firth', 'range': {'start': {'line': 3, 'column': 6}, 'end': {'line': 3, 'column': 12}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         },
         {
@@ -204,7 +204,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmpwn46i1nz.firth', 'range': {'start': {'line': 3, 'column': 6}, 'end': {'line': 3, 'column': 12}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         },
         {
@@ -216,7 +216,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp26yrisk1.firth', 'range': {'start': {'line': 3, 'column': 6}, 'end': {'line': 3, 'column': 12}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         },
         {
@@ -228,7 +228,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp24n7qevm.firth', 'range': {'start': {'line': 3, 'column': 6}, 'end': {'line': 3, 'column': 12}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         }
       ],
@@ -251,7 +251,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmpa1q03gs5.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         },
         {
@@ -263,7 +263,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp5vegyaxj.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         },
         {
@@ -275,7 +275,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp0q7lmw4a.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         },
         {
@@ -287,7 +287,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmpsr3lxcia.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         },
         {
@@ -299,7 +299,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_underflow', 'message_params': {'name': '*'}, 'location': {'path': 'tmp2ck06ccq.firth', 'range': {'start': {'line': 3, 'column': 5}, 'end': {'line': 3, 'column': 11}}}, 'cause': {'kind': 'type-checking', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.stack-underflow\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.stack-underflow', 'severity': 'error', 'message_key': 'diagnostic.stack_un",
           "pass": false
         }
       ],
@@ -736,7 +736,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmp32la_ykv.firth', 'range': {'start': {'line': 5, 'column': 7}, 'end': {'line': 5, 'column': 8}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -750,7 +750,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmpwtfj604q.firth', 'range': {'start': {'line': 5, 'column': 7}, 'end': {'line': 5, 'column': 8}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -764,7 +764,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmpskpo81_u.firth', 'range': {'start': {'line': 5, 'column': 7}, 'end': {'line': 5, 'column': 8}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -778,7 +778,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmps2nr5k9b.firth', 'range': {'start': {'line': 5, 'column': 7}, 'end': {'line': 5, 'column': 8}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -792,7 +792,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmpyupr907d.firth', 'range': {'start': {'line': 5, 'column': 7}, 'end': {'line': 5, 'column': 8}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -806,7 +806,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmpsjww9cs7.firth', 'range': {'start': {'line': 5, 'column': 7}, 'end': {'line': 5, 'column': 8}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -820,7 +820,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmpa4l9ief9.firth', 'range': {'start': {'line': 5, 'column': 7}, 'end': {'line': 5, 'column': 8}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         }
       ],
@@ -845,7 +845,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_input_mismatch', 'message_params': {}, 'location': {'path': 'tmpf8mchg_x.firth', 'range': {'start': {'line': 5, 'column': 5}, 'end': {'line': 5, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 19))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 10 (Firth.Elaborator.StackEffect.AUsage.mvar 11)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 9 (Firth.Elaborator.StackEffect.AUsage.mvar 10)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 12 (Firth.Elaborator.StackEffect.AUsage.mvar 13)))\\\\n      (Firth.Elaborator.StackEffect.AType.mvar 16 (Firth.Elaborator.StackEffect.AUsage.mvar 18)))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elab",
+          "error": "code: firth.type.quotation-input-mismatch\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic",
           "pass": false
         },
         {
@@ -859,7 +859,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_input_mismatch', 'message_params': {}, 'location': {'path': 'tmpmepghwf_.firth', 'range': {'start': {'line': 5, 'column': 5}, 'end': {'line': 5, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 19))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 10 (Firth.Elaborator.StackEffect.AUsage.mvar 11)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 9 (Firth.Elaborator.StackEffect.AUsage.mvar 10)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 12 (Firth.Elaborator.StackEffect.AUsage.mvar 13)))\\\\n      (Firth.Elaborator.StackEffect.AType.mvar 16 (Firth.Elaborator.StackEffect.AUsage.mvar 18)))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elab",
+          "error": "code: firth.type.quotation-input-mismatch\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic",
           "pass": false
         },
         {
@@ -873,7 +873,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_input_mismatch', 'message_params': {}, 'location': {'path': 'tmpq833lnpg.firth', 'range': {'start': {'line': 5, 'column': 5}, 'end': {'line': 5, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 19))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 10 (Firth.Elaborator.StackEffect.AUsage.mvar 11)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 9 (Firth.Elaborator.StackEffect.AUsage.mvar 10)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 12 (Firth.Elaborator.StackEffect.AUsage.mvar 13)))\\\\n      (Firth.Elaborator.StackEffect.AType.mvar 16 (Firth.Elaborator.StackEffect.AUsage.mvar 18)))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elab",
+          "error": "code: firth.type.quotation-input-mismatch\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic",
           "pass": false
         },
         {
@@ -887,7 +887,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_input_mismatch', 'message_params': {}, 'location': {'path': 'tmptcnsewp2.firth', 'range': {'start': {'line': 5, 'column': 5}, 'end': {'line': 5, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 19))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 10 (Firth.Elaborator.StackEffect.AUsage.mvar 11)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 9 (Firth.Elaborator.StackEffect.AUsage.mvar 10)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 12 (Firth.Elaborator.StackEffect.AUsage.mvar 13)))\\\\n      (Firth.Elaborator.StackEffect.AType.mvar 16 (Firth.Elaborator.StackEffect.AUsage.mvar 18)))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elab",
+          "error": "code: firth.type.quotation-input-mismatch\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic",
           "pass": false
         },
         {
@@ -901,7 +901,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_input_mismatch', 'message_params': {}, 'location': {'path': 'tmpdn45eydz.firth', 'range': {'start': {'line': 5, 'column': 5}, 'end': {'line': 5, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 19))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 10 (Firth.Elaborator.StackEffect.AUsage.mvar 11)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 9 (Firth.Elaborator.StackEffect.AUsage.mvar 10)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 12 (Firth.Elaborator.StackEffect.AUsage.mvar 13)))\\\\n      (Firth.Elaborator.StackEffect.AType.mvar 16 (Firth.Elaborator.StackEffect.AUsage.mvar 18)))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elab",
+          "error": "code: firth.type.quotation-input-mismatch\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic",
           "pass": false
         }
       ],
@@ -925,7 +925,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmphneyyjws.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -938,7 +938,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmp5xlm1iit.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -951,7 +951,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmp1alkz938.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -964,7 +964,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmp87fha45r.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -977,7 +977,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmprmy22lg3.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -990,7 +990,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmpq6hm_buf.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         }
       ],
@@ -1015,7 +1015,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'a'}, 'location': {'path': 'tmp2hmx99xk.firth', 'range': {'start': {'line': 4, 'column': 18}, 'end': {'line': 4, 'column': 19}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -1029,7 +1029,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'a'}, 'location': {'path': 'tmpszwtcftr.firth', 'range': {'start': {'line': 4, 'column': 18}, 'end': {'line': 4, 'column': 19}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -1043,7 +1043,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'a'}, 'location': {'path': 'tmpol2btfo6.firth', 'range': {'start': {'line': 4, 'column': 18}, 'end': {'line': 4, 'column': 19}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -1057,7 +1057,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'a'}, 'location': {'path': 'tmpxrjx1b12.firth', 'range': {'start': {'line': 4, 'column': 18}, 'end': {'line': 4, 'column': 19}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -1071,7 +1071,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'a'}, 'location': {'path': 'tmptxxyn6va.firth', 'range': {'start': {'line': 4, 'column': 18}, 'end': {'line': 4, 'column': 19}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -1085,7 +1085,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'a'}, 'location': {'path': 'tmpspc7ul_e.firth', 'range': {'start': {'line': 4, 'column': 18}, 'end': {'line': 4, 'column': 19}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         }
       ],
@@ -1110,7 +1110,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmpewrmolxv.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -1123,7 +1123,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmpjebltfhk.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -1136,7 +1136,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmpkjvppd_1.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -1149,7 +1149,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmpmwmaqmwo.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -1162,7 +1162,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'b'}, 'location': {'path': 'tmpwksry6xw.firth', 'range': {'start': {'line': 3, 'column': 33}, 'end': {'line': 3, 'column': 34}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         }
       ],
@@ -1187,7 +1187,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'lo'}, 'location': {'path': 'tmplb_eu5sg.firth', 'range': {'start': {'line': 3, 'column': 38}, 'end': {'line': 3, 'column': 40}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -1201,7 +1201,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'lo'}, 'location': {'path': 'tmpc8radnb2.firth', 'range': {'start': {'line': 3, 'column': 38}, 'end': {'line': 3, 'column': 40}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -1215,7 +1215,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'lo'}, 'location': {'path': 'tmp3mg_4cfa.firth', 'range': {'start': {'line': 3, 'column': 38}, 'end': {'line': 3, 'column': 40}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -1229,7 +1229,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'lo'}, 'location': {'path': 'tmps6fmwu0x.firth', 'range': {'start': {'line': 3, 'column': 38}, 'end': {'line': 3, 'column': 40}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -1243,7 +1243,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'lo'}, 'location': {'path': 'tmpianfq2lx.firth', 'range': {'start': {'line': 3, 'column': 38}, 'end': {'line': 3, 'column': 40}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         },
         {
@@ -1257,7 +1257,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'lo'}, 'location': {'path': 'tmp3y5ilz6q.firth', 'range': {'start': {'line': 3, 'column': 38}, 'end': {'line': 3, 'column': 40}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.elaboration.unsupported-capture\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnost",
           "pass": false
         }
       ],
@@ -1282,7 +1282,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmprbqsx3l1.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 44}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.declared-effect-mismatch\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic",
           "pass": false
         },
         {
@@ -1294,7 +1294,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmps48zencu.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 44}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.declared-effect-mismatch\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic",
           "pass": false
         },
         {
@@ -1306,7 +1306,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmprn2ts0yx.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 44}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.declared-effect-mismatch\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic",
           "pass": false
         },
         {
@@ -1318,7 +1318,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpdo5i6s7d.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 44}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.declared-effect-mismatch\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic",
           "pass": false
         },
         {
@@ -1330,7 +1330,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmp3y1zz988.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 44}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.declared-effect-mismatch\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic",
           "pass": false
         },
         {
@@ -1342,7 +1342,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpx3gdyd3o.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 44}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.type.declared-effect-mismatch\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic",
           "pass": false
         }
       ],
@@ -1367,7 +1367,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpne0_9eo2.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1379,7 +1379,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmprz8_yru5.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1391,7 +1391,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpvebw4dpu.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1403,7 +1403,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpo7fpzeyo.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1415,7 +1415,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpo7ew_3y6.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         }
       ],
@@ -1441,7 +1441,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmp9gka5z1o.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1453,7 +1453,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmppjhezaxo.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1465,7 +1465,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmp6_bat4ww.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1477,7 +1477,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpuiap6nav.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1489,7 +1489,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpqebt0a5f.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         }
       ],
@@ -1514,7 +1514,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmp1zr8v776.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1526,7 +1526,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmp72oq53_4.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1538,7 +1538,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpc88qmf9j.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1550,7 +1550,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmp8_0rmuwu.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1562,7 +1562,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmp3_1m8zar.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1574,7 +1574,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpw6hvvedc.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'n'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         }
       ],
@@ -1600,7 +1600,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmp1ipzd3tl.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'b'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1613,7 +1613,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpi246_3jt.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'b'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1626,7 +1626,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpa03ggiag.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'b'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1639,7 +1639,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpv1jcnov0.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'b'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1652,7 +1652,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpegr_yxtl.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'b'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1665,7 +1665,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmp55u80e21.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 4}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'b'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         }
       ],
@@ -1692,7 +1692,7 @@
           ],
           "visible": true,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpq5giura0.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'exp'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1705,7 +1705,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpj9zy236a.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'exp'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1718,7 +1718,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpmj2lyjod.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'exp'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1731,7 +1731,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpmc_0pll1.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'exp'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1744,7 +1744,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpg02d238d.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'exp'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         },
         {
@@ -1757,7 +1757,7 @@
           ],
           "visible": false,
           "ok": false,
-          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', 'message_params': {}, 'location': {'path': 'tmpoy5948tj.firth', 'range': {'start': {'line': 3, 'column': 3}, 'end': {'line': 3, 'column': 6}}}, 'cause': {'kind': 'validation', 'data': {'actual': 'exp'}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "error": "code: firth.name.unresolved\n{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.name.unresolved', 'severity': 'error', 'message_key': 'diagnostic.unresolved', ",
           "pass": false
         }
       ],
@@ -1779,5 +1779,12 @@
       "hidden_total": 0
     }
   },
-  "label": "firth haiku r1"
+  "label": "firth haiku r1",
+  "firth_commit": "42f00a7f0b56c094a2f888771c9cdf680b11af4e",
+  "prompt_docs": [
+    "docs/getting-started.md",
+    "docs/firth-agent-guide.md",
+    "eval/s7/docs/primitives-pr113.md"
+  ],
+  "metadata_note": "firth_commit and prompt_docs were added after scoring; errors were compacted from the raw runner output."
 }
