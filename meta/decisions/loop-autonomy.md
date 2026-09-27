@@ -1,9 +1,12 @@
 ---
 id: dec.loop-autonomy
 nodes: [firth.governance, firth.governance.loop]
-status: accepted
+status: superseded
 date: 2026-08-05
 ---
+
+> Superseded on 2026-09-27 by `dec.loop-freeze` (`meta/decisions/loop-freeze.md`). The loop is frozen, and `docs/roadmap.md` defines done.
+
 # Loop Autonomy
 
 ## Context
