@@ -98,7 +98,9 @@ fixed error codes for invalid inputs. When the contract was frozen on 27
 September 2026, every expected outcome was re-derived from this text by hand
 and again, blind, by a separate reviewer. The cases added then cover error
 precedence, the edge of every bound, exact fit and case-sensitive IDs; the
-original 19 cases are unchanged. `tools/loop/test_inventory_contract.py`
+original 19 cases are unchanged. Review of that change added two more: IDs are
+checked beyond the 64th request, and a value past the signed 64-bit range is
+`invalid-range`. `tools/loop/test_inventory_contract.py`
 checks these against an independent mathematical model and invariant checks;
 that validates the specification corpus, not Firth execution. The eventual
 consumer gate must execute the actual Firth program and compare to these
