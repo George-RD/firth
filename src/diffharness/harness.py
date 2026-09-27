@@ -191,7 +191,8 @@ class Result:
     records: list[dict[str, Any]] = dataclasses.field(default_factory=list)
     traps: tuple[str | None, str | None] = (None, None)
     # The per-event trace label of an agreement: `gate.TRACE_AGREED` when the
-    # projected traces matched stack for stack, `gate.TRACE_UNSUPPORTED` when
+    # projected traces matched stack for stack, `gate.TRACE_PREFIX_AGREED` when
+    # they matched up to the trace limit, `gate.TRACE_UNSUPPORTED` when
     # intermediate stacks held quotations and were not compared.
     trace_comparison: str | None = None
 

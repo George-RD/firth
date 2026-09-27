@@ -618,8 +618,9 @@ def compare(reference: dict[str, Any], target: dict[str, Any], name: str,
     `contract` is the manifest's `[comparison]` table; only the table this
     module implements is accepted, so no flag can weaken the comparison. The
     traces are compared event by event by `compare_traces`, whose label
-    (`TRACE_AGREED` or `TRACE_UNSUPPORTED`) is returned. Effectful equivalence
-    is not asserted: the portable adapter currently runs pure programs.
+    (`TRACE_AGREED`, `TRACE_PREFIX_AGREED` or `TRACE_UNSUPPORTED`) is
+    returned. Effectful equivalence is not asserted: the portable adapter
+    currently runs pure programs.
     """
     check_comparison_contract(contract)
     if type(fuel) is not int or not 0 <= fuel <= MAX_FUEL:
