@@ -34,7 +34,7 @@ sha256 = "b1631c896feb8f474bc09e0239e16af9b705bbe109b6bcadd3f48d25b54aad97"
 role = "elaborator-to-envelope-adapters"
 
 [gamma]
-version = "0.1"
+version = "0.2"
 portable = true
 primitives = ["+", "-", "*", "<", "=", "send"]
 values = ["Int", "Bool", "Handle", "Bytes", "World"]
