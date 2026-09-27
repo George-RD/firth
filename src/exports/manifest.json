@@ -1,0 +1,11 @@
+[
+  {"source": "examples/programs/allocate.firth", "module": "Programs.Allocate"},
+  {"source": "examples/programs/factorial.firth", "module": "Programs.Factorial"},
+  {"source": "examples/programs/fib.firth", "module": "Programs.Fib"},
+  {"source": "examples/programs/locals.firth", "module": "Programs.Locals"},
+  {"source": "examples/programs/quotations.firth", "module": "Programs.Quotations"},
+  {"source": "examples/programs/sequences.firth", "module": "Programs.Sequences"},
+  {"source": "examples/programs/signed.firth", "module": "Programs.Signed"},
+  {"source": "examples/programs/sum-to.firth", "module": "Programs.SumTo"},
+  {"source": "examples/inventory/allocator.firth", "module": "Inventory.Allocator"}
+]
