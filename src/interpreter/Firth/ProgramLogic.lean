@@ -322,152 +322,17 @@ theorem induction_on_measure {α : Sort _} (size : α → Nat) {P : α → Prop}
   (_root_.measure size).wf.induction x step
 
 /-!
-## Primitives under the reference runner's registry
+## Registries
 
-Kernel programs name primitives by their surface names, and the reference
-runner resolves them through `Firth.ReferenceRun.adapterGamma`. One lemma per
-primitive states its effect under that registry.
+`adapterGamma` is the reference runner's registry. `int64Gamma` is the same
+registry with `+`, `-` and `*` faulting outside i64, as the VM's do (see the
+Overflow section). `ReferenceRegistry` holds for both: they agree on literals
+and on every other primitive, so the literal and non-arithmetic primitive
+lemmas below hold under either.
 -/
 
-section Primitives
+section Registries
 open Firth.ReferenceRun
-variable {dictionary : Dictionary} {costs : CostTable}
-
-private theorem adapter_prim {surface kernel : String} {specification : PrimitiveSpec}
-    (hSurface : kernelPrimitive surface = some kernel)
-    (hKernel : defaultGamma.primitive kernel = some specification) :
-    adapterGamma.primitive surface = some specification := by
-  simp [adapterGamma, hSurface, hKernel]
-
-theorem runs_literal_int (value : Int) (stack : Stack) :
-    Runs adapterGamma dictionary costs (.cons (.lit (.int value)) .empty) stack
-      (.literal (.int value) :: stack) 1 (costs.atom (.lit (.int value))) :=
-  runs_lit (type := .int) stack rfl
-
-theorem runs_literal_bool (value : Bool) (stack : Stack) :
-    Runs adapterGamma dictionary costs (.cons (.lit (.bool value)) .empty) stack
-      (.literal (.bool value) :: stack) 1 (costs.atom (.lit (.bool value))) :=
-  runs_lit (type := .bool) stack rfl
-
-theorem runs_add (left right : Int) (tail : Stack) :
-    Runs adapterGamma dictionary costs (.cons (.prim "+") .empty)
-      (.literal (.int right) :: .literal (.int left) :: tail)
-      (.literal (.int (left + right)) :: tail) 1 (costs.primitive "+") :=
-  runs_prim (adapter_prim (kernel := "addInt") rfl rfl) rfl
-
-theorem runs_sub (left right : Int) (tail : Stack) :
-    Runs adapterGamma dictionary costs (.cons (.prim "-") .empty)
-      (.literal (.int right) :: .literal (.int left) :: tail)
-      (.literal (.int (left - right)) :: tail) 1 (costs.primitive "-") :=
-  runs_prim (adapter_prim (kernel := "subInt") rfl rfl) rfl
-
-theorem runs_mul (left right : Int) (tail : Stack) :
-    Runs adapterGamma dictionary costs (.cons (.prim "*") .empty)
-      (.literal (.int right) :: .literal (.int left) :: tail)
-      (.literal (.int (left * right)) :: tail) 1 (costs.primitive "*") :=
-  runs_prim (adapter_prim (kernel := "mulInt") rfl rfl) rfl
-
-theorem runs_lt (left right : Int) (tail : Stack) :
-    Runs adapterGamma dictionary costs (.cons (.prim "<") .empty)
-      (.literal (.int right) :: .literal (.int left) :: tail)
-      (.literal (.bool (decide (left < right))) :: tail) 1 (costs.primitive "<") :=
-  runs_prim (adapter_prim (kernel := "ltInt") rfl rfl) rfl
-
-theorem runs_eq (left right : Int) (tail : Stack) :
-    Runs adapterGamma dictionary costs (.cons (.prim "=") .empty)
-      (.literal (.int right) :: .literal (.int left) :: tail)
-      (.literal (.bool (decide (left = right))) :: tail) 1 (costs.primitive "=") :=
-  runs_prim (adapter_prim (kernel := "eqInt") rfl rfl) rfl
-
-theorem runs_intSeq_empty (tail : Stack) :
-    Runs adapterGamma dictionary costs (.cons (.prim "seq-int.empty") .empty) tail
-      (.literal (.intSeq []) :: tail) 1 (costs.primitive "seq-int.empty") :=
-  runs_prim (adapter_prim (kernel := "intSeqEmpty") rfl rfl) rfl
-
-theorem runs_intSeq_len (values : List Int) (tail : Stack) :
-    Runs adapterGamma dictionary costs (.cons (.prim "seq-int.len") .empty)
-      (.literal (.intSeq values) :: tail) (.literal (.int values.length) :: tail) 1
-      (costs.primitive "seq-int.len") :=
-  runs_prim (adapter_prim (kernel := "intSeqLen") rfl rfl) rfl
-
-/-- `seq-int.at` at an index inside the sequence. Outside it the primitive
-faults, and no `Runs` fact holds. -/
-theorem runs_intSeq_at {values : List Int} {index : Nat} {value : Int} (tail : Stack)
-    (h : values[index]? = some value) :
-    Runs adapterGamma dictionary costs (.cons (.prim "seq-int.at") .empty)
-      (.literal (.int index) :: .literal (.intSeq values) :: tail)
-      (.literal (.int value) :: tail) 1 (costs.primitive "seq-int.at") :=
-  runs_prim (adapter_prim (kernel := "intSeqAt") rfl rfl)
-    (by simp [intSeqAtDelta, elementAt?, h])
-
-theorem runs_intSeq_push (values : List Int) (value : Int) (tail : Stack) :
-    Runs adapterGamma dictionary costs (.cons (.prim "seq-int.push") .empty)
-      (.literal (.int value) :: .literal (.intSeq values) :: tail)
-      (.literal (.intSeq (values ++ [value])) :: tail) 1 (costs.primitive "seq-int.push") :=
-  runs_prim (adapter_prim (kernel := "intSeqPush") rfl rfl) rfl
-
-theorem runs_boolSeq_empty (tail : Stack) :
-    Runs adapterGamma dictionary costs (.cons (.prim "seq-bool.empty") .empty) tail
-      (.literal (.boolSeq []) :: tail) 1 (costs.primitive "seq-bool.empty") :=
-  runs_prim (adapter_prim (kernel := "boolSeqEmpty") rfl rfl) rfl
-
-theorem runs_boolSeq_len (values : List Bool) (tail : Stack) :
-    Runs adapterGamma dictionary costs (.cons (.prim "seq-bool.len") .empty)
-      (.literal (.boolSeq values) :: tail) (.literal (.int values.length) :: tail) 1
-      (costs.primitive "seq-bool.len") :=
-  runs_prim (adapter_prim (kernel := "boolSeqLen") rfl rfl) rfl
-
-/-- `seq-bool.at` at an index inside the sequence. -/
-theorem runs_boolSeq_at {values : List Bool} {index : Nat} {value : Bool} (tail : Stack)
-    (h : values[index]? = some value) :
-    Runs adapterGamma dictionary costs (.cons (.prim "seq-bool.at") .empty)
-      (.literal (.int index) :: .literal (.boolSeq values) :: tail)
-      (.literal (.bool value) :: tail) 1 (costs.primitive "seq-bool.at") :=
-  runs_prim (adapter_prim (kernel := "boolSeqAt") rfl rfl)
-    (by simp [boolSeqAtDelta, elementAt?, h])
-
-theorem runs_boolSeq_push (values : List Bool) (value : Bool) (tail : Stack) :
-    Runs adapterGamma dictionary costs (.cons (.prim "seq-bool.push") .empty)
-      (.literal (.bool value) :: .literal (.boolSeq values) :: tail)
-      (.literal (.boolSeq (values ++ [value])) :: tail) 1 (costs.primitive "seq-bool.push") :=
-  runs_prim (adapter_prim (kernel := "boolSeqPush") rfl rfl) rfl
-
-/-- `seq-int.at` at an index given as an `Int`, as arithmetic on the stack
-leaves it: the index must be non-negative and inside the sequence. -/
-theorem runs_intSeq_at_int {values : List Int} {index : Int} {value : Int} (tail : Stack)
-    (hIndex : 0 ≤ index) (h : values[index.toNat]? = some value) :
-    Runs adapterGamma dictionary costs (.cons (.prim "seq-int.at") .empty)
-      (.literal (.int index) :: .literal (.intSeq values) :: tail)
-      (.literal (.int value) :: tail) 1 (costs.primitive "seq-int.at") := by
-  have := runs_intSeq_at (dictionary := dictionary) (costs := costs) tail h
-  rwa [Int.toNat_of_nonneg hIndex] at this
-
-/-- `seq-bool.at` at an index given as an `Int`. -/
-theorem runs_boolSeq_at_int {values : List Bool} {index : Int} {value : Bool} (tail : Stack)
-    (hIndex : 0 ≤ index) (h : values[index.toNat]? = some value) :
-    Runs adapterGamma dictionary costs (.cons (.prim "seq-bool.at") .empty)
-      (.literal (.int index) :: .literal (.boolSeq values) :: tail)
-      (.literal (.bool value) :: tail) 1 (costs.primitive "seq-bool.at") := by
-  have := runs_boolSeq_at (dictionary := dictionary) (costs := costs) tail h
-  rwa [Int.toNat_of_nonneg hIndex] at this
-
-end Primitives
-
-/-!
-## Overflow
-
-The VM's integers are signed 64-bit and `+`, `-` and `*` trap on overflow,
-while the reference interpreter's `Int` is unbounded. `int64Gamma` is the
-reference registry with those three primitives faulting outside the i64 range,
-as the VM's do. A `Runs` fact under `int64Gamma` therefore also says that no
-arithmetic step overflowed, and `Runs.of_int64` recovers the same fact under
-`adapterGamma`. Literals need no check: the compiler refuses an out-of-range
-literal, and `seq-int.len` of a sequence the VM can hold fits in i64.
--/
-
-section Overflow
-open Firth.ReferenceRun
-variable {dictionary : Dictionary} {costs : CostTable}
 
 /-- The VM's signed 64-bit range. -/
 def InInt64 (value : Int) : Prop := -9223372036854775808 ≤ value ∧ value ≤ 9223372036854775807
@@ -495,6 +360,184 @@ def int64Gamma : Gamma :=
   { adapterGamma with
     primitive := fun primitive => (adapterGamma.primitive primitive).map fun specification =>
       { specification with delta := int64Delta primitive specification.delta } }
+
+/-- A registry that agrees with the reference runner's on literal types and on
+every primitive other than `+`, `-` and `*`. -/
+class ReferenceRegistry (gamma : Gamma) : Prop where
+  literalType : gamma.literalType = defaultGamma.literalType
+  primitive : ∀ primitive : Prim, primitive ≠ "+" → primitive ≠ "-" → primitive ≠ "*" →
+    gamma.primitive primitive = adapterGamma.primitive primitive
+
+instance : ReferenceRegistry adapterGamma where
+  literalType := rfl
+  primitive _ _ _ _ := rfl
+
+instance : ReferenceRegistry int64Gamma where
+  literalType := rfl
+  primitive primitive hAdd hSub hMul := by
+    cases h : adapterGamma.primitive primitive with
+    | none => simp [int64Gamma, h]
+    | some specification => simp [int64Gamma, h, int64Delta, hAdd, hSub, hMul]
+
+end Registries
+
+/-!
+## Primitives under the reference runner's registry
+
+Kernel programs name primitives by their surface names, and the reference
+runner resolves them through `Firth.ReferenceRun.adapterGamma`. One lemma per
+primitive states its effect under that registry.
+-/
+
+section Primitives
+open Firth.ReferenceRun
+variable {gamma : Gamma} [ReferenceRegistry gamma] {dictionary : Dictionary} {costs : CostTable}
+
+private theorem adapter_prim {surface kernel : String} {specification : PrimitiveSpec}
+    (hSurface : kernelPrimitive surface = some kernel)
+    (hKernel : defaultGamma.primitive kernel = some specification) :
+    adapterGamma.primitive surface = some specification := by
+  simp [adapterGamma, hSurface, hKernel]
+
+/-- A non-arithmetic primitive resolves under any reference registry as under
+the runner's own. -/
+private theorem registry_prim {surface kernel : String} {specification : PrimitiveSpec}
+    (hOther : surface ≠ "+" ∧ surface ≠ "-" ∧ surface ≠ "*")
+    (hSurface : kernelPrimitive surface = some kernel)
+    (hKernel : defaultGamma.primitive kernel = some specification) :
+    gamma.primitive surface = some specification := by
+  rw [ReferenceRegistry.primitive surface hOther.1 hOther.2.1 hOther.2.2]
+  exact adapter_prim hSurface hKernel
+
+theorem runs_literal_int (value : Int) (stack : Stack) :
+    Runs gamma dictionary costs (.cons (.lit (.int value)) .empty) stack
+      (.literal (.int value) :: stack) 1 (costs.atom (.lit (.int value))) :=
+  runs_lit (type := .int) stack (by rw [ReferenceRegistry.literalType]; rfl)
+
+theorem runs_literal_bool (value : Bool) (stack : Stack) :
+    Runs gamma dictionary costs (.cons (.lit (.bool value)) .empty) stack
+      (.literal (.bool value) :: stack) 1 (costs.atom (.lit (.bool value))) :=
+  runs_lit (type := .bool) stack (by rw [ReferenceRegistry.literalType]; rfl)
+
+theorem runs_add (left right : Int) (tail : Stack) :
+    Runs adapterGamma dictionary costs (.cons (.prim "+") .empty)
+      (.literal (.int right) :: .literal (.int left) :: tail)
+      (.literal (.int (left + right)) :: tail) 1 (costs.primitive "+") :=
+  runs_prim (adapter_prim (kernel := "addInt") rfl rfl) rfl
+
+theorem runs_sub (left right : Int) (tail : Stack) :
+    Runs adapterGamma dictionary costs (.cons (.prim "-") .empty)
+      (.literal (.int right) :: .literal (.int left) :: tail)
+      (.literal (.int (left - right)) :: tail) 1 (costs.primitive "-") :=
+  runs_prim (adapter_prim (kernel := "subInt") rfl rfl) rfl
+
+theorem runs_mul (left right : Int) (tail : Stack) :
+    Runs adapterGamma dictionary costs (.cons (.prim "*") .empty)
+      (.literal (.int right) :: .literal (.int left) :: tail)
+      (.literal (.int (left * right)) :: tail) 1 (costs.primitive "*") :=
+  runs_prim (adapter_prim (kernel := "mulInt") rfl rfl) rfl
+
+theorem runs_lt (left right : Int) (tail : Stack) :
+    Runs gamma dictionary costs (.cons (.prim "<") .empty)
+      (.literal (.int right) :: .literal (.int left) :: tail)
+      (.literal (.bool (decide (left < right))) :: tail) 1 (costs.primitive "<") :=
+  runs_prim (registry_prim (kernel := "ltInt") (by decide) rfl rfl) rfl
+
+theorem runs_eq (left right : Int) (tail : Stack) :
+    Runs gamma dictionary costs (.cons (.prim "=") .empty)
+      (.literal (.int right) :: .literal (.int left) :: tail)
+      (.literal (.bool (decide (left = right))) :: tail) 1 (costs.primitive "=") :=
+  runs_prim (registry_prim (kernel := "eqInt") (by decide) rfl rfl) rfl
+
+theorem runs_intSeq_empty (tail : Stack) :
+    Runs gamma dictionary costs (.cons (.prim "seq-int.empty") .empty) tail
+      (.literal (.intSeq []) :: tail) 1 (costs.primitive "seq-int.empty") :=
+  runs_prim (registry_prim (kernel := "intSeqEmpty") (by decide) rfl rfl) rfl
+
+theorem runs_intSeq_len (values : List Int) (tail : Stack) :
+    Runs gamma dictionary costs (.cons (.prim "seq-int.len") .empty)
+      (.literal (.intSeq values) :: tail) (.literal (.int values.length) :: tail) 1
+      (costs.primitive "seq-int.len") :=
+  runs_prim (registry_prim (kernel := "intSeqLen") (by decide) rfl rfl) rfl
+
+/-- `seq-int.at` at an index inside the sequence. Outside it the primitive
+faults, and no `Runs` fact holds. -/
+theorem runs_intSeq_at {values : List Int} {index : Nat} {value : Int} (tail : Stack)
+    (h : values[index]? = some value) :
+    Runs gamma dictionary costs (.cons (.prim "seq-int.at") .empty)
+      (.literal (.int index) :: .literal (.intSeq values) :: tail)
+      (.literal (.int value) :: tail) 1 (costs.primitive "seq-int.at") :=
+  runs_prim (registry_prim (kernel := "intSeqAt") (by decide) rfl rfl)
+    (by simp [intSeqAtDelta, elementAt?, h])
+
+theorem runs_intSeq_push (values : List Int) (value : Int) (tail : Stack) :
+    Runs gamma dictionary costs (.cons (.prim "seq-int.push") .empty)
+      (.literal (.int value) :: .literal (.intSeq values) :: tail)
+      (.literal (.intSeq (values ++ [value])) :: tail) 1 (costs.primitive "seq-int.push") :=
+  runs_prim (registry_prim (kernel := "intSeqPush") (by decide) rfl rfl) rfl
+
+theorem runs_boolSeq_empty (tail : Stack) :
+    Runs gamma dictionary costs (.cons (.prim "seq-bool.empty") .empty) tail
+      (.literal (.boolSeq []) :: tail) 1 (costs.primitive "seq-bool.empty") :=
+  runs_prim (registry_prim (kernel := "boolSeqEmpty") (by decide) rfl rfl) rfl
+
+theorem runs_boolSeq_len (values : List Bool) (tail : Stack) :
+    Runs gamma dictionary costs (.cons (.prim "seq-bool.len") .empty)
+      (.literal (.boolSeq values) :: tail) (.literal (.int values.length) :: tail) 1
+      (costs.primitive "seq-bool.len") :=
+  runs_prim (registry_prim (kernel := "boolSeqLen") (by decide) rfl rfl) rfl
+
+/-- `seq-bool.at` at an index inside the sequence. -/
+theorem runs_boolSeq_at {values : List Bool} {index : Nat} {value : Bool} (tail : Stack)
+    (h : values[index]? = some value) :
+    Runs gamma dictionary costs (.cons (.prim "seq-bool.at") .empty)
+      (.literal (.int index) :: .literal (.boolSeq values) :: tail)
+      (.literal (.bool value) :: tail) 1 (costs.primitive "seq-bool.at") :=
+  runs_prim (registry_prim (kernel := "boolSeqAt") (by decide) rfl rfl)
+    (by simp [boolSeqAtDelta, elementAt?, h])
+
+theorem runs_boolSeq_push (values : List Bool) (value : Bool) (tail : Stack) :
+    Runs gamma dictionary costs (.cons (.prim "seq-bool.push") .empty)
+      (.literal (.bool value) :: .literal (.boolSeq values) :: tail)
+      (.literal (.boolSeq (values ++ [value])) :: tail) 1 (costs.primitive "seq-bool.push") :=
+  runs_prim (registry_prim (kernel := "boolSeqPush") (by decide) rfl rfl) rfl
+
+/-- `seq-int.at` at an index given as an `Int`, as arithmetic on the stack
+leaves it: the index must be non-negative and inside the sequence. -/
+theorem runs_intSeq_at_int {values : List Int} {index : Int} {value : Int} (tail : Stack)
+    (hIndex : 0 ≤ index) (h : values[index.toNat]? = some value) :
+    Runs gamma dictionary costs (.cons (.prim "seq-int.at") .empty)
+      (.literal (.int index) :: .literal (.intSeq values) :: tail)
+      (.literal (.int value) :: tail) 1 (costs.primitive "seq-int.at") := by
+  have := runs_intSeq_at (gamma := gamma) (dictionary := dictionary) (costs := costs) tail h
+  rwa [Int.toNat_of_nonneg hIndex] at this
+
+/-- `seq-bool.at` at an index given as an `Int`. -/
+theorem runs_boolSeq_at_int {values : List Bool} {index : Int} {value : Bool} (tail : Stack)
+    (hIndex : 0 ≤ index) (h : values[index.toNat]? = some value) :
+    Runs gamma dictionary costs (.cons (.prim "seq-bool.at") .empty)
+      (.literal (.int index) :: .literal (.boolSeq values) :: tail)
+      (.literal (.bool value) :: tail) 1 (costs.primitive "seq-bool.at") := by
+  have := runs_boolSeq_at (gamma := gamma) (dictionary := dictionary) (costs := costs) tail h
+  rwa [Int.toNat_of_nonneg hIndex] at this
+
+end Primitives
+
+/-!
+## Overflow
+
+The VM's integers are signed 64-bit and `+`, `-` and `*` trap on overflow,
+while the reference interpreter's `Int` is unbounded. `int64Gamma` is the
+reference registry with those three primitives faulting outside the i64 range,
+as the VM's do. A `Runs` fact under `int64Gamma` therefore also says that no
+arithmetic step overflowed, and `Runs.of_int64` recovers the same fact under
+`adapterGamma`. Literals need no check: the compiler refuses an out-of-range
+literal, and `seq-int.len` of a sequence the VM can hold fits in i64.
+-/
+
+section Overflow
+open Firth.ReferenceRun
+variable {dictionary : Dictionary} {costs : CostTable}
 
 private theorem int64Delta_sound {primitive : Prim} {specification : PrimitiveSpec}
     (hSpec : adapterGamma.primitive primitive = some specification)
@@ -776,12 +819,22 @@ end Bounds
 
 `runs_chain` proves a `Runs` goal for a straight-line program by applying one
 rule per atom: the structural atoms, literals, the arithmetic, comparison and
-sequence-length primitives, `dip` and `call` of a literal quotation, `if` on a
+sequence-length primitives (under `int64Gamma`, `+`, `-` and `*` leave an
+`InInt64` side goal, closed from the assumptions when linear arithmetic
+suffices), `dip` and `call` of a literal quotation, `if` on a
 condition `rfl`, `decide` or an assumption settles, and any word call or atom
 for which a matching `Runs` hypothesis is in context. It then closes the step
 and cost equations with `runs_arith`. Whatever it cannot settle, such as a
 stack that is only equal up to arithmetic, is left as a goal.
 -/
+
+/-- Closes a side goal a chain leaves: step and cost arithmetic, or an i64
+range condition that is an assumption or follows from the assumptions by
+linear arithmetic. -/
+macro "runs_side" : tactic => `(tactic| first
+  | assumption
+  | runs_arith
+  | (simp only [InInt64] at *; omega))
 
 /-- One rule of a chain; fails when no rule applies. -/
 macro "runs_atom" : tactic => `(tactic| first
@@ -799,6 +852,9 @@ macro "runs_atom" : tactic => `(tactic| first
   | apply runs_cons (runs_add _ _ _)
   | apply runs_cons (runs_sub _ _ _)
   | apply runs_cons (runs_mul _ _ _)
+  | apply runs_cons (runs_add_int64 _ ?_)
+  | apply runs_cons (runs_sub_int64 _ ?_)
+  | apply runs_cons (runs_mul_int64 _ ?_)
   | apply runs_cons (runs_lt _ _ _)
   | apply runs_cons (runs_eq _ _ _)
   | apply runs_cons (runs_intSeq_empty _)
@@ -828,17 +884,18 @@ through its dictionary entry and chaining its body. Calls inside the body are
 not unfolded; they need `Runs` hypotheses, so recursion stays explicit. -/
 macro "runs_unfold" : tactic => `(tactic| (
   apply Runs.congr
-  · apply runs_word (by rfl)
+  focus
+    apply runs_word (by rfl)
     dsimp only
     runs_expand
-    repeat' runs_atom
-  all_goals try runs_arith))
+  repeat' runs_atom
+  all_goals try runs_side))
 
 /-- Proves a straight-line `Runs` goal; see the section comment. -/
 macro "runs_chain" : tactic => `(tactic| (
   apply Runs.congr
-  · runs_expand
-    repeat' runs_atom
-  all_goals try runs_arith))
+  runs_expand
+  repeat' runs_atom
+  all_goals try runs_side))
 
 end Firth.Logic

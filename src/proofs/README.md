@@ -27,14 +27,17 @@ Also in the library:
 - `runs_intSeq_at_int` and `runs_boolSeq_at_int`, for an index computed as an
   `Int`;
 - `int64Gamma`, the registry with `+`, `-` and `*` faulting outside i64 as the
-  VM's do. Prove under it with `runs_add_int64` and friends, and
-  `Runs.of_int64` gives the same fact under the reference registry, now with
-  no overflow on the way;
+  VM's do. The literal lemmas and the comparison and sequence primitive
+  lemmas hold under either registry (`[ReferenceRegistry gamma]`); for the
+  arithmetic, use `runs_add_int64` and friends. `Runs.of_int64` gives the same
+  fact under the reference registry, now with no overflow on the way;
 - tactics: `runs_chain` proves a straight-line body one atom at a time,
   `runs_unfold` does the same through one word call, and `runs_arith` closes
   the step and cost arithmetic under `defaultCosts`. Word calls inside a
   body are discharged only from `Runs` hypotheses in context, so recursion
-  stays explicit.
+  stays explicit. Under `int64Gamma` the chain leaves an `InInt64` side goal
+  per `+`, `-` and `*`, closed when it is an assumption or follows from the
+  assumptions by linear arithmetic.
 
 `Programs/SumTo.lean` is the worked example: for every `n`, `sum-to` returns
 `1 + ... + n` at a cost of exactly `13·n + 10`, the figure `firth_run.py`
