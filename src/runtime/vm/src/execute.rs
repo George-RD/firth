@@ -272,7 +272,7 @@ fn run_code<'x>(
         environment,
         machine,
         current_word,
-        captures.is_empty(),
+        !owns_linear_captures(captures, environment.registry),
     )?;
     machine.frames.truncate(frame_depth);
     match tail {
@@ -320,7 +320,8 @@ fn run_tail_chain<'x>(
     let frame_depth = machine.frames.len();
     // A tail word replaces the word (and its image); a tail quotation
     // replaces only the code and keeps the enclosing word, exactly as a
-    // nested `call` would attribute it. Tail quotations are capture-free.
+    // nested `call` would attribute it. Tail quotations own no linear
+    // captures, so nothing is left to check when they end.
     let mut word: Option<ResolvedWord<'x>> = None;
     let mut next = Some(first);
     while let Some(target) = next.take() {
@@ -331,24 +332,35 @@ fn run_tail_chain<'x>(
                 None
             }
         };
-        let (frame_image, frame_word, frame_code): (&Image, &str, &[Instruction]) =
-            match (&word, &quote) {
-                (Some(resolved), None) => {
-                    let (word_image, entry) = resolved.parts();
-                    (word_image, entry.name.as_str(), &entry.code)
-                }
-                (Some(resolved), Some(quote)) => {
-                    let (word_image, entry) = resolved.parts();
-                    (word_image, entry.name.as_str(), &quote.code)
-                }
-                (None, Some(quote)) => (image, current_word, &quote.code),
+        let mut quote = quote;
+        let mut no_captures: [Value; 0] = [];
+        let mut no_consumed: [bool; 0] = [];
+        let (frame_image, frame_word) = match &word {
+            Some(resolved) => {
+                let (word_image, entry) = resolved.parts();
+                (word_image, entry.name.as_str())
+            }
+            None => (image, current_word),
+        };
+        let (frame_code, frame_captures, frame_consumed): (&[Instruction], &mut [Value], &mut [bool]) =
+            match (&word, &mut quote) {
+                (_, Some(Quotation {
+                    code,
+                    captures,
+                    consumed,
+                })) => (code, captures, consumed),
+                (Some(resolved), None) => (
+                    &resolved.parts().1.code,
+                    &mut no_captures,
+                    &mut no_consumed,
+                ),
                 (None, None) => return Err(VmError::StackFault),
             };
-        push_frame(machine, frame_word, frame_code, &[], &[])?;
+        push_frame(machine, frame_word, frame_code, frame_captures, frame_consumed)?;
         next = run_frame(
             frame_code,
-            &mut [],
-            &mut [],
+            frame_captures,
+            frame_consumed,
             frame_image,
             environment,
             machine,
@@ -412,9 +424,9 @@ fn run_frame<'x>(
     Ok(tail)
 }
 
-/// Dispatches a `CALL`, `IF` or `CALL_WORD` in tail position. Only
-/// capture-free quotations become tail targets: a quotation that owns
-/// captures keeps its own frame so they are checked when it ends.
+/// Dispatches a `CALL`, `IF` or `CALL_WORD` in tail position. A quotation
+/// that owns linear captures keeps its own frame so they are checked when it
+/// ends; any other quotation becomes a tail target with its captures.
 #[inline(never)]
 fn step_tail<'x>(
     instruction: &Instruction,
@@ -424,13 +436,13 @@ fn step_tail<'x>(
     current_word: &str,
 ) -> Result<Option<Box<Tail<'x>>>, VmError> {
     match instruction.op {
-        Op::Call if top_is_capture_free_quotation(machine) => {
+        Op::Call if top_is_tail_quotation(machine, environment.registry) => {
             Ok(Some(Box::new(Tail::Quote(pop_quotation(machine)?))))
         }
         Op::Call => step_call(image, environment, machine, current_word).map(|()| None),
         Op::If => {
             let branch = take_if_branch(environment, machine)?;
-            if branch.captures.is_empty() {
+            if !owns_linear_captures(&branch.captures, environment.registry) {
                 Ok(Some(Box::new(Tail::Quote(branch))))
             } else {
                 run_branch(branch, image, environment, machine, current_word).map(|()| None)

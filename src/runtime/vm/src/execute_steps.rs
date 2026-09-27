@@ -213,10 +213,17 @@ fn step_quote(machine: &mut Machine) -> Result<(), VmError> {
     Ok(())
 }
 
-fn top_is_capture_free_quotation(machine: &Machine) -> bool {
+fn owns_linear_captures(captures: &[Value], registry: &PrimitiveRegistry) -> bool {
+    captures
+        .iter()
+        .any(|value| value.usage(registry) == Usage::Linear)
+}
+
+fn top_is_tail_quotation(machine: &Machine, registry: &PrimitiveRegistry) -> bool {
     matches!(
         machine.stack.last(),
-        Some(Slot::Value(Value::Quotation(quotation))) if quotation.captures.is_empty()
+        Some(Slot::Value(Value::Quotation(quotation)))
+            if !owns_linear_captures(&quotation.captures, registry)
     )
 }
 

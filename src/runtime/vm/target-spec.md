@@ -169,9 +169,10 @@ Tail transfers. A `CALL`, `IF` or `CALL_WORD` that is the last instruction of
 its frame's code does not push a frame: the finished frame is replaced by the
 target, which keeps the finished frame's continuation. `CALL_WORD` is still
 charged its entry; `CALL` and `IF` are charged as usual. A frame whose code
-owns captures never gives up its frame this way, and a quotation that owns
-captures is never a tail target, so every capture is still checked when the
-code that owns it ends. The kernel rewrite is unchanged (the reference
+owns linear captures never gives up its frame this way, and a quotation that
+owns linear captures is never a tail target, so every linear capture is still
+checked when the code that owns it ends. A tail quotation keeps its other
+captures. The kernel rewrite is unchanged (the reference
 interpreter's `S-CALL`, `S-IF` and `S-WORD` concatenate the body onto an empty
 remainder), so costs and stacks agree step for step; only the administrative
 frame stack differs, and it no longer grows with tail recursion. A loop

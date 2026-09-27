@@ -32,6 +32,14 @@ action of an `if` branch. The VM runs such a call in the caller's frame, so the
 loop is bounded by the step budget (4096 steps per run), not by call depth.
 A recursive call followed by more work still nests and traps past 256 frames.
 
+## Locals
+
+`locals { a b } { ... }` names the top values. Inside the block a name can be
+used any number of times, inside `if` branches, and inside quotations (the
+value is captured when the quotation is built). `locals.firth` has factorial,
+Fibonacci and an allocation step written this way. A `locals` block nested
+inside a quotation still cannot use the outer block's names.
+
 ## Limits
 
 - `allocate.firth` is one step of `specs/inventory-allocation.md`. The whole

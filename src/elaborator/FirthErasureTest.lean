@@ -102,6 +102,15 @@ def main : IO Unit := do
   let repeated ← parsed ": repeated ( a:Int^many -- ) locals { a } { a a a } ;"
   expectShapes repeated ["dup", "dup", "swap", "[swap]", "dip", "swap"]
 
+  -- A later use of a local that is not on top copies it where it sits, so the
+  -- value selected before it keeps its place: a b + b + is a + b + b.
+  let reuse ← parsed ": reuse ( a:Int^many b:Int^many -- r:Int^many ) locals { a b } { a b prim + b prim + } ;"
+  expectShapes reuse ["swap", "[dup]", "dip", "swap", "prim:+", "swap", "prim:+"]
+
+  -- A quotation may use a local: the value is quoted and composed in.
+  let captured ← parsed ": captured ( a:Int^many -- q:Quote^many ) locals { a } { [ a 1 prim + ] } ;"
+  expectShapes captured ["[]", "swap", "quote", "compose", "[lit,prim:+]", "compose"]
+
   let quoted ← parsed ": quoted ( a:Int^many -- q:Quote^many ) locals { a } { [ 1 ] } ;"
   expectShapes quoted ["[lit]", "swap", "drop"]
 
@@ -170,10 +179,17 @@ def main : IO Unit := do
   expectKernelAtoms inferred
     [.quotation (atomProgram [.lit (.nat 1), .lit (.nat 2), .prim "+"])]
 
-  -- Capture is checked recursively and the diagnostic retains the child use span.
-  let capture ← parsed ": capture ( a:Int^many -- ) locals { a } { [ [ a ] ] } ;"
+  -- Nested quotations may use a local: it is lifted out innermost first.
+  let nested ← parsed ": nested ( a:Int^many -- q:Quote^many ) locals { a } { [ [ a ] ] } ;"
+  match erase arithmetic nested.effect nested.body with
+  | .ok _ => pure ()
+  | .error error => fail s!"nested capture failed: {repr error}"
+
+  -- A locals block inside a quotation is not lifted, so a use of an outer
+  -- local there is still refused, and the diagnostic keeps the use span.
+  let capture ← parsed ": capture ( a:Int^many -- ) locals { a } { [ 1 locals { b } { a b prim + } ] } ;"
   let captureSpan := match capture.body with
-    | [.locals _ [.quotation [.quotation [.word _ span] _] _] _] => span
+    | [.locals _ [.quotation [_, .locals _ [.word _ span, _, _] _] _] _] => span
     | _ => panic! "capture fixture changed"
   expectErrorAt capture (fun error => match error with
     | .unsupportedCapture name _ => name == "a"

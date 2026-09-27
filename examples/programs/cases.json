@@ -15,6 +15,12 @@
     {"source": "allocate.firth", "entry": "allocate", "stack": [0, 2, false], "expect": [0, 0, 2]},
     {"source": "allocate.firth", "entry": "allocate", "stack": [5, 7, true], "expect": [5, 0, 3]},
     {"source": "allocate.firth", "entry": "allocate", "stack": [5, 3, true], "expect": [2, 3, 0]},
-    {"source": "allocate.firth", "entry": "allocate", "stack": [0, 3, true], "expect": [0, 0, 2]}
+    {"source": "allocate.firth", "entry": "allocate", "stack": [0, 3, true], "expect": [0, 0, 2]},
+    {"source": "locals.firth", "entry": "fact", "stack": [0], "expect": [1]},
+    {"source": "locals.firth", "entry": "fact", "stack": [10], "expect": [3628800]},
+    {"source": "locals.firth", "entry": "fib", "stack": [0], "expect": [0]},
+    {"source": "locals.firth", "entry": "fib", "stack": [20], "expect": [6765]},
+    {"source": "locals.firth", "entry": "allocate-partial", "stack": [10, 2], "expect": [8, 2]},
+    {"source": "locals.firth", "entry": "allocate-partial", "stack": [5, 7], "expect": [0, 5]}
   ]
 }

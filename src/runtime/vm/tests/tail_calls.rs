@@ -107,6 +107,18 @@ fn unbounded_tail_recursion_stops_on_fuel_in_one_frame() {
 }
 
 #[test]
+fn a_quotation_with_unrestricted_captures_is_a_tail_target() {
+    // `: main 7 quote call ;` calls a quotation that captured 7.
+    let ExecutionOutcome::Complete(report) =
+        run(&image(vec![int(7), op(Op::Quote), op(Op::Call)]), vec![])
+    else {
+        panic!("a captured value is pushed back")
+    };
+    assert_eq!(report.stack, vec![Value::Int(7)]);
+    assert!(report.trace.iter().all(|event| event.frames.len() == 1));
+}
+
+#[test]
 fn a_call_followed_by_more_code_still_nests() {
     // `: main main 1 ;` is not a tail call and still meets the depth bound.
     let ExecutionOutcome::Trap(trap) = run(&image(vec![call_main(), int(1)]), vec![]) else {
