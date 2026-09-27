@@ -141,5 +141,91 @@ TASKS: tuple[Task, ...] = (
        (6,), [(1,), (2,), (3,), (7,), (12,)], ["sub", "cmp", "mul", "loop"]),
 )
 
-BY_ID = {t.id: t for t in TASKS}
-assert len(BY_ID) == len(TASKS)
+
+
+def _isqrt(n):
+    r = 0
+    while (r + 1) * (r + 1) <= n:
+        r += 1
+    return r
+
+
+def _divisors(n):
+    return sum(1 for d in range(1, n + 1) if n % d == 0)
+
+
+def _prime(n):
+    return n >= 2 and all(n % d for d in range(2, n))
+
+
+def _triangle(a, b, c):
+    x, y, z = sorted((a, b, c))
+    if x == 0 or x + y <= z:
+        return 0
+    if x == z:
+        return 1
+    if x == y or y == z:
+        return 2
+    return 3
+
+
+def _allocate(remaining, requested, whole):
+    """One step of specs/inventory-allocation.md: (left, allocated, reason)."""
+    if requested <= remaining:
+        return (remaining - requested, requested, 0)
+    if remaining == 0:
+        return (0, 0, 2)
+    if whole:
+        return (remaining, 0, 3)
+    return (0, remaining, 1)
+
+
+# Harder tasks: several cooperating words, more stack juggling, and loops whose
+# inputs stay small enough for the 4096-step budget with a plain solution. In
+# the PR #113 build one loop iteration over three locals costs about 120 steps,
+# so a loop gets roughly 30 iterations; the inputs below are sized for that.
+HARD: tuple[Task, ...] = (
+    _t("sort3", "Leave a, b and c sorted so the smallest is at the bottom and the largest on top.",
+       [("a", I), ("b", I), ("c", I)], [("lo", I), ("mid", I), ("hi", I)],
+       lambda a, b, c: tuple(sorted((a, b, c))),
+       (3, 1, 2), [(1, 2, 3), (3, 2, 1), (2, 3, 1), (5, 5, 1), (0, 9, 0), (7, 7, 7)], ["cmp"]),
+    _t("median3", "Return the middle value of a, b and c.",
+       [("a", I), ("b", I), ("c", I)], [("m", I)], lambda a, b, c: (sorted((a, b, c))[1],),
+       (9, 1, 5), [(1, 2, 3), (3, 1, 2), (2, 3, 1), (4, 4, 1), (0, 0, 0)], ["cmp"]),
+    _t("triangle-kind",
+       "Classify side lengths a, b, c: return 0 if they cannot form a triangle with positive "
+       "area (a zero side, or the two shorter sides sum to no more than the longest), 1 if "
+       "equilateral, 2 if isosceles, 3 if scalene.",
+       [("a", I), ("b", I), ("c", I)], [("kind", I)], lambda a, b, c: (_triangle(a, b, c),),
+       (3, 4, 5), [(2, 2, 2), (2, 2, 3), (3, 2, 2), (1, 2, 3), (0, 1, 1), (5, 3, 4), (10, 1, 1), (2, 3, 2)],
+       ["cmp", "sub"]),
+    _t("divmod", "Return the quotient and then the remainder of a divided by b (b is at least 1).",
+       [("a", I), ("b", I)], [("q", I), ("r", I)], lambda a, b: (a // b, a % b),
+       (17, 5), [(0, 3), (3, 3), (2, 7), (40, 9), (12, 1)], ["cmp", "sub", "loop"]),
+    _t("isqrt", "Return the largest r with r * r <= n.",
+       [("n", I)], [("r", I)], lambda n: (_isqrt(n),),
+       (10,), [(0,), (1,), (3,), (4,), (99,), (100,), (200,)], ["cmp", "mul", "loop"]),
+    _t("is-prime", "Return true when n is a prime number.",
+       [("n", I)], [("r", B)], lambda n: (_prime(n),),
+       (7,), [(0,), (1,), (2,), (9,), (13,), (15,), (11,)], ["cmp", "sub", "loop"]),
+    _t("digit-sum", "Return the sum of the decimal digits of n.",
+       [("n", I)], [("r", I)], lambda n: (sum(map(int, str(n))),),
+       (42,), [(0,), (7,), (10,), (31,), (57,)], ["cmp", "sub", "loop"]),
+    _t("lcm", "Return the least common multiple of a and b (both at least 1).",
+       [("a", I), ("b", I)], [("r", I)], lambda a, b: (a * b // gcd(a, b),),
+       (4, 6), [(1, 1), (3, 5), (6, 3), (6, 9), (7, 7)], ["cmp", "sub", "mul", "loop"]),
+    _t("allocate",
+       "Allocate stock for one order. If requested <= remaining, allocate all of it (reason 0). "
+       "Otherwise, if remaining is 0, allocate nothing (reason 2). Otherwise, if whole is true "
+       "the order must be filled completely, so allocate nothing (reason 3); if whole is false "
+       "allocate everything that remains (reason 1). Return the stock left, the quantity "
+       "allocated and the reason code.",
+       [("remaining", I), ("requested", I), ("whole", B)],
+       [("left", I), ("allocated", I), ("reason", I)], _allocate,
+       (10, 4, False),
+       [(10, 10, True), (5, 8, False), (5, 8, True), (0, 3, False), (0, 3, True), (7, 0, True), (0, 0, False)],
+       ["cmp", "sub"]),
+)
+
+BY_ID = {t.id: t for t in TASKS + HARD}
+assert len(BY_ID) == len(TASKS) + len(HARD)

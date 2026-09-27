@@ -1,0 +1,11 @@
+{
+  "sort3": "def main(a, b, c):\n    return tuple(sorted([a, b, c]))\n",
+  "median3": "def main(a, b, c):\n    return sorted([a, b, c])[1]\n",
+  "triangle-kind": "def main(a, b, c):\n    sides = sorted([a, b, c])\n    lo, mid, hi = sides\n    \n    if lo <= 0 or lo + mid <= hi:\n        return 0\n    \n    if a == b == c:\n        return 1\n    \n    if a == b or b == c or a == c:\n        return 2\n    \n    return 3\n",
+  "divmod": "def main(a, b):\n    return (a // b, a % b)\n",
+  "isqrt": "def main(n):\n    if n == 0:\n        return 0\n    r = n\n    while True:\n        r_new = (r + n // r) // 2\n        if r_new >= r:\n            return r\n        r = r_new\n",
+  "is-prime": "def main(n):\n    if n < 2:\n        return False\n    if n == 2:\n        return True\n    if n % 2 == 0:\n        return False\n    for i in range(3, int(n**0.5) + 1, 2):\n        if n % i == 0:\n            return False\n    return True\n",
+  "digit-sum": "def main(n):\n    return sum(int(d) for d in str(abs(n)))\n",
+  "lcm": "def main(a, b):\n    def gcd(x, y):\n        while y:\n            x, y = y, x % y\n        return x\n    return (a * b) // gcd(a, b)\n",
+  "allocate": "def main(remaining, requested, whole):\n    if requested <= remaining:\n        return (remaining - requested, requested, 0)\n    elif remaining == 0:\n        return (0, 0, 2)\n    elif whole:\n        return (remaining, 0, 3)\n    else:\n        return (0, remaining, 1)\n"
+}

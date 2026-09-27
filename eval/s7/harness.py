@@ -4,7 +4,7 @@
 The author model sees only the language docs, each task's description, its
 input/output shape and one visible example. Hidden tests stay here.
 
-    harness.py prompt  --lang firth --tier today > prompt.md
+    harness.py prompt  --lang firth --tier today|all|hard [--extra-doc F] > prompt.md
     harness.py extract --lang firth answer.md > solutions.json
     harness.py score   --lang firth solutions.json > results.json
     harness.py repair  --lang firth solutions.json results.json > repair.md
@@ -26,7 +26,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from tasks import BY_ID, TASKS, Task  # noqa: E402
+from tasks import BY_ID, HARD, TASKS, Task  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 RUNNER = ROOT / "tools/loop/firth_run.py"
@@ -38,6 +38,10 @@ TIMEOUT = 300
 def select(tier: str) -> list[Task]:
     if tier == "all":
         return list(TASKS)
+    if tier == "hard":
+        return list(HARD)
+    if tier == "everything":
+        return list(TASKS + HARD)
     if tier == "today":
         return [t for t in TASKS if t.needs <= {"add"}]
     if tier == "later":
@@ -173,6 +177,15 @@ def score(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int) ->
     return {"lang": lang, "tasks": per}
 
 
+def readable(error: str) -> str:
+    """Prefer the checker's plain-language fields over the raw JSON envelope."""
+    fields = {k: m.group(1) for k in ("code", "message", "expected", "actual", "hint")
+              if (m := re.search(rf"'{k}': '((?:[^'\\]|\\.)*)'", error))}
+    if "message" not in fields:
+        return error
+    return "\n".join(f"{k}: {v}" for k, v in fields.items())
+
+
 def repair(solutions: dict[str, str], results: dict, lang: str, tasks: list[Task]) -> str:
     """Second attempt: show only the visible example's outcome, never hidden tests."""
     wanted = {t.id for t in tasks}
@@ -186,7 +199,7 @@ def repair(solutions: dict[str, str], results: dict, lang: str, tasks: list[Task
             continue
         t = BY_ID[tid]
         what = ("no answer was given" if not vis else
-                f"the run failed:\n{vis['error']}" if not vis["ok"] else
+                f"the run failed:\n{readable(vis['error'])}" if not vis["ok"] else
                 f"it returned {vis['stack']} instead of {vis['expected']}")
         parts.append(f"## {tid}\n{t.description}\n{shape(t, lang)}\n\nYour answer:\n"
                      f"```\n{solutions.get(tid, '')}\n```\nOn the example, {what}\n")
@@ -203,7 +216,7 @@ def report(paths: list[Path]) -> str:
     labels = sorted({l for r in rows.values() for l in r})
     out = ["| task | needs | " + " | ".join(labels) + " |",
            "|---|---|" + "---|" * len(labels)]
-    for t in TASKS:
+    for t in TASKS + HARD:
         if t.id not in rows:
             continue
         cells = []

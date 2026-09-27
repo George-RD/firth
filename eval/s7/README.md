@@ -138,14 +138,71 @@ reused from run 1. Everything is in `runs/2026-09-27-pr113/`.
   checker bug `invented_syntax` (Sonnet's `majority`, 0.45). It is useful for
   sorting failures, not as the record.
 
+## Run 3: 27 September 2026, harder tasks, three attempts each
+
+Nine harder tasks (`HARD` in `tasks.py`): sort3, median3, triangle-kind,
+divmod, isqrt, is-prime, digit-sum, lcm, and one step of the inventory
+allocator from `specs/inventory-allocation.md`. They need several cooperating
+words and more stack juggling. Loop inputs are small because the step budget
+is 4096. A loop over three locals cost about 120 steps per iteration in this
+build, so a count-divisors task was dropped: no plain solution fitted.
+`reference/firth-hard.json` passes 9/9.
+
+Each model got three fresh author sessions per language. Firth attempts that
+failed the visible example got one repair round. The repair showed the
+checker's new plain-language `message`, `expected`, `actual` and `hint`
+fields rather than the raw envelope. The prompt was built at PR #113
+`a8c3337` with the primitives supplement; everything was finally scored at
+`ecd724d`, which fixes the nested-`if`-in-`locals` bug the first scoring hit.
+Results are in `runs/2026-09-27-hard/`.
+
+| Passed out of 9 | Firth, first try | Firth, after one repair | Python |
+|---|---|---|---|
+| Sonnet 5, three attempts | 9, 9, 8 | 9, 9, 8 | 9, 9, 9 |
+| Haiku 4.5, three attempts | 1, 0, 4 | 1, 2, 3 | 9, 9, 9 |
+
+- **Sonnet matched Python.** Its one miss in 27 was a correct `lcm` that ran
+  out of steps on an input Python handles instantly (`resource_limit`). One
+  attempt first scored 7/9 on `a8c3337` because correct nested `if`s inside
+  `locals` hit a checker bug; after the Language core fix both passed
+  unchanged. Sonnet took far longer to write Firth than Python: about 7 to 29
+  minutes per attempt, against under 30 seconds.
+- **Haiku failed badly in Firth and not at all in Python.** Across its three
+  attempts after repair, 21 tasks failed:
+  - 9 used syntax that does not exist. Five used primed names such as `q'`,
+    which the lexer reports only as `firth.syntax.overlong-character`. Four
+    called words they never defined.
+  - 5 were stack-shape mistakes that the checker rejected before running
+    (`branch-mismatch`, `occurs-check`, `quotation-compose-mismatch`).
+  - 6 ran but gave wrong answers. Two attempts got `allocate` wrong when
+    requested equals remaining, and there were off-by-one errors in `isqrt`
+    and `is-prime`.
+  - 1 nested a `locals` block inside a quotation, which is still unsupported.
+- **The repair round barely helped Haiku** (5 to 6 of 27), even with the new
+  error messages. One attempt got worse. Its first `sort3` error came from the
+  since-fixed checker bug, and that bug's hint ("a `locals` block needs more
+  values") sent it to strip out locals and break two other tasks. A misleading
+  hint costs more than no hint.
+
+## What the three runs say about the bet
+
+Explicit stack effects did not stop a strong model writing correct Firth from
+the docs alone. Sonnet was at Python's level on every task set, and its only
+failures were checker bugs and the step budget. They did not carry a weaker
+model: Haiku wrote correct Python every time and mostly failed in Firth, in
+ways the checker caught but Haiku could not repair. The checker found most
+stack-shape errors before execution. Wrong answers at runtime were logic slips
+that a signature cannot catch. So the bet holds for strong models and not yet
+for weak ones, and the costs are real: Sonnet spent 20 to 100 times longer per
+Firth attempt than per Python attempt.
+
 ## Limits and next steps
 
-- The tasks are still small and single-purpose, and Python is at ceiling for
-  both models, so the Python column does not separate the models. Add harder
-  tasks (several cooperating words, the inventory allocator's shape) where
-  Python is not perfect.
-- One sample per task per model is noisy. Haiku passed 7 of the easy tasks in
-  run 1 and only 5 in run 2 with near-identical prompts. Run several samples
-  per task and report the spread.
-- Rerun once the three `locals` bugs are fixed and the step budget is raised,
-  using the repo docs alone with no supplement.
+- Python is still at ceiling for both models on every task set, so these
+  tasks measure Firth's cost relative to an easy baseline, not a hard one.
+- Runs 1 and 2 used one sample per task, which is noisy: Haiku passed 7 of
+  the easy tasks in run 1 and only 5 in run 2. Run 3 used three.
+- The step budget still shapes the task set. Raise it, then add tasks with
+  real loops (count-divisors, larger inputs) back.
+- The repo docs now cover the new primitives (PR #113 `54387bd`), so the
+  next run should drop the supplement and use the docs as they are.
