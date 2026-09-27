@@ -7,7 +7,7 @@ open Firth.Interpreter
 
 def testPolicy : PrimitiveOwnershipPolicy where
   authorised := fun name consumed produced =>
-    (name == "addNat" ∧ consumed = [] ∧ produced = []) ∨
+    (name ∈ ["addNat", "subNat", "mulNat", "ltNat", "eqNat"] ∧ consumed = [] ∧ produced = []) ∨
     (name == "makeWorld" ∧ consumed = [] ∧ produced.length = 1) ∨
     (name == "consumeWorld" ∧ consumed.length = 1 ∧ produced = [])
 
@@ -495,9 +495,503 @@ theorem examplePrimitiveTagLift_addNat :
                       intro tag htag
                       exact htag
                     stack_contract := .addNat
-                    authorised := by
-                      change ("addNat" == "addNat" ∧ [] = [] ∧ [] = []) ∨ _
-                      exact Or.inl ⟨rfl, rfl, rfl⟩ }
+                    authorised := Or.inl ⟨by decide, rfl, rfl⟩ }
+                · intro tag
+                  simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTagsValueList, taggedLinearTagsValue, tailTags]
+                · intro tag
+                  simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                    tailTags]
+                · exact (nodup_append_constructive.mp hwellformed.1).1
+                · intro tag
+                  constructor
+                  · intro htag
+                    exact ⟨htag, htag⟩
+                  · rintro ⟨htag, _⟩
+                    exact htag
+                · intro tag
+                  constructor
+                  · intro htag
+                    cases htag
+                  · rintro ⟨htag, hnot⟩
+                    exact (hnot htag).elim
+                · intro tag
+                  constructor
+                  · intro htag
+                    cases htag
+                  · rintro ⟨htag, hnot⟩
+                    exact (hnot htag).elim
+                · exact (filterContainsEqSelf_explicit _ tailTags (by
+                    intro tag htag
+                    simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList,
+                      taggedLinearTagsValue, tailTags] using htag)).symm
+                · simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                    tailTags] using hwellformed.1
+              · intro tag htag
+                apply hwellformed.2 tag
+                simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                  tailTags] using List.mem_append_left
+                    (taggedLinearTagsProgram residue) htag
+
+
+theorem examplePrimitiveTagLift_subNat :
+    PrimitiveTagLift examplePolicy exampleGamma "subNat" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspecification : specification =
+      { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
+        output := .snoc (.row "ρ") (.base .nat .many), delta := subNatDelta } :=
+    (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+  | cons rightValue inputTail =>
+    cases rightValue with
+    | quotation rightTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+    | world rightTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+    | literal rightTag rightLiteral =>
+      cases rightLiteral with
+      | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+      | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+      | nat right =>
+        cases inputTail with
+        | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+        | cons leftValue tail =>
+          cases leftValue with
+          | quotation leftTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+          | world leftTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+          | literal leftTag leftLiteral =>
+            cases leftLiteral with
+            | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+            | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta; cases hdelta
+            | nat left =>
+              simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, subNatDelta] at hdelta
+              have hplainOutput := Option.some.inj hdelta
+              subst plainOutput
+              let tailTags := taggedLinearTagsValueList tail
+              have htags :
+                  taggedLinearTags
+                    { stack := .literal rightTag (.nat right) ::
+                        .literal leftTag (.nat left) :: tail,
+                      program := .cons (.prim "subNat") residue,
+                      nextTag := nextTag } =
+                    tailTags ++ taggedLinearTagsProgram residue := by
+                simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTags, taggedLinearTagsValueList,
+                  taggedLinearTagsValue, taggedLinearTagsProgram,
+                  taggedLinearTagsAtom, tailTags,
+                  taggedLinearTagsValueList_eq_foldr]
+              unfold InstrumentedWellFormed at hwellformed
+              rw [htags] at hwellformed
+              let output : AStack := .literal rightTag (.nat (left - right)) :: tail
+              refine ⟨output, nextTag, ?_, Nat.le_refl _, ?_, ?_⟩
+              · simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
+              · refine ⟨
+                  { input := .snoc (.snoc (.row "ρ") (.base .nat .many))
+                      (.base .nat .many),
+                    output := .snoc (.row "ρ") (.base .nat .many),
+                    delta := subNatDelta },
+                  .literal (.nat right) :: .literal (.nat left) :: tail.map eraseValue,
+                  .literal (.nat (left - right)) :: tail.map eraseValue,
+                  tailTags, tailTags, [], [], ?_⟩
+                refine
+                  { name_resolves := hname
+                    input_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, eraseValue]
+                    delta := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, subNatDelta, eraseValue]
+                    output_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
+                    input_partition := ?_
+                    output_partition := ?_
+                    retained_nodup := ?_
+                    consumed_nodup := List.nodup_nil
+                    produced_nodup := List.nodup_nil
+                    retained_exact := ?_
+                    consumed_exact := ?_
+                    produced_exact := ?_
+                    retained_unchanged := ?_
+                    consumed_absent := by
+                      intro tag htag
+                      cases htag
+                    produced_fresh := by
+                      intro tag htag
+                      cases htag
+                    output_residue_nodup := ?_
+                    frontier_monotone := Nat.le_refl _
+                    row_tail_retained := by
+                      intro tag htag
+                      exact htag
+                    stack_contract := .subNat
+                    authorised := Or.inl ⟨by decide, rfl, rfl⟩ }
+                · intro tag
+                  simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTagsValueList, taggedLinearTagsValue, tailTags]
+                · intro tag
+                  simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                    tailTags]
+                · exact (nodup_append_constructive.mp hwellformed.1).1
+                · intro tag
+                  constructor
+                  · intro htag
+                    exact ⟨htag, htag⟩
+                  · rintro ⟨htag, _⟩
+                    exact htag
+                · intro tag
+                  constructor
+                  · intro htag
+                    cases htag
+                  · rintro ⟨htag, hnot⟩
+                    exact (hnot htag).elim
+                · intro tag
+                  constructor
+                  · intro htag
+                    cases htag
+                  · rintro ⟨htag, hnot⟩
+                    exact (hnot htag).elim
+                · exact (filterContainsEqSelf_explicit _ tailTags (by
+                    intro tag htag
+                    simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList,
+                      taggedLinearTagsValue, tailTags] using htag)).symm
+                · simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                    tailTags] using hwellformed.1
+              · intro tag htag
+                apply hwellformed.2 tag
+                simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                  tailTags] using List.mem_append_left
+                    (taggedLinearTagsProgram residue) htag
+
+
+theorem examplePrimitiveTagLift_mulNat :
+    PrimitiveTagLift examplePolicy exampleGamma "mulNat" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspecification : specification =
+      { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
+        output := .snoc (.row "ρ") (.base .nat .many), delta := mulNatDelta } :=
+    (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+  | cons rightValue inputTail =>
+    cases rightValue with
+    | quotation rightTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+    | world rightTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+    | literal rightTag rightLiteral =>
+      cases rightLiteral with
+      | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+      | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+      | nat right =>
+        cases inputTail with
+        | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+        | cons leftValue tail =>
+          cases leftValue with
+          | quotation leftTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+          | world leftTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+          | literal leftTag leftLiteral =>
+            cases leftLiteral with
+            | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+            | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta; cases hdelta
+            | nat left =>
+              simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, mulNatDelta] at hdelta
+              have hplainOutput := Option.some.inj hdelta
+              subst plainOutput
+              let tailTags := taggedLinearTagsValueList tail
+              have htags :
+                  taggedLinearTags
+                    { stack := .literal rightTag (.nat right) ::
+                        .literal leftTag (.nat left) :: tail,
+                      program := .cons (.prim "mulNat") residue,
+                      nextTag := nextTag } =
+                    tailTags ++ taggedLinearTagsProgram residue := by
+                simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTags, taggedLinearTagsValueList,
+                  taggedLinearTagsValue, taggedLinearTagsProgram,
+                  taggedLinearTagsAtom, tailTags,
+                  taggedLinearTagsValueList_eq_foldr]
+              unfold InstrumentedWellFormed at hwellformed
+              rw [htags] at hwellformed
+              let output : AStack := .literal rightTag (.nat (left * right)) :: tail
+              refine ⟨output, nextTag, ?_, Nat.le_refl _, ?_, ?_⟩
+              · simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
+              · refine ⟨
+                  { input := .snoc (.snoc (.row "ρ") (.base .nat .many))
+                      (.base .nat .many),
+                    output := .snoc (.row "ρ") (.base .nat .many),
+                    delta := mulNatDelta },
+                  .literal (.nat right) :: .literal (.nat left) :: tail.map eraseValue,
+                  .literal (.nat (left * right)) :: tail.map eraseValue,
+                  tailTags, tailTags, [], [], ?_⟩
+                refine
+                  { name_resolves := hname
+                    input_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, eraseValue]
+                    delta := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, mulNatDelta, eraseValue]
+                    output_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
+                    input_partition := ?_
+                    output_partition := ?_
+                    retained_nodup := ?_
+                    consumed_nodup := List.nodup_nil
+                    produced_nodup := List.nodup_nil
+                    retained_exact := ?_
+                    consumed_exact := ?_
+                    produced_exact := ?_
+                    retained_unchanged := ?_
+                    consumed_absent := by
+                      intro tag htag
+                      cases htag
+                    produced_fresh := by
+                      intro tag htag
+                      cases htag
+                    output_residue_nodup := ?_
+                    frontier_monotone := Nat.le_refl _
+                    row_tail_retained := by
+                      intro tag htag
+                      exact htag
+                    stack_contract := .mulNat
+                    authorised := Or.inl ⟨by decide, rfl, rfl⟩ }
+                · intro tag
+                  simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTagsValueList, taggedLinearTagsValue, tailTags]
+                · intro tag
+                  simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                    tailTags]
+                · exact (nodup_append_constructive.mp hwellformed.1).1
+                · intro tag
+                  constructor
+                  · intro htag
+                    exact ⟨htag, htag⟩
+                  · rintro ⟨htag, _⟩
+                    exact htag
+                · intro tag
+                  constructor
+                  · intro htag
+                    cases htag
+                  · rintro ⟨htag, hnot⟩
+                    exact (hnot htag).elim
+                · intro tag
+                  constructor
+                  · intro htag
+                    cases htag
+                  · rintro ⟨htag, hnot⟩
+                    exact (hnot htag).elim
+                · exact (filterContainsEqSelf_explicit _ tailTags (by
+                    intro tag htag
+                    simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList,
+                      taggedLinearTagsValue, tailTags] using htag)).symm
+                · simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                    tailTags] using hwellformed.1
+              · intro tag htag
+                apply hwellformed.2 tag
+                simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                  tailTags] using List.mem_append_left
+                    (taggedLinearTagsProgram residue) htag
+
+
+theorem examplePrimitiveTagLift_ltNat :
+    PrimitiveTagLift examplePolicy exampleGamma "ltNat" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspecification : specification =
+      { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
+        output := .snoc (.row "ρ") (.base .bool .many), delta := ltNatDelta } :=
+    (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+  | cons rightValue inputTail =>
+    cases rightValue with
+    | quotation rightTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+    | world rightTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+    | literal rightTag rightLiteral =>
+      cases rightLiteral with
+      | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+      | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+      | nat right =>
+        cases inputTail with
+        | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+        | cons leftValue tail =>
+          cases leftValue with
+          | quotation leftTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+          | world leftTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+          | literal leftTag leftLiteral =>
+            cases leftLiteral with
+            | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+            | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta; cases hdelta
+            | nat left =>
+              simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, ltNatDelta] at hdelta
+              have hplainOutput := Option.some.inj hdelta
+              subst plainOutput
+              let tailTags := taggedLinearTagsValueList tail
+              have htags :
+                  taggedLinearTags
+                    { stack := .literal rightTag (.nat right) ::
+                        .literal leftTag (.nat left) :: tail,
+                      program := .cons (.prim "ltNat") residue,
+                      nextTag := nextTag } =
+                    tailTags ++ taggedLinearTagsProgram residue := by
+                simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTags, taggedLinearTagsValueList,
+                  taggedLinearTagsValue, taggedLinearTagsProgram,
+                  taggedLinearTagsAtom, tailTags,
+                  taggedLinearTagsValueList_eq_foldr]
+              unfold InstrumentedWellFormed at hwellformed
+              rw [htags] at hwellformed
+              let output : AStack := .literal rightTag (.bool (decide (left < right))) :: tail
+              refine ⟨output, nextTag, ?_, Nat.le_refl _, ?_, ?_⟩
+              · simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
+              · refine ⟨
+                  { input := .snoc (.snoc (.row "ρ") (.base .nat .many))
+                      (.base .nat .many),
+                    output := .snoc (.row "ρ") (.base .bool .many),
+                    delta := ltNatDelta },
+                  .literal (.nat right) :: .literal (.nat left) :: tail.map eraseValue,
+                  .literal (.bool (decide (left < right))) :: tail.map eraseValue,
+                  tailTags, tailTags, [], [], ?_⟩
+                refine
+                  { name_resolves := hname
+                    input_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, eraseValue]
+                    delta := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, ltNatDelta, eraseValue]
+                    output_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
+                    input_partition := ?_
+                    output_partition := ?_
+                    retained_nodup := ?_
+                    consumed_nodup := List.nodup_nil
+                    produced_nodup := List.nodup_nil
+                    retained_exact := ?_
+                    consumed_exact := ?_
+                    produced_exact := ?_
+                    retained_unchanged := ?_
+                    consumed_absent := by
+                      intro tag htag
+                      cases htag
+                    produced_fresh := by
+                      intro tag htag
+                      cases htag
+                    output_residue_nodup := ?_
+                    frontier_monotone := Nat.le_refl _
+                    row_tail_retained := by
+                      intro tag htag
+                      exact htag
+                    stack_contract := .ltNat
+                    authorised := Or.inl ⟨by decide, rfl, rfl⟩ }
+                · intro tag
+                  simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTagsValueList, taggedLinearTagsValue, tailTags]
+                · intro tag
+                  simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                    tailTags]
+                · exact (nodup_append_constructive.mp hwellformed.1).1
+                · intro tag
+                  constructor
+                  · intro htag
+                    exact ⟨htag, htag⟩
+                  · rintro ⟨htag, _⟩
+                    exact htag
+                · intro tag
+                  constructor
+                  · intro htag
+                    cases htag
+                  · rintro ⟨htag, hnot⟩
+                    exact (hnot htag).elim
+                · intro tag
+                  constructor
+                  · intro htag
+                    cases htag
+                  · rintro ⟨htag, hnot⟩
+                    exact (hnot htag).elim
+                · exact (filterContainsEqSelf_explicit _ tailTags (by
+                    intro tag htag
+                    simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList,
+                      taggedLinearTagsValue, tailTags] using htag)).symm
+                · simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                    tailTags] using hwellformed.1
+              · intro tag htag
+                apply hwellformed.2 tag
+                simpa only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, taggedLinearTagsValueList, taggedLinearTagsValue,
+                  tailTags] using List.mem_append_left
+                    (taggedLinearTagsProgram residue) htag
+
+
+theorem examplePrimitiveTagLift_eqNat :
+    PrimitiveTagLift examplePolicy exampleGamma "eqNat" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspecification : specification =
+      { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
+        output := .snoc (.row "ρ") (.base .bool .many), delta := eqNatDelta } :=
+    (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+  | cons rightValue inputTail =>
+    cases rightValue with
+    | quotation rightTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+    | world rightTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+    | literal rightTag rightLiteral =>
+      cases rightLiteral with
+      | bool right => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+      | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+      | nat right =>
+        cases inputTail with
+        | nil => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+        | cons leftValue tail =>
+          cases leftValue with
+          | quotation leftTag body usage => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+          | world leftTag payload => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+          | literal leftTag leftLiteral =>
+            cases leftLiteral with
+            | bool left => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+            | unit => simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta; cases hdelta
+            | nat left =>
+              simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, List.map, eraseValue, eqNatDelta] at hdelta
+              have hplainOutput := Option.some.inj hdelta
+              subst plainOutput
+              let tailTags := taggedLinearTagsValueList tail
+              have htags :
+                  taggedLinearTags
+                    { stack := .literal rightTag (.nat right) ::
+                        .literal leftTag (.nat left) :: tail,
+                      program := .cons (.prim "eqNat") residue,
+                      nextTag := nextTag } =
+                    tailTags ++ taggedLinearTagsProgram residue := by
+                simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTags, taggedLinearTagsValueList,
+                  taggedLinearTagsValue, taggedLinearTagsProgram,
+                  taggedLinearTagsAtom, tailTags,
+                  taggedLinearTagsValueList_eq_foldr]
+              unfold InstrumentedWellFormed at hwellformed
+              rw [htags] at hwellformed
+              let output : AStack := .literal rightTag (.bool (decide (left = right))) :: tail
+              refine ⟨output, nextTag, ?_, Nat.le_refl _, ?_, ?_⟩
+              · simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
+              · refine ⟨
+                  { input := .snoc (.snoc (.row "ρ") (.base .nat .many))
+                      (.base .nat .many),
+                    output := .snoc (.row "ρ") (.base .bool .many),
+                    delta := eqNatDelta },
+                  .literal (.nat right) :: .literal (.nat left) :: tail.map eraseValue,
+                  .literal (.bool (decide (left = right))) :: tail.map eraseValue,
+                  tailTags, tailTags, [], [], ?_⟩
+                refine
+                  { name_resolves := hname
+                    input_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, eraseValue]
+                    delta := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, eqNatDelta, eraseValue]
+                    output_erases := by simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, output, eraseValue]
+                    input_partition := ?_
+                    output_partition := ?_
+                    retained_nodup := ?_
+                    consumed_nodup := List.nodup_nil
+                    produced_nodup := List.nodup_nil
+                    retained_exact := ?_
+                    consumed_exact := ?_
+                    produced_exact := ?_
+                    retained_unchanged := ?_
+                    consumed_absent := by
+                      intro tag htag
+                      cases htag
+                    produced_fresh := by
+                      intro tag htag
+                      cases htag
+                    output_residue_nodup := ?_
+                    frontier_monotone := Nat.le_refl _
+                    row_tail_retained := by
+                      intro tag htag
+                      exact htag
+                    stack_contract := .eqNat
+                    authorised := Or.inl ⟨by decide, rfl, rfl⟩ }
                 · intro tag
                   simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, taggedLinearTagsValueList, taggedLinearTagsValue, tailTags]
                 · intro tag
@@ -803,13 +1297,17 @@ theorem examplePrimitiveTagLift_consumeWorld :
 
 theorem examplePrimitiveTagLift_unknown (name : Prim)
     (haddNat : name ≠ "addNat")
+    (hsubNat : name ≠ "subNat")
+    (hmulNat : name ≠ "mulNat")
+    (hltNat : name ≠ "ltNat")
+    (heqNat : name ≠ "eqNat")
     (hmakeWorld : name ≠ "makeWorld")
     (hconsumeWorld : name ≠ "consumeWorld") :
     PrimitiveTagLift examplePolicy exampleGamma name := by
   intro input residue nextTag specification plainInput plainOutput hname
     hinput hdelta hwellformed
   have hnone : exampleGamma.primitive name = none := by
-    simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, exampleGamma, defaultGamma, haddNat, hmakeWorld, hconsumeWorld]
+    simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, exampleGamma, defaultGamma, haddNat, hsubNat, hmulNat, hltNat, heqNat, hmakeWorld, hconsumeWorld]
   rw [hnone] at hname
   cases hname
 
@@ -825,7 +1323,20 @@ theorem examplePrimitiveTagLift :
     · by_cases hconsumeWorld : name = "consumeWorld"
       · subst name
         exact examplePrimitiveTagLift_consumeWorld
-      · exact examplePrimitiveTagLift_unknown name haddNat hmakeWorld hconsumeWorld
+      · by_cases hsubNat : name = "subNat"
+        · subst name
+          exact examplePrimitiveTagLift_subNat
+        · by_cases hmulNat : name = "mulNat"
+          · subst name
+            exact examplePrimitiveTagLift_mulNat
+          · by_cases hltNat : name = "ltNat"
+            · subst name
+              exact examplePrimitiveTagLift_ltNat
+            · by_cases heqNat : name = "eqNat"
+              · subst name
+                exact examplePrimitiveTagLift_eqNat
+              · exact examplePrimitiveTagLift_unknown name haddNat hsubNat hmulNat hltNat heqNat
+                  hmakeWorld hconsumeWorld
 
 #print axioms filterContainsEqSelf_explicit
 #print axioms examplePrimitiveTagLift_addNat

@@ -396,6 +396,12 @@ impl PrimitiveContext<'_> {
         Ok(())
     }
 
+    pub fn push_bool(&mut self, value: bool) -> Result<(), VmError> {
+        reserve(self.stack, 1)?;
+        self.stack.push(Slot::Value(Value::Bool(value)));
+        Ok(())
+    }
+
     pub fn make_world(&mut self) -> Result<(), VmError> {
         if self.world.active {
             return Err(VmError::WorldFault);
@@ -454,9 +460,13 @@ pub struct PrimitiveDefinition {
 impl PrimitiveDefinition {
     pub fn signature(&self) -> PrimitiveSignature {
         match self.name {
-            "addNat" => PrimitiveSignature {
+            "addNat" | "subNat" | "mulNat" => PrimitiveSignature {
                 input: &[PrimitiveType::Int, PrimitiveType::Int],
                 output: &[PrimitiveType::Int],
+            },
+            "ltNat" | "eqNat" => PrimitiveSignature {
+                input: &[PrimitiveType::Int, PrimitiveType::Int],
+                output: &[PrimitiveType::Bool],
             },
             "makeWorld" => PrimitiveSignature {
                 input: &[],

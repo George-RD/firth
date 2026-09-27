@@ -1,0 +1,38 @@
+\ One step of the ordered stock allocation in specs/inventory-allocation.md:
+\ given the remaining stock and one request, return the new remaining stock,
+\ the quantity allocated and the reason code. Reason codes: 0 fulfilled,
+\ 1 partial, 2 out-of-stock, 3 insufficient-stock.
+\ The whole batch needs a sequence type, which the language does not have yet.
+
+: over
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ a:Int^many b:Int^many c:Int^many)
+  [ dup ] dip swap;
+
+: min
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ m:Int^many)
+  over over prim < [ drop ] [ swap drop ] if;
+
+\ Partial policy: allocate min(remaining, requested).
+: allocate-partial
+  (forall ρ; ρ remaining:Int^many requested:Int^many -- ρ left:Int^many allocated:Int^many)
+  over min dup [ prim - ] dip;
+
+\ All-or-nothing policy: allocate the whole request only when it fits.
+: allocate-whole
+  (forall ρ; ρ remaining:Int^many requested:Int^many -- ρ left:Int^many allocated:Int^many)
+  over over prim < [ drop 0 ] [ dup [ prim - ] dip ] if;
+
+: reason
+  (forall ρ; ρ before:Int^many requested:Int^many allocated:Int^many -- ρ code:Int^many)
+  swap over prim =
+  [ drop drop 0 ]
+  [ dup 0 prim =
+    [ drop 0 prim = [ 2 ] [ 3 ] if ]
+    [ drop drop 1 ] if ] if;
+
+\ The entry: `whole` selects all-or-nothing, otherwise partial.
+: allocate
+  (forall ρ; ρ remaining:Int^many requested:Int^many whole:Bool^many -- ρ left:Int^many allocated:Int^many code:Int^many)
+  [ over over allocate-whole ] [ over over allocate-partial ] if
+  swap [ dup [ reason ] dip ] dip
+  swap [ swap ] dip swap;

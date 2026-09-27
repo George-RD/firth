@@ -30,19 +30,39 @@ role = "envelope-validation"
 
 [[inputs.interface]]
 path = "src/agent/Firth/Agent/ElaboratorDiagnostics.lean"
-sha256 = "93b427d4fe5bb17f7172e83289ea9af1bf77c4f536ad86ed4f3fd6ec6ed15c2c"
+sha256 = "b1631c896feb8f474bc09e0239e16af9b705bbe109b6bcadd3f48d25b54aad97"
 role = "elaborator-to-envelope-adapters"
 
 [gamma]
 version = "0.1"
 portable = true
-primitives = ["+", "send"]
+primitives = ["+", "-", "*", "<", "=", "send"]
 values = ["Int", "Bool", "Handle", "Bytes", "World"]
 predicates = ["positive", "nonzero", "is-open"]
 
 [gamma.primitive."+"]
 effect = "Int^many Int^many -- Int^many"
 transition = "deterministic-integer-addition"
+observation = "pure"
+
+[gamma.primitive."-"]
+effect = "Int^many Int^many -- Int^many"
+transition = "deterministic-truncating-natural-subtraction"
+observation = "pure"
+
+[gamma.primitive."*"]
+effect = "Int^many Int^many -- Int^many"
+transition = "deterministic-integer-multiplication"
+observation = "pure"
+
+[gamma.primitive."<"]
+effect = "Int^many Int^many -- Bool^many"
+transition = "deterministic-integer-less-than"
+observation = "pure"
+
+[gamma.primitive."="]
+effect = "Int^many Int^many -- Bool^many"
+transition = "deterministic-integer-equality"
 observation = "pure"
 
 [gamma.primitive.send]

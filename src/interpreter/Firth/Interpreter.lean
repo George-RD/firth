@@ -139,6 +139,27 @@ def addNatDelta : Stack → Option Stack
       some (.literal (.nat (left + right)) :: rest)
   | _ => none
 
+/-- Natural-number subtraction truncates at zero, matching Lean's `Nat.sub`. -/
+def subNatDelta : Stack → Option Stack
+  | .literal (.nat right) :: .literal (.nat left) :: rest =>
+      some (.literal (.nat (left - right)) :: rest)
+  | _ => none
+
+def mulNatDelta : Stack → Option Stack
+  | .literal (.nat right) :: .literal (.nat left) :: rest =>
+      some (.literal (.nat (left * right)) :: rest)
+  | _ => none
+
+def ltNatDelta : Stack → Option Stack
+  | .literal (.nat right) :: .literal (.nat left) :: rest =>
+      some (.literal (.bool (decide (left < right))) :: rest)
+  | _ => none
+
+def eqNatDelta : Stack → Option Stack
+  | .literal (.nat right) :: .literal (.nat left) :: rest =>
+      some (.literal (.bool (decide (left = right))) :: rest)
+  | _ => none
+
 def makeWorldDelta : Stack → Option Stack
   | rest => some (.world 0 :: rest)
 
@@ -154,11 +175,28 @@ def defaultGamma : Gamma :=
     primitive := fun primitive => match primitive with
       | "addNat" => some { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
                            output := .snoc (.row "ρ") (.base .nat .many), delta := addNatDelta }
+      | "subNat" => some { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
+                           output := .snoc (.row "ρ") (.base .nat .many), delta := subNatDelta }
+      | "mulNat" => some { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
+                           output := .snoc (.row "ρ") (.base .nat .many), delta := mulNatDelta }
+      | "ltNat" => some { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
+                          output := .snoc (.row "ρ") (.base .bool .many), delta := ltNatDelta }
+      | "eqNat" => some { input := .snoc (.snoc (.row "ρ") (.base .nat .many)) (.base .nat .many),
+                          output := .snoc (.row "ρ") (.base .bool .many), delta := eqNatDelta }
       | "makeWorld" => some { input := .row "ρ",
                                output := .snoc (.row "ρ") (.base .world .linear), delta := makeWorldDelta }
       | "consumeWorld" => some { input := .snoc (.row "ρ") (.base .world .linear),
                                   output := .row "ρ", delta := consumeWorldDelta }
       | _ => none }
+
+/-- The surface spelling of each executable kernel primitive. The elaborator,
+the reference-run adapter and the compiler all read this one table, so the
+three hosts accept exactly the same primitive names. -/
+def surfacePrimitives : List (String × Prim) :=
+  [("+", "addNat"), ("-", "subNat"), ("*", "mulNat"), ("<", "ltNat"), ("=", "eqNat")]
+
+def kernelPrimitive (surface : String) : Option Prim :=
+  (surfacePrimitives.find? (·.1 == surface)).map (·.2)
 
 inductive StepResult where
   | terminal (config : Config)

@@ -63,6 +63,11 @@ fn image(code: Vec<Instruction>) -> Image {
     )
 }
 
+/// `: main main 1 ;` — the recursive call is not the word's last instruction.
+fn non_tail_recursion() -> Vec<Instruction> {
+    vec![call_main(), literal(Value::Int(1))]
+}
+
 /// Runs `body` on a thread with the 2 MiB native stack the test harness gives
 /// its workers, so the pinned depth is shown to fit that stack rather than the
 /// larger main-thread stack.
@@ -79,10 +84,12 @@ fn on_a_two_mebibyte_stack(body: impl FnOnce() + Send + 'static) {
 fn self_recursion_at_gate_fuel_traps_with_call_depth_exceeded() {
     on_a_two_mebibyte_stack(|| {
         let registry = default_registry();
-        // `CALL_WORD` recursion: the entry frame plus MAX_CALL_DEPTH - 1
-        // entered frames, then the next entry is refused.
+        // Non-tail `CALL_WORD` recursion: the entry frame plus
+        // MAX_CALL_DEPTH - 1 entered frames, then the next entry is refused.
+        // (A call in tail position replaces its frame instead; see
+        // `tests/tail_calls.rs`.)
         let ExecutionOutcome::Trap(trap) =
-            execute_diagnostic(&image(vec![call_main()]), MAX_FUEL, &registry)
+            execute_diagnostic(&image(non_tail_recursion()), MAX_FUEL, &registry)
         else {
             panic!("unbounded recursion must trap, not complete")
         };
@@ -127,7 +134,7 @@ fn self_recursion_at_gate_fuel_traps_with_call_depth_exceeded() {
 
         // Cross-host, the reference has no such bound: a deeper program is a
         // one-sided trap and disagrees, never agreement.
-        let observed = observe_image(&image(vec![call_main()]), vec![], MAX_FUEL, &registry);
+        let observed = observe_image(&image(non_tail_recursion()), vec![], MAX_FUEL, &registry);
         assert_eq!(observed.status, ConformanceStatus::Trap);
         let terminal = ConformanceReference {
             status: ConformanceStatus::Terminal,
