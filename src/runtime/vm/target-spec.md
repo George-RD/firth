@@ -81,6 +81,10 @@ PICK         depth
 ROLL         depth
 ```
 
+`PICK` and `ROLL` were added after the other opcodes, so their numbers (13 and
+14) extend the table without renumbering it. An older VM refuses an image that
+uses them at decode, as an unknown opcode, rather than running it.
+
 `PUSH_LITERAL` and `PUSH_QUOTE` are the target forms of kernel literal and
 quotation construction. `PUSH_CAPTURE` is the one additional instruction
 needed to make `quote` executable without cloning linear values. `CALL_WORD` resolves a dictionary name at execution

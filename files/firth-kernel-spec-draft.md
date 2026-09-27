@@ -52,7 +52,7 @@ for cost, not expressive power: `pick n` has the effect of `n` nested
 effect of the nested `[ … ] dip swap` chain, but each costs one step where
 those chains cost about five per level. Named locals erase to them, so reading
 a local costs the same however deep it sits. This resolves the open question
-in §11 on indexed shuffles.
+in §11 on indexed shuffles; see `dec.kernel-indexed-shuffles`.
 
 ### 3. Types
 
