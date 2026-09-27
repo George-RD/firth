@@ -20,3 +20,12 @@ Deliver a reproducible, documented authoring workflow.
 ## Traceability
 
 PRD G8, R12/R13/R14; focused authoring ergonomics, not full LSP or package registry.
+
+## Public test command slice
+
+`meta/changes/public-source-tests/` adds saved input/output suites beside the
+public `check` and `run` commands, with strict validation, real dual-host
+execution and executable documentation. This addresses part of the workflow
+criterion only. Keep this task open: pinned release installation, local
+signature/typed-hole discovery and measured edit/check latency remain work,
+and the fresh-context pilot has its own task.
