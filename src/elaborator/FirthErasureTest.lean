@@ -98,9 +98,10 @@ def main : IO Unit := do
   | .ok _ => fail "focus fixture emitted no kernel"
   | .error error => fail s!"focus provenance failed: {repr error}"
 
-  -- Every demand selects the most recently produced remaining identity.
+  -- A use copies the local only while later uses remain, one copy at a time;
+  -- the last use moves the local itself.
   let repeated ← parsed ": repeated ( a:Int^many -- ) locals { a } { a a a } ;"
-  expectShapes repeated ["dup", "dup", "swap", "[swap]", "dip", "swap"]
+  expectShapes repeated ["dup", "[dup]", "dip", "swap", "[swap]", "dip", "swap"]
 
   -- A later use of a local that is not on top copies it where it sits, so the
   -- value selected before it keeps its place: a b + b + is a + b + b.
@@ -174,7 +175,8 @@ def main : IO Unit := do
   expectKernelAtoms deepFocus
     [.quotation (atomProgram [.swap]), .dip, .swap, .swap, .drop, .swap, .drop]
   expectKernelAtoms repeated
-    [.dup, .dup, .swap, .quotation (atomProgram [.swap]), .dip, .swap]
+    [.dup, .quotation (atomProgram [.dup]), .dip, .swap,
+      .quotation (atomProgram [.swap]), .dip, .swap]
   expectKernelAtoms shadow [.drop]
   expectKernelAtoms inferred
     [.quotation (atomProgram [.lit (.nat 1), .lit (.nat 2), .prim "+"])]

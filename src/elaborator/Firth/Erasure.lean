@@ -326,6 +326,22 @@ mutual
     | item :: rest => itemFuel item + itemsFuel rest + 1
 end
 
+mutual
+  private def itemNesting : Item → Nat
+    | .quotation body _ | .locals _ body _ => itemsNesting body + 1
+    | _ => 0
+
+  private def itemsNesting : List Item → Nat
+    | [] => 0
+    | item :: rest => max (itemNesting item) (itemsNesting rest)
+end
+
+/-- The recursion budget for erasing `items`. Lifting captured locals out of
+quotations (`liftCaptures`) turns each item into at most five, once per
+enclosing quotation level, so the budget grows with nesting as well as size. -/
+private def erasureDepth (items : List Item) : Nat :=
+  itemsFuel items * 6 ^ (itemsNesting items + 1)
+
 private def demandCountWithFuel (fuel : Nat) (name : String) (items : List Item) : Nat :=
   match fuel with
   | 0 => 0
@@ -486,8 +502,11 @@ inductive CleansLocals (slots : List Slot) : State → KernelProgram → State �
       (rest : CleansLocals slots { state with stack := focused.drop 1 } tail final) :
       CleansLocals slots state (focus ++ atomList .drop candidate.origin ++ tail) final
 
+/-- A use copies the local only when a later use still needs it, and makes
+one copy at a time. Copying every later use up front made the stack, and the
+code that reaches into it, grow with the number of uses. -/
 private def demandCopies (slot : Slot) (name : String) (count : Nat) (state : State) : List Slot :=
-  List.range (if slot.expanded then 0 else count - 1) |>.map (fun index =>
+  List.range (if count > 1 then 1 else 0) |>.map (fun index =>
     Slot.mk (state.nextId + index) name slot.usage slot.origin none slot.family true true)
 
 /-- `dup` applied to the value `depth` places below the top, leaving the
@@ -523,7 +542,7 @@ inductive DemandCopiesRel (slot : Slot) (name : String) (count : Nat) (state : S
     List Slot → Prop where
   | generate :
       DemandCopiesRel slot name count state
-        (List.range (if slot.expanded then 0 else count - 1) |>.map (fun index =>
+        (List.range (if count > 1 then 1 else 0) |>.map (fun index =>
           Slot.mk (state.nextId + index) name slot.usage slot.origin none slot.family true true))
 
 inductive DemandStateRel (slot : Slot) (state : State) (focused : List StackEntry)
@@ -534,7 +553,7 @@ inductive DemandStateRel (slot : Slot) (state : State) (focused : List StackEntr
         stack := markUnavailable ((copies.getLast?).map (·.id) |>.getD slot.id)
           (markExpanded slot.id focused) }
 
-/-- One use of a local: copy it in place as often as later uses demand, then
+/-- One use of a local: copy it in place if a later use still needs it, then
 bring the selected value to the top. -/
 inductive ExpandsDemand (slot : Slot) (name : String) (span : Span) (count : Nat)
     (state : State) : KernelProgram → State → Prop where
@@ -1097,7 +1116,7 @@ private def eraseLocalBodyWithProof (depth : Nat) (env : EffectEnv) (items : Lis
 
 private def eraseItems (env : EffectEnv) (items : List Item) (state : State)
     (visible : List String) : Except ErasureError (KernelProgram × State) :=
-  eraseItemsWithProof (itemsFuel items) env items state visible |>.map
+  eraseItemsWithProof (erasureDepth items) env items state visible |>.map
     (fun run => (run.program, run.final))
 
 private def localDepthWarningsWithFuel (fuel : Nat) (items : List Item) : List LintWarning :=
@@ -1128,7 +1147,7 @@ def erase (env : EffectEnv) (effect : StackEffect) (body : List Item) : Except E
 theorem erase_sound_under (env : EffectEnv) (effect : StackEffect) (body : List Item)
     {result : ErasureResult} (success : erase env effect body = .ok result) :
     ErasesToUnder env effect body result.program := by
-  cases runEq : eraseItemsWithProof (itemsFuel body) env body (initialState effect) [] with
+  cases runEq : eraseItemsWithProof (erasureDepth body) env body (initialState effect) [] with
   | error error =>
       simp only [erase, eraseItems, runEq, Except.map] at success
       cases success

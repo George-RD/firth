@@ -337,19 +337,20 @@ For example, focusing the bottom of `[a,b,c]` emits
 leaves `[b,c,a]`. Focus never copies or discards a value.
 
 A local name is a select operation that places its slot on top for the next
-ordinary item. If a slot has `d` total selects, the first select emits
-`focus(x,S)` followed by exactly `d - 1` `dup` atoms, provided `x` is `many`.
-The original and each resulting copy receive distinct identities in production
-order. Every select always uses the most recently produced identity that remains
-available in `S`, including the first select; consequently, the original
-identity is selected last. This agrees with `dup` leaving its newly produced
-copy on top. A selected identity is marked used and removed from the available
-set immediately, so consecutive demands select distinct identities. A used
-identity never becomes available again; an ordinary word or primitive may
-consume it or leave it on `S` according to its declared stack effect. For
-`d = 1` no `dup` is emitted. A linear slot must have exactly one select and is
-never passed to `dup`. Ordinary words and primitives then apply their declared
-stack effects to `S`, consuming and producing fresh slot identities as
+ordinary item. If a select of slot `x` is followed by further selects of `x`
+in the same body, and `x` is `many`, it first copies `x` where it sits, with
+`dup` under as many `dip`s as there are values above `x`, then emits
+`focus` of the copy (which sits directly above `x`). The copy receives a fresh
+identity and is the one selected; the original stays available. The last select
+of `x` makes no copy and focuses the original identity itself. Making one copy
+per select, rather than all copies at the first select, keeps the stack, and
+therefore every later focus, as shallow as the locals in scope. A selected
+identity is marked used and removed from the available set immediately, so
+consecutive demands select distinct identities. A used identity never becomes
+available again; an ordinary word or primitive may consume it or leave it on
+`S` according to its declared stack effect. A linear slot must have exactly one
+select and is never copied. Ordinary words and primitives then apply their
+declared stack effects to `S`, consuming and producing fresh slot identities as
 appropriate. The kernel type checker validates every transition.
 
 At the end of the block, cleanup repeatedly chooses the unused declared-local
@@ -362,8 +363,7 @@ silently discarded, is an error.
 
 This is a total algorithm: the finite body is scanned once, each focus emits a
 finite number of adjacent swaps, each usage count is finite, and the
-most-recently-produced remaining copy rule gives exactly one identity to every
-demand. It fails with a diagnostic if a name is absent, a required focus is not
+copy-per-select rule gives exactly one identity to every demand. It fails with a diagnostic if a name is absent, a required focus is not
 represented by the current typed stack, or a linear usage count is not exactly
 one. The canonical output is therefore unique and contains only kernel atoms,
 dictionary words, primitives, and recursively constructed quotation literals.

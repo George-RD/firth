@@ -21,3 +21,15 @@
   { remaining requested prim <
     [ 0 remaining ]
     [ remaining requested prim - requested ] if };
+
+\ Sort three values ascending. Nested `if`s whose branches push several locals.
+: sort3
+  (forall ρ; ρ a:Int^many b:Int^many c:Int^many -- ρ x:Int^many y:Int^many z:Int^many)
+  locals { a b c }
+  { a b prim <
+    [ b c prim <
+      [ a b c ]
+      [ a c prim < [ a c b ] [ c a b ] if ] if ]
+    [ a c prim <
+      [ b a c ]
+      [ b c prim < [ b c a ] [ c b a ] if ] if ] if };

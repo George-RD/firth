@@ -21,6 +21,10 @@
     {"source": "locals.firth", "entry": "fib", "stack": [0], "expect": [0]},
     {"source": "locals.firth", "entry": "fib", "stack": [20], "expect": [6765]},
     {"source": "locals.firth", "entry": "allocate-partial", "stack": [10, 2], "expect": [8, 2]},
-    {"source": "locals.firth", "entry": "allocate-partial", "stack": [5, 7], "expect": [0, 5]}
+    {"source": "locals.firth", "entry": "allocate-partial", "stack": [5, 7], "expect": [0, 5]},
+    {"source": "locals.firth", "entry": "sort3", "stack": [1, 2, 3], "expect": [1, 2, 3]},
+    {"source": "locals.firth", "entry": "sort3", "stack": [3, 2, 1], "expect": [1, 2, 3]},
+    {"source": "locals.firth", "entry": "sort3", "stack": [2, 3, 1], "expect": [1, 2, 3]},
+    {"source": "locals.firth", "entry": "sort3", "stack": [3, 1, 2], "expect": [1, 2, 3]}
   ]
 }
