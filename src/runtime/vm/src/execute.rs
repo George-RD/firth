@@ -283,7 +283,7 @@ fn run_code<'x>(
     machine.frames.truncate(frame_depth);
     match tail {
         None => Ok(()),
-        Some(tail) => run_tail_chain(*tail, image, environment, machine, current_word),
+        Some(exit) => run_tail_chain(exit, image, environment, machine, current_word),
     }
 }
 
@@ -315,14 +315,17 @@ fn push_frame(
 /// Runs tail targets in the frame slot the finished frame gave up. It is a
 /// separate function so that its state is on the native stack only while a
 /// tail chain runs, not on every nested call (see the note above).
+// The exit stays boxed so that `run_code` holds a pointer, not the exit.
+#[allow(clippy::boxed_local)]
 #[inline(never)]
 fn run_tail_chain<'x>(
-    first: Tail<'x>,
+    exit: Box<TailExit<'x>>,
     image: &Image,
     environment: &ExecutionEnvironment<'x>,
     machine: &mut Machine,
     current_word: &str,
 ) -> Result<(), VmError> {
+    let TailExit { tail: first, undo } = *exit;
     let frame_depth = machine.frames.len();
     // A tail word replaces the word (and its image); a tail quotation
     // replaces only the code and keeps the enclosing word, exactly as a
@@ -362,21 +365,90 @@ fn run_tail_chain<'x>(
                 ),
                 (None, None) => return Err(VmError::StackFault),
             };
-        push_frame(machine, frame_word, frame_code, frame_captures, frame_consumed)?;
-        next = run_frame(
+        let result = match push_frame(machine, frame_word, frame_code, frame_captures, frame_consumed) {
+            Ok(()) => run_frame(
             frame_code,
             frame_captures,
             frame_consumed,
             frame_image,
             environment,
             machine,
-            frame_word,
-            true,
-        )?
-        .map(|tail| *tail);
+                frame_word,
+                true,
+            ),
+            Err(error) => Err(error),
+        };
+        match result {
+            Ok(exit) => next = exit.map(|exit| exit.tail),
+            Err(VmError::AllocationFailure) => {
+                return Err(undo_tail_transfer(undo, frame_depth, image, machine, current_word));
+            }
+            Err(error) => return Err(error),
+        }
         machine.frames.truncate(frame_depth);
     }
     Ok(())
+}
+
+/// A tail target with the state before the instruction that transferred to
+/// it. The target runs after that instruction returned, so a failure in the
+/// tail chain is rolled back here to that instruction, exactly as `run_frame`
+/// rolls back a nested call (`target-spec.md` §5).
+struct TailExit<'x> {
+    tail: Tail<'x>,
+    undo: Box<TailUndo>,
+}
+
+struct TailUndo {
+    checkpoint: Checkpoint,
+    pc: usize,
+    caller: Option<FrameTrace>,
+}
+
+/// Kept out of `run_frame` so that building the exit is not on the native
+/// stack of every nested call.
+#[allow(clippy::boxed_local)]
+#[inline(never)]
+fn tail_exit<'x>(
+    tail: Box<Tail<'x>>,
+    undo: Option<Checkpoint>,
+    pc: usize,
+    machine: &Machine,
+) -> Result<Box<TailExit<'x>>, VmError> {
+    Ok(Box::new(TailExit {
+        tail: *tail,
+        undo: Box::new(TailUndo {
+            checkpoint: undo.ok_or(VmError::StackFault)?,
+            pc,
+            caller: machine.frames.last().cloned(),
+        }),
+    }))
+}
+
+/// Restores the caller's frame and the state before its transferring
+/// instruction. The transfer reads no captures, so the caller's are unchanged.
+#[inline(never)]
+fn undo_tail_transfer(
+    undo: Box<TailUndo>,
+    frame_depth: usize,
+    image: &Image,
+    machine: &mut Machine,
+    current_word: &str,
+) -> VmError {
+    let TailUndo {
+        checkpoint,
+        pc,
+        caller,
+    } = *undo;
+    machine.frames.truncate(frame_depth);
+    machine.frames.extend(caller);
+    rollback(machine, checkpoint);
+    machine.location = Some(TrapLocation {
+        word: String::from(current_word),
+        pc,
+        image_version: image.image_version,
+    });
+    VmError::AllocationFailure
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -389,9 +461,9 @@ fn run_frame<'x>(
     machine: &mut Machine,
     current_word: &str,
     allow_tail: bool,
-) -> Result<Option<Box<Tail<'x>>>, VmError> {
+) -> Result<Option<Box<TailExit<'x>>>, VmError> {
     let last = code.len().saturating_sub(1);
-    let mut tail = None;
+    let mut exit = None;
     for (pc, instruction) in code.iter().enumerate() {
         if let Some(frame) = machine.frames.last_mut() {
             frame.pc = pc;
@@ -425,10 +497,13 @@ fn run_frame<'x>(
             captures.clone_from_slice(&captures_checkpoint);
             consumed.copy_from_slice(&consumed_checkpoint);
         }
-        tail = instruction_result?;
+        if let Some(tail) = instruction_result? {
+            exit = Some(tail_exit(tail, undo, pc, machine)?);
+        }
     }
-    Ok(tail)
+    Ok(exit)
 }
+
 
 /// Dispatches a `CALL`, `IF` or `CALL_WORD` in tail position. A quotation
 /// that owns linear captures keeps its own frame so they are checked when it
