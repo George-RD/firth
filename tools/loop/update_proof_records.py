@@ -6,9 +6,11 @@ each claimed theorem (see `src/compiler/Firth/ProofRecords.lean`) and reports
 every exported word as `contract_verified` or `type_checked`. This script
 writes that report to `src/proofs/records.json`.
 
-Before trusting the audit, it runs it on the refusal fixtures in
-`src/prooftests/Refused.lean` and requires exactly the expected refusals, so
-an audit that stopped refusing would fail here rather than admit a proof.
+Before trusting the audit, it runs it on the fixtures in `src/prooftests/`:
+every theorem in `Refused.lean` must be refused for its expected reason, and
+every theorem in `Accepted.lean` must be accepted with exactly its expected
+coverage. An audit that stopped refusing, or began to overclaim coverage,
+fails here rather than admitting a proof.
 
 Usage: python3 tools/loop/update_proof_records.py [--check]
 
@@ -29,13 +31,20 @@ AUDIT = ROOT / ".lake" / "build" / "bin" / "firthProofRecords"
 CONTRACTS = ROOT / "src" / "proofs" / "contracts.json"
 REPORT = ROOT / "src" / "proofs" / "records.json"
 
-FIXTURES = "Firth.ProofTests.Refused"
+REFUSED = "Firth.ProofTests.Refused"
 EXPECTED_REFUSALS = {
-    f"{FIXTURES}.native": "rests on refused axioms",
-    f"{FIXTURES}.unrelated": "covers no exported word",
-    f"{FIXTURES}.notATheorem": "not a theorem",
+    f"{REFUSED}.native": "rests on refused axioms",
+    f"{REFUSED}.unrelated": "statement runs under no reference registry",
+    f"{REFUSED}.notATheorem": "not a theorem",
+    f"{REFUSED}.namesNoWord": "statement runs under no reference registry",
+    f"{REFUSED}.foreignDictionary": "statement names Programs.Allocate bodies but not",
 }
-ACCEPTED_FIXTURE = f"{FIXTURES}.honest"
+# Each accepted fixture and the exact (module, word) pairs it must cover. The
+# first guards against coverage overclaim: it uses the whole sum-to dictionary
+# but states a fact about sum-acc only.
+EXPECTED_COVERAGE = {
+    "Firth.ProofTests.Accepted.narrow": [("Programs.SumTo", "sum-acc")],
+}
 
 
 def audit(*args: str) -> subprocess.CompletedProcess[str]:
@@ -43,25 +52,35 @@ def audit(*args: str) -> subprocess.CompletedProcess[str]:
                           capture_output=True, text=True, check=False)
 
 
-def check_fixtures() -> list[str]:
-    problems: list[str] = []
-    names = [*EXPECTED_REFUSALS, ACCEPTED_FIXTURE]
-    contracts = [{"theorem": name, "module": "prooftests.Refused", "claim": "fixture"}
-                 for name in names]
+def audit_fixtures(module: str, names: list[str]) -> subprocess.CompletedProcess[str]:
+    contracts = [{"theorem": name, "module": module, "claim": "fixture"} for name in names]
     with tempfile.TemporaryDirectory() as scratch:
         path = Path(scratch) / "fixtures.json"
         path.write_text(json.dumps(contracts), encoding="utf-8")
-        result = audit("--fixtures", str(path))
+        return audit("--fixtures", str(path))
+
+
+def check_fixtures() -> list[str]:
+    problems: list[str] = []
+    result = audit_fixtures("prooftests.Refused", list(EXPECTED_REFUSALS))
     if result.returncode != 1:
-        problems.append(f"fixture audit exited {result.returncode}, expected 1")
+        problems.append(f"refusal fixtures: audit exited {result.returncode}, expected 1")
     refusals = [line for line in result.stderr.splitlines() if line.startswith("refused: ")]
     for name, reason in EXPECTED_REFUSALS.items():
         if not any(line.startswith(f"refused: {name}: {reason}") for line in refusals):
-            problems.append(f"the audit did not refuse {name} ({reason})")
-    if any(line.startswith(f"refused: {ACCEPTED_FIXTURE}:") for line in refusals):
-        problems.append(f"the audit refused the honest fixture {ACCEPTED_FIXTURE}")
+            problems.append(f"the audit did not refuse {name} ({reason}): {refusals}")
     if len(refusals) != len(EXPECTED_REFUSALS):
         problems.append(f"expected {len(EXPECTED_REFUSALS)} refusals, got {refusals}")
+
+    result = audit_fixtures("prooftests.Accepted", list(EXPECTED_COVERAGE))
+    if result.returncode != 0:
+        problems.append(f"accepted fixtures were refused:\n{result.stderr}")
+        return problems
+    records = {record["theorem"]: record for record in json.loads(result.stdout)["records"]}
+    for name, expected in EXPECTED_COVERAGE.items():
+        covered = [(item["module"], item["word"]) for item in records[name]["covers"]]
+        if covered != expected:
+            problems.append(f"{name} covers {covered}, expected exactly {expected}")
     return problems
 
 

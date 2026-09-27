@@ -16,12 +16,16 @@ built into and checks, refusing the whole run on any failure:
   `Classical.choice` and `Quot.sound`. A proof that reaches `sorryAx`,
   `Lean.ofReduceBool` (what `native_decide` uses) or any other declared
   axioms is refused;
-* the theorem reaches at least one exported word body. The words it reaches
-  are the words it covers, and each is recorded with its current body digest.
+* the statement runs under `adapterGamma` or `int64Gamma` and covers at least
+  one exported word. Each covered word is recorded with its current body
+  digest.
 
-Coverage is computed, never declared: a theorem that mentions an export's
-`dictionary` reaches every body in it, so a change to any of those words
-changes the record. The record's evidence id is the SHA-256 of its canonical
+Coverage is computed from the statement, never declared, and never from the
+proof: it is the words whose bodies the statement names, and the words it
+calls by name in a module whose `dictionary` it names, closed under the calls
+in their bodies. Naming a dictionary covers nothing by itself, so a theorem
+about `has-repeat` covers `has-repeat` and what it calls, not the rest of the
+allocator. The record's evidence id is the SHA-256 of its canonical
 text, which includes the digest of the theorem's statement.
 
 The kernel check itself is `lake build`, which elaborates every proof module
@@ -105,14 +109,91 @@ where
                  | _ => [])
               go (used ++ rest) seen axioms
 
-/-- The exported bodies `reached` contains, with their current digests. -/
-def coveredWords (reached : NameSet) : List Covered :=
-  Firth.Exports.all.flatMap fun (module, source, words) =>
-    let base := (module.splitOn ".").foldl Name.str `Firth.Exports
-    words.filterMap fun (word, _, digest) =>
-      if reached.contains (Name.str (Name.str base word) "body") then
-        some { module, source, word, bodyDigest := digest }
-      else none
+/-- What a theorem's statement names: constants, and the string literals it
+passes to `Atom.word`. -/
+structure Named where
+  constants : NameSet := {}
+  wordNames : List String := []
+
+/-- Collects what the statement names, unfolding the definitions it uses that
+live under `Firth.Proofs`, the proofs' own helpers such as an abbreviation for
+`Runs … dictionary …` or a named program. Nothing outside `Firth.Proofs` is
+unfolded, so mentioning an export's `dictionary` names the dictionary, not
+every word in it. -/
+partial def statementNames (env : Environment) (statement : Expr) : Named :=
+  (visit statement).run {} |>.2
+where
+  visit (e : Expr) : StateM Named Unit := do
+    match e with
+    | .app function argument =>
+        if function.isConstOf ``Firth.Interpreter.Atom.word then
+          if let .lit (.strVal name) := argument then
+            modify fun named => { named with wordNames := name :: named.wordNames }
+        visit function
+        visit argument
+    | .const name _ =>
+        if (← get).constants.contains name then return
+        modify fun named => { named with constants := named.constants.insert name }
+        if (`Firth.Proofs).isPrefixOf name then
+          if let some value := (env.find? name).bind (·.value? (allowOpaque := true)) then
+            visit value
+    | .lam _ type body _ | .forallE _ type body _ => visit type; visit body
+    | .letE _ type value body _ => visit type; visit value; visit body
+    | .mdata _ inner | .proj _ _ inner => visit inner
+    | _ => pure ()
+
+/-- The words a kernel program calls, including inside quotations. -/
+partial def callees : Firth.Interpreter.Program → List String
+  | .empty => []
+  | .cons atom rest => atomCallees atom ++ callees rest
+where
+  atomCallees : Firth.Interpreter.Atom → List String
+    | .word name => [name]
+    | .quotation body => callees body
+    | .push (.quotation body _) => callees body
+    | _ => []
+
+private def moduleBase (module : String) : Name :=
+  (module.splitOn ".").foldl Name.str `Firth.Exports
+
+/-- The registries a contract's statement may run under. A statement under any
+other `Gamma` could give a primitive another meaning. -/
+def allowedGammas : List Name := [``Firth.ReferenceRun.adapterGamma, `Firth.Logic.int64Gamma]
+
+/-- The words a statement covers: every export word whose body it names, and
+every word it calls by name in a module whose `dictionary` it names, closed
+under the calls in their bodies. A named body whose module's dictionary the
+statement does not name is refused, because its calls would not run the
+exported words. -/
+def coveredWords (named : Named) : Except String (List Covered) := do
+  if !allowedGammas.any named.constants.contains then
+    err "statement runs under no reference registry (adapterGamma or int64Gamma)"
+  let mut covered : List Covered := []
+  for (module, source, words) in Firth.Exports.all do
+    let base := moduleBase module
+    let hasDictionary := named.constants.contains (Name.str base "dictionary")
+    let bodyRoots := words.filter fun (word, _, _) =>
+      named.constants.contains (Name.str (Name.str base word) "body")
+    if !bodyRoots.isEmpty && !hasDictionary then
+      err s!"statement names {module} bodies but not {module}.dictionary, so their calls do not run the exported words"
+    let callRoots := if hasDictionary then
+      words.filter fun (word, _, _) => named.wordNames.contains word else []
+    let mut pending := (bodyRoots ++ callRoots).map (·.1)
+    let mut reached : List String := []
+    while !pending.isEmpty do
+      match pending with
+      | [] => pure ()
+      | word :: rest =>
+          pending := rest
+          if !reached.contains word then
+            reached := reached ++ [word]
+            if let some (_, program, _) := words.find? (·.1 == word) then
+              pending := pending ++ (callees program).filter fun callee =>
+                words.any (·.1 == callee)
+    for (word, _, digest) in words do
+      if reached.contains word then
+        covered := covered ++ [{ module, source, word, bodyDigest := digest }]
+  pure covered
 
 def audit (env : Environment) (contract : Contract) : Except String ProofRecord := do
   let some info := env.find? contract.theoremName
@@ -123,12 +204,14 @@ def audit (env : Environment) (contract : Contract) : Except String ProofRecord 
       if env.header.moduleNames[index.toNat]? != some contract.module then
         err s!"{contract.theoremName}: not declared in {contract.module}"
   | none => err s!"{contract.theoremName}: not declared in an imported module"
-  let (reached, axioms) ← reach env contract.theoremName
+  let (_, axioms) ← reach env contract.theoremName
   let axioms := axioms.toList.mergeSort (fun a b => a.toString ≤ b.toString)
   let refused := axioms.filter (!allowedAxioms.contains ·)
   unless refused.isEmpty do
     err s!"{contract.theoremName}: rests on refused axioms {refused}"
-  let covers := coveredWords reached
+  let covers ← match coveredWords (statementNames env info.type) with
+    | .ok covers => pure covers
+    | .error message => err s!"{contract.theoremName}: {message}"
   if covers.isEmpty then err s!"{contract.theoremName}: covers no exported word"
   pure { contract, axioms, covers,
          statementDigest := Digest.hexOfString (toString info.type) }

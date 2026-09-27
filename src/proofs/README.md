@@ -66,17 +66,29 @@ run if any contract:
 - reaches, through its statement, its proof or any definition they use, an
   axiom other than `propext`, `Classical.choice` and `Quot.sound`. This refuses
   `sorryAx` and the auxiliary axioms `native_decide` declares;
-- reaches no exported word body.
+- has a statement that does not run under `adapterGamma` or `int64Gamma`;
+- names an export's word body without naming that export's `dictionary`;
+- covers no exported word.
 
-Each record lists the exported words the theorem reaches, with their current
-body digests, and an evidence id: the SHA-256 of the record's text, which
-includes a digest of the theorem's statement. `records.json` also reports
-every exported word as `contract_verified`, naming the theorems that cover it,
-or `type_checked`.
+Coverage comes from the statement alone, never from the proof. A theorem
+covers the words whose bodies its statement names, and the words it calls by
+name (`.word "w"`) in a module whose `dictionary` it names, closed under the
+calls in those words' bodies. Definitions under `Firth.Proofs`, such as an
+abbreviation for `Runs adapterGamma dictionary defaultCosts`, are unfolded
+first. Naming a dictionary covers nothing by itself, so a theorem about
+`has-repeat` covers `has-repeat` and what it calls, not the rest of the
+allocator.
+
+Each record lists the covered words with their current body digests, and an
+evidence id: the SHA-256 of the record's text, which includes a digest of the
+theorem's statement. `records.json` also reports every exported word as
+`contract_verified`, naming the theorems that cover it, or `type_checked`.
 
 CI runs the script with `--check`. It fails if any contract is refused, if a
 covered word's body digest changed since the record was written, or if the
-audit no longer refuses the fixtures in `src/prooftests/Refused.lean`.
+audit's behaviour on the fixtures in `src/prooftests/` changes: every theorem in
+`Refused.lean` must be refused for its reason, and every theorem in
+`Accepted.lean` accepted with exactly its expected coverage.
 
 Adding a contract: prove it here, add it to `contracts.json`, then run
 `lake build` and `python3 tools/loop/update_proof_records.py`.
