@@ -53,3 +53,8 @@
 : third
   (forall ρ; ρ xs:Seq Int^many -- ρ r:Int^many)
   2 prim seq-int.at;
+
+\ Any index at or past the length traps, however large.
+: element
+  (forall ρ; ρ xs:Seq Int^many i:Int^many -- ρ r:Int^many)
+  prim seq-int.at;

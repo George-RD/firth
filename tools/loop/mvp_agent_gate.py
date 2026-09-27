@@ -638,6 +638,8 @@ def without_faulting_step(target: dict[str, Any], name: str) -> dict[str, Any]:
     cost = target.get("cost")
     if not isinstance(trace, list) or not trace or len(trace) >= MAX_TRACE_EVENTS:
         fail(f"{name}: target trace does not end at the faulting instruction")
+    # Validate every event, the one about to be removed included, first.
+    validate_trace(trace, TARGET_EVENT_FIELDS, ("cost", "kernel_cost"), f"{name}: target")
     last = trace[-1]
     if not isinstance(last, dict) or not isinstance(cost, dict) or any(
             type(value) is not int for value in (last.get("cost"), last.get("kernel_cost"),

@@ -137,6 +137,7 @@
             (SEQ_INT_TAG, 7_i64.to_le_bytes().to_vec(), true),
             (SEQ_BOOL_TAG, vec![0, 1], true),
             (SEQ_INT_TAG, vec![7], false),
+            (SEQ_INT_TAG, (-1_i64).to_le_bytes().to_vec(), false),
             (SEQ_BOOL_TAG, vec![2], false),
             (99, vec![], false),
         ] {
@@ -154,6 +155,52 @@
                 assert_eq!(result, Err(VmError::InvalidLiteralEncoding), "{tag}");
             }
         }
+    }
+
+    fn run_sequence_primitive(tag: u64, bytes: Vec<u8>, operand: Value, name: &str) -> Result<Vec<Value>, VmError> {
+        execute(&test_image(vec![word(
+            "main",
+            vec![
+                instruction(
+                    Op::PushLiteral,
+                    Some(Operand::Literal(Value::PrimitiveValue { tag, bytes })),
+                ),
+                instruction(Op::PushLiteral, Some(Operand::Literal(operand))),
+                instruction(Op::Prim, Some(Operand::Primitive(String::from(name)))),
+            ],
+        )]))
+    }
+
+    #[test]
+    fn sequence_indexes_past_the_end_fault_at_every_magnitude() {
+        let ints: Vec<u8> = [7_i64, 8, 9].iter().flat_map(|v| v.to_le_bytes()).collect();
+        assert_eq!(
+            run_sequence_primitive(SEQ_INT_TAG, ints.clone(), Value::Int(2), "natSeqAt"),
+            Ok(vec![Value::Int(9)])
+        );
+        // 2^61 - 1 is the largest index whose byte offset fits a usize but
+        // whose end does not; it once overflowed and panicked.
+        for index in [3, (1_i64 << 61) - 1, 1_i64 << 61, i64::MAX, -1] {
+            assert_eq!(
+                run_sequence_primitive(SEQ_INT_TAG, ints.clone(), Value::Int(index), "natSeqAt"),
+                Err(VmError::PrimitiveFault),
+                "Seq Int at {index}"
+            );
+            assert_eq!(
+                run_sequence_primitive(SEQ_BOOL_TAG, vec![1, 0], Value::Int(index), "boolSeqAt"),
+                Err(VmError::PrimitiveFault),
+                "Seq Bool at {index}"
+            );
+        }
+    }
+
+    #[test]
+    fn pushing_a_negative_integer_onto_a_sequence_faults() {
+        assert_eq!(
+            run_sequence_primitive(SEQ_INT_TAG, vec![], Value::Int(-1), "natSeqPush"),
+            Err(VmError::PrimitiveFault)
+        );
+        assert!(run_sequence_primitive(SEQ_INT_TAG, vec![], Value::Int(0), "natSeqPush").is_ok());
     }
 
     #[test]

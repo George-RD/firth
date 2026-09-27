@@ -424,6 +424,12 @@ class ExecutionWiringTests(unittest.TestCase):
             self.gate.compare(reference, target, "trap", expected_trap="primitive-fault",
                               fuel=self.gate.MAX_FUEL)
 
+    def test_the_removed_faulting_event_is_validated_first(self) -> None:
+        reference, target = self.trapped_observations()
+        del target["trace"][-1]["frames"]
+        with self.assertRaisesRegex(self.gate.GateError, "target"):
+            self.gate.compare(reference, target, "trap", expected_trap="primitive-fault")
+
     def test_fuel_exhaustion_is_never_an_expected_trap(self) -> None:
         reference, target = self.trapped_observations()
         for value in ("fuel-exhausted", ""):

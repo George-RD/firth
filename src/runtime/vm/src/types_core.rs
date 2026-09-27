@@ -10,7 +10,12 @@ pub const SEQ_BOOL_TAG: u64 = 3;
 /// Values with other known tags carry no byte-level invariant here.
 pub fn canonical_primitive_bytes(tag: u64, bytes: &[u8]) -> bool {
     match tag {
-        SEQ_INT_TAG => bytes.len().is_multiple_of(8),
+        // Each element is a non-negative little-endian i64: the kernel's
+        // sequence elements are naturals.
+        SEQ_INT_TAG => {
+            bytes.len().is_multiple_of(8)
+                && bytes.chunks_exact(8).all(|word| word[7] & 0x80 == 0)
+        }
         SEQ_BOOL_TAG => bytes.iter().all(|byte| *byte <= 1),
         _ => true,
     }

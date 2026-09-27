@@ -344,13 +344,17 @@ private def parseRefinement (p : Parser) (opening : Token) : Except ParseError (
 
 private def parseType (p₀ : Parser) (name₀ : String) (nameSpan₀ : Span) : Except ParseError (TypeExpr × Parser) :=
   -- `Seq Int` and `Seq Bool` name the two sequence types; the element type
-  -- is part of the name, since the checker's base types are names.
+  -- is part of the name, since the checker's base types are names. An
+  -- `Int` or `Bool` followed by `:` is the next stack item's label instead.
   let (p, name, nameSpan) : Parser × String × Span :=
     if name₀ == "Seq" then
       match current p₀ with
       | some t => match t.kind with
         | .identifier elem =>
-            if elem == "Int" || elem == "Bool" then (bump p₀, s!"Seq {elem}", mkSpan nameSpan₀.start t.span.stop)
+            let labelsNextItem := match current (bump p₀) with
+              | some next => isSymbol ":" next
+              | none => false
+            if (elem == "Int" || elem == "Bool") && !labelsNextItem then (bump p₀, s!"Seq {elem}", mkSpan nameSpan₀.start t.span.stop)
             else (p₀, name₀, nameSpan₀)
         | _ => (p₀, name₀, nameSpan₀)
       | none => (p₀, name₀, nameSpan₀)

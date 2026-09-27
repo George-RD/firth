@@ -50,7 +50,7 @@ def main() -> int:
             failures += 1
             continue
         stack = [value["literal"]["value"] for value in observation["stack"]]
-        if "expect_trap" in case:
+        if case.get("expect_trap") is not None:
             print(f"ok   {label} -> both hosts trapped with {observation['trap']}")
             continue
         if stack != case["expect"]:

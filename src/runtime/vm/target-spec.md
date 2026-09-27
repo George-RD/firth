@@ -134,9 +134,12 @@ integers (a negative operand is a `primitive-fault`):
 | `prim seq-bool.push` | `PRIM boolSeqPush` | `Seq Bool Bool -- Seq Bool`; appends at the end. |
 
 Sequences are `many` registry values. A `Seq Int` is `PrimitiveValue(2,
-bytes)` holding each element as an 8-byte little-endian `i64`; a `Seq Bool` is
-`PrimitiveValue(3, bytes)` holding one byte, 0 or 1, per element. Any other
-byte length or byte value is not canonical and is refused. Every sequence
+bytes)` holding each element as a non-negative 8-byte little-endian `i64`; a
+`Seq Bool` is `PrimitiveValue(3, bytes)` holding one byte, 0 or 1, per element.
+Any other byte length or byte value is not canonical and is refused, and
+pushing a negative integer is a `primitive-fault`. The target spells the two
+types `SeqInt` and `SeqBool`, so the compiler refuses a source type with
+either of those names. Every sequence
 primitive costs 1. `PUSH_LITERAL` accepts a canonical sequence as well as the
 scalar literals, so `{ 1 2 3 }` compiles to one instruction; no other primitive
 value is a literal. The kernel treats an out-of-range `at` as a primitive with

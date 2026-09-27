@@ -200,6 +200,10 @@ def runParserTests : IO Unit := do
   match parse ": xs ( -- ) [ { 4 } ] ;" with
   | .success { declarations := [.word { body := [.quotation [.literal { value := .integers [4], .. } _] _], .. }], .. } => pure ()
   | _ => fail "sequence literal inside a quotation"
+  -- `Int` followed by `:` labels the next stack item; it is not an element type.
+  match parse ": xs ( x:Seq Int:Bool -- x:Seq Int:Bool ) ;" with
+  | .success { declarations := [.word { effect := { input := [.value "x" { name := "Seq", .. } _, .value "Int" { name := "Bool", .. } _], .. }, .. }], .. } => pure ()
+  | _ => fail "Seq followed by a labelled item"
   expectFailure ": xs ( -- ) { } ;" "firth.syntax.empty-sequence"
   expectFailure ": xs ( -- ) { 1 true } ;" "firth.syntax.mixed-sequence"
   expectFailure ": xs ( -- ) { 1 dup } ;" "firth.syntax.invalid-sequence-element"

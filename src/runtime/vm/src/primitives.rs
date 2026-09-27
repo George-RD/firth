@@ -40,8 +40,9 @@ fn eq_nat(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
 fn element(bytes: &[u8], index: i64, width: usize) -> Result<&[u8], VmError> {
     let index = usize::try_from(index).map_err(|_| VmError::PrimitiveFault)?;
     let start = index.checked_mul(width).ok_or(VmError::PrimitiveFault)?;
+    let end = start.checked_add(width).ok_or(VmError::PrimitiveFault)?;
     bytes
-        .get(start..start + width)
+        .get(start..end)
         .ok_or(VmError::PrimitiveFault)
 }
 
@@ -64,6 +65,10 @@ fn nat_seq_at(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
 
 fn nat_seq_push(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     let value = context.pop_int()?;
+    // Elements are naturals, like every kernel integer.
+    if value < 0 {
+        return Err(VmError::PrimitiveFault);
+    }
     let mut bytes = context.pop_primitive(SEQ_INT_TAG)?;
     reserve(&mut bytes, 8)?;
     bytes.extend_from_slice(&value.to_le_bytes());
