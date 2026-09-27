@@ -24,8 +24,11 @@ route PRD G4 names for what SMT cannot do: Lean proofs.
 
 ## What counts as toolchain-checked
 
-- The property is stated once, as a Lean statement bound to the body digests
-  of the words it covers.
+- The property is stated once, as a Lean statement bound to the words it
+  covers. A body digest hashes only that word's own code, so the binding is
+  the body digest and erased type of every covered word and of every word it
+  calls, directly or transitively, with that call set determined
+  mechanically from the compiled program's `call-word` edges.
 - It is proved for every input the host can hand the program (for the
   allocator: stock and quantities in the spec's ranges, at most 64 requests,
   well-formed ID encodings). A finite set of inputs, `decide` or
@@ -34,8 +37,9 @@ route PRD G4 names for what SMT cannot do: Lean proofs.
 - The proof is about the kernel program the elaborator emits for those words,
   run by the Lean reference interpreter.
 - The Lean kernel checks it. The result is a content-addressed record that CI
-  rechecks and that becomes invalid when a covered word changes (the per-word
-  obligation shape of `req-r9`).
+  rechecks and that becomes invalid when any bound word's body or type
+  changes, including a callee of a covered word (the per-word obligation
+  shape of `req-r9`).
 - The toolchain reports the property as `contract_verified`, distinct from
   `type_checked` and `unsupported`.
 
@@ -61,8 +65,9 @@ Two gaps remain and must be stated wherever the result is claimed:
 - A kernel program-logic library over the reference interpreter covers
   atoms, composition, `if`, `dip`, quotation calls, word unfolding, recursion
   by a measure, and the sequence primitives. No `sorry`, `admit` or `axiom`.
-- User-written Lean proofs are admitted as evidence records bound to the
-  digests they cover and rechecked by the Lean kernel; the pipeline reports
+- User-written Lean proofs are admitted as evidence records carrying that
+  binding (covered words and their transitive callees, digests and types)
+  and rechecked by the Lean kernel; the pipeline reports
   `contract_verified` for them instead of treating the Lean queue as an
   internal failure.
 - The allocator's required properties are proved this way: non-negative
@@ -70,8 +75,10 @@ Two gaps remain and must be stated wherever the result is claimed:
   conservation, IDs and order preserved, earlier eligible requests first, and
   each allocation following the chosen policy, together with termination and
   the i64 range of every intermediate value.
-- A deliberately wrong property, and a proof whose covered word has changed,
-  are both rejected.
+- A deliberately wrong property is rejected, and so is a proof after a
+  covered word changes, after a covered word's type changes, and after only a
+  callee of a covered word changes (for the allocator: editing
+  `allocate-one` invalidates the proofs about `allocate-batch`).
 
 ## Non-goals
 
