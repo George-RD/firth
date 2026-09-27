@@ -5,9 +5,11 @@ A `firth.tests.v1` JSON suite names one source file relative to the suite and
 entry, an input stack and an expected output stack. Unknown or duplicate JSON
 members, non-portable values, missing fields and empty suites fail before a
 build. Suite bytes and stack lengths are bounded. Names never become paths.
+The source must decode as UTF-8 before the build, and it is read once: every
+case runs from that snapshot, so edits during a run cannot mix versions.
 
 Build once, then use the existing `mvp_agent_gate.rebuild` in separate scratch
-workspaces. It re-elaborates the original source, independently rechecks
+workspaces. It re-elaborates the snapshotted source, independently rechecks
 compiler admission, runs the VM and reference interpreter and compares their
 observations. The test adds an exact typed expected-stack comparison, so a
 Boolean cannot pass as an integer. No generated oracle or expected-output

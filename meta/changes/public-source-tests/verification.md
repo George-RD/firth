@@ -1,22 +1,36 @@
 # Verification: public-source-tests
 
-## Local checks, 14 September 2026
+## Correction to the 14 September record
 
-The workspace was reconstructed from main commit
-`c6b1a19c5a94eacf13d2b9679b2bbbf1eba33ff7` using its checksum-verified CI source
-archive. The imported Git tree matched `02b63845f454800c11f3589332447c916176b24b`.
+The first record said the 28 tests ran in a workspace reconstructed from main
+commit `c6b1a19c5a94eacf13d2b9679b2bbbf1eba33ff7` (tree
+`02b63845f454800c11f3589332447c916176b24b`). That tree does not contain
+`tools/loop/test_firth_run.py`, so those results cannot be attributed to it.
+They are withdrawn and replaced by the checks below.
 
-- `python3 tools/loop/test_firth_run.py`: 28 tests passed. These use mocked
-  build/rebuild boundaries and exercise the real suite loader and CLI reporting.
-- Python compilation of the modified CLI and language-example gate passed.
-- `python3 tools/loop/check_mvp_agent_inputs.py`: passed; frozen authoring and
-  interface inputs are unchanged.
-- `select_unit.py --validate` and `coverage.py --validate`: passed.
-- `git diff --check`: passed.
+## Local checks, 27 September 2026
 
-The broader Python sweep was interrupted by local process deadlines. Do not
-count it as a completed suite. Lean, Cargo and Cairn are unavailable locally;
-no local full-language or governance pass is claimed.
+Run from a checkout of candidate commit
+`0f3901ff06d553dca7ab2b95c34125332ffbad7d` (tree
+`fb9f902f74be6a7a2517d0c479f1f234fdee5044`) with Python 3.11.15, first as
+published and then with the review fixes in the commit that adds this record.
+
+- At `0f3901f`: `python3 tools/loop/test_firth_run.py` ran 28 tests, all
+  passing, with mocked build/rebuild boundaries.
+- At `0f3901f`: every `tools/loop/test_*.py` suite, run as CI runs them (20
+  suites), passed. This replaces the earlier interrupted broader sweep.
+- At `0f3901f`: Python compilation of the CLI and language-example gate,
+  `check_mvp_agent_inputs.py`, `select_unit.py --validate`,
+  `coverage.py --validate` and `git diff --check c6b1a19 HEAD` passed.
+- With the review fixes: 30 tests pass. The two new tests (non-UTF-8 source
+  refused before build; every case runs the pre-build snapshot) and the
+  updated rebuild-entry assertion fail against the unfixed runner.
+
+Lean, Cargo and Cairn are not available in this container, so no local
+language or governance pass is claimed. CI run
+[34786322525](https://github.com/George-RD/firth/actions/runs/34786322525)
+passed all four gates on `0f3901f`, including `check_language_examples.py`
+with the real toolchains; it does not verify the review-fix commit.
 
 ## Required candidate checks
 

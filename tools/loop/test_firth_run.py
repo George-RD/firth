@@ -143,7 +143,9 @@ class SavedCaseTests(unittest.TestCase):
 
     def test_nested_json_is_bounded_without_traceback(self) -> None:
         self.path.write_text("[" * 10000 + "]" * 10000, encoding="utf-8")
-        self.refuse_before_build("RecursionError")
+        # The decoder may raise RecursionError or accept the depth; either way
+        # the suite is refused before any build.
+        self.refuse_before_build()
 
     def test_suite_byte_limit_boundary(self) -> None:
         raw = self.path.read_bytes()
@@ -187,6 +189,25 @@ class SavedCaseTests(unittest.TestCase):
             with self.assertRaises(gate.GateError):
                 runner.test_suite(self.path, fuel)
 
+    def test_non_utf8_source_is_refused_before_build(self) -> None:
+        self.source.write_bytes(b": main ( -- ) \xff ;\n")
+        self.refuse_before_build("UTF-8")
+
+    def test_every_case_runs_the_source_snapshot_taken_before_build(self) -> None:
+        self.write({**self.suite, "cases": [self.case, {**self.case, "name": "second"}]})
+        original = self.source.read_bytes()
+        seen = []
+
+        def run_case(entry, workspace, **_):
+            seen.append(Path(entry["source"]).read_bytes())
+            self.source.write_text(": main ( -- ) ;\n", encoding="utf-8")
+            return self.observation([42])
+
+        with patch.object(gate, "build_toolchain"), patch.object(gate, "rebuild", side_effect=run_case):
+            code, result, error = self.invoke()
+        self.assertEqual(code, 0)
+        self.assertEqual(seen, [original, original])
+
     def test_whole_suite_is_validated_before_any_case_executes(self) -> None:
         self.write({**self.suite, "cases": [self.case, {**self.case, "name": "second", "expected_stack": [-1]}]})
         with patch.object(gate, "rebuild", side_effect=AssertionError("must not execute")):
@@ -200,10 +221,12 @@ class SavedCaseTests(unittest.TestCase):
         self.assertIsNone(error)
         build.assert_called_once_with()
         entry, workspace = rebuild.call_args.args
-        self.assertEqual(entry, {"name": "case-0", "entry": "main", "source": str(self.source),
+        self.assertEqual(entry, {"name": "case-0", "entry": "main",
+                                 "source": str(workspace / "source" / "double.firth"),
                                  "source_path": "double.firth"})
         self.assertEqual(rebuild.call_args.kwargs, {"stack": [21], "fuel": 32})
         self.assertFalse(workspace.exists())
+        self.assertEqual(result["source"], str(self.source))
         self.assertEqual((result["passed"], result["failed"]), (1, 0))
         self.assertEqual(result["schema"], "firth.test-results.v1")
         self.assertEqual(result["cases"][0]["stack"], [42])

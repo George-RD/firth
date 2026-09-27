@@ -111,21 +111,35 @@ def load_suite(path: Path) -> tuple[Path, list[dict]]:
     return source, cases
 
 
+def snapshot_source(source: Path) -> bytes:
+    """Read the suite source once so every case runs the same validated text."""
+    raw = source.read_bytes()
+    try:
+        raw.decode("utf-8")
+    except UnicodeDecodeError:
+        gate.fail("suite.source: expected a UTF-8 file")
+    return raw
+
+
 def test_suite(path: Path, fuel: int) -> dict:
     if type(fuel) is not int or not 0 <= fuel <= gate.MAX_FUEL:
         gate.fail(f"fuel: expected an integer from 0 to {gate.MAX_FUEL}")
     source, cases = load_suite(path)
+    snapshot = snapshot_source(source)
     gate.build_toolchain()
     results = []
     with tempfile.TemporaryDirectory(prefix="firth-test-") as directory:
         workspace = Path(directory)
+        frozen = workspace / "source" / source.name
+        frozen.parent.mkdir()
+        frozen.write_bytes(snapshot)
         for index, case in enumerate(cases):
             result = {"name": case["name"], "entry": case["entry"],
                       "expected_stack": case["expected_stack"]}
             try:
                 observation = gate.rebuild(
                     {"name": f"case-{index}", "entry": case["entry"],
-                     "source": str(source), "source_path": source.name},
+                     "source": str(frozen), "source_path": source.name},
                     workspace, stack=case["stack"], fuel=fuel,
                 )
                 gate.validate_portable_stack(observation["stack"], f"case {index} result")
