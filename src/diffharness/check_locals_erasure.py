@@ -11,8 +11,10 @@ which a local is a name bound to a value.
 
 A generated program is built while it is executed on concrete inputs, so every
 program runs without faults in the direct interpreter. The toolchain may
-refuse a program (for example `firth.elaboration.untracked-local`); that is
-counted, not failed. A program it accepts must give the same final stack.
+refuse a program only with a documented checker limit (`TOLERATED_REFUSALS`);
+that is counted, not failed. Any other refusal of a generated program is a
+failure, since every generated program runs, and a program the toolchain
+accepts must give the same final stack.
 """
 from __future__ import annotations
 
@@ -30,6 +32,10 @@ sys.path.insert(0, str(HERE.parents[1] / "tools" / "loop"))
 import mvp_agent_gate as gate  # noqa: E402
 
 MAX_DEPTH = 7
+# The checker limits a generated program may hit: a local used after a
+# quotation whose stack effect is unknown, and a hidden local the checker
+# cannot reach. Every other refusal is an erasure or checker regression.
+TOLERATED_REFUSALS = ("firth.elaboration.untracked-local", "firth.elaboration.hidden-local")
 NAMES = ["a", "b", "c", "d", "e"]
 
 
@@ -332,7 +338,7 @@ def main(argv: list[str] | None = None) -> int:
                     )
                 except gate.GateError as error:
                     code = refusal_code(error)
-                    if code and code.startswith(("firth.elaboration.", "firth.type.")):
+                    if code in TOLERATED_REFUSALS:
                         counts["refused"] += 1
                         refusals[code] = refusals.get(code, 0) + 1
                     else:
@@ -349,8 +355,8 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 counts["agreed"] += 1
     print(json.dumps({"seeds": seeds, **counts, "refusals": refusals}, sort_keys=True))
-    if counts["agreed"] == 0:
-        print("no generated program was accepted; the test proves nothing")
+    if counts["agreed"] == 0 or counts["agreed"] < counts["refused"]:
+        print("most generated programs were refused; the test proves little")
         return 1
     return 1 if counts["mismatched"] or counts["errored"] else 0
 

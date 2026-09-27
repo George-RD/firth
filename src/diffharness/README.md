@@ -109,8 +109,10 @@ branches, after `call`, `dip` and `compose`, quotations kept in locals) by
 running each program as it is built, in a small Python interpreter where a
 block takes its values off the stack and a name pushes the value bound to it.
 Each program then runs through the real elaborator, compiler and both hosts;
-the final stack must equal the interpreter's. A refusal is counted, not
-failed, but a run in which nothing is accepted fails.
+the final stack must equal the interpreter's. Only the documented checker
+limits (`firth.elaboration.untracked-local` and `firth.elaboration.hidden-local`)
+are counted as refusals; any other refusal of a generated program fails, and
+so does a run in which fewer programs are accepted than refused.
 
 ```sh
 python3 src/diffharness/check_locals_erasure.py --seed 0 --seed 1 --seed 2 --cases 100 --artifacts /tmp/firth-locals
