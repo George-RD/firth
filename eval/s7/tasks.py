@@ -1,0 +1,145 @@
+"""S7 authoring tasks: small stack-in, stack-out problems with hidden tests.
+
+Every task is a word `main` that takes its inputs on the stack (listed bottom
+to top) and leaves its outputs on the stack (bottom to top). Values are
+non-negative integers and Booleans only, because that is all the portable
+runner can pass in or read back.
+
+`needs` records which language capabilities a reasonable solution requires.
+`add` means only `prim +`, stack atoms, quotations and `if`; anything else
+(`sub`, `cmp`, `mul`, `loop`) depends on primitives the executable profile does
+not have yet. The prompt shows the description and one visible example; the
+`hidden` inputs are scored against `ref` and never shown to the author.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from math import gcd
+from typing import Callable
+
+
+@dataclass(frozen=True)
+class Task:
+    id: str
+    description: str
+    inputs: tuple[tuple[str, str], ...]   # (name, "Int" | "Bool"), bottom to top
+    outputs: tuple[tuple[str, str], ...]  # (name, "Int" | "Bool"), bottom to top
+    ref: Callable[..., tuple]
+    example: tuple
+    hidden: tuple[tuple, ...]
+    needs: frozenset[str]
+
+    def expected(self, args: tuple) -> list:
+        return list(self.ref(*args))
+
+
+def _t(id, description, inputs, outputs, ref, example, hidden, needs=("add",)):
+    return Task(id, description, tuple(inputs), tuple(outputs), ref, tuple(example),
+                tuple(tuple(h) for h in hidden), frozenset(needs))
+
+
+I, B = "Int", "Bool"
+
+
+def _fib(n):
+    a, b = 0, 1
+    for _ in range(n):
+        a, b = b, a + b
+    return a
+
+
+def _fact(n):
+    r = 1
+    for k in range(2, n + 1):
+        r *= k
+    return r
+
+
+def _collatz(n):
+    steps = 0
+    while n != 1:
+        n = n // 2 if n % 2 == 0 else 3 * n + 1
+        steps += 1
+    return steps
+
+
+TASKS: tuple[Task, ...] = (
+    # --- expressible with `prim +` and structural words -----------------------
+    _t("triple", "Return three times n.",
+       [("n", I)], [("r", I)], lambda n: (3 * n,),
+       (4,), [(0,), (1,), (7,), (1000,), (123456,)]),
+    _t("sum3", "Return a + b + c.",
+       [("a", I), ("b", I), ("c", I)], [("r", I)], lambda a, b, c: (a + b + c,),
+       (1, 2, 3), [(0, 0, 0), (5, 0, 9), (10, 20, 30), (1, 1, 999)]),
+    _t("times10", "Return ten times n.",
+       [("n", I)], [("r", I)], lambda n: (10 * n,),
+       (3,), [(0,), (1,), (42,), (999,)]),
+    _t("affine", "Return 4*x + 7.",
+       [("x", I)], [("r", I)], lambda x: (4 * x + 7,),
+       (1,), [(0,), (2,), (10,), (250,)]),
+    _t("pair-sum", "Leave b and then a + b on the stack (a + b on top).",
+       [("a", I), ("b", I)], [("b", I), ("s", I)], lambda a, b: (b, a + b),
+       (2, 5), [(0, 0), (1, 0), (0, 1), (13, 29)]),
+    _t("select", "If flag is true return a, otherwise return b.",
+       [("a", I), ("b", I), ("flag", B)], [("r", I)], lambda a, b, f: (a if f else b,),
+       (7, 9, True), [(7, 9, False), (0, 5, True), (0, 5, False), (3, 3, True)]),
+    _t("not", "Return the Boolean negation of p.",
+       [("p", B)], [("r", B)], lambda p: (not p,),
+       (True,), [(False,), (True,)]),
+    _t("and", "Return p AND q.",
+       [("p", B), ("q", B)], [("r", B)], lambda p, q: (p and q,),
+       (True, False), [(True, True), (False, True), (False, False), (True, False)]),
+    _t("xor", "Return p XOR q (true when exactly one is true).",
+       [("p", B), ("q", B)], [("r", B)], lambda p, q: (p != q,),
+       (True, False), [(True, True), (False, True), (False, False), (True, False)]),
+    _t("majority", "Return true when at least two of p, q, r are true.",
+       [("p", B), ("q", B), ("r", B)], [("m", B)],
+       lambda p, q, r: (p + q + r >= 2,),
+       (True, False, True),
+       [(False, False, False), (True, True, False), (False, True, False),
+        (True, True, True), (False, False, True), (False, True, True)]),
+    _t("count-true", "Return how many of p, q, r are true, as an Int.",
+       [("p", B), ("q", B), ("r", B)], [("n", I)],
+       lambda p, q, r: (int(p) + int(q) + int(r),),
+       (True, False, True),
+       [(False, False, False), (True, True, True), (False, True, False), (True, True, False)]),
+    # --- need subtraction, comparison, multiplication or loops ----------------
+    _t("max", "Return the larger of a and b.",
+       [("a", I), ("b", I)], [("r", I)], lambda a, b: (max(a, b),),
+       (3, 8), [(8, 3), (0, 0), (5, 5), (100, 99), (0, 7)], ["cmp"]),
+    _t("min3", "Return the smallest of a, b and c.",
+       [("a", I), ("b", I), ("c", I)], [("r", I)], lambda a, b, c: (min(a, b, c),),
+       (4, 2, 9), [(1, 2, 3), (3, 2, 1), (2, 3, 1), (5, 5, 5), (0, 9, 9)], ["cmp"]),
+    _t("abs-diff", "Return |a - b|.",
+       [("a", I), ("b", I)], [("r", I)], lambda a, b: (abs(a - b),),
+       (3, 10), [(10, 3), (0, 0), (7, 7), (0, 1000)], ["sub", "cmp"]),
+    _t("clamp", "Return x limited to the range lo..hi (lo <= hi is guaranteed).",
+       [("x", I), ("lo", I), ("hi", I)], [("r", I)], lambda x, lo, hi: (min(max(x, lo), hi),),
+       (15, 0, 10), [(5, 0, 10), (0, 3, 10), (10, 10, 10), (11, 2, 11), (99, 5, 7)], ["cmp"]),
+    _t("is-even", "Return true when n is even.",
+       [("n", I)], [("r", B)], lambda n: (n % 2 == 0,),
+       (6,), [(0,), (1,), (7,), (40,), (41,)], ["sub", "cmp", "loop"]),
+    _t("sum-to", "Return 0 + 1 + ... + n.",
+       [("n", I)], [("r", I)], lambda n: (n * (n + 1) // 2,),
+       (4,), [(0,), (1,), (10,), (30,)], ["sub", "cmp", "loop"]),
+    _t("factorial", "Return n! (0! = 1).",
+       [("n", I)], [("r", I)], lambda n: (_fact(n),),
+       (4,), [(0,), (1,), (5,), (7,)], ["sub", "cmp", "mul", "loop"]),
+    _t("fib", "Return the n-th Fibonacci number, with fib(0) = 0 and fib(1) = 1.",
+       [("n", I)], [("r", I)], lambda n: (_fib(n),),
+       (6,), [(0,), (1,), (2,), (10,), (20,)], ["sub", "cmp", "loop"]),
+    _t("gcd", "Return the greatest common divisor of a and b (both at least 1).",
+       [("a", I), ("b", I)], [("r", I)], lambda a, b: (gcd(a, b),),
+       (12, 18), [(7, 5), (9, 3), (1, 1), (48, 36), (17, 51)], ["sub", "cmp", "loop"]),
+    _t("power", "Return base raised to exp (0^0 = 1).",
+       [("base", I), ("exp", I)], [("r", I)], lambda b, e: (b ** e,),
+       (3, 4), [(2, 0), (0, 0), (0, 3), (2, 10), (5, 3)], ["sub", "cmp", "mul", "loop"]),
+    _t("collatz-steps",
+       "Return how many Collatz steps it takes n (n >= 1) to reach 1: halve even "
+       "numbers, map odd n to 3n + 1.",
+       [("n", I)], [("r", I)], lambda n: (_collatz(n),),
+       (6,), [(1,), (2,), (3,), (7,), (12,)], ["sub", "cmp", "mul", "loop"]),
+)
+
+BY_ID = {t.id: t for t in TASKS}
+assert len(BY_ID) == len(TASKS)

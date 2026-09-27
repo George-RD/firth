@@ -1,0 +1,1902 @@
+{
+  "lang": "firth",
+  "tasks": {
+    "triple": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            4
+          ],
+          "expected": [
+            12
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            12
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            3
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            21
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            21
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1000
+          ],
+          "expected": [
+            3000
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            3000
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            123456
+          ],
+          "expected": [
+            370368
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            370368
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 5,
+      "hidden_total": 5
+    },
+    "sum3": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            1,
+            2,
+            3
+          ],
+          "expected": [
+            6
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            6
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            0,
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            5,
+            0,
+            9
+          ],
+          "expected": [
+            14
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            14
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            10,
+            20,
+            30
+          ],
+          "expected": [
+            60
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            60
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1,
+            1,
+            999
+          ],
+          "expected": [
+            1001
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1001
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "times10": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            3
+          ],
+          "expected": [
+            30
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            30
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            10
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            42
+          ],
+          "expected": [
+            420
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            420
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            999
+          ],
+          "expected": [
+            9990
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            9990
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "affine": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            11
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            11
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            7
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            2
+          ],
+          "expected": [
+            15
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            15
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            47
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            47
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            250
+          ],
+          "expected": [
+            1007
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1007
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "pair-sum": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            2,
+            5
+          ],
+          "expected": [
+            5,
+            7
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            5,
+            7
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            0
+          ],
+          "expected": [
+            0,
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0,
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            1,
+            0
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0,
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            1
+          ],
+          "expected": [
+            1,
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1,
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            13,
+            29
+          ],
+          "expected": [
+            29,
+            42
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            29,
+            42
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "select": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            7,
+            9,
+            true
+          ],
+          "expected": [
+            7
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            7
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            7,
+            9,
+            false
+          ],
+          "expected": [
+            9
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            9
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            5,
+            true
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            5,
+            false
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            5
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            3,
+            3,
+            true
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            3
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "not": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            true
+          ],
+          "expected": [
+            false
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            false
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            true
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            true
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            false
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 2,
+      "hidden_total": 2
+    },
+    "and": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            true,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmp7gfop_hh.firth', 'range': {'start': {'line': 3, 'column': 22}, 'end': {'line': 3, 'column': 23}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            true,
+            true
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmp4uirvw3_.firth', 'range': {'start': {'line': 3, 'column': 22}, 'end': {'line': 3, 'column': 23}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            true
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmp9f6a0s5x.firth', 'range': {'start': {'line': 3, 'column': 22}, 'end': {'line': 3, 'column': 23}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmpkqn09_di.firth', 'range': {'start': {'line': 3, 'column': 22}, 'end': {'line': 3, 'column': 23}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            true,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'q'}, 'location': {'path': 'tmp3rjw0me1.firth', 'range': {'start': {'line': 3, 'column': 22}, 'end': {'line': 3, 'column': 23}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "xor": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            true,
+            false
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'p'}, 'location': {'path': 'tmp4bk2cq6e.firth', 'range': {'start': {'line': 4, 'column': 9}, 'end': {'line': 4, 'column': 10}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            true,
+            true
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'p'}, 'location': {'path': 'tmpvfu7iyhf.firth', 'range': {'start': {'line': 4, 'column': 9}, 'end': {'line': 4, 'column': 10}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            true
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'p'}, 'location': {'path': 'tmpd6p4eodz.firth', 'range': {'start': {'line': 4, 'column': 9}, 'end': {'line': 4, 'column': 10}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'p'}, 'location': {'path': 'tmphye1ze74.firth', 'range': {'start': {'line': 4, 'column': 9}, 'end': {'line': 4, 'column': 10}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            true,
+            false
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'p'}, 'location': {'path': 'tmpokwghsxk.firth', 'range': {'start': {'line': 4, 'column': 9}, 'end': {'line': 4, 'column': 10}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "majority": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            true,
+            false,
+            true
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'r'}, 'location': {'path': 'tmpboesxdqn.firth', 'range': {'start': {'line': 5, 'column': 12}, 'end': {'line': 5, 'column': 13}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            false,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'r'}, 'location': {'path': 'tmpsb5a9ksq.firth', 'range': {'start': {'line': 5, 'column': 12}, 'end': {'line': 5, 'column': 13}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            true,
+            true,
+            false
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'r'}, 'location': {'path': 'tmp9zi21ruo.firth', 'range': {'start': {'line': 5, 'column': 12}, 'end': {'line': 5, 'column': 13}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            true,
+            false
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'r'}, 'location': {'path': 'tmp2uo63yll.firth', 'range': {'start': {'line': 5, 'column': 12}, 'end': {'line': 5, 'column': 13}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            true,
+            true,
+            true
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'r'}, 'location': {'path': 'tmp2wnmm9yc.firth', 'range': {'start': {'line': 5, 'column': 12}, 'end': {'line': 5, 'column': 13}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            false,
+            true
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'r'}, 'location': {'path': 'tmp4tgzp4td.firth', 'range': {'start': {'line': 5, 'column': 12}, 'end': {'line': 5, 'column': 13}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            true,
+            true
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.elaboration.unsupported-capture', 'severity': 'error', 'message_key': 'diagnostic.unsupported_capture', 'message_params': {'name': 'r'}, 'location': {'path': 'tmp3olyptgx.firth', 'range': {'start': {'line': 5, 'column': 12}, 'end': {'line': 5, 'column': 13}}}, 'cause': {'kind': 'elaboration', 'data': {}}, 'expected_stack': None, 'actual_stack': None, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "count-true": {
+      "needs": [
+        "add"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            true,
+            false,
+            true
+          ],
+          "expected": [
+            2
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_input_mismatch', 'message_params': {}, 'location': {'path': 'tmp0b1ypace.firth', 'range': {'start': {'line': 5, 'column': 5}, 'end': {'line': 5, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 19))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 10 (Firth.Elaborator.StackEffect.AUsage.mvar 11)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 9 (Firth.Elaborator.StackEffect.AUsage.mvar 10)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 12 (Firth.Elaborator.StackEffect.AUsage.mvar 13)))\\\\n      (Firth.Elaborator.StackEffect.AType.mvar 16 (Firth.Elaborator.StackEffect.AUsage.mvar 18)))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elab",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            false,
+            false
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_input_mismatch', 'message_params': {}, 'location': {'path': 'tmp7oafyet6.firth', 'range': {'start': {'line': 5, 'column': 5}, 'end': {'line': 5, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 19))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 10 (Firth.Elaborator.StackEffect.AUsage.mvar 11)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 9 (Firth.Elaborator.StackEffect.AUsage.mvar 10)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 12 (Firth.Elaborator.StackEffect.AUsage.mvar 13)))\\\\n      (Firth.Elaborator.StackEffect.AType.mvar 16 (Firth.Elaborator.StackEffect.AUsage.mvar 18)))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elab",
+          "pass": false
+        },
+        {
+          "input": [
+            true,
+            true,
+            true
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_input_mismatch', 'message_params': {}, 'location': {'path': 'tmpfs3x8y22.firth', 'range': {'start': {'line': 5, 'column': 5}, 'end': {'line': 5, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 19))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 10 (Firth.Elaborator.StackEffect.AUsage.mvar 11)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 9 (Firth.Elaborator.StackEffect.AUsage.mvar 10)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 12 (Firth.Elaborator.StackEffect.AUsage.mvar 13)))\\\\n      (Firth.Elaborator.StackEffect.AType.mvar 16 (Firth.Elaborator.StackEffect.AUsage.mvar 18)))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elab",
+          "pass": false
+        },
+        {
+          "input": [
+            false,
+            true,
+            false
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_input_mismatch', 'message_params': {}, 'location': {'path': 'tmp9s_3mz1r.firth', 'range': {'start': {'line': 5, 'column': 5}, 'end': {'line': 5, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 19))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 10 (Firth.Elaborator.StackEffect.AUsage.mvar 11)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 9 (Firth.Elaborator.StackEffect.AUsage.mvar 10)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 12 (Firth.Elaborator.StackEffect.AUsage.mvar 13)))\\\\n      (Firth.Elaborator.StackEffect.AType.mvar 16 (Firth.Elaborator.StackEffect.AUsage.mvar 18)))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elab",
+          "pass": false
+        },
+        {
+          "input": [
+            true,
+            true,
+            false
+          ],
+          "expected": [
+            2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.quotation-input-mismatch', 'severity': 'error', 'message_key': 'diagnostic.quotation_input_mismatch', 'message_params': {}, 'location': {'path': 'tmpw6bcwfmh.firth', 'range': {'start': {'line': 5, 'column': 5}, 'end': {'line': 5, 'column': 6}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 19))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 10 (Firth.Elaborator.StackEffect.AUsage.mvar 11)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 9 (Firth.Elaborator.StackEffect.AUsage.mvar 10)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 12 (Firth.Elaborator.StackEffect.AUsage.mvar 13)))\\\\n      (Firth.Elaborator.StackEffect.AType.mvar 16 (Firth.Elaborator.StackEffect.AUsage.mvar 18)))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elab",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "max": {
+      "needs": [
+        "cmp"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            3,
+            8
+          ],
+          "expected": [
+            8
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmpglgzmgas.firth', 'range': {'start': {'line': 3, 'column': 35}, 'end': {'line': 3, 'column': 37}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 5))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 4 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 3 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 5))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 7))\\\\n      (F",
+          "pass": false
+        },
+        {
+          "input": [
+            8,
+            3
+          ],
+          "expected": [
+            8
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmp0xegd1dh.firth', 'range': {'start': {'line': 3, 'column': 35}, 'end': {'line': 3, 'column': 37}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 5))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 4 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 3 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 5))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 7))\\\\n      (F",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmpq3nw3s76.firth', 'range': {'start': {'line': 3, 'column': 35}, 'end': {'line': 3, 'column': 37}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 5))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 4 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 3 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 5))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 7))\\\\n      (F",
+          "pass": false
+        },
+        {
+          "input": [
+            5,
+            5
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmpbmlnxurk.firth', 'range': {'start': {'line': 3, 'column': 35}, 'end': {'line': 3, 'column': 37}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 5))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 4 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 3 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 5))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 7))\\\\n      (F",
+          "pass": false
+        },
+        {
+          "input": [
+            100,
+            99
+          ],
+          "expected": [
+            100
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmp5482i5ql.firth', 'range': {'start': {'line': 3, 'column': 35}, 'end': {'line': 3, 'column': 37}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 5))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 4 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 3 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 5))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 7))\\\\n      (F",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            7
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmp6bg38aal.firth', 'range': {'start': {'line': 3, 'column': 35}, 'end': {'line': 3, 'column': 37}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 5))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 4 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 3 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 5))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 7))\\\\n      (F",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "min3": {
+      "needs": [
+        "cmp"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            4,
+            2,
+            9
+          ],
+          "expected": [
+            2
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmp7euzhyle.firth', 'range': {'start': {'line': 3, 'column': 45}, 'end': {'line': 3, 'column': 47}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 6))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 5 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 4 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 3 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborat",
+          "pass": false
+        },
+        {
+          "input": [
+            1,
+            2,
+            3
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmp8a2kqta1.firth', 'range': {'start': {'line': 3, 'column': 45}, 'end': {'line': 3, 'column': 47}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 6))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 5 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 4 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 3 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborat",
+          "pass": false
+        },
+        {
+          "input": [
+            3,
+            2,
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmpft2vcb8x.firth', 'range': {'start': {'line': 3, 'column': 45}, 'end': {'line': 3, 'column': 47}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 6))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 5 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 4 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 3 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborat",
+          "pass": false
+        },
+        {
+          "input": [
+            2,
+            3,
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmpppyho5nz.firth', 'range': {'start': {'line': 3, 'column': 45}, 'end': {'line': 3, 'column': 47}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 6))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 5 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 4 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 3 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborat",
+          "pass": false
+        },
+        {
+          "input": [
+            5,
+            5,
+            5
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmp1bogb646.firth', 'range': {'start': {'line': 3, 'column': 45}, 'end': {'line': 3, 'column': 47}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 6))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 5 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 4 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 3 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborat",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            9,
+            9
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmpejhrzp59.firth', 'range': {'start': {'line': 3, 'column': 45}, 'end': {'line': 3, 'column': 47}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n            (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.snoc\\\\n          (Firth.Elaborator.StackEffect.AStack.snoc\\\\n            (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 6))\\\\n            (Firth.Elaborator.StackEffect.AType.mvar 5 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n          (Firth.Elaborator.StackEffect.AType.mvar 4 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n        (Firth.Elaborator.StackEffect.AType.mvar 3 (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborat",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "abs-diff": {
+      "needs": [
+        "cmp",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            3,
+            10
+          ],
+          "expected": [
+            7
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpkqphky6o.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 54}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            10,
+            3
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpr3ip5r9e.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 54}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmp6h__r1_0.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 54}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            7,
+            7
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmp2dny0smz.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 54}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            1000
+          ],
+          "expected": [
+            1000
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmp32szd40z.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 54}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "clamp": {
+      "needs": [
+        "cmp"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            15,
+            0,
+            10
+          ],
+          "expected": [
+            10
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpvmx1fcfx.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 67}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            5,
+            0,
+            10
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpu3rdddv6.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 67}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            3,
+            10
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmp812jlfzj.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 67}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            10,
+            10,
+            10
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmprsz_awbm.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 67}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            11,
+            2,
+            11
+          ],
+          "expected": [
+            11
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpsuvogi0s.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 67}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            99,
+            5,
+            7
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpsn_ib26q.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 67}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "is-even": {
+      "needs": [
+        "cmp",
+        "loop",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            6
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmp92hg19z8.firth', 'range': {'start': {'line': 3, 'column': 22}, 'end': {'line': 3, 'column': 24}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 0))\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 0))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 1))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 1))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.empty)\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborato",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmpo23f__r3.firth', 'range': {'start': {'line': 3, 'column': 22}, 'end': {'line': 3, 'column': 24}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 0))\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 0))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 1))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 1))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.empty)\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborato",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmpmprv9_1b.firth', 'range': {'start': {'line': 3, 'column': 22}, 'end': {'line': 3, 'column': 24}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 0))\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 0))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 1))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 1))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.empty)\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborato",
+          "pass": false
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmpmv8w96du.firth', 'range': {'start': {'line': 3, 'column': 22}, 'end': {'line': 3, 'column': 24}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 0))\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 0))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 1))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 1))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.empty)\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborato",
+          "pass": false
+        },
+        {
+          "input": [
+            40
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmpquvfikka.firth', 'range': {'start': {'line': 3, 'column': 22}, 'end': {'line': 3, 'column': 24}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 0))\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 0))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 1))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 1))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.empty)\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborato",
+          "pass": false
+        },
+        {
+          "input": [
+            41
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.expected-bool', 'severity': 'error', 'message_key': 'diagnostic.expected_bool', 'message_params': {}, 'location': {'path': 'tmpmsgqxyw1.firth', 'range': {'start': {'line': 3, 'column': 22}, 'end': {'line': 3, 'column': 24}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AType.quotation\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 0))\\\\n      (Firth.Elaborator.StackEffect.AStack.snoc\\\\n        (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 0))\\\\n        (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n      (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.quotation\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 1))\\\\n    (Firth.Elaborator.StackEffect.AStack.snoc\\\\n      (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.mvar 1))\\\\n      (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n    (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.empty)\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Bool\\\" (Firth.Elaborato",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "sum-to": {
+      "needs": [
+        "cmp",
+        "loop",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            4
+          ],
+          "expected": [
+            10
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpix9ayitp.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmp3ykuw9b_.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpt2egpep8.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            55
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmp690wbnis.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            30
+          ],
+          "expected": [
+            465
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpgvr5zk_z.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "factorial": {
+      "needs": [
+        "cmp",
+        "loop",
+        "mul",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            4
+          ],
+          "expected": [
+            24
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpg41xaky4.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmp0dfxj9r4.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmp_1ozbph4.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            5
+          ],
+          "expected": [
+            120
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpcm5alvkp.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            5040
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmp70vbc4p0.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "fib": {
+      "needs": [
+        "cmp",
+        "loop",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            6
+          ],
+          "expected": [
+            8
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmp72xwkb8r.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmp3k8frhqw.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmp84e7lem5.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            2
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmp2gcxwl2q.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            55
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmp3qt981v8.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            20
+          ],
+          "expected": [
+            6765
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpml2d_dvg.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "gcd": {
+      "needs": [
+        "cmp",
+        "loop",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            12,
+            18
+          ],
+          "expected": [
+            6
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            30
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            7,
+            5
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            12
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            9,
+            3
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            12
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            1,
+            1
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            2
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            48,
+            36
+          ],
+          "expected": [
+            12
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            84
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            17,
+            51
+          ],
+          "expected": [
+            17
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            68
+          ],
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "power": {
+      "needs": [
+        "cmp",
+        "loop",
+        "mul",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            3,
+            4
+          ],
+          "expected": [
+            81
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            3
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            2,
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            2
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            3
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            2,
+            10
+          ],
+          "expected": [
+            1024
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            2
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            5,
+            3
+          ],
+          "expected": [
+            125
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            5
+          ],
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 1,
+      "hidden_total": 5
+    },
+    "collatz-steps": {
+      "needs": [
+        "cmp",
+        "loop",
+        "mul",
+        "sub"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            6
+          ],
+          "expected": [
+            8
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpnnnnyml1.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpumbyf8w_.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            2
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpz7g5b689.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            3
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpchc98707.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            16
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmpvp4_qn20.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        },
+        {
+          "input": [
+            12
+          ],
+          "expected": [
+            9
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "{\"error\": \"application elaborate: status 'failure', expected 'success': [{'schema_version': '1.0', 'payload_kind': 'diagnostic', 'payload_id': 'application.elaborate', 'request_id': 'application', 'body': {'code': 'firth.type.declared-effect-mismatch', 'severity': 'error', 'message_key': 'diagnostic.declared_effect_mismatch', 'message_params': {}, 'location': {'path': 'tmp5phx5wnp.firth', 'range': {'start': {'line': 2, 'column': 3}, 'end': {'line': 2, 'column': 43}}}, 'cause': {'kind': 'type-checking', 'data': {'state': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.snoc\\\\n    (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n    (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many)))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}}}, 'expected_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\")'}}, 'actual_stack': {'encoding': 'opaque', 'value': {'lean_repr': 'Firth.Elaborator.StackEffect.AStack.snoc\\\\n  (Firth.Elaborator.StackEffect.AStack.row (Firth.Elaborator.StackEffect.Row.rigid \\\"\\u03c1\\\"))\\\\n  (Firth.Elaborator.StackEffect.AType.base \\\"Int\\\" (Firth.Elaborator.StackEffect.AUsage.many))'}}, 'obligations': [], 'proposed_fixes': []}}]\", \"status\": \"error\"}",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    }
+  },
+  "label": "firth haiku r1"
+}

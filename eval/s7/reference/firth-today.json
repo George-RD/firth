@@ -1,0 +1,13 @@
+{
+  "triple": ": main\n  (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many)\n  dup dup prim + prim +;\n",
+  "sum3": ": main\n  (forall \u03c1; \u03c1 a:Int^many b:Int^many c:Int^many -- \u03c1 r:Int^many)\n  prim + prim +;\n",
+  "times10": ": main\n  (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many)\n  dup prim + dup dup prim + dup prim + prim +;\n",
+  "affine": ": main\n  (forall \u03c1; \u03c1 x:Int^many -- \u03c1 r:Int^many)\n  dup prim + dup prim + 7 prim +;\n",
+  "pair-sum": ": main\n  (forall \u03c1; \u03c1 a:Int^many b:Int^many -- \u03c1 b2:Int^many s:Int^many)\n  locals { a b } { b a b prim + };\n",
+  "select": ": main\n  (forall \u03c1; \u03c1 a:Int^many b:Int^many flag:Bool^many -- \u03c1 r:Int^many)\n  [ drop ] [ swap drop ] if;\n",
+  "not": ": main\n  (forall \u03c1; \u03c1 p:Bool^many -- \u03c1 r:Bool^many)\n  [ false ] [ true ] if;\n",
+  "and": ": main\n  (forall \u03c1; \u03c1 p:Bool^many q:Bool^many -- \u03c1 r:Bool^many)\n  [ ] [ drop false ] if;\n",
+  "xor": ": main\n  (forall \u03c1; \u03c1 p:Bool^many q:Bool^many -- \u03c1 r:Bool^many)\n  [ [ false ] [ true ] if ] [ ] if;\n",
+  "majority": ": main\n  (forall \u03c1; \u03c1 p:Bool^many q:Bool^many r:Bool^many -- \u03c1 m:Bool^many)\n  \\ majority is (p or r) when q holds, else (p and r)\n  swap [ or2 ] [ and2 ] if;\n\n: and2\n  (forall \u03c1; \u03c1 p:Bool^many q:Bool^many -- \u03c1 r:Bool^many)\n  [ ] [ drop false ] if;\n\n: or2\n  (forall \u03c1; \u03c1 p:Bool^many q:Bool^many -- \u03c1 r:Bool^many)\n  [ drop true ] [ ] if;\n",
+  "count-true": ": main\n  (forall \u03c1; \u03c1 p:Bool^many q:Bool^many r:Bool^many -- \u03c1 n:Int^many)\n  b2i swap b2i prim + swap b2i prim +;\n\n: b2i\n  (forall \u03c1; \u03c1 p:Bool^many -- \u03c1 n:Int^many)\n  [ 1 ] [ 0 ] if;\n"
+}
