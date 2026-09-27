@@ -109,8 +109,12 @@ sequence.
 | `w` | `CALL_WORD name(w)` | Resolves and runs the current definition of `w`. |
 | `prim π` | `PRIM id(π)` | Applies deterministic `delta_pi` from `Gamma`, threading hidden `WorldState` linearly. |
 
-The pure primitives of the default registry act on kernel naturals, carried as
-non-negative target integers (a negative operand is a `primitive-fault`):
+The default registry is target Gamma version 2 (adapter `gamma_version` "0.2").
+Version 1 (adapter "0.1") had `addNat` as its only pure primitive; adding one
+bumps both versions, so an image or request tagged with an older registry is
+refused rather than run under a different one. The pure primitives of the
+default registry act on kernel naturals, carried as non-negative target
+integers (a negative operand is a `primitive-fault`):
 
 | Source | Target | Effect |
 | --- | --- | --- |

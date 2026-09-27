@@ -1,5 +1,5 @@
 pub const FORMAT_VERSION: u16 = 1;
-pub const GAMMA_VERSION: u64 = 1;
+pub const GAMMA_VERSION: u64 = 2;
 
 /// The ownership class assigned by the kernel type system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

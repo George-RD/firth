@@ -62,10 +62,10 @@ MANIFEST = ROOT / "tools" / "loop" / "mvp_agent_manifest.toml"
 HASH = re.compile(r"^[0-9a-f]{64}$")
 
 LANGUAGE_VERSION = "0.1"
-GAMMA_VERSION = "0.1"
+GAMMA_VERSION = "0.2"
 TARGET_VERSION = "0.1"
 IMAGE_FORMAT_VERSION = 1
-TARGET_GAMMA_VERSION = 1
+TARGET_GAMMA_VERSION = 2
 # The VM adapter refuses a larger budget (`firth_vm::MAX_FUEL`), so every
 # caller of this module shares one bound.
 MAX_FUEL = 4096

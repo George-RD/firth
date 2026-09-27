@@ -52,10 +52,10 @@ import mvp_agent_gate as gate
 ROOT = Path(__file__).resolve().parents[2]
 SPECIFICATION = ROOT / "examples" / "s5" / "protocol-handler.spec.toml"
 
-GAMMA_VERSION = "0.1"
+GAMMA_VERSION = "0.2"
 LANGUAGE_VERSION = "0.1"
 TARGET_VERSION = "0.1"
-TARGET_GAMMA_VERSION = 1
+TARGET_GAMMA_VERSION = 2
 
 BUILD_TIMEOUT_SECONDS = 900
 ADAPTER_TIMEOUT_SECONDS = 60

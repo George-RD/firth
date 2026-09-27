@@ -48,7 +48,7 @@ def contract_tables() -> dict[str, object]:
     }
     return {
         "gamma": {
-            "version": "0.1",
+            "version": "0.2",
             "primitives": ["+", "-", "*", "<", "=", "send"],
             "primitive": {name: {"effect": "declared"} for name in ["+", "-", "*", "<", "=", "send"]},
         },
@@ -292,7 +292,7 @@ class MvpAgentGateTests(unittest.TestCase):
         entry_points = tables["entry_point"]
         cases: list[tuple[str, dict[str, object], str]] = [
             ("language_version", {"language_version": "0.2"}, "language_version"),
-            ("gamma.version", {"gamma": {**tables["gamma"], "version": "0.2"}}, "gamma.version"),
+            ("gamma.version", {"gamma": {**tables["gamma"], "version": "0.1"}}, "gamma.version"),
             ("gamma.primitives", {"gamma": {**tables["gamma"], "primitives": ["send"]}}, "gamma.primitives"),
             ("gamma.primitives", {"gamma": {**tables["gamma"], "primitives": ["+", "send"]}},
              "gamma.primitives"),
