@@ -1,0 +1,38 @@
+{
+  "schema": "firth.tests.v1",
+  "source": "choose-increment.firth",
+  "cases": [
+    {
+      "name": "increment when true",
+      "entry": "main",
+      "stack": [
+        41,
+        true
+      ],
+      "expected_stack": [
+        42
+      ]
+    },
+    {
+      "name": "keep value when false",
+      "entry": "main",
+      "stack": [
+        41,
+        false
+      ],
+      "expected_stack": [
+        41
+      ]
+    },
+    {
+      "name": "call helper directly",
+      "entry": "increment",
+      "stack": [
+        9
+      ],
+      "expected_stack": [
+        10
+      ]
+    }
+  ]
+}

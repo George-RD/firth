@@ -7,6 +7,7 @@ agent authorship. The original authored corpus remains separately pinned.
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -86,6 +87,8 @@ def main() -> int:
             [sys.executable, "tools/loop/firth_run.py", "check", source],
             [sys.executable, "tools/loop/firth_run.py", "run", source,
              "--entry", "main", "--stack", "[41, true]"],
+            [sys.executable, "tools/loop/firth_run.py", "test",
+             "examples/mvp/choose-increment.tests.json"],
         ):
             output = gate.run(command, cwd=gate.ROOT, stdin=None, timeout=120)
             result = json.loads(output)
@@ -93,10 +96,41 @@ def main() -> int:
                 gate.fail("documented command did not succeed")
             if result["command"] == "run" and result["stack"] != [42]:
                 gate.fail("documented run command did not return 42")
+            if result["command"] == "test" and (result["passed"], result["failed"]) != (3, 0):
+                gate.fail("documented test command did not pass all three cases")
+
+        # A real failing suite must exit nonzero, retain both failure reasons,
+        # and still run its final passing case. No mocked execution adapters.
+        with tempfile.TemporaryDirectory(prefix="firth-cli-test-failures-") as directory:
+            workspace = Path(directory)
+            (workspace / "cases.firth").write_text(
+                ": one ( -- n:Int ) 1;\n: loop ( -- ) loop;\n", encoding="utf-8")
+            suite = {"schema": "firth.tests.v1", "source": "cases.firth", "cases": [
+                {"name": "Boolean is not integer", "entry": "one", "stack": [], "expected_stack": [True]},
+                {"name": "fuel is not a pass", "entry": "loop", "stack": [], "expected_stack": []},
+                {"name": "continue after failures", "entry": "one", "stack": [], "expected_stack": [1]},
+            ]}
+            path = workspace / "cases.tests.json"
+            path.write_text(json.dumps(suite), encoding="utf-8")
+            process = subprocess.run(
+                [sys.executable, str(gate.ROOT / "tools/loop/firth_run.py"),
+                 "test", str(path), "--fuel", "16"],
+                cwd=workspace, text=True, capture_output=True, timeout=120, check=False)
+            if process.returncode != 1:
+                gate.fail(f"failing suite returned {process.returncode}, expected 1")
+            report = json.loads(process.stdout)
+            if report.get("status") != "failure" or (report["passed"], report["failed"]) != (1, 2):
+                gate.fail("failing suite did not preserve its result counts")
+            if "typed stack" not in report["cases"][0].get("error", ""):
+                gate.fail("Boolean/integer mismatch did not fail through the CLI")
+            if "fuel-exhausted" not in report["cases"][1].get("error", ""):
+                gate.fail("exhausted execution did not fail through the CLI")
+            if report["cases"][2]["status"] != "passed":
+                gate.fail("the suite skipped its final case after failures")
         print(json.dumps({"status": "ok", "successful_cases": results,
-                          "refused_cases": 7, "documented_cli_commands": 2}, sort_keys=True))
+                          "refused_cases": 7, "documented_cli_commands": 3, "saved_suite_cases": 6}, sort_keys=True))
         return 0
-    except (gate.GateError, OSError, UnicodeError, json.JSONDecodeError) as error:
+    except (gate.GateError, OSError, UnicodeError, json.JSONDecodeError, subprocess.SubprocessError) as error:
         print(json.dumps({"status": "error", "error": str(error)}), file=sys.stderr)
         return 1
 

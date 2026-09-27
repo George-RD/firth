@@ -1,6 +1,6 @@
 ---
 node: firth.governance.loop
-status: open
+status: done
 created: 2026-09-08
 ---
 
@@ -40,8 +40,15 @@ Criteria 1 to 3 are discharged on the candidate branch and recorded in
   the candidate tree with the pinned toolchains and passes, with no failing or
   missing pinned gates and `loop_exhausted_valid` correctly false.
 
-Criterion 4 is open by construction: rerunning acceptance on merged main names
-a commit that does not exist until the merge. **This todo stays `open`.** Its
-`Requires` are now all `done`, so `select_unit.py` may surface it; the session
-that selects it must not mark it done without the merged-main record, and a
-green branch is not that record.
+## Landed acceptance, 14 September 2026
+
+Criterion 4 is now met by the post-merge push run on main commit
+`c6b1a19c5a94eacf13d2b9679b2bbbf1eba33ff7`. GitHub Actions run
+`34702764110` completed successfully on 12 September 2026; its exact source
+snapshot, language diagnostics and governance diagnostics were retrieved and
+checked on 14 September. This records that already-completed rerun, not a
+claim that this chat ran Lean or Rust locally.
+
+See `meta/changes/pr109-baseline-acceptance/landed-main.md` for commit-bound
+results and retained coverage output. Candidate verification above remains a
+separate claim. M1/M2 and the wider active profile remain incomplete.
