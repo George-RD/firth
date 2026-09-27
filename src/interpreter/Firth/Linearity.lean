@@ -361,6 +361,22 @@ inductive PrimitiveStackContract : Prim → AStack → AStack → Prop where
       PrimitiveStackContract "addNat"
         (.literal rightTag (.nat right) :: .literal leftTag (.nat left) :: rest)
         (.literal outputTag (.nat (left + right)) :: rest)
+  | subNat {rightTag leftTag outputTag : Tag} {right left : Nat} {rest : AStack} :
+      PrimitiveStackContract "subNat"
+        (.literal rightTag (.nat right) :: .literal leftTag (.nat left) :: rest)
+        (.literal outputTag (.nat (left - right)) :: rest)
+  | mulNat {rightTag leftTag outputTag : Tag} {right left : Nat} {rest : AStack} :
+      PrimitiveStackContract "mulNat"
+        (.literal rightTag (.nat right) :: .literal leftTag (.nat left) :: rest)
+        (.literal outputTag (.nat (left * right)) :: rest)
+  | ltNat {rightTag leftTag outputTag : Tag} {right left : Nat} {rest : AStack} :
+      PrimitiveStackContract "ltNat"
+        (.literal rightTag (.nat right) :: .literal leftTag (.nat left) :: rest)
+        (.literal outputTag (.bool (decide (left < right))) :: rest)
+  | eqNat {rightTag leftTag outputTag : Tag} {right left : Nat} {rest : AStack} :
+      PrimitiveStackContract "eqNat"
+        (.literal rightTag (.nat right) :: .literal leftTag (.nat left) :: rest)
+        (.literal outputTag (.bool (decide (left = right))) :: rest)
   | makeWorld {tag : Tag} {rest : AStack} :
       PrimitiveStackContract "makeWorld" rest (.world tag 0 :: rest)
   | consumeWorld {tag : Tag} {payload : Nat} {rest : AStack} :

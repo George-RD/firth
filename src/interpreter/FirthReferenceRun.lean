@@ -114,7 +114,9 @@ private def marker (context : String) (values : List (String × Json)) : Except 
 private def adapterGamma : Gamma :=
   { defaultGamma with
     primitive := fun primitive =>
-      if primitive == "+" then defaultGamma.primitive "addNat" else none }
+      match kernelPrimitive primitive with
+      | some kernel => defaultGamma.primitive kernel
+      | none => none }
 
 private def decodeDictionary (value : Json) : Except String (Dictionary × List Program) := do
   let entries ← fields "dictionary" value

@@ -1,0 +1,10 @@
+\ Factorial with an accumulator. `fact-acc` recurses in tail position.
+: fact
+  (forall ρ; ρ n:Int^many -- ρ r:Int^many)
+  1 swap fact-acc;
+
+: fact-acc
+  (forall ρ; ρ acc:Int^many n:Int^many -- ρ r:Int^many)
+  dup 0 prim =
+  [ drop ]
+  [ dup 1 prim - [ prim * ] dip fact-acc ] if;

@@ -200,16 +200,23 @@ python3 tools/loop/firth_run.py run examples/mvp/double.firth \
 The default fuel budget is 4096 steps, which is also the largest budget the VM
 adapter accepts: `--fuel` accepts an integer from 0 to 4096. Recursive
 definitions are permitted, but exhausting the bound does not prove divergence
-and is never accepted as a successful run; recursion deeper than 256
-administrative frames traps with `resource-fault` on the VM alone, which is
-reported as a mismatch rather than agreement. The VM and
+and is never accepted as a successful run. A call in last position (a word
+call, `call` or `if` as the final instruction of a word or quotation body) is a
+tail call: it reuses the current frame, so loops written as tail recursion run
+until fuel rather than hitting a depth limit. Non-tail recursion deeper than
+256 administrative frames traps with `resource-fault` on the VM alone, which is
+reported as a mismatch rather than agreement. Quotations that own linear
+captures keep their own frame. See `examples/programs/` for loops, factorial,
+Fibonacci and an allocator that run on both hosts. The VM and
 reference interpreter report cost differently: VM word entry and capture
 restoration carry administrative target charges, so reference cost is compared
 with `kernel_cost`, not the larger `vm_cost`. Capture restoration still consumes
 VM fuel; a zero kernel charge does not make a VM instruction free to execute.
 
-Addition must stay within `0..9223372036854775807` for portable execution.
-Overflow fails instead of wrapping. The reference interpreter's natural
+Arithmetic works on naturals. `prim -` truncates at 0 (`3 5 prim -` is `0`).
+`prim +` and `prim *` must stay within `0..9223372036854775807` for portable
+execution; overflow fails instead of wrapping. `prim <` and `prim =` take two
+integers and push a Boolean for `if`. The reference interpreter's natural
 numbers are unbounded; the finite VM's refusal is not evidence of agreement.
 
 The comparison gate validates every returned scalar before comparing stacks.
@@ -224,7 +231,7 @@ execution-trace equivalence.
 | --- | --- |
 | External inputs and final results | Non-negative integers through `9223372036854775807`, and Booleans |
 | Source type name for integers | `Int`; the executable literal representation is currently non-negative |
-| Primitive operations | `prim +` |
+| Primitive operations | `prim +`, `prim -` (truncates at 0), `prim *` : `Int Int -- Int`; `prim <`, `prim =` : `Int Int -- Bool` |
 | Definitions | Explicit stack effects, multiple words, qualified vocabulary names, recursion with finite fuel |
 | Composition | Core stack operations, quotations, `call`, `if`, named locals; matching checked effects are required |
 | Quotations as external inputs/results | Explicitly rejected; returned bodies and captures do not yet have a shared comparison format |

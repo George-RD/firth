@@ -106,6 +106,9 @@ BUILD_TIMEOUT_SECONDS = 900
 ADAPTER_TIMEOUT_SECONDS = 60
 
 LEAN_ADAPTERS = ("firthElaborate", "firthCompile", "firthReferenceRun")
+# The primitives the portable elaborator, compiler and VM all execute
+# (`surfacePrimitives` in src/interpreter/Firth/Interpreter.lean).
+PORTABLE_PRIMITIVES = ("+", "-", "*", "<", "=")
 VM_BINARY = ROOT / "src" / "runtime" / "vm" / "target" / "debug" / "firth-vm"
 LEAN_BIN = ROOT / ".lake" / "build" / "bin"
 
@@ -185,8 +188,12 @@ def verify_contract(data: dict[str, Any]) -> None:
     if gamma.get("version") != GAMMA_VERSION:
         fail(f"gamma.version: expected {GAMMA_VERSION}")
     primitives = gamma.get("primitives")
-    if not isinstance(primitives, list) or "+" not in primitives:
-        fail("gamma.primitives: the executable profile must declare +")
+    if not isinstance(primitives, list) or not set(PORTABLE_PRIMITIVES) <= set(primitives):
+        fail("gamma.primitives: the executable profile must declare "
+             + " ".join(PORTABLE_PRIMITIVES))
+    tables = gamma.get("primitive")
+    if not isinstance(tables, dict) or not set(primitives) <= set(tables):
+        fail("gamma.primitive: every declared primitive needs an effect table")
     entry_points = data.get("entry_point")
     if not isinstance(entry_points, dict):
         fail("entry_point: expected a table")
