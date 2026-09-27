@@ -40,6 +40,14 @@ value is captured when the quotation is built). `locals.firth` has factorial,
 Fibonacci and an allocation step written this way. A `locals` block nested
 inside a quotation still cannot use the outer block's names.
 
+A local can't be used after `call`, `dip` or `if` runs a quotation whose stack
+effect isn't known at that point: a quotation passed in as a value, one
+returned by another quotation, or `[ call ]` itself. The checker can't tell
+where the local sits afterwards, so it refuses the program with
+`firth.elaboration.untracked-local` rather than guess. Quotations written
+inline, like `[ 1 prim + ] call` or `[ 1 prim + ] [ ] compose call`, are fine
+(`quotations.firth`). The programs under `refused/` must be rejected this way.
+
 ## Limits
 
 - `allocate.firth` is one step of `specs/inventory-allocation.md`. The whole

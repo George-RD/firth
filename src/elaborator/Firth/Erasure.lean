@@ -35,6 +35,9 @@ inductive ErasureError where
   | usageMismatch (name : String) (span : Span)
   | unsupportedLiteral (span : Span)
   | unsupportedAtom (name : String) (span : Span)
+  /-- A local is used after `call`, `dip` or `if` ran a quotation whose stack
+  effect is not known here, so where the local sits can't be determined. -/
+  | untrackedStack (name : String) (span : Span)
   deriving Repr, BEq
 
 structure LintWarning where
@@ -69,6 +72,9 @@ structure StackEntry where
 structure State where
   stack : List StackEntry
   nextId : Nat := 0
+  /-- Set once a quotation of unknown stack effect has run: from then on the
+  tracked stack may not match the real one, so no local may be located. -/
+  untracked : Bool := false
   deriving Repr, BEq
 
 private def located (span : Span) (atom : Atom) : LocatedKernel := { span, atom }
@@ -179,6 +185,20 @@ private def ifStack : List StackEntry → List StackEntry
       | some effect => applyEffect effect rest
       | none => falseBranch :: trueBranch :: condition :: rest
   | stack => stack
+
+/-- Whether the effect of what `call`, `dip` or `if` runs is known. -/
+private def callKnown : List StackEntry → Bool
+  | quotation :: _ => quotation.effect.isSome
+  | [] => false
+
+private def ifKnown : List StackEntry → Bool
+  | falseBranch :: trueBranch :: _ :: _ =>
+      (branchEffect trueBranch.effect falseBranch.effect).isSome
+  | _ => false
+
+/-- The effect a quotation body records, unless running it lost track of the stack. -/
+private def bodyEffect (seedCount : Nat) (final : State) : Option (Nat × Nat) :=
+  if final.untracked then none else some (seedCount, final.stack.length)
 
 private def composeEffect : Option (Nat × Nat) → Option (Nat × Nat) → Option (Nat × Nat)
   | some (i₁, o₁), some (i₂, o₂) => some (i₁ + (i₂ - o₁), o₂ + (o₁ - i₂))
@@ -591,16 +611,19 @@ inductive ErasesAtomTo : String → Span → State → KernelProgram → State �
         { state with stack := { usage := a.usage, effect := some (0, 1) } :: rest }
   | dip {span : Span} {state : State} :
       ErasesAtomTo "dip" span state (atomList .dip span)
-        { state with stack := dipStack state.stack }
+        { state with stack := dipStack state.stack
+                     untracked := state.untracked || !callKnown state.stack }
   | call {span : Span} {state : State} :
       ErasesAtomTo "call" span state (atomList .call span)
-        { state with stack := callStack state.stack }
+        { state with stack := callStack state.stack
+                     untracked := state.untracked || !callKnown state.stack }
   | compose {span : Span} {state : State} :
       ErasesAtomTo "compose" span state (atomList .compose span)
         { state with stack := composeStack state.stack }
   | ifThenElse {span : Span} {state : State} :
       ErasesAtomTo "if" span state (atomList .ifThenElse span)
-        { state with stack := ifStack state.stack }
+        { state with stack := ifStack state.stack
+                     untracked := state.untracked || !ifKnown state.stack }
 
 private def NonWord : Item → Prop
   | .word _ _ => False
@@ -648,7 +671,7 @@ inductive ErasureRel (env : EffectEnv) :
       (bodyRun : ErasureRel env (.items body visible)
         { stack := List.replicate seedCount { usage := .many } } program bodyFinal) :
       ErasureRel env (.item (.quotation body span) visible) state [locatedQuotation span program]
-        { state with stack := { usage := .many, effect := some (seedCount, bodyFinal.stack.length) } ::
+        { state with stack := { usage := .many, effect := bodyEffect seedCount bodyFinal } ::
           state.stack }
   | locals {names : List LocatedName} {body : List Item} {span : Span}
       {state entered final : State} {visible : List String} {slots : List Slot}
@@ -661,6 +684,7 @@ inductive ErasureRel (env : EffectEnv) :
       ErasureRel env (.item (.locals names body span) visible) state program final
   | localDone {state cleaned : State} {slots : List Slot} {visible : List String}
       {program : KernelProgram}
+      (tracked : (!state.untracked || !state.stack.any (cleanupCandidate slots)) = true)
       (cleanup : CleansLocals slots state program cleaned) :
       ErasureRel env (.localBody [] slots visible) state program
         { cleaned with stack := restoreParents slots cleaned.stack }
@@ -668,6 +692,7 @@ inductive ErasureRel (env : EffectEnv) :
       {slots : List Slot} {visible : List String} {slot : Slot}
       {head tail : KernelProgram}
       (active : (slots.any (fun declared => declared.name == name) || visible.contains name) = true)
+      (tracked : state.untracked = false)
       (resolved : ResolvesSlot name state.stack slot)
       (linearOnce : slot.usage = .linear → 1 + demandCount name rest = 1)
       (expanded : ExpandsDemand slot name span (1 + demandCount name rest)
@@ -936,11 +961,13 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
           | _ => .error (.effectUnderflow name span)
         | "dip" => .ok {
             program := atomList .dip span
-            final := { state with stack := dipStack state.stack }
+            final := { state with stack := dipStack state.stack
+                                  untracked := state.untracked || !callKnown state.stack }
             evidence := .atom .dip }
         | "call" => .ok {
             program := atomList .call span
-            final := { state with stack := callStack state.stack }
+            final := { state with stack := callStack state.stack
+                                  untracked := state.untracked || !callKnown state.stack }
             evidence := .atom .call }
         | "compose" => .ok {
             program := atomList .compose span
@@ -948,7 +975,8 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
             evidence := .atom .compose }
         | "if" => .ok {
             program := atomList .ifThenElse span
-            final := { state with stack := ifStack state.stack }
+            final := { state with stack := ifStack state.stack
+                                  untracked := state.untracked || !ifKnown state.stack }
             evidence := .atom .ifThenElse }
         | _ => .error (.unsupportedAtom name span)
       | .quotation body quotationSpan => match closedEq : captureIn visible body with
@@ -961,7 +989,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
           | .ok bodyRun => .ok {
               program := [locatedQuotation quotationSpan bodyRun.program]
               final := { state with stack :=
-                { usage := .many, effect := some (bodyRun.seedCount, bodyRun.final.stack.length) } ::
+                { usage := .many, effect := bodyEffect bodyRun.seedCount bodyRun.final } ::
                   state.stack }
               evidence := .quotation closedEq bodyRun.evidence }
       | .locals names body _ => match uniqueEq : duplicateName names with
@@ -980,15 +1008,24 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                 evidence := .locals uniqueEq binding.evidence bodyRun.evidence }
 
     | .localBody items slots visible => match items with
-      | [] => match cleanupWithProof slots state with
-        | .error error => .error error
-        | .ok cleaned => .ok {
-            program := cleaned.program
-            final := { cleaned.final with stack := restoreParents slots cleaned.final.stack }
-            evidence := .localDone cleaned.evidence }
+      | [] =>
+        if trackedEq : (!state.untracked || !state.stack.any (cleanupCandidate slots)) = true then
+          match cleanupWithProof slots state with
+          | .error error => .error error
+          | .ok cleaned => .ok {
+              program := cleaned.program
+              final := { cleaned.final with stack := restoreParents slots cleaned.final.stack }
+              evidence := .localDone trackedEq cleaned.evidence }
+        else
+          let unused := (slots.find? (fun slot => state.stack.any (fun entry =>
+            cleanupCandidate slots entry && (entry.slot.map (·.id) == some slot.id)))).getD
+              (slots.head?.getD { id := 0, name := "local", usage := .many, origin := emptySpan })
+          .error (.untrackedStack unused.name unused.origin)
       | item :: rest => match item with
         | .word name localSpan =>
           if activeEq : slots.any (fun slot => slot.name == name) || visible.contains name then
+            if untrackedEq : state.untracked = true then .error (.untrackedStack name localSpan) else
+            have trackedEq : state.untracked = false := by simpa using untrackedEq
             let count := 1 + demandCount name rest
             match resolveSlotWithProof name localSpan state.stack with
             | .error error => .error error
@@ -1009,7 +1046,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                       program := copyProgram localSpan position copies ++ focus ++ tail.program
                       final := tail.final
                       evidence := by
-                        exact .select activeEq selected.evidence linearOnce
+                        exact .select activeEq trackedEq selected.evidence linearOnce
                           (.expand (demandCopies_correct selected.slot name count state) depthEq
                             (focusAtoms_correct _ _ _ focusEq)
                             (demandState_correct selected.slot state focused copies))

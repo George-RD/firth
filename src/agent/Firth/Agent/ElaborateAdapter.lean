@@ -87,36 +87,70 @@ def decodeRequest (value : Json) : Except String Request := do
 
 private def rowTail : AStack := .row (.rigid "ρ")
 
-private def intMany : AType := .base "Int" .many
+private def surfaceUsage : Firth.Interpreter.Usage → AUsage
+  | .many => .many
+  | .linear => .linear
+
+private def surfaceBase : Firth.Interpreter.BaseType → String
+  | .nat => "Int"
+  | .bool => "Bool"
+  | .unit => "Unit"
+  | .world => "World"
+
+mutual
+  /-- A kernel stack type in surface terms; the kernel's `nat` is the
+  surface `Int`. -/
+  private partial def surfaceStack : Firth.Interpreter.StackType → AStack
+    | .row name => .row (.rigid name)
+    | .snoc rest value => .snoc (surfaceStack rest) (surfaceValue value)
+
+  private partial def surfaceValue : Firth.Interpreter.ValueType → AType
+    | .base type usage => .base (surfaceBase type) (surfaceUsage usage)
+    | .quotation input output usage =>
+        .quotation (surfaceStack input) (surfaceStack output) (surfaceUsage usage)
+end
+
+private def erasureUsage : Firth.Interpreter.Usage → Usage
+  | .many => .many
+  | .linear => .linear
+
+private def stackUsages : Firth.Interpreter.StackType → List Usage
+  | .row _ => []
+  | .snoc rest (.base _ usage) | .snoc rest (.quotation _ _ usage) =>
+      stackUsages rest ++ [erasureUsage usage]
+
+/-- The kernel primitive a surface primitive names, as `defaultGamma` defines
+it. `surfacePrimitives` is the one table all hosts read. -/
+private def kernelSpec (name : String) : Option Firth.Interpreter.PrimitiveSpec :=
+  (Firth.Interpreter.kernelPrimitive name).bind Firth.Interpreter.defaultGamma.primitive
 
 /-- The manifest's `[gamma.primitive]` table, as the elaborator's erasure
 signature. Only the ownership classes matter at erasure time. -/
 def gammaErasure : EffectEnv :=
   { primitive := fun name =>
-      if (Firth.Interpreter.kernelPrimitive name).isSome then
-        some { input := [.many, .many], output := [.many] }
-      else if name == "send" then some { input := [.linear, .linear, .linear], output := [.linear] }
-      else none }
+      match kernelSpec name with
+      | some spec => some { input := stackUsages spec.input, output := stackUsages spec.output }
+      | none =>
+        if name == "send" then some { input := [.linear, .linear, .linear], output := [.linear] }
+        else none }
 
-/-- The same table as a typing scheme. `+` is row polymorphic over two `Int`s;
-`send` threads one linear `World` past a `Handle` and a `Bytes`. -/
+/-- The same table as a typing scheme, read from `defaultGamma` for every
+surface primitive. `send` threads one linear `World` past a `Handle` and a
+`Bytes`. -/
 def gammaTyping : Env :=
   { literal := defaultLiteralType
     primitive := fun name =>
-      if name == "+" || name == "-" || name == "*" then
-        some { rowVariables := ["ρ"]
-               input := .snoc (.snoc rowTail intMany) intMany
-               output := .snoc rowTail intMany }
-      else if name == "<" || name == "=" then
-        some { rowVariables := ["ρ"]
-               input := .snoc (.snoc rowTail intMany) intMany
-               output := .snoc rowTail (.base "Bool" .many) }
-      else if name == "send" then
-        some { rowVariables := ["ρ"]
-               input := .snoc (.snoc (.snoc rowTail (.base "World" .linear))
-                 (.base "Handle" .linear)) (.base "Bytes" .linear)
-               output := .snoc rowTail (.base "World" .linear) }
-      else none }
+      match kernelSpec name with
+      | some spec => some { rowVariables := ["ρ"]
+                            input := surfaceStack spec.input
+                            output := surfaceStack spec.output }
+      | none =>
+        if name == "send" then
+          some { rowVariables := ["ρ"]
+                 input := .snoc (.snoc (.snoc rowTail (.base "World" .linear))
+                   (.base "Handle" .linear)) (.base "Bytes" .linear)
+                 output := .snoc rowTail (.base "World" .linear) }
+        else none }
 
 private def quote (value : String) : String := (Json.str value).compress
 

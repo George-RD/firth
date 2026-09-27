@@ -1,0 +1,9 @@
+\ Locals used after running a quotation whose stack effect is known where it
+\ runs. `b` must still be found under the result: z stays below, r = (a+1) - b.
+: call-then-local
+  (forall ρ; ρ z:Int^many a:Int^many b:Int^many -- ρ z:Int^many r:Int^many)
+  locals { a b } { a [ 1 prim + ] call b prim - };
+
+: compose-then-local
+  (forall ρ; ρ z:Int^many a:Int^many b:Int^many -- ρ z:Int^many r:Int^many)
+  locals { a b } { a [ 1 prim + ] [ ] compose call b prim - };
