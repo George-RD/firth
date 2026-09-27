@@ -230,7 +230,7 @@ def main() -> int:
     rep = sub.add_parser("report"); rep.add_argument("results", type=Path, nargs="+")
     a = cli.parse_args()
     if a.cmd == "prompt":
-        print(prompt(select(a.tier), a.lang))
+        print(prompt(select(a.tier), a.lang).rstrip("\n"))
     elif a.cmd == "extract":
         print(json.dumps(extract(a.answer.read_text()), indent=2))
     elif a.cmd == "score":
@@ -239,7 +239,7 @@ def main() -> int:
         print(json.dumps(res, indent=2))
     elif a.cmd == "repair":
         print(repair(json.loads(a.solutions.read_text()), json.loads(a.results.read_text()),
-                     a.lang, select(a.tier)))
+                     a.lang, select(a.tier)).rstrip("\n"))
     elif a.cmd == "report":
         print(report(a.results))
     return 0

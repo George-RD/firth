@@ -142,4 +142,3 @@ Return how many Collatz steps it takes n (n >= 1) to reach 1: halve even numbers
 Arguments, in order: n: Int.
 Return: r: Int.
 Example: main(6) returns 8.
-

@@ -834,4 +834,3 @@ Return how many Collatz steps it takes n (n >= 1) to reach 1: halve even numbers
 Inputs on the stack, bottom to top: n: Int.
 Outputs left on the stack, bottom to top: r: Int.
 Example: stack [6] becomes [8].
-
