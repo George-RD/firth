@@ -44,6 +44,7 @@ EXPECTED_REFUSALS = {
 # but states a fact about sum-acc only.
 EXPECTED_COVERAGE = {
     "Firth.ProofTests.Accepted.narrow": [("Programs.SumTo", "sum-acc")],
+    "Firth.ProofTests.Accepted.int64Diff": [("Programs.Signed", "diff")],
 }
 
 
