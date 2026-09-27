@@ -12,8 +12,8 @@ Prove a program's kernel cost bound as a function of its input size, from the
 stated cost semantics, instead of fitting it from measurements. PRD R10: "All
 timing or memory claims shall be derivable from the stated cost semantics,
 not from measurement alone." The first consumer is the inventory allocator's
-bound, currently `417 + 767n + 264n(n−1)/2` kernel steps, fitted by
-`examples/inventory/measure_cost.py`.
+bound, currently fitted by `examples/inventory/measure_cost.py` and stated in
+`examples/inventory/run_cases.py` (`cost_bound`).
 
 ## Acceptance criteria
 
@@ -26,9 +26,9 @@ bound, currently `417 + 767n + 264n(n−1)/2` kernel steps, fitted by
 - The bound in `examples/inventory/run_cases.py` and the README is the proved
   f(n). `measure_cost.py` stays as a check that the measured costs are within
   it.
-- The same two gaps as `language-06b` are stated: VM agreement, including the
-  VM's own cost accounting, rests on differential testing, and the proof
-  carries the i64 side condition.
+- The same gaps as `language-06b` are stated: agreement of the compiler's
+  lowering and the VM, including the VM's own cost accounting, rests on
+  differential testing, and the Python host is tested, not proved.
 
 ## Traceability
 

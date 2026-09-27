@@ -39,13 +39,20 @@ route PRD G4 names for what SMT cannot do: Lean proofs.
 - The toolchain reports the property as `contract_verified`, distinct from
   `type_checked` and `unsupported`.
 
+The VM's integers are i64 and trap on overflow; Lean's are unbounded. So
+the proofs must also show, not assume, that every intermediate value stays in
+i64 for every input within the host's bounds, and the result states that
+bound.
+
 Two gaps remain and must be stated wherever the result is claimed:
 
-- The proofs are about the reference interpreter. That the VM computes the
-  same result rests on differential testing (S2), not on a lowering proof.
-- The VM's integers are i64 and trap on overflow; Lean's are unbounded. Each
-  proof carries the side condition that every intermediate value stays in
-  i64 under the host's bounds.
+- The proofs are about the reference interpreter. That the compiler's
+  lowering and the VM compute the same result rests on differential testing
+  (S2), not on a proof.
+- The host is Python and is tested, not proved: JSON decoding and encoding,
+  and the four-Int ID encoding the spec requires to give distinct IDs
+  distinct encodings. The properties about IDs (order preserved, repeated IDs
+  rejected) rely on it.
 
 ## Acceptance criteria
 
@@ -61,15 +68,16 @@ Two gaps remain and must be stated wherever the result is claimed:
 - The allocator's required properties are proved this way: non-negative
   remaining stock and allocations, no request over its quantity,
   conservation, IDs and order preserved, earlier eligible requests first, and
-  each allocation following the chosen policy, together with termination.
+  each allocation following the chosen policy, together with termination and
+  the i64 range of every intermediate value.
 - A deliberately wrong property, and a proof whose covered word has changed,
   are both rejected.
 
 ## Non-goals
 
 Extending the SMT profile with sequences, sums or quantifiers is not part of
-this task and is not planned (decided 27 September 2026); it can be
-revisited. Proving the VM equal to the reference interpreter is not part of
+this task and is not planned (proposed 27 September 2026, pending George's
+decision); it can be revisited. Proving the VM equal to the reference interpreter is not part of
 it either.
 
 ## Traceability
