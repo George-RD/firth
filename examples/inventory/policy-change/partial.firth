@@ -1,0 +1,6 @@
+\ A client of allocator.firth that reserves stock under the partial policy.
+\ It takes the host's decoded stock, IDs and quantities and supplies the
+\ policy itself (false is partial).
+: reserve
+  (forall ρ; ρ available:Int^many ids:Seq Int^many qs:Seq Int^many -- ρ code:Int^many remaining:Int^many allocated:Seq Int^many reasons:Seq Int^many)
+  [ [ false ] dip ] dip allocate-batch;
