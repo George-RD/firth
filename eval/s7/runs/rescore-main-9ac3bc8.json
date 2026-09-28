@@ -1,0 +1,178 @@
+{
+  "firth_commit": "9ac3bc8a9ea5f7c69882ab0fbaff11cc01a8ffcf",
+  "note": "Stored Firth solutions from all three runs rescored on main after the locals rework (#118), the 100k step budget (#119) and signed Int (#122), with no new model calls. 'gained' and 'lost' compare with the original scoring; the run directories keep the original scores. 'lost_to_language_change' marks answers that were correct for the language as documented at the time.",
+  "references": {
+    "today": "11/11",
+    "all": "22/22",
+    "hard": "9/9"
+  },
+  "attempts": {
+    "2026-09-27-hard/haiku-firth-1/results-1.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "tasks": 9,
+      "passed_then": 1,
+      "passed_now": 1,
+      "gained": [],
+      "lost": []
+    },
+    "2026-09-27-hard/haiku-firth-1/results-2.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "tasks": 9,
+      "passed_then": 1,
+      "passed_now": 1,
+      "gained": [],
+      "lost": []
+    },
+    "2026-09-27-hard/haiku-firth-2/results-1.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "tasks": 9,
+      "passed_then": 0,
+      "passed_now": 0,
+      "gained": [],
+      "lost": []
+    },
+    "2026-09-27-hard/haiku-firth-2/results-2.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "tasks": 9,
+      "passed_then": 2,
+      "passed_now": 2,
+      "gained": [],
+      "lost": []
+    },
+    "2026-09-27-hard/haiku-firth-3/results-1.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "tasks": 9,
+      "passed_then": 4,
+      "passed_now": 4,
+      "gained": [],
+      "lost": []
+    },
+    "2026-09-27-hard/haiku-firth-3/results-2.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "tasks": 9,
+      "passed_then": 3,
+      "passed_now": 3,
+      "gained": [],
+      "lost": []
+    },
+    "2026-09-27-hard/sonnet-firth-1/results-1.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "tasks": 9,
+      "passed_then": 9,
+      "passed_now": 9,
+      "gained": [],
+      "lost": []
+    },
+    "2026-09-27-hard/sonnet-firth-2/results-1.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "tasks": 9,
+      "passed_then": 9,
+      "passed_now": 9,
+      "gained": [],
+      "lost": []
+    },
+    "2026-09-27-hard/sonnet-firth-2/results-2.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "tasks": 9,
+      "passed_then": 9,
+      "passed_now": 9,
+      "gained": [],
+      "lost": []
+    },
+    "2026-09-27-hard/sonnet-firth-3/results-1.json": {
+      "scored_at": "ecd724dbd2ba9acfdb43b2e23ad70903b7e5057a",
+      "tasks": 9,
+      "passed_then": 8,
+      "passed_now": 9,
+      "gained": [
+        "lcm"
+      ],
+      "lost": []
+    },
+    "2026-09-27-plus-only/haiku-firth/results-1.json": {
+      "scored_at": "c6b1a19c5a94eacf13d2b9679b2bbbf1eba33ff7",
+      "tasks": 22,
+      "passed_then": 7,
+      "passed_now": 8,
+      "gained": [
+        "count-true"
+      ],
+      "lost": []
+    },
+    "2026-09-27-plus-only/haiku-firth/results-2.json": {
+      "scored_at": "c6b1a19c5a94eacf13d2b9679b2bbbf1eba33ff7",
+      "tasks": 11,
+      "passed_then": 10,
+      "passed_now": 10,
+      "gained": [],
+      "lost": []
+    },
+    "2026-09-27-plus-only/sonnet-firth/results-1.json": {
+      "scored_at": "c6b1a19c5a94eacf13d2b9679b2bbbf1eba33ff7",
+      "tasks": 22,
+      "passed_then": 11,
+      "passed_now": 15,
+      "gained": [
+        "factorial",
+        "min3",
+        "power",
+        "sum-to"
+      ],
+      "lost": []
+    },
+    "2026-09-27-pr113/haiku-firth/results-1.json": {
+      "scored_at": "42f00a7f0b56c094a2f888771c9cdf680b11af4e",
+      "tasks": 22,
+      "passed_then": 5,
+      "passed_now": 11,
+      "gained": [
+        "abs-diff",
+        "clamp",
+        "count-true",
+        "majority",
+        "max",
+        "min3"
+      ],
+      "lost": []
+    },
+    "2026-09-27-pr113/haiku-firth/results-2.json": {
+      "scored_at": "42f00a7f0b56c094a2f888771c9cdf680b11af4e",
+      "tasks": 22,
+      "passed_then": 11,
+      "passed_now": 11,
+      "gained": [],
+      "lost": []
+    },
+    "2026-09-27-pr113/sonnet-firth/results-1.json": {
+      "scored_at": "42f00a7f0b56c094a2f888771c9cdf680b11af4e",
+      "tasks": 22,
+      "passed_then": 20,
+      "passed_now": 21,
+      "gained": [
+        "collatz-steps",
+        "majority"
+      ],
+      "lost": [
+        "abs-diff"
+      ],
+      "lost_to_language_change": {
+        "abs-diff": "relied on subtraction stopping at zero, which the run 2 prompt documented; Int is signed since #122"
+      }
+    },
+    "2026-09-27-pr113/sonnet-firth/results-2.json": {
+      "scored_at": "42f00a7f0b56c094a2f888771c9cdf680b11af4e",
+      "tasks": 22,
+      "passed_then": 21,
+      "passed_now": 21,
+      "gained": [
+        "collatz-steps"
+      ],
+      "lost": [
+        "abs-diff"
+      ],
+      "lost_to_language_change": {
+        "abs-diff": "relied on subtraction stopping at zero, which the run 2 prompt documented; Int is signed since #122"
+      }
+    }
+  }
+}

@@ -57,7 +57,8 @@ the `answer-*.md` next to it. In all 18 author sessions the only files read
 were the prompt and repair files, and the only files written were the
 answers. This is an instruction plus an audit, not a sandbox.
 
-Each `results-*.json` records `firth_commit` (the build it was scored on) and
+Each `results-*.json` records `firth_commit` (the build it was scored on,
+ending in `-dirty` if files outside `eval/` had uncommitted changes) and
 `prompt_docs` (the documents the author's prompt was built from). Failure
 messages are kept in compact form: the VM trap class, and the checker's code,
 message, expected and actual stacks and hint.
@@ -192,39 +193,62 @@ Results are in `runs/2026-09-27-hard/`.
   values") sent it to strip out locals and break two other tasks. A misleading
   hint costs more than no hint.
 
-## Rescore after the locals rework left PR #113
+## Rescores on later builds
 
-The locals fixes that run 3 was scored on were taken out of PR #113 at
-`b958353`, after review found silent miscompiles in them. They will return
-as a separate PR. Every stored Firth answer from runs 2 and 3 was rescored at
-`b958353` with no new model calls. The results are in
-`runs/rescore-pr113-b958353.json`.
+Stored answers are rescored when the language changes, with no new model
+calls. The tables above keep the original scores; the rescore files list
+every attempt's passes then and now.
 
-- **Run 2 is unchanged.** All four attempts pass exactly the same tasks, so
-  its numbers stand on #113 as it will merge.
-- **Run 3 depends on the locals PR.** At `b958353`, Sonnet passes 3 of its
-  27 tasks and Haiku passes none. Every task that stopped passing is now
-  rejected by the checker (`unsupported-capture` for locals used inside `if`
-  branches, `unbound-local` for reusing the top local). None of them run and
-  give a wrong answer. These are counted as blocked on the locals PR, not as
-  model failures. The nine reference solutions are blocked the same way.
-- Run 3's table therefore holds only for a build with working locals. The
-  locals miscompile may have let a wrong answer pass at `ecd724d`, and that
-  can't be checked until the locals PR lands. Run 3 gets rescored then.
+**PR #113 without the locals rework (`b958353`).** The locals fixes run 3
+was scored on were taken out of #113 after review found silent miscompiles
+in them. Run 2 was unchanged. Run 3 fell to 3 of Sonnet's 27 tasks and none
+of Haiku's, all rejected by the checker for their use of locals and none
+giving a wrong answer, so they were counted as blocked, not as model
+failures. See `runs/rescore-pr113-b958353.json`.
+
+**Main with the locals rework, a larger step budget and signed Int
+(`9ac3bc8`: PRs #118, #119 and #122).** All 42 reference solutions pass. No
+stored answer that passed before now fails except one `abs-diff`, explained
+below, so the earlier locals miscompile had not let any wrong answer through.
+See `runs/rescore-main-9ac3bc8.json`.
+
+| Firth, passed | First try, originally | First try, now | After repair, originally | After repair, now |
+|---|---|---|---|---|
+| Run 2, Sonnet 5, 22 tasks | 20 | 21 | 21 | 21 |
+| Run 2, Haiku 4.5, 22 tasks | 5 | 11 | 11 | 11 |
+| Run 3, Sonnet 5, 27 tasks | 26 | 27 | 26 | 27 |
+| Run 3, Haiku 4.5, 27 tasks | 5 | 5 | 6 | 6 |
+
+- Sonnet's run 2 `abs-diff` computed (a − b) + (b − a). That was correct
+  when the run 2 prompt said subtraction stops at zero, and it returns 0 now
+  that `Int` is signed. This is a language change, not a model error; the
+  reference used the same trick and was rewritten in #122.
+- Sonnet's run 2 `collatz-steps` and run 3 `lcm` now fit in the step budget,
+  which went from 4096 to 100,000 steps. Its run 2 `majority` no longer hits
+  the top-local bug. Apart from run 2's `abs-diff`, Sonnet now passes every task.
+- Haiku's run 2 first try gains six tasks that used locals inside quotations.
+  Its repaired answers still pass 11, but a different 11: the repair round
+  had steered it away from locals and it broke other tasks doing so. Its
+  run 3 failures are unchanged, because they were not locals problems.
+- Run 1 was scored with only `prim +`. On main, four of the answers Sonnet
+  flagged as impossible now pass (`factorial`, `min3`, `power`, `sum-to`),
+  because the primitives it guessed (`prim -`, `prim *`, `prim <`,
+  `prim =`) are the ones that were added. The Haiku `count-true` answer the
+  checker rejected in run 1 also passes now.
 
 ## What the three runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from
-the docs alone. Sonnet was at Python's level on every task set except for one step-budget
-failure, and its only
-failures were checker bugs and the step budget. They did not carry a weaker
+the docs alone. On main, Sonnet matches Python on every task set except
+for one run 2 `abs-diff` answer that the signed-Int change invalidated; its
+other failures when first scored were checker bugs and a step budget that
+have since been fixed. They did not carry a weaker
 model: Haiku wrote correct Python every time and mostly failed in Firth, in
 ways the checker caught but Haiku could not repair. The checker found most
 stack-shape errors before execution. Wrong answers at runtime were logic slips
 that a signature cannot catch. So the bet holds for strong models and not yet
 for weak ones, and the costs are real: Sonnet spent 20 to 100 times longer per
-Firth attempt than per Python attempt. The run 3 half of that evidence waits
-on the locals PR (see the rescore above).
+Firth attempt than per Python attempt.
 
 ## Limits and next steps
 
@@ -232,7 +256,7 @@ on the locals PR (see the rescore above).
   tasks measure Firth's cost relative to an easy baseline, not a hard one.
 - Runs 1 and 2 used one sample per task, which is noisy: Haiku passed 7 of
   the easy tasks in run 1 and only 5 in run 2. Run 3 used three.
-- The step budget still shapes the task set. Raise it, then add tasks with
-  real loops (count-divisors, larger inputs) back.
+- The step budget is now 100,000 steps (#119), so tasks with real loops
+  (count-divisors, larger inputs) can come back.
 - The repo docs now cover the new primitives (PR #113 `54387bd`), so the
   next run should drop the supplement and use the docs as they are.
