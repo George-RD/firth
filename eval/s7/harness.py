@@ -246,11 +246,13 @@ def same(got, want) -> bool:
     return got == want
 
 
-def task_hashes() -> dict[str, str]:
-    """SHA-256 of each task-set file, so a later edit to a frozen set shows in results."""
+def eval_hashes() -> dict[str, str]:
+    """SHA-256 of the task sets and the scorer as they were when scored.
+    `firth_commit` ignores eval/ (rescores copy it onto other builds), so this is
+    what shows an edit to the frozen tasks or the harness, committed or not."""
     here = Path(__file__).resolve().parent
     return {n: hashlib.sha256((here / n).read_bytes()).hexdigest()
-            for n in ("task.py", "tasks.py", "mvp_tasks.py")}
+            for n in ("task.py", "tasks.py", "mvp_tasks.py", "harness.py")}
 
 
 def firth_commit() -> str:
@@ -391,7 +393,7 @@ def main() -> int:
         print(json.dumps(extract(a.answer.read_text()), indent=2))
     elif a.cmd == "score":
         res = score(load_solutions(a.solutions), a.lang, select(a.tier), a.jobs)
-        res.update(label=a.label, firth_commit=firth_commit(), task_files_sha256=task_hashes(),
+        res.update(label=a.label, firth_commit=firth_commit(), eval_sha256=eval_hashes(),
                    prompt_docs=[d for d in a.prompt_docs.split(",") if d])
         print(json.dumps(res, indent=2))
     elif a.cmd == "repair":

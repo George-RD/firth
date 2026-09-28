@@ -106,9 +106,10 @@ include negative numbers and empty sequences.
   `isolate.py audit` checks each retained transcript for any other tool call.
   A run with a flagged call is void. The audit is tested against planted
   calls.
-- Each results file records a SHA-256 of `task.py`, `tasks.py` and
-  `mvp_tasks.py`, so an edit to the frozen set after a run shows in its
-  results.
+- Each results file records `eval_sha256`, a SHA-256 of `task.py`,
+  `tasks.py`, `mvp_tasks.py` and `harness.py` as scored. `firth_commit`
+  ignores `eval/`, so this is what shows an edit to the frozen set or the
+  scorer, committed or not.
 - Writing the references hit two gaps: no division or remainder, and no way
   to replace one element of a sequence. They are recorded in
   `meta/todos/todo.language-14-authoring-gaps.md`. Boolean `and`, `or` and

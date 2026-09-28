@@ -156,9 +156,16 @@ def firth_references() -> None:
           "MVP tasks run past the default step budget")
 
 
+def hashes_recorded() -> None:
+    h = harness.eval_hashes()
+    check(set(h) == {"task.py", "tasks.py", "mvp_tasks.py", "harness.py"}
+          and all(len(v) == 64 for v in h.values()), "results can record the eval sources' SHA-256")
+
+
 def main() -> int:
     hand_values()
     scorer_rejects_wrong_python()
+    hashes_recorded()
     if "--no-firth" not in sys.argv:
         firth_references()
     print(f"\n{len(failures)} failure(s)")
