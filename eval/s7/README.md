@@ -99,8 +99,9 @@ include negative numbers and empty sequences.
   the harness runs outside, over a socket in the workspace, so `mvp_tasks.py`,
   `reference/mvp/` and the git history stay out of reach.
   Python programs run the author's code, so `./try` runs them inside the
-  sandbox as well, and scoring (as root) runs Python answers there too; the
-  result records `python_sandboxed`. Firth programs cannot read files.
+  sandbox as well, and scoring runs Python answers there too; the result
+  records `python_sandboxed`. `harness.py score` refuses to score Python
+  answers to MVP tasks when it cannot sandbox them (not root). Firth programs cannot read files.
   `test_isolation.py` (CI, as root) runs a probe that finds them without the
   sandbox and finds nothing inside it, by direct path, `/proc/<pid>/root`,
   `git show`, `umount` or a filesystem search.

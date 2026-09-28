@@ -156,6 +156,23 @@ def firth_references() -> None:
           "MVP tasks run past the default step budget")
 
 
+def unsandboxed_python_refused() -> None:
+    real = harness.os.geteuid
+    try:
+        harness.os.geteuid = lambda: 1000
+        try:
+            harness.require_sandbox("python", [BY_ID["sort"]])
+            refused = False
+        except SystemExit:
+            refused = True
+        check(refused, "a non-root Python score of MVP tasks is refused")
+        harness.require_sandbox("firth", [BY_ID["sort"]])
+        harness.require_sandbox("python", [BY_ID["fib"]])
+        check(True, "Firth, and Python outside the MVP tier, are not refused")
+    finally:
+        harness.os.geteuid = real
+
+
 def hashes_recorded() -> None:
     h = harness.eval_hashes()
     check(set(h) == {"task.py", "tasks.py", "mvp_tasks.py", "harness.py", "isolate.py"}
@@ -166,6 +183,7 @@ def main() -> int:
     hand_values()
     scorer_rejects_wrong_python()
     hashes_recorded()
+    unsandboxed_python_refused()
     if "--no-firth" not in sys.argv:
         firth_references()
     print(f"\n{len(failures)} failure(s)")

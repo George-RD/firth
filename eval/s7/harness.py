@@ -277,6 +277,13 @@ def firth_commit() -> str:
     return head + ("-dirty" if st.returncode or st.stdout.strip() else "")
 
 
+def require_sandbox(lang: str, tasks: list[Task]) -> None:
+    """A real Python run of MVP tasks must sandbox the answers, or an answer could
+    read the hidden tests or call the reference. Refuse rather than record it."""
+    if lang == "python" and os.geteuid() != 0 and any(t.id in MVP_IDS for t in tasks):
+        raise SystemExit("scoring Python answers to MVP tasks needs the sandbox; run as root")
+
+
 def score(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int) -> dict:
     """Score every answer. Python answers run in the sandbox when we are root, so
     an answer cannot read the expected results or change the files it is scored
@@ -414,6 +421,7 @@ def main() -> int:
     elif a.cmd == "extract":
         print(json.dumps(extract(a.answer.read_text()), indent=2))
     elif a.cmd == "score":
+        require_sandbox(a.lang, select(a.tier))
         res = score(load_solutions(a.solutions), a.lang, select(a.tier), a.jobs)
         res.update(label=a.label, firth_commit=firth_commit(), eval_sha256=eval_hashes(),
                    prompt_docs=[d for d in a.prompt_docs.split(",") if d])
