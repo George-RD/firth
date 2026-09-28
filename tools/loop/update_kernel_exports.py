@@ -12,7 +12,9 @@ Usage: python3 tools/loop/update_kernel_exports.py [--check]
 
 Run from the repository root after `lake build`. `--check` regenerates in
 memory and exits non-zero if any checked-in file differs, is missing, or is an
-export no manifest entry produces.
+export no manifest entry produces. It also re-exports a copy of one source
+with a planted edit and fails unless that word's exported body changes, so
+the check is shown to see a source change.
 """
 from __future__ import annotations
 
@@ -20,12 +22,18 @@ import json
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 EXPORTS = ROOT / "src" / "exports"
 MANIFEST = EXPORTS / "manifest.json"
 EXPORTER = ROOT / ".lake" / "build" / "bin" / "firthExportLean"
+# The planted edit: `abs` compares with 1 instead of 0.
+PLANT_SOURCE = "examples/programs/signed.firth"
+PLANT_MODULE = "Programs.Signed"
+PLANT_WORD = "abs"
+PLANT_EDIT = ("{ n 0 prim < ", "{ n 1 prim < ")
 MODULE = re.compile(r"^[A-Z][A-Za-z0-9_]*(\.[A-Z][A-Za-z0-9_]*)*$")
 
 
@@ -57,6 +65,30 @@ def export(source: str, module: str) -> str:
     if result.returncode != 0:
         raise SystemExit(f"firthExportLean failed for {source}:\n{result.stderr}")
     return result.stdout
+
+
+def word_block(text: str, word: str) -> str:
+    """The exported definitions of one word: its namespace up to its digest."""
+    match = re.search(rf"namespace «{re.escape(word)}»\n(.*?)\ndef bodyDigest[^\n]*\n",
+                      text, re.S)
+    if match is None:
+        raise SystemExit(f"no exported word {word}")
+    return match.group(0)
+
+
+def planted_edit_detected() -> bool:
+    """Export a copy of PLANT_SOURCE with PLANT_EDIT applied, and report
+    whether PLANT_WORD's body and digest differ from the unedited export."""
+    original = (ROOT / PLANT_SOURCE).read_text(encoding="utf-8")
+    old, new = PLANT_EDIT
+    if original.count(old) != 1:
+        raise SystemExit(f"planted edit {old!r} does not occur once in {PLANT_SOURCE}")
+    with tempfile.TemporaryDirectory() as scratch:
+        planted = Path(scratch) / Path(PLANT_SOURCE).name
+        planted.write_text(original.replace(old, new), encoding="utf-8")
+        edited = export(str(planted), PLANT_MODULE)
+    unedited = export(PLANT_SOURCE, PLANT_MODULE)
+    return word_block(edited, PLANT_WORD) != word_block(unedited, PLANT_WORD)
 
 
 def aggregate(pairs: list[tuple[str, str]]) -> str:
@@ -103,6 +135,10 @@ def main() -> int:
             print(f"kernel export with no manifest entry: {path}", file=sys.stderr)
         if drift or stray:
             print("run `python3 tools/loop/update_kernel_exports.py`", file=sys.stderr)
+            return 1
+        if not planted_edit_detected():
+            print(f"a planted edit to {PLANT_SOURCE} did not change the export of "
+                  f"{PLANT_WORD}", file=sys.stderr)
             return 1
         print(f"kernel exports match their sources ({len(pairs)} modules)")
         return 0

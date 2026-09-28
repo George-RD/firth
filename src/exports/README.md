@@ -26,7 +26,9 @@ lake build
 Two checks bind them:
 
 - CI runs `python3 tools/loop/update_kernel_exports.py --check`, which
-  re-exports every source and fails on any difference or on a stray file.
+  re-exports every source and fails on any difference or on a stray file. It
+  also exports a copy of `signed.firth` with a planted edit and fails unless
+  the export of `abs` changes. `lake build` builds the exporter it runs.
 - `lake exe firthExportsTest` (part of `lake test`) lowers each `body` again
   and fails unless it hashes to `bodyDigest`, and fails unless the source
   still elaborates to the same program.
@@ -39,3 +41,9 @@ The exports state nothing about the programs. They are inputs to proofs.
 The two gaps any such proof inherits: it is about the reference interpreter,
 with VM agreement resting on differential testing, and Lean's `Int` is
 unbounded where the VM traps on i64 overflow.
+
+Each `dictionary` entry carries the reference runner's placeholder type
+`adapterWordType` (`ρ -- ρ`), because the runner reads only bodies. So the
+kernel's typing theorems (preservation, progress) cannot be applied to these
+dictionaries as they stand. The real erased type of each word is recorded as
+the string `erasedType`, which nothing in Lean parses yet.
