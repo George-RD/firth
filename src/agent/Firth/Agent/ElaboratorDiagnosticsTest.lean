@@ -439,15 +439,15 @@ def runElaboratorDiagnosticTests : IO Unit := do
   | .success _ => pure ()
   | .failure envelopes =>
       fail s!"a branch running a row-changing word was refused: {envelopes.map encode}"
-  -- The same through a quotation that calls one, and through `compose`.
+  -- The same through a quotation that calls one, and through `compose`:
+  -- both are accepted outright, as on main.
   for (label, body) in [("nested", "true [ [ w ] call ] [ 1 ] if"),
       ("composed", "true [ w ] [ ] compose [ 1 ] if")] do
     let source := s!": w (forall ρ ρ2; ρ -- ρ2) w ;\n: main (forall ρ; ρ -- ρ r:Int^many) {body} ;"
     match elaboratePipeline pipelineContext source agentConfig with
     | .success _ => pure ()
     | .failure envelopes =>
-        if envelopes.any (fun envelope => (encode envelope).contains "leave different numbers") then
-          fail s!"{label}: a branch running a row-changing word was refused: {envelopes.map encode}"
+        fail s!"{label}: a branch running a row-changing word was refused: {envelopes.map encode}"
 
   -- A name that is not in the stack effect keeps the general hint, which
   -- now also mentions `locals`.
