@@ -43,6 +43,8 @@ HIDDEN = ("/home", "/root", "/tmp", "/var/tmp", "/mnt", "/srv")
 SOCKET = "try.sock"
 INSIDE = "/tmp/work"
 PROTECTED = ("try", "workspace.json")
+DEVICES = ("null", "zero", "full", "random", "urandom", "tty")
+NOBODY = 65534
 
 # `-I` keeps the workspace off the import path, so a file the author writes
 # (a `json.py`, say) cannot take over the client.
@@ -134,13 +136,15 @@ def hidden_paths() -> list[str]:
 
 
 def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = (),
-                    network: bool = True) -> list[str]:
+                    network: bool = True, uid: int | None = None) -> list[str]:
     """The command line that runs COMMAND in the sandbox, with the workspace at
     /tmp/work. `keep` lists files or directories to bind back in read-only (for
     example the author model's credentials), each at its own path. With
     `network=False` the command also gets an empty network namespace: that is how
     submitted programs run, while the author process keeps its network for the
-    model API."""
+    model API. With `uid`, the command runs as that user and group instead of
+    root, so root-only files the mounts do not cover stay unreadable; submitted
+    programs run as `nobody`."""
     if os.geteuid() != 0:
         raise SystemExit("the sandbox needs root (unshare and mount)")
     stage = "/run/s7-stage"
@@ -150,6 +154,17 @@ def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = (),
         kind = "-d" if Path(k).is_dir() else "-f"
         lines += [f"mkdir {stage}/k{i}" if kind == "-d" else f"touch {stage}/k{i}",
                   f"mount --bind {q(k)} {stage}/k{i}"]
+    # A fresh /dev with only the harmless character devices: no disk, loop or
+    # memory device to read the hidden files through, below every path mount.
+    lines.append(f"mkdir {stage}/dev")
+    for d in DEVICES:
+        lines += [f"touch {stage}/dev/{d}", f"mount --bind /dev/{d} {stage}/dev/{d}"]
+    lines.append("mount -t tmpfs -o mode=755 tmpfs /dev")
+    for d in DEVICES:
+        lines += [f"touch /dev/{d}", f"mount --bind {stage}/dev/{d} /dev/{d}"]
+    lines += ["mkdir -p /dev/shm", "mount -t tmpfs -o mode=1777 tmpfs /dev/shm",
+              "ln -sfn /proc/self/fd /dev/fd"]
+    lines += [f"ln -sfn /proc/self/fd/{i} /dev/{n}" for i, n in enumerate(("stdin", "stdout", "stderr"))]
     for p in hidden_paths():
         lines.append(f"[ -d {q(p)} ] && mount -t tmpfs -o mode=755 tmpfs {q(p)}")
     lines += [f"mkdir -p {INSIDE}", f"mount --bind {stage}/work {INSIDE}"]
@@ -162,7 +177,9 @@ def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = (),
                 f"[ -e {q(k)} ] || {{ mkdir -p {q(str(Path(k).parent))} && touch {q(k)}; }}")
         lines += [make, f"mount --bind -o ro {stage}/k{i} {q(k)}"]
     lines += [f"umount -l {stage}", f"cd {INSIDE}",
-              'exec setpriv --bounding-set=-all --inh-caps=-all --no-new-privs -- "$@"']
+              "exec setpriv --bounding-set=-all --inh-caps=-all --no-new-privs"
+              + (f" --reuid={uid} --regid={uid} --clear-groups" if uid is not None else "")
+              + ' -- "$@"']
     return ["unshare", "--mount", "--pid", "--fork", "--mount-proc", "--propagation", "private",
             *([] if network else ["--net"]),
             "bash", "-c", "\n".join(lines), "sandbox", *command]

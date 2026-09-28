@@ -149,24 +149,62 @@ def extract(text: str) -> dict[str, str]:
     return {m.group(1): m.group(2) for m in BLOCK.finditer(text)}
 
 
-def load_solutions(path: Path) -> dict[str, str]:
-    """A solutions JSON file, or a directory of `<task id>.firth` / `<task id>.py` files."""
-    if path.is_dir():
-        return {f.stem: read_regular(f) for f in sorted(path.iterdir()) if f.suffix in (".firth", ".py")}
-    return json.loads(read_regular(path))
+def load_solutions(path: Path, root: Path | None = None) -> dict[str, str]:
+    """A solutions JSON file, or a directory of `<task id>.firth` / `<task id>.py`
+    files. Read as `read_regular` reads: nothing below `root` may be a link."""
+    try:
+        dfd = open_under(path, root, directory=True)
+    except NotADirectoryError:
+        return json.loads(read_regular(path, root))
+    try:
+        return {Path(n).stem: _read_plain(os.open(n, READ, dir_fd=dfd), path / n)
+                for n in sorted(os.listdir(dfd)) if Path(n).suffix in (".firth", ".py")}
+    finally:
+        os.close(dfd)
 
 
-def read_regular(path: Path) -> str:
-    """Read a file an author may have written, refusing anything but a plain file
-    with one link. In the sandbox an author can make a symlink to a path it cannot
-    see (the target need not exist); read on the host, the link would follow to
-    that path, for example a reference solution. So links are never followed,
-    and FIFOs, devices and hard links are refused too."""
-    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+READ = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+
+
+def read_regular(path: Path, root: Path | None = None) -> str:
+    """Read a file an author may have written. In the sandbox an author can make a
+    symlink to a path it cannot see (the target need not exist); read on the host,
+    the link would follow to that path, for example a reference solution. So no
+    component of `path` below `root` (the workspace; by default the parent
+    directory) may be a link, and the file must be a plain file with one link:
+    FIFOs, devices and hard links are refused too."""
+    return _read_plain(open_under(path, root, directory=False), path)
+
+
+def open_under(path: Path, root: Path | None, directory: bool) -> int:
+    """A descriptor for `path`, opened one component at a time from `root` with
+    O_NOFOLLOW, so a link anywhere below `root` is refused rather than followed.
+    `root` itself is trusted; `path` must lie under it, lexically."""
+    root = Path(os.path.normpath(root if root is not None else path.parent))
+    rel = Path(os.path.relpath(os.path.normpath(path), root))
+    if rel.parts[:1] == ("..",):
+        raise ValueError(f"{path} is not under {root}")
+    parts = [x for x in rel.parts if x != "."]
+    if not parts and not directory:
+        raise ValueError(f"{path}: is the root, not a file")
+    fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        for i, part in enumerate(parts):
+            leaf = i == len(parts) - 1 and not directory
+            nfd = os.open(part, READ if leaf else READ | os.O_DIRECTORY, dir_fd=fd)
+            os.close(fd)
+            fd = nfd
+        return fd
+    except BaseException:
+        os.close(fd)
+        raise
+
+
+def _read_plain(fd: int, label: Path) -> str:
     try:
         st = os.fstat(fd)
         if not stat.S_ISREG(st.st_mode) or st.st_nlink != 1:
-            raise ValueError(f"{path}: not a plain file with one link; refusing to read it")
+            raise ValueError(f"{label}: not a plain file with one link; refusing to read it")
         with os.fdopen(fd, encoding="utf-8") as f:
             fd = -1
             return f.read()
@@ -247,14 +285,16 @@ print(json.dumps(out))
 def run_python(source: str, args: tuple, fuel: int | None = None,
                outputs: tuple[str, ...] = (), sandboxed: bool = False) -> dict:
     """Run `main`; `outputs` are the task's output types, which the result must match.
-    With `sandboxed`, the author's code runs with no network and where the hidden
-    tests, the references and the repository cannot be read (isolate.py; needs root)."""
+    With `sandboxed`, the author's code runs as `nobody`, with no network or disk
+    devices, where the hidden tests, the references and the repository cannot be
+    read (isolate.py; needs root)."""
     cmd = [sys.executable, "-c", PY_DRIVER, json.dumps(list(args)), json.dumps(list(outputs))]
     empty = None
     if sandboxed:
         import isolate  # imports this module, so only when needed
         empty = tempfile.mkdtemp(dir="/var/tmp", prefix="s7py-")
-        cmd = isolate.sandbox_command(Path(empty), cmd, network=False)
+        os.chown(empty, isolate.NOBODY, isolate.NOBODY)
+        cmd = isolate.sandbox_command(Path(empty), cmd, network=False, uid=isolate.NOBODY)
     try:
         p = subprocess.run(cmd, input=source, capture_output=True, text=True, timeout=30)
     except subprocess.TimeoutExpired:
@@ -426,6 +466,8 @@ def main() -> int:
     s = sub.add_parser("score"); s.add_argument("--lang", required=True, choices=["firth", "python"])
     s.add_argument("solutions", type=Path); s.add_argument("--tier", default="all")
     s.add_argument("--label"); s.add_argument("--jobs", type=int, default=4)
+    s.add_argument("--workspace", type=Path,
+                   help="the author's workspace, when the answers are in it: no link below it is followed")
     s.add_argument("--prompt-docs", default="",
                    help="the documents the author's prompt was built from, recorded in the result")
     r = sub.add_parser("repair"); r.add_argument("--lang", required=True)
@@ -443,7 +485,7 @@ def main() -> int:
         print(json.dumps(extract(read_regular(a.answer)), indent=2))
     elif a.cmd == "score":
         require_sandbox(a.lang, select(a.tier))
-        res = score(load_solutions(a.solutions), a.lang, select(a.tier), a.jobs)
+        res = score(load_solutions(a.solutions, a.workspace), a.lang, select(a.tier), a.jobs)
         res.update(label=a.label, firth_commit=firth_commit(), eval_sha256=eval_hashes(),
                    prompt_docs=[d for d in a.prompt_docs.split(",") if d])
         print(json.dumps(res, indent=2))

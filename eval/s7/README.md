@@ -119,9 +119,15 @@ include negative numbers and empty sequences.
   the audit flags any write to `try`, its socket or `workspace.json`.
   `test_isolation.py` plants each of these.
 - The host reads what an author wrote (answer files, transcripts) only as
-  plain files with one link, never following a symlink. Otherwise a link made
-  in the sandbox to a reference path, dangling there, would read the reference
-  on the host. A workspace holding such a file is refused.
+  plain files with one link. It opens each path one component at a time from
+  the workspace (`score --workspace DIR`; by default the parent directory) with
+  `O_NOFOLLOW`, so no link is followed, in a directory component or the file
+  itself. Otherwise a link made in the sandbox to a reference path, dangling
+  there, would read the reference on the host. Such a workspace is refused.
+- Submitted programs run as `nobody` with a fresh `/dev` holding only `null`,
+  `zero`, `full`, `random`, `urandom` and `tty`, so no disk device or root-only
+  file is readable below the path mounts. The author process gets the same
+  `/dev`.
 - An author can delete `try.sock`. That only breaks its own `./try`, and the
   audit flags the command.
 - Each results file records `eval_sha256`, a SHA-256 of `task.py`,

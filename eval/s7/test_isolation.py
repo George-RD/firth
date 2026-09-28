@@ -238,6 +238,25 @@ def main() -> int:
                             capture_output=True, text=True, timeout=300)
         check("unknown task" in other.stdout, "try refuses tasks outside the workspace's set")
 
+        # Below the path mounts: a disk device holds every file, hidden ones
+        # included, and root can read root-only files the mounts miss. Codex's
+        # probe counts block devices in /dev and reads a root-only file.
+        (ws / "raw.py").write_text(
+            "import os, stat\ndef main(xs):\n"
+            "    blocks = [n for n in os.listdir('/dev') if stat.S_ISBLK(os.lstat('/dev/' + n).st_mode)]\n"
+            "    try:\n        open('/etc/shadow').read(1)\n        shadow = 1\n"
+            "    except OSError:\n        shadow = 0\n"
+            "    return [len(blocks), shadow]\n")
+        raw = harness.run_python((ws / "raw.py").read_text(), ([],), None, ("Seq Int",))
+        check(raw["ok"] and raw["stack"][0][0] > 0,
+              f"unsandboxed, block devices are visible (the planted case): {raw}")
+        check(raw["ok"] and raw["stack"][0][1] == 1,
+              f"unsandboxed, root reads a root-only file (the planted case): {raw}")
+        rawtry = isolate.run(ws, ["./try", "--task", "reverse", "raw.py"],
+                             capture_output=True, text=True, timeout=300)
+        check("got: [[0, 0]]" in rawtry.stdout,
+              f"through try, no block device and no root-only file: {rawtry.stdout.strip()}")
+
         # The reviewer's probe: inside the sandbox an author links to a reference
         # it cannot see. The link dangles there, but on the host it resolves.
         ref = HERE / "reference/mvp/sort.firth"
@@ -259,6 +278,21 @@ def main() -> int:
         check(refused(lambda: harness.load_solutions(answers)), "loading answers refuses a hard link")
         (ws / "twin").unlink()
         check(harness.load_solutions(answers) == {"sort": "x"}, "a plain answer file still loads")
+
+        # The reviewer's next probes: a link in a directory component. O_NOFOLLOW
+        # alone only covers the last component.
+        isolate.run(ws, ["bash", "-c", f"ln -s {ref.parent} linked && ln -s {ref.parent.parent} sub"],
+                    capture_output=True, text=True, timeout=300)
+        check(len(list((ws / "linked").iterdir())) == 20 and (ws / "sub/mvp/sort.firth").is_file(),
+              "directory links made in the sandbox reach the references on the host (the planted case)")
+        check(refused(lambda: harness.load_solutions(ws / "linked")),
+              "loading answers refuses a directory that is a link")
+        check(refused(lambda: harness.load_solutions(ws / "sub/mvp", ws)),
+              "loading answers refuses a link in a directory component below the workspace")
+        check(refused(lambda: harness.read_regular(ws / "sub/mvp/sort.firth", ws)),
+              "reading a file refuses a link in a directory component below the workspace")
+        check(harness.load_solutions(answers, ws) == {"sort": "x"},
+              "a plain answer directory still loads with the workspace as root")
     audit_checks()
     print(f"\n{len(failures)} failure(s)")
     return 1 if failures else 0
