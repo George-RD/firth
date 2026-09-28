@@ -234,20 +234,51 @@ def main() -> int:
         scored_litter = harness.score({"reverse": litter}, "python", [harness.BY_ID["reverse"]], 1)
         check(scored_litter["tasks"]["reverse"]["pass"],
               "a sandboxed program that writes a file still scores, and its files are removed")
-        # Codex's probe: the client runs as the author (root in the sandbox),
-        # so an allowed `./try` could read a host file and echo it back in a
-        # diagnostic. The planted case shows the file is readable there.
-        shadow = isolate.run(ws, ["bash", "-c", "head -c 5 /etc/shadow"],
+        # The reviewer's probes: the author runs as `nobody` with only an
+        # allowlisted environment. Planted: a root author reads /etc/shadow, and
+        # a sandbox run with the host's environment sees a host secret.
+        os.environ["S7_PLANTED_SECRET"] = "hunter2"
+        head = ["bash", "-c", "head -c 5 /etc/shadow"]
+        as_root = isolate.run(ws, head, uid=0, capture_output=True, text=True, timeout=300)
+        check(as_root.returncode == 0 and as_root.stdout, "a root author reads /etc/shadow (the planted case)")
+        as_author = isolate.run(ws, head, capture_output=True, text=True, timeout=300)
+        check(as_author.returncode != 0 and not as_author.stdout,
+              f"the author cannot read /etc/shadow: {as_author.stderr.strip()}")
+        echo = ["bash", "-c", 'echo "[$S7_PLANTED_SECRET] $(id -u)"']
+        leaky = subprocess.run(isolate.sandbox_command(ws, echo, uid=isolate.NOBODY),
+                               capture_output=True, text=True, timeout=300)
+        check("[hunter2]" in leaky.stdout, "with the host's environment the secret reaches the sandbox (the planted case)")
+        clean = isolate.run(ws, echo, capture_output=True, text=True, timeout=300)
+        check(clean.stdout.strip() == f"[] {isolate.NOBODY}",
+              f"the author sees no host variable and runs as nobody: {clean.stdout.strip()}")
+        passed = isolate.run(ws, echo, passed=("S7_PLANTED_SECRET",), capture_output=True, text=True, timeout=300)
+        check("[hunter2]" in passed.stdout, "a variable named with --pass-env does reach the author")
+        (ws / "env.py").write_text("import os\ndef main(xs):\n    return [len(os.environ.get('S7_PLANTED_SECRET', ''))]\n")
+        envtry = isolate.run(ws, ["./try", "--task", "reverse", "env.py"], capture_output=True, text=True, timeout=300)
+        check("got: [[0]]" in envtry.stdout, f"a submitted program sees no host variable: {envtry.stdout.strip()}")
+        del os.environ["S7_PLANTED_SECRET"]
+        # Credentials come in as a copy the author can read, at their own path,
+        # while the host file stays root-only.
+        cred = Path(tmp) / "cred.json"
+        cred.write_text("token")
+        cred.chmod(0o600)
+        kept = isolate.run(ws, ["cat", str(cred)], keep=(str(cred),), capture_output=True, text=True, timeout=300)
+        check(kept.stdout == "token" and cred.stat().st_uid == 0,
+              f"a kept credential is readable by the author as a copy: {kept.stdout!r} {kept.stderr.strip()}")
+
+        # Codex's probe: an allowed `./try` naming a host file the author can
+        # read would send it on, for a diagnostic to echo back.
+        passwd = isolate.run(ws, ["bash", "-c", "head -c 5 /etc/passwd"],
                              capture_output=True, text=True, timeout=300)
-        check(shadow.returncode == 0 and shadow.stdout,
-              "the author process can read /etc/shadow (the planted case)")
-        outside = isolate.run(ws, ["./try", "--task", "reverse", "/etc/shadow"],
+        check(passwd.returncode == 0 and passwd.stdout,
+              "the author can read /etc/passwd (the planted case)")
+        outside = isolate.run(ws, ["./try", "--task", "reverse", "/etc/passwd"],
                               capture_output=True, text=True, timeout=300)
-        check("not a file in the workspace" in outside.stderr and shadow.stdout not in outside.stdout,
+        check("not a file in the workspace" in outside.stderr and passwd.stdout not in outside.stdout,
               f"try refuses a file outside the workspace: {outside.stderr.strip()}")
-        linked_try = isolate.run(ws, ["bash", "-c", "ln -s /etc/shadow s.py && ./try --task reverse s.py"],
+        linked_try = isolate.run(ws, ["bash", "-c", "ln -s /etc/passwd s.py && ./try --task reverse s.py"],
                                  capture_output=True, text=True, timeout=300)
-        check("not a plain file" in linked_try.stderr and shadow.stdout not in linked_try.stdout,
+        check("not a plain file" in linked_try.stderr and passwd.stdout not in linked_try.stdout,
               f"try refuses a link to a file outside the workspace: {linked_try.stderr.strip()}")
         (ws / "s.py").unlink()
         other = isolate.run(ws, ["./try", "--task", "fib", "reverse.py"],

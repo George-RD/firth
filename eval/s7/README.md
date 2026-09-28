@@ -128,10 +128,14 @@ include negative numbers and empty sequences.
   itself. Without `--workspace`, a path with any link in its directories is
   refused. Otherwise a link made in the sandbox to a reference path, dangling
   there, would read the reference on the host. Such a workspace is refused.
-- Submitted programs run as `nobody` with a fresh `/dev` holding only `null`,
-  `zero`, `full`, `random`, `urandom` and `tty`, so no disk device or root-only
-  file is readable below the path mounts. The author process gets the same
-  `/dev`.
+- The author and the programs it submits run as `nobody`, with a fresh `/dev`
+  holding only `null`, `zero`, `full`, `random`, `urandom` and `tty`, so no
+  disk device or root-only file is readable below the path mounts. The
+  workspace is handed to `nobody`, except `try` and `workspace.json`.
+- Nothing from the host environment reaches the sandbox except `PATH`, and
+  what `isolate.py run --pass-env NAME` names (the model API key). `HOME` is
+  the workspace. Credentials passed with `--keep` come in as read-only copies
+  `nobody` can read.
 - An author can delete `try.sock`. That only breaks its own `./try`, and the
   audit flags the command.
 - Each results file records `eval_sha256`, a SHA-256 of `task.py`,

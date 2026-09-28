@@ -168,17 +168,20 @@ def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = (),
     `network=False` the command also gets an empty network namespace: that is how
     submitted programs run, while the author process keeps its network for the
     model API. With `uid`, the command runs as that user and group instead of
-    root, so root-only files the mounts do not cover stay unreadable; submitted
-    programs run as `nobody`."""
+    root, so root-only files the mounts do not cover stay unreadable; the author
+    and submitted programs both run as `nobody`. Run it with `env=sandbox_env()`:
+    the command sees only that environment."""
     if os.geteuid() != 0:
         raise SystemExit("the sandbox needs root (unshare and mount)")
     stage = "/run/s7-stage"
     lines = ["set -e", f"mkdir -p {stage}", f"mount -t tmpfs tmpfs {stage}",
              f"mkdir {stage}/work", f"mount --bind {q(dir)} {stage}/work"]
+    # Credentials the author needs come in as copies its uid can read, not as
+    # the host's files.
     for i, k in enumerate(keep):
-        kind = "-d" if Path(k).is_dir() else "-f"
-        lines += [f"mkdir {stage}/k{i}" if kind == "-d" else f"touch {stage}/k{i}",
-                  f"mount --bind {q(k)} {stage}/k{i}"]
+        lines.append(f"cp -rL {q(k)} {stage}/k{i}")
+        if uid is not None:
+            lines.append(f"chown -R {uid}:{uid} {stage}/k{i}")
     # A fresh /dev with only the harmless character devices: no disk, loop or
     # memory device to read the hidden files through, below every path mount.
     lines.append(f"mkdir {stage}/dev")
@@ -210,15 +213,41 @@ def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = (),
             "bash", "-c", "\n".join(lines), "sandbox", *command]
 
 
+def sandbox_env(passed: tuple[str, ...] = ()) -> dict[str, str]:
+    """The whole environment a sandboxed command gets: PATH, a UTF-8 locale, HOME
+    at the workspace, and the host variables named in `passed` (the author
+    model's API key, say). Nothing else from the host, so no stray token leaks."""
+    env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "LANG": "C.UTF-8", "HOME": INSIDE}
+    env.update({n: os.environ[n] for n in passed if n in os.environ})
+    return env
+
+
+def hand_over(dir: Path, uid: int) -> None:
+    """Give the workspace to the author's uid, except the files it must not change
+    (they are also mounted read-only). Links are changed, never followed."""
+    for top, dirs, files in os.walk(dir, followlinks=False):
+        os.lchown(top, uid, uid)
+        for n in files + [d for d in dirs if os.path.islink(os.path.join(top, d))]:
+            path = os.path.join(top, n)
+            if top == str(dir) and n in (*PROTECTED, SOCKET):
+                continue
+            os.lchown(path, uid, uid)
+
+
 def q(s: str | Path) -> str:
     return "'" + str(s).replace("'", "'\\''") + "'"
 
 
-def run(dir: Path, command: list[str], keep: tuple[str, ...] = (), **kw) -> subprocess.CompletedProcess:
+def run(dir: Path, command: list[str], keep: tuple[str, ...] = (), passed: tuple[str, ...] = (),
+        uid: int | None = None, **kw) -> subprocess.CompletedProcess:
+    """COMMAND as the author: in the sandbox, as `nobody`, with `sandbox_env(passed)`.
+    `uid` exists only so the isolation test can plant a root author."""
+    uid = NOBODY if uid is None else uid
     stop = threading.Event()
     serve(dir, stop)
+    hand_over(dir, uid)
     try:
-        return subprocess.run(sandbox_command(dir, command, keep), **kw)
+        return subprocess.run(sandbox_command(dir, command, keep, uid=uid), env=sandbox_env(passed), **kw)
     finally:
         stop.set()
 
@@ -283,6 +312,8 @@ def main() -> int:
     au.add_argument("--workspace", type=Path, help="the author's workspace, when the transcript is in it")
     r = sub.add_parser("run"); r.add_argument("dir", type=Path)
     r.add_argument("--keep", action="append", default=[])
+    r.add_argument("--pass-env", action="append", default=[],
+                   help="a host variable the author needs (its API key); nothing else is passed")
     r.add_argument("command", nargs=argparse.REMAINDER)
     a = cli.parse_args()
     if a.cmd == "workspace":
@@ -301,7 +332,7 @@ def main() -> int:
         return 1 if bad else 0
     elif a.cmd == "run":
         cmd = a.command[1:] if a.command[:1] == ["--"] else a.command
-        return run(a.dir.resolve(), cmd, tuple(a.keep)).returncode
+        return run(a.dir.resolve(), cmd, tuple(a.keep), tuple(a.pass_env)).returncode
     return 0
 
 
