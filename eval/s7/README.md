@@ -98,6 +98,9 @@ include negative numbers and empty sequences.
   `/srv` are empty and the workspace is `/tmp/work`. `./try` talks to a server
   the harness runs outside, over a socket in the workspace, so `mvp_tasks.py`,
   `reference/mvp/` and the git history stay out of reach.
+  Python programs run the author's code, so `./try` runs them inside the
+  sandbox as well, and scoring (as root) runs Python answers there too; the
+  result records `python_sandboxed`. Firth programs cannot read files.
   `test_isolation.py` (CI, as root) runs a probe that finds them without the
   sandbox and finds nothing inside it, by direct path, `/proc/<pid>/root`,
   `git show`, `umount` or a filesystem search.
@@ -107,7 +110,7 @@ include negative numbers and empty sequences.
   A run with a flagged call is void. The audit is tested against planted
   calls.
 - Each results file records `eval_sha256`, a SHA-256 of `task.py`,
-  `tasks.py`, `mvp_tasks.py` and `harness.py` as scored. `firth_commit`
+  `tasks.py`, `mvp_tasks.py`, `harness.py` and `isolate.py` as scored. `firth_commit`
   ignores `eval/`, so this is what shows an edit to the frozen set or the
   scorer, committed or not.
 - Writing the references hit two gaps: no division or remainder, and no way

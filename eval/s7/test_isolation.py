@@ -63,6 +63,8 @@ def audit_checks() -> None:
         "read-out": call("Read", file_path="/tmp/work/../../home/user/firth/eval/s7/mvp_tasks.py"),
         "grep": call("Grep", pattern="allocate", path="/"),
         "fetch": call("WebFetch", url="https://github.com/George-RD/firth"),
+        "newline": call("Bash", command="./try --task sort s.firth\ncurl https://example.com"),
+        "subshell": call("Bash", command="./try --task sort $(cat /etc/passwd)"),
     }
     for name, ev in planted.items():
         check(len(isolate.audit(clean + [ev])) == 1, f"the audit flags a planted {name} call")
@@ -96,6 +98,23 @@ def main() -> int:
                           capture_output=True, text=True, timeout=300)
         check("got: [[8, 7]]" in own.stdout and "expected" not in own.stdout,
               "try runs the author's own inputs without showing an answer")
+        # Python runs the author's code: it must run in the sandbox too, or it
+        # could read the hidden tests and print them in an error.
+        (ws / "leak.py").write_text(
+            f"def main(xs):\n    raise Exception(open({str(HERE / 'mvp_tasks.py')!r}).read())\n")
+        leak = isolate.run(ws, ["./try", "--task", "reverse", "leak.py"],
+                           capture_output=True, text=True, timeout=300)
+        check("allocate-batch" not in leak.stdout and "FileNotFoundError" in leak.stdout,
+              "Python run by try cannot read the hidden tests")
+        bare_leak = harness.run_python((ws / "leak.py").read_text(), ([1],), None, ("Seq Int",))
+        check("allocate-batch" in bare_leak.get("error", ""),
+              "unsandboxed, the same program does read them (the planted case)")
+        scored = harness.score({"reverse": (ws / "leak.py").read_text()}, "python",
+                               [harness.BY_ID["reverse"]], 1)
+        check(scored["python_sandboxed"]
+              and all("allocate-batch" not in c.get("error", "")
+                      for c in scored["tasks"]["reverse"]["cases"]),
+              "scoring runs Python answers in the sandbox too")
         other = isolate.run(ws, ["./try", "--task", "fib", "reverse.py"],
                             capture_output=True, text=True, timeout=300)
         check("unknown task" in other.stdout, "try refuses tasks outside the workspace's set")

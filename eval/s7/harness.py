@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -223,14 +224,23 @@ print(json.dumps(out))
 
 
 def run_python(source: str, args: tuple, fuel: int | None = None,
-               outputs: tuple[str, ...] = ()) -> dict:
-    """Run `main`; `outputs` are the task's output types, which the result must match."""
+               outputs: tuple[str, ...] = (), sandboxed: bool = False) -> dict:
+    """Run `main`; `outputs` are the task's output types, which the result must match.
+    With `sandboxed`, the author's code runs where the hidden tests, the references
+    and the repository cannot be read (isolate.py; needs root)."""
+    cmd = [sys.executable, "-c", PY_DRIVER, json.dumps(list(args)), json.dumps(list(outputs))]
+    empty = None
+    if sandboxed:
+        import isolate  # imports this module, so only when needed
+        empty = tempfile.mkdtemp(dir="/var/tmp", prefix="s7py-")
+        cmd = isolate.sandbox_command(Path(empty), cmd)
     try:
-        p = subprocess.run([sys.executable, "-c", PY_DRIVER, json.dumps(list(args)),
-                            json.dumps(list(outputs))],
-                           input=source, capture_output=True, text=True, timeout=30)
+        p = subprocess.run(cmd, input=source, capture_output=True, text=True, timeout=30)
     except subprocess.TimeoutExpired:
         return {"ok": False, "error": "timeout"}
+    finally:
+        if empty:
+            Path(empty).rmdir()
     if p.returncode == 0:
         return {"ok": True, "stack": json.loads(p.stdout)}
     return {"ok": False, "error": p.stderr.strip()[-2000:]}
@@ -252,7 +262,7 @@ def eval_hashes() -> dict[str, str]:
     what shows an edit to the frozen tasks or the harness, committed or not."""
     here = Path(__file__).resolve().parent
     return {n: hashlib.sha256((here / n).read_bytes()).hexdigest()
-            for n in ("task.py", "tasks.py", "mvp_tasks.py", "harness.py")}
+            for n in ("task.py", "tasks.py", "mvp_tasks.py", "harness.py", "isolate.py")}
 
 
 def firth_commit() -> str:
@@ -268,7 +278,12 @@ def firth_commit() -> str:
 
 
 def score(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int) -> dict:
-    runner = run_firth if lang == "firth" else run_python
+    """Score every answer. Python answers run in the sandbox when we are root, so
+    an answer cannot read the expected results or change the files it is scored
+    with; the result records whether they did."""
+    sandboxed = lang == "python" and os.geteuid() == 0
+    runner = run_firth if lang == "firth" else (
+        lambda src, args, fuel=None, outputs=(): run_python(src, args, fuel, outputs, sandboxed))
     work = [(t, args, i == 0) for t in tasks if t.id in solutions
             for i, args in enumerate((t.example, *t.hidden))]
     if lang == "firth" and work:
@@ -288,7 +303,10 @@ def score(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int) ->
         r["pass"] = bool(hidden) and all(c["pass"] for c in hidden)
         r["hidden_passed"] = sum(c["pass"] for c in hidden)
         r["hidden_total"] = len(hidden)
-    return {"lang": lang, "tasks": per}
+    res = {"lang": lang, "tasks": per}
+    if lang == "python":
+        res["python_sandboxed"] = sandboxed
+    return res
 
 
 def readable(error: str) -> str:
@@ -320,12 +338,16 @@ def repair(solutions: dict[str, str], results: dict, lang: str, tasks: list[Task
     return "\n".join(parts)
 
 
-def try_run(source: str, lang: str, task: Task, stack: list | None) -> str:
+def try_run(source: str, lang: str, task: Task, stack: list | None,
+            sandboxed: bool = False) -> str:
     """The author's diagnostics loop: run on the visible example, or on the author's
-    own inputs (with no expected answer). Never touches the hidden tests."""
-    runner = run_firth if lang == "firth" else run_python
+    own inputs (with no expected answer). Never touches the hidden tests. With
+    `sandboxed`, Python code runs in the sandbox (Firth programs cannot read files)."""
     args = tuple(task.example) if stack is None else tuple(stack)
-    out = runner(source, args, fuel_for(task), types(task))
+    if lang == "firth":
+        out = run_firth(source, args, fuel_for(task), types(task))
+    else:
+        out = run_python(source, args, fuel_for(task), types(task), sandboxed)
     lines = [f"input: {json.dumps(list(args))}"]
     if stack is None:
         lines.append(f"expected: {json.dumps(list(task.expected(args)))}")

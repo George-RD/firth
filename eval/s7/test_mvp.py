@@ -158,7 +158,7 @@ def firth_references() -> None:
 
 def hashes_recorded() -> None:
     h = harness.eval_hashes()
-    check(set(h) == {"task.py", "tasks.py", "mvp_tasks.py", "harness.py"}
+    check(set(h) == {"task.py", "tasks.py", "mvp_tasks.py", "harness.py", "isolate.py"}
           and all(len(v) == 64 for v in h.values()), "results can record the eval sources' SHA-256")
 
 

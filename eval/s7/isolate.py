@@ -84,7 +84,7 @@ def answer(req: dict, lang: str, allowed: set[str]) -> str:
     stack = req.get("stack")
     if stack is not None and not isinstance(stack, list):
         return "--stack must be a JSON array"
-    return harness.try_run(str(req.get("source", "")), lang, BY_ID[tid], stack)
+    return harness.try_run(str(req.get("source", "")), lang, BY_ID[tid], stack, sandboxed=True)
 
 
 def serve(dir: Path, stop: threading.Event | None = None) -> socket.socket:
@@ -169,7 +169,8 @@ def run(dir: Path, command: list[str], keep: tuple[str, ...] = (), **kw) -> subp
         stop.set()
 
 
-TRY_CALL = re.compile(r"^\./try(\s[^;&|`$<>]*)?$")
+# One command on one line: spaces and tabs only, no newline, no shell operators.
+TRY_CALL = re.compile(r"\./try(?:[ \t][^;&|`$<>()\\\r\n]*)?")
 
 
 def audit(events: list[dict]) -> list[str]:
@@ -184,7 +185,7 @@ def audit(events: list[dict]) -> list[str]:
             if block.get("type") != "tool_use":
                 continue
             name, inp = block.get("name"), block.get("input") or {}
-            if name == "Bash" and TRY_CALL.match(str(inp.get("command", "")).strip()):
+            if name == "Bash" and TRY_CALL.fullmatch(str(inp.get("command", "")).strip(" \t")):
                 continue
             if name in ("Read", "Write", "Edit") and in_workspace(str(inp.get("file_path", ""))):
                 continue
