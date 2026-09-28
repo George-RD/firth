@@ -11,12 +11,19 @@ as four Ints, and turning the result codes back into JSON.
 python3 examples/inventory/run_cases.py          # the 53 fixed cases
 python3 examples/inventory/measure_cost.py       # cost against batch size
 python3 examples/inventory/policy_change.py      # the partial to all-or-nothing change
+python3 examples/inventory/check_scan.py         # the repeated-ID scan, part by part
 ```
 
 Every case that reaches Firth runs on the VM and the reference interpreter,
 which must agree (`mvp_agent_gate.rebuild`), and the result must equal the
 corpus's fixed expected output. The corpus is never rewritten from what the
 program produces.
+
+The corpus never has two IDs that agree on some of their four encoded parts
+and differ in another, so a scan that skipped a part would still pass it.
+`check_scan.py` covers that: 20 batches whose IDs differ in only one part, with
+and without a repeat at the first, middle or last pair, each checked against
+the independently tested model in `tools/loop/test_inventory_contract.py`.
 
 ## Result
 
@@ -29,14 +36,14 @@ before it looks for repeated IDs.
 
 For a batch of n valid requests with no repeated ID, the kernel cost is at most
 
-    166 + 199·n + 264·n(n−1)/2
+    165 + 202·n + 157·n(n−1)/2
 
-which is 545,126 at the 64-request maximum, inside the VM's 1,000,000-step fuel
+which is 329,605 at the 64-request maximum, inside the VM's 1,000,000-step fuel
 cap. `measure_cost.py` measures n = 0 to 64 on both hosts. It uses IDs sharing
 their first 24 characters, which is the slowest case for the repeated-ID
 scan, and one run for each allocation branch. For n ≥ 2 each run's cost is
-exactly `82 + b·n + 264·n(n−1)/2`, where b is 169 (out-of-stock), 191
-(fulfilled) or 198 (insufficient-stock), plus 30 once for the single partial
+exactly `75 + b·n + 157·n(n−1)/2`, where b is 172 (out-of-stock), 194
+(fulfilled) or 201 (insufficient-stock), plus 30 once for the single partial
 request a batch can have. The stated bound is deliberately looser than any one
 of those: it uses the largest per-request cost and the n = 0 entry cost, so it
 also covers mixed batches and the one partial request. An invalid input stops
@@ -64,7 +71,7 @@ toolchain produces:
 - **Changed words and dependents.** It elaborates and compiles both programs,
   compares every word's body digest and erased type from the compiler, and
   follows `call-word` edges in the compiled program. It fails unless `reserve`
-  is the only changed word and no word depends on it; the 14 allocator words
+  is the only changed word and no word depends on it; the 10 allocator words
   keep their digests. Both programs share `allocator.firth`, so that
   comparison alone cannot see an allocator edit; an allocator change is its
   own change, gated by `run_cases.py` and `measure_cost.py`. To show the check
@@ -86,11 +93,12 @@ toolchain produces:
 
 - **Locals were expensive in hot loops.** A local cost tens of kernel steps
   per use, so the first version of the repeated-ID scan, with six locals, ran
-  out of the 1,000,000-step fuel at 64 requests. The scan is written with stack
-  words, and the IDs arrive as one sequence (four Ints per request) instead of
-  four. Since `pick` and `roll` a local costs one step per use, which cut the
-  per-request cost from 689 to 766 steps down to 169 to 198; the scan's 264 per
-  pair was already hand-written and is unchanged.
+  out of the 1,000,000-step fuel at 64 requests, and the scan was rewritten by
+  hand with stack-shuffling words (264 steps per pair). The IDs also arrive as
+  one sequence (four Ints per request) instead of four. Since `pick` and `roll`
+  (#125) a local costs one step per use. The per-request cost fell from 689 to
+  766 steps to 169 to 198, and the scan is back to plain locals, now cheaper
+  than the hand-written version: 157 steps per pair.
 - **There is no Boolean `and` or absolute difference.** Both are written with
   nested `if`.
 - **There are no imports.** `vocab` groups words inside one file, but a
