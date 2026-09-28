@@ -874,23 +874,49 @@ def runElaboratorDiagnosticTests : IO Unit := do
   let pushedOne := ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) drop true [ 1 prim + ] [ 0 ] if ;"
   branchReport "branch pushed one operand" pushedOne
     ["`prim +` needs 2 values (Int, Int), but the branch has pushed only 1 value before it (`1`).",
-      "Make the branch push, just before `prim +`, exactly the values it takes, in this order: Int, Int. The branch already pushes `1`, in the place of the last one (Int): keep it where it has that type and replace it where it does not. Then push the first one (Int) before it"]
+      "Make the branch push, just before `prim +`, exactly the values it takes, in this order: Int, Int. The branch already pushes `1`: keep it in its place where it is one of these and replace it where it is not, and push the other one in its place"]
   match elaboratePipeline pipelineContext pushedOne agentConfig with
   | .failure [envelope] =>
       if (encode envelope).contains "Push every value" then
         fail s!"branch pushed one operand: the hint asks for every value again: {encode envelope}"
   | _ => pure ()
-  -- A pushed value of the wrong type is not to be kept: the hint says to
-  -- replace it.
+  -- `1` has the type of either input of `prim +`, so the hint does not
+  -- say on which side the missing one goes. A pushed value of the wrong
+  -- type matches neither side; the hint says to replace it.
   branchReport "branch pushed a Bool operand" ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) drop true [ true prim + ] [ 0 ] if ;"
-    ["The branch already pushes `true`, in the place of the last one (Int): keep it where it has that type and replace it where it does not."]
-  -- The pushed value is the operation's last input, so the missing first
-  -- one goes before it: for `prim seq-int.push` after `1`, the sequence.
+    ["The branch already pushes `true`: keep it in its place where it is one of these and replace it where it is not, and push the other one in its place"]
+  -- The pushed value has the type of the operation's last input only, so
+  -- the missing first one goes before it: for `prim seq-int.push` after
+  -- `1`, the sequence.
   branchReport "branch pushed the top operand" ": g (forall ρ; ρ a:Int^many -- ρ r:Seq Int^many) drop true [ 1 prim seq-int.push ] [ prim seq-int.empty ] if ;"
     ["The branch already pushes `1`, in the place of the last one (Int): keep it where it has that type and replace it where it does not. Then push the first one (Seq Int) before it"]
   match elaboratePipeline pipelineContext ": g (forall ρ; ρ a:Int^many -- ρ r:Seq Int^many) drop true [ prim seq-int.empty 1 prim seq-int.push ] [ prim seq-int.empty ] if ;" agentConfig with
   | .success _ => pure ()
   | .failure _ => fail "branch pushed the top operand: the program following the hint is refused"
+  -- The pushed values have the types of the first inputs only, so the
+  -- missing last one goes after them: Haiku's histogram answer at c6a964a
+  -- (haiku-firth-2, solutions-1) left out `v`, the last argument of
+  -- `count-value`, which is a local in scope.
+  let countValue := ": count-value (forall ρ; ρ cnt:Int^many xs:Seq Int^many idx:Int^many v:Int^many -- ρ count:Int^many) locals { cnt xs idx v } { cnt } ;\n\n"
+  let pushedFirst := countValue ++ ": g (forall ρ; ρ xs:Seq Int^many idx:Int^many v:Int^many -- ρ r:Int^many) locals { xs idx v } { true [ 0 xs idx count-value ] [ 0 ] if } ;"
+  branchReport "branch pushed the first operands" pushedFirst
+    ["The branch already pushes `0`, `xs` and `idx`, in the place of the first 3 (cnt:Int, xs:Seq Int, idx:Int): keep each where it has that type and replace it where it does not. Then push the last one (v:Int) after them"]
+  branchReport "histogram at c6a964a" ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ counts:Seq Int^many)\n  swap prim seq-int.empty 0 0 build-histogram swap drop;\n\n: build-histogram\n  (forall ρ; ρ xs:Seq Int^many result:Seq Int^many k:Int^many v:Int^many idx:Int^many -- ρ counts:Seq Int^many)\n  locals { xs result k v idx } {\n    v k prim < [\n      0 xs idx count-value result prim seq-int.push xs k v 1 prim + build-histogram\n    ] [ result ] if\n  };\n\n: count-value\n  (forall ρ; ρ cnt:Int^many xs:Seq Int^many idx:Int^many v:Int^many -- ρ count:Int^many)\n  locals { cnt xs idx v } {\n    idx xs prim seq-int.len prim < [\n      idx xs prim seq-int.at v prim = [\n        cnt 1 prim +\n      ] [ cnt ] if\n      xs idx 1 prim + v count-value\n    ] [ cnt ] if\n  };"
+    ["Then push the last one (v:Int) after them"]
+  -- Following the hint as written: the name before the colon of the input
+  -- it asks for, written after the values the branch pushes.
+  match elaboratePipeline pipelineContext pushedFirst agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      match (emitted.splitOn "Then push the last one (").drop 1 with
+      | rest :: _ =>
+          let name := ((rest.splitOn ":").headD "").trimAscii.toString
+          let followed := pushedFirst.replace "[ 0 xs idx count-value ]" s!"[ 0 xs idx {name} count-value ]"
+          match elaboratePipeline pipelineContext followed agentConfig with
+          | .success _ => pure ()
+          | .failure _ => fail s!"branch pushed the first operands: the program following the hint (`{name}` after `idx`) is refused"
+      | [] => fail s!"branch pushed the first operands: the hint names no last input: {emitted}"
+  | _ => fail "branch pushed the first operands: expected one diagnostic"
   -- Following the hint, with `2` as the other value, makes the program check.
   match elaboratePipeline pipelineContext ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) drop true [ 2 1 prim + ] [ 0 ] if ;" agentConfig with
   | .success _ => pure ()

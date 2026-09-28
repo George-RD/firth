@@ -50,6 +50,9 @@ structure BranchReach where
   count : Nat
   /-- The branch's own values it found, bottom to top. -/
   own : List String := []
+  /-- Their types, where the walk knows them: a literal's, a local's or
+  input's declared type, a word's or primitive's declared output type. -/
+  ownTypes : List (Option String) := []
   /-- The values from below the `if` it takes, bottom to top. -/
   below : List String := []
   /-- How many more it takes that are not there at all. -/

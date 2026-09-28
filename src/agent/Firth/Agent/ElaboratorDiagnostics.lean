@@ -266,15 +266,30 @@ private def accountExplanation (word : String) (account : Firth.Elaborator.IfAcc
         else if reach.own.isEmpty then
           s!"Push every value {reach.operation} takes inside the branch, just before it and in this order: {", ".intercalate reach.inputs}, for example by writing the locals that hold them. If {reach.operation} should not be in this branch, remove it. {noEvening}"
         else
-          -- The branch already pushes the operation's last inputs: its own
-          -- values are the top of what the operation takes. The first
-          -- inputs are missing and go below them. A pushed value of another
-          -- type, such as `true` before `prim +`, is replaced.
-          let lacking := reach.count - reach.own.length
-          let one := reach.own.length == 1
-          let firstInputs := ", ".intercalate (reach.inputs.take lacking)
-          let lastInputs := ", ".intercalate (reach.inputs.drop lacking)
-          s!"Make the branch push, just before {reach.operation}, exactly the values it takes, in this order: {", ".intercalate reach.inputs}. The branch already pushes {listing reach.own}, in the place of the last {if one then "one" else toString reach.own.length} ({lastInputs}): keep {if one then "it" else "each"} where it has that type and replace it where it does not. Then push the first {if lacking == 1 then "one" else toString lacking} ({firstInputs}) before {if one then "it" else "them"}, for example by writing the locals that hold {if lacking == 1 then "it" else "them"}. If {reach.operation} should not be in this branch, remove it. {noEvening}"
+          -- The branch's own values are the top of what the operation
+          -- takes, but which inputs the author left out is told by their
+          -- types: `1` before `prim seq-int.push` stands for the last
+          -- input, `0 xs idx` before a word of four inputs for the first
+          -- three. Where the types match only one side, the hint says where
+          -- the missing inputs go; otherwise it does not choose.
+          let pushed := reach.own.length
+          let lacking := reach.count - pushed
+          let one := pushed == 1
+          let known := reach.types.length == reach.count
+          let asLast := known && reach.ownTypes == (reach.types.drop lacking).map some
+          let asFirst := known && reach.ownTypes == (reach.types.take pushed).map some
+          let order := s!"Make the branch push, just before {reach.operation}, exactly the values it takes, in this order: {", ".intercalate reach.inputs}. The branch already pushes {listing reach.own}"
+          let keep := s!"keep {if one then "it" else "each"} where it has that type and replace it where it does not"
+          let them := if one then "it" else "them"
+          let locals := s!"for example by writing the locals that hold {if lacking == 1 then "it" else "them"}"
+          let count (n : Nat) := if n == 1 then "one" else toString n
+          let tail := s!"If {reach.operation} should not be in this branch, remove it. {noEvening}"
+          if asLast && !asFirst then
+            s!"{order}, in the place of the last {count pushed} ({", ".intercalate (reach.inputs.drop lacking)}): {keep}. Then push the first {count lacking} ({", ".intercalate (reach.inputs.take lacking)}) before {them}, {locals}. {tail}"
+          else if asFirst && !asLast then
+            s!"{order}, in the place of the first {count pushed} ({", ".intercalate (reach.inputs.take pushed)}): {keep}. Then push the last {count lacking} ({", ".intercalate (reach.inputs.drop pushed)}) after {them}, {locals}. {tail}"
+          else
+            s!"{order}: keep {if one then "it" else "each"} in its place where it is one of these and replace it where it is not, and push the other {count lacking} in {if lacking == 1 then "its place" else "their places"}, {locals}. {tail}"
       let inside := if reach.nested then " (inside a quotation in that branch)" else ""
       some (s!"{place name}, {reach.operation}{inside} {needs}, but the branch {own}. {below}", hint)
   | none =>

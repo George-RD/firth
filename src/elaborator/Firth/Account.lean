@@ -24,11 +24,11 @@ open Firth.Elaborator
 open Firth.Elaborator.StackEffect
 
 /-- What the walk needs to know besides the body: the words of the file, a
-primitive's input types and output count, the source text, and the `if` the
+primitive's input and output types, the source text, and the `if` the
 checker refused, by the byte offset where it starts. -/
 structure Context where
   words : List WordDefinition
-  primitive : String → Option (List String × Nat)
+  primitive : String → Option (List String × List String)
   external : String → Option (Nat × Nat) := fun _ => none
   source : String
   target : Nat
@@ -38,6 +38,8 @@ the values a branch pushed itself; `quotation` keeps a literal quotation's
 body so that `call`, `dip` and `if` can run it. -/
 structure Entry where
   label : String
+  /-- The value's type, where the walk knows it. -/
+  type : Option String := none
   own : Bool := true
   quotation : Option (List Item × Span) := none
 
@@ -47,6 +49,8 @@ did not push. -/
 structure Walk where
   stack : List Entry
   locals : List String := []
+  /-- The types of the locals in scope, where known. -/
+  localTypes : List (String × String) := []
   inLocals : Bool := false
   reach : Option BranchReach := none
   /-- The values not pushed by the branch that it took, and how many more it
@@ -105,6 +109,7 @@ private def take (walk : Walk) (operation : String) (inputs : List String) (coun
   let this : BranchReach :=
     { operation, inputs, count, types
       own := (taken.takeWhile (·.own)).reverse.map (·.label)
+      ownTypes := (taken.takeWhile (·.own)).reverse.map (·.type)
       below := (taken.dropWhile (·.own)).reverse.map (·.label)
       missing := count - taken.length
       inLocals := walk.inLocals
@@ -125,6 +130,15 @@ private def take (walk : Walk) (operation : String) (inputs : List String) (coun
 /-- Pushes values named `labels`, bottom to top. -/
 private def push (walk : Walk) (labels : List String) : Walk :=
   { walk with stack := labels.reverse.map ({ label := · }) ++ walk.stack }
+
+/-- Pushes values with their labels and types, bottom to top. -/
+private def pushTyped (walk : Walk) (values : List (String × Option String)) : Walk :=
+  { walk with stack := values.reverse.map (fun (label, type) => { label, type }) ++ walk.stack }
+
+private def literalType : Firth.Elaborator.Literal → Option String
+  | .integer _ => some "Int"
+  | .boolean _ => some "Bool"
+  | _ => none
 
 private def resultLabels (operation : String) (names : List String) : List String :=
   match names with
@@ -151,18 +165,19 @@ mutual
     | other => other
 
   partial def step (context : Context) (walk : Walk) : Item → Outcome
-    | .literal literal _ => .next (push walk [s!"`{literalText literal.value}`"])
+    | .literal literal _ => .next (pushTyped walk [(s!"`{literalText literal.value}`", literalType literal.value)])
     | .quotation items span =>
         .next { walk with stack := { label := s!"the quotation `{quotationStart context.source span}`", quotation := some (items, span) } :: walk.stack }
     | .word name _ =>
-        if walk.locals.contains name then .next (push walk [s!"`{name}`"]) else
+        if walk.locals.contains name then
+          .next (pushTyped walk [(s!"`{name}`", (walk.localTypes.lookup name))]) else
         match context.words.find? (·.name == name) with
         | some word =>
             if !keepsRow word.effect then .lost else
             let inputs := valueItems word.effect.input
             let outputs := valueItems word.effect.output
             let (_, walk) := take walk s!"`{name}`" (inputs.map fun (n, t) => s!"{n}:{t}") inputs.length (inputs.map (·.2))
-            .next (push walk (resultLabels s!"`{name}`" (outputs.map (·.1))))
+            .next (pushTyped walk ((resultLabels s!"`{name}`" (outputs.map (·.1))).zip (outputs.map (some ·.2))))
         | none => match context.external name with
           | some (inputs, outputs) =>
               let (_, walk) := take walk s!"`{name}`" [] inputs
@@ -172,12 +187,18 @@ mutual
         | some (inputs, outputs) =>
             let operation := s!"`prim {name}`"
             let (_, walk) := take walk operation inputs inputs.length inputs
-            .next (push walk (resultLabels operation (List.replicate outputs "")))
+            .next (pushTyped walk ((resultLabels operation (List.replicate outputs.length "")).zip (outputs.map some)))
         | none => .lost
     | .locals names body _ =>
-        let (_, inner) := take walk "`locals`" [] names.length
-        match walkItems context { inner with locals := names.map (·.name) ++ walk.locals, inLocals := true } body with
-        | .next after => .next { after with locals := walk.locals, inLocals := walk.inLocals }
+        let (taken, inner) := take walk "`locals`" [] names.length
+        -- `taken` is top first; the block names its values bottom to top.
+        let bound := (names.map (·.name)).zip (taken.reverse.map (·.type))
+        let typed := if taken.length == names.length then
+            bound.filterMap fun (name, type) => type.map (name, ·) else []
+        let shadowed := walk.localTypes.filter fun (name, _) => !names.any (·.name == name)
+        match walkItems context { inner with locals := names.map (·.name) ++ walk.locals, inLocals := true,
+                                             localTypes := typed ++ shadowed } body with
+        | .next after => .next { after with locals := walk.locals, inLocals := walk.inLocals, localTypes := walk.localTypes }
         | other => other
     | .atom "dup" _ =>
         let (taken, walk) := take walk "`dup`" [] 1
@@ -256,9 +277,12 @@ mutual
                     match afterTrue.reach, afterFalse.reach with
                     | none, none => some none
                     | some onTrue, some onFalse =>
-                        if { onTrue with own := onFalse.own } == onFalse then
-                          some (some { onTrue with own := (onTrue.own.zip onFalse.own).map fun (a, b) =>
-                            if a == b then a else s!"{a} or {b}" })
+                        if { onTrue with own := onFalse.own, ownTypes := onFalse.ownTypes } == onFalse then
+                          some (some { onTrue with
+                            own := (onTrue.own.zip onFalse.own).map fun (a, b) =>
+                              if a == b then a else s!"{a} or {b}"
+                            ownTypes := (onTrue.ownTypes.zip onFalse.ownTypes).map fun (a, b) =>
+                              if a == b then a else none })
                         else none
                     -- A path that reaches below and one that does not also
                     -- leave different values in place or a different number,
@@ -274,8 +298,9 @@ mutual
                   -- Where the branches leave different values, the value is
                   -- whichever branch ran.
                   let merged := (afterTrue.stack.zip afterFalse.stack).map fun (onTrue, onFalse) =>
-                    if onTrue.label == onFalse.label then onTrue
-                    else { label := "the result of an `if`", own := onTrue.own }
+                    if onTrue.label == onFalse.label && onTrue.type == onFalse.type then onTrue
+                    else { label := "the result of an `if`", own := onTrue.own,
+                           type := if onTrue.type == onFalse.type then onTrue.type else none }
                   .next { afterTrue with stack := merged, reach }
               | _, _ => .lost
         | _ => .lost
@@ -285,8 +310,8 @@ end
 /-- The account of the `if` starting at `context.target` in `word`, if the
 walk can follow the body that far. The word's inputs are named as such. -/
 def ofWord (context : Context) (word : WordDefinition) : Option IfAccount :=
-  let inputs := (valueItems word.effect.input).map fun (name, _) => s!"the input `{name}`"
-  match walkItems context (push { stack := [] } inputs) word.body with
+  let inputs := (valueItems word.effect.input).map fun (name, type) => (s!"the input `{name}`", some type)
+  match walkItems context (pushTyped { stack := [] } inputs) word.body with
   | .found account => some account
   | _ => none
 
@@ -298,11 +323,11 @@ def ofIf (context : Context) (span : Span) : Option IfAccount :=
     if word.span.start.offset ≤ span.start.offset && span.start.offset < word.span.stop.offset
     then ofWord context word else none
 
-/-- A primitive's input types, bottom to top, and output count, from its
-scheme, when the scheme keeps the stack below its inputs as it is. -/
-def primitiveShape (scheme : Scheme) : Option (List String × Nat) :=
+/-- A primitive's input and output types, bottom to top, from its scheme,
+when the scheme keeps the stack below its inputs as it is. -/
+def primitiveShape (scheme : Scheme) : Option (List String × List String) :=
   let (inputs, below) := stackValues scheme.input
   let (outputs, after) := stackValues scheme.output
-  if below.isSome && below == after then some (inputs.map renderType, outputs.length) else none
+  if below.isSome && below == after then some (inputs.map renderType, outputs.map renderType) else none
 
 end Firth.Elaborator.Account

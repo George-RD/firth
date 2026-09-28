@@ -38,12 +38,17 @@ the checker wrote, not the author:
   reports in the #166 review: keep-positive, count-distinct twice,
   longest-run-loop twice, allocate-batch, 470c6d0 longest-run answer 3).
   The report could name both paths' operations instead.
-- The walk gives up on a stack atom short of a value (`swap` or `dup` with
-  nothing of the branch's below it inside `locals`), since it cannot name
-  the value the kernel program takes there. Where that atom is on one path
-  of an `if` before the refused one, the report falls back although the
-  paths leave the same stack: 470c6d0 longest-run answer 2, `find-longest`,
-  whose false path `[ swap drop 1 ]` does this (#166 review).
+- An `if` before the refused one whose paths leave stacks of different
+  lengths in the walk makes the report fall back, even where the checker
+  sees the same depth. `take` pads a stack short of a value with "a value
+  that is not there", and a stack atom keeps that placeholder on the stack:
+  in 470c6d0 longest-run answer 2, `find-longest`, the true path
+  `[ drop count 1 prim + ]` leaves 1 value and the false path
+  `[ swap drop 1 ]` leaves 2, one of them the placeholder for a value
+  inside `locals` that the walk cannot name, so the merge's length check
+  loses the walk (#166 review). Following the true path when only the
+  lengths differ gets main's account back, but describes a path that may
+  not run; the fix is to account for the placeholder at the merge.
 - `firth.name.locals-order` (#165) states an edit when the edited word is
   refused no earlier in the source than the word as written. That compares
   only first errors, so an edit can add an error hidden behind an earlier,
