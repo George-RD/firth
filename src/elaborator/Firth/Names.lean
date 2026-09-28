@@ -145,6 +145,13 @@ def localBinders (inputs : List String) (reserved : List String := []) : List St
       bound ++ [freshBinder name taken (taken.length + 1) 2]
     else bound ++ [name]
 
+/-- The names inner `locals` blocks of a body bind, at any depth. -/
+private partial def innerBinders : List Item → List String
+  | [] => []
+  | .quotation items _ :: rest => innerBinders items ++ innerBinders rest
+  | .locals names items _ :: rest => names.map (·.name) ++ innerBinders items ++ innerBinders rest
+  | _ :: rest => innerBinders rest
+
 /-- Every name a body refers to or binds, at any depth. -/
 private partial def bodyNames : List Item → List String
   | [] => []
@@ -170,9 +177,13 @@ pushes those first. Each undeclared name stands for one of the other
 unclaimed inputs, in order, and the body writes that input's name for it.
 When the old block was a reordering of the new one, the body stays as it
 is. -/
-private def misorderedInputLocals (word : WordDefinition) : Option (LocatedName × LocalsBlock) :=
+private def misorderedInputLocals (word : WordDefinition) (written : List Item) :
+    Option (LocatedName × LocalsBlock) :=
   match word.body with
-  | .locals names items _ :: _ =>
+  -- A block that repeats a name is refused as `firth.name.duplicate-local`,
+  -- which says more.
+  | .locals names _ _ :: _ =>
+      if (names.map (·.name)).eraseDups.length != names.length then none else
       let inputs := word.effect.input.filterMap fun
         | .value name type _ => some (name, type.name)
         | .row _ _ => none
@@ -194,15 +205,25 @@ private def misorderedInputLocals (word : WordDefinition) : Option (LocatedName 
               | none => (claimed, fresh ++ [name.name])
           let unclaimed := positions.filter (!claimed.contains ·)
           -- Names the body uses that the old block does not bind, words it
-          -- calls and inner locals, which a new binder must not shadow.
+          -- calls and inner locals, which a new binder must not shadow. They
+          -- are read from the body as written, before word names are
+          -- resolved, since the author edits that text.
+          let items := match written with
+            | .locals _ items _ :: _ => items
+            | _ => []
           let reserved := (bodyNames items).filter fun name => !names.any (·.name == name)
+          -- A name to rename that an inner block binds again means two
+          -- things in the body, so "write `b` for `x`" would be read for
+          -- both: no edit is stated.
+          let rebound := fresh.any fun name => (innerBinders items).contains name
           let binders := localBinders declared reserved
           let binder (index : Nat) : String := binders[index]?.getD ""
           (bound, { word := word.name
                     pairs := pairs.map fun (bound, input, type) => (bound.name, input, type)
                     block := binders.drop first
                     renames := fresh.zip ((unclaimed.drop (start - first)).map binder)
-                    prelude := (unclaimed.take (start - first)).map binder })
+                    prelude := (unclaimed.take (start - first)).map binder
+                    rebound })
   | _ => none
 
 private partial def renameItems (renames : List (String × String)) : List Item → List Item
@@ -226,9 +247,13 @@ def applyLocalsBlock (word : WordDefinition) (block : LocalsBlock) : WordDefinit
 
 /-- Every word whose opening `locals` block binds its inputs out of order,
 refused as one `firth.name.locals-order` error at the first such name, so an
-author sees each block to fix in one report. -/
-def checkInputLocals (words : List WordDefinition) : Except ParseError Unit :=
-  match words.filterMap misorderedInputLocals with
+author sees each block to fix in one report. `written` gives the words as
+written, before their names are resolved. -/
+def checkInputLocals (words : List WordDefinition) (written : List WordDefinition := words) :
+    Except ParseError Unit :=
+  let body (word : WordDefinition) : List Item :=
+    ((written.find? (·.name == word.name)).map (·.body)).getD word.body
+  match words.filterMap fun word => misorderedInputLocals word (body word) with
   | [] => pure ()
   | blocks@((bound, block) :: _) =>
       throw { code := "firth.name.locals-order", primary := bound.span, cause := .validation,

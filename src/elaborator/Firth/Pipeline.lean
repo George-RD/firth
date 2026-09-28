@@ -231,7 +231,7 @@ private def checkLocalsEdits (config : PipelineConfig) (words : List WordDefinit
             | none, _ => true
             | some edited, some written => edited ≥ written
             | some _, none => false
-          { block with checked }
+          { block with checked := checked && !block.rebound }
       | none => block }
 
 def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResult :=
@@ -241,7 +241,7 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
       match resolveNames file.declarations (fun name => (config.erasureEnv.word name).isSome) with
       | .error error => .failure [.parse error]
       | .ok words =>
-          match checkInputLocals words with
+          match checkInputLocals words (collectWords file.declarations) with
           | .error error => .failure [.parse (checkLocalsEdits config words error)]
           | .ok () =>
           if words.isEmpty then

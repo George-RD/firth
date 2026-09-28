@@ -462,7 +462,12 @@ def runElaboratorDiagnosticTests : IO Unit := do
     -- still checked and stated.
     ("edit beside another word's error", "sub",
       ": bad\n  (forall ρ; ρ v:Int^many -- ρ r:Bool^many)\n  1 prim + ;\n\n: sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x a prim - };",
-      ["Write `locals { a b }` in `sub`", "In its body, write `b` for `x`"], [10, 3], [-7])]
+      ["Write `locals { a b }` in `sub`", "In its body, write `b` for `x`"], [10, 3], [-7]),
+    -- The same inside a vocabulary: the body calls `b` as written, which
+    -- resolves to `v.b`, and the input `b` is still bound as `b2`.
+    ("input label that names a word, in a vocabulary", "v.sub",
+      "vocab v {\n: b\n  (forall ρ; ρ x:Int^many -- ρ r:Int^many)\n  1 prim + ;\n\n: sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x a prim + b };\n}",
+      ["Write `locals { a b2 }` in `v.sub`", "In its body, write `b2` for `x`"], [10, 3], [14])]
   for (label, word, source, needles, inputs, expected) in localsCases do
     match elaboratePipeline pipelineContext source agentConfig with
     | .failure [envelope] =>
@@ -502,7 +507,16 @@ def runElaboratorDiagnosticTests : IO Unit := do
     -- The same as the first, with a later mistake of its own (`true prim +`):
     -- the edit brings the refusal earlier, to `prim seq-int.at`.
     ("body fits the old binding, before a later mistake", "get",
-      ": get\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs } { xs prim seq-int.at true prim + };")]
+      ": get\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs } { xs prim seq-int.at true prim + };"),
+    -- An inner block binds `x` again, so "write `b` for `x`" would be read
+    -- for both.
+    ("name to rename bound again inside", "sub",
+      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x 1 prim + locals { x } { x } a prim - };")]
+  -- A block that repeats a name is refused for that, not for its order.
+  match elaboratePipeline pipelineContext ": sum\n  (forall ρ; ρ a:Int^many b:Int^many c:Int^many -- ρ r:Int^many)\n  locals { x a x } { x a x prim + prim + };" agentConfig with
+  | .failure (envelope :: _) =>
+      expectValidCode "repeated name in a misordered block" "firth.name.duplicate-local" (encode envelope)
+  | _ => fail "repeated name in a misordered block: expected a refusal"
   for (label, word, source) in uncheckedCases do
     match elaboratePipeline pipelineContext source agentConfig with
     | .failure [envelope] =>
