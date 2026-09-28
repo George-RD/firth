@@ -39,7 +39,10 @@ effect's names. When it is not a reordering of the old block, the diagnostic
 also says what the body must change: the input's name for each name that
 claims no input, and, first in the body, the inputs no name claims that stand
 in for the values the old block left on the stack (`todo.locals-order-rename`).
-The tests apply the hint as written and run the result.
+The pipeline applies each edit to the word and checks it before the
+diagnostic states it; an edit that brings a refusal earlier, or refuses a word
+that was accepted, is not stated. The tests apply the hint as written and run
+the result.
 
 Names the stack effect does not declare remain the author's to choose. Blocks
 that are not the first item of the body, and blocks with more names than

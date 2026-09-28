@@ -447,7 +447,22 @@ def runElaboratorDiagnosticTests : IO Unit := do
     -- adds the one left on the stack, the second `n`: 10 + (100 - 1).
     ("repeated label", "rep",
       ": rep\n  (forall ρ; ρ n:Int^many n:Int^many n2:Int^many -- ρ r:Int^many)\n  locals { n2 n } { n2 n prim - prim + };",
-      ["Write `locals { n n3 n2 }` in `rep`", "Then start the body with `n3`"], [1, 10, 100], [109])]
+      ["Write `locals { n n3 n2 }` in `rep`", "Then start the body with `n3`"], [1, 10, 100], [109]),
+    -- The body calls a word `b`, so the input `b` is bound as `b2`, and
+    -- `x` stands for it: (3 + 10) + 1.
+    ("input label that names a word the body calls", "sub",
+      ": b\n  (forall ρ; ρ v:Int^many -- ρ r:Int^many)\n  1 prim + ;\n\n: sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x a prim + b };",
+      ["Write `locals { a b2 }` in `sub`", "In its body, write `b2` for `x`"], [10, 3], [14]),
+    -- An input labelled like the word `inc` the body calls, below the one
+    -- the block names: the prelude pushes it as `inc2`, and `a` is 5 + 1.
+    ("input label that names a word, in the prelude", "sub",
+      ": inc\n  (forall ρ; ρ v:Int^many -- ρ r:Int^many)\n  1 prim + ;\n\n: sub\n  (forall ρ; ρ a:Int^many inc:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a } { drop drop a inc };",
+      ["Write `locals { a inc2 b }` in `sub`", "Then start the body with `inc2 b`"], [5, 7, 9], [6]),
+    -- Another word has a type error of its own; the edit for `sub` is
+    -- still checked and stated.
+    ("edit beside another word's error", "sub",
+      ": bad\n  (forall ρ; ρ v:Int^many -- ρ r:Bool^many)\n  1 prim + ;\n\n: sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x a prim - };",
+      ["Write `locals { a b }` in `sub`", "In its body, write `b` for `x`"], [10, 3], [-7])]
   for (label, word, source, needles, inputs, expected) in localsCases do
     match elaboratePipeline pipelineContext source agentConfig with
     | .failure [envelope] =>
@@ -465,7 +480,38 @@ def runElaboratorDiagnosticTests : IO Unit := do
                 unless result == some expected do
                   fail s!"{label}: the edited program computes {result} instead of {expected}: {edited}"
             | .failure diagnostics =>
-                fail s!"{label}: the edit the hint gives does not check: {edited}: {diagnostics.map encode}"
+                -- A refusal charged only to another word leaves this one's
+                -- edit standing; its value cannot then be run.
+                let wordOf (envelope : Envelope) : String :=
+                  match Lean.Json.parse (encode envelope) with
+                  | .ok json => (((json.getObjValD "body").getObjValD "message_params").getObjValD "word").getStr?.toOption.getD ""
+                  | .error _ => ""
+                unless diagnostics.all (fun envelope => let owner := wordOf envelope; owner != "" && owner != word) do
+                  fail s!"{label}: the edit the hint gives does not check: {edited}: {diagnostics.map encode}"
+    | _ => fail s!"{label}: expected one diagnostic"
+  -- Blocks whose edit, applied to the word, is refused: the old body only
+  -- fits the values the names hold now. The report states no edit, and no
+  -- hint edit can be read out of it.
+  let uncheckedCases : List (String × String × String) := [
+    -- The name `xs` holds `n`, and the body relies on it.
+    ("body fits the old binding (types)", "get",
+      ": get\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs } { xs prim seq-int.at };"),
+    -- The prelude would push linear `b` where the body drops a `^many` value.
+    ("body fits the old binding (linearity)", "sum",
+      ": sum\n  (forall ρ; ρ a:Int^many b:Int^linear c:Int^linear -- ρ r:Int^many)\n  locals { c a } { drop a c prim + };"),
+    -- The same as the first, with a later mistake of its own (`true prim +`):
+    -- the edit brings the refusal earlier, to `prim seq-int.at`.
+    ("body fits the old binding, before a later mistake", "get",
+      ": get\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs } { xs prim seq-int.at true prim + };")]
+  for (label, word, source) in uncheckedCases do
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .failure [envelope] =>
+        let emitted := encode envelope
+        expectValidCode label "firth.name.locals-order" emitted
+        unless emitted.contains s!"In `{word}` the body was written for the values the names hold now, so changing the block alone does not fix it" do
+          fail s!"{label}: the report does not fall back: {emitted}"
+        if (applyLocalsHint source (hintOf envelope)).isSome then
+          fail s!"{label}: the report still states an edit: {emitted}"
     | _ => fail s!"{label}: expected one diagnostic"
   match elaboratePipeline pipelineContext
       s!": pair {repeated} locals \{ n n2 } \{ n n2 prim + } ;" agentConfig with
@@ -476,9 +522,9 @@ def runElaboratorDiagnosticTests : IO Unit := do
       s!": pair {repeated} locals \{ n n } \{ n n prim + } ;" agentConfig with
   | .failure [envelope] => expectValidCode "duplicate local" "firth.name.duplicate-local" (encode envelope)
   | _ => fail "a repeated local name was accepted"
-  expectEqual "binders keep distinct names" (localBinders ["xs", "n"]) ["xs", "n"]
-  expectEqual "binders skip a name an input uses" (localBinders ["n", "n", "n2"]) ["n", "n3", "n2"]
-  expectEqual "binders number every repeat" (localBinders ["a", "a", "a"]) ["a", "a2", "a3"]
+  expectEqual "binders keep distinct names" (Firth.Elaborator.localBinders ["xs", "n"]) ["xs", "n"]
+  expectEqual "binders skip a name an input uses" (Firth.Elaborator.localBinders ["n", "n", "n2"]) ["n", "n3", "n2"]
+  expectEqual "binders number every repeat" (Firth.Elaborator.localBinders ["a", "a", "a"]) ["a", "a2", "a3"]
 
   -- An `if` inside `locals` whose branches change the stack depth by
   -- different amounts, with a local used after it. Erasure loses track of

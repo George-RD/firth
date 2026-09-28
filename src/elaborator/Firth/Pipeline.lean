@@ -187,6 +187,53 @@ private def withAccount (config : PipelineConfig) (source : String)
       else .stackEffect diagnostic
   | other => other
 
+private def erasureSpan : ErasureError → Span
+  | .duplicateLocal _ span | .unboundLocal _ span | .unsupportedCapture _ span
+  | .missingStackValue span | .linearCopy _ span | .linearUnused _ span
+  | .unresolvedEffect _ span | .effectUnderflow _ span | .usageMismatch _ span
+  | .unsupportedLiteral span | .unsupportedAtom _ span | .untrackedStack _ span _
+  | .branchShape span .. | .hiddenLocal _ span => span
+
+/-- What erasure and the type checker make of `word` among `words`: `none`
+when it is accepted, else where in the source its first error is. The other words are
+given by their declared effects only, so an error of theirs is never charged
+to `word`. -/
+private def outcomeAlone (config : PipelineConfig) (words : List WordDefinition)
+    (word : WordDefinition) : Option Nat :=
+  let others := words.filter (·.name != word.name)
+  match erase (makeErasureEnv config (word :: others)) word.effect word.body with
+  | .error error => some (erasureSpan error).start.offset
+  | .ok erased =>
+      let definitions : List StackEffect.Definition :=
+        { name := word.name, declared := word.effect, program := erased.program, span := word.span } ::
+          others.map fun other => { name := other.name, declared := other.effect, program := [], span := other.span }
+      match checkDictionary config.typingEnv definitions with
+      | .ok _ => none
+      -- The word is checked first, so an error charged to another word
+      -- means it passed.
+      | .error diagnostic =>
+          if diagnostic.word.isSome && diagnostic.word != some word.name then none
+          else some diagnostic.primary.start.offset
+
+/-- A misordered `locals` refusal whose suggested edits have been applied and
+checked. A block is marked `checked` when its word, edited as the diagnostic
+would say, is accepted, or is refused no earlier in the source than the word
+as written: most answers carry more than one mistake, and the edit then got
+past the first. An edit that turns an accepted word into a refused one, or
+brings a refusal earlier, is not stated. -/
+private def checkLocalsEdits (config : PipelineConfig) (words : List WordDefinition)
+    (error : ParseError) : ParseError :=
+  { error with localsBlocks := error.localsBlocks.map fun block =>
+      match words.find? (·.name == block.word) with
+      | some word =>
+          let checked := match outcomeAlone config words (applyLocalsBlock word block),
+              outcomeAlone config words word with
+            | none, _ => true
+            | some edited, some written => edited ≥ written
+            | some _, none => false
+          { block with checked }
+      | none => block }
+
 def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResult :=
   match parse source with
   | .failure errors => .failure (errors.map PipelineDiagnostic.parse)
@@ -195,7 +242,7 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
       | .error error => .failure [.parse error]
       | .ok words =>
           match checkInputLocals words with
-          | .error error => .failure [.parse error]
+          | .error error => .failure [.parse (checkLocalsEdits config words error)]
           | .ok () =>
           if words.isEmpty then
             .failure [.parse { code := "firth.elaboration.empty-program"

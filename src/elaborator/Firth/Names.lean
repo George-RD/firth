@@ -128,6 +128,31 @@ private partial def resolveScope (keys vocabularies : List String) (external : S
       let outside ← resolveScope keys vocabularies external scopeName uses rest
       return inside ++ outside
 
+private def freshBinder (name : String) (taken : List String) : Nat → Nat → String
+  | 0, _ => name
+  | fuel + 1, suffix =>
+      let candidate := s!"{name}{suffix}"
+      if taken.contains candidate then freshBinder name taken fuel (suffix + 1) else candidate
+
+/-- The names a `locals` block can bind for these inputs. A stack effect may
+repeat a label (`n:Int n:Int`), but `locals` refuses a repeated name, so each
+repeat gets the first numbered name (`n2`, `n3`, ...) that no input uses.
+A label in `reserved` is numbered the same way. -/
+def localBinders (inputs : List String) (reserved : List String := []) : List String :=
+  inputs.foldl (init := []) fun bound name =>
+    if bound.contains name || reserved.contains name then
+      let taken := inputs ++ bound ++ reserved
+      bound ++ [freshBinder name taken (taken.length + 1) 2]
+    else bound ++ [name]
+
+/-- Every name a body refers to or binds, at any depth. -/
+private partial def bodyNames : List Item → List String
+  | [] => []
+  | .word name _ :: rest => name :: bodyNames rest
+  | .quotation items _ :: rest => bodyNames items ++ bodyNames rest
+  | .locals names items _ :: rest => names.map (·.name) ++ bodyNames items ++ bodyNames rest
+  | _ :: rest => bodyNames rest
+
 /-- The `locals` block that opens a word's body, when a name the stack
 effect gives to one input binds another. The block binds the inputs the last
 name to the top, so `locals { b a }` for inputs `a b` binds `b` to the value
@@ -147,7 +172,7 @@ When the old block was a reordering of the new one, the body stays as it
 is. -/
 private def misorderedInputLocals (word : WordDefinition) : Option (LocatedName × LocalsBlock) :=
   match word.body with
-  | .locals names _ _ :: _ =>
+  | .locals names items _ :: _ =>
       let inputs := word.effect.input.filterMap fun
         | .value name type _ => some (name, type.name)
         | .row _ _ => none
@@ -168,13 +193,36 @@ private def misorderedInputLocals (word : WordDefinition) : Option (LocatedName 
               | some index => (claimed ++ [index], fresh)
               | none => (claimed, fresh ++ [name.name])
           let unclaimed := positions.filter (!claimed.contains ·)
+          -- Names the body uses that the old block does not bind, words it
+          -- calls and inner locals, which a new binder must not shadow.
+          let reserved := (bodyNames items).filter fun name => !names.any (·.name == name)
+          let binders := localBinders declared reserved
+          let binder (index : Nat) : String := binders[index]?.getD ""
           (bound, { word := word.name
                     pairs := pairs.map fun (bound, input, type) => (bound.name, input, type)
-                    inputs := declared
-                    first
-                    renames := fresh.zip (unclaimed.drop (start - first))
-                    prelude := unclaimed.take (start - first) })
+                    block := binders.drop first
+                    renames := fresh.zip ((unclaimed.drop (start - first)).map binder)
+                    prelude := (unclaimed.take (start - first)).map binder })
   | _ => none
+
+private partial def renameItems (renames : List (String × String)) : List Item → List Item
+  | [] => []
+  | .word name span :: rest => .word ((renames.lookup name).getD name) span :: renameItems renames rest
+  | .quotation items span :: rest => .quotation (renameItems renames items) span :: renameItems renames rest
+  | .locals names items span :: rest =>
+      .locals names (renameItems renames items) span :: renameItems renames rest
+  | item :: rest => item :: renameItems renames rest
+
+/-- The word with the edit `block` states applied, as an author reading the
+diagnostic would apply it: the new block, each renamed name written in its
+place throughout the body, and the prelude names first. -/
+def applyLocalsBlock (word : WordDefinition) (block : LocalsBlock) : WordDefinition :=
+  match word.body with
+  | .locals _ items span :: rest =>
+      let names := block.block.map fun name => ({ name := name, span := span } : LocatedName)
+      let prelude := block.prelude.map fun name => Item.word name span
+      { word with body := .locals names (prelude ++ renameItems block.renames items) span :: rest }
+  | _ => word
 
 /-- Every word whose opening `locals` block binds its inputs out of order,
 refused as one `firth.name.locals-order` error at the first such name, so an

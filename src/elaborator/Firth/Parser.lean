@@ -22,17 +22,18 @@ structure LocalsBlock where
   /-- Each name of the block, the stack-effect input it binds and that
   input's type, in the block's order. -/
   pairs : List (String × String × String)
-  /-- The stack effect's input labels, bottom to top. -/
-  inputs : List String
-  /-- The deepest input the block to write binds: it binds every input from
-  here up to the top. -/
-  first : Nat
+  /-- The block to write: every input from the deepest one the old block
+  names up to the top, named as `locals` can bind them. -/
+  block : List String
   /-- Names in the old block that claim no input by their label, each with
-  the input the body should name instead, since the new block binds that input. -/
-  renames : List (String × Nat) := []
-  /-- The inputs the body should push first, bottom to top, in place of the
+  the name in the new block the body should write instead. -/
+  renames : List (String × String) := []
+  /-- The names the body should push first, bottom to top, in place of the
   values the old block left on the stack. -/
-  prelude : List Nat := []
+  prelude : List String := []
+  /-- Whether the word, edited as above, was checked and is accepted. When
+  it is not, the diagnostic states no edit. -/
+  checked : Bool := false
   deriving Repr, BEq
 
 structure ParseError where
