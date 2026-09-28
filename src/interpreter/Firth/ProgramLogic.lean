@@ -208,6 +208,20 @@ theorem runs_swap (second first : Value) (tail : Stack) :
       (first :: second :: tail) 1 (costs.atom .swap) :=
   runs_simple fun _ => by simp [step]
 
+/-- `pick depth` copies the value `depth` places below the top. -/
+theorem runs_pick {depth : Nat} {stack : Stack} {value : Value}
+    (h : stack[depth]? = some value) :
+    Runs gamma dictionary costs (.cons (.pick depth) .empty) stack (value :: stack) 1
+      (costs.atom (.pick depth)) :=
+  runs_simple fun _ => by simp [step, h]
+
+/-- `roll depth` moves the value `depth` places below the top to the top. -/
+theorem runs_roll {depth : Nat} {stack tail : Stack} {value : Value}
+    (h : rollOut stack depth = some (value, tail)) :
+    Runs gamma dictionary costs (.cons (.roll depth) .empty) stack (value :: tail) 1
+      (costs.atom (.roll depth)) :=
+  runs_simple fun _ => by simp [step, h]
+
 theorem runs_quote (value : Value) (tail : Stack) :
     Runs gamma dictionary costs (.cons .quote .empty) (value :: tail)
       (.quotation (.cons (.push value) .empty) (quotationUsage value) :: tail) 1
@@ -818,7 +832,8 @@ end Bounds
 ## Straight-line chains
 
 `runs_chain` proves a `Runs` goal for a straight-line program by applying one
-rule per atom: the structural atoms, literals, the arithmetic, comparison and
+rule per atom: the structural atoms (with `pick` and `roll` on a stack deep
+enough), literals, the arithmetic, comparison and
 sequence-length primitives (under `int64Gamma`, `+`, `-` and `*` leave an
 `InInt64` side goal, closed from the assumptions when linear arithmetic
 suffices), `dip` and `call` of a literal quotation, `if` on a
@@ -836,6 +851,13 @@ macro "runs_side" : tactic => `(tactic| first
   | runs_arith
   | (simp only [InInt64] at *; omega))
 
+/-- Settles the condition of an `if` in a chain, or fails. -/
+macro "runs_condition" : tactic => `(tactic| first
+  | rfl
+  | decide
+  | assumption
+  | (simp_all; done))
+
 /-- One rule of a chain; fails when no rule applies. -/
 macro "runs_atom" : tactic => `(tactic| first
   | exact runs_empty _
@@ -843,6 +865,8 @@ macro "runs_atom" : tactic => `(tactic| first
   | apply runs_cons (runs_dup _ _)
   | apply runs_cons (runs_drop _ _)
   | apply runs_cons (runs_swap _ _ _)
+  | apply runs_cons (runs_pick (by rfl))
+  | apply runs_cons (runs_roll (by rfl))
   | apply runs_cons (runs_quote _ _)
   | apply runs_cons (runs_compose _ _ _ _ _)
   | apply runs_cons (runs_push _ _)
@@ -865,8 +889,8 @@ macro "runs_atom" : tactic => `(tactic| first
   | apply runs_cons (runs_boolSeq_push _ _ _)
   | apply runs_cons (runs_dip ?_)
   | apply runs_cons (runs_call ?_)
-  | apply runs_cons (runs_if_of_true (by first | rfl | decide | assumption | simp_all) ?_)
-  | apply runs_cons (runs_if_of_false (by first | rfl | decide | assumption | simp_all) ?_))
+  | (apply runs_cons (runs_if_of_true ?condition ?_); case condition => runs_condition)
+  | (apply runs_cons (runs_if_of_false ?condition ?_); case condition => runs_condition))
 
 open Lean Elab Tactic Meta in
 /-- Unfolds the named program in a `Runs` goal, such as an exported
