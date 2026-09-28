@@ -1,12 +1,12 @@
 name = "firth"
 version = "0.1.0"
-defaultTargets = ["FirthProofs", "firthTest", "firthParserTest", "firthCompilerTest", "firthElaborateTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthRecordIntegrityTest", "firthAdapterIntegrationTest", "firthAgentDiagnosticTest", "firthPipelineTest", "firthNamesTest", "smtBoundaryTest", "smtSolverTest", "firthReferenceRunTest", "firthExportsTest", "firthExportLean", "firthAllTest"]
+defaultTargets = ["Firth", "FirthProofs", "firthTest", "firthParserTest", "firthCompilerTest", "firthElaborateTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthRecordIntegrityTest", "firthAdapterIntegrationTest", "firthAgentDiagnosticTest", "firthPipelineTest", "firthNamesTest", "smtBoundaryTest", "smtSolverTest", "firthReferenceRunTest", "firthExportsTest", "firthExportLean", "firthAllTest"]
 testDriver = "firthAllTest"
 
 [[lean_lib]]
 name = "Firth"
 srcDir = "src/interpreter"
-roots = ["Firth", "FirthReferenceRun"]
+roots = ["Firth", "FirthReferenceRun", "FirthLogicTest"]
 
 [[lean_lib]]
 name = "FirthElaborator"
