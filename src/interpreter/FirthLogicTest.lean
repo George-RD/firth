@@ -62,6 +62,14 @@ example (x y : Int) (n : Nat) (qs : List Int) (hq : qs[n]? = some x) (h : x = y 
     (hn : n = 4) : x + n = y + 6 := by
   runs_arith
 
+/- `omega` also reads equations and disequations over `Fin n`, so those stay:
+the goals below need `h` itself. -/
+example (n c : Nat) (i j : Fin n) (h : i = j) : i.val + c = j.val + c := by
+  runs_arith
+
+example (n : Nat) (i j : Fin n) (h : i ≠ j) : i.val ≠ j.val := by
+  runs_arith
+
 /- `int64Gamma` refuses `div` where the VM traps: a zero divisor, and the one
 quotient past i64, `-2^63 div -1`. The reference registry refuses only the
 zero divisor; its `-2^63 div -1` is the unbounded 2^63. -/

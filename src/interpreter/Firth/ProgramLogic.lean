@@ -780,11 +780,12 @@ rules leaves behind.
 
 open Lean Elab Tactic Meta in
 /-- Clears every hypothesis that is an equation (or disequation) between
-values of a type other than `Int` or `Nat`: the condition
+values of a type other than `Int`, `Nat` or `Fin n`: the condition
 `decide (x < y) = true` of an `if`, or a list lookup `xs[i]? = some q` from
 `seq-int.at`. `omega` cannot use one, and with one in context it can run out
 of heartbeats normalising a long step or cost sum; `Firth.LogicTest` has both
-cases. Equations over `Int` or `Nat`, and every other hypothesis, stay. -/
+cases. Equations over `Int`, `Nat` or `Fin n`, which `omega` reads, and every
+other hypothesis, stay. -/
 elab "runs_clear_nonarith" : tactic => withMainContext do
   let mut goal ← getMainGoal
   for decl in ← getLCtx do
@@ -795,14 +796,14 @@ elab "runs_clear_nonarith" : tactic => withMainContext do
       else if type.isAppOfArity ``Ne 3 then some (type.getArg! 0)
       else none
     if let some carrier := carrier? then
-      unless carrier.isConstOf ``Int || carrier.isConstOf ``Nat do
+      unless carrier.isConstOf ``Int || carrier.isConstOf ``Nat || carrier.isAppOfArity ``Fin 1 do
         goal ← goal.tryClear decl.fvarId
   replaceMainGoal [goal]
 
 /-- Closes a step or cost equation or inequality under `defaultCosts`.
-Equations over types other than `Int` and `Nat` are cleared first (see
-`runs_clear_nonarith`), so a fact `omega` needs must be stated over `Int` or
-`Nat`, not as a `decide` or a lookup. -/
+Equations over types other than `Int`, `Nat` and `Fin n` are cleared first
+(see `runs_clear_nonarith`), so a fact `omega` needs must be stated over one
+of those, not as a `decide` or a lookup. -/
 macro "runs_arith" : tactic =>
   `(tactic| ((try simp only [defaultCosts_atom, defaultCosts_primitive, defaultCosts_unfold]) <;>
     (runs_clear_nonarith; omega)))
