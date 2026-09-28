@@ -194,6 +194,66 @@
         }
     }
 
+    fn run_set(tag: u64, bytes: Vec<u8>, index: i64, value: Value, name: &str) -> Result<Vec<Value>, VmError> {
+        execute(&test_image(vec![word(
+            "main",
+            vec![
+                instruction(
+                    Op::PushLiteral,
+                    Some(Operand::Literal(Value::PrimitiveValue { tag, bytes })),
+                ),
+                instruction(Op::PushLiteral, Some(Operand::Literal(Value::Int(index)))),
+                instruction(Op::PushLiteral, Some(Operand::Literal(value))),
+                instruction(Op::Prim, Some(Operand::Primitive(String::from(name)))),
+            ],
+        )]))
+    }
+
+    fn ints(values: &[i64]) -> Vec<u8> {
+        values.iter().flat_map(|v| v.to_le_bytes()).collect()
+    }
+
+    #[test]
+    fn set_replaces_one_element_and_keeps_the_length() {
+        // Hand-written: element 1 of [7, 8, 9] becomes i64::MIN; the rest stay.
+        assert_eq!(
+            run_set(SEQ_INT_TAG, ints(&[7, 8, 9]), 1, Value::Int(i64::MIN), "intSeqSet"),
+            Ok(vec![Value::PrimitiveValue { tag: SEQ_INT_TAG, bytes: ints(&[7, i64::MIN, 9]) }])
+        );
+        assert_eq!(
+            run_set(SEQ_INT_TAG, ints(&[7, 8, 9]), 2, Value::Int(-1), "intSeqSet"),
+            Ok(vec![Value::PrimitiveValue { tag: SEQ_INT_TAG, bytes: ints(&[7, 8, -1]) }])
+        );
+        assert_eq!(
+            run_set(SEQ_BOOL_TAG, vec![1, 1, 0], 1, Value::Bool(false), "boolSeqSet"),
+            Ok(vec![Value::PrimitiveValue { tag: SEQ_BOOL_TAG, bytes: vec![1, 0, 0] }])
+        );
+        assert_eq!(
+            run_set(SEQ_BOOL_TAG, vec![0], 0, Value::Bool(true), "boolSeqSet"),
+            Ok(vec![Value::PrimitiveValue { tag: SEQ_BOOL_TAG, bytes: vec![1] }])
+        );
+    }
+
+    #[test]
+    fn set_outside_the_sequence_faults_at_every_magnitude() {
+        for index in [3, (1_i64 << 61) - 1, 1_i64 << 61, i64::MAX, -1, i64::MIN] {
+            assert_eq!(
+                run_set(SEQ_INT_TAG, ints(&[7, 8, 9]), index, Value::Int(0), "intSeqSet"),
+                Err(VmError::PrimitiveFault),
+                "Seq Int set {index}"
+            );
+            assert_eq!(
+                run_set(SEQ_BOOL_TAG, vec![1, 0, 1], index, Value::Bool(true), "boolSeqSet"),
+                Err(VmError::PrimitiveFault),
+                "Seq Bool set {index}"
+            );
+        }
+        assert_eq!(
+            run_set(SEQ_INT_TAG, vec![], 0, Value::Int(0), "intSeqSet"),
+            Err(VmError::PrimitiveFault)
+        );
+    }
+
     #[test]
     fn negative_integers_push_onto_and_read_back_from_a_sequence() {
         let pushed = run_sequence_primitive(SEQ_INT_TAG, vec![], Value::Int(i64::MIN), "intSeqPush")

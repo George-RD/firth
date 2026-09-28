@@ -34,9 +34,9 @@ sha256 = "32832d0aac0e9a619967d9450f31473048224dcf41e56befa4152c366d1a885b"
 role = "elaborator-to-envelope-adapters"
 
 [gamma]
-version = "0.6"
+version = "0.7"
 portable = true
-primitives = ["+", "-", "*", "<", "=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"]
+primitives = ["+", "-", "*", "<", "=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-int.set", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "seq-bool.set", "send"]
 values = ["Int", "Bool", "Seq Int", "Seq Bool", "Handle", "Bytes", "World"]
 predicates = ["positive", "nonzero", "is-open"]
 
@@ -110,6 +110,11 @@ effect = "Seq Int^many Int^many -- Seq Int^many"
 transition = "deterministic-sequence-append"
 observation = "pure"
 
+[gamma.primitive."seq-int.set"]
+effect = "Seq Int^many Int^many Int^many -- Seq Int^many"
+transition = "deterministic-sequence-replace-faulting-outside-bounds"
+observation = "pure"
+
 [gamma.primitive."seq-bool.empty"]
 effect = "-- Seq Bool^many"
 transition = "deterministic-empty-sequence"
@@ -128,6 +133,11 @@ observation = "pure"
 [gamma.primitive."seq-bool.push"]
 effect = "Seq Bool^many Bool^many -- Seq Bool^many"
 transition = "deterministic-sequence-append"
+observation = "pure"
+
+[gamma.primitive."seq-bool.set"]
+effect = "Seq Bool^many Int^many Bool^many -- Seq Bool^many"
+transition = "deterministic-sequence-replace-faulting-outside-bounds"
 observation = "pure"
 
 [gamma.primitive.send]

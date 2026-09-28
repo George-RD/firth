@@ -462,8 +462,8 @@ def runElaboratorDiagnosticTests : IO Unit := do
   -- are written out here, not read from `languagePrimitives`, so a hint
   -- that falls behind the language fails.
   let everyPrimitive := ["+", "-", "*", "<", "=", "div", "mod", "and", "or", "not",
-    "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push",
-    "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"]
+    "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-int.set",
+    "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "seq-bool.set", "send"]
   -- The list is the checker's: each name has a signature in the agent Gamma,
   -- which refuses a name that is not a primitive.
   for name in everyPrimitive do

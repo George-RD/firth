@@ -589,6 +589,29 @@ theorem runs_boolSeq_at_int {values : List Bool} {index : Int} {value : Bool} (t
   have := runs_boolSeq_at (gamma := gamma) (dictionary := dictionary) (costs := costs) tail h
   rwa [Int.toNat_of_nonneg hIndex] at this
 
+/-- `seq-int.set` at an index inside the sequence replaces that element.
+Outside it the primitive faults, and no `Runs` fact holds. -/
+theorem runs_intSeq_set {values : List Int} {index value : Int} (tail : Stack)
+    (hIndex : 0 ≤ index) (hBound : index.toNat < values.length) :
+    Runs gamma dictionary costs (.cons (.prim "seq-int.set") .empty)
+      (.literal (.int value) :: .literal (.int index) :: .literal (.intSeq values) :: tail)
+      (.literal (.intSeq (values.set index.toNat value)) :: tail) 1
+      (costs.primitive "seq-int.set") := by
+  obtain ⟨n, rfl⟩ := Int.eq_ofNat_of_zero_le hIndex
+  exact runs_prim (registry_prim (kernel := "intSeqSet") (by decide) rfl rfl)
+    (by simp_all [intSeqSetDelta, replaceAt?])
+
+/-- `seq-bool.set` at an index inside the sequence replaces that element. -/
+theorem runs_boolSeq_set {values : List Bool} {index : Int} {value : Bool} (tail : Stack)
+    (hIndex : 0 ≤ index) (hBound : index.toNat < values.length) :
+    Runs gamma dictionary costs (.cons (.prim "seq-bool.set") .empty)
+      (.literal (.bool value) :: .literal (.int index) :: .literal (.boolSeq values) :: tail)
+      (.literal (.boolSeq (values.set index.toNat value)) :: tail) 1
+      (costs.primitive "seq-bool.set") := by
+  obtain ⟨n, rfl⟩ := Int.eq_ofNat_of_zero_le hIndex
+  exact runs_prim (registry_prim (kernel := "boolSeqSet") (by decide) rfl rfl)
+    (by simp_all [boolSeqSetDelta, replaceAt?])
+
 end Primitives
 
 /-!
