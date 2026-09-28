@@ -233,12 +233,12 @@ def subagent_audit() -> None:
         sol.write_text(json.dumps({**harness.extract(ans.read_text()), "sort": "changed after the answer"}))
         check(len(audit(ok, prompt, d, d)[1]) == 1, "the audit flags scored solutions that differ from the answer")
         sol.unlink()
+        ans.write_text("### task: sort\nchanged\n")
+        check(len(audit(ok, prompt, d, d)[1]) == 1, "the audit flags an answer changed after it was written")
     from audit_subagent import solutions_mismatch
     kept = sorted(p for p in (HERE / "runs").glob("2026-09-28-*/*") if (p / "answer-1.md").is_file())
     check(kept and all(solutions_mismatch(p) == [] for p in kept),
           f"every kept round's scored solutions are its answers as written ({len(kept)} authors)")
-        ans.write_text("### task: sort\nchanged\n")
-        check(len(audit(ok, prompt, d, d)[1]) == 1, "the audit flags an answer changed after it was written")
 
 
 def unsandboxed_python_refused() -> None:
