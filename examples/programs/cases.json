@@ -100,6 +100,7 @@
     {"source": "refused/call-unknown-effect.firth", "entry": "call-unknown-effect", "stack": [100, 5, 3], "expect_error": "firth.elaboration.untracked-local"},
     {"source": "refused/dip-unknown-effect.firth", "entry": "dip-unknown-effect", "stack": [5, 3], "expect_error": "firth.elaboration.untracked-local"},
     {"source": "refused/nested-quotation-result.firth", "entry": "nested-quotation-result", "stack": [5, 3], "expect_error": "firth.elaboration.untracked-local"},
+    {"source": "refused/if-branch-shape.firth", "entry": "keep-positive", "stack": [5], "expect_error": "firth.type.branch-mismatch"},
     {"source": "refused/reserved-type-name.firth", "entry": "reserved-type-name", "stack": [], "expect_error": "firth.compile.invalid-word-type"}
   ]
 }

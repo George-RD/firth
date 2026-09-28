@@ -1,0 +1,6 @@
+\ The true branch pushes `x` and the false branch pushes nothing, so the two
+\ branches leave stacks of different depths. The checker must report the
+\ `if` itself, not the later use of `x` where erasure first loses track.
+: keep-positive
+  (forall ρ; ρ x:Int^many -- ρ r:Int^many)
+  locals { x } { 0 x prim < [ x ] [ ] if x prim + } ;

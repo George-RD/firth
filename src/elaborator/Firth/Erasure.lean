@@ -23,6 +23,17 @@ structure EffectEnv where
   word : String → Option Signature := fun _ => none
   primitive : String → Option Signature := fun _ => none
 
+/-- Where erasure lost track of the stack: the higher-order atom that ran a
+quotation of unknown stack effect. For an `if` whose two branches both have
+known effects that change the stack depth by different amounts, `branches`
+holds the true and false branch effects (values consumed, values produced);
+such a program is ill-typed, since both branches must leave the same stack. -/
+structure LostTrack where
+  atom : String
+  span : Span
+  branches : Option ((Nat × Nat) × (Nat × Nat)) := none
+  deriving Repr, BEq
+
 inductive ErasureError where
   | duplicateLocal (name : String) (span : Span)
   | unboundLocal (name : String) (span : Span)
@@ -37,7 +48,7 @@ inductive ErasureError where
   | unsupportedAtom (name : String) (span : Span)
   /-- A local is used after `call`, `dip` or `if` ran a quotation whose stack
   effect is not known here, so where the local sits can't be determined. -/
-  | untrackedStack (name : String) (span : Span)
+  | untrackedStack (name : String) (span : Span) (lost : Option LostTrack)
   /-- An operation would take a local that is not yet used, and it could not
   be moved out of the way. A block's locals are off the stack for its body. -/
   | hiddenLocal (name : String) (span : Span)
@@ -81,6 +92,8 @@ structure State where
   /-- Set once a quotation of unknown stack effect has run: from then on the
   tracked stack may not match the real one, so no local may be located. -/
   untracked : Bool := false
+  /-- The atom that set `untracked`, for the diagnostic. -/
+  lostAt : Option LostTrack := none
   deriving Repr, BEq
 
 private def located (span : Span) (atom : Atom) : LocatedKernel := { span, atom }
@@ -207,6 +220,18 @@ private def dipMove : List StackEntry → Option (List StackEntry × Bool)
   | quotation :: preserved :: rest =>
       runKnown quotation.effect rest (quotation :: preserved :: rest) (preserved :: ·)
   | _ => none
+
+/-- Both branch effects of an `if`, when both are known. -/
+private def ifBranches : List StackEntry → Option ((Nat × Nat) × (Nat × Nat))
+  | { effect := some falseEffect, .. } :: { effect := some trueEffect, .. } :: _ :: _ =>
+      some (trueEffect, falseEffect)
+  | _ => none
+
+/-- `lostAt` after an atom: kept once the stack is untracked, recorded when
+this atom is the one that loses track. -/
+private def lostAfter (state : State) (exact : Bool) (atom : String) (span : Span)
+    (branches : Option ((Nat × Nat) × (Nat × Nat)) := none) : Option LostTrack :=
+  if state.untracked || exact then state.lostAt else some { atom, span, branches }
 
 private def ifMove : List StackEntry → Option (List StackEntry × Bool)
   | falseBranch :: trueBranch :: condition :: rest =>
@@ -709,19 +734,31 @@ inductive ErasesAtomTo : String → Span → State → KernelProgram → State �
   | dip {span : Span} {state : State} {next : List StackEntry} {exact : Bool}
       (moved : dipMove state.stack = some (next, exact)) :
       ErasesAtomTo "dip" span state (atomList .dip span)
-        { state with stack := next, untracked := state.untracked || !exact }
+        { state with
+          stack := next
+          untracked := state.untracked || !exact
+          lostAt := lostAfter state exact "dip" span }
   | call {span : Span} {state : State} {next : List StackEntry} {exact : Bool}
       (moved : callMove state.stack = some (next, exact)) :
       ErasesAtomTo "call" span state (atomList .call span)
-        { state with stack := next, untracked := state.untracked || !exact }
+        { state with
+          stack := next
+          untracked := state.untracked || !exact
+          lostAt := lostAfter state exact "call" span }
   | compose {span : Span} {state : State} {next : List StackEntry} {exact : Bool}
       (moved : composeMove state.stack = some (next, exact)) :
       ErasesAtomTo "compose" span state (atomList .compose span)
-        { state with stack := next, untracked := state.untracked || !exact }
+        { state with
+          stack := next
+          untracked := state.untracked || !exact
+          lostAt := lostAfter state exact "compose" span }
   | ifThenElse {span : Span} {state : State} {next : List StackEntry} {exact : Bool}
       (moved : ifMove state.stack = some (next, exact)) :
       ErasesAtomTo "if" span state (atomList .ifThenElse span)
-        { state with stack := next, untracked := state.untracked || !exact }
+        { state with
+          stack := next
+          untracked := state.untracked || !exact
+          lostAt := lostAfter state exact "if" span (ifBranches state.stack) }
 
 private def NonWord : Item → Prop
   | .word _ _ => False
@@ -1131,25 +1168,37 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
         | "dip" => match movedEq : dipMove state.stack with
           | some (next, exact) => .ok {
               program := atomList .dip span
-              final := { state with stack := next, untracked := state.untracked || !exact }
+              final := { state with
+                         stack := next
+                         untracked := state.untracked || !exact
+                         lostAt := lostAfter state exact "dip" span }
               evidence := .atom clearEq (.dip movedEq) }
           | none => .error (.effectUnderflow name span)
         | "call" => match movedEq : callMove state.stack with
           | some (next, exact) => .ok {
               program := atomList .call span
-              final := { state with stack := next, untracked := state.untracked || !exact }
+              final := { state with
+                         stack := next
+                         untracked := state.untracked || !exact
+                         lostAt := lostAfter state exact "call" span }
               evidence := .atom clearEq (.call movedEq) }
           | none => .error (.effectUnderflow name span)
         | "compose" => match movedEq : composeMove state.stack with
           | some (next, exact) => .ok {
               program := atomList .compose span
-              final := { state with stack := next, untracked := state.untracked || !exact }
+              final := { state with
+                         stack := next
+                         untracked := state.untracked || !exact
+                         lostAt := lostAfter state exact "compose" span }
               evidence := .atom clearEq (.compose movedEq) }
           | none => .error (.effectUnderflow name span)
         | "if" => match movedEq : ifMove state.stack with
           | some (next, exact) => .ok {
               program := atomList .ifThenElse span
-              final := { state with stack := next, untracked := state.untracked || !exact }
+              final := { state with
+                         stack := next
+                         untracked := state.untracked || !exact
+                         lostAt := lostAfter state exact "if" span (ifBranches state.stack) }
               evidence := .atom clearEq (.ifThenElse movedEq) }
           | none => .error (.effectUnderflow name span)
         | _ => .error (.unsupportedAtom name span)))
@@ -1194,11 +1243,11 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
           let unused := (slots.find? (fun slot => state.stack.any (fun entry =>
             cleanupCandidate slots entry && (entry.slot.map (·.id) == some slot.id)))).getD
               (slots.head?.getD { id := 0, name := "local", usage := .many, origin := emptySpan })
-          .error (.untrackedStack unused.name unused.origin)
+          .error (.untrackedStack unused.name unused.origin state.lostAt)
       | item :: rest => match item with
         | .word name localSpan =>
           if activeEq : slots.any (fun slot => slot.name == name) || visible.contains name then
-            if untrackedEq : state.untracked = true then .error (.untrackedStack name localSpan) else
+            if untrackedEq : state.untracked = true then .error (.untrackedStack name localSpan state.lostAt) else
             have trackedEq : state.untracked = false := by simpa using untrackedEq
             match resolveSlotWithProof name localSpan state.stack with
             | .error error => .error error
