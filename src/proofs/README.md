@@ -101,7 +101,8 @@ names the word. It also refuses an entry when:
 - the theorem is not a `theorem` in the named module;
 - the theorem, its statement or any definition they use reaches an axiom
   other than `propext`, `Classical.choice` and `Quot.sound`. This refuses
-  `sorryAx` and the auxiliary axioms `native_decide` declares;
+  `sorryAx` and the auxiliary axioms that proofs by compiled evaluation
+  (Lean's native decision tactic) declare;
 - the registry is not `adapterGamma` or `int64Gamma` itself (a definition
   equal to one of them is refused too);
 - the module's source file is gone, since its `.olean` may be stale.

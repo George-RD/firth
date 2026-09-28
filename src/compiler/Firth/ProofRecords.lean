@@ -21,7 +21,7 @@ and refuses the whole run unless, for every contract:
 * the theorem is a `theorem` declared in the named module;
 * every constant it reaches, through its statement and its proof and through
   every definition they use, rests only on `propext`, `Classical.choice` and
-  `Quot.sound`. `sorryAx`, `Lean.ofReduceBool` (what `native_decide` uses),
+  `Quot.sound`. `sorryAx`, `Lean.ofReduceBool` (what compiled-evaluation proofs use),
   `Lean.trustCompiler` and every other constant declared without a proof are
   refused;
 * `gamma` is `adapterGamma` or `int64Gamma`, `costs` is a `CostTable`, the

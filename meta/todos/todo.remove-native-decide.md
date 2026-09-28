@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.elaborator
-status: open
+status: done
 created: 2026-09-28
 ---
 
@@ -22,3 +22,12 @@ axiom. AGENTS.md rule 11 forbids new uses.
 ## Traceability
 
 `dec.agent-development-rules`. Owned by whoever owns `src/elaborator`.
+
+## Resolution
+
+Both side conditions now close by `decide`. They could not before because
+the bounds traversal in `Refinement.lean` recursed by well-founded recursion,
+which `decide` does not unfold; it now recurses structurally on a fuel that
+starts one above its two budgets, so accepted formulas are unchanged.
+`check_zero_admit.py` rejects `native_decide`, with planted cases in
+`tools/loop/test_check_zero_admit.py`.
