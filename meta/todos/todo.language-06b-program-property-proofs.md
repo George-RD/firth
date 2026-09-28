@@ -94,9 +94,14 @@ it either.
 returns `Spec.allocateAll`'s result on every valid input (codes 1 and 2 for
 out-of-bounds input and repeated IDs), so the properties proved in
 `src/proofs/Inventory/Spec.lean` hold of the program, with every intermediate
-value in i64 (`int64Gamma`). Open: admitting these as evidence records bound to
-the covered words' digests, `contract_verified` reporting, and the
-invalidation checks.
+value in i64 (`int64Gamma`).
+
+`allocate_batch_contract` is recorded in `src/proofs/records.json`, bound to
+the body digests and erased types of `allocate-batch` and the nine words it
+calls, and all ten are reported `contract_verified`. A planted change to
+`allocate-one` (reason 3 to 4) breaks the proof, and
+`update_proof_records.py --check` refuses; the record mechanism's own
+staleness checks are in its fixtures (#138).
 
 ## Traceability
 
