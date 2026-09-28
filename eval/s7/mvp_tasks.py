@@ -14,7 +14,7 @@ author. `test_mvp.py` checks the refs against hand-worked expected values.
 """
 from __future__ import annotations
 
-from tasks import Task, _t
+from task import Task, _t
 
 I, B, SI, SB = "Int", "Bool", "Seq Int", "Seq Bool"
 

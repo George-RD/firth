@@ -100,10 +100,18 @@ def scorer_rejects_wrong_python() -> None:
     check(not harness.same([[1, 0]], [[True, False]]), "a nested Bool never equals an Int")
     check(not harness.same([[1, 2]], [[1, 2, 3]]), "nested lengths are compared")
     # `reverse` has one output, a list: returning it must not spread into several values.
-    rev = harness.run_python("def main(xs):\n    return xs[::-1]\n", ([1, 2],), None, 1)
+    rev = harness.run_python("def main(xs):\n    return xs[::-1]\n", ([1, 2],), None, ("Seq Int",))
     check(rev == {"ok": True, "stack": [[2, 1]]}, "a single list output stays one value")
-    two = harness.run_python("def main(s, t):\n    return (s, 0)\n", (1, []), None, 2)
+    two = harness.run_python("def main(s, t):\n    return (s, 0)\n", (1, []), None, ("Int", "Int"))
     check(two == {"ok": True, "stack": [1, 0]}, "a tuple of two outputs gives two values")
+    # A tuple where a list is due, or a Bool where an Int is due, fails even
+    # though JSON would make it look right.
+    tup = harness.run_python("def main(xs):\n    return tuple(xs[::-1])\n", ([1, 2],), None,
+                             ("Seq Int",))
+    check(not tup["ok"], "a tuple returned for a Seq Int output fails")
+    flag = harness.run_python("def main(xs):\n    return [x > 0 for x in xs]\n", ([1, 2],), None,
+                              ("Seq Int",))
+    check(not flag["ok"], "Bools returned inside a Seq Int output fail")
     res = harness.score({"reverse": "def main(xs):\n    return list(xs)\n"}, "python",
                         [BY_ID["reverse"]], 1)
     check(not res["tasks"]["reverse"]["pass"], "the scorer fails a wrong Python answer")

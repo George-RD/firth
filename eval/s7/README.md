@@ -78,8 +78,9 @@ include negative numbers and empty sequences.
   against values worked out by hand from the description.
 - `reference/mvp/` has a Firth solution for each task. All 20 pass their
   example and hidden tests on both hosts. `test_mvp.py` checks that, and that
-  the scorer fails a planted mutant, a Python answer with a Bool where an Int
-  is due, and a single list output read as several values. CI runs it.
+  the scorer fails a planted mutant and Python answers of the wrong type (a
+  tuple where a list is due, Bools inside a `list[int]`). A Python answer must
+  return exactly its declared types, checked before JSON conversion. CI runs it.
 - MVP tasks run with a budget of 1,000,000 steps (`--fuel`), the runner's
   largest. The references use far less.
 - `prompt --tier mvp` gives the author `docs/getting-started.md`,

@@ -152,12 +152,17 @@ def load_solutions(path: Path) -> dict[str, str]:
     return json.loads(path.read_text())
 
 
+def types(task: Task) -> tuple[str, ...]:
+    return tuple(t for _, t in task.outputs)
+
+
 def fuel_for(task: Task) -> int | None:
     """The step budget a task runs with; None means the runner's default."""
     return MVP_FUEL if task.id in MVP_IDS else None
 
 
-def run_firth(source: str, args: tuple, fuel: int | None = None, outputs: int = 0) -> dict:
+def run_firth(source: str, args: tuple, fuel: int | None = None,
+              outputs: tuple[str, ...] = ()) -> dict:
     with tempfile.NamedTemporaryFile("w", suffix=".firth", delete=False) as f:
         f.write(source)
         path = f.name
@@ -196,19 +201,32 @@ import json, sys
 ns = {}
 exec(compile(sys.stdin.read(), "solution.py", "exec"), ns)
 r = ns["main"](*json.loads(sys.argv[1]))
-# A task with one output returns it bare, even when it is a list; with several,
-# a tuple (or list) of them.
-if int(sys.argv[2]) == 1:
-    out = list(r) if isinstance(r, tuple) and len(r) == 1 else [r]
+types = json.loads(sys.argv[2])
+# One output is returned bare, even when it is a list; several as a tuple (or
+# list) of that length. Each value must have exactly its declared type, checked
+# before JSON erases the difference between a tuple and a list or True and 1.
+if len(types) == 1:
+    out = [r]
+elif isinstance(r, (tuple, list)) and len(r) == len(types):
+    out = list(r)
 else:
-    out = list(r) if isinstance(r, (tuple, list)) else [r]
+    sys.exit(f"main returned {r!r}, expected {len(types)} values")
+ELEM = {"Seq Int": int, "Seq Bool": bool}
+for v, t in zip(out, types):
+    ok = (type(v) is list and all(type(x) is ELEM[t] for x in v) if t in ELEM
+          else type(v) is {"Int": int, "Bool": bool}[t])
+    if not ok:
+        sys.exit(f"main returned {v!r} where a {t} is due")
 print(json.dumps(out))
 """
 
 
-def run_python(source: str, args: tuple, fuel: int | None = None, outputs: int = 0) -> dict:
+def run_python(source: str, args: tuple, fuel: int | None = None,
+               outputs: tuple[str, ...] = ()) -> dict:
+    """Run `main`; `outputs` are the task's output types, which the result must match."""
     try:
-        p = subprocess.run([sys.executable, "-c", PY_DRIVER, json.dumps(list(args)), str(outputs)],
+        p = subprocess.run([sys.executable, "-c", PY_DRIVER, json.dumps(list(args)),
+                            json.dumps(list(outputs))],
                            input=source, capture_output=True, text=True, timeout=30)
     except subprocess.TimeoutExpired:
         return {"ok": False, "error": "timeout"}
@@ -247,7 +265,7 @@ def score(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int) ->
         runner(solutions[work[0][0].id], work[0][1], fuel_for(work[0][0]))  # build the toolchain once, serially
     with ThreadPoolExecutor(jobs) as pool:
         outs = list(pool.map(
-            lambda w: runner(solutions[w[0].id], w[1], fuel_for(w[0]), len(w[0].outputs)), work))
+            lambda w: runner(solutions[w[0].id], w[1], fuel_for(w[0]), types(w[0])), work))
     per: dict[str, dict] = {t.id: {"needs": sorted(t.needs), "submitted": t.id in solutions,
                                     "cases": []} for t in tasks}
     for (t, args, visible), out in zip(work, outs):
@@ -297,7 +315,7 @@ def try_run(source: str, lang: str, task: Task, stack: list | None) -> str:
     own inputs (with no expected answer). Never touches the hidden tests."""
     runner = run_firth if lang == "firth" else run_python
     args = tuple(task.example) if stack is None else tuple(stack)
-    out = runner(source, args, fuel_for(task), len(task.outputs))
+    out = runner(source, args, fuel_for(task), types(task))
     lines = [f"input: {json.dumps(list(args))}"]
     if stack is None:
         lines.append(f"expected: {json.dumps(list(task.expected(args)))}")
