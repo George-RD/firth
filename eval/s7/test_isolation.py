@@ -847,7 +847,7 @@ print(json.dumps(out))
         check("S7-NOTE" in got.stdout, f"two runs as one uid share its keyring (the planted case): {put.stdout.strip()} {got.stdout.strip()}")
         put = isolate.run(ws, ["python3", "kr.py", "put"], capture_output=True, text=True, timeout=300)
         got = isolate.run(ws, ["python3", "kr.py", "get"], capture_output=True, text=True, timeout=300)
-        check(put.stdout.startswith("put") and "S7-NOTE" not in got.stdout,
+        check(put.stdout.split()[:2] == ["put", "1"] and "S7-NOTE" not in got.stdout,
               f"a key stored by one author run is gone for the next: {put.stdout.strip()} {got.stdout.strip()}")
         (ws / "kr.py").unlink()
         keyed = [harness.run_python(f"import ctypes\n{KEYRING_FN}\ndef main(xs):\n    return [keyring(m) for m in {mode!r}]\n",
