@@ -105,6 +105,12 @@ include negative numbers and empty sequences.
   `test_isolation.py` (CI, as root) runs a probe that finds them without the
   sandbox and finds nothing inside it, by direct path, `/proc/<pid>/root`,
   `git show`, `umount` or a filesystem search.
+- The repository's git storage is hidden too, wherever it lives: a
+  worktree's git directory, the shared common directory and any object
+  alternates (`git_storage`), since `git show` reads the hidden tests from
+  any of them. The sandbox refuses to start if the storage cannot be found.
+  `test_isolation.py` plants a worktree of a `--shared` clone under `/opt`
+  whose secret git gives back when the storage is not hidden.
 - Submitted Python programs, run by `./try` or at scoring, also get an empty
   network namespace, so an answer cannot fetch anything. `test_isolation.py`
   plants one that reads from a local listener.

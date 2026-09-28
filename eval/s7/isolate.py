@@ -156,12 +156,40 @@ def serve(dir: Path, stop: threading.Event | None = None) -> socket.socket:
 
 
 def hidden_paths() -> list[str]:
-    """Everything to cover: the fixed list plus the repository, wherever it is."""
+    """Everything to cover: the fixed list, the repository wherever it is, and
+    its git storage. A worktree's git directory, the shared common directory
+    and any object alternates can lie outside the repository, and `git show`
+    reads the hidden tests from any of them."""
     paths = list(HIDDEN)
-    root = str(harness.ROOT)
-    if not any(root == p or root.startswith(p + "/") for p in paths):
-        paths.append(root)
+    for extra in (str(harness.ROOT), *git_storage(harness.ROOT)):
+        if not any(extra == p or extra.startswith(p + "/") for p in paths):
+            paths.append(extra)
     return paths
+
+
+def git_storage(root: Path) -> list[str]:
+    """The git directory, common directory and object alternates behind ROOT.
+    Fails closed: a checkout whose storage cannot be resolved is not run."""
+    if not (root / ".git").exists():
+        return []
+    try:
+        out = subprocess.run(["git", "-C", str(root), "rev-parse", "--path-format=absolute",
+                              "--git-dir", "--git-common-dir"],
+                             capture_output=True, text=True, check=True, timeout=30).stdout
+    except (OSError, subprocess.SubprocessError) as e:
+        raise SystemExit(f"cannot find the repository's git storage to hide it: {e}")
+    dirs = [os.path.realpath(d) for d in out.split()]
+    pending = [Path(dirs[-1]) / "objects"]
+    while pending:  # alternates may chain
+        alt = pending.pop() / "info" / "alternates"
+        if alt.is_file():
+            for line in alt.read_text().splitlines():
+                if line.strip() and not line.startswith("#"):
+                    obj = Path(os.path.realpath(alt.parent.parent / line.strip()))
+                    if str(obj) not in dirs:
+                        dirs.append(str(obj))
+                        pending.append(obj)
+    return dirs
 
 
 def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = (),
