@@ -105,6 +105,48 @@ def audit_checks() -> None:
         check(len(isolate.audit(clean + [ev])) == 1, f"the audit flags a planted {name} call")
 
 
+def git_storage_checks(ws: Path) -> None:
+    """Codex's probe: a checkout that is a worktree of a clone sharing objects
+    with another repository keeps its git directory, common directory and
+    object alternates outside the repository path. Planted under /opt, outside
+    every fixed hidden path, with a secret only git can give back."""
+    base = Path(f"/opt/s7-git-probe-{os.getpid()}")
+    origin, clone, wt = base / "origin", base / "clone", base / "wt"
+    git = ["git", "-c", "user.email=s7@probe", "-c", "user.name=s7"]
+    try:
+        origin.mkdir(parents=True)
+        subprocess.run(git + ["init", "-q", str(origin)], check=True)
+        (origin / "secret.txt").write_text("S7-GIT-SECRET\n")
+        subprocess.run(git + ["-C", str(origin), "add", "secret.txt"], check=True)
+        subprocess.run(git + ["-C", str(origin), "commit", "-qm", "s"], check=True)
+        subprocess.run(git + ["clone", "-q", "--shared", str(origin), str(clone)], check=True)
+        subprocess.run(git + ["-C", str(clone), "worktree", "add", "-q", str(wt)], check=True)
+        (wt / "secret.txt").unlink()  # the working copy is the repository: only git storage is left
+        read = ["bash", "-c", f"git -c safe.directory='*' --git-dir={clone}/.git show HEAD:secret.txt; "
+                f"cat {clone}/.git/HEAD {wt}/.git 2>/dev/null; ls {origin}/.git/objects 2>/dev/null"]
+        real_root, real_storage = harness.ROOT, isolate.git_storage
+        try:
+            harness.ROOT = wt
+            stored = isolate.git_storage(wt)
+            check(str(clone / ".git") in stored and str(origin / ".git" / "objects") in stored,
+                  f"the worktree's common directory and alternates are found: {stored}")
+            isolate.git_storage = lambda root: []  # the planted case: storage not hidden
+            leaky = subprocess.run(isolate.sandbox_command(ws, read, uid=isolate.NOBODY), env=isolate.sandbox_env(),
+                                   capture_output=True, text=True, timeout=300)
+            check("S7-GIT-SECRET" in leaky.stdout,
+                  "without hiding git storage, git gives back the secret in the sandbox (the planted case)")
+            isolate.git_storage = real_storage
+            inside = subprocess.run(isolate.sandbox_command(ws, read, uid=isolate.NOBODY), env=isolate.sandbox_env(),
+                                    capture_output=True, text=True, timeout=300)
+            check("S7-GIT-SECRET" not in inside.stdout and "ref:" not in inside.stdout
+                  and not inside.stdout.strip(),
+                  f"in the sandbox the worktree's git storage is empty: {inside.stdout.strip()[:200]!r}")
+        finally:
+            harness.ROOT, isolate.git_storage = real_root, real_storage
+    finally:
+        shutil.rmtree(base, ignore_errors=True)
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(dir="/var/tmp") as tmp:
         ws = Path(tmp) / "ws"
@@ -395,6 +437,7 @@ def main() -> int:
         finally:
             isolate.sandbox_command = real
         check(broken, "scoring refuses to run when the sandbox cannot start")
+        git_storage_checks(ws)
         other = isolate.run(ws, ["./try", "--task", "fib", "reverse.py"],
                             capture_output=True, text=True, timeout=300)
         check("unknown task" in other.stdout, "try refuses tasks outside the workspace's set")
