@@ -108,9 +108,8 @@ Do not start a language server, package registry, web framework, general I/O
 layer or new autonomous orchestration system before the consumer exposes a
 need. Do not extend the SMT path to sequences: the chosen route for sequence
 properties is Lean proofs (`dec.s5-proof-standard`), which are not written
-yet. Do not market runtime hashes as authenticated
-proofs, finite tests as a compiler theorem, or kernel cost as a hardware
-timing guarantee.
+yet. Do not market runtime hashes as authenticated proofs, finite tests as a
+compiler theorem, or kernel cost as a hardware timing guarantee.
 
 The decision after the first pilot is evidence-driven: expand when Firth
 reduces failed changes or repair effort. Improve its interface when diagnostics
