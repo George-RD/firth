@@ -28,14 +28,6 @@ as accidents.
   present, and fails closed only when git errors, so a later lazy fetch
   inside the sandbox is blocked by the missing network, not by the scan.
   The scan should refuse a repository with a promisor remote outright.
-- **The direct `harness.py try` reads any path it is given.** Run as root,
-  it reads the program file on the host before sandboxing the run, so a
-  diagnostic can echo any host file (Codex, on #134 at `6661ad8`). Only a
-  caller already on the host can pass that path, and such a caller can read
-  the file anyway, so this is outside the sandbox's threat model. The
-  in-workspace `./try` already refuses paths outside the workspace. Reading
-  the program with `read_regular` under a named workspace would make the
-  direct command match it.
 
 ## Acceptance criteria
 
@@ -48,5 +40,3 @@ as accidents.
 - A shown repository whose only tree holding the references is rooted at
   `eval/s7` is refused, with the bypass mutant reading it.
 - A shown partial clone (a `remote.*.promisor` setting) is refused.
-- `harness.py try` reads its program only as a plain file under a named
-  workspace, with a planted `/etc/shadow` path that is refused.
