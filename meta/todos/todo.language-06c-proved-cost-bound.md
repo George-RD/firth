@@ -38,6 +38,15 @@ bound, currently fitted by `examples/inventory/measure_cost.py` and stated in
   lowering and the VM, including the VM's own cost accounting, rests on
   differential testing, and the Python host is tested, not proved.
 
+## Progress
+
+28 September 2026: `allocate_batch` in `src/proofs/Inventory/Allocate.lean`
+proves that `allocate-batch`'s body terminates within
+`181 + 224n + 172·n(n−1)/2` transitions at kernel cost at most
+`165 + 202n + 163·n(n−1)/2`, which `batchCost_eq` shows is
+`run_cases.cost_bound`. Open: admission and rechecking as an evidence record,
+as for `language-06b`.
+
 ## Traceability
 
 PRD R10, S5. Split from `language-06-source-refinement-execution` on 27

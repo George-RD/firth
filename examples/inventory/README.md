@@ -58,9 +58,14 @@ characters, which take the negating branch once per pair, and stated a bound
 that the costliest shape exceeds: before this rewrite, 545,126 was stated for
 n = 64 and those IDs cost 555,248.
 
-This bound is measured and explained by the program's structure, not proved.
-The toolchain does not yet check the allocator's properties or prove its cost
-bound; that work is `language-06b` and `language-06c`.
+The bound is also proved. `src/proofs/Inventory/Allocate.lean` proves, from
+the exported kernel program run by the reference interpreter, that
+`allocate-batch` returns the spec's result on every valid input (so the
+properties proved in `src/proofs/Inventory/Spec.lean` hold of its output) at a
+kernel cost of at most this bound, with every value in i64. The proof is not yet
+admitted as a toolchain evidence record bound to the word digests
+(`language-06b`), agreement of the VM with the reference interpreter rests on
+differential testing, and the Python host is tested, not proved.
 
 ## Changing the policy
 

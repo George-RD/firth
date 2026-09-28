@@ -87,6 +87,17 @@ this task and is not planned (decided 28 September 2026 by the coordinator, on
 George's delegation); it can be revisited. Proving the VM equal to the reference interpreter is not part of
 it either.
 
+## Progress
+
+28 September 2026: `src/proofs/Inventory/Allocate.lean` proves that
+`allocate-batch`'s exported kernel program, run by the reference interpreter,
+returns `Spec.allocateAll`'s result on every valid input (codes 1 and 2 for
+out-of-bounds input and repeated IDs), so the properties proved in
+`src/proofs/Inventory/Spec.lean` hold of the program, with every intermediate
+value in i64 (`int64Gamma`). Open: admitting these as evidence records bound to
+the covered words' digests, `contract_verified` reporting, and the
+invalidation checks.
+
 ## Traceability
 
 PRD G4, R9, R15, S5. Split from `language-06-source-refinement-execution` on
