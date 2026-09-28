@@ -681,12 +681,8 @@ Failures by the checker's first diagnostic (`results-N.json`):
 - **Branch-mismatch repair did not improve.** Of the answers that failed
   on `firth.type.branch-mismatch` and were resubmitted, 12 of 18 failed on
   it again in the next round and none passed. In run 6 it was 15 of 23,
-  with one pass. What changed is how often the author left the `if`
-  alone: in run 6, 11 of those 15 repeats had the same message as the
-  round before (the same branches, unrepaired); here 6 of 12 did, so
-  Haiku now changes the branches more often but still does not make them
-  agree. Two samples each, so this is no evidence that the new message is
-  worse either.
+  with one pass. Two samples each, so this is no evidence that the new
+  message is worse either.
 - **Why sample 1 collapsed: it bound its locals in reverse from the
   first answer.** In sample 1's `answer-1.md`, 29 of the 34 `locals`
   blocks that open a word body list the word's inputs in reverse (for
@@ -716,16 +712,19 @@ Failures by the checker's first diagnostic (`results-N.json`):
   `seq-sum`), the run 4 mistake, while the helpers kept their `locals`.
   All 20 failed on `firth.name.unresolved`. The checker's hint names the
   fix; there was no round left to use it.
-- **The first-answer `firth.name.unresolved` rise in run 6 is sample
-  variance.** First answers that failed on it, by prompt:
+- **The first-answer `firth.name.unresolved` rise in run 6 is
+  consistent with sample variance.** First answers that failed on it, by
+  prompt:
 
   | Prompt | Answers |
   |---|---|
   | `cec3707` (run 5) | 1 and 0 (run 5), 20 and 13 (this run) |
   | `470c6d0` (runs 6 and 7) | 7 and 19 (run 6), 0 and 2 (this run) |
 
-  Both prompts produce anything from none to all 20, so the run 5 to run 6
-  change is not the prompt's additions.
+  Both prompts produce anything from none to all 20, so sample variance
+  alone can account for the run 5 to run 6 change. Four answers per
+  prompt are too few to rule out a smaller effect of the prompt's
+  additions.
 - **Jev** (`modes-1.json`, `modes-3.json`, every capability available):
   sample 1's first answers are 17 `stack_effect` and 3 `stack_order`, its
   last all 20 `invented_syntax` (the unresolved names); sample 2's first

@@ -39,11 +39,12 @@ diagnostic, in `eval/s7/runs/2026-09-28-haiku-470c6d0/`:
 ## Progress
 
 - Run 7 (`eval/s7/README.md`, "Run 7"; `runs/2026-09-28-haiku-c6a964a/`)
-  is the rerun after #153 and #156. It meets the second and third
-  criteria: of 18 resubmitted branch mismatches, 12 failed on it again and
-  none passed (run 6: 15 of 23, one pass), and the extra first answers put
-  the `firth.name.unresolved` rise down to sample variance (the run 5
-  prompt gave 20 and 13).
+  is the rerun after #153 and #156. It meets the second criterion: of 18
+  resubmitted branch mismatches, 12 failed on it again and none passed
+  (run 6: 15 of 23, one pass). For the third, the extra first answers on
+  the run 5 prompt gave 20 and 13 unresolved-name failures, so sample
+  variance alone can account for the rise; four answers per prompt are
+  too few to rule out a smaller prompt effect.
 - The first criterion is Language core's. On `c6a964a`, 15 of the 16
   run 6 fixtures get a message naming what both branches take and leave;
   sample 2's `longest-run` gets "the true branch ... cannot run on the
