@@ -110,8 +110,8 @@ theorem part_distance {ids : List Int} {p q k : Int} {a b : Int}
   leaf_chain
 
 set_option hygiene false in
-/-- `runs_unfold`, but the step and cost arithmetic runs without the `if`
-condition `hCond`, which `omega` would otherwise try to decide. -/
+/-- `runs_unfold` for a word whose body the chain proves atom by atom, with
+the word calls it makes taken from `Runs` hypotheses in context. -/
 macro "word_chain" : tactic => `(tactic| (
   apply Runs.congr
   focus
@@ -120,7 +120,7 @@ macro "word_chain" : tactic => `(tactic| (
     runs_expand
   repeat' runs_atom
   all_goals try (simp only [InInt64]; omega)
-  all_goals try (try clear hCond); (try clear hCond2); (try clear hCond3); runs_arith))
+  all_goals try runs_arith))
 
 set_option hygiene false in
 /-- `word_chain` that stops at the step and cost equations, simplified, so the
