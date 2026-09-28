@@ -34,9 +34,9 @@ sha256 = "b323f26ab221ed0c49b53da02b21bc3751a253437cf4c9b3f66139c18da6105d"
 role = "elaborator-to-envelope-adapters"
 
 [gamma]
-version = "0.4"
+version = "0.5"
 portable = true
-primitives = ["+", "-", "*", "<", "=", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"]
+primitives = ["+", "-", "*", "<", "=", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"]
 values = ["Int", "Bool", "Seq Int", "Seq Bool", "Handle", "Bytes", "World"]
 predicates = ["positive", "nonzero", "is-open"]
 
@@ -63,6 +63,21 @@ observation = "pure"
 [gamma.primitive."="]
 effect = "Int^many Int^many -- Bool^many"
 transition = "deterministic-integer-equality"
+observation = "pure"
+
+[gamma.primitive."and"]
+effect = "Bool^many Bool^many -- Bool^many"
+transition = "deterministic-boolean-and"
+observation = "pure"
+
+[gamma.primitive."or"]
+effect = "Bool^many Bool^many -- Bool^many"
+transition = "deterministic-boolean-or"
+observation = "pure"
+
+[gamma.primitive."not"]
+effect = "Bool^many -- Bool^many"
+transition = "deterministic-boolean-not"
 observation = "pure"
 
 [gamma.primitive."seq-int.empty"]

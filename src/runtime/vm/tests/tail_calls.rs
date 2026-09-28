@@ -1,4 +1,4 @@
-//! Tail calls and the integer primitives, through the public API.
+//! Tail calls and the integer and Boolean primitives, through the public API.
 //!
 //! A `CALL`, `IF` or `CALL_WORD` that is the last instruction of a frame
 //! replaces that frame, so loops written as tail recursion run in constant
@@ -179,4 +179,39 @@ fn arithmetic_past_either_end_of_the_target_integer_faults() {
         };
         assert_eq!(trap.code, "primitive-fault", "{name}");
     }
+}
+
+fn boolean(value: bool) -> Instruction {
+    Instruction {
+        op: Op::PushLiteral,
+        operand: Some(Operand::Literal(Value::Bool(value))),
+    }
+}
+
+#[test]
+fn boolean_primitives_match_the_reference_definitions() {
+    for left in [false, true] {
+        assert_eq!(
+            result(run(&image(vec![boolean(left), prim("notBool")]), vec![])),
+            Value::Bool(!left)
+        );
+        for right in [false, true] {
+            let apply = |name| {
+                run(
+                    &image(vec![boolean(left), boolean(right), prim(name)]),
+                    vec![],
+                )
+            };
+            assert_eq!(result(apply("andBool")), Value::Bool(left && right));
+            assert_eq!(result(apply("orBool")), Value::Bool(left || right));
+        }
+    }
+}
+
+#[test]
+fn boolean_primitives_refuse_an_integer() {
+    let ExecutionOutcome::Trap(trap) = run(&image(vec![int(1), prim("notBool")]), vec![]) else {
+        panic!("not on an Int must trap")
+    };
+    assert_eq!(trap.code, "type-fault");
 }

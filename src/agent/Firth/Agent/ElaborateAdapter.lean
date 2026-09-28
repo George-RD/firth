@@ -36,7 +36,7 @@ open Firth.Elaborator.StackEffect
 def languageVersion : String := "0.1"
 
 /-- The `Gamma` version this adapter speaks. -/
-def gammaVersion : String := "0.4"
+def gammaVersion : String := "0.5"
 
 private def err (message : String) : Except String α := .error message
 
