@@ -8,8 +8,8 @@ The executable `Gamma` type is intentionally permissive, so progress carries
 the specification's literal-signature well-formedness condition explicitly.
 Likewise, primitive totality is a premise because `PrimitiveSpec.delta` is
 represented as an `Option` in the unchecked interpreter. A primitive declared
-with `faults := true` (a sequence index, or integer division and remainder
-on a zero divisor) is exempt from totality, so progress
+with `faults := true` (a sequence index read or replaced, or integer division
+and remainder on a zero divisor) is exempt from totality, so progress
 has exactly one exception: such a primitive faulting on its typed input.
 -/
 
@@ -414,6 +414,23 @@ theorem defaultGamma_primitivesWellFormed (dictionary : Dictionary) :
           obtain ⟨values, rfl⟩ := defaultGamma_intSeq_literal seqType
           simp only [intSeqPushDelta, Option.some.injEq] at hdelta; subst hdelta
           exact literal_stack _ _ rfl
+    · -- intSeqSet
+      cases htyped with
+      | cons valueType tailType =>
+        cases tailType with
+        | cons indexType tailType =>
+          cases tailType with
+          | cons seqType emptyType =>
+            cases emptyType
+            obtain ⟨value, rfl⟩ := defaultGamma_int_literal valueType
+            obtain ⟨index, rfl⟩ := defaultGamma_int_literal indexType
+            obtain ⟨values, rfl⟩ := defaultGamma_intSeq_literal seqType
+            simp only [intSeqSetDelta] at hdelta
+            cases hset : replaceAt? values index value with
+            | none => simp [hset] at hdelta
+            | some updated =>
+              simp only [hset, Option.map_some, Option.some.injEq] at hdelta; subst hdelta
+              exact literal_stack _ _ rfl
     · -- boolSeqEmpty
       cases htyped
       simp only [boolSeqEmptyDelta, Option.some.injEq] at hdelta; subst hdelta
@@ -449,6 +466,23 @@ theorem defaultGamma_primitivesWellFormed (dictionary : Dictionary) :
           obtain ⟨values, rfl⟩ := defaultGamma_boolSeq_literal seqType
           simp only [boolSeqPushDelta, Option.some.injEq] at hdelta; subst hdelta
           exact literal_stack _ _ rfl
+    · -- boolSeqSet
+      cases htyped with
+      | cons valueType tailType =>
+        cases tailType with
+        | cons indexType tailType =>
+          cases tailType with
+          | cons seqType emptyType =>
+            cases emptyType
+            obtain ⟨value, rfl⟩ := defaultGamma_bool_literal valueType
+            obtain ⟨index, rfl⟩ := defaultGamma_int_literal indexType
+            obtain ⟨values, rfl⟩ := defaultGamma_boolSeq_literal seqType
+            simp only [boolSeqSetDelta] at hdelta
+            cases hset : replaceAt? values index value with
+            | none => simp [hset] at hdelta
+            | some updated =>
+              simp only [hset, Option.map_some, Option.some.injEq] at hdelta; subst hdelta
+              exact literal_stack _ _ rfl
     · cases htyped
       simp only [makeWorldDelta, Option.some.injEq] at hdelta; subst hdelta
       exact .cons .world .empty
@@ -491,7 +525,7 @@ theorem defaultGamma_primitivesWellFormed (dictionary : Dictionary) :
 /-- Type safety for the shipped primitive table: a well-typed configuration
 under a well-typed dictionary either has finished, steps to a configuration
 that is again well typed, or stops at a primitive declared `faults := true`:
-a sequence index out of range, or a zero divisor. No premise about primitives remains. -/
+a sequence index out of range for `at` or `set`, or a zero divisor. No premise about primitives remains. -/
 theorem defaultGamma_typeSafety (dictionary : Dictionary) (costs : CostTable)
     (dictionaryWellTyped : DictionaryWellTyped defaultGamma dictionary) {config : Config}
     (configTyping : TypedConfig defaultGamma dictionary config)
@@ -507,11 +541,12 @@ theorem defaultGamma_typeSafety (dictionary : Dictionary) (costs : CostTable)
       preservation defaultGamma dictionary costs dictionaryWellTyped wellFormed.1 configTyping successor⟩
   · exact .inr fault
 
-/-- The primitives that may fault are exactly the two sequence indexes and
-integer division and remainder. -/
+/-- The primitives that may fault are exactly the two sequence reads, the two
+sequence replacements, and integer division and remainder. -/
 theorem defaultGamma_faulting_primitives (name : Prim) (specification : PrimitiveSpec)
     (h : defaultGamma.primitive name = some specification) (faults : specification.faults = true) :
-    name = "intSeqAt" ∨ name = "boolSeqAt" ∨ name = "divInt" ∨ name = "modInt" := by
+    name = "intSeqAt" ∨ name = "boolSeqAt" ∨ name = "intSeqSet" ∨ name = "boolSeqSet" ∨
+      name = "divInt" ∨ name = "modInt" := by
   simp only [defaultGamma] at h
   split at h <;> cases h <;> simp_all
 
@@ -595,6 +630,28 @@ def progressSmokeInt (name : Prim) (left right : Int) : Option Int :=
 #guard progressSmokeInt "divInt" 7 0 = none
 #guard progressSmokeInt "modInt" 7 0 = none
 #guard progressSmokeInt "divInt" 0 0 = none
+
+/- `set` against hand-written results: it replaces one element in place and
+keeps the length; a negative index and one at or past the end fault. -/
+def progressSmokeSet (values : List Int) (index value : Int) : Option (List Int) :=
+  match run defaultGamma emptyDictionary defaultCosts 8
+      { stack := [], program :=
+          .cons (.lit (.intSeq values)) (.cons (.lit (.int index))
+            (.cons (.lit (.int value)) (.cons (.prim "intSeqSet") .empty))) } with
+  | .terminal { stack := [.literal (.intSeq result)], program := .empty } _ _ => some result
+  | _ => none
+
+#guard progressSmokeSet [4, 5, 6] 0 9 = some [9, 5, 6]
+#guard progressSmokeSet [4, 5, 6] 2 (-1) = some [4, 5, -1]
+#guard progressSmokeSet [4, 5, 6] 3 9 = none
+#guard progressSmokeSet [4, 5, 6] (-1) 9 = none
+#guard progressSmokeSet [] 0 9 = none
+#guard match run defaultGamma emptyDictionary defaultCosts 8
+    { stack := [], program :=
+        .cons (.lit (.boolSeq [true, true])) (.cons (.lit (.int 1))
+          (.cons (.lit (.bool false)) (.cons (.prim "boolSeqSet") .empty))) } with
+  | .terminal { stack := [.literal (.boolSeq [true, false])], program := .empty } _ _ => true
+  | _ => false
 
 /- The fault is a stuck configuration at the primitive, not fuel running out. -/
 #guard match run defaultGamma emptyDictionary defaultCosts 8

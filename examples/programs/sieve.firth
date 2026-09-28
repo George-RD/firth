@@ -1,0 +1,74 @@
+\ The sieve of Eratosthenes over a `Seq Bool`, updated in place with
+\ `prim seq-bool.set`: flag i says whether i is prime.
+
+\ Appends true until the sequence has n flags.
+: trues-from
+  (forall ρ; ρ flags:Seq Bool^many i:Int^many n:Int^many -- ρ r:Seq Bool^many)
+  locals { flags i n }
+  { i n prim <
+    [ flags true prim seq-bool.push i 1 prim + n trues-from ]
+    [ flags ] if };
+
+\ Clears flag i if the sequence has one.
+: clear-if-inside
+  (forall ρ; ρ flags:Seq Bool^many i:Int^many -- ρ r:Seq Bool^many)
+  locals { flags i }
+  { i flags prim seq-bool.len prim <
+    [ flags i false prim seq-bool.set ]
+    [ flags ] if };
+
+\ Clears the flags at m, m + p, m + 2p, ... up to the end.
+: cross-from
+  (forall ρ; ρ flags:Seq Bool^many m:Int^many p:Int^many -- ρ r:Seq Bool^many)
+  locals { flags m p }
+  { m flags prim seq-bool.len prim <
+    [ flags m false prim seq-bool.set m p prim + p cross-from ]
+    [ flags ] if };
+
+\ For each p with p*p inside the sequence: if p is still flagged, it is prime,
+\ and its multiples from p*p on are not.
+: sieve-from
+  (forall ρ; ρ flags:Seq Bool^many p:Int^many -- ρ r:Seq Bool^many)
+  locals { flags p }
+  { p p prim * flags prim seq-bool.len prim <
+    [ flags p prim seq-bool.at
+      [ flags p p prim * p cross-from ]
+      [ flags ] if
+      p 1 prim + sieve-from ]
+    [ flags ] if };
+
+\ n flags, flag i true exactly when i is prime.
+: sieve
+  (forall ρ; ρ n:Int^many -- ρ r:Seq Bool^many)
+  locals { n }
+  { prim seq-bool.empty 0 n trues-from
+    0 clear-if-inside 1 clear-if-inside
+    2 sieve-from };
+
+: primes-from
+  (forall ρ; ρ flags:Seq Bool^many acc:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { flags acc i }
+  { i flags prim seq-bool.len prim <
+    [ flags
+      flags i prim seq-bool.at [ acc i prim seq-int.push ] [ acc ] if
+      i 1 prim + primes-from ]
+    [ acc ] if };
+
+\ The primes below n, in order.
+: primes-below
+  (forall ρ; ρ n:Int^many -- ρ r:Seq Int^many)
+  sieve prim seq-int.empty 0 primes-from;
+
+: count-from
+  (forall ρ; ρ flags:Seq Bool^many acc:Int^many i:Int^many -- ρ r:Int^many)
+  locals { flags acc i }
+  { i flags prim seq-bool.len prim <
+    [ flags
+      flags i prim seq-bool.at [ acc 1 prim + ] [ acc ] if
+      i 1 prim + count-from ]
+    [ acc ] if };
+
+\ How many primes are below n.
+: prime-count
+  (forall ρ; ρ n:Int^many -- ρ r:Int^many)
+  sieve 0 0 count-from;

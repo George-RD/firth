@@ -8,8 +8,8 @@ open Firth.Interpreter
 def testPolicy : PrimitiveOwnershipPolicy where
   authorised := fun name consumed produced =>
     (name ∈ ["addInt", "subInt", "mulInt", "ltInt", "eqInt", "divInt", "modInt", "andBool", "orBool",
-        "notBool", "intSeqEmpty", "intSeqLen", "intSeqAt", "intSeqPush",
-        "boolSeqEmpty", "boolSeqLen", "boolSeqAt", "boolSeqPush"] ∧
+        "notBool", "intSeqEmpty", "intSeqLen", "intSeqAt", "intSeqPush", "intSeqSet",
+        "boolSeqEmpty", "boolSeqLen", "boolSeqAt", "boolSeqPush", "boolSeqSet"] ∧
       consumed = [] ∧ produced = []) ∨
     (name == "makeWorld" ∧ consumed = [] ∧ produced.length = 1) ∨
     (name == "consumeWorld" ∧ consumed.length = 1 ∧ produced = [])
@@ -1483,6 +1483,47 @@ theorem examplePrimitiveTagLift_intSeqPush :
             (by simp [intSeqPushDelta, eraseValue]) .intSeqPush
             (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
 
+theorem examplePrimitiveTagLift_intSeqSet :
+    PrimitiveTagLift examplePolicy exampleGamma "intSeqSet" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp [intSeqSetDelta] at hdelta
+  | cons top tail =>
+    cases top with
+    | quotation => simp [intSeqSetDelta, eraseValue] at hdelta
+    | world => simp [intSeqSetDelta, eraseValue] at hdelta
+    | literal topTag topLiteral =>
+      cases tail with
+      | nil => cases topLiteral <;> simp [intSeqSetDelta, eraseValue] at hdelta
+      | cons middle tail =>
+        cases middle with
+        | quotation => cases topLiteral <;> simp [intSeqSetDelta, eraseValue] at hdelta
+        | world => cases topLiteral <;> simp [intSeqSetDelta, eraseValue] at hdelta
+        | literal indexTag indexLiteral =>
+          cases tail with
+          | nil => cases topLiteral <;> cases indexLiteral <;> simp [intSeqSetDelta, eraseValue] at hdelta
+          | cons below tail =>
+            cases below with
+            | quotation => cases topLiteral <;> cases indexLiteral <;> simp [intSeqSetDelta, eraseValue] at hdelta
+            | world => cases topLiteral <;> cases indexLiteral <;> simp [intSeqSetDelta, eraseValue] at hdelta
+            | literal seqTag seqLiteral =>
+              cases topLiteral <;> cases indexLiteral <;> cases seqLiteral <;>
+                first | (simp [intSeqSetDelta, eraseValue] at hdelta; done) | skip
+              rename_i top index values
+              simp only [intSeqSetDelta, eraseValue, List.map, Option.map_eq_some_iff] at hdelta
+              obtain ⟨updated, hreplaced, hout⟩ := hdelta
+              subst hout
+              exact literalPrimitiveTagLift
+                (top := [.literal topTag (.int top), .literal indexTag (.int index),
+                  .literal seqTag (.intSeq values)])
+                (out := [.literal topTag (.intSeq updated)]) hname rfl rfl
+                (by simp [intSeqSetDelta, eraseValue, hreplaced]) (.intSeqSet hreplaced)
+                (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+
 theorem examplePrimitiveTagLift_boolSeqEmpty :
     PrimitiveTagLift examplePolicy exampleGamma "boolSeqEmpty" := by
   intro input residue nextTag specification plainInput plainOutput
@@ -1580,6 +1621,47 @@ theorem examplePrimitiveTagLift_boolSeqPush :
             (by simp [boolSeqPushDelta, eraseValue]) .boolSeqPush
             (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
 
+
+theorem examplePrimitiveTagLift_boolSeqSet :
+    PrimitiveTagLift examplePolicy exampleGamma "boolSeqSet" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp [boolSeqSetDelta] at hdelta
+  | cons top tail =>
+    cases top with
+    | quotation => simp [boolSeqSetDelta, eraseValue] at hdelta
+    | world => simp [boolSeqSetDelta, eraseValue] at hdelta
+    | literal topTag topLiteral =>
+      cases tail with
+      | nil => cases topLiteral <;> simp [boolSeqSetDelta, eraseValue] at hdelta
+      | cons middle tail =>
+        cases middle with
+        | quotation => cases topLiteral <;> simp [boolSeqSetDelta, eraseValue] at hdelta
+        | world => cases topLiteral <;> simp [boolSeqSetDelta, eraseValue] at hdelta
+        | literal indexTag indexLiteral =>
+          cases tail with
+          | nil => cases topLiteral <;> cases indexLiteral <;> simp [boolSeqSetDelta, eraseValue] at hdelta
+          | cons below tail =>
+            cases below with
+            | quotation => cases topLiteral <;> cases indexLiteral <;> simp [boolSeqSetDelta, eraseValue] at hdelta
+            | world => cases topLiteral <;> cases indexLiteral <;> simp [boolSeqSetDelta, eraseValue] at hdelta
+            | literal seqTag seqLiteral =>
+              cases topLiteral <;> cases indexLiteral <;> cases seqLiteral <;>
+                first | (simp [boolSeqSetDelta, eraseValue] at hdelta; done) | skip
+              rename_i top index values
+              simp only [boolSeqSetDelta, eraseValue, List.map, Option.map_eq_some_iff] at hdelta
+              obtain ⟨updated, hreplaced, hout⟩ := hdelta
+              subst hout
+              exact literalPrimitiveTagLift
+                (top := [.literal topTag (.bool top), .literal indexTag (.int index),
+                  .literal seqTag (.boolSeq values)])
+                (out := [.literal topTag (.boolSeq updated)]) hname rfl rfl
+                (by simp [boolSeqSetDelta, eraseValue, hreplaced]) (.boolSeqSet hreplaced)
+                (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
 
 theorem examplePrimitiveTagLift_andBool :
     PrimitiveTagLift examplePolicy exampleGamma "andBool" := by
@@ -1747,14 +1829,15 @@ theorem examplePrimitiveTagLift_unknown (name : Prim)
     (hboolSeqAt : name ≠ "boolSeqAt")
     (hboolSeqPush : name ≠ "boolSeqPush")
     (handBool : name ≠ "andBool") (horBool : name ≠ "orBool") (hnotBool : name ≠ "notBool")
-    (hdivInt : name ≠ "divInt") (hmodInt : name ≠ "modInt") :
+    (hdivInt : name ≠ "divInt") (hmodInt : name ≠ "modInt")
+    (hintSeqSet : name ≠ "intSeqSet") (hboolSeqSet : name ≠ "boolSeqSet") :
     PrimitiveTagLift examplePolicy exampleGamma name := by
   intro input residue nextTag specification plainInput plainOutput hname
     hinput hdelta hwellformed
   have hnone : exampleGamma.primitive name = none := by
     simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, exampleGamma, defaultGamma, haddInt, hsubInt, hmulInt, hltInt, heqInt, hmakeWorld, hconsumeWorld,
       hintSeqEmpty, hintSeqLen, hintSeqAt, hintSeqPush, hboolSeqEmpty, hboolSeqLen, hboolSeqAt, hboolSeqPush,
-      handBool, horBool, hnotBool, hdivInt, hmodInt]
+      handBool, horBool, hnotBool, hdivInt, hmodInt, hintSeqSet, hboolSeqSet]
   rw [hnone] at hname
   cases hname
 
@@ -1821,11 +1904,18 @@ theorem examplePrimitiveTagLift :
                                       · by_cases hmodInt : name = "modInt"
                                         · subst name
                                           exact examplePrimitiveTagLift_modInt
-                                        · exact examplePrimitiveTagLift_unknown name haddInt hsubInt
-                                            hmulInt hltInt heqInt hmakeWorld hconsumeWorld hintSeqEmpty
-                                            hintSeqLen hintSeqAt hintSeqPush hboolSeqEmpty hboolSeqLen
-                                            hboolSeqAt hboolSeqPush handBool horBool hnotBool hdivInt
-                                            hmodInt
+                                        · by_cases hintSeqSet : name = "intSeqSet"
+                                          · subst name
+                                            exact examplePrimitiveTagLift_intSeqSet
+                                          · by_cases hboolSeqSet : name = "boolSeqSet"
+                                            · subst name
+                                              exact examplePrimitiveTagLift_boolSeqSet
+                                            · exact examplePrimitiveTagLift_unknown name haddInt
+                                                hsubInt hmulInt hltInt heqInt hmakeWorld hconsumeWorld
+                                                hintSeqEmpty hintSeqLen hintSeqAt hintSeqPush
+                                                hboolSeqEmpty hboolSeqLen hboolSeqAt hboolSeqPush
+                                                handBool horBool hnotBool hdivInt hmodInt hintSeqSet
+                                                hboolSeqSet
 
 #print axioms filterContainsEqSelf_explicit
 #print axioms examplePrimitiveTagLift_addInt
@@ -1835,6 +1925,8 @@ theorem examplePrimitiveTagLift :
 #print axioms examplePrimitiveTagLift_intSeqAt
 #print axioms examplePrimitiveTagLift_divInt
 #print axioms examplePrimitiveTagLift_modInt
+#print axioms examplePrimitiveTagLift_intSeqSet
+#print axioms examplePrimitiveTagLift_boolSeqSet
 #print axioms examplePrimitiveTagLift_unknown
 #print axioms examplePrimitiveTagLift
 

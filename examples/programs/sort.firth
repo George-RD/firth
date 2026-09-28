@@ -1,0 +1,38 @@
+\ Insertion sort of a `Seq Int` in place with `prim seq-int.set`: each element
+\ sinks left past every larger neighbour, by swapping the two.
+
+\ With `left` = xs[j-1] and `right` = xs[j]: if right < left, swap them and
+\ keep sinking from j - 1; otherwise xs[0..j] is sorted.
+: sink-pair
+  (forall ρ; ρ xs:Seq Int^many j:Int^many left:Int^many right:Int^many -- ρ r:Seq Int^many)
+  locals { xs j left right }
+  { right left prim <
+    [ xs j 1 prim - right prim seq-int.set j left prim seq-int.set
+      j 1 prim - sink ]
+    [ xs ] if };
+
+\ Sinks xs[j] left until the prefix xs[0..j] is sorted.
+: sink
+  (forall ρ; ρ xs:Seq Int^many j:Int^many -- ρ r:Seq Int^many)
+  locals { xs j }
+  { 0 j prim <
+    [ xs j xs j 1 prim - prim seq-int.at xs j prim seq-int.at sink-pair ]
+    [ xs ] if };
+
+: sort-from
+  (forall ρ; ρ xs:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { xs i }
+  { i xs prim seq-int.len prim <
+    [ xs i sink i 1 prim + sort-from ]
+    [ xs ] if };
+
+\ xs in ascending order, the same length and the same elements.
+: sort
+  (forall ρ; ρ xs:Seq Int^many -- ρ r:Seq Int^many)
+  1 sort-from;
+
+\ Replaces element i with v. An index outside the sequence traps with
+\ `primitive-fault` on both hosts; `set` never grows a sequence.
+: replace
+  (forall ρ; ρ xs:Seq Int^many i:Int^many v:Int^many -- ρ r:Seq Int^many)
+  prim seq-int.set;
