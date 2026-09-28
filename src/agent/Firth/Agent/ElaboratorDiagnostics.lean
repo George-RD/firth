@@ -156,22 +156,24 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
             else s!"`{name}` the value the stack effect calls `{input}` ({type})")
         let described := error.localsBlocks.map fun block =>
           s!"{names (block.pairs.map (·.1))} in `{block.word}` gives {received block.pairs}"
-        let quoted (list : List String) := match (list.map (s!"`{·}`")).reverse with
-          | [] => ""
-          | [one] => one
-          | last :: rest => s!"{", ".intercalate rest.reverse} and {last}"
+        -- Inputs are named as a `locals` block can bind them, a repeated
+        -- label numbered with a name no input uses.
+        let binder (block : Firth.Elaborator.LocalsBlock) (index : Nat) : String :=
+          (localBinders block.inputs)[index]?.getD ""
+        let written (block : Firth.Elaborator.LocalsBlock) : List String :=
+          (localBinders block.inputs).drop block.first
         -- A reordering of the same names needs no change to the body.
         let (plain, reaching) := error.localsBlocks.partition fun block =>
-          block.renames.isEmpty && block.deeper.isEmpty
+          block.renames.isEmpty && block.prelude.isEmpty
         let plainFix := if plain.isEmpty then "" else
-          s!" Write {", and ".intercalate (plain.map fun block => s!"{names block.block} in `{block.word}`")}, and keep {if plain.length == 1 then "the body" else "the bodies"} as {if plain.length == 1 then "it is" else "they are"}: each name then holds the value the stack effect gives it."
+          s!" Write {", and ".intercalate (plain.map fun block => s!"{names (written block)} in `{block.word}`")}, and keep {if plain.length == 1 then "the body" else "the bodies"} as {if plain.length == 1 then "it is" else "they are"}: each name then holds the value the stack effect gives it."
         let reachingFix := reaching.map fun block =>
           let renamed := if block.renames.isEmpty then "" else
-            s!" In its body, write {", ".intercalate (block.renames.map fun (name, input) => s!"`{input}` for `{name}`")}, since the new block binds {if block.renames.length == 1 then "that input" else "those inputs"} under the stack effect's {if block.renames.length == 1 then "name" else "names"}."
-          let deeper := if block.deeper.isEmpty then "" else
-            let (it, them) := if block.deeper.length == 1 then ("it", "it") else ("them", "they")
-            s!" The new block also binds {quoted block.deeper}, which the old one left on the stack: where the body takes {it} from the stack, remove what takes {it} and write the name instead, since {them} {if block.deeper.length == 1 then "is" else "are"} no longer there."
-          s!" Write {names block.block} in `{block.word}`: the block takes the inputs from the top of the stack, so for each name the stack effect declares to hold the value it gives that name, the block must bind every input from the deepest such name up to the top.{renamed}{deeper}"
+            s!" In its body, write {", ".intercalate (block.renames.map fun (name, input) => s!"`{binder block input}` for `{name}`")}, since the new block binds {if block.renames.length == 1 then "that input" else "those inputs"} under the stack effect's {if block.renames.length == 1 then "name" else "names"}."
+          let prelude := if block.prelude.isEmpty then "" else
+            let count := block.prelude.length
+            s!" Then start the body with `{" ".intercalate (block.prelude.map (binder block))}`: the old block left {if count == 1 then "1 value" else s!"{count} values"} on the stack for the body, and the new block binds every input, so the body pushes {if count == 1 then "the input" else "the inputs"} none of the old names stood for."
+          s!" Write {names (written block)} in `{block.word}`: the block takes the inputs from the top of the stack, so for each name the stack effect declares to hold the value it gives that name, the block must bind every input from the deepest such name up to the top.{renamed}{prelude}"
         (s!"A `locals` block binds the word's inputs in a different order from its stack effect: " ++
             "; ".intercalate described ++ ".",
           s!"A `locals` block takes one value off the stack for each name, the last name from the top, so the names must follow the stack effect's inputs from left to right.{plainFix}{String.join reachingFix} Swapping values with `swap` would not help, because the names are what is wrong.")

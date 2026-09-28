@@ -3,6 +3,7 @@ import agent.Firth.Agent.ElaborateAdapter
 import agent.Firth.Agent.Validation
 import agent.Firth.Agent.DiagnosticEnvelopeTest
 import elaborator.Firth.Refinement
+import FirthReferenceRun
 
 namespace Firth.Agent.Test
 
@@ -373,34 +374,81 @@ def runElaboratorDiagnosticTests : IO Unit := do
       unless (encode envelope).contains "Write `locals { a b }` in `difference`" do
         fail s!"reversed same-typed locals: {encode envelope}"
   | _ => fail "reversed same-typed locals were accepted"
-  -- A block that binds only some inputs, or mixes in names the effect does
-  -- not declare, cannot be fixed by renaming its binders alone: the body
-  -- still uses the old names. The report says the whole edit, and applying
-  -- exactly what it says must make the program check. Each case also
-  -- carries the edit the earlier report suggested ("keep the body as it
-  -- is"), which must still be refused: that is the planted wrong hint.
-  let reachingLocals : List (String × String × List String × String × String) := [
-    ("fresh name beside a declared one",
+  -- The hint is applied as written: the test reads the block, the names to
+  -- write for others and the names to start the body with out of the hint
+  -- text, edits the source with them, and requires the result to check and
+  -- to compute, on sample inputs, the value worked out by hand from what
+  -- each declared name means. A plain reordering takes no body edits.
+  let hintOf (envelope : Envelope) : String :=
+    match Lean.Json.parse (encode envelope) with
+    | .ok json => (((json.getObjValD "body").getObjValD "message_params").getObjValD "hint").getStr?.toOption.getD ""
+    | .error _ => ""
+  let upTo (text marker : String) : String := (text.splitOn marker).headD ""
+  let applyLocalsHint (source hint : String) : Option String :=
+    match (hint.splitOn "Write `locals { ")[1]? with
+    | none => none
+    | some afterWrite =>
+      let block := upTo afterWrite " }`"
+      let renames := ((hint.splitOn "write `").drop 1).filterMap fun piece =>
+        match piece.splitOn "` for `" with
+        | input :: rest :: _ => some (upTo rest "`", input)
+        | _ => none
+      let prelude := match (hint.splitOn "start the body with `")[1]? with
+        | some rest => (upTo rest "`").splitOn " "
+        | none => []
+      match source.splitOn "locals { " with
+      | [head, tail] =>
+          match tail.splitOn " } { " with
+          | [_, rest] =>
+              match rest.splitOn " }" with
+              | body :: after =>
+                  let tokens := ((body.splitOn " ").filter (· != "")).map fun token =>
+                    (renames.lookup token).getD token
+                  some (head ++ "locals { " ++ block ++ " } { " ++ " ".intercalate (prelude ++ tokens) ++ " }" ++
+                    " }".intercalate after)
+              | [] => none
+          | _ => none
+      | _ => none
+  -- Runs `word` of a checked program on the reference interpreter, with
+  -- `inputs` given bottom to top, and returns the Int stack it leaves.
+  let runWord (program : CheckedProgram) (word : String) (inputs : List Int) : Option (List Int) :=
+    let toProgram (kernel : KernelProgram) : Firth.Interpreter.Program :=
+      kernel.foldr (fun located rest => .cons located.atom rest) .empty
+    let dictionary : Firth.Interpreter.Dictionary := fun name =>
+      (program.words.find? (·.name == name)).map fun checked =>
+        { type := Firth.ReferenceRun.adapterWordType, body := toProgram checked.program }
+    let rec go : Nat → Firth.Interpreter.Config → Option Firth.Interpreter.Stack
+      | 0, _ => none
+      | fuel + 1, config =>
+          match Firth.Interpreter.step Firth.ReferenceRun.adapterGamma dictionary Firth.Interpreter.defaultCosts config with
+          | .terminal final => some final.stack
+          | .stuck _ => none
+          | .stepped next _ => go fuel next
+    let start := (inputs.map fun value => Firth.Interpreter.Value.literal (.int value)).reverse
+    (go 10000 { stack := start, program := .cons (.word word) .empty }).bind fun stack =>
+      (stack.reverse.mapM fun
+        | .literal (.int value) => some value
+        | _ => none)
+  let localsCases : List (String × String × String × List String × List Int × List Int) := [
+    -- `b` then `a`: the reordered block alone, `a - b`.
+    ("reordered names", "sub",
+      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { b a } { a b prim - };",
+      ["Write `locals { a b }` in `sub`, and keep the body as it is"], [10, 3], [7]),
+    -- `a` claims the input `a`, so `x` stands for `b`: `b - a`.
+    ("fresh name beside a declared one", "sub",
       ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x a prim - };",
-      ["Write `locals { a b }` in `sub`: the block takes the inputs from the top of the stack",
-        "In its body, write `a` for `x`"],
-      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } { a a prim - };",
-      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } { x a prim - };"),
-    ("declared name for a shallower input",
+      ["Write `locals { a b }` in `sub`", "In its body, write `b` for `x`"], [10, 3], [-7]),
+    -- `a` names the deeper input, and the body drops the value it expects
+    -- on the stack, `b`: the result is `a`.
+    ("declared name for a deeper input", "sub",
       ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a } { drop a };",
-      ["Write `locals { a b }` in `sub`: the block takes the inputs from the top of the stack",
-        "The new block also binds `a`, which the old one left on the stack: where the body takes it from the stack, remove what takes it and write the name instead"],
-      -- The `drop` took `a` from the stack, so it goes.
-      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } { a };",
-      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { b } { drop a };"),
-    ("repeated label",
-      ": rep\n  (forall ρ; ρ a:Int^many n:Int^many n:Int^many -- ρ r:Int^many)\n  locals { x a } { x a prim + };",
-      ["Write `locals { a n n2 }` in `rep`: the block takes the inputs from the top of the stack",
-        "In its body, write `n` for `x`",
-        "The new block also binds `a`, which the old one left on the stack"],
-      ": rep\n  (forall ρ; ρ a:Int^many n:Int^many n:Int^many -- ρ r:Int^many)\n  locals { a n n2 } { n a prim + };",
-      ": rep\n  (forall ρ; ρ a:Int^many n:Int^many n:Int^many -- ρ r:Int^many)\n  locals { n n } { x a prim + };")]
-  for (label, source, needles, fixed, earlier) in reachingLocals do
+      ["Write `locals { a b }` in `sub`", "Then start the body with `b`"], [10, 3], [10]),
+    -- Inputs `n n n2`: `n` claims the first, `n2` the last, and the body
+    -- adds the one left on the stack, the second `n`: 10 + (100 - 1).
+    ("repeated label", "rep",
+      ": rep\n  (forall ρ; ρ n:Int^many n:Int^many n2:Int^many -- ρ r:Int^many)\n  locals { n2 n } { n2 n prim - prim + };",
+      ["Write `locals { n n3 n2 }` in `rep`", "Then start the body with `n3`"], [1, 10, 100], [109])]
+  for (label, word, source, needles, inputs, expected) in localsCases do
     match elaboratePipeline pipelineContext source agentConfig with
     | .failure [envelope] =>
         let emitted := encode envelope
@@ -408,15 +456,17 @@ def runElaboratorDiagnosticTests : IO Unit := do
         for needle in needles do
           unless emitted.contains needle do
             fail s!"{label}: the report does not say {needle}: {emitted}"
-        if emitted.contains "keep the body" then
-          fail s!"{label}: the report says to keep the body: {emitted}"
+        match applyLocalsHint source (hintOf envelope) with
+        | none => fail s!"{label}: the hint could not be applied: {emitted}"
+        | some edited =>
+            match elaboratePipeline pipelineContext edited agentConfig with
+            | .success program =>
+                let result := runWord program word inputs
+                unless result == some expected do
+                  fail s!"{label}: the edited program computes {result} instead of {expected}: {edited}"
+            | .failure diagnostics =>
+                fail s!"{label}: the edit the hint gives does not check: {edited}: {diagnostics.map encode}"
     | _ => fail s!"{label}: expected one diagnostic"
-    match elaboratePipeline pipelineContext fixed agentConfig with
-    | .success _ => pure ()
-    | .failure diagnostics => fail s!"{label}: the edit the report suggests does not check: {diagnostics.map encode}"
-    match elaboratePipeline pipelineContext earlier agentConfig with
-    | .success _ => fail s!"{label}: the earlier suggestion was accepted"
-    | .failure _ => pure ()
   match elaboratePipeline pipelineContext
       s!": pair {repeated} locals \{ n n2 } \{ n n2 prim + } ;" agentConfig with
   | .success _ => pure ()

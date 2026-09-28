@@ -35,8 +35,11 @@ Otherwise the program is refused with `firth.name.locals-order` before erasure,
 and the one diagnostic lists every such block in the file with what each of its
 names would hold, and the block to write instead. That block binds the inputs
 from the deepest one the old block names up to the top, under the stack
-effect's names; when it is not a reordering of the old block, the diagnostic
-also says what the body must change (`todo.locals-order-rename`).
+effect's names. When it is not a reordering of the old block, the diagnostic
+also says what the body must change: the input's name for each name that
+claims no input, and, first in the body, the inputs no name claims that stand
+in for the values the old block left on the stack (`todo.locals-order-rename`).
+The tests apply the hint as written and run the result.
 
 Names the stack effect does not declare remain the author's to choose. Blocks
 that are not the first item of the body, and blocks with more names than

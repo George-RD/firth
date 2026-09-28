@@ -22,15 +22,17 @@ structure LocalsBlock where
   /-- Each name of the block, the stack-effect input it binds and that
   input's type, in the block's order. -/
   pairs : List (String × String × String)
-  /-- The block to write: the stack effect's input names, from the deepest
-  input the block names up to the top. -/
-  block : List String
-  /-- Names the stack effect does not declare, each with the input name to
-  write for it in the body, since the new block binds that input under its
-  own name. -/
-  renames : List (String × String) := []
-  /-- Inputs the new block binds that the old one left on the stack. -/
-  deeper : List String := []
+  /-- The stack effect's input labels, bottom to top. -/
+  inputs : List String
+  /-- The deepest input the block to write binds: it binds every input from
+  here up to the top. -/
+  first : Nat
+  /-- Names in the old block that claim no input by their label, each with
+  the input the body should name instead, since the new block binds that input. -/
+  renames : List (String × Nat) := []
+  /-- The inputs the body should push first, bottom to top, in place of the
+  values the old block left on the stack. -/
+  prelude : List Nat := []
   deriving Repr, BEq
 
 structure ParseError where

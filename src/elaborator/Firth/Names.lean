@@ -136,11 +136,15 @@ computes the wrong result. Names the effect does not declare, and blocks that
 reach below the declared inputs, are left to the checker.
 
 The block to write binds every input from the deepest one the block names up
-to the top, each under its own name, so that every declared name holds the
-value the stack effect gives it. When the old block was a reordering of those
-names the body stays as it is; otherwise the body must write an input's name
-for each undeclared name that bound it, and stop taking off the stack the
-inputs the new block now binds. -/
+to the top, so that every declared name holds the value the stack effect
+gives it. Each declared name in the old block claims its input. The author's
+reading is that the block names the top inputs and leaves the rest on the
+stack, so the old block left, as the deepest of the inputs no name claims, as
+many values as the body found on the stack below its names: the body now
+pushes those first. Each undeclared name stands for one of the other
+unclaimed inputs, in order, and the body writes that input's name for it.
+When the old block was a reordering of the new one, the body stays as it
+is. -/
 private def misorderedInputLocals (word : WordDefinition) : Option (LocatedName × LocalsBlock) :=
   match word.body with
   | .locals names _ _ :: _ =>
@@ -154,21 +158,22 @@ private def misorderedInputLocals (word : WordDefinition) : Option (LocatedName 
       (pairs.find? fun (bound, input, _) => declared.contains bound.name && bound.name != input).map
         fun (bound, _) =>
           -- The deepest input the block names, by the name the effect gives it.
-          let named := names.filterMap fun name => declared.idxOf? name.name
-          let from_ := named.foldl min start
-          -- `locals` refuses a repeated name, so a label the effect repeats
-          -- is numbered from its second use, as `n n2`.
-          let numbered := (declared.foldl (fun (seen, out) name =>
-              let count := (seen.filter (· == name)).length
-              (name :: seen, out ++ [if count == 0 then name else s!"{name}{count + 1}"]))
-            (([] : List String), ([] : List String))).2
-          let renames := (names.zip (numbered.drop start)).filterMap fun (bound, input) =>
-            if declared.contains bound.name then none else some (bound.name, input)
+          let first := (names.filterMap fun name => declared.idxOf? name.name).foldl min start
+          let positions := (List.range declared.length).filter (first ≤ ·)
+          -- A declared name claims the first input with that label the new
+          -- block binds; a label the effect repeats is claimed once.
+          let (claimed, fresh) := names.foldl (init := (([] : List Nat), ([] : List String)))
+            fun (claimed, fresh) name =>
+              match positions.find? fun index => declared[index]? == some name.name && !claimed.contains index with
+              | some index => (claimed ++ [index], fresh)
+              | none => (claimed, fresh ++ [name.name])
+          let unclaimed := positions.filter (!claimed.contains ·)
           (bound, { word := word.name
                     pairs := pairs.map fun (bound, input, type) => (bound.name, input, type)
-                    block := numbered.drop from_
-                    renames
-                    deeper := (numbered.drop from_).take (start - from_) })
+                    inputs := declared
+                    first
+                    renames := fresh.zip (unclaimed.drop (start - first))
+                    prelude := unclaimed.take (start - first) })
   | _ => none
 
 /-- Every word whose opening `locals` block binds its inputs out of order,

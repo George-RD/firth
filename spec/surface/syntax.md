@@ -343,10 +343,13 @@ first item and blocks with more names than declared inputs, which the checker
 refuses on its own terms. Every word breaking the rule is reported in the one
 diagnostic, with what each name of its block would hold and the block to write
 instead: the stack effect's input names from the deepest input the block names
-up to the top. When that block is not a reordering of the old one, the report
-also names the body edits it needs: an input's name for each undeclared name
-that bound it, and the inputs the new block takes that the body found on the
-stack (`dec.locals-input-order`).
+up to the top, a repeated label numbered with a name no input uses. When that
+block is not a reordering of the old one, the report also names the body edits
+it needs. Each declared name keeps the input it names; each other name stands
+for an input no name claims, and the body writes that input's name for it.
+The values the old block left on the stack for the body are read as the
+deepest inputs no name claims, and the body starts by pushing them
+(`dec.locals-input-order`).
 
 ### 5.1 Complete erasure algorithm
 

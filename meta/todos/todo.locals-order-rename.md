@@ -30,14 +30,16 @@ none of those answers.
 
 ## Resolution
 
-The suggested block now binds the inputs from the deepest one the old block
-names up to the top, under the stack effect's names, numbering a repeated
-label from its second use. When that is not a reordering of the old block,
-the hint names the body edits too: an input's name for each undeclared name,
-and the inputs the new block takes that the body found on the stack.
-`ElaboratorDiagnosticsTest` applies each hint's edit to three such fixtures
-(a fresh name beside a declared one, a declared name for a shallower input,
-a repeated label) and requires the result to check, and requires the earlier
-"keep the body" edit to be refused. The decision record's figures are
-corrected. The 67 misordered blocks in the recorded answers are all
-reorderings, so their hint is unchanged.
+The suggested block binds the inputs from the deepest one the old block names
+up to the top, named as `locals` can bind them (a repeated label gets a
+number no input uses). Each declared name in the old block keeps the input it
+names. The values the old block left on the stack are read as the deepest
+inputs no name claims, and the body starts by pushing them. Each other name
+stands for one of the remaining unclaimed inputs, and the body writes that
+input's name for it. A plain reordering keeps the body. `ElaboratorDiagnosticsTest`
+reads the edit out of the hint text, applies it to four fixtures (a
+reordering, a fresh name, a declared name for a deeper input, a repeated
+label), and requires the result to check and to compute the value worked out
+by hand on sample inputs. The decision record's figures are corrected. The 67
+misordered blocks in the recorded answers are all reorderings, so their hint
+is unchanged.
