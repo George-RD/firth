@@ -19,3 +19,4 @@ def main : IO Unit := do
   runSuite "firthReferenceRunTest"
   runSuite "firthCompilerTest"
   runSuite "firthElaborateTest"
+  runSuite "firthExportsTest"

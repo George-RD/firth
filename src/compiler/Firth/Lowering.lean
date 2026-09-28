@@ -235,18 +235,22 @@ structure CheckedWord where
   program : Firth.Interpreter.Program
   deriving BEq
 
-/-- Builds the source-to-target name map, refusing an unmanglable or colliding
-name before any lowering happens. -/
-def nameMap (words : List CheckedWord) : Except CompileError (List (String × String)) := do
+/-- Builds the source-to-target name map from source word names, refusing an
+unmanglable or colliding name before any lowering happens. -/
+def nameMapOf (names : List String) : Except CompileError (List (String × String)) := do
   let mut mapping : List (String × String) := []
-  for word in words do
-    match mangle word.name with
-    | .error detail => throw (.invalidName word.name detail)
+  for name in names do
+    match mangle name with
+    | .error detail => throw (.invalidName name detail)
     | .ok mangled =>
         if mapping.any (fun entry => entry.2 == mangled) then
-          throw (.collidingName word.name mangled)
-        mapping := mapping ++ [(word.name, mangled)]
+          throw (.collidingName name mangled)
+        mapping := mapping ++ [(name, mangled)]
   pure mapping
+
+/-- `nameMapOf` over a dictionary's words, in declaration order. -/
+def nameMap (words : List CheckedWord) : Except CompileError (List (String × String)) :=
+  nameMapOf (words.map (·.name))
 
 private def checkingUsage : WordType.Usage → Firth.Elaborator.StackEffect.AUsage
   | .many => .many
@@ -291,6 +295,17 @@ private def recheckWords (words : List CheckedWord) : Except CompileError Unit :
         (locatedProgram word.program) checkingSpan with
     | .error diagnostic => throw (.checkingFailed word.name diagnostic.code)
     | .ok _ => pure ()
+
+/-- The target `body_digest` of one word's kernel program: the program lowered
+exactly as `compileWords` lowers it, in a dictionary whose source word names
+are `names` in declaration order.
+
+This does not recheck typing. It exists so a kernel program exported to Lean
+(`src/exports/`) can be rebound to the digest in the image the VM runs. -/
+def bodyDigest (names : List String) (word : String) (program : Firth.Interpreter.Program) :
+    Except CompileError ByteArray := do
+  let code ← lowerProgram { word, words := ← nameMapOf names } program
+  pure (Target.bodyDigest code)
 
 /-- Admits a dictionary by actual type/ownership checking, then emits entries.
 
