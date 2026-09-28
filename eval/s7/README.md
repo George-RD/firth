@@ -159,8 +159,12 @@ include negative numbers and empty sequences.
   `nobody` can read. A `--keep` path inside the workspace, through a link, or
   under a directory `nobody` or everyone can write is refused, and so is a
   kept path holding anything but directories and plain files with one link
-  (a symbolic or hard link could lead to the repository). The copy never
-  follows links.
+  (a symbolic or hard link could lead to the repository), with a mount point
+  at or below it (read from `/proc/self/mountinfo`, since a same-filesystem
+  bind looks like a plain directory), or with a file whose SHA-256 equals a
+  hidden file's (a copy or reflink). The copy never follows links. A kept
+  file holding part of a hidden file, or an encoding of it, is not caught:
+  kept contents are trusted to be credentials.
 - Inside the sandbox the root and everything shown are read-only except the
   workspace, a fresh `/tmp` and `/dev/shm`, and there is no `/run` (it holds
   host sockets). So one attempt cannot leave notes for a later one.

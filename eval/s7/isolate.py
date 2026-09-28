@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import fcntl
+import hashlib
 import json
 import os
 import re
@@ -353,12 +354,39 @@ def hand_over(dir: Path, uid: int) -> None:
             os.lchown(path, uid, uid)
 
 
+def mount_points() -> list[str]:
+    """Every mount point this process sees, from /proc/self/mountinfo (field 5,
+    with its octal escapes undone). A bind mount from the same filesystem looks
+    like a plain directory to lstat, os.path.ismount and st_dev alike."""
+    out = []
+    for line in Path("/proc/self/mountinfo").read_text().splitlines():
+        field = line.split(" ")[4]
+        out.append(re.sub(r"\\([0-7]{3})", lambda m: chr(int(m.group(1), 8)), field))
+    return out
+
+
+def hidden_hashes() -> set[str]:
+    """SHA-256 of the hidden tests and the reference solutions."""
+    files = [HERE / "mvp_tasks.py", *sorted((HERE / "reference").rglob("*.firth"))]
+    return {hashlib.sha256(f.read_bytes()).hexdigest() for f in files if f.is_file()}
+
+
 def plain_tree(k: str) -> None:
     """Refuse a kept credential that holds anything but plain files and
-    directories. A link nested in a kept directory could point at the
-    repository, and copying through it would bring the hidden tests in; a
-    file with a second hard link could be a hidden file itself (both Codex's
-    findings); a device or FIFO has no place among credentials."""
+    directories, or that could carry a hidden file in. A link nested in a kept
+    directory could point at the repository, and copying through it would bring
+    the hidden tests in; a file with a second hard link could be a hidden file
+    itself (both Codex's findings); a mount at or below the kept path could
+    show the repository (the reviewer's); a device or FIFO has no place among
+    credentials. A kept file with the same content as a hidden file, a copy or
+    a reflink, is refused by its hash. A kept file that holds part of one, or
+    an encoding of it, is not caught: kept contents are trusted to be
+    credentials."""
+    top_path = os.path.realpath(k)
+    for m in mount_points():
+        if within(m, top_path):
+            raise SystemExit(f"--keep {k}: {m} is a mount point at or below it")
+    hidden = hidden_hashes()
     for top, dirs, files in os.walk(k, followlinks=False):
         for n in [top] + [os.path.join(top, e) for e in dirs + files]:
             st = os.lstat(n)
@@ -367,6 +395,11 @@ def plain_tree(k: str) -> None:
     st = os.lstat(k)
     if not (stat.S_ISDIR(st.st_mode) or stat.S_ISREG(st.st_mode) and st.st_nlink == 1):
         raise SystemExit(f"--keep {k}: not a plain file with one link, or a directory")
+    kept = [k] if not stat.S_ISDIR(st.st_mode) else [
+        os.path.join(t, f) for t, _, fs in os.walk(k, followlinks=False) for f in fs]
+    for f in kept:
+        if hashlib.sha256(Path(f).read_bytes()).hexdigest() in hidden:
+            raise SystemExit(f"--keep {k}: {f} has the content of a hidden file")
 
 
 def check_keep(keep: tuple[str, ...], dir: Path) -> None:

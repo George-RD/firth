@@ -9,6 +9,7 @@ probe that finds nothing anywhere cannot pass for isolation.
 """
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import socket
@@ -456,6 +457,57 @@ def main() -> int:
                       f"without the check, a hard link brings the hidden tests in (the planted case): {leaked.stdout.strip()!r}")
         finally:
             shutil.rmtree(hard)
+        # The reviewer's probe: a bind mount of eval/s7 inside a kept directory.
+        # To lstat it is a plain directory, and a copy brings the tests in. It
+        # runs in its own mount namespace, so the host never sees the mount.
+        bind = Path(tempfile.mkdtemp(dir="/root", prefix="s7-keep-"))
+        try:
+            (bind / "token").write_text("token")
+            (bind / "sub").mkdir()
+            probe = f"""
+import json, subprocess, sys
+sys.path.insert(0, {str(HERE)!r})
+import isolate
+subprocess.run(["mount", "--bind", {str(HERE)!r}, {str(bind / "sub")!r}], check=True)
+out = {{}}
+try:
+    isolate.sandbox_command({str(ws)!r}, ["true"], keep=({str(bind)!r},))
+    out["refused"] = False
+except SystemExit:
+    out["refused"] = True
+isolate.plain_tree = lambda k: None
+cmd = isolate.sandbox_command({str(ws)!r}, ["bash", "-c", "grep -c allocate-batch {bind}/sub/mvp_tasks.py"],
+                              keep=({str(bind)!r},), uid=isolate.NOBODY)
+out["leak"] = subprocess.run(cmd, env=isolate.sandbox_env(), capture_output=True, text=True).stdout.strip()
+print(json.dumps(out))
+"""
+            got = subprocess.run(["unshare", "--mount", "--propagation", "private", sys.executable, "-c", probe],
+                                 capture_output=True, text=True, timeout=300)
+            res = json.loads(got.stdout or "{}")
+            check(res.get("refused") is True, f"the sandbox refuses a kept directory with a mount inside it: {got.stderr.strip()[-200:]}")
+            check(res.get("leak") not in (None, "", "0"),
+                  f"without the check, the bind mount brings the hidden tests in (the planted case): {res.get('leak')!r}")
+        finally:
+            shutil.rmtree(bind)
+        # A kept file with the content of a hidden file (a copy or a reflink) is
+        # refused by its hash. Planted: with the check bypassed it comes in.
+        copied = Path(tempfile.mkdtemp(dir="/root", prefix="s7-keep-"))
+        try:
+            (copied / "token").write_text("token")
+            shutil.copyfile(HERE / "reference/mvp/sort.firth", copied / "notes")
+            check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"], keep=(str(copied),))),
+                  "the sandbox refuses a kept copy of a reference solution")
+            real_plain, isolate.plain_tree = isolate.plain_tree, lambda k: None
+            try:
+                mutant = isolate.sandbox_command(ws, ["cat", str(copied / "notes")], keep=(str(copied),),
+                                                 uid=isolate.NOBODY)
+            finally:
+                isolate.plain_tree = real_plain
+            leaked = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+            check(leaked.stdout == (HERE / "reference/mvp/sort.firth").read_text(),
+                  "without the check, the copy reaches the sandbox (the planted case)")
+        finally:
+            shutil.rmtree(copied)
         # A credential path the author could have planted or redirected is refused:
         # in the workspace, under a world-writable directory, or through a link.
         (ws / "planted.json").write_text("x")
