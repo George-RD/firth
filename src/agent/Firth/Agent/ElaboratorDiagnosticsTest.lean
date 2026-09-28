@@ -539,6 +539,10 @@ def runElaboratorDiagnosticTests : IO Unit := do
           "Either add `drop` at the end of the true branch, or push a value of the same type at the end of the false branch (for example `0`)"] do
         unless emitted.contains needle do
           fail s!"branch depth: the report does not say {needle}: {emitted}"
+      -- The compared stacks stay in the structured fields: the true branch's
+      -- output as expected, the false branch's as actual.
+      if emitted.contains "\"expected_stack\":null" || emitted.contains "\"actual_stack\":null" then
+        fail s!"branch depth: the compared stacks are missing from the envelope: {emitted}"
   -- The same in the type checker, which does know the types: when the values
   -- both branches leave differ, it offers no drop or push, and says where
   -- they differ.
