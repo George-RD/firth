@@ -122,19 +122,27 @@ def audit_checks() -> None:
         check(len(isolate.audit(clean + [ev])) == 1, f"the audit flags a planted {name} call")
 
 
+GIT = ["git", "-c", "user.email=s7@probe", "-c", "user.name=s7", "-c", "safe.directory=*"]
+
+
 def mirror(under: Path) -> Path:
-    """A bare mirror under UNDER of a small repository whose one commit holds
-    a secret with the hidden tests' marker; `git show` reads it back."""
-    src = under / "mirror-src"
-    git = ["git", "-c", "user.email=s7@probe", "-c", "user.name=s7", "-c", "safe.directory=*"]
-    subprocess.run(git + ["init", "-q", str(src)], check=True)
-    (src / "secret.txt").write_text("S7-MIRROR-SECRET allocate-batch\n")
-    subprocess.run(git + ["-C", str(src), "add", "secret.txt"], check=True)
-    subprocess.run(git + ["-C", str(src), "commit", "-qm", "s"], check=True)
+    """A shallow bare mirror of this checkout under UNDER; `git show` reads the
+    hidden tests back from it."""
     bare = under / "mirror.git"
-    subprocess.run(git + ["clone", "-q", "--bare", "--no-local", str(src), str(bare)], check=True)
-    shutil.rmtree(src)
+    subprocess.run(GIT + ["clone", "-q", "--bare", "--depth", "1", f"file://{ROOT}", str(bare)], check=True)
     return bare
+
+
+def repo(under: Path, name: str, path: str, text: str) -> Path:
+    """A one-commit repository at UNDER/NAME whose commit adds PATH with TEXT."""
+    top = under / name
+    subprocess.run(GIT + ["init", "-q", str(top)], check=True)
+    (top / path).parent.mkdir(parents=True, exist_ok=True)
+    (top / path).write_text(text)
+    subprocess.run(GIT + ["-C", str(top), "add", "-A"], check=True)
+    subprocess.run(GIT + ["-C", str(top), "commit", "-qm", "s"], check=True)
+    (top / path).unlink()  # only the git storage holds it now
+    return top
 
 
 def layout_checks(ws: Path) -> None:
@@ -228,7 +236,7 @@ def layout_checks(ws: Path) -> None:
             f.write_text(marker + "\n")
         else:
             f = mirror(share)
-            return f, f"git -c safe.directory='*' --git-dir={f} show HEAD:secret.txt | grep -c allocate-batch"
+            return f, f"git -c safe.directory='*' --git-dir={f} show HEAD:eval/s7/mvp_tasks.py | grep -c allocate-batch"
         return f, f"grep -c allocate-batch {f}"
     for kind in ("exact", "old revision", "references", "mirror"):
         try:
@@ -248,6 +256,32 @@ def layout_checks(ws: Path) -> None:
         finally:
             shutil.rmtree(share, ignore_errors=True)
             isolate.hidden_copies.cache_clear()
+    # Git storage is refused only when it holds the hidden files. The CI
+    # runner ships an unrelated checkout (/etc/skel/.nvm), which is shown.
+    # Planted: a repository whose commit adds a newer revision of the task
+    # file, matching no known blob, is refused by its path alone.
+    try:
+        share.mkdir()
+        other = repo(share, "other", "README", "an unrelated tool\n")
+        isolate.hidden_copies.cache_clear()
+        read = subprocess.run(isolate.sandbox_command(ws, ["git", "-c", "safe.directory=*", "-C", str(other),
+                                                           "log", "--format=%s"], uid=isolate.NOBODY),
+                              env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+        check(read.stdout.strip() == "s", f"an unrelated repository is shown: {read.stdout.strip()!r} {read.stderr[:200]}")
+        repo(share, "newer", "eval/s7/mvp_tasks.py", old_rev + "# a newer revision\n")
+        isolate.hidden_copies.cache_clear()
+        check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"])),
+              "the sandbox refuses a repository with a revision of the hidden tests it has never seen")
+        real_storage, isolate.firth_storage = isolate.firth_storage, lambda top, bare: None
+        try:
+            isolate.hidden_copies.cache_clear()
+            check(not refused_exit(lambda: isolate.sandbox_command(ws, ["true"])),
+                  "without the storage check, that repository is shown (the planted case)")
+        finally:
+            isolate.firth_storage = real_storage
+    finally:
+        shutil.rmtree(share, ignore_errors=True)
+        isolate.hidden_copies.cache_clear()
     # Codex's probe: a --tool that is a single file, a renamed exact copy of a
     # reference. Refused; planted: with the scan bypassed it is readable.
     lone = Path(f"/opt/s7-tool-{os.getpid()}")
@@ -276,7 +310,7 @@ def layout_checks(ws: Path) -> None:
         (local / "eval/s7/mvp_tasks.py").write_text(old_rev)
         git_dir = mirror(local)
         read = ["bash", "-c", f"grep -c allocate-batch {local}/eval/s7/mvp_tasks.py; "
-                f"git -c safe.directory='*' --git-dir={git_dir} show HEAD:secret.txt | grep -c allocate-batch; true"]
+                f"git -c safe.directory='*' --git-dir={git_dir} show HEAD:eval/s7/mvp_tasks.py | grep -c allocate-batch; true"]
         isolate.hidden_copies.cache_clear()
         inside = subprocess.run(isolate.sandbox_command(ws, read, uid=isolate.NOBODY), env=isolate.sandbox_env(),
                                 capture_output=True, text=True, timeout=300)

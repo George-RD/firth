@@ -265,9 +265,10 @@ def hidden_copies(sources: tuple[str, ...]) -> list[str]:
     to this checkout (Codex's and the reviewer's findings): a file with the
     content of a hidden file (hashing only files of a hidden file's size), a
     file named like the hidden tests or a directory named like the references
-    (catching older revisions), and git storage of any kind (a `.git` entry,
-    or a directory with HEAD, objects and refs, as a bare mirror has), since
-    `git show` reads any revision from it. The directories the sandbox never
+    (catching older revisions), and git storage (a `.git` entry, or a directory
+    with HEAD, objects and refs, as a bare mirror has) that holds this
+    repository's hidden files in any revision it has, since `git show` reads
+    them back (firth_storage). The directories the sandbox never
     shows (UNSHOWN) are skipped. Each source set is scanned once per process.
     A renamed and edited copy is not caught (see the README's threat model)."""
     hidden = {}
@@ -293,12 +294,52 @@ def hidden_copies(sources: tuple[str, ...]) -> list[str]:
         for top, dirs, files in os.walk(src, followlinks=False):
             dirs[:] = [d for d in dirs if os.path.join(top, d) not in UNSHOWN]
             if ".git" in dirs + files or {"objects", "refs"} <= set(dirs) and "HEAD" in files:
-                found.append(f"{top} (git storage)")
+                why = firth_storage(top, bare=".git" not in dirs + files)
+                if why:
+                    found.append(f"{top} (git storage that {why})")
             if top.endswith("/eval/s7/reference") or top.endswith("/eval/s7/reference/mvp"):
                 found.append(f"{top} (named like the references)")
             for n in files:
                 check_file(os.path.join(top, n), n)
     return found
+
+
+HIDDEN_PATHS = ("eval/s7/mvp_tasks.py", "eval/s7/reference")
+
+
+@functools.lru_cache(maxsize=None)
+def hidden_blobs() -> tuple[str, ...]:
+    """The git blob id of every version of a hidden file this repository knows:
+    the files as they are now, and each revision in its history."""
+    root = HERE.parent.parent
+    now = [HERE / "mvp_tasks.py", *sorted((HERE / "reference").rglob("*.firth"))]
+    blobs = set(git_lines(root, "hash-object", "--", *map(str, now)))
+    for line in git_lines(root, "log", "--all", "--format=", "--raw", "--no-abbrev", "--", *HIDDEN_PATHS):
+        blobs.update(b for b in line.split()[2:4] if b.strip("0"))
+    return tuple(sorted(blobs))
+
+
+def firth_storage(top: str, bare: bool) -> str | None:
+    """Why the git storage at TOP could hand an author the hidden tests, or None
+    when it holds no revision of them: it has one of their blobs, or a commit
+    on any ref that touches their paths (a clone of a newer revision). Storage
+    git cannot read is refused, since we could not tell what it holds. Other
+    repositories (a tool's own checkout under /etc/skel, say) are shown."""
+    git = ["git", "-c", "safe.directory=*", *(["--git-dir", top] if bare else ["-C", top])]
+    try:
+        have = subprocess.run(git + ["cat-file", "--batch-check"], input="".join(b + "\n" for b in hidden_blobs()),
+                              capture_output=True, text=True, timeout=60)
+        if have.returncode:
+            return f"git cannot read ({have.stderr.strip()[:200]})"
+        if any(not line.endswith(" missing") for line in have.stdout.splitlines()):
+            return "holds a hidden file's content"
+        touched = subprocess.run(git + ["log", "--all", "--format=%H", "-1", "--", *HIDDEN_PATHS],
+                                 capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.SubprocessError) as e:
+        return f"git cannot read ({e})"
+    if touched.returncode:
+        return f"git cannot read ({touched.stderr.strip()[:200]})"
+    return "has a revision of the hidden files" if touched.stdout.strip() else None
 
 
 def allowed_sources(tools: tuple[str, ...]) -> list[tuple[str, str]]:
