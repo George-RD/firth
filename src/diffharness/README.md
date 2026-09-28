@@ -49,16 +49,24 @@ returns 0 for a zero divisor, a bounded reference) are in
 Three outcomes pass, each only when both hosts match the oracle:
 
 - `agreement`: both succeed, and stacks, kernel cost and traces match.
-- `expected-trap`: both fault where the oracle says a zero divisor faults.
+- `expected-trap`: both fault where the oracle says a zero divisor faults,
+  and up to the fault the stacks, kernel cost and traces match, after the VM's
+  charge for the faulting instruction is removed. The stack at the fault alone
+  cannot tell the right step from an earlier one that leaves the same operands.
 - `expected-portable-overflow`: the reference succeeds with its unbounded
   result and the VM faults at the first primitive that leaves the 64-bit range.
-  This is the documented difference between the two hosts, not an agreement.
+  The VM's run, less its faulting instruction, must be a prefix of the
+  reference's: the same charge and stack at each kernel step, its stack at the
+  fault equal to the reference's before that step, and its kernel cost the sum
+  of the reference's charges up to it. This is the documented difference
+  between the two hosts, not an agreement.
 
 Raw VM cost may differ. Both hosts exhausting fuel is
 `bounded-fuel-inconclusive`, not agreement. One-sided exhaustion, a trap the
 oracle does not predict, checker/compiler rejection, malformed transport and
 process failures have separate failure classes and all fail the finite gate.
-The oracle does not model cost, traces or fuel; those keep the checks below.
+The oracle does not model cost, traces or fuel; those keep the checks below,
+and a fault is compared up to the fault as above.
 A process timeout is distinct from interpreter/VM fuel exhaustion. The fuel
 budget defaults to 4096 per generated case and is bounded by the gate's
 `MAX_FUEL`, the largest budget the VM adapter accepts. Each host records at

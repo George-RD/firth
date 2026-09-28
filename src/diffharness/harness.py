@@ -416,13 +416,12 @@ def compare(reference: Any, target: Any, fuel: int) -> Result:
     if any(traps):
         # The reference's unbounded integers are wider than the portable Rust
         # profile. An overflow is explicit non-success, never an agreement.
-        if traps == (None, "primitive-fault") and isinstance(reference["stack"], list) \
-                and any(isinstance(v, dict) and isinstance(v.get("literal"), dict)
-                        and v["literal"].get("type") == "int"
-                        and type(v["literal"].get("value")) is int
-                        and not MIN_INT <= v["literal"]["value"] <= MAX_INT
-                        for v in reference["stack"]):
-            return Result("portable-integer-overflow", traps=traps)
+        # Whether the VM should have faulted is the oracle's call (`judge`);
+        # here the VM's run must be the reference's up to the fault.
+        if traps == (None, "primitive-fault"):
+            return overflow_prefix(reference, target, fuel)
+        if traps == ("primitive-fault", "primitive-fault"):
+            return both_faulted(reference, target, fuel)
         return Result("runtime-trap" if traps[0] == traps[1] else "trap-mismatch", traps=traps)
     try:
         for side, observation in (("reference", reference), ("target", target)):
@@ -455,6 +454,79 @@ def compare(reference: Any, target: Any, fuel: int) -> Result:
     return Result("agreement", trace_comparison=trace_comparison)
 
 
+def both_faulted(reference: dict[str, Any], target: dict[str, Any], fuel: int) -> Result:
+    """Both hosts faulted: compare them up to the fault as for a success.
+
+    The stack at the fault alone cannot tell a fault at the right step from
+    one at an earlier step that happens to leave the same operands, so the
+    kernel cost and the traces are compared too, after the gate removes the
+    VM's charge for the faulting instruction (`gate.without_faulting_step`).
+    """
+    traps = ("primitive-fault", "primitive-fault")
+    if reference["stack"] != target["stack"]:
+        return Result("stack-mismatch", traps=traps)
+    try:
+        lined_up = gate.without_faulting_step(target, "case")
+        cost = reference["cost"]
+        if not isinstance(cost, dict) or type(cost.get("total")) is not int:
+            raise gate.GateError("reference: invalid cost")
+    except gate.GateError as error:
+        return Result("invalid-observation", detail=str(error), traps=traps)
+    if cost["total"] != lined_up["cost"]["kernel"]:
+        return Result("kernel-cost-mismatch", traps=traps)
+    try:
+        trace_comparison = gate.compare(reference, target, "case", fuel, expected_trap="primitive-fault")
+    except gate.TraceMismatch as error:
+        return Result("trace-mismatch", detail=str(error), traps=traps)
+    except gate.GateError as error:
+        return Result("invalid-observation", detail=str(error), traps=traps)
+    return Result("runtime-trap", traps=traps, trace_comparison=trace_comparison)
+
+
+def overflow_prefix(reference: dict[str, Any], target: dict[str, Any], fuel: int) -> Result:
+    """The VM overflowed where the unbounded reference ran on.
+
+    Up to the VM's fault the two runs are the same computation, so the VM's
+    kernel-charged trace, less its faulting instruction, must be a prefix of
+    the reference's: the same charge at every step, the same stack wherever
+    neither holds a quotation, and the VM's stack at the fault equal to the
+    reference's stack before the same step. Its kernel cost must be the sum
+    of the reference's charges over that prefix.
+    """
+    traps = (None, "primitive-fault")
+    try:
+        lined_up = gate.without_faulting_step(target, "case")
+        gate.validate_trace(reference["trace"], gate.REFERENCE_EVENT_FIELDS, ("cost",), "case: reference")
+        gate.validate_portable_stack(target["stack"], "target")
+    except gate.GateError as error:
+        return Result("invalid-observation", detail=str(error), traps=traps)
+    projected_reference = [event for event in reference["trace"] if event["cost"] > 0]
+    projected_target = [event for event in lined_up["trace"] if event["kernel_cost"] > 0]
+    if len(reference["trace"]) >= gate.MAX_TRACE_EVENTS \
+            and len(projected_target) >= len(projected_reference):
+        return Result("invalid-observation", traps=traps,
+                      detail="reference trace cut before the VM's fault")
+    if len(projected_target) >= len(projected_reference):
+        return Result("trace-mismatch", traps=traps,
+                      detail=f"VM faulted after {len(projected_target)} kernel steps; "
+                             f"the reference ran only {len(projected_reference)}")
+    for index, (left, right) in enumerate(zip(projected_reference, projected_target)):
+        if left["cost"] != right["kernel_cost"]:
+            return Result("trace-mismatch", traps=traps,
+                          detail=f"trace event {index} charges {left['cost']} against {right['kernel_cost']}")
+        if not gate.holds_quotation(left["stack"]) and not gate.holds_quotation(right["stack"]) \
+                and left["stack"] != right["stack"]:
+            return Result("trace-mismatch", traps=traps, detail=f"trace event {index} stack differs")
+    at_fault = projected_reference[len(projected_target)]["stack"]
+    if not gate.holds_quotation(at_fault) and at_fault != target["stack"]:
+        return Result("stack-mismatch", traps=traps,
+                      detail="the VM's stack at the fault is not the reference's before that step")
+    if sum(event["cost"] for event in projected_reference[:len(projected_target)]) \
+            != lined_up["cost"]["kernel"]:
+        return Result("kernel-cost-mismatch", traps=traps)
+    return Result("portable-integer-overflow", traps=traps)
+
+
 # Outcomes that pass the campaign. The two expected classes are the documented
 # difference between the unbounded reference and the portable VM, or a fault
 # both must raise, and each counts only when both hosts match the oracle.
@@ -478,9 +550,11 @@ def judge(case: Case, reference: dict[str, Any], target: dict[str, Any], result:
                           traps=result.traps)
     if result.kind == "agreement":
         return result
-    if result.traps == ("primitive-fault", "primitive-fault"):
-        return Result("expected-trap", traps=result.traps)
-    if result.traps == (None, "primitive-fault"):
+    # Only a trap already compared up to the fault is promoted; a stack, cost
+    # or trace difference keeps its own failure class.
+    if result.kind == "runtime-trap" and result.traps == ("primitive-fault", "primitive-fault"):
+        return Result("expected-trap", traps=result.traps, trace_comparison=result.trace_comparison)
+    if result.kind == "portable-integer-overflow":
         return Result("expected-portable-overflow", traps=result.traps)
     return result
 

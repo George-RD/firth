@@ -92,12 +92,32 @@ class GenerationTests(unittest.TestCase):
                 h.Case.from_payload({**recipe, **mutation})
 
 
+def reference_event(index, stack, cost=1):
+    return {"index": index, "stack": stack, "program": [], "cost": cost}
+
+
+def target_event(index, stack, kernel_cost=1):
+    return {"index": index, "word": "main", "pc": index, "stack": stack, "cost": kernel_cost,
+            "kernel_cost": kernel_cost, "image_version": 1, "frames": []}
+
+
 def judged(case, reference_side, target_side):
-    """Observations built by hand, then compared and judged as the executor does."""
+    """Observations built by hand, then compared and judged as the executor does.
+
+    A faulting VM run ends with the charged event of its faulting instruction,
+    whose stack is the stack at the fault; where the reference runs on, its
+    trace holds the same step with the same stack.
+    """
     reference, target = observations()
     for observation, (status, values) in ((reference, reference_side), (target, target_side)):
         observation.update(status=status, trap=None if status == "success" else "primitive-fault",
                            stack=h.encode(values))
+    if target_side[0] == "trap":
+        target.update(trace=[target_event(0, h.encode(target_side[1]))],
+                      cost={"total": 1, "kernel": 1, "steps": 1})
+        if reference_side[0] == "success":
+            reference.update(trace=[reference_event(0, h.encode(target_side[1]))],
+                             cost={"total": 1, "steps": 1})
     result = h.compare(reference, target, 4096)
     return result.kind, h.judge(case, reference, target, result).kind
 
@@ -163,7 +183,7 @@ class OracleTests(unittest.TestCase):
         self.assertEqual(judged(zero, ("trap", [7, 0]), ("trap", [7, 0])), ("runtime-trap", "expected-trap"))
         overflow = case_of(h.MAX_INT, h.Step("add", 1), h.Step("sub", 2))
         self.assertEqual(judged(overflow, ("success", [h.MAX_INT - 1]), ("trap", [h.MAX_INT, 1])),
-                         ("trap-mismatch", "expected-portable-overflow"))
+                         ("portable-integer-overflow", "expected-portable-overflow"))
         for kind in ("expected-trap", "expected-portable-overflow"):
             self.assertIn(kind, h.PASSING)
 
@@ -266,7 +286,8 @@ class ComparisonTests(unittest.TestCase):
     def test_traps_are_not_passing_cases(self):
         reference, target = observations()
         reference.update(status="trap", trap="primitive-fault")
-        target.update(status="trap", trap="primitive-fault")
+        target.update(status="trap", trap="primitive-fault", trace=[target_event(0, [])],
+                      cost={"total": 1, "kernel": 1, "steps": 1})
         self.assertEqual(h.compare(reference, target, 8).kind, "runtime-trap")
         target["trap"] = "type-mismatch"
         self.assertEqual(h.compare(reference, target, 8).kind, "trap-mismatch")
@@ -274,8 +295,72 @@ class ComparisonTests(unittest.TestCase):
     def test_target_integer_overflow_is_explicit(self):
         reference, target = observations()
         reference["stack"] = [{"kind": "literal", "literal": {"type": "int", "value": h.MAX_INT + 1}}]
-        target.update(status="trap", trap="primitive-fault")
+        reference.update(trace=[reference_event(0, [])], cost={"total": 1, "steps": 1})
+        target.update(status="trap", trap="primitive-fault", trace=[target_event(0, [])],
+                      cost={"total": 1, "kernel": 1, "steps": 1})
         self.assertEqual(h.compare(reference, target, 8).kind, "portable-integer-overflow")
+
+    def test_faults_are_compared_up_to_the_fault(self):
+        # `7 0 mod`: the reference stops before `mod` after two charged pushes;
+        # the VM also charges the faulting `mod`. Both leave 7 0 at the fault.
+        seven, zero = h.encode([7]), h.encode([7, 0])
+        case = case_of(7, h.Step("mod", 0))
+
+        def faulted(target_trace):
+            reference, target = observations()
+            reference.update(status="trap", trap="primitive-fault", stack=zero,
+                             trace=[reference_event(0, []), reference_event(1, seven)],
+                             cost={"total": 2, "steps": 2})
+            target.update(status="trap", trap="primitive-fault", stack=zero, trace=target_trace,
+                          cost={"total": len(target_trace), "kernel": len(target_trace),
+                                "steps": len(target_trace)})
+            result = h.compare(reference, target, 8)
+            return result.kind, h.judge(case, reference, target, result).kind
+
+        right = [target_event(0, []), target_event(1, seven), target_event(2, zero)]
+        self.assertEqual(faulted(right), ("runtime-trap", "expected-trap"))
+        # Planted: the VM faults a step later with the same operands, and
+        # before this check the stack at the fault alone passed it.
+        late = right[:2] + [target_event(2, zero), target_event(3, zero)]
+        self.assertEqual(faulted(late), ("kernel-cost-mismatch", "kernel-cost-mismatch"))
+        # Planted: same charges, a different stack on the way.
+        detour = [target_event(0, []), target_event(1, h.encode([8])), target_event(2, zero)]
+        self.assertEqual(faulted(detour)[0], "trace-mismatch")
+        self.assertEqual(faulted(detour)[1], "trace-mismatch")
+
+    def test_an_overflow_must_follow_the_reference_up_to_the_fault(self):
+        # `MAX 1 +` then `2 -`: the VM faults at `+` with MAX 1 on the stack;
+        # the reference runs on and leaves MAX - 1.
+        top, both = h.encode([h.MAX_INT]), h.encode([h.MAX_INT, 1])
+        case = case_of(h.MAX_INT, h.Step("add", 1), h.Step("sub", 2))
+        reference_trace = [reference_event(0, []), reference_event(1, top), reference_event(2, both),
+                           reference_event(3, h.encode([h.MAX_INT + 1])),
+                           reference_event(4, h.encode([h.MAX_INT + 1, 2]))]
+
+        def overflowed(target_trace, stack=both):
+            reference, target = observations()
+            reference.update(stack=h.encode([h.MAX_INT - 1]), trace=copy.deepcopy(reference_trace),
+                             cost={"total": 5, "steps": 5})
+            target.update(status="trap", trap="primitive-fault", stack=stack, trace=target_trace,
+                          cost={"total": len(target_trace), "kernel": len(target_trace),
+                                "steps": len(target_trace)})
+            result = h.compare(reference, target, 8)
+            return result.kind, h.judge(case, reference, target, result).kind
+
+        right = [target_event(0, []), target_event(1, top), target_event(2, both)]
+        self.assertEqual(overflowed(right), ("portable-integer-overflow", "expected-portable-overflow"))
+        # Planted: the VM took a different path to the same operands.
+        detour = [target_event(0, []), target_event(1, h.encode([1])), target_event(2, both)]
+        self.assertEqual(overflowed(detour), ("trace-mismatch", "trace-mismatch"))
+        # Planted: the VM's stack at the fault is not the reference's there.
+        self.assertEqual(overflowed(right, h.encode([h.MAX_INT, 2]))[0], "stack-mismatch")
+        # Planted: the VM faults a step early, at the push of 1. Its run is a
+        # true prefix of the reference's, so only the oracle can name it.
+        early = [target_event(0, []), target_event(1, top)]
+        self.assertEqual(overflowed(early, top), ("portable-integer-overflow", "oracle-mismatch"))
+        # Planted: the VM runs past the end of the reference's run.
+        longer = [target_event(i, []) for i in range(7)]
+        self.assertEqual(overflowed(longer, h.encode([]))[0], "trace-mismatch")
 
     def test_per_event_trace_differences_have_their_own_failure_class(self):
         one, two = h.gate.initial_values([1, 2])
@@ -402,8 +487,13 @@ else:
   if stage=="target":
     response["cost"]["kernel"]=0; response["world_observation"]={"bytes":[0]}
     if sys.argv[2]=="mismatch": response["cost"].update(total=2,kernel=1)
-    if sys.argv[2]=="trap": response.update(status="trap",trap="primitive-fault")
+    if sys.argv[2]=="trap":
+      response.update(status="trap",trap="primitive-fault",cost={"total":1,"kernel":1,"steps":1})
+      response["trace"]=[{"index":0,"word":"main","pc":0,"stack":stack,"cost":1,"kernel_cost":1,"image_version":1,"frames":[]}]
     if sys.argv[2]=="malformed": response.pop("stack")
+  elif sys.argv[2]=="trap":
+    # The reference runs on through the step at which the VM faults.
+    response.update(cost={"total":1,"steps":1},trace=[{"index":0,"stack":stack,"program":[],"cost":1}])
 print(json.dumps(response))
 ''', encoding="utf-8")
         return {stage: (sys.executable, "-S", str(path), stage, target_mode, compiler_mode, elaborate_mode)
