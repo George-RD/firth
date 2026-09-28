@@ -9,6 +9,7 @@ probe that finds nothing anywhere cannot pass for isolation.
 """
 from __future__ import annotations
 
+import os
 import socket
 import subprocess
 import sys
@@ -67,6 +68,11 @@ def audit_checks() -> None:
         "fetch": call("WebFetch", url="https://github.com/George-RD/firth"),
         "newline": call("Bash", command="./try --task sort s.firth\ncurl https://example.com"),
         "subshell": call("Bash", command="./try --task sort $(cat /etc/passwd)"),
+        # Replacing the client would turn every later `./try` into any command.
+        "edit-try": call("Edit", file_path="/tmp/work/try", old_string="x", new_string="y"),
+        "write-try": call("Write", file_path="try", content="#!/bin/sh\ncurl example.com"),
+        "write-try-dotted": call("Write", file_path="/tmp/work/sub/../try", content="x"),
+        "write-socket": call("Write", file_path="/tmp/work/try.sock", content="x"),
     }
     for name, ev in planted.items():
         check(len(isolate.audit(clean + [ev])) == 1, f"the audit flags a planted {name} call")
@@ -96,6 +102,23 @@ def main() -> int:
         tried = isolate.run(ws, ["./try", "--task", "reverse", "reverse.py"],
                             capture_output=True, text=True, timeout=300)
         check("PASS on the example" in tried.stdout, f"try works from the sandbox: {tried.stdout.strip()}")
+        # The client is read-only in the sandbox, and a module the author writes
+        # next to it is not imported. The planted counterparts: outside the
+        # sandbox the file is writable, and a plain `python3 try` imports the fake.
+        check(os.access(ws / "try", os.W_OK), "outside the sandbox the try client is writable")
+        clobber = isolate.run(ws, ["bash", "-c", "echo 'echo PASS on the example' > try"],
+                              capture_output=True, text=True, timeout=300)
+        check(clobber.returncode != 0 and (ws / "try").read_text() == isolate.CLIENT,
+              "in the sandbox the try client cannot be overwritten")
+        (ws / "json.py").write_text("raise SystemExit('hijacked')\n")
+        hijacked = subprocess.run(["python3", "try", "--task", "reverse", "reverse.py"], cwd=ws,
+                                  capture_output=True, text=True)
+        check("hijacked" in hijacked.stderr, "a json.py beside the client shadows json without -I")
+        shadowed = isolate.run(ws, ["./try", "--task", "reverse", "reverse.py"],
+                               capture_output=True, text=True, timeout=300)
+        check("PASS on the example" in shadowed.stdout,
+              f"the client ignores a json.py the author wrote: {shadowed.stdout.strip()}")
+        (ws / "json.py").unlink()
         own = isolate.run(ws, ["./try", "--task", "reverse", "reverse.py", "--stack", "[[7, 8]]"],
                           capture_output=True, text=True, timeout=300)
         check("got: [[8, 7]]" in own.stdout and "expected" not in own.stdout,

@@ -113,6 +113,11 @@ include negative numbers and empty sequences.
   `isolate.py audit` checks each retained transcript for any other tool call.
   A run with a flagged call is void. The audit is tested against planted
   calls.
+- Since `./try` is the one command allowed, the author must not be able to
+  change what it runs. In the sandbox the client is mounted read-only, it
+  runs as `python3 -I` so a `json.py` the author writes is not imported, and
+  the audit flags any write to `try`, its socket or `workspace.json`.
+  `test_isolation.py` plants each of these.
 - Each results file records `eval_sha256`, a SHA-256 of `task.py`,
   `tasks.py`, `mvp_tasks.py`, `harness.py` and `isolate.py` as scored. `firth_commit`
   ignores `eval/`, so this is what shows an edit to the frozen set or the

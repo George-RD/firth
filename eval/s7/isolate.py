@@ -42,8 +42,11 @@ from tasks import BY_ID  # noqa: E402
 HIDDEN = ("/home", "/root", "/tmp", "/var/tmp", "/mnt", "/srv")
 SOCKET = "try.sock"
 INSIDE = "/tmp/work"
+PROTECTED = ("try", "workspace.json")
 
-CLIENT = r'''#!/usr/bin/env python3
+# `-I` keeps the workspace off the import path, so a file the author writes
+# (a `json.py`, say) cannot take over the client.
+CLIENT = r'''#!/usr/bin/python3 -I
 """Check and run a program on a task's visible example, or on your own inputs.
 
     ./try --task TASK_ID FILE [--stack JSON]
@@ -150,6 +153,10 @@ def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = (),
     for p in hidden_paths():
         lines.append(f"[ -d {q(p)} ] && mount -t tmpfs -o mode=755 tmpfs {q(p)}")
     lines += [f"mkdir -p {INSIDE}", f"mount --bind {stage}/work {INSIDE}"]
+    # The client and its socket stay as the harness wrote them: an author who
+    # could replace `try` could run anything through the one allowed command.
+    for name in PROTECTED:
+        lines.append(f"[ -e {INSIDE}/{name} ] && mount --bind -o ro {INSIDE}/{name} {INSIDE}/{name}")
     for i, k in enumerate(keep):
         make = (f"mkdir -p {q(k)}" if Path(k).is_dir() else
                 f"[ -e {q(k)} ] || {{ mkdir -p {q(str(Path(k).parent))} && touch {q(k)}; }}")
@@ -182,7 +189,8 @@ def audit(events: list[dict]) -> list[str]:
     """Every tool call in an author transcript that goes beyond the workspace and
     `try`. The transcript is the author CLI's stream-json output, one event per
     line; tool calls are `tool_use` blocks in assistant messages. Allowed: `./try`
-    with plain arguments, and reading or writing files inside the workspace."""
+    with plain arguments, reading files inside the workspace, and writing them,
+    except the `try` client, its socket and `workspace.json`."""
     bad = []
     for ev in events:
         content = (ev.get("message") or {}).get("content") if ev.get("type") == "assistant" else None
@@ -192,13 +200,25 @@ def audit(events: list[dict]) -> list[str]:
             name, inp = block.get("name"), block.get("input") or {}
             if name == "Bash" and TRY_CALL.fullmatch(str(inp.get("command", "")).strip(" \t")):
                 continue
-            if name in ("Read", "Write", "Edit") and in_workspace(str(inp.get("file_path", ""))):
+            path = str(inp.get("file_path", ""))
+            if name == "Read" and in_workspace(path):
+                continue
+            if name in ("Write", "Edit") and in_workspace(path) and not protected(path):
                 continue
             bad.append(f"{name}: {json.dumps(inp)[:200]}")
     return bad
 
 
 def in_workspace(path: str) -> bool:
+    return normal(path).startswith(INSIDE + "/")
+
+
+def protected(path: str) -> bool:
+    """The files an author may read but never change: the client and its socket."""
+    return normal(path) in {f"{INSIDE}/{n}" for n in (*PROTECTED, SOCKET)}
+
+
+def normal(path: str) -> str:
     p = Path(INSIDE) / path if not path.startswith("/") else Path(path)
     parts = []
     for part in p.parts:
@@ -207,7 +227,7 @@ def in_workspace(path: str) -> bool:
                 parts.pop()
         elif part not in ("", "."):
             parts.append(part)
-    return str(Path("/", *parts)).startswith(INSIDE + "/")
+    return str(Path("/", *parts))
 
 
 def main() -> int:
