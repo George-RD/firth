@@ -125,6 +125,8 @@ jobs:
         run: python3 examples/inventory/measure_cost.py 2>&1 | tee /tmp/language-inventory-cost.log
       - name: Change the inventory client from partial to all-or-nothing and check the change
         run: python3 examples/inventory/policy_change.py 2>&1 | tee /tmp/language-inventory-policy.log
+      - name: Check the inventory allocator's repeated-ID scan part by part
+        run: python3 examples/inventory/check_scan.py 2>&1 | tee /tmp/language-inventory-scan.log
       - name: Compare locals erasure against direct locals semantics
         run: python3 src/diffharness/check_locals_erasure.py --seed 0 --seed 1 --seed 2 --cases 100 --artifacts /tmp/firth-locals 2>&1 | tee /tmp/language-locals.log
       - name: Execute the seeded differential source campaign
