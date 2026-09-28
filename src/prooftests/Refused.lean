@@ -17,9 +17,9 @@ open Firth.Proofs.Programs.SumTo
 open Firth.ProofTests.Accepted
 
 /-- Mentions an export but rests on `Lean.trustCompiler`, which trusts the
-compiled evaluator rather than the kernel; `native_decide` proofs rest on it
-too. Naming it directly exercises the same refusal without a new
-`native_decide`, which AGENTS.md rule 11 forbids even here. -/
+compiled evaluator rather than the kernel; proofs by compiled evaluation
+rest on it too. Naming it directly exercises the same refusal without a new
+such proof, which AGENTS.md rule 11 forbids even here. -/
 theorem trustsCompiler (_ : words.length = words.length) : True :=
   Lean.trustCompiler
 

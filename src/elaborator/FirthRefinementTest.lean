@@ -275,8 +275,8 @@ private def runTests : IO Unit := do
   expectEq normalisedSimple.conclusions
     [.and .truth (.and .falsity .truth)]
     "formula normalisation retains all conclusions in right-associated form"
-  have simpleFormulaProof := generateVc_formula .body simpleFormula ctx (by native_decide)
-  have simpleIdentityProof := generateVc_identity .body simpleFormula ctx (by native_decide)
+  have simpleFormulaProof := generateVc_formula .body simpleFormula ctx (by decide)
+  have simpleIdentityProof := generateVc_identity .body simpleFormula ctx (by decide)
   have simpleValidityProof := valid_normaliseFormula_iff simpleFormula
   let _ := simpleFormulaProof
   let _ := simpleIdentityProof

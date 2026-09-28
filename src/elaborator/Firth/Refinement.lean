@@ -165,57 +165,60 @@ private def intKernelCost (value : Int) : Nat :=
 /- Traverse caller-supplied predicate roots incrementally.  In particular, do not first fold or
 copy the complete top-level lists, because the budget is the resource boundary for those lists. -/
 private def predicateGroupsWithinKernelBounds (groups : List (List Predicate)) : Bool :=
-  let rec visit : Nat → Nat → Nat → List RefinementNode → Bool
-    | _, _, _, [] => true
-    | _, 0, _, .predicates _ :: _ => false
-    | remaining, links + 1, stringBytes, .predicates [] :: rest =>
-        visit remaining links stringBytes rest
-    | remaining, links + 1, stringBytes, .predicates (value :: values) :: rest =>
-        visit remaining links stringBytes (.predicate value :: .predicates values :: rest)
-    | _, 0, _, .predicateGroups _ :: _ => false
-    | remaining, links + 1, stringBytes, .predicateGroups [] :: rest =>
-        visit remaining links stringBytes rest
-    | remaining, links + 1, stringBytes, .predicateGroups (values :: groups) :: rest =>
-        visit remaining links stringBytes (.predicates values :: .predicateGroups groups :: rest)
-    | _, 0, _, .intExprs _ :: _ => false
-    | remaining, links + 1, stringBytes, .intExprs [] :: rest =>
-        visit remaining links stringBytes rest
-    | remaining, links + 1, stringBytes, .intExprs (value :: values) :: rest =>
-        visit remaining links stringBytes (.intExpr value :: .intExprs values :: rest)
-    | 0, _, _, _ => false
-    | remaining + 1, links, stringBytes, node :: rest =>
+  let rec visit : Nat → Nat → Nat → Nat → List RefinementNode → Bool
+    -- Unreachable: every call below takes one from `remaining` or `links`, and
+    -- the fuel starts one above their sum.
+    | 0, _, _, _, _ => false
+    | _ + 1, _, _, _, [] => true
+    | _ + 1, _, 0, _, .predicates _ :: _ => false
+    | fuel + 1, remaining, links + 1, stringBytes, .predicates [] :: rest =>
+        visit fuel remaining links stringBytes rest
+    | fuel + 1, remaining, links + 1, stringBytes, .predicates (value :: values) :: rest =>
+        visit fuel remaining links stringBytes (.predicate value :: .predicates values :: rest)
+    | _ + 1, _, 0, _, .predicateGroups _ :: _ => false
+    | fuel + 1, remaining, links + 1, stringBytes, .predicateGroups [] :: rest =>
+        visit fuel remaining links stringBytes rest
+    | fuel + 1, remaining, links + 1, stringBytes, .predicateGroups (values :: groups) :: rest =>
+        visit fuel remaining links stringBytes (.predicates values :: .predicateGroups groups :: rest)
+    | _ + 1, _, 0, _, .intExprs _ :: _ => false
+    | fuel + 1, remaining, links + 1, stringBytes, .intExprs [] :: rest =>
+        visit fuel remaining links stringBytes rest
+    | fuel + 1, remaining, links + 1, stringBytes, .intExprs (value :: values) :: rest =>
+        visit fuel remaining links stringBytes (.intExpr value :: .intExprs values :: rest)
+    | _ + 1, 0, _, _, _ => false
+    | fuel + 1, remaining + 1, links, stringBytes, node :: rest =>
         match node with
         | .predicate predicate =>
             match predicate with
-            | .truth | .falsity => visit remaining links stringBytes rest
+            | .truth | .falsity => visit fuel remaining links stringBytes rest
             | .boolVariable name | .nonlinear name | .worldSensitive name =>
                 let nextBytes := stringBytes + name.utf8ByteSize
-                nextBytes <= 1048576 && visit remaining links nextBytes rest
-            | .not body => visit remaining links stringBytes (.predicate body :: rest)
+                nextBytes <= 1048576 && visit fuel remaining links nextBytes rest
+            | .not body => visit fuel remaining links stringBytes (.predicate body :: rest)
             | .and left right | .or left right =>
-                visit remaining links stringBytes (.predicate left :: .predicate right :: rest)
+                visit fuel remaining links stringBytes (.predicate left :: .predicate right :: rest)
             | .intEq left right | .intNe left right | .intLe left right | .intLt left right =>
-                visit remaining links stringBytes (.intExpr left :: .intExpr right :: rest)
+                visit fuel remaining links stringBytes (.intExpr left :: .intExpr right :: rest)
             | .named name version arguments =>
                 let nextBytes := stringBytes + name.utf8ByteSize + version.utf8ByteSize
                 nextBytes <= 1048576 &&
-                  visit remaining links nextBytes (.intExprs arguments :: rest)
+                  visit fuel remaining links nextBytes (.intExprs arguments :: rest)
         | .intExpr expression =>
             match expression with
             | .literal value =>
                 let nextBytes := stringBytes + intKernelCost value
-                nextBytes <= 1048576 && visit remaining links nextBytes rest
+                nextBytes <= 1048576 && visit fuel remaining links nextBytes rest
             | .variable name =>
                 let nextBytes := stringBytes + name.utf8ByteSize
-                nextBytes <= 1048576 && visit remaining links nextBytes rest
+                nextBytes <= 1048576 && visit fuel remaining links nextBytes rest
             | .add left right | .sub left right =>
-                visit remaining links stringBytes (.intExpr left :: .intExpr right :: rest)
+                visit fuel remaining links stringBytes (.intExpr left :: .intExpr right :: rest)
             | .scale coefficient body =>
                 let nextBytes := stringBytes + intKernelCost coefficient
                 nextBytes <= 1048576 &&
-                  visit remaining links nextBytes (.intExpr body :: rest)
+                  visit fuel remaining links nextBytes (.intExpr body :: rest)
         | .predicates _ | .predicateGroups _ | .intExprs _ => false
-  visit 10000 10010 0 [.predicateGroups groups]
+  visit (10000 + 10010 + 1) 10000 10010 0 [.predicateGroups groups]
 
 private def formulaWithinKernelBounds (formula : Formula) : Bool :=
   predicateGroupsWithinKernelBounds [formula.premises, formula.conclusions]

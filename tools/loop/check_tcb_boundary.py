@@ -47,7 +47,7 @@ EXPECTED_STAGES = {
     "lean-zero-admit": (
         "python3 tools/loop/check_zero_admit.py",
         frozenset({"lean-kernel"}),
-        frozenset({"tools/loop/check_zero_admit.py", "src"}),
+        frozenset({"tools/loop/check_zero_admit.py", "lakefile.toml", "lean-toolchain", "src"}),
     ),
     "lean-build": (
         "lake build",
