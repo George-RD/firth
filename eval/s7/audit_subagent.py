@@ -130,6 +130,9 @@ def solutions_mismatch(kept: Path) -> list[str]:
             # A gap would otherwise end the walk before later rounds were compared.
             # Keep walking so a later round's mismatch is listed too (CodeRabbit, on #152).
             bad.append(f"{kept / f'answer-{n}.md'}: missing (Codex, on #152)")
+            # Later rounds build on this round's kept solutions (Codex, on #154).
+            if (kept / f"solutions-{n}.json").is_file():
+                prev = json.loads((kept / f"solutions-{n}.json").read_text())
             continue
         want = {**prev, **extract((kept / f"answer-{n}.md").read_text())}
         sol = kept / f"solutions-{n}.json"

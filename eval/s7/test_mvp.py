@@ -282,6 +282,16 @@ def subagent_audit() -> None:
               "the audit flags answers kept after a missing round")
         check(any("solutions-2.json" in b for b in solutions(gap)),
               "after a missing round, the next round's mismatch is still listed")
+        # A later round that is the kept round's solutions plus its own answer
+        # is not a mismatch (Codex, on #154). Planted: without carrying the
+        # kept solutions over the gap, round 2 is flagged.
+        carry = d / "carry"
+        carry.mkdir()
+        (carry / "solutions-1.json").write_text(json.dumps({"reverse": "kept"}))
+        (carry / "answer-2.md").write_text("### task: sort\n")
+        (carry / "solutions-2.json").write_text(json.dumps({"reverse": "kept", **harness.extract("### task: sort\n")}))
+        check(solutions(carry) == [f"{carry / 'answer-1.md'}: missing (Codex, on #152)"],
+              "across a missing answer, the kept solutions carry to the next round")
         (gap / "repair-2.md").write_text("hidden case: [[3, 1, 2]] -> [[1, 2, 3]]\n")
         check(any("repair-2.md" in b for b in repairs(gap, "firth")),
               "the audit checks feedback kept after a missing round")
