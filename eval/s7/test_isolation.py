@@ -308,6 +308,10 @@ def layout_checks(ws: Path) -> None:
         subprocess.run(GIT + ["-C", str(refs), "branch", "-q", "keep"], check=True)
         subprocess.run(GIT + ["-C", str(refs), "checkout", "-q", "--orphan", "other"], check=True)
         subprocess.run(GIT + ["-C", str(refs), "branch", "-q", "-D", "master", "main", "keep"], capture_output=True)
+        subprocess.run(GIT + ["-C", str(refs), "rm", "-rqf", "--cached", "."], check=True)
+        shutil.rmtree(refs / "eval")  # only a tree object names the directory now
+        check(isolate.firth_storage(str(refs), bare=False) == "has a revision of the references",
+              "the storage check finds the references directory in a tree no branch reaches")
         isolate.hidden_copies.cache_clear()
         check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"])),
               "the sandbox refuses a repository holding an eval/s7/reference directory it has never seen")
