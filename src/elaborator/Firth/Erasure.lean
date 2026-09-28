@@ -100,7 +100,7 @@ private def locatedQuotation (span : Span) (program : KernelProgram) : LocatedKe
 private def atomList (atom : Atom) (span : Span) : KernelProgram := [located span atom]
 
 private def structural : Atom → Bool
-  | .dup | .drop | .swap | .dip => true
+  | .dup | .drop | .swap | .pick _ | .roll _ | .dip => true
   | _ => false
 
 private def longestStructuralRun (program : KernelProgram) : Nat :=
@@ -227,64 +227,61 @@ private def composeMove : List StackEntry → Option (List StackEntry × Bool)
       some ({ usage := .many, effect := composeEffect first.effect second.effect } :: rest, true)
   | _ => none
 
-inductive FocusRel (id : Nat) (span : Span) :
-    List StackEntry → KernelProgram → List StackEntry → Prop where
+/-- The nearest value marked `id` sits `depth` places below the top; moving it
+there keeps the other values in order. -/
+inductive FocusRel (id : Nat) :
+    List StackEntry → Nat → List StackEntry → Prop where
   | top {target : StackEntry} {rest : List StackEntry}
       (targeted : isFocusTarget id target = true) :
-      FocusRel id span (target :: rest) [] (target :: rest)
-  | adjacent {guard target : StackEntry} {rest : List StackEntry}
+      FocusRel id (target :: rest) 0 (target :: rest)
+  | deeper {guard focusedTarget : StackEntry} {rest after : List StackEntry} {depth : Nat}
       (guarded : isFocusTarget id guard = false)
-      (targeted : isFocusTarget id target = true) :
-      FocusRel id span (guard :: target :: rest) (atomList .swap span)
-        (target :: guard :: rest)
-  | protect {guard next focusedTarget : StackEntry} {rest after : List StackEntry}
-      {inner : KernelProgram}
-      (guarded : isFocusTarget id guard = false)
-      (notNext : isFocusTarget id next = false)
-      (innerFocus : FocusRel id span (next :: rest) inner (focusedTarget :: after)) :
-      FocusRel id span (guard :: next :: rest)
-        ([locatedQuotation span inner] ++ atomList .dip span ++ atomList .swap span)
-        (focusedTarget :: guard :: after)
+      (innerFocus : FocusRel id rest depth (focusedTarget :: after)) :
+      FocusRel id (guard :: rest) (depth + 1) (focusedTarget :: guard :: after)
 
-private theorem FocusRel.focused_ne_nil {id : Nat} {span : Span}
-    {stack : List StackEntry} {program : KernelProgram} {focused : List StackEntry}
-    (relation : FocusRel id span stack program focused) : focused ≠ [] := by
+/-- Brings the value `depth` places down to the top in one step: nothing,
+`swap`, or `roll depth`, so a use costs the same however deep the local is. -/
+def focusProgram (span : Span) : Nat → KernelProgram
+  | 0 => []
+  | 1 => atomList .swap span
+  | depth => atomList (.roll depth) span
+
+/-- Copies the value `depth` places down to the top in one step. -/
+def pickProgram (span : Span) : Nat → KernelProgram
+  | 0 => atomList .dup span
+  | depth => atomList (.pick depth) span
+
+private theorem FocusRel.focused_ne_nil {id : Nat}
+    {stack : List StackEntry} {depth : Nat} {focused : List StackEntry}
+    (relation : FocusRel id stack depth focused) : focused ≠ [] := by
   cases relation with
-  | top | adjacent | protect =>
+  | top | deeper =>
       intro impossible
       cases impossible
 
-private structure FocusRun (id : Nat) (span : Span) (stack : List StackEntry) where
-  program : KernelProgram
+private structure FocusRun (id : Nat) (stack : List StackEntry) where
+  depth : Nat
   focused : List StackEntry
-  evidence : FocusRel id span stack program focused
+  evidence : FocusRel id stack depth focused
 
 private def focusAtomsWithProof (id : Nat) (span : Span) :
-    (stack : List StackEntry) → Except ErasureError (FocusRun id span stack)
+    (stack : List StackEntry) → Except ErasureError (FocusRun id stack)
   | [] => .error (.missingStackValue span)
   | target :: rest =>
       match targetEq : isFocusTarget id target with
-      | true => .ok { program := [], focused := target :: rest, evidence := .top targetEq }
-      | false => match rest with
-        | [] => .error (.missingStackValue span)
-        | next :: tail => match nextEq : isFocusTarget id next with
-          | true => .ok {
-              program := atomList .swap span
-              focused := next :: target :: tail
-              evidence := .adjacent targetEq nextEq }
-          | false => match focusAtomsWithProof id span (next :: tail) with
-            | .error error => .error error
-            | .ok inner => match focusedEq : inner.focused with
-              | [] => False.elim (inner.evidence.focused_ne_nil focusedEq)
-              | focusedTarget :: after => .ok {
-                  program := [locatedQuotation span inner.program] ++ atomList .dip span ++
-                    atomList .swap span
-                  focused := focusedTarget :: target :: after
-                  evidence := .protect targetEq nextEq (focusedEq ▸ inner.evidence) }
+      | true => .ok { depth := 0, focused := target :: rest, evidence := .top targetEq }
+      | false => match focusAtomsWithProof id span rest with
+        | .error error => .error error
+        | .ok inner => match focusedEq : inner.focused with
+          | [] => False.elim (inner.evidence.focused_ne_nil focusedEq)
+          | focusedTarget :: after => .ok {
+              depth := inner.depth + 1
+              focused := focusedTarget :: target :: after
+              evidence := .deeper targetEq (focusedEq ▸ inner.evidence) }
 
 private def focusAtoms (id : Nat) (span : Span) (stack : List StackEntry) :
-    Except ErasureError (KernelProgram × List StackEntry) :=
-  focusAtomsWithProof id span stack |>.map (fun run => (run.program, run.focused))
+    Except ErasureError (Nat × List StackEntry) :=
+  focusAtomsWithProof id span stack |>.map (fun run => (run.depth, run.focused))
 
 private def literalAtom : Firth.Elaborator.Literal → Option Firth.Interpreter.Literal
   | .integer value => some (.int value)
@@ -376,8 +373,9 @@ private def cleanup (slots : List Slot) (state : State) : Except ErasureError (K
           if candidate.usage == .linear then .error (.linearUnused candidate.name candidate.origin)
           else match focusAtoms candidate.id candidate.origin current.stack with
             | .error e => .error e
-            | .ok (focus, focused) =>
-                loop fuel { current with stack := focused.drop 1 } (out ++ focus ++ atomList .drop candidate.origin)
+            | .ok (focusDepth, focused) =>
+                loop fuel { current with stack := focused.drop 1 }
+                  (out ++ focusProgram candidate.origin focusDepth ++ atomList .drop candidate.origin)
   loop (state.stack.length + 1) state []
 
 mutual
@@ -603,13 +601,14 @@ inductive CleansLocals (slots : List Slot) : State → KernelProgram → State �
       (noCandidate : state.stack.find? (cleanupCandidate slots) = none) :
       CleansLocals slots state [] state
   | discard {state : State} {entry : StackEntry} {candidate : Slot}
-      {focus tail : KernelProgram} {focused : List StackEntry} {final : State}
+      {focusDepth : Nat} {tail : KernelProgram} {focused : List StackEntry} {final : State}
       (nearest : state.stack.find? (cleanupCandidate slots) = some entry)
       (isCandidate : entry.slot = some candidate)
       (many : candidate.usage = .many)
-      (focusedBy : FocusRel candidate.id candidate.origin state.stack focus focused)
+      (focusedBy : FocusRel candidate.id state.stack focusDepth focused)
       (rest : CleansLocals slots { state with stack := focused.drop 1 } tail final) :
-      CleansLocals slots state (focus ++ atomList .drop candidate.origin ++ tail) final
+      CleansLocals slots state
+        (focusProgram candidate.origin focusDepth ++ atomList .drop candidate.origin ++ tail) final
 
 /-- A use copies the local only when a later use still needs it, and makes
 one copy at a time. Copying every later use up front made the stack, and the
@@ -636,6 +635,15 @@ private def copyEntries (copies : List Slot) : List StackEntry :=
 private def spliceCopies (depth : Nat) (copies : List Slot) (stack : List StackEntry) :
     List StackEntry :=
   stack.take depth ++ copyEntries copies ++ stack.drop depth
+
+/-- One use of a local. When the use makes a copy that it then selects, the
+copy and the move are one `pick`; otherwise the copies are made in place and
+the selected value is moved up. -/
+def demandProgram (span : Span) (depth : Nat) (copies : List Slot) (focusDepth : Nat) :
+    KernelProgram :=
+  if copies.length = 1 ∧ focusDepth = depth then pickProgram span depth
+  else (List.replicate copies.length (dupAtDepth span depth)).flatten ++
+    focusProgram span focusDepth
 
 /-- The value the use selects: the nearest copy, or the local itself. -/
 private def selectedId (slot : Slot) (copies : List Slot) : Nat :=
@@ -666,17 +674,17 @@ inductive DemandStateRel (slot : Slot) (state : State) (focused : List StackEntr
 bring the selected value to the top. -/
 inductive ExpandsDemand (slot : Slot) (name : String) (span : Span) (count : Nat)
     (state : State) : KernelProgram → State → Prop where
-  | expand {copies : List Slot} {depth : Nat} {focus : KernelProgram}
+  | expand {copies : List Slot} {depth : Nat} {focusDepth : Nat}
       {focused : List StackEntry} {next : State}
       (copiesRule : DemandCopiesRel slot name count state copies)
       (located : state.stack.findIdx? (isFocusTarget slot.id) = some depth)
-      (focusedBy : FocusRel ((copies.getLast?).map (·.id) |>.getD slot.id) span
+      (focusedBy : FocusRel ((copies.getLast?).map (·.id) |>.getD slot.id)
         (state.stack.take depth ++
           copies.reverse.map (fun fresh => { slot := some fresh, usage := fresh.usage, effect := fresh.effect }) ++
-          state.stack.drop depth) focus focused)
+          state.stack.drop depth) focusDepth focused)
       (stateRule : DemandStateRel slot state focused copies next) :
       ExpandsDemand slot name span count state
-        ((List.replicate copies.length (dupAtDepth span depth)).flatten ++ focus) next
+        (demandProgram span depth copies focusDepth) next
 
 inductive ErasesAtomTo : String → Span → State → KernelProgram → State → Prop where
   | swap {span : Span} {state : State} {a b : StackEntry} {rest : List StackEntry}
@@ -782,11 +790,11 @@ inductive ErasureRel (env : EffectEnv) :
   top first, where the item then runs beneath it. Only a name moves; the
   values keep their order. -/
   | raise {item : Item} {span : Span} {state next : State} {visible : List String}
-      {id : Nat} {focus program : KernelProgram} {focused : List StackEntry}
+      {id : Nat} {focusDepth : Nat} {program : KernelProgram} {focused : List StackEntry}
       (named : state.stack.any (fun entry => hiddenEntry entry && isFocusTarget id entry) = true)
-      (focusedBy : FocusRel id span state.stack focus focused)
+      (focusedBy : FocusRel id state.stack focusDepth focused)
       (itemRun : ErasureRel env (.item item visible) { state with stack := focused } program next) :
-      ErasureRel env (.item item visible) state (focus ++ program) next
+      ErasureRel env (.item item visible) state (focusProgram span focusDepth ++ program) next
   /-- Unused locals on top are names, not values the item can see: the item
   runs beneath them, and they stay on top. -/
   | beneath {item : Item} {span : Span} {state next : State} {visible : List String}
@@ -911,9 +919,9 @@ private theorem bool_eq_false_of_not_true {value : Bool} (notTrue : ¬value = tr
   | true => exact False.elim (notTrue rfl)
 
 private theorem focusAtoms_correct (id : Nat) (span : Span) (stack : List StackEntry)
-    {program : KernelProgram} {focused : List StackEntry}
-    (success : focusAtoms id span stack = .ok (program, focused)) :
-    FocusRel id span stack program focused := by
+    {depth : Nat} {focused : List StackEntry}
+    (success : focusAtoms id span stack = .ok (depth, focused)) :
+    FocusRel id stack depth focused := by
   cases runEq : focusAtomsWithProof id span stack with
   | error error =>
       simp only [focusAtoms, runEq, Except.map] at success
@@ -982,12 +990,13 @@ private def cleanupWithProof (slots : List Slot) (state : State) :
           | .linear => .error (.linearUnused candidate.name candidate.origin)
           | .many => match focusEq : focusAtoms candidate.id candidate.origin current.stack with
             | .error error => .error error
-            | .ok (focus, focused) =>
+            | .ok (focusDepth, focused) =>
               let next := { current with stack := focused.drop 1 }
               match loop fuel next with
               | .error error => .error error
               | .ok tail => .ok {
-                  program := focus ++ atomList .drop candidate.origin ++ tail.program
+                  program := focusProgram candidate.origin focusDepth ++
+                    atomList .drop candidate.origin ++ tail.program
                   final := tail.final
                   evidence := .discard nearestEq slotEq usageEq
                     (focusAtoms_correct _ _ _ focusEq) tail.evidence }
@@ -1055,11 +1064,11 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
             = true then
           match focusEq : focusAtoms slot.id (itemSpan item) state.stack with
           | .error error => .error error
-          | .ok (focus, focused) =>
+          | .ok (focusDepth, focused) =>
             match eraseSubjectWithProof depth env (.item item visible) { state with stack := focused } with
             | .error error => .error error
             | .ok inner => .ok {
-                program := focus ++ inner.program
+                program := focusProgram (itemSpan item) focusDepth ++ inner.program
                 final := inner.final
                 evidence := .raise namedEq (focusAtoms_correct _ _ _ focusEq) inner.evidence }
         else .error (.hiddenLocal slot.name (itemSpan item))
@@ -1203,12 +1212,13 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                 match focusEq : focusAtoms (selectedId selected.slot copies) localSpan
                     (spliceCopies position copies state.stack) with
                 | .error error => .error error
-                | .ok (focus, focused) =>
+                | .ok (focusDepth, focused) =>
                   let next := demandState selected.slot state focused copies
                   match eraseSubjectWithProof depth env (.localBody rest slots visible) next with
                   | .error error => .error error
                   | .ok tail => .ok {
-                      program := copyProgram localSpan position copies ++ focus ++ tail.program
+                      program := demandProgram localSpan position copies focusDepth ++
+                        tail.program
                       final := tail.final
                       evidence := by
                         exact .select activeEq trackedEq selected.evidence linearOnce

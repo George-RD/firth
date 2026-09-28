@@ -134,7 +134,7 @@ fn validate_patch_references(
                     return Err(ImageError::EffectfulWord);
                 }
             }
-            Some(Operand::Literal(_) | Operand::Capture(_)) | None => {}
+            Some(Operand::Literal(_) | Operand::Capture(_) | Operand::Depth(_)) | None => {}
         }
     }
     Ok(())

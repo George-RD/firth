@@ -197,6 +197,14 @@ fn instruction_json(instruction: &Instruction) -> Json {
             op("prim"),
             (String::from("primitive"), Json::Str(name.clone())),
         ]),
+        (Op::Pick, Some(Operand::Depth(depth))) => Json::Object(vec![
+            op("pick"),
+            (String::from("depth"), Json::Int(*depth as i64)),
+        ]),
+        (Op::Roll, Some(Operand::Depth(depth))) => Json::Object(vec![
+            op("roll"),
+            (String::from("depth"), Json::Int(*depth as i64)),
+        ]),
         (Op::Dup, _) => Json::Object(vec![op("dup")]),
         (Op::Drop, _) => Json::Object(vec![op("drop")]),
         (Op::Swap, _) => Json::Object(vec![op("swap")]),
@@ -212,6 +220,8 @@ fn instruction_json(instruction: &Instruction) -> Json {
         (Op::PushCapture, _) => Json::Object(vec![op("push-capture")]),
         (Op::CallWord, _) => Json::Object(vec![op("call-word")]),
         (Op::Prim, _) => Json::Object(vec![op("prim")]),
+        (Op::Pick, _) => Json::Object(vec![op("pick")]),
+        (Op::Roll, _) => Json::Object(vec![op("roll")]),
     }
 }
 

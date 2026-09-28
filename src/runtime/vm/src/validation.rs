@@ -1,3 +1,18 @@
+/// The slot a `PICK` or `ROLL` reaches: `depth` values below the top.
+fn reached<'a>(machine: &'a Machine, instruction: &Instruction) -> Result<&'a Slot, VmError> {
+    let Some(Operand::Depth(depth)) = instruction.operand.as_ref() else {
+        return Err(VmError::StackFault);
+    };
+    let depth = usize::try_from(*depth).map_err(|_| VmError::StackFault)?;
+    let index = machine
+        .stack
+        .len()
+        .checked_sub(depth)
+        .and_then(|above| above.checked_sub(1))
+        .ok_or(VmError::StackFault)?;
+    Ok(&machine.stack[index])
+}
+
 #[allow(clippy::too_many_arguments)]
 fn validate_before_charge(
     instruction: &Instruction,
@@ -58,6 +73,11 @@ fn validate_before_charge(
                 Ok(())
             }
         }
+        Op::Pick => match reached(machine, instruction)? {
+            Slot::Value(value) if value.usage(registry) == Usage::Many => Ok(()),
+            Slot::Value(_) | Slot::WorldMarker => Err(VmError::ResourceFault),
+        },
+        Op::Roll => reached(machine, instruction).map(|_| ()),
         Op::Call => match top()? {
             Slot::Value(Value::Quotation(_)) => Ok(()),
             Slot::Value(_) => Err(VmError::TypeFault),
@@ -379,6 +399,10 @@ fn validate_code_structure(code: &[Instruction], depth: usize) -> Result<(), VmE
             },
             Op::PushCapture => match instruction.operand.as_ref() {
                 Some(Operand::Capture(_)) => {}
+                _ => return Err(VmError::StackFault),
+            },
+            Op::Pick | Op::Roll => match instruction.operand.as_ref() {
+                Some(Operand::Depth(_)) => {}
                 _ => return Err(VmError::StackFault),
             },
             Op::CallWord => match instruction.operand.as_ref() {

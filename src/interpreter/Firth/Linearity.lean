@@ -27,6 +27,7 @@ mutual
     | push (value : AValue)
     | quotation (body : AProgram)
     | dup | drop | swap | dip | call | compose | quote | ifThenElse
+    | pick (depth : Nat) | roll (depth : Nat)
     | word (name : String)
     | prim (primitive : Prim)
 
@@ -59,6 +60,7 @@ mutual
     | .dup => .dup | .drop => .drop | .swap => .swap | .dip => .dip
     | .call => .call | .compose => .compose | .quote => .quote
     | .ifThenElse => .ifThenElse
+    | .pick depth => .pick depth | .roll depth => .roll depth
     | .word name => .word name
     | .prim name => .prim name
 
@@ -504,6 +506,17 @@ inductive InstrumentedStep (policy : PrimitiveOwnershipPolicy) (gamma : Gamma)
       InstrumentedStep policy gamma dictionary costs
         { stack := second :: first :: tail, program := .cons .swap rest, nextTag := nextTag }
         { stack := first :: second :: tail, program := rest, nextTag := nextTag }
+  | pick {above : AStack} {value : AValue} {tail : AStack} {rest : AProgram} {nextTag : Tag}
+      (h : taggedLinearTagsValue value = []) :
+      InstrumentedStep policy gamma dictionary costs
+        { stack := above ++ value :: tail, program := .cons (.pick above.length) rest,
+          nextTag := nextTag }
+        { stack := value :: (above ++ value :: tail), program := rest, nextTag := nextTag }
+  | roll {above : AStack} {value : AValue} {tail : AStack} {rest : AProgram} {nextTag : Tag} :
+      InstrumentedStep policy gamma dictionary costs
+        { stack := above ++ value :: tail, program := .cons (.roll above.length) rest,
+          nextTag := nextTag }
+        { stack := value :: (above ++ tail), program := rest, nextTag := nextTag }
   | call {body : AProgram} {tail : AStack} {rest : AProgram} {usage : Usage}
       {tag nextTag : Tag} :
       InstrumentedStep policy gamma dictionary costs
@@ -612,6 +625,30 @@ theorem instrumented_frontier_preserved
       exact hbefore tag (by simpa [taggedLinearTags, taggedLinearTagsProgram,
         taggedLinearTagsAtom, taggedLinearTagsValue, or_comm, or_left_comm,
         or_assoc] using htag)
+  | pick h =>
+      rename_i above value tail rest nextTag
+      intro tag htag
+      apply hbefore tag
+      simp only [taggedLinearTags, List.mem_append, taggedLinearTagsValue_mem_foldr_iff,
+        List.mem_cons, taggedLinearTagsProgram, taggedLinearTagsAtom, List.nil_append] at htag ⊢
+      rcases htag with ⟨value', hvalue', htag'⟩ | hprog
+      · rcases hvalue' with rfl | hvalue'
+        · exact Or.inl ⟨value', Or.inr (Or.inl rfl), htag'⟩
+        · exact Or.inl ⟨value', hvalue', htag'⟩
+      · exact Or.inr hprog
+  | roll =>
+      rename_i above value tail rest nextTag
+      intro tag htag
+      apply hbefore tag
+      simp only [taggedLinearTags, List.mem_append, taggedLinearTagsValue_mem_foldr_iff,
+        List.mem_cons, taggedLinearTagsProgram, taggedLinearTagsAtom, List.nil_append] at htag ⊢
+      rcases htag with ⟨value', hvalue', htag'⟩ | hprog
+      · refine Or.inl ⟨value', ?_, htag'⟩
+        rcases hvalue' with rfl | hvalue' | hvalue'
+        · exact Or.inr (Or.inl rfl)
+        · exact Or.inl hvalue'
+        · exact Or.inr (Or.inr hvalue')
+      · exact Or.inr hprog
   | call =>
       rename_i body tail rest usage tag nextTag
       intro tag htag
@@ -805,6 +842,37 @@ theorem instrumented_step_erases_swap
   refine ⟨costs.atom .swap, ?_⟩
   rfl
 
+theorem erased_getElem_middle (above : AStack) (value : AValue) (tail : AStack) :
+    ((above ++ value :: tail).map eraseValue)[above.length]? = some (eraseValue value) := by
+  induction above with
+  | nil => rfl
+  | cons head above ih => simpa using ih
+
+theorem erased_rollOut_middle (above : AStack) (value : AValue) (tail : AStack) :
+    rollOut ((above ++ value :: tail).map eraseValue) above.length =
+      some (eraseValue value, (above ++ tail).map eraseValue) := by
+  induction above with
+  | nil => rfl
+  | cons head above ih =>
+      simp only [List.cons_append, List.map_cons, List.length_cons, rollOut, ih]
+      rfl
+
+theorem instrumented_step_erases_pick
+    {above : AStack} {value : AValue} {tail : AStack} {rest : AProgram} {nextTag : Tag} :
+    HasSuccessor gamma dictionary costs
+      (eraseAConfig ⟨above ++ value :: tail, .cons (.pick above.length) rest, nextTag⟩)
+      (eraseAConfig ⟨value :: (above ++ value :: tail), rest, nextTag⟩) := by
+  refine ⟨costs.atom (.pick above.length), ?_⟩
+  simp only [step, eraseAConfig, eraseAtom, eraseProgram, erased_getElem_middle, List.map_cons]
+
+theorem instrumented_step_erases_roll
+    {above : AStack} {value : AValue} {tail : AStack} {rest : AProgram} {nextTag : Tag} :
+    HasSuccessor gamma dictionary costs
+      (eraseAConfig ⟨above ++ value :: tail, .cons (.roll above.length) rest, nextTag⟩)
+      (eraseAConfig ⟨value :: (above ++ tail), rest, nextTag⟩) := by
+  refine ⟨costs.atom (.roll above.length), ?_⟩
+  simp only [step, eraseAConfig, eraseAtom, eraseProgram, erased_rollOut_middle, List.map_cons]
+
 theorem instrumented_step_erases_call
     {body : AProgram} {tail : AStack} {rest : AProgram}
     {usage : Usage} {tag nextTag : Tag} :
@@ -904,6 +972,8 @@ theorem instrumented_step_erases
   | dup h => exact instrumented_step_erases_dup h
   | drop h => exact instrumented_step_erases_drop h
   | swap => exact instrumented_step_erases_swap
+  | pick _ => exact instrumented_step_erases_pick
+  | roll => exact instrumented_step_erases_roll
   | call => exact instrumented_step_erases_call
   | dip => exact instrumented_step_erases_dip
   | compose => exact instrumented_step_erases_compose
@@ -1222,6 +1292,25 @@ theorem step_ownership_of_step
               (List.foldr (fun value tags => taggedLinearTagsValue value ++ tags) [] tail)
               (List.perm_append_comm (l₁ := taggedLinearTagsValue second)
                 (l₂ := taggedLinearTagsValue first))).symm)
+      · change nextTag ≤ nextTag
+        exact Nat.le_refl _
+  | pick h =>
+      rename_i above value tail rest nextTag
+      apply step_ownership_of_tag_permutation hbefore.1
+      · simp only [beforeTags, afterTags, taggedLinearTags, taggedLinearTagsAtom,
+          taggedLinearTagsProgram, List.foldr, h, List.nil_append]
+        exact List.Perm.refl _
+      · change nextTag ≤ nextTag
+        exact Nat.le_refl _
+  | roll =>
+      rename_i above value tail rest nextTag
+      apply step_ownership_of_tag_permutation hbefore.1
+      · simp only [beforeTags, afterTags, taggedLinearTags, taggedLinearTagsAtom,
+          taggedLinearTagsProgram, List.nil_append, ← taggedLinearTagsValueList_eq_foldr,
+          taggedLinearTagsValueList_eq_flatMap, List.flatMap_cons, List.flatMap_append,
+          List.append_assoc]
+        simp only [← List.append_assoc]
+        exact List.Perm.append_right _ (List.Perm.append_right _ List.perm_append_comm)
       · change nextTag ≤ nextTag
         exact Nat.le_refl _
   | call =>
@@ -2213,7 +2302,8 @@ mutual
         cases htyped with
         | quotation hbody =>
             exact many_annotated_program_has_no_linear_tags hbody hmany
-    | dup | drop | swap | dip | call | compose | quote | ifThenElse | word | prim => rfl
+    | dup | drop | swap | dip | call | compose | quote | ifThenElse | pick | roll | word
+    | prim => rfl
 
   theorem many_annotated_program_has_no_linear_tags
       {program : AProgram} {input output : StackType}
@@ -2243,6 +2333,50 @@ mutual
                       many_annotated_atom_has_no_linear_tags hhead hheadUsage,
                       many_annotated_program_has_no_linear_tags htail htailUsage]
 end
+
+theorem annotated_stack_pickAt {stack : AStack} {stackType : StackType}
+    (typing : StackTyping gamma dictionary (stack.map eraseValue) stackType) :
+    ∀ {depth : Nat} {type : ValueType}, stackType.pickAt depth = some type →
+      ∃ above value tail, stack = above ++ value :: tail ∧ above.length = depth ∧
+        ValueTyping gamma dictionary (eraseValue value) type := by
+  induction stack generalizing stackType with
+  | nil =>
+      cases typing
+      intro depth type found; simp [StackType.pickAt] at found
+  | cons head tail ih =>
+      cases typing with
+      | cons valueTyping tailTyping =>
+        intro depth type found
+        cases depth with
+        | zero =>
+            simp [StackType.pickAt] at found
+            subst found
+            exact ⟨[], head, tail, rfl, rfl, valueTyping⟩
+        | succ depth =>
+            simp only [StackType.pickAt] at found
+            rcases ih tailTyping found with ⟨above, value, rest, rfl, rfl, typed⟩
+            exact ⟨head :: above, value, rest, rfl, rfl, typed⟩
+
+theorem annotated_stack_rollAt {stack : AStack} {stackType : StackType}
+    (typing : StackTyping gamma dictionary (stack.map eraseValue) stackType) :
+    ∀ {depth : Nat} {rest : StackType} {type : ValueType},
+      stackType.rollAt depth = some (rest, type) →
+      ∃ above value tail, stack = above ++ value :: tail ∧ above.length = depth := by
+  induction stack generalizing stackType with
+  | nil =>
+      cases typing
+      intro depth rest type found; simp [StackType.rollAt] at found
+  | cons head tail ih =>
+      cases typing with
+      | cons valueTyping tailTyping =>
+        intro depth rest type found
+        cases depth with
+        | zero => exact ⟨[], head, tail, rfl, rfl⟩
+        | succ depth =>
+            simp only [StackType.rollAt, Option.map_eq_some_iff] at found
+            rcases found with ⟨⟨remaining, moved⟩, inner, _⟩
+            rcases ih tailTyping inner with ⟨above, value, rest', rfl, rfl⟩
+            exact ⟨head :: above, value, rest', rfl, rfl⟩
 
 set_option maxHeartbeats 2000000 in
 theorem backward_adequacy
@@ -2385,6 +2519,43 @@ theorem backward_adequacy
                                 exact ⟨annotatedAfter, hinstrumented, rfl,
                                   instrumented_well_formed_preserved_of_step_ownership
                                     hwellformed hinstrumented⟩
+        | pick depth =>
+            cases headTyping with
+            | pick hpick hmany =>
+                rcases annotated_stack_pickAt stackTyping hpick with
+                  ⟨above, value, tail, rfl, rfl, valueTyping⟩
+                simp only [eraseAConfig, eraseProgram, eraseAtom, step,
+                  erased_getElem_middle, Option.some.injEq, StepResult.stepped.injEq] at hstep
+                rcases hstep with ⟨rfl, rfl⟩
+                have htags := many_annotated_value_has_no_linear_tags valueTyping hmany
+                let annotatedAfter : AConfig :=
+                  { stack := value :: (above ++ value :: tail), program := rest,
+                    nextTag := nextTag }
+                have hinstrumented : InstrumentedStep policy gamma dictionary costs
+                    { stack := above ++ value :: tail,
+                      program := .cons (.pick above.length) rest, nextTag := nextTag }
+                    annotatedAfter := .pick htags
+                exact ⟨annotatedAfter, hinstrumented, by simp [annotatedAfter, eraseAConfig],
+                  instrumented_well_formed_preserved_of_step_ownership
+                    hwellformed hinstrumented⟩
+        | roll depth =>
+            cases headTyping with
+            | roll hroll =>
+                rcases annotated_stack_rollAt stackTyping hroll with
+                  ⟨above, value, tail, rfl, rfl⟩
+                simp only [eraseAConfig, eraseProgram, eraseAtom, step,
+                  erased_rollOut_middle, StepResult.stepped.injEq] at hstep
+                rcases hstep with ⟨rfl, rfl⟩
+                let annotatedAfter : AConfig :=
+                  { stack := value :: (above ++ tail), program := rest,
+                    nextTag := nextTag }
+                have hinstrumented : InstrumentedStep policy gamma dictionary costs
+                    { stack := above ++ value :: tail,
+                      program := .cons (.roll above.length) rest, nextTag := nextTag }
+                    annotatedAfter := .roll
+                exact ⟨annotatedAfter, hinstrumented, by simp [annotatedAfter, eraseAConfig],
+                  instrumented_well_formed_preserved_of_step_ownership
+                    hwellformed hinstrumented⟩
         | call =>
             cases headTyping with
             | call =>

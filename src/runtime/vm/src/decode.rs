@@ -61,6 +61,8 @@ fn decode_instruction(reader: &mut Reader<'_>, depth: usize) -> Result<Instructi
         8 => (Op::Compose, None),
         9 => (Op::Quote, None),
         10 => (Op::If, None),
+        13 => (Op::Pick, Some(Operand::Depth(reader.unsigned()?))),
+        14 => (Op::Roll, Some(Operand::Depth(reader.unsigned()?))),
         11 => {
             let name = reader.string()?;
             if !is_canonical_identifier(name.as_bytes()) {

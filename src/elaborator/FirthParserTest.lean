@@ -232,6 +232,9 @@ def runParserTests : IO Unit := do
   expectFailure "vocab outer { vocab inner { } }" "firth.syntax.nested-vocabulary"
   expectFailure ": true ( -- ) ;" "firth.syntax.invalid-name"
   expectFailure ": as ( -- ) ;" "firth.syntax.invalid-name"
+  -- `pick` and `roll` are kernel atoms that locals erase to, so no word may take the name.
+  expectFailure ": pick ( -- ) ;" "firth.syntax.invalid-name"
+  expectFailure ": roll ( -- ) ;" "firth.syntax.invalid-name"
   expectFailure ": ρfoo ( -- ) ;" "firth.syntax.invalid-name"
   expectFailure ": x (forall ρ ρ -- ρ) ;" "firth.syntax.duplicate-row"
   expectFailure ": x (forall ρ; forall ρ2; ρ -- ρ) ;" "firth.syntax.repeated-forall"

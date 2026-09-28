@@ -24,6 +24,7 @@ well-formed `Γ`.
 Atom      a ::= lit c            push a literal constant
              | [ p ]             push a quotation of program p
              | dup | drop | swap
+             | pick n | roll n    indexed shuffles, n a natural number
              | dip | call | compose | quote
              | if
              | w                 dictionary word reference
@@ -44,6 +45,14 @@ The kernel atoms are minimal for v0.1: `dup` and `drop` are structural rules,
 `quote` construct quotations beyond literal formation, `if` selects a branch,
 words provide recursion, and `prim π` supplies the operations declared by
 `Γ`.
+
+`pick n` and `roll n` (added 2026-09-27) are the one exception, and are kept
+for cost, not expressive power: `pick n` has the effect of `n` nested
+`[ … ] dip` around `dup` followed by moving the copy up, and `roll n` the
+effect of the nested `[ … ] dip swap` chain, but each costs one step where
+those chains cost about five per level. Named locals erase to them, so reading
+a local costs the same however deep it sits. This resolves the open question
+in §11 on indexed shuffles; see `dec.kernel-indexed-shuffles`.
 
 ### 3. Types
 
@@ -118,6 +127,11 @@ The program judgement is `Γ;D ⊢ p : Σ₁ → Σ₂`. Value and stack judgeme
 
 (SWAP)      Γ;D ⊢ swap : Σ · τ₁ · τ₂ → Σ · τ₂ · τ₁
 
+(PICK)      usage(τ) = many
+            Γ;D ⊢ pick n : Σ · τ · τ₁ ⋯ τₙ → Σ · τ · τ₁ ⋯ τₙ · τ
+
+(ROLL)      Γ;D ⊢ roll n : Σ · τ · τ₁ ⋯ τₙ → Σ · τ₁ ⋯ τₙ · τ
+
 (CALL)      Γ;D ⊢ call : Σ₁ · [Σ₁ → Σ₂]^u → Σ₂
 
 (DIP)       Γ;D ⊢ dip : Σ₁ · τ · [Σ₁ → Σ₂]^u → Σ₂ · τ
@@ -175,6 +189,8 @@ Small-step execution is over configurations `⟨V ∣ p⟩`. The administrative 
 (S-DUP)     ⟨V v ∣ dup ; p⟩         → ⟨V v v ∣ p⟩
 (S-DROP)    ⟨V v ∣ drop ; p⟩        → ⟨V ∣ p⟩
 (S-SWAP)    ⟨V v₁ v₂ ∣ swap ; p⟩    → ⟨V v₂ v₁ ∣ p⟩
+(S-PICK)    ⟨V v v₁ ⋯ vₙ ∣ pick n ; p⟩ → ⟨V v v₁ ⋯ vₙ v ∣ p⟩
+(S-ROLL)    ⟨V v v₁ ⋯ vₙ ∣ roll n ; p⟩ → ⟨V v₁ ⋯ vₙ v ∣ p⟩
 (S-CALL)    ⟨V ⟦q⟧ ∣ call ; p⟩      → ⟨V ∣ q ; p⟩
 (S-DIP)     ⟨V v ⟦q⟧ ∣ dip ; p⟩     → ⟨V ∣ q ; push v ; p⟩
 (S-COMP)    ⟨V ⟦q₁⟧ ⟦q₂⟧ ∣ compose ; p⟩ → ⟨V ⟦q₁ ; q₂⟧ ∣ p⟩
@@ -259,7 +275,7 @@ they can be admitted.
   live in the elaborator and Lean.
 - Namespaces, naming grammar, vocabularies, and visibility are surface
   concerns that erase to dictionary entries.
-- Named locals desugar to `dip`/`swap`/`dup` patterns.
+- Named locals desugar to `pick`/`roll`/`dup`/`swap` patterns.
 - Concurrency is outside v0.1. A future partitioned World-token extension may
   be proposed without changing this freeze.
 - Higher-rank rows, subtyping, overloading, and implicit usage coercions are
@@ -269,7 +285,7 @@ they can be admitted.
 
 The following are mechanisation questions that do not alter the frozen v0.1
 rules: usage formalisation as kinds or capability flags; proof details for the
-World token; whether `swap` later gains indexed shuffles; and whether Bool is
+World token; whether Bool is
 also offered through a Church encoding. OPEN-3 is resolved by the accepted
 decision `dec.gap-firth-language-kernel-open-3-validate-quotation-usage-meet-inference`.
 

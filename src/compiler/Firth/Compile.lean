@@ -333,6 +333,8 @@ mutual
     | .dup => obj [("op", quote "dup")]
     | .drop => obj [("op", quote "drop")]
     | .swap => obj [("op", quote "swap")]
+    | .pick depth => obj [("op", quote "pick"), ("depth", number depth)]
+    | .roll depth => obj [("op", quote "roll"), ("depth", number depth)]
     | .call => obj [("op", quote "call")]
     | .dip => obj [("op", quote "dip")]
     | .compose => obj [("op", quote "compose")]
