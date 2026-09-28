@@ -152,7 +152,7 @@ def extract(text: str) -> dict[str, str]:
 def load_solutions(path: Path) -> dict[str, str]:
     """A solutions JSON file, or a directory of `<task id>.firth` / `<task id>.py` files."""
     if path.is_dir():
-        return {f.stem: f.read_text() for f in sorted(path.iterdir()) if f.suffix in (".firth", ".py")}
+        return {f.stem: read_regular(f) for f in sorted(path.iterdir()) if f.suffix in (".firth", ".py")}
     return json.loads(read_regular(path))
 
 
