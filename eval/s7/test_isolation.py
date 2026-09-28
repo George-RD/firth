@@ -481,7 +481,8 @@ def main() -> int:
         # The MVP prompt outside a workspace names `harness.py try` directly;
         # that path must sandbox Python too (Codex, on #134).
         direct = subprocess.run([sys.executable, str(HERE / "harness.py"), "try", "--lang", "python",
-                                 "--task", "reverse", str(ws / "leak.py")], capture_output=True, text=True, timeout=300)
+                                 "--task", "reverse", str(ws / "leak.py"), "--workspace", str(ws)],
+                                capture_output=True, text=True, timeout=300)
         check("allocate-batch" not in direct.stdout and "FileNotFoundError" in direct.stdout,
               "harness.py try runs a Python answer in the sandbox too")
         check("allocate-batch" in harness.try_run((ws / "leak.py").read_text(), "python", harness.BY_ID["reverse"], None),
