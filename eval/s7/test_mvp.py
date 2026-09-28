@@ -106,6 +106,13 @@ def scorer_rejects_wrong_python() -> None:
     # `reverse` has one output, a list: returning it must not spread into several values.
     rev = harness.run_python("def main(xs):\n    return xs[::-1]\n", ([1, 2],), None, ("Seq Int",))
     check(rev == {"ok": True, "stack": [[2, 1]]}, "a single list output stays one value")
+    # CodeRabbit's finding: an answer that prints while it works used to break
+    # the result (stdout carried both), and with it the whole scoring run.
+    loud = harness.run_python("def main(xs):\n    print('debug', xs)\n    return xs[::-1]\n",
+                              ([1, 2],), None, ("Seq Int",))
+    check(loud == {"ok": True, "stack": [[2, 1]]}, "an answer that prints still gives its result")
+    fake = harness.run_python("import os\ndef main(xs):\n    os._exit(0)\n", ([1, 2],), None, ("Seq Int",))
+    check(not fake["ok"], "an answer that exits before returning gives no result, not a crash")
     two = harness.run_python("def main(s, t):\n    return (s, 0)\n", (1, []), None, ("Int", "Int"))
     check(two == {"ok": True, "stack": [1, 0]}, "a tuple of two outputs gives two values")
     # A tuple where a list is due, or a Bool where an Int is due, fails even

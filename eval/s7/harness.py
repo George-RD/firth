@@ -268,7 +268,12 @@ def compact(text: str) -> str:
 
 
 PY_DRIVER = """
-import json, sys
+import json, os, sys
+# The result goes out on the real stdout; anything the answer prints goes to
+# stderr, so a debugging print cannot corrupt the result.
+result = os.fdopen(os.dup(1), "w")
+os.dup2(2, 1)
+sys.stdout = sys.stderr
 ns = {}
 exec(compile(sys.stdin.read(), "solution.py", "exec"), ns)
 r = ns["main"](*json.loads(sys.argv[1]))
@@ -288,7 +293,8 @@ for v, t in zip(out, types):
           else type(v) is {"Int": int, "Bool": bool}[t])
     if not ok:
         sys.exit(f"main returned {v!r} where a {t} is due")
-print(json.dumps(out))
+print(json.dumps(out), file=result)
+result.flush()
 """
 
 
@@ -327,7 +333,10 @@ def run_python(source: str, args: tuple, fuel: int | None = None,
         if empty:  # the program may have left files there
             shutil.rmtree(empty, ignore_errors=True)
     if p.returncode == 0:
-        return {"ok": True, "stack": json.loads(p.stdout)}
+        try:
+            return {"ok": True, "stack": json.loads(p.stdout)}
+        except ValueError:
+            return {"ok": False, "error": f"no result from main: {p.stdout.strip()[-200:]!r}"}
     return {"ok": False, "error": p.stderr.strip()[-2000:]}
 
 
