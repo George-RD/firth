@@ -283,7 +283,12 @@ def compact(text: str) -> str:
 
 
 PY_DRIVER = """
-import json, sys
+import json, os, sys
+# The result goes out on the real stdout; anything the answer prints goes to
+# stderr, so a debugging print cannot corrupt the result.
+result = os.fdopen(os.dup(1), "w")
+os.dup2(2, 1)
+sys.stdout = sys.stderr
 ns = {}
 exec(compile(sys.stdin.read(), "solution.py", "exec"), ns)
 r = ns["main"](*json.loads(sys.argv[1]))
@@ -303,11 +308,20 @@ for v, t in zip(out, types):
           else type(v) is {"Int": int, "Bool": bool}[t])
     if not ok:
         sys.exit(f"main returned {v!r} where a {t} is due")
-print(json.dumps(out))
+print(json.dumps(out), file=result)
+result.flush()
 """
 
 
 PY_TIMEOUT = 30  # seconds per Python case
+
+
+def python_install() -> tuple[str, ...]:
+    """The interpreter's install, when the sandbox's system directories lack it."""
+    import isolate
+    prefix = os.path.realpath(sys.base_prefix)
+    return () if any(isolate.within(prefix, os.path.realpath(d)) for d in isolate.SYSTEM
+                     if os.path.isdir(d)) else (prefix,)
 
 
 def run_python(source: str, args: tuple, fuel: int | None = None,
@@ -322,7 +336,8 @@ def run_python(source: str, args: tuple, fuel: int | None = None,
         import isolate  # imports this module, so only when needed
         empty = tempfile.mkdtemp(dir="/var/tmp", prefix="s7py-")
         os.chown(empty, isolate.NOBODY, isolate.NOBODY)
-        cmd = isolate.sandbox_command(Path(empty), cmd, network=False, uid=isolate.NOBODY)
+        cmd = isolate.sandbox_command(Path(empty), cmd, network=False, uid=isolate.NOBODY,
+                                      tools=python_install())
     try:
         p = (isolate.contained(cmd, input=source, capture_output=True, text=True, timeout=PY_TIMEOUT,
                                env=isolate.sandbox_env()) if empty else
@@ -333,7 +348,10 @@ def run_python(source: str, args: tuple, fuel: int | None = None,
         if empty:  # the program may have left files there
             shutil.rmtree(empty, ignore_errors=True)
     if p.returncode == 0:
-        return {"ok": True, "stack": json.loads(p.stdout)}
+        try:
+            return {"ok": True, "stack": json.loads(p.stdout)}
+        except ValueError:
+            return {"ok": False, "error": f"no result from main: {p.stdout.strip()[-200:]!r}"}
     return {"ok": False, "error": p.stderr.strip()[-2000:]}
 
 
@@ -354,6 +372,18 @@ def eval_hashes() -> dict[str, str]:
     here = Path(__file__).resolve().parent
     return {n: hashlib.sha256((here / n).read_bytes()).hexdigest()
             for n in ("task.py", "tasks.py", "mvp_tasks.py", "harness.py", "isolate.py")}
+
+
+def scored_with_hashes(run):
+    """RUN's result and the eval hashes taken before it started. Refuses when
+    the files change while it runs: scoring keeps the definitions it imported,
+    so hashes taken afterwards would name an evaluator that did not score it
+    (Codex's finding)."""
+    before = eval_hashes()
+    out = run()
+    if eval_hashes() != before:
+        raise SystemExit("the task sets or the scorer changed while scoring; nothing is recorded")
+    return out, before
 
 
 def firth_commit() -> str:
@@ -571,8 +601,9 @@ def main() -> int:
         print(json.dumps(extract(read_regular(a.answer, a.workspace or plain_parent(a.answer))), indent=2))
     elif a.cmd == "score":
         require_sandbox(a.lang, select(a.tier))
-        res = score(load_solutions(a.solutions, a.workspace or plain_parent(a.solutions)), a.lang, select(a.tier), a.jobs)
-        res.update(label=a.label, firth_commit=firth_commit(), eval_sha256=eval_hashes(),
+        sols = load_solutions(a.solutions, a.workspace or plain_parent(a.solutions))
+        res, hashes = scored_with_hashes(lambda: score(sols, a.lang, select(a.tier), a.jobs))
+        res.update(label=a.label, firth_commit=firth_commit(), eval_sha256=hashes,
                    prompt_docs=[d for d in a.prompt_docs.split(",") if d])
         print(json.dumps(res, indent=2))
     elif a.cmd == "repair":

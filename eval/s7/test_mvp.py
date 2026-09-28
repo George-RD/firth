@@ -107,6 +107,13 @@ def scorer_rejects_wrong_python() -> None:
     # `reverse` has one output, a list: returning it must not spread into several values.
     rev = harness.run_python("def main(xs):\n    return xs[::-1]\n", ([1, 2],), None, ("Seq Int",))
     check(rev == {"ok": True, "stack": [[2, 1]]}, "a single list output stays one value")
+    # CodeRabbit's finding: an answer that prints while it works used to break
+    # the result (stdout carried both), and with it the whole scoring run.
+    loud = harness.run_python("def main(xs):\n    print('debug', xs)\n    return xs[::-1]\n",
+                              ([1, 2],), None, ("Seq Int",))
+    check(loud == {"ok": True, "stack": [[2, 1]]}, "an answer that prints still gives its result")
+    fake = harness.run_python("import os\ndef main(xs):\n    os._exit(0)\n", ([1, 2],), None, ("Seq Int",))
+    check(not fake["ok"], "an answer that exits before returning gives no result, not a crash")
     two = harness.run_python("def main(s, t):\n    return (s, 0)\n", (1, []), None, ("Int", "Int"))
     check(two == {"ok": True, "stack": [1, 0]}, "a tuple of two outputs gives two values")
     # A tuple where a list is due, or a Bool where an Int is due, fails even
@@ -244,6 +251,23 @@ def hashes_recorded() -> None:
     h = harness.eval_hashes()
     check(set(h) == {"task.py", "tasks.py", "mvp_tasks.py", "harness.py", "isolate.py"}
           and all(len(v) == 64 for v in h.values()), "results can record the eval sources' SHA-256")
+    # Hashes are taken before scoring, and a change during scoring is refused.
+    # Planted: a scoring run during which the files' hashes change.
+    real = harness.eval_hashes
+    seen = iter([{"harness.py": "a"}, {"harness.py": "b"}])
+    try:
+        harness.eval_hashes = lambda: next(seen)
+        changed = False
+        try:
+            harness.scored_with_hashes(lambda: "result")
+        except SystemExit:
+            changed = True
+        check(changed, "scoring refuses to record hashes when the eval files change while it runs")
+        harness.eval_hashes = lambda: {"harness.py": "a"}
+        check(harness.scored_with_hashes(lambda: "result") == ("result", {"harness.py": "a"}),
+              "unchanged files give the result with the hashes taken before scoring")
+    finally:
+        harness.eval_hashes = real
 
 
 def main() -> int:

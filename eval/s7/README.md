@@ -94,8 +94,14 @@ include negative numbers and empty sequences.
   enforced, not just asked. `isolate.py workspace` makes a workspace holding
   only the prompt and a `./try` client. `isolate.py run` runs the author
   inside a sandbox (a mount and PID namespace with every capability dropped)
-  where the repository, `/home`, `/root`, `/tmp`, `/var/tmp`, `/mnt` and
-  `/srv` are empty and the workspace is `/tmp/work`. `./try` talks to a server
+  whose root is built from an allowlist: `/usr`, `/etc` and the other system
+  directories, the author CLI's install (`--tool DIR`), read-only copies of
+  its credentials (`--keep`), a fresh `/tmp`, `/dev` and `/proc`, and the
+  workspace at `/tmp/work`. The host's root is dropped with `pivot_root`, so
+  the repository, `/home`, `/root`, `/opt`, `/var`, `/mnt`, `/sys` and
+  anything else not on the list do not exist inside. An earlier version hid a
+  list of paths instead, and a plain `cat` read the main checkout of a
+  worktree it did not know about. `./try` talks to a server
   the harness runs outside, over a socket in the workspace, so `mvp_tasks.py`,
   `reference/mvp/` and the git history stay out of reach.
   Python programs run the author's code, so `./try` runs them inside the
@@ -104,13 +110,22 @@ include negative numbers and empty sequences.
   answers to MVP tasks when it cannot sandbox them (not root). Firth programs cannot read files.
   `test_isolation.py` (CI, as root) runs a probe that finds them without the
   sandbox and finds nothing inside it, by direct path, `/proc/<pid>/root`,
-  `git show`, `umount` or a filesystem search.
-- The repository's git storage is hidden too, wherever it lives: a
-  worktree's git directory, the shared common directory and any object
-  alternates (`git_storage`), since `git show` reads the hidden tests from
-  any of them. The sandbox refuses to start if the storage cannot be found.
-  `test_isolation.py` plants a worktree of a `--shared` clone under `/opt`
-  whose secret git gives back when the storage is not hidden.
+  `git show` or a filesystem search. That probe also runs once on the host as
+  root, so it never mounts or unmounts anything; unmounting is tried only
+  inside, on the workspace mount, and fails for lack of capabilities.
+- The sandbox refuses to start if anything it would show (a system
+  directory, a `--tool`, a `--keep` credential or the workspace) is, holds or
+  lies inside a path of the repository: the checkout, its git directory,
+  common directory and object alternates, its main checkout and other
+  worktrees, remotes that are local paths, and any enclosing checkout
+  (`repository_paths`). It also refuses when git cannot tell it that layout.
+  `test_isolation.py` plants a worktree of a `--shared` clone of a local
+  origin, inside an enclosing checkout, with a copy of the clone beside it,
+  all under `/opt`. Outside the sandbox `cat` reads the main checkout's,
+  parent's and sibling's secrets and git gives back the stored one; inside,
+  none of them exists, and a `--tool` naming any of those paths is refused.
+  A repository placed under `/usr/local` is refused too, since `/usr` is
+  shown.
 - Submitted Python programs, run by `./try` or at scoring, also get an empty
   network namespace, so an answer cannot fetch anything. `test_isolation.py`
   plants one that reads from a local listener.
@@ -142,12 +157,16 @@ include negative numbers and empty sequences.
   what `isolate.py run --pass-env NAME` names (the model API key). `HOME` is
   the workspace. Credentials passed with `--keep` come in as read-only copies
   `nobody` can read. A `--keep` path inside the workspace, through a link, or
-  under a directory `nobody` or everyone can write is refused.
-- Inside the sandbox every mount is remounted read-only except the workspace,
-  a fresh `/tmp` and `/dev/shm`, and `/run` is replaced by an empty directory
-  (it holds host sockets). So one attempt cannot leave notes for a later one.
+  under a directory `nobody` or everyone can write is refused, and so is a
+  kept directory holding anything but plain files and directories (a link
+  inside it could lead to the repository). The copy never follows links.
+- Inside the sandbox the root and everything shown are read-only except the
+  workspace, a fresh `/tmp` and `/dev/shm`, and there is no `/run` (it holds
+  host sockets). So one attempt cannot leave notes for a later one.
   `test_isolation.py` runs `find / -writable` as the author and allows nothing
-  else.
+  else. There is no `/sys`, and `/proc/sys` is read-only, so even a root
+  author (a test-only case) cannot write a kernel knob; the test plants the
+  sandbox without its read-only `/proc/sys`, which does write one.
 - Scoring Python first checks that the sandbox starts, and refuses to score if
   it does not, so a broken sandbox cannot pass for a set of wrong answers.
 - The sandbox has its own IPC namespace, so shared memory and message queues
@@ -173,9 +192,9 @@ keeps every transcript, and reports the pass rate per task and overall.
 
 ```sh
 python3 eval/s7/harness.py prompt --lang firth --tier mvp > prompt.md
-sudo python3 eval/s7/isolate.py workspace --lang firth ws   # prompt.md and ./try
-sudo python3 eval/s7/isolate.py run ws -- <author command>    # the author, sandboxed
-sudo python3 eval/s7/isolate.py audit ws/transcript.jsonl
+sudo python3 eval/s7/isolate.py workspace --lang firth /var/tmp/ws   # outside the repository
+sudo python3 eval/s7/isolate.py run /var/tmp/ws --tool <author CLI install> -- <author command>
+sudo python3 eval/s7/isolate.py audit /var/tmp/ws/transcript.jsonl
 python3 eval/s7/harness.py score --lang firth --tier mvp solutions.json > results.json
 python3 eval/s7/test_mvp.py
 sudo python3 eval/s7/test_isolation.py

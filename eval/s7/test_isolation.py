@@ -27,7 +27,9 @@ import isolate  # noqa: E402
 ROOT = harness.ROOT
 SECRETS = [HERE / "mvp_tasks.py", HERE / "reference/mvp/sort.firth"]
 # Every way we know of to reach the hidden files from inside. Each prints a
-# FOUND line only when it actually read hidden content.
+# FOUND line only when it actually read hidden content. This probe also runs
+# once outside the sandbox, as root, so it must never change the host: no
+# umount, mount or write here (unmounting is tried only inside, see main).
 PROBE = f"""
 for f in {' '.join(isolate.q(s) for s in SECRETS)}; do
   grep -q 'allocate-batch\\|insert-from' "$f" 2>/dev/null && echo "FOUND direct $f"
@@ -37,8 +39,7 @@ for p in $(ls /proc | grep -E '^[0-9]+$'); do
   grep -qs 'allocate-batch' "/proc/$p/root{HERE}/mvp_tasks.py" && echo "FOUND pid $p"
 done
 git -C {isolate.q(ROOT)} show HEAD:eval/s7/mvp_tasks.py 2>/dev/null | grep -q allocate-batch && echo "FOUND git"
-for m in {' '.join(isolate.hidden_paths())}; do umount "$m" 2>/dev/null && echo "FOUND umount $m"; done
-find / -xdev \\( -name mvp_tasks.py -o -name sort.firth \\) 2>/dev/null | grep . && echo "FOUND find"
+find / \\( -path /proc -o -path /sys -o -path /mnt \\) -prune -o \\( -name mvp_tasks.py -o -name sort.firth \\) -print 2>/dev/null | grep . && echo "FOUND find"
 true
 """
 
@@ -105,46 +106,88 @@ def audit_checks() -> None:
         check(len(isolate.audit(clean + [ev])) == 1, f"the audit flags a planted {name} call")
 
 
-def git_storage_checks(ws: Path) -> None:
-    """Codex's probe: a checkout that is a worktree of a clone sharing objects
-    with another repository keeps its git directory, common directory and
-    object alternates outside the repository path. Planted under /opt, outside
-    every fixed hidden path, with a secret only git can give back."""
-    base = Path(f"/opt/s7-git-probe-{os.getpid()}")
-    origin, clone, wt = base / "origin", base / "clone", base / "wt"
-    git = ["git", "-c", "user.email=s7@probe", "-c", "user.name=s7"]
+def layout_checks(ws: Path) -> None:
+    """The reviewer's probe and its relatives: the repository is a worktree of
+    a clone that shares objects with a local origin, all inside an enclosing
+    checkout, with a copy of the clone beside it. Each holds its own secret.
+    Planted under /opt, which the sandbox never shows, and outside every path
+    the old denylist sandbox hid, where plain `cat` read the main checkout."""
+    base = Path(f"/opt/s7-layout-{os.getpid()}")
+    outer = base / "outer"
+    origin, clone, wt, copy = outer / "origin", outer / "clone", outer / "wt", outer / "copy"
+    git = ["git", "-c", "user.email=s7@probe", "-c", "user.name=s7", "-c", "safe.directory=*"]
+
+    def commit(repo: Path, name: str, text: str) -> None:
+        (repo / name).write_text(text + "\n")
+        subprocess.run(git + ["-C", str(repo), "add", name], check=True)
+        subprocess.run(git + ["-C", str(repo), "commit", "-qm", name], check=True)
+    secrets = {"S7-PARENT-SECRET": outer / "parent.txt", "S7-MAIN-SECRET": clone / "main.txt",
+               "S7-SIBLING-SECRET": copy / "sibling.txt"}
     try:
-        origin.mkdir(parents=True)
+        outer.mkdir(parents=True)
+        subprocess.run(git + ["init", "-q", str(outer)], check=True)
+        commit(outer, "parent.txt", "S7-PARENT-SECRET")
         subprocess.run(git + ["init", "-q", str(origin)], check=True)
-        (origin / "secret.txt").write_text("S7-GIT-SECRET\n")
-        subprocess.run(git + ["-C", str(origin), "add", "secret.txt"], check=True)
-        subprocess.run(git + ["-C", str(origin), "commit", "-qm", "s"], check=True)
+        commit(origin, "secret.txt", "S7-GIT-SECRET")
         subprocess.run(git + ["clone", "-q", "--shared", str(origin), str(clone)], check=True)
+        commit(clone, "main.txt", "S7-MAIN-SECRET")
         subprocess.run(git + ["-C", str(clone), "worktree", "add", "-q", str(wt)], check=True)
-        (wt / "secret.txt").unlink()  # the working copy is the repository: only git storage is left
-        read = ["bash", "-c", f"git -c safe.directory='*' --git-dir={clone}/.git show HEAD:secret.txt; "
-                f"cat {clone}/.git/HEAD {wt}/.git 2>/dev/null; ls {origin}/.git/objects 2>/dev/null"]
-        real_root, real_storage = harness.ROOT, isolate.git_storage
+        shutil.copytree(clone, copy, symlinks=True)
+        (copy / "sibling.txt").write_text("S7-SIBLING-SECRET\n")
+        read = ["bash", "-c", " ".join(f"cat {p};" for p in secrets.values())
+                + f" git -c safe.directory='*' --git-dir={clone}/.git show HEAD:secret.txt;"
+                f" cat {clone}/.git/HEAD {wt}/.git; ls {origin}/.git/objects; true"]
+        bare = subprocess.run(read, capture_output=True, text=True)
+        check(all(s in bare.stdout for s in (*secrets, "S7-GIT-SECRET")),
+              "outside the sandbox the main checkout, parent, sibling and git storage are readable (the planted case)")
+        real_root = harness.ROOT
         try:
             harness.ROOT = wt
-            stored = isolate.git_storage(wt)
-            check(str(clone / ".git") in stored and str(origin / ".git" / "objects") in stored,
-                  f"the worktree's common directory and alternates are found: {stored}")
-            isolate.git_storage = lambda root: []  # the planted case: storage not hidden
-            leaky = subprocess.run(isolate.sandbox_command(ws, read, uid=isolate.NOBODY), env=isolate.sandbox_env(),
-                                   capture_output=True, text=True, timeout=300)
-            check("S7-GIT-SECRET" in leaky.stdout,
-                  "without hiding git storage, git gives back the secret in the sandbox (the planted case)")
-            isolate.git_storage = real_storage
-            inside = subprocess.run(isolate.sandbox_command(ws, read, uid=isolate.NOBODY), env=isolate.sandbox_env(),
-                                    capture_output=True, text=True, timeout=300)
-            check("S7-GIT-SECRET" not in inside.stdout and "ref:" not in inside.stdout
-                  and not inside.stdout.strip(),
-                  f"in the sandbox the worktree's git storage is empty: {inside.stdout.strip()[:200]!r}")
+            found = isolate.repository_paths(wt)
+            want = [wt, clone, clone / ".git", origin, origin / ".git" / "objects", outer]
+            check(all(str(p) in found for p in want),
+                  f"the worktree's main checkout, storage, alternates, local remote and enclosing checkout are found: {found}")
+            inside = subprocess.run(isolate.sandbox_command(ws, read, uid=isolate.NOBODY),
+                                    env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+            check(inside.returncode == 0 and not inside.stdout.strip(),
+                  f"in the sandbox none of them exists: {inside.stdout.strip()[:300]!r} {inside.stderr.strip()[:300]}")
+            # Nothing allowed may expose them: a tool naming any of these paths,
+            # or a directory holding them, is refused before the sandbox starts.
+            for p in (*want, clone / ".git" / "worktrees", base, copy):
+                check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"], tools=(str(p),))),
+                      f"the sandbox refuses to show {p}")
+            check(refused_exit(lambda: isolate.sandbox_command(clone / "ws", ["true"])),
+                  "the sandbox refuses a workspace inside the main checkout")
         finally:
-            harness.ROOT, isolate.git_storage = real_root, real_storage
+            harness.ROOT = real_root
+        # A tool unrelated to the repository comes in read-only at its path.
+        tool = base / "tool"
+        tool.mkdir()
+        (tool / "bin").write_text("S7-TOOL\n")
+        shown = subprocess.run(isolate.sandbox_command(ws, ["bash", "-c", f"cat {tool}/bin; touch {tool}/x"],
+                                                       uid=isolate.NOBODY, tools=(str(tool),)),
+                               env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+        check(shown.stdout.strip() == "S7-TOOL" and not (tool / "x").exists(),
+              f"a --tool directory is shown read-only: {shown.stdout.strip()!r} {shown.stderr.strip()[:200]}")
+        check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"], tools=("relative/tool",))),
+              "a --tool path that is not absolute and real is refused")
     finally:
         shutil.rmtree(base, ignore_errors=True)
+    # A repository under a system directory would be shown with it. Planted
+    # under /usr/local: the sandbox refuses to start; the same layout under
+    # /var/tmp, which is not shown, starts.
+    for top, starts in ((Path(f"/usr/local/s7-repo-{os.getpid()}"), False),
+                        (Path(f"/var/tmp/s7-repo-{os.getpid()}"), True)):
+        real_root = harness.ROOT
+        try:
+            top.mkdir()
+            subprocess.run(git + ["init", "-q", str(top)], check=True)
+            harness.ROOT = top
+            ran = not refused_exit(lambda: isolate.sandbox_command(ws, ["true"]))
+            check(ran == starts, f"a repository at {top} {'starts' if starts else 'is refused'}")
+        finally:
+            harness.ROOT = real_root
+            shutil.rmtree(top, ignore_errors=True)
 
 
 def main() -> int:
@@ -293,6 +336,31 @@ def main() -> int:
         head = ["bash", "-c", "head -c 5 /etc/shadow"]
         as_root = isolate.run(ws, head, uid=0, capture_output=True, text=True, timeout=300)
         check(as_root.returncode == 0 and as_root.stdout, "a root author reads /etc/shadow (the planted case)")
+        # Unmounting runs only here, in the sandbox, on a mount that exists only
+        # there. Even a root author has no capability left to do it.
+        unmounted = isolate.run(ws, ["bash", "-c", f"umount -l {isolate.INSIDE} && echo UNMOUNTED"], uid=0,
+                                capture_output=True, text=True, timeout=300)
+        check("UNMOUNTED" not in unmounted.stdout, f"a root author cannot unmount: {unmounted.stderr.strip()}")
+        # CI's probe: an author wrote an AppArmor file under /sys. Kernel knobs
+        # are out of reach even for a root author: /sys is not in the sandbox,
+        # and /proc/sys is read-only. The write puts back the value just read,
+        # so it changes nothing even where it succeeds. The planted case is the
+        # sandbox with its read-only /proc/sys line removed, where the host
+        # lets root write the knob at all.
+        knob = "/proc/sys/kernel/domainname"
+        poke = ["bash", "-c", f"ls /sys && echo SYS; v=$(cat {knob}) && printf '%s\\n' \"$v\" > {knob} && echo WROTE"]
+        check(os.path.isdir("/sys/kernel"), "the host has /sys (the planted case)")
+        if os.access(knob, os.W_OK):
+            mutant = isolate.sandbox_command(ws, poke, uid=0)
+            i = mutant.index("-c") + 1
+            mutant[i] = "\n".join(l for l in mutant[i].splitlines() if "/proc/sys " not in l)
+            poked = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+            check("WROTE" in poked.stdout, f"without the read-only /proc/sys, a root author writes {knob} (the planted case)")
+        else:
+            print(f"skip the host's {knob} is read-only here, so there is no planted case")
+        knobs = isolate.run(ws, poke, uid=0, capture_output=True, text=True, timeout=300)
+        check("SYS" not in knobs.stdout and "WROTE" not in knobs.stdout,
+              f"a root author sees no /sys and cannot write /proc/sys: {knobs.stdout.strip()!r}")
         as_author = isolate.run(ws, head, capture_output=True, text=True, timeout=300)
         check(as_author.returncode != 0 and not as_author.stdout,
               f"the author cannot read /etc/shadow: {as_author.stderr.strip()}")
@@ -333,6 +401,35 @@ def main() -> int:
                   f"a kept credential is readable by the author as a copy: {kept.stdout!r} {kept.stderr.strip()}")
         finally:
             shutil.rmtree(creds)
+        # Codex's probe: a kept directory with a link inside it to the hidden
+        # tests. Copying it through the link would bring them into the sandbox.
+        # The planted case is the old copy command, which follows links.
+        nest = Path(tempfile.mkdtemp(dir="/root", prefix="s7-keep-"))
+        try:
+            (nest / "token").write_text("token")
+            os.symlink(HERE / "mvp_tasks.py", nest / "tasks")
+            read_nest = ["bash", "-c", f"cat {nest}/tasks 2>/dev/null | grep -c allocate-batch"]
+            check(refused_exit(lambda: isolate.run(ws, ["true"], keep=(str(nest),))),
+                  "--keep refuses a directory with a link inside it")
+            check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"], keep=(str(nest),))),
+                  "the sandbox refuses to copy a kept directory with a link inside it")
+            real_plain, isolate.plain_tree = isolate.plain_tree, lambda k: None
+            try:
+                mutant = isolate.sandbox_command(ws, read_nest, keep=(str(nest),), uid=isolate.NOBODY)
+            finally:
+                isolate.plain_tree = real_plain
+            # Even past the refusal, the copy keeps the link a link, which
+            # dangles inside.
+            kept_link = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+            check(kept_link.stdout.strip() in ("", "0"),
+                  f"copied without following links, the hidden tests stay out: {kept_link.stdout.strip()!r}")
+            i = mutant.index("-c") + 1
+            mutant[i] = mutant[i].replace("cp -r --no-dereference", "cp -rL")
+            leaked = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+            check(leaked.stdout.strip() not in ("", "0"),
+                  f"copied through the link, the hidden tests reach the sandbox (the planted case): {leaked.stdout.strip()!r}")
+        finally:
+            shutil.rmtree(nest)
         # A credential path the author could have planted or redirected is refused:
         # in the workspace, under a world-writable directory, or through a link.
         (ws / "planted.json").write_text("x")
@@ -437,7 +534,7 @@ def main() -> int:
         finally:
             isolate.sandbox_command = real
         check(broken, "scoring refuses to run when the sandbox cannot start")
-        git_storage_checks(ws)
+        layout_checks(ws)
         other = isolate.run(ws, ["./try", "--task", "fib", "reverse.py"],
                             capture_output=True, text=True, timeout=300)
         check("unknown task" in other.stdout, "try refuses tasks outside the workspace's set")
