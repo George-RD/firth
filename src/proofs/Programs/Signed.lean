@@ -31,8 +31,10 @@ theorem abs_of_nonneg (x : Int) (tail : Stack) (hx : ¬ x < 0) :
       (.literal (.int x) :: tail) (.literal (.int x) :: tail) 13 12 := by
   runs_chain
 
-/-- Both branches leave `|x|`, provided `-x` is in i64 range, which fails only
-for the least i64 value. -/
+/-- Both branches leave `|x|`, provided `-x` is in i64 range. That fails only
+for the least i64 value, -2^63, whose negation overflows: there `0 x -` is a
+primitive fault under `int64Gamma` and traps on the VM, so `abs` of the i64
+minimum stops with an overflow trap and returns nothing. -/
 theorem abs_natAbs (x : Int) (tail : Stack) (hRange : InInt64 (0 - x)) :
     RunsWithin int64Gamma dictionary defaultCosts «abs».body
       (.literal (.int x) :: tail) (.literal (.int x.natAbs) :: tail) 16 15 := by

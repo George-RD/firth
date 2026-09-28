@@ -42,9 +42,9 @@ Also in the library:
 `Programs/Signed.lean` proves `abs`, whose local compiles to `pick` and
 `roll`, under `int64Gamma` with `runs_chain` alone.
 
-`Programs/SumTo.lean` is the worked example: for every `n`, `sum-to` returns
-`1 + ... + n` at a cost of exactly `13·n + 10`, the figure `firth_run.py`
-reports as `kernel_cost`.
+`Programs/SumTo.lean` is the worked example: under `int64Gamma`, for every
+`n ≥ 0` whose sum is in i64 range, `sum-to` returns `1 + ... + n` at a cost of
+exactly `13·n + 10`, the figure `firth_run.py` reports as `kernel_cost`.
 
 Proofs here are built by `lake build` and must be free of `sorry`, `admit`
 and new axioms. They are not yet recorded as evidence bound to body digests,

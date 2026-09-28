@@ -370,10 +370,31 @@ def int64Delta (primitive : Prim) (delta : Stack → Option Stack) : Stack → O
   else if primitive = "*" then checkedIntDelta (· * ·)
   else delta
 
+/-- Whether `int64Gamma` checks a surface primitive for i64 overflow. -/
+def Int64Checked (primitive : Prim) : Prop := primitive = "+" ∨ primitive = "-" ∨ primitive = "*"
+
+instance (primitive : Prim) : Decidable (Int64Checked primitive) := by
+  unfold Int64Checked; exact inferInstance
+
+/-- The reference registry with `+`, `-` and `*` checked for i64 overflow.
+The checked primitives are declared `faults := true`, since an overflow is a
+primitive fault on a well-typed stack, as the VM's trap is. The kernel's
+progress theorem is not yet proved for this registry. -/
 def int64Gamma : Gamma :=
   { adapterGamma with
     primitive := fun primitive => (adapterGamma.primitive primitive).map fun specification =>
-      { specification with delta := int64Delta primitive specification.delta } }
+      { specification with
+        delta := int64Delta primitive specification.delta
+        faults := decide (Int64Checked primitive) || specification.faults } }
+
+/-- The checked arithmetic of `int64Gamma` is declared as faulting. -/
+theorem int64Gamma_checked_faults {primitive : Prim} {specification : PrimitiveSpec}
+    (hChecked : Int64Checked primitive)
+    (hSpec : int64Gamma.primitive primitive = some specification) :
+    specification.faults = true := by
+  simp only [int64Gamma, Option.map_eq_some_iff] at hSpec
+  rcases hSpec with ⟨_, _, rfl⟩
+  simp [hChecked]
 
 /-- A registry that agrees with the reference runner's on literal types and on
 every primitive other than `+`, `-` and `*`. -/
@@ -391,7 +412,8 @@ instance : ReferenceRegistry int64Gamma where
   primitive primitive hAdd hSub hMul := by
     cases h : adapterGamma.primitive primitive with
     | none => simp [int64Gamma, h]
-    | some specification => simp [int64Gamma, h, int64Delta, hAdd, hSub, hMul]
+    | some specification =>
+        simp [int64Gamma, h, int64Delta, Int64Checked, hAdd, hSub, hMul]
 
 end Registries
 
@@ -631,7 +653,9 @@ theorem Runs.of_int64 {program : Program} {before after : Stack} {steps cost : N
 private theorem int64_prim {primitive : Prim} {specification : PrimitiveSpec}
     (hSpec : adapterGamma.primitive primitive = some specification) :
     int64Gamma.primitive primitive =
-      some { specification with delta := int64Delta primitive specification.delta } := by
+      some { specification with
+        delta := int64Delta primitive specification.delta
+        faults := decide (Int64Checked primitive) || specification.faults } := by
   simp [int64Gamma, hSpec]
 
 theorem runs_add_int64 {left right : Int} (tail : Stack) (hRange : InInt64 (left + right)) :
