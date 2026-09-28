@@ -189,6 +189,11 @@ def main() -> int:
         check(all(not c["ok"] for c in scored_net["tasks"]["reverse"]["cases"]),
               "scored in the sandbox, a submitted program has no network")
         srv.close()
+        # A program that leaves a file behind must not abort scoring.
+        litter = "def main(xs):\n    open('left.txt', 'w').write('x')\n    return xs[::-1]\n"
+        scored_litter = harness.score({"reverse": litter}, "python", [harness.BY_ID["reverse"]], 1)
+        check(scored_litter["tasks"]["reverse"]["pass"],
+              "a sandboxed program that writes a file still scores, and its files are removed")
         other = isolate.run(ws, ["./try", "--task", "fib", "reverse.py"],
                             capture_output=True, text=True, timeout=300)
         check("unknown task" in other.stdout, "try refuses tasks outside the workspace's set")

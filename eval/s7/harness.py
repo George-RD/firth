@@ -26,6 +26,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -239,8 +240,8 @@ def run_python(source: str, args: tuple, fuel: int | None = None,
     except subprocess.TimeoutExpired:
         return {"ok": False, "error": "timeout"}
     finally:
-        if empty:
-            Path(empty).rmdir()
+        if empty:  # the program may have left files there
+            shutil.rmtree(empty, ignore_errors=True)
     if p.returncode == 0:
         return {"ok": True, "stack": json.loads(p.stdout)}
     return {"ok": False, "error": p.stderr.strip()[-2000:]}
