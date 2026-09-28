@@ -640,6 +640,8 @@ def main() -> int:
     tr.add_argument("--task", required=True, choices=sorted(BY_ID))
     tr.add_argument("program", type=Path)
     tr.add_argument("--stack", help="JSON array of inputs, bottom of the stack first")
+    tr.add_argument("--workspace", type=Path, default=None,
+                    help="the directory the program must be in (default: the current directory)")
     rep = sub.add_parser("report"); rep.add_argument("results", type=Path, nargs="+")
     a = cli.parse_args()
     if a.cmd == "prompt":
@@ -669,7 +671,13 @@ def main() -> int:
         # reviewer, on #134).
         if a.lang == "python" and os.geteuid() != 0:
             raise SystemExit("running a Python answer with try needs the sandbox; run as root")
-        print(try_run(a.program.read_text(), a.lang, BY_ID[a.task], stack, sandboxed=a.lang == "python"))
+        # Read the program as `./try` does: a plain file in the workspace, so a
+        # diagnostic cannot echo a host file such as /etc/shadow (Codex, on #134).
+        try:
+            source = read_regular(a.program, a.workspace or Path.cwd())
+        except (OSError, ValueError) as e:
+            raise SystemExit(f"try: {a.program} is not a plain file in the workspace ({e})")
+        print(try_run(source, a.lang, BY_ID[a.task], stack, sandboxed=a.lang == "python"))
     elif a.cmd == "report":
         print(report(a.results))
     return 0

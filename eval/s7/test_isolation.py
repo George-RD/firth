@@ -488,6 +488,17 @@ def main() -> int:
               "unsandboxed, try_run returns the hidden tests (the planted case)")
         # Not as root, any task id: an older-tier id is not an MVP task, but the
         # answer could still read the MVP tests (the reviewer, on #134).
+        # The direct command reads its program only from the workspace, as
+        # ./try does, so a diagnostic cannot echo a host file (Codex, on #134).
+        host = subprocess.run([sys.executable, str(HERE / "harness.py"), "try", "--lang", "python", "--task", "reverse",
+                               "/etc/shadow"], cwd=ws, capture_output=True, text=True, timeout=300)
+        check(host.returncode != 0 and "not a plain file in the workspace" in host.stderr and "root:" not in host.stdout,
+              f"harness.py try refuses a program outside the workspace: {host.stderr.strip()[-70:]}")
+        inside = subprocess.run([sys.executable, str(HERE / "harness.py"), "try", "--lang", "python", "--task", "reverse",
+                                 "leak.py"], cwd=ws, capture_output=True, text=True, timeout=300)
+        check("FileNotFoundError" in inside.stdout, "harness.py try still runs a program in the workspace")
+        echoed = harness.try_run(Path("/etc/shadow").read_text(), "python", harness.BY_ID["reverse"], None, sandboxed=True)
+        check("root:" in echoed, "read without the check, /etc/shadow comes back in the diagnostic (the planted case)")
         leak_any = Path("/tmp/s7-leak.py")
         leak_any.write_text(f"def main(*args):\n    raise Exception(open({str(HERE / 'mvp_tasks.py')!r}).read()[:60])\n")
         os.chmod(leak_any, 0o644)
