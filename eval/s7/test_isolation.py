@@ -498,8 +498,20 @@ def main() -> int:
         inside = subprocess.run([sys.executable, str(HERE / "harness.py"), "try", "--lang", "python", "--task", "reverse",
                                  "leak.py"], cwd=ws, capture_output=True, text=True, timeout=300)
         check("FileNotFoundError" in inside.stdout, "harness.py try still runs a program in the workspace")
-        echoed = harness.try_run(Path("/etc/shadow").read_text(), "python", harness.BY_ID["reverse"], None, sandboxed=True)
-        check("root:" in echoed, "read without the check, /etc/shadow comes back in the diagnostic (the planted case)")
+        # A root-only file outside the workspace whose first line is known, so the
+        # plant does not depend on what the host's /etc/shadow holds (CI's first
+        # line did not come back).
+        secret_dir = Path(tempfile.mkdtemp(dir="/var/tmp"))
+        secret = secret_dir / "secret"
+        secret.write_text("S7-HOST-SECRET ::\n")
+        secret.chmod(0o600)
+        away = subprocess.run([sys.executable, str(HERE / "harness.py"), "try", "--lang", "python", "--task", "reverse",
+                               str(secret)], cwd=ws, capture_output=True, text=True, timeout=300)
+        check(away.returncode != 0 and "S7-HOST-SECRET" not in away.stdout + away.stderr,
+              "harness.py try refuses a root-only host file outside the workspace")
+        echoed = harness.try_run(secret.read_text(), "python", harness.BY_ID["reverse"], None, sandboxed=True)
+        check("S7-HOST-SECRET" in echoed, "read without the check, the host file comes back in the diagnostic (the planted case)")
+        shutil.rmtree(secret_dir)
         leak_any = Path("/tmp/s7-leak.py")
         leak_any.write_text(f"def main(*args):\n    raise Exception(open({str(HERE / 'mvp_tasks.py')!r}).read()[:60])\n")
         os.chmod(leak_any, 0o644)
