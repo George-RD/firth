@@ -126,6 +126,40 @@ def audit_checks() -> None:
     }
     for name, ev in planted.items():
         check(len(isolate.audit(clean + [ev])) == 1, f"the audit flags a planted {name} call")
+    transcript_checks(clean, planted["cat"])
+
+
+def transcript_checks(clean: list[dict], bad: dict) -> None:
+    """A transcript in the workspace can be rewritten by the author after a
+    forbidden call, so the audit refuses one kept there."""
+    lines = lambda evs: "".join(json.dumps(e) + "\n" for e in evs)
+    with tempfile.TemporaryDirectory() as d:
+        ws, outside = Path(d) / "ws", Path(d) / "transcript.jsonl"
+        ws.mkdir()
+        outside.write_text(lines(clean + [bad]))
+        check(len(isolate.audit_file(outside, ws)) == 1, "the audit flags a forbidden call in a transcript outside the workspace")
+        inside = ws / "transcript.jsonl"
+        inside.write_text(lines(clean))  # the author's rewrite, after its forbidden call
+        try:
+            isolate.audit_file(inside, ws)
+            check(False, "the audit refuses a transcript in the workspace")
+        except ValueError as e:
+            check("in the author's workspace" in str(e), f"the audit refuses a transcript in the workspace: {e}")
+        nested = ws / "sub" / "t.jsonl"
+        nested.parent.mkdir()
+        nested.write_text(lines(clean))
+        try:
+            isolate.audit_file(nested, ws)
+            check(False, "the audit refuses a transcript below the workspace")
+        except ValueError:
+            check(True, "the audit refuses a transcript below the workspace")
+        # The planted case: without the check, the rewritten transcript audits clean.
+        text = harness.read_regular(inside, harness.plain_parent(inside))
+        check(isolate.audit([json.loads(l) for l in text.splitlines() if l.strip()]) == [],
+              "without the check, a rewritten transcript in the workspace audits clean (the planted case)")
+        cli = subprocess.run([sys.executable, str(HERE / "isolate.py"), "audit", str(inside), "--workspace", str(ws)],
+                             capture_output=True, text=True)
+        check(cli.returncode == 2 and "workspace" in cli.stderr, f"isolate.py audit refuses it too: {cli.returncode}")
 
 
 GIT = ["git", "-c", "user.email=s7@probe", "-c", "user.name=s7", "-c", "safe.directory=*"]
@@ -444,6 +478,37 @@ def main() -> int:
         bare_leak = harness.run_python((ws / "leak.py").read_text(), ([1],), None, ("Seq Int",))
         check("allocate-batch" in bare_leak.get("error", ""),
               "unsandboxed, the same program does read them (the planted case)")
+        # The MVP prompt outside a workspace names `harness.py try` directly;
+        # that path must sandbox Python too (Codex, on #134).
+        direct = subprocess.run([sys.executable, str(HERE / "harness.py"), "try", "--lang", "python",
+                                 "--task", "reverse", str(ws / "leak.py")], capture_output=True, text=True, timeout=300)
+        check("allocate-batch" not in direct.stdout and "FileNotFoundError" in direct.stdout,
+              "harness.py try runs a Python answer in the sandbox too")
+        check("allocate-batch" in harness.try_run((ws / "leak.py").read_text(), "python", harness.BY_ID["reverse"], None),
+              "unsandboxed, try_run returns the hidden tests (the planted case)")
+        # Not as root, any task id: an older-tier id is not an MVP task, but the
+        # answer could still read the MVP tests (the reviewer, on #134).
+        leak_any = Path("/tmp/s7-leak.py")
+        leak_any.write_text(f"def main(*args):\n    raise Exception(open({str(HERE / 'mvp_tasks.py')!r}).read()[:60])\n")
+        os.chmod(leak_any, 0o644)
+        # A non-root uid that can still read the checkout (the CI runner's home
+        # is not readable by nobody): the refusal depends on the uid alone.
+        nobody = ["setpriv", "--reuid", "65534", "--regid", "65534", "--clear-groups",
+                  "--inh-caps", "+dac_read_search", "--ambient-caps", "+dac_read_search", "--", sys.executable]
+        try:
+            for tid in ("sum3", "seq-sum"):
+                user = subprocess.run([*nobody, str(HERE / "harness.py"), "try", "--lang", "python", "--task", tid,
+                                       str(leak_any)], capture_output=True, text=True, timeout=300)
+                check(user.returncode != 0 and "MVP-authoring" not in user.stdout + user.stderr
+                      and "needs the sandbox" in user.stderr,
+                      f"not as root, harness.py try refuses a Python answer to {tid}: {user.stderr.strip()[-80:]}")
+            planted = subprocess.run([*nobody, "-c", f"import sys; sys.path.insert(0, {str(HERE)!r}); import harness; "
+                                      f"print(harness.try_run(open({str(leak_any)!r}).read(), 'python', harness.BY_ID['sum3'], None))"],
+                                     capture_output=True, text=True, timeout=300)
+            check("MVP-authoring" in planted.stdout,
+                  "as nobody, an unsandboxed try on sum3 reads the MVP tests (the planted case)")
+        finally:
+            leak_any.unlink()
         scored = harness.score({"reverse": (ws / "leak.py").read_text()}, "python",
                                [harness.BY_ID["reverse"]], 1)
         check(scored["python_sandboxed"]

@@ -652,7 +652,13 @@ def main() -> int:
         stack = None if a.stack is None else json.loads(a.stack)
         if stack is not None and not isinstance(stack, list):
             cli.error("--stack must be a JSON array")
-        print(try_run(a.program.read_text(), a.lang, BY_ID[a.task], stack))
+        # The MVP prompt names this command and the author picks `--task`, so a
+        # Python answer runs here only in the sandbox, whatever the task: an
+        # older-tier id would otherwise run it unsandboxed (Codex and the
+        # reviewer, on #134).
+        if a.lang == "python" and os.geteuid() != 0:
+            raise SystemExit("running a Python answer with try needs the sandbox; run as root")
+        print(try_run(a.program.read_text(), a.lang, BY_ID[a.task], stack, sandboxed=a.lang == "python"))
     elif a.cmd == "report":
         print(report(a.results))
     return 0
