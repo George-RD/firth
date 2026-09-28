@@ -488,18 +488,24 @@ def main() -> int:
               "unsandboxed, try_run returns the hidden tests (the planted case)")
         # Not as root, any task id: an older-tier id is not an MVP task, but the
         # answer could still read the MVP tests (the reviewer, on #134).
-        shutil.copy(ws / "leak.py", "/tmp/s7-leak.py")
-        os.chmod("/tmp/s7-leak.py", 0o644)
+        leak_any = Path("/tmp/s7-leak.py")
+        leak_any.write_text(f"def main(*args):\n    raise Exception(open({str(HERE / 'mvp_tasks.py')!r}).read()[:60])\n")
+        os.chmod(leak_any, 0o644)
+        nobody = ["runuser", "-u", "nobody", "--", sys.executable]
         try:
             for tid in ("sum3", "seq-sum"):
-                user = subprocess.run(["runuser", "-u", "nobody", "--", sys.executable, str(HERE / "harness.py"), "try",
-                                       "--lang", "python", "--task", tid, "/tmp/s7-leak.py"],
-                                      capture_output=True, text=True, timeout=300)
-                check(user.returncode != 0 and "allocate-batch" not in user.stdout + user.stderr
+                user = subprocess.run([*nobody, str(HERE / "harness.py"), "try", "--lang", "python", "--task", tid,
+                                       str(leak_any)], capture_output=True, text=True, timeout=300)
+                check(user.returncode != 0 and "MVP-authoring" not in user.stdout + user.stderr
                       and "needs the sandbox" in user.stderr,
                       f"not as root, harness.py try refuses a Python answer to {tid}: {user.stderr.strip()[-80:]}")
+            planted = subprocess.run([*nobody, "-c", f"import sys; sys.path.insert(0, {str(HERE)!r}); import harness; "
+                                      f"print(harness.try_run(open({str(leak_any)!r}).read(), 'python', harness.BY_ID['sum3'], None))"],
+                                     capture_output=True, text=True, timeout=300)
+            check("MVP-authoring" in planted.stdout,
+                  "as nobody, an unsandboxed try on sum3 reads the MVP tests (the planted case)")
         finally:
-            os.unlink("/tmp/s7-leak.py")
+            leak_any.unlink()
         scored = harness.score({"reverse": (ws / "leak.py").read_text()}, "python",
                                [harness.BY_ID["reverse"]], 1)
         check(scored["python_sandboxed"]
