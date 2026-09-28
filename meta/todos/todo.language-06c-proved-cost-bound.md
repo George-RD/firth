@@ -26,6 +26,14 @@ bound, currently fitted by `examples/inventory/measure_cost.py` and stated in
 - The bound in `examples/inventory/run_cases.py` and the README is the proved
   f(n). `measure_cost.py` stays as a check that the measured costs are within
   it.
+- The cost theorem is bound to the cost table κ it was proved against. Its
+  proof record carries the digest of that table's definition (done in the
+  proof-records change: `cost_tables` in `src/proofs/records.json`), and
+  `firthProofRecords --status` stops counting the record as
+  `contract_verified` once κ changes, which `update_proof_records.py` shows
+  with a planted stale digest. A change to κ cannot leave a cost proof
+  silently marked verified. The VM's own cost accounting is not bound this
+  way; it rests on differential testing, as below.
 - The same gaps as `language-06b` are stated: agreement of the compiler's
   lowering and the VM, including the VM's own cost accounting, rests on
   differential testing, and the Python host is tested, not proved.

@@ -1,0 +1,8 @@
+[
+  {"theorem": "Firth.ProofTests.Accepted.sumTo", "module": "prooftests.Accepted", "export": "Programs.SumTo", "word": "sum-to", "contract": "Firth.Proofs.Programs.SumTo.sumToContract", "gamma": "Firth.Logic.int64Gamma", "costs": "Firth.Interpreter.defaultCosts", "claim": "fixture"},
+  {"theorem": "Firth.ProofTests.Accepted.absOnly", "module": "prooftests.Accepted", "export": "Programs.Signed", "word": "abs", "contract": "Firth.Proofs.Programs.Signed.absContract", "gamma": "Firth.Logic.int64Gamma", "costs": "Firth.Interpreter.defaultCosts", "claim": "fixture"},
+  {"theorem": "Firth.ProofTests.Accepted.int64Diff", "module": "prooftests.Accepted", "export": "Programs.Signed", "word": "diff", "contract": "Firth.ProofTests.Accepted.diffContract", "gamma": "Firth.Logic.int64Gamma", "costs": "Firth.Interpreter.defaultCosts", "claim": "fixture"},
+  {"theorem": "Firth.ProofTests.Accepted.int64DiffDoubled", "module": "prooftests.Accepted", "export": "Programs.Signed", "word": "diff", "contract": "Firth.ProofTests.Accepted.diffDoubledContract", "gamma": "Firth.Logic.int64Gamma", "costs": "Firth.ProofTests.Accepted.doubledPrimitives", "claim": "fixture"},
+  {"theorem": "Firth.ProofTests.Helper.absAllowed", "module": "prooftests.Helper", "export": "Programs.Signed", "word": "abs", "contract": "Firth.ProofTests.Helper.absAllowedContract", "gamma": "Firth.Logic.int64Gamma", "costs": "Firth.Interpreter.defaultCosts", "claim": "fixture"},
+  {"theorem": "Firth.ProofTests.Helper.absOk", "module": "prooftests.Helper", "export": "Programs.Signed", "word": "abs", "contract": "Firth.ProofTests.Helper.absOkContract", "gamma": "Firth.Logic.int64Gamma", "costs": "Firth.Interpreter.defaultCosts", "claim": "fixture"}
+]

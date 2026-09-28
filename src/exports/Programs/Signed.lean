@@ -184,14 +184,15 @@ def erasedType : String := "(forallρ;ρ,v0:SeqInt^many,v1:Int^many--ρ,v0:Int^m
 
 end «element»
 
-/-- Every word, in declaration order: its name, body and body digest. -/
-def words : List (String × Program × String) := [
-  ("diff", «diff».body, «diff».bodyDigest),
-  ("abs", «abs».body, «abs».bodyDigest),
-  ("minimum-from", «minimum-from».body, «minimum-from».bodyDigest),
-  ("minimum", «minimum».body, «minimum».bodyDigest),
-  ("offsets", «offsets».body, «offsets».bodyDigest),
-  ("element", «element».body, «element».bodyDigest)]
+/-- Every word, in declaration order: its name, body, body digest and erased
+type. -/
+def words : List (String × Program × String × String) := [
+  ("diff", «diff».body, «diff».bodyDigest, «diff».erasedType),
+  ("abs", «abs».body, «abs».bodyDigest, «abs».erasedType),
+  ("minimum-from", «minimum-from».body, «minimum-from».bodyDigest, «minimum-from».erasedType),
+  ("minimum", «minimum».body, «minimum».bodyDigest, «minimum».erasedType),
+  ("offsets", «offsets».body, «offsets».bodyDigest, «offsets».erasedType),
+  ("element", «element».body, «element».bodyDigest, «element».erasedType)]
 
 /-- The dictionary the reference runner builds for this source. -/
 def dictionary : Dictionary

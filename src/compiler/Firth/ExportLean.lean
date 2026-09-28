@@ -177,7 +177,7 @@ end {ident}
     entries := entries ++ [s!"theorem {ident}.entry :
     dictionary {quote word.name} = some \{ type := adapterWordType, body := {ident}.body } := rfl
 "]
-    listed := listed ++ [s!"  ({quote word.name}, {ident}.body, {ident}.bodyDigest)"]
+    listed := listed ++ [s!"  ({quote word.name}, {ident}.body, {ident}.bodyDigest, {ident}.erasedType)"]
   let namespaceName := s!"Firth.Exports.{moduleName}"
   pure s!"import FirthReferenceRun
 
@@ -203,8 +203,9 @@ open Firth.ReferenceRun
 def sourceDigest : String := {quote (Digest.hexOfString sourceText)}
 
 {"\n".intercalate sections}
-/-- Every word, in declaration order: its name, body and body digest. -/
-def words : List (String × Program × String) := [
+/-- Every word, in declaration order: its name, body, body digest and erased
+type. -/
+def words : List (String × Program × String × String) := [
 {",\n".intercalate listed}]
 
 /-- The dictionary the reference runner builds for this source. -/

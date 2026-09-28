@@ -44,6 +44,7 @@ System Firth "Concatenative language elaborated through Lean 4 and compiled to a
         Module Compiler "Compiler: kernel calculus into the Forth-class target" id "firth.toolchain.compiler" {
             path "src/compiler"
             path "src/exports"
+            path "src/prooftests"
         }
 
         Module DiffHarness "Differential test harness: fuzzed program generation checking compiler-versus-interpreter agreement" id "firth.toolchain.diffharness" {

@@ -132,4 +132,21 @@ theorem run_sum_to (n : Nat) (tail : Stack) (extra : Nat) (hRange : InInt64 (tri
         (14 * n + 10) (13 * n + 10) :=
   run_of_runs (sum_to_body n tail hRange).of_int64 extra
 
+/-- `sum-to`'s contract: for every natural `n` whose triangle number is in i64,
+`n` becomes `1 + ... + n` within `14·n + 10` transitions at a cost of at most
+`13·n + 10`. -/
+def sumToContract : WordContract where
+  Args := Nat
+  pre n := InInt64 (triangle n)
+  input n := [.literal (.int n)]
+  output n := [.literal (.int (triangle n))]
+  steps n := 14 * n + 10
+  cost n := 13 * n + 10
+  witness := ⟨0, by simp only [InInt64, triangle]; omega⟩
+
+/-- The recorded contract of `sum-to`, under the i64 registry. -/
+theorem sum_to_contract :
+    sumToContract.Holds int64Gamma dictionary defaultCosts «sum-to».body :=
+  fun n tail hRange => (sum_to_body n tail hRange).within
+
 end Firth.Proofs.Programs.SumTo
