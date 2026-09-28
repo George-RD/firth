@@ -725,10 +725,26 @@ rules leaves behind.
     defaultCosts.primitive primitive = 1 := rfl
 @[simp] theorem defaultCosts_unfold : defaultCosts.unfold = 1 := rfl
 
-/-- Closes a step or cost equation or inequality under `defaultCosts`. -/
+open Lean Elab Tactic Meta in
+/-- Clears every hypothesis that is an equation between Booleans, such as the
+condition `decide (x < y) = true` of an `if`. `omega` cannot use one, and with
+one in context it can run out of heartbeats normalising a long step or cost
+sum; `Firth.LogicTest` has the case. -/
+elab "runs_clear_bool" : tactic => withMainContext do
+  let mut goal ← getMainGoal
+  for decl in ← getLCtx do
+    if decl.isImplementationDetail then continue
+    let type ← instantiateMVars decl.type
+    if type.isAppOfArity ``Eq 3 && (type.getArg! 0).isConstOf ``Bool then
+      goal ← goal.tryClear decl.fvarId
+  replaceMainGoal [goal]
+
+/-- Closes a step or cost equation or inequality under `defaultCosts`. Boolean
+equations in context are cleared first (see `runs_clear_bool`), so a fact
+`omega` needs must be stated over `Int` or `Nat`, not as a `decide`. -/
 macro "runs_arith" : tactic =>
   `(tactic| ((try simp only [defaultCosts_atom, defaultCosts_primitive, defaultCosts_unfold]) <;>
-    omega))
+    (runs_clear_bool; omega)))
 
 section Bounds
 variable {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
@@ -869,11 +885,13 @@ stack that is only equal up to arithmetic, is left as a goal.
 
 /-- Closes a side goal a chain leaves: step and cost arithmetic, or an i64
 range condition that is an assumption or follows from the assumptions by
-linear arithmetic. -/
+linear arithmetic. The assumption must match up to reducible unfolding only:
+at default transparency, matching a hypothesis against a long cost sum can run
+out of heartbeats. -/
 macro "runs_side" : tactic => `(tactic| first
-  | assumption
+  | with_reducible assumption
   | runs_arith
-  | (simp only [InInt64] at *; omega))
+  | (runs_clear_bool; simp only [InInt64] at *; omega))
 
 /-- Settles the condition of an `if` in a chain, or fails. -/
 macro "runs_condition" : tactic => `(tactic| first

@@ -37,7 +37,12 @@ Also in the library:
   body are discharged only from `Runs` hypotheses in context, so recursion
   stays explicit. Under `int64Gamma` the chain leaves an `InInt64` side goal
   per `+`, `-` and `*`, closed when it is an assumption or follows from the
-  assumptions by linear arithmetic.
+  assumptions by linear arithmetic. `runs_arith` clears Boolean equations
+  such as an `if` condition `decide (x < y) = true` before calling `omega`,
+  which can time out with one in context, so state any fact the arithmetic
+  needs over `Int` or `Nat`. The side goals match assumptions up to
+  reducible unfolding only. `src/interpreter/FirthLogicTest.lean` holds the
+  regression cases.
 
 `Programs/Signed.lean` proves `abs`, whose local compiles to `pick` and
 `roll`, under `int64Gamma` with `runs_chain` alone.
