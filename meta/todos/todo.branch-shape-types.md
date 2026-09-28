@@ -27,3 +27,9 @@ This needs erasure to carry types, or the pipeline to type the two branch
 quotations on their own when erasure refuses the `if`. Erasure has to refuse
 the `if` because the stack depth after it is unknown, so later locals cannot
 be placed.
+
+## Progress
+
+The branch account now names each value the branches take and leave by the
+source that pushed it, and a word's or primitive's inputs by their types.
+The values a branch leaves are still named without their types.

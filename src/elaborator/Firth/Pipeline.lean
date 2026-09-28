@@ -2,6 +2,7 @@ import elaborator.Firth.Parser
 import elaborator.Firth.Names
 import elaborator.Firth.Erasure
 import elaborator.Firth.StackEffect
+import elaborator.Firth.Account
 import elaborator.Firth.Refinement
 
 namespace Firth.Elaborator
@@ -162,6 +163,29 @@ private def unsupportedSourceRefinements (word : WordDefinition) : List Pipeline
           .parse { code := "firth.refinement.unsupported-source"
                    primary := refinement.span, actual := some word.name, cause := .validation }
 
+/-- A refused `if` recounted from the source, value by value, so its
+diagnostic can name the operation and the values responsible. Diagnostics
+only: it never changes what is accepted. -/
+private def accountFor (config : PipelineConfig) (source : String)
+    (words : List WordDefinition) (span : Span) : Option IfAccount :=
+  Account.ofIf {
+    words
+    primitive := fun name => (config.typingEnv.primitive name).map Account.primitiveShape
+    external := fun name => (config.erasureEnv.word name).map fun signature =>
+      (signature.input.length, signature.output.length)
+    source
+    target := span.start.offset } span
+
+private def withAccount (config : PipelineConfig) (source : String)
+    (words : List WordDefinition) : PipelineDiagnostic → PipelineDiagnostic
+  | .erasure word (.branchShape span onTrue onFalse locals _) =>
+      .erasure word (.branchShape span onTrue onFalse locals (accountFor config source words span))
+  | .stackEffect diagnostic =>
+      if diagnostic.code == "firth.type.branch-mismatch" then
+        .stackEffect { diagnostic with ifAccount := accountFor config source words diagnostic.primary }
+      else .stackEffect diagnostic
+  | other => other
+
 def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResult :=
   match parse source with
   | .failure errors => .failure (errors.map PipelineDiagnostic.parse)
@@ -181,10 +205,10 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
             else
               let env := makeErasureEnv config words
               match eraseWords env words with
-              | .error (word, error) => .failure [.erasure word error]
+              | .error (word, error) => .failure [withAccount config source words (.erasure word error)]
               | .ok erased =>
                   match checkDictionary config.typingEnv (definitionsOf erased) with
-                  | .error diagnostic => .failure [.stackEffect diagnostic]
+                  | .error diagnostic => .failure [withAccount config source words (.stackEffect diagnostic)]
                   | .ok checked => finishWords config erased checked
 
 def elaborate (source : String) : ElaborationResult := elaborateWith {} source

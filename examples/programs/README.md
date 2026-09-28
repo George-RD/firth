@@ -71,7 +71,10 @@ inline, like `[ 1 prim + ] call` or `[ 1 prim + ] [ ] compose call`, are fine
 (`quotations.firth`). An `if` whose two branches leave different numbers of
 values is a type error, reported as `firth.type.branch-mismatch` at that
 `if`, however deeply it is nested and whatever follows it
-(`refused/if-branch-shape.firth`). The
+(`refused/if-branch-shape.firth`). Where it can follow the word's body, the
+report names each value by the source that pushed it (a local, a literal, an
+input, or the result of an operation) and says either which operation in a
+branch takes a value the branch did not push, or what each branch leaves. The
 programs under `refused/` must be rejected.
 
 ## Sequences

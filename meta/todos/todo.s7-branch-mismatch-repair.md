@@ -58,3 +58,9 @@ diagnostic, in `eval/s7/runs/2026-09-28-haiku-470c6d0/`:
   values from below the `if` that are not there, without naming the
   operation that takes them. Language core is adding a message that
   names it.
+- The branch account (`src/elaborator/Firth/Account.lean`) now names the
+  operation, the `if` by its true branch, and every value by its source.
+  All 99 branch-mismatch reports on the recorded Haiku answers use it.
+  Five run 7 answers are fixtures in `ElaboratorDiagnosticsTest.lean`: the
+  edit each report suggests removes the mistake at that `if`. Whether
+  Haiku repairs more from it needs the next rerun (second criterion).

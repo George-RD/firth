@@ -65,6 +65,9 @@ structure Diagnostic where
   condition: whether it is the true branch, and the stack it takes. `state` is
   then the stack below the condition and the two quotations. -/
   branchInput : Option (Bool × AStack) := none
+  /-- For a branch mismatch: what each branch does, value by value, as the
+  pipeline recounts it from the source. Diagnostics only. -/
+  ifAccount : Option IfAccount := none
   deriving Repr, BEq, Nonempty
 
 structure TypedHole where
