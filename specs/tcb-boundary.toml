@@ -306,7 +306,7 @@ evidence = ["lean-test-driver", "vm-conformance"]
 id = "lean-zero-admit"
 command = "python3 tools/loop/check_zero_admit.py"
 trusted_components = ["lean-kernel"]
-evidence_paths = ["tools/loop/check_zero_admit.py", "src"]
+evidence_paths = ["tools/loop/check_zero_admit.py", "lakefile.toml", "lean-toolchain", "src"]
 
 [[stages]]
 id = "lean-build"
