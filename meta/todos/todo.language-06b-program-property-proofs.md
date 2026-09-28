@@ -1,10 +1,10 @@
 ---
 node: firth.toolchain.interpreter
-status: done
+status: open
 created: 2026-09-27
 ---
 
-Requires: language-02-compiler-evidence
+Requires: language-02-compiler-evidence inventory-host-proof
 
 ## Goal
 
@@ -103,9 +103,9 @@ calls, and all ten are reported `contract_verified`. A planted change to
 `update_proof_records.py --check` refuses; the record mechanism's own
 staleness checks are in its fixtures (#138).
 
-## Completion, 28 September 2026
+## Status, 28 September 2026
 
-Each acceptance criterion and its evidence on `main`:
+Every acceptance criterion is met on `main` except one part, listed last:
 
 - Export bound to the body digest: `lake exe firthExportLean` writes
   `src/exports/`, and `update_kernel_exports.py --check` in CI fails on drift
@@ -125,7 +125,7 @@ Each acceptance criterion and its evidence on `main`:
   non-negative stock, conservation, the policy rule, the reason table,
   priority), and `allocate_batch` in `src/proofs/Inventory/Allocate.lean`
   proves the program returns that result, with termination and every value
-  in i64 (#137). Repeated IDs are rejected (code 2). It is recorded as
+  in i64 (#137). Repeated ID blocks are rejected (code 2). It is recorded as
   `allocate_batch_contract` (#141).
 - Rejections: the refused fixtures in `src/prooftests/` include false and
   vacuous contracts (#138). `update_proof_records.py` plants a stale body
@@ -133,8 +133,15 @@ Each acceptance criterion and its evidence on `main`:
   erased type, and each must withdraw the record (#141). Editing
   `allocate-one` breaks the proof of `allocate-batch`.
 
-The two stated gaps are open as their own todos:
-`todo.compiler-vm-agreement-proof` and `todo.inventory-host-proof`.
+Still open: "IDs and order preserved". The program is proved to return one
+allocation and reason per request, in request order, but it never sees the
+IDs. The Python host attaches each result to its request's ID by position
+(`host_encode` in `examples/inventory/run_cases.py`), and that is tested, not
+proved. The same holds for "repeated IDs rejected", which the program proves
+for the four-part encoded blocks and which equals ID equality only if the
+host's encoding is injective. Both are closed by `todo.inventory-host-proof`,
+so this task stays open until that lands. The compiler and VM gap is
+`todo.compiler-vm-agreement-proof`, which this task's non-goals leave out.
 
 ## Traceability
 
