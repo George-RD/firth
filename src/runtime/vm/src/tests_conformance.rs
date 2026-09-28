@@ -307,6 +307,48 @@
     }
 
     #[test]
+    fn allocation_failure_after_a_tail_call_rolls_back_like_a_nested_call() {
+        let target = word(
+            "target",
+            vec![
+                instruction(Op::Drop, None),
+                instruction(Op::PushLiteral, Some(Operand::Literal(Value::Int(1)))),
+            ],
+        );
+        let call_target = instruction(Op::CallWord, Some(Operand::Word(String::from("target"))));
+        let trap_for = |main: Vec<Instruction>| {
+            let image = test_image(vec![word("main", main), target.clone()]);
+            let ExecutionOutcome::Trap(trap) = execute_diagnostic_with_stack_budget(
+                &image,
+                vec![Value::Int(7)],
+                64,
+                &default_registry(),
+                Some(0),
+            ) else {
+                panic!("expected an allocation trap")
+            };
+            trap
+        };
+        let tail = trap_for(vec![call_target.clone()]);
+        let nested = trap_for(vec![call_target, instruction(Op::Dup, None)]);
+        for trap in [&tail, &nested] {
+            assert_eq!(trap.error, VmError::AllocationFailure);
+            assert_eq!(trap.stack, vec![Value::Int(7)]);
+            assert!(trap.trace.is_empty());
+            assert_eq!(trap.cost.total, 0);
+            assert_eq!(
+                trap.location,
+                Some(TrapLocation {
+                    word: String::from("main"),
+                    pc: 0,
+                    image_version: 1,
+                })
+            );
+        }
+        assert_eq!(tail.frames.len(), nested.frames.len());
+    }
+
+    #[test]
     fn invalid_multiple_world_states_are_rejected_at_diagnostic_boundary() {
         let image = test_image(vec![word("main", vec![])]);
         let worlds = vec![Value::World, Value::World];
