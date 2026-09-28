@@ -16,6 +16,10 @@ Each kept `solutions-<n>.json`, which is what `score` read, must also be the
 previous round's solutions updated with the tasks `extract` finds in
 `answer-<n>.md`, so a merge between rounds cannot change what was scored.
 
+Each kept `repair-<n>.md`, which is what the author read, must be what
+`harness.py repair` builds from `solutions-<n>.json` and `results-<n>.json`,
+so feedback cannot show more than the visible example (Codex, on #147).
+
 `--rounds` is the number of feedback rounds the prompt allowed (`harness.py
 prompt --rounds`): `repair-1` to `repair-<rounds>` and `answer-1` to
 `answer-<rounds + 1>`. A read, write or kept file beyond that is flagged, so a
@@ -36,10 +40,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from harness import extract  # noqa: E402
+from harness import extract, repair, select  # noqa: E402
 
 
-def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: int) -> tuple[dict, list[str]]:
+def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: int,
+          lang: str = "firth") -> tuple[dict, list[str]]:
     reads = {str(prompt)}
     answer = re.compile(re.escape(str(run_dir)) + r"/answer-([1-9][0-9]*)\.md")
     repair = re.compile(re.escape(str(run_dir)) + r"/repair-([1-9][0-9]*)\.md")
@@ -78,6 +83,7 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
                 bad.append(f"{name}: {json.dumps(inp)[:200]}")
             calls.append(rec)
     bad += solutions_mismatch(kept)
+    bad += repair_mismatch(kept, lang)
     bad += [f"{p}: beyond the {rounds} feedback round(s) the prompt allowed"
             for p in sorted(kept.iterdir()) if beyond(p.name, rounds)]
     log = {"note": "Trimmed log of the author sub-agent: every tool call it made, with written "
@@ -91,6 +97,22 @@ def beyond(name: str, rounds: int) -> bool:
     """A kept answer, solutions or feedback file from a round the prompt did not allow."""
     m = re.fullmatch(r"(answer|solutions|repair|results)-([0-9]+)\.(md|json)", name)
     return bool(m) and int(m[2]) > (rounds if m[1] == "repair" else rounds + 1)
+
+
+def repair_mismatch(kept: Path, lang: str) -> list[str]:
+    """Each kept repair-N.md that is not the feedback `harness.py repair` builds
+    from that round's solutions and results."""
+    bad, n = [], 1
+    while (kept / f"repair-{n}.md").is_file():
+        sol, res = kept / f"solutions-{n}.json", kept / f"results-{n}.json"
+        if not (sol.is_file() and res.is_file()):
+            bad.append(f"{kept / f'repair-{n}.md'}: its round's solutions or results are not kept")
+        else:
+            want = repair(json.loads(sol.read_text()), json.loads(res.read_text()), lang, select("mvp"))
+            if (kept / f"repair-{n}.md").read_text().rstrip("\n") != want.rstrip("\n"):
+                bad.append(f"{kept / f'repair-{n}.md'}: not the feedback its round's results give")
+        n += 1
+    return bad
 
 
 def solutions_mismatch(kept: Path) -> list[str]:
@@ -120,9 +142,10 @@ def main() -> int:
     cli.add_argument("--dir", type=Path, required=True)
     cli.add_argument("--kept", type=Path)
     cli.add_argument("--rounds", type=int, required=True, help="the feedback rounds the prompt allowed")
+    cli.add_argument("--lang", default="firth", choices=["firth", "python"])
     a = cli.parse_args()
     events = [json.loads(l) for l in a.log.read_text().splitlines() if l.strip()]
-    log, bad = audit(events, a.prompt, a.dir, a.kept or a.dir, a.rounds)
+    log, bad = audit(events, a.prompt, a.dir, a.kept or a.dir, a.rounds, a.lang)
     print(json.dumps(log, indent=2))
     for b in bad:
         print("FLAGGED", b, file=sys.stderr)

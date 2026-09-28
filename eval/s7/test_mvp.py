@@ -254,12 +254,28 @@ def subagent_audit() -> None:
               "the audit passes feedback up to the round limit")
         check(len(audit(ok + extra, prompt, d, d, 2)[1]) == 2, "the audit flags a read and a write past the round limit")
         (d / "repair-3.md").write_text("r")
-        check(len(audit(ok, prompt, d, d, 2)[1]) == 1, "the audit flags a kept feedback file past the round limit")
-        check(audit(ok, prompt, d, d, 3)[1] == [], "with three rounds allowed, that file passes")
+        (d / "repair-3.md").unlink()
+        # Codex's case: feedback is allowed by its name only if it is what the
+        # round's results give. Planted: a repair file edited to show more.
+        (d / "results-1.json").write_text(json.dumps({"tasks": {"sort": {"submitted": True, "cases": [
+            {"visible": True, "pass": False, "ok": True, "stack": [[2, 1]], "expected": [[1, 2]]}]}}}))
+        (d / "repair-1.md").write_text(harness.repair(harness.extract(ans.read_text()),
+                                                      json.loads((d / "results-1.json").read_text()),
+                                                      "firth", harness.select("mvp")))
+        check(audit(ok, prompt, d, d, 2)[1] == [], "the audit passes feedback that its round's results give")
+        (d / "repair-1.md").write_text((d / "repair-1.md").read_text() + "\nhidden case: [[3, 1, 2]] -> [[1, 2, 3]]\n")
+        check(len(audit(ok, prompt, d, d, 2)[1]) == 1, "the audit flags feedback edited to show more than its results")
+        (d / "repair-3.md").write_text("r")
+        check(any("past" in b or "beyond" in b for b in audit(ok, prompt, d, d, 2)[1]),
+              "the audit flags a kept feedback file past the round limit")
+        (d / "repair-3.md").unlink()
     from audit_subagent import solutions_mismatch
     kept = sorted(p for p in (HERE / "runs").glob("2026-09-28-*/*") if (p / "answer-1.md").is_file())
     check(kept and all(solutions_mismatch(p) == [] for p in kept),
           f"every kept round's scored solutions are its answers as written ({len(kept)} authors)")
+    from audit_subagent import repair_mismatch
+    check(all(repair_mismatch(p, "python" if "python" in p.name else "firth") == [] for p in kept),
+          "every kept feedback file is what its round's results give")
 
 
 def run_options_parsed() -> None:
@@ -332,6 +348,14 @@ def hashes_recorded() -> None:
             except SystemExit:
                 moved = True
             check(moved, "scoring refuses when the Firth tree changes while it runs, even dirty to dirty")
+            # Codex's case: two different uncommitted patches must not record
+            # the same firth_commit. Planted: the same dirty head, two digests.
+            got = []
+            for digest in ("p1", "p2"):
+                harness.tree_state = lambda d=digest: ("c0ffee-dirty", d)
+                got.append(harness.scored_with_hashes(lambda: "result")[2])
+            check(got == ["c0ffee-dirty+p1", "c0ffee-dirty+p2"],
+                  f"a dirty tree's firth_commit names its digest, so two patches differ: {got}")
         finally:
             harness.tree_state = real_tree
     finally:

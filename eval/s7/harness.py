@@ -407,7 +407,9 @@ def scored_with_hashes(run):
         raise SystemExit("the task sets or the scorer changed while scoring; nothing is recorded")
     if tree_state() != tree:
         raise SystemExit("the Firth tree changed while scoring; nothing is recorded")
-    return out, dict(IMPORT_HASHES), tree[0]
+    # A dirty tree is named by its digest too, so two different uncommitted
+    # patches do not record the same firth_commit (Codex, on #147).
+    return out, dict(IMPORT_HASHES), tree[0] + (f"+{tree[1]}" if tree[0].endswith("-dirty") else "")
 
 
 def tree_state() -> tuple[str, str]:
