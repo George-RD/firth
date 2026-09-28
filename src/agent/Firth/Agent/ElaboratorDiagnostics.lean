@@ -191,7 +191,8 @@ stack depth by different amounts: what each branch does, how many more values
 one leaves than the other, and the edits that make them agree. Erasure knows
 only the depths here, not the types; the type checker's report of the same
 mistake, when it gets there, names the types too. -/
-private def branchShapeExplanation (word : String) (onTrue onFalse : Nat × Nat) : String × String :=
+private def branchShapeExplanation (word : String) (onTrue onFalse : Nat × Nat)
+    (locals : Firth.Elaborator.BranchLocals := {}) : String × String :=
   let inWord := if word.isEmpty then "" else s!" in `{word}`"
   let net (effect : Nat × Nat) : Int := (effect.2 : Int) - (effect.1 : Int)
   let values (count : Nat) := if count == 1 then "1 value" else s!"{count} values"
@@ -199,8 +200,30 @@ private def branchShapeExplanation (word : String) (onTrue onFalse : Nat × Nat)
     if net onTrue > net onFalse then ("true", "false", (net onTrue - net onFalse).toNat)
     else ("false", "true", (net onFalse - net onTrue).toNat)
   let drops := " ".intercalate (List.replicate extra "drop")
+  let reached := locals.reached.eraseDups
+  let summary := s!"The two branches of `if`{inWord} leave different numbers of values: the true branch {depthChange onTrue}, and the false branch {depthChange onFalse}."
+  -- A drop or a push would only move these mistakes, so neither is offered.
+  let noEvening := "Adding a `drop` or pushing values to even out the branches would only move the mistake."
+  if !reached.isEmpty then
+    -- The `if` or a branch reaches for a local as if it were a value on the
+    -- stack: the fix is to use the local by name and leave it in place.
+    let quoted := reached.map (s!"`{·}`")
+    let names := match quoted.reverse with
+      | [] => ""
+      | [one] => s!"the local {one}"
+      | last :: rest => s!"the locals {", ".intercalate rest.reverse} and {last}"
+    (s!"{summary} The condition and the values the branches take from below the `if` are looked for where {names} would be, but a local is not a value on the stack.",
+      s!"Inside `locals`, a local is used by writing its name, which pushes a copy and leaves the local in place. Write the condition just before the two quotations (for example a local's name or a comparison), and in each branch use locals by name instead of taking them from the stack with `drop`, `swap` or an operator that is short of an operand. {noEvening}")
+  else if locals.missing > 0 then
+    -- The `if` or a branch takes values below everything this code pushed or
+    -- was given: they belong to the caller.
+    let count := locals.missing
+    let taker := if onTrue.1 == onFalse.1 then "The `if`" else if onTrue.1 > onFalse.1 then "The true branch" else "The false branch"
+    (s!"{summary} {taker} takes {values count} from below the `if` that this code does not have: everything it was given is bound to locals or already used, so {if count == 1 then "that value belongs" else "those values belong"} to the caller.",
+      s!"Push what the branch needs inside the branch, by writing a local's name or computing the value there, or remove the operation that takes it if it should not be there. If the branch means to use a value computed before the `if`, keep a copy of it before the condition (for example with `dup`). {noEvening}")
+  else
   (s!"The two branches of `if`{inWord} leave different numbers of values: the true branch {depthChange onTrue}, and the false branch {depthChange onFalse}. So the {longer} branch leaves {values extra} more than the {shorter} branch.",
-    s!"Either add `{drops}` at the end of the {longer} branch, or make the {shorter} branch push {values extra} more, of the same {if extra == 1 then "type" else "types"} the {longer} branch leaves on top. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.")
+    s!"If the values below those already agree, either add `{drops}` at the end of the {longer} branch, or make the {shorter} branch push {values extra} more, of the same {if extra == 1 then "type" else "types"} the {longer} branch leaves on top. If they do not, the branches also leave different types, and each must be changed until both leave the same values. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.")
 
 private def erasureDiagnostic (word : String) : Firth.Elaborator.ErasureError → ErasureDiagnostic
   | .duplicateLocal name span =>
@@ -225,8 +248,8 @@ private def erasureDiagnostic (word : String) : Firth.Elaborator.ErasureError �
       { code := "firth.elaboration.unsupported-literal", cause := "elaboration", params := .mkObj [], span }
   | .unsupportedAtom name span =>
       { code := "firth.elaboration.unsupported-atom", cause := "elaboration", params := namedParams name, span }
-  | .branchShape span onTrue onFalse =>
-      let (message, hint) := branchShapeExplanation word onTrue onFalse
+  | .branchShape span onTrue onFalse locals =>
+      let (message, hint) := branchShapeExplanation word onTrue onFalse locals
       { code := "firth.type.branch-mismatch", cause := "type-checking"
         params := .mkObj ([("at", .str "if")] ++ (if word.isEmpty then [] else [("word", .str word)]) ++
           [("message", .str message), ("hint", .str hint)])
@@ -390,12 +413,24 @@ private def branchExplanation (inWord : String) (below onTrue onFalse : AStack) 
       | some values => s!"push {if count == 1 then "a value" else s!"{count} values"} of the same type at the end of the {other} branch (for example `{" ".intercalate values}`)"
       | none => s!"push {renderValues extra} at the end of the {other} branch"
     s!"The {name} branch leaves {plural count "more value"} than the {other} branch ({renderValues extra} on top). Either add {drops} at the end of the {name} branch, or {pushes}. {rule}"
+  -- The values both branches leave, from the bottom: a drop or a push fixes
+  -- the count only when these agree.
+  let sharedDifference (longerValues shorterValues : List AType) :=
+    firstDifference (longerValues.take shorterValues.length) shorterValues
+  let alsoDiffers (name other : String) (extra : List AType) (depth : Nat) (onName onOther : AType) :=
+    s!"The {name} branch leaves {plural extra.length "more value"} than the {other} branch ({renderValues extra} on top), and below those the two differ too: {ordinalFromTop depth} of the values both leave is {renderType onName} after the {name} branch and {renderType onOther} after the {other} branch. Change the branches until both leave the same values. {rule}"
   if trueRow != falseRow then
     (base, s!"The two branches leave different parts of the caller's stack (ρ): one of them consumes values it should keep, or keeps values it should consume. {rule}")
   else if trueValues.length > falseValues.length then
-    (base, longer "true" "false" (trueValues.drop falseValues.length))
+    let extra := trueValues.drop falseValues.length
+    match sharedDifference trueValues falseValues with
+    | some (depth, onTrueType, onFalseType) => (base, alsoDiffers "true" "false" extra depth onTrueType onFalseType)
+    | none => (base, longer "true" "false" extra)
   else if falseValues.length > trueValues.length then
-    (base, longer "false" "true" (falseValues.drop trueValues.length))
+    let extra := falseValues.drop trueValues.length
+    match sharedDifference falseValues trueValues with
+    | some (depth, onFalseType, onTrueType) => (base, alsoDiffers "false" "true" extra depth onFalseType onTrueType)
+    | none => (base, longer "false" "true" extra)
   else match firstDifference trueValues falseValues with
     | some (depth, onTrueType, onFalseType) =>
         (base, s!"Both leave {plural trueValues.length "value"}, but {ordinalFromTop depth} is {renderType onTrueType} after the true branch and {renderType onFalseType} after the false branch. Make both branches leave the same type there. {rule}")
