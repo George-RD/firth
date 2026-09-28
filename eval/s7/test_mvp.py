@@ -413,6 +413,33 @@ def hashes_recorded() -> None:
         probe.unlink(missing_ok=True)
 
 
+def classify_default() -> None:
+    import subprocess
+    import tempfile
+    import classify
+    check(all(t.needs <= classify.ALL for t in MVP), "classify's default capabilities cover every MVP task")
+    plain = {"cases": [{"visible": True, "pass": False, "ok": False, "error": "code: firth.type.branch-mismatch"}]}
+    check(classify.by_rule("sort", plain, set(classify.ALL)) is None,
+          "with every capability, an ordinary MVP failure goes to Jev")
+    check(classify.by_rule("sort", plain, {"add"}) == "missing_primitive",
+          "with only add, the same failure is missing_primitive by rule (the planted case)")
+    # Run the CLI with no flags on a failure the fuel rule catches, so Jev is never
+    # asked: the old "add" default labelled it missing_primitive instead.
+    fuel = {"tasks": {"sort": {"pass": False, "cases": [{"visible": True, "pass": False, "ok": False,
+                                                          "error": "fuel exhausted"}]}}}
+    with tempfile.TemporaryDirectory() as d:
+        (Path(d) / "s.json").write_text("{}")
+        (Path(d) / "r.json").write_text(json.dumps(fuel))
+        cli = [sys.executable, str(HERE / "classify.py"), f"{d}/s.json", f"{d}/r.json"]
+        got = json.loads(subprocess.run(cli, capture_output=True, text=True, check=True).stdout)
+        old = json.loads(subprocess.run(cli + ["--available", "add"], capture_output=True, text=True,
+                                        check=True).stdout)
+    check(got["tasks"]["sort"] == {"mode": "resource_limit", "by": "rule"},
+          "classify.py with no flags labels an MVP failure by what went wrong")
+    check(old["tasks"]["sort"]["mode"] == "missing_primitive",
+          "with the old add default it is missing_primitive (the planted case)")
+
+
 def main() -> int:
     hand_values()
     scorer_rejects_wrong_python()
@@ -422,6 +449,7 @@ def main() -> int:
     subagent_audit()
     run_options_parsed()
     unsandboxed_python_refused()
+    classify_default()
     if "--no-firth" not in sys.argv:
         firth_references()
     print(f"\n{len(failures)} failure(s)")

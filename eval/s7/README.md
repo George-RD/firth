@@ -26,7 +26,9 @@ docs solves small tasks in Firth and in Python, and hidden tests score both.
 - `harness.py repair` builds a second-round prompt showing each failing
   answer's result on the visible example only. Hidden tests are never shown.
 - `classify.py` labels why each failed task failed. Tasks that need a
-  capability the runner lacks are labelled `missing_primitive` by rule. The
+  capability the runner lacks are labelled `missing_primitive` by rule.
+  `--available` names the capabilities the build provides and defaults to all
+  of them; runs scored on the plus-only build passed `--available add`. The
   rest are sent to TypeSafe's Jev classifier (`jev-1.13.0`), which is cheap and
   fast but can only pick from fixed labels. Pass/fail never comes from Jev.
 - `reference/firth-today.json` has hand-written Firth solutions for the eleven
@@ -46,7 +48,7 @@ python3 eval/s7/harness.py prompt --lang firth > prompt.md
 python3 eval/s7/harness.py extract answer.md > solutions.json
 python3 eval/s7/harness.py score --lang firth solutions.json --label "firth sonnet" > results.json
 python3 eval/s7/harness.py report results.json
-python3 eval/s7/classify.py solutions.json results.json --available add > modes.json
+python3 eval/s7/classify.py solutions.json results.json > modes.json
 ```
 
 The author model is run separately, as a sub-agent told to read only the
