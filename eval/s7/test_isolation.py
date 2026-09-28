@@ -115,6 +115,46 @@ def main() -> int:
               and all("allocate-batch" not in c.get("error", "")
                       for c in scored["tasks"]["reverse"]["cases"]),
               "scoring runs Python answers in the sandbox too")
+        # The reviewer's try probe: search for the task file and return its text.
+        (ws / "glob.py").write_text(
+            "import glob\ndef main(xs):\n"
+            "    hits = glob.glob('/home/**/eval/s7/mvp_tasks.py', recursive=True)\n"
+            f"    hits = hits or [{str(HERE / 'mvp_tasks.py')!r}]\n"
+            "    src = open(hits[0]).read()\n"
+            "    i = src.find('_t(\"histogram\"')\n"
+            "    return [ord(c) for c in src[i:i+300]]\n")
+        found = harness.run_python((ws / "glob.py").read_text(), ([1],), None, ("Seq Int",))
+        check(found["ok"] and "histogram" in "".join(map(chr, found["stack"][0])),
+              "unsandboxed, the reviewer's glob probe reads the hidden inputs (the planted case)")
+        globbed = isolate.run(ws, ["./try", "--task", "reverse", "glob.py"],
+                              capture_output=True, text=True, timeout=300)
+        check("got:" not in globbed.stdout and "failed:" in globbed.stdout,
+              "through try, the reviewer's glob probe finds nothing")
+        # The reviewer's scoring probe: a "solution" that finds the task file and
+        # calls the reference. Unsandboxed it passes; sandboxed it must fail.
+        cheat = ("import glob, sys, os\n"
+                 "d = os.path.dirname(glob.glob('/home/**/eval/s7/mvp_tasks.py', recursive=True)[0]\n"
+                 "    if glob.glob('/home/**/eval/s7/mvp_tasks.py', recursive=True) else "
+                 f"{str(HERE / 'mvp_tasks.py')!r})\n"
+                 "sys.path.insert(0, d)\n"
+                 "from tasks import BY_ID\n"
+                 "def main(*a):\n    return BY_ID['sort'].ref(*a)[0]\n")
+        sort = [harness.BY_ID["sort"]]
+        check(harness.run_python(cheat, ([2, 1],), None, ("Seq Int",))["ok"],
+              "unsandboxed, a solution that calls the reference runs (the planted case)")
+        check(not harness.score({"sort": cheat}, "python", sort, 1)["tasks"]["sort"]["pass"],
+              "scored in the sandbox, a solution that calls the reference fails")
+        # Firth has no file access and no cross-file imports: a program that
+        # leans on a reference's helper word is refused, not linked.
+        (ws / "borrow.firth").write_text(
+            ": main (forall ρ; ρ xs:Seq Int^many -- ρ total:Int^many) 0 0 sum-from;\n")
+        fws = Path(tmp) / "fws"
+        isolate.workspace(fws, "firth", "mvp")
+        (fws / "borrow.firth").write_text((ws / "borrow.firth").read_text())
+        borrow = isolate.run(fws, ["./try", "--task", "seq-sum", "borrow.firth"],
+                             capture_output=True, text=True, timeout=600)
+        check("failed:" in borrow.stdout and "PASS" not in borrow.stdout,
+              "a Firth program cannot reach a reference's words")
         other = isolate.run(ws, ["./try", "--task", "fib", "reverse.py"],
                             capture_output=True, text=True, timeout=300)
         check("unknown task" in other.stdout, "try refuses tasks outside the workspace's set")
