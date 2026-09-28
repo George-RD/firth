@@ -28,8 +28,8 @@ fn nested_push_quote_request(depth: usize, innermost: &str) -> String {
          \"words\":[{{\"name\":\"main\",\"erased_word_type\":\"(--)\",\"code\":{code},\
          \"body_digest\":\"{digest}\",\"kernel_evidence_digest\":\"{evidence}\",\
          \"refinement_evidence_digest\":\"{evidence}\",\"generation\":0}}]}},\
-         \"initial_stack\":[],\"image\":{{\"image_version\":1,\"gamma_version\":5}},\
-         \"gamma_version\":\"0.5\",\"fuel\":0}}"
+         \"initial_stack\":[],\"image\":{{\"image_version\":1,\"gamma_version\":6}},\
+         \"gamma_version\":\"0.6\",\"fuel\":0}}"
     )
 }
 

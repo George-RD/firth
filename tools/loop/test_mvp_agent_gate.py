@@ -48,9 +48,9 @@ def contract_tables() -> dict[str, object]:
     }
     return {
         "gamma": {
-            "version": "0.5",
-            "primitives": ["+", "-", "*", "<", "=", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"],
-            "primitive": {name: {"effect": "declared"} for name in ["+", "-", "*", "<", "=", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"]},
+            "version": "0.6",
+            "primitives": ["+", "-", "*", "<", "=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"],
+            "primitive": {name: {"effect": "declared"} for name in ["+", "-", "*", "<", "=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"]},
         },
         "entry_point": {
             name: {"version": "0.1", "adapter": adapter, "transport": "structured-json",

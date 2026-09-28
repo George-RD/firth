@@ -18,6 +18,8 @@ Integers are signed 64-bit values; a literal may be negative (`-3`).
 a b prim +    \ Int Int -- Int
 a b prim -    \ Int Int -- Int   (3 5 prim - gives -2)
 a b prim *    \ Int Int -- Int
+a b prim div  \ Int Int -- Int   (Euclidean quotient: -7 2 prim div gives -4)
+a b prim mod  \ Int Int -- Int   (Euclidean remainder, never negative: -7 2 prim mod gives 1)
 a b prim <    \ Int Int -- Bool
 a b prim =    \ Int Int -- Bool
 p q prim and  \ Bool Bool -- Bool
@@ -27,6 +29,11 @@ flag [ then-branch ] [ else-branch ] if
 ```
 
 A result that does not fit a signed 64-bit integer traps on the VM.
+
+`div` and `mod` satisfy `a = b*q + r` with `0 <= r < |b|`, as Lean's `Int./`
+and `Int.%`. A zero divisor traps with `primitive-fault` on both hosts.
+`division.firth` has a quotient-and-remainder word, a decimal digit sum and
+Euclid's greatest common divisor.
 
 ## Loops
 

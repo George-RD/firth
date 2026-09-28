@@ -85,8 +85,20 @@ portable compiler implementation. `run` also compiles and executes.
 ```
 
 `ρ` is the untouched part of the stack. `forall ρ` binds it. The rightmost
-input is the top of the stack. Names such as `n` label the type boundary;
-they are not ordinary mutable variables.
+input is the top of the stack. Names such as `n` and `result` only document
+the stack: they are not variables, and writing `n` in the body is an
+unresolved name. The body works on the stack itself. To refer to inputs by
+name, bind them with `locals`, which takes one value off the stack for each
+name, the last name from the top:
+
+```firth
+: difference
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b } { a b prim - };
+```
+
+Inside the second braces, `a` and `b` can be used any number of times. The
+result is whatever the block leaves on the stack; `r` is never assigned.
 
 Brackets create a quotation: code that runs only when called or selected.
 `if` consumes the Boolean below the two quotations and executes the first
@@ -220,7 +232,12 @@ Integers are signed: `-3` is a literal and `3 5 prim -` is `-2`. `prim +`,
 `prim -` and `prim *` must stay within the signed 64-bit range
 (`-9223372036854775808..9223372036854775807`) for portable execution; overflow
 fails instead of wrapping. `prim <` and `prim =` take two integers and push a
-Boolean for `if`; `prim and`, `prim or` and `prim not` combine Booleans. The reference interpreter's integers are unbounded; the
+Boolean for `if`; `prim and`, `prim or` and `prim not` combine Booleans.
+`prim div` and `prim mod` are Euclidean: `a b prim div` is the quotient `q`
+and `a b prim mod` the remainder `r` with `a = b*q + r` and `0 <= r < |b|`, so
+`-7 2 prim div` is `-4` and `-7 2 prim mod` is `1`. A zero divisor traps with
+`primitive-fault` on both hosts, and `-9223372036854775808 -1 prim div`
+overflows on the VM like `prim *`. The reference interpreter's integers are unbounded; the
 finite VM's refusal is not evidence of agreement.
 
 The comparison gate validates every returned scalar before comparing stacks.
@@ -235,7 +252,7 @@ execution-trace equivalence.
 | --- | --- |
 | External inputs and final results | Signed 64-bit integers, Booleans, and sequences of either as JSON arrays (`[1, 2]` is a `Seq Int`, `[true]` a `Seq Bool`; `[]` takes its type from the word's signature) |
 | Source type name for integers | `Int`, signed; literals may be negative (`-3`) |
-| Primitive operations | `prim +`, `prim -`, `prim *` : `Int Int -- Int`; `prim <`, `prim =` : `Int Int -- Bool`; `prim and`, `prim or` : `Bool Bool -- Bool`; `prim not` : `Bool -- Bool`; `prim seq-int.empty`, `.len`, `.at`, `.push` and the same for `seq-bool` (see `examples/programs/README.md`) |
+| Primitive operations | `prim +`, `prim -`, `prim *`, `prim div`, `prim mod` : `Int Int -- Int` (`div` and `mod` trap on a zero divisor); `prim <`, `prim =` : `Int Int -- Bool`; `prim and`, `prim or` : `Bool Bool -- Bool`; `prim not` : `Bool -- Bool`; `prim seq-int.empty`, `.len`, `.at`, `.push` and the same for `seq-bool` (see `examples/programs/README.md`) |
 | Sequences | `Seq Int` and `Seq Bool`, written `{ 1 2 3 }` or `{ true false }`; a negative or out-of-range `at` index traps with `primitive-fault` on both hosts |
 | Definitions | Explicit stack effects, multiple words, qualified vocabulary names, recursion with finite fuel |
 | Composition | Core stack operations, quotations, `call`, `if`, named locals (a block takes its values off the stack; a local may be used any number of times, inside `if` branches, inside quotations and inside nested blocks. A local can't be used after running a quotation whose stack effect is unknown there, such as one passed in as a value; that is refused with `firth.elaboration.untracked-local`); matching checked effects are required |

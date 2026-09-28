@@ -3,3 +3,4 @@ import Firth.OracleAdapter
 import Firth.KernelMetatheory
 import Firth.Progress
 import Firth.CostInvariance
+import Firth.ProgramLogic

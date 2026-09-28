@@ -26,9 +26,27 @@ bound, currently fitted by `examples/inventory/measure_cost.py` and stated in
 - The bound in `examples/inventory/run_cases.py` and the README is the proved
   f(n). `measure_cost.py` stays as a check that the measured costs are within
   it.
+- The cost theorem is bound to the cost table κ it was proved against. Its
+  proof record carries the digest of that table's definition (done in the
+  proof-records change: `cost_tables` in `src/proofs/records.json`), and
+  `firthProofRecords --status` stops counting the record as
+  `contract_verified` once κ changes, which `update_proof_records.py` shows
+  with a planted stale digest. A change to κ cannot leave a cost proof
+  silently marked verified. The VM's own cost accounting is not bound this
+  way; it rests on differential testing, as below.
 - The same gaps as `language-06b` are stated: agreement of the compiler's
   lowering and the VM, including the VM's own cost accounting, rests on
   differential testing, and the Python host is tested, not proved.
+
+## Progress
+
+28 September 2026: `allocate_batch` in `src/proofs/Inventory/Allocate.lean`
+proves that `allocate-batch`'s body terminates within
+`181 + 224n + 172·n(n−1)/2` transitions at kernel cost at most
+`165 + 202n + 163·n(n−1)/2`, which `batchCost_eq` shows is
+`run_cases.cost_bound`. It is recorded with the property in
+`src/proofs/records.json` (`allocate_batch_contract`), bound to the cost table's
+digest.
 
 ## Traceability
 

@@ -17,7 +17,7 @@
 
 /// The language-level `Gamma` version this adapter speaks, matching the
 /// reference-run adapter's `gamma_version` check.
-pub const ADAPTER_GAMMA_VERSION: &str = "0.5";
+pub const ADAPTER_GAMMA_VERSION: &str = "0.6";
 
 /// Why a request was refused before any execution happened.
 #[derive(Debug, Clone, PartialEq, Eq)]

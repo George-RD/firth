@@ -34,63 +34,41 @@
     [ false ] if };
 
 \ The IDs arrive as one sequence, four Ints per request, so request k's ID is
-\ ids[4k .. 4k+3]. The repeated-ID scan compares every pair of requests,
-\ which makes it the hot loop, so it keeps its values on the stack: a local
-\ costs far more per use than a stack word here (see README.md).
-
-: over-si
-  (forall ρ; ρ a:Seq Int^many b:Int^many -- ρ a:Seq Int^many b:Int^many c:Seq Int^many)
-  [ dup ] dip swap;
-
-: over-ii
-  (forall ρ; ρ a:Int^many b:Int^many -- ρ a:Int^many b:Int^many c:Int^many)
-  [ dup ] dip swap;
-
-\ ( ids p q -- ids p q ids )
-: third-ids
-  (forall ρ; ρ s:Seq Int^many p:Int^many q:Int^many -- ρ s:Seq Int^many p:Int^many q:Int^many t:Seq Int^many)
-  [ over-si ] dip swap;
+\ ids[4k .. 4k+3], and an ID is named by its offset 4k.
 
 \ |x - y|. ID parts are non-negative, so the difference cannot overflow.
 : distance
   (forall ρ; ρ x:Int^many y:Int^many -- ρ d:Int^many)
   prim - dup 0 prim < [ 0 swap prim - ] [ ] if;
 
-\ ( ids p q -- ids p q |ids[p] - ids[q]| )
-: pair-distance
-  (forall ρ; ρ s:Seq Int^many p:Int^many q:Int^many -- ρ s:Seq Int^many p:Int^many q:Int^many d:Int^many)
-  third-ids [ over-ii ] dip swap prim seq-int.at
-  [ third-ids ] dip swap [ over-ii ] dip swap prim seq-int.at
-  distance;
+\ The distance between part k of the IDs at offsets p and q.
+: part-distance
+  (forall ρ; ρ ids:Seq Int^many p:Int^many q:Int^many k:Int^many -- ρ d:Int^many)
+  locals { ids p q k }
+  { ids p k prim + prim seq-int.at ids q k prim + prim seq-int.at distance };
 
-\ ( p q -- p+1 q+1 )
-: bump
-  (forall ρ; ρ p:Int^many q:Int^many -- ρ p:Int^many q:Int^many)
-  [ 1 prim + ] dip 1 prim +;
-
-\ True when the IDs at offsets p and q are equal. Leaves ids, p and q in
-\ place. Most pairs differ in their first part, so that part is tested alone;
-\ the other three distances are summed without branching, which keeps the
-\ worst case (IDs sharing their first 24 characters) close to the typical one.
+\ True when the IDs at offsets p and q are equal. Most pairs differ in their
+\ first part, so that part is tested alone; the other three distances are
+\ summed without branching, which keeps the worst case (IDs sharing their
+\ first 24 characters) close to the typical one.
 : same-id
-  (forall ρ; ρ s:Seq Int^many p:Int^many q:Int^many -- ρ s:Seq Int^many p:Int^many q:Int^many same:Bool^many)
-  pair-distance 0 prim =
-  [ bump pair-distance
-    [ bump pair-distance ] dip prim +
-    [ bump pair-distance ] dip prim +
-    [ [ 3 prim - ] dip 3 prim - ] dip
-    0 prim = ]
-  [ false ] if;
+  (forall ρ; ρ ids:Seq Int^many p:Int^many q:Int^many -- ρ same:Bool^many)
+  locals { ids p q }
+  { ids p q 0 part-distance 0 prim =
+    [ ids p q 1 part-distance ids p q 2 part-distance prim +
+      ids p q 3 part-distance prim + 0 prim = ]
+    [ false ] if };
 
 \ Visits every pair of offsets p < q once, starting from (p, q), and stops at
 \ the first repeated ID.
 : repeat-from
-  (forall ρ; ρ s:Seq Int^many p:Int^many q:Int^many -- ρ found:Bool^many)
-  third-ids prim seq-int.len over-ii swap prim <
-  [ same-id [ drop drop drop true ] [ 4 prim + repeat-from ] if ]
-  [ drop over-si prim seq-int.len [ dup 8 prim + ] dip prim <
-    [ 4 prim + dup 4 prim + repeat-from ]
-    [ drop drop false ] if ] if;
+  (forall ρ; ρ ids:Seq Int^many p:Int^many q:Int^many -- ρ found:Bool^many)
+  locals { ids p q }
+  { q ids prim seq-int.len prim <
+    [ ids p q same-id [ true ] [ ids p q 4 prim + repeat-from ] if ]
+    [ p 8 prim + ids prim seq-int.len prim <
+      [ ids p 4 prim + p 8 prim + repeat-from ]
+      [ false ] if ] if };
 
 : has-repeat
   (forall ρ; ρ ids:Seq Int^many -- ρ found:Bool^many)

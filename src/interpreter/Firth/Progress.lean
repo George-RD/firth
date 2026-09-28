@@ -8,7 +8,8 @@ The executable `Gamma` type is intentionally permissive, so progress carries
 the specification's literal-signature well-formedness condition explicitly.
 Likewise, primitive totality is a premise because `PrimitiveSpec.delta` is
 represented as an `Option` in the unchecked interpreter. A primitive declared
-with `faults := true` (a sequence index) is exempt from totality, so progress
+with `faults := true` (a sequence index, or integer division and remainder
+on a zero divisor) is exempt from totality, so progress
 has exactly one exception: such a primitive faulting on its typed input.
 -/
 
@@ -351,6 +352,20 @@ theorem defaultGamma_primitivesWellFormed (dictionary : Dictionary) :
     · obtain ⟨l, r, rfl⟩ := defaultGamma_int_pair htyped
       simp only [eqIntDelta, Option.some.injEq] at hdelta; subst hdelta
       exact literal_stack _ _ rfl
+    · -- divInt
+      obtain ⟨l, r, rfl⟩ := defaultGamma_int_pair htyped
+      simp only [divIntDelta] at hdelta
+      split at hdelta
+      · cases hdelta
+      · simp only [Option.some.injEq] at hdelta; subst hdelta
+        exact literal_stack _ _ rfl
+    · -- modInt
+      obtain ⟨l, r, rfl⟩ := defaultGamma_int_pair htyped
+      simp only [modIntDelta] at hdelta
+      split at hdelta
+      · cases hdelta
+      · simp only [Option.some.injEq] at hdelta; subst hdelta
+        exact literal_stack _ _ rfl
     · obtain ⟨l, r, rfl⟩ := defaultGamma_bool_pair htyped
       simp only [andBoolDelta, Option.some.injEq] at hdelta; subst hdelta
       exact literal_stack _ _ rfl
@@ -475,8 +490,8 @@ theorem defaultGamma_primitivesWellFormed (dictionary : Dictionary) :
 
 /-- Type safety for the shipped primitive table: a well-typed configuration
 under a well-typed dictionary either has finished, steps to a configuration
-that is again well typed, or stops at a sequence index out of range (the only
-primitives declared `faults := true`). No premise about primitives remains. -/
+that is again well typed, or stops at a primitive declared `faults := true`:
+a sequence index out of range, or a zero divisor. No premise about primitives remains. -/
 theorem defaultGamma_typeSafety (dictionary : Dictionary) (costs : CostTable)
     (dictionaryWellTyped : DictionaryWellTyped defaultGamma dictionary) {config : Config}
     (configTyping : TypedConfig defaultGamma dictionary config)
@@ -492,10 +507,11 @@ theorem defaultGamma_typeSafety (dictionary : Dictionary) (costs : CostTable)
       preservation defaultGamma dictionary costs dictionaryWellTyped wellFormed.1 configTyping successor⟩
   · exact .inr fault
 
-/-- The primitives that may fault are exactly the two sequence indexes. -/
+/-- The primitives that may fault are exactly the two sequence indexes and
+integer division and remainder. -/
 theorem defaultGamma_faulting_primitives (name : Prim) (specification : PrimitiveSpec)
     (h : defaultGamma.primitive name = some specification) (faults : specification.faults = true) :
-    name = "intSeqAt" ∨ name = "boolSeqAt" := by
+    name = "intSeqAt" ∨ name = "boolSeqAt" ∨ name = "divInt" ∨ name = "modInt" := by
   simp only [defaultGamma] at h
   split at h <;> cases h <;> simp_all
 
@@ -556,5 +572,35 @@ def boolBinary (name : Prim) (left right : Bool) : Program :=
     progressSmokeBool (boolBinary "orBool" left right) = some (left || right)
 #guard [false, true].all fun value =>
   progressSmokeBool (.cons (.lit (.bool value)) (.cons (.prim "notBool") .empty)) = some (!value)
+
+/- `div` and `mod` against hand-computed Euclidean results (a = b*q + r,
+   0 <= r < |b|), and a zero divisor is a primitive fault on either. -/
+def progressSmokeInt (name : Prim) (left right : Int) : Option Int :=
+  match run defaultGamma emptyDictionary defaultCosts 8
+      { stack := [], program :=
+          .cons (.lit (.int left)) (.cons (.lit (.int right)) (.cons (.prim name) .empty)) } with
+  | .terminal { stack := [.literal (.int value)], program := .empty } _ _ => some value
+  | _ => none
+
+#guard progressSmokeInt "divInt" 7 2 = some 3
+#guard progressSmokeInt "modInt" 7 2 = some 1
+#guard progressSmokeInt "divInt" (-7) 2 = some (-4)
+#guard progressSmokeInt "modInt" (-7) 2 = some 1
+#guard progressSmokeInt "divInt" 7 (-2) = some (-3)
+#guard progressSmokeInt "modInt" 7 (-2) = some 1
+#guard progressSmokeInt "divInt" (-7) (-2) = some 4
+#guard progressSmokeInt "modInt" (-7) (-2) = some 1
+#guard progressSmokeInt "divInt" 6 3 = some 2
+#guard progressSmokeInt "modInt" 6 3 = some 0
+#guard progressSmokeInt "divInt" 7 0 = none
+#guard progressSmokeInt "modInt" 7 0 = none
+#guard progressSmokeInt "divInt" 0 0 = none
+
+/- The fault is a stuck configuration at the primitive, not fuel running out. -/
+#guard match run defaultGamma emptyDictionary defaultCosts 8
+    { stack := [], program :=
+        .cons (.lit (.int 7)) (.cons (.lit (.int 0)) (.cons (.prim "divInt") .empty)) } with
+  | .stuck { stack := [.literal (.int 0), .literal (.int 7)], program := .cons (.prim "divInt") .empty } _ _ => true
+  | _ => false
 
 end Firth.Interpreter

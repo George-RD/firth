@@ -122,12 +122,24 @@ private def marker (context : String) (values : List (String × Json)) : Except 
   if (← reqStr context "checking_state" values) != "checked" then err s!"{context}: checking unavailable"
   if (← reqStr context "proof_state" values) != "available" then err s!"{context}: proof unavailable"
 
-private def adapterGamma : Gamma :=
+/-- The primitive registry the reference runner executes under: kernel
+programs name primitives by their surface names (`+`, `seq-int.at`), and this
+resolves each through `surfacePrimitives` to its `defaultGamma` entry.
+
+Public so that a kernel program exported to Lean (`src/exports/`) is reasoned
+about under exactly the registry the runner uses. -/
+def adapterGamma : Gamma :=
   { defaultGamma with
     primitive := fun primitive =>
       match kernelPrimitive primitive with
       | some kernel => defaultGamma.primitive kernel
       | none => none }
+
+/-- The type every dictionary entry carries in the reference runner. `step`
+and `run` never read an entry's type, only its body; typing was already
+checked by the elaborator and is rechecked by the compiler. -/
+def adapterWordType : WordType :=
+  { rowVariables := ["ρ"], input := .row "ρ", output := .row "ρ" }
 
 private def decodeDictionary (value : Json) : Except String (Dictionary × List Program) := do
   let entries ← fields "dictionary" value
@@ -141,7 +153,7 @@ private def decodeDictionary (value : Json) : Except String (Dictionary × List 
         marker context values
         let body ← decodeProgram (← required context "program" values)
         let tail ← go rest
-        pure ((name, { type := { rowVariables := ["ρ"], input := .row "ρ", output := .row "ρ" }, body := body }) :: tail)
+        pure ((name, { type := adapterWordType, body := body }) :: tail)
   let entries ← go entries
   let dictionary : Dictionary := fun name => entries.find? (fun (entry, _) => entry == name) |>.map (·.2)
   pure (dictionary, entries.map (fun (_, entry) => entry.body))
@@ -169,7 +181,7 @@ private def decodeRequest (value : Json) : Except String Request := do
     ["request_id", "checked_kernel", "initial_stack", "dictionary", "gamma_version", "fuel"]
   let requestId ← nonempty "request_id" =<< reqStr "request" "request_id" values
   let version ← reqStr "request" "gamma_version" values
-  if version != "0.5" then err "unsupported gamma version"
+  if version != "0.6" then err "unsupported gamma version"
   let kernel ← object "checked_kernel" (← required "request" "checked_kernel" values)
     ["checking_state", "proof_state", "gamma_version", "program"]
     ["checking_state", "proof_state", "gamma_version", "program"]
