@@ -356,15 +356,17 @@ def hand_over(dir: Path, uid: int) -> None:
 def plain_tree(k: str) -> None:
     """Refuse a kept credential that holds anything but plain files and
     directories. A link nested in a kept directory could point at the
-    repository, and copying through it would bring the hidden tests in
-    (Codex's finding); a device or FIFO has no place among credentials."""
+    repository, and copying through it would bring the hidden tests in; a
+    file with a second hard link could be a hidden file itself (both Codex's
+    findings); a device or FIFO has no place among credentials."""
     for top, dirs, files in os.walk(k, followlinks=False):
         for n in [top] + [os.path.join(top, e) for e in dirs + files]:
-            mode = os.lstat(n).st_mode
-            if not (stat.S_ISDIR(mode) or stat.S_ISREG(mode)):
-                raise SystemExit(f"--keep {k}: {n} is not a plain file or directory")
-    if not os.path.isdir(k) and not stat.S_ISREG(os.lstat(k).st_mode):
-        raise SystemExit(f"--keep {k}: not a plain file or directory")
+            st = os.lstat(n)
+            if not (stat.S_ISDIR(st.st_mode) or stat.S_ISREG(st.st_mode) and st.st_nlink == 1):
+                raise SystemExit(f"--keep {k}: {n} is not a plain file with one link, or a directory")
+    st = os.lstat(k)
+    if not (stat.S_ISDIR(st.st_mode) or stat.S_ISREG(st.st_mode) and st.st_nlink == 1):
+        raise SystemExit(f"--keep {k}: not a plain file with one link, or a directory")
 
 
 def check_keep(keep: tuple[str, ...], dir: Path) -> None:

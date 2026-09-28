@@ -158,8 +158,9 @@ include negative numbers and empty sequences.
   the workspace. Credentials passed with `--keep` come in as read-only copies
   `nobody` can read. A `--keep` path inside the workspace, through a link, or
   under a directory `nobody` or everyone can write is refused, and so is a
-  kept directory holding anything but plain files and directories (a link
-  inside it could lead to the repository). The copy never follows links.
+  kept path holding anything but directories and plain files with one link
+  (a symbolic or hard link could lead to the repository). The copy never
+  follows links.
 - Inside the sandbox the root and everything shown are read-only except the
   workspace, a fresh `/tmp` and `/dev/shm`, and there is no `/run` (it holds
   host sockets). So one attempt cannot leave notes for a later one.

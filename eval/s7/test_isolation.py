@@ -430,6 +430,32 @@ def main() -> int:
                   f"copied through the link, the hidden tests reach the sandbox (the planted case): {leaked.stdout.strip()!r}")
         finally:
             shutil.rmtree(nest)
+        # Codex's next probe: a hard link to the hidden tests inside a kept
+        # directory is a regular file, and a plain copy brings its content in.
+        # Planted: with the check bypassed, the copy does bring it.
+        hard = Path(tempfile.mkdtemp(dir="/root", prefix="s7-keep-"))
+        try:
+            (hard / "token").write_text("token")
+            try:
+                os.link(HERE / "mvp_tasks.py", hard / "tasks")
+            except OSError as e:
+                print(f"skip no hard link to the tests from /root here ({e}), so no hard-link case")
+            else:
+                check(refused_exit(lambda: isolate.run(ws, ["true"], keep=(str(hard),))),
+                      "--keep refuses a directory holding a hard link")
+                check(refused_exit(lambda: isolate.run(ws, ["true"], keep=(str(hard / "tasks"),))),
+                      "--keep refuses a file with a second hard link")
+                read_hard = ["bash", "-c", f"grep -c allocate-batch {hard}/tasks 2>/dev/null"]
+                real_plain, isolate.plain_tree = isolate.plain_tree, lambda k: None
+                try:
+                    mutant = isolate.sandbox_command(ws, read_hard, keep=(str(hard),), uid=isolate.NOBODY)
+                finally:
+                    isolate.plain_tree = real_plain
+                leaked = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+                check(leaked.stdout.strip() not in ("", "0"),
+                      f"without the check, a hard link brings the hidden tests in (the planted case): {leaked.stdout.strip()!r}")
+        finally:
+            shutil.rmtree(hard)
         # A credential path the author could have planted or redirected is refused:
         # in the workspace, under a world-writable directory, or through a link.
         (ws / "planted.json").write_text("x")
