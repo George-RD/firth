@@ -743,6 +743,18 @@ Failures by the checker's first diagnostic (`results-N.json`):
   give. Scoring on `c6a964a` still passes run 6's passing answers
   (sample 2 round 2 rescored: 6 of 20, the same tasks).
 
+**The feedback in runs 1 to 7 showed no location.** The checker gives each
+diagnostic the line and column in the submitted program where it failed, and
+`readable` left it out, so an author saw the word a message named but not
+which `if` or line it meant. Language core's reading of run 7 is that in
+`sort` (sample 2, round 2) Haiku edited `insert-at` when the mismatched `if`
+was in `insertion-sort`. The feedback now puts `at: line L, column C` after
+the code, as a real author would see it; the line and column count from the
+start of the answer as written. `test_mvp.py` checks it on a real branch
+mismatch, and the check fails with the location removed from the checker's
+output. Kept runs are unchanged, since their results hold the feedback as it
+was shown. Run 8 is the first with it.
+
 ## What the seven runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from

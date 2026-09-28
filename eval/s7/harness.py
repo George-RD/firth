@@ -501,6 +501,10 @@ def score(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int) ->
 
 
 FIELDS = ("code", "message", "expected", "actual", "hint")
+# Where the checker points in the author's program, shown as `at: line L, column C`
+# after the code: a real author sees it, and without it an author cannot tell
+# which `if` or word a message means (run 7's `sort` edited the wrong word).
+ORDER = ("code", "at", "message", "expected", "actual", "hint")
 
 
 def readable(error: str) -> str:
@@ -544,7 +548,31 @@ def _diagnostic_fields(error: str) -> dict[str, str]:
             for x in v:
                 walk(x)
     walk(found)
-    return {k: fields[k] for k in FIELDS if k in fields}
+    at = _location(found)
+    if at:
+        fields["at"] = at
+    return {k: fields[k] for k in ORDER if k in fields}
+
+
+def _location(v) -> str | None:
+    """The start of the first diagnostic's `location` range, as the checker gives
+    it: lines and columns of the submitted program, which is the author's answer
+    as written (`run_firth` writes it unchanged)."""
+    if isinstance(v, dict):
+        loc = v.get("location")
+        if isinstance(loc, dict):
+            start = (loc.get("range") or {}).get("start") or {}
+            line, col = start.get("line"), start.get("column")
+            if isinstance(line, int) and isinstance(col, int):
+                return f"line {line}, column {col}"
+        for x in v.values():
+            if (found := _location(x)):
+                return found
+    elif isinstance(v, (list, tuple)):
+        for x in v:
+            if (found := _location(x)):
+                return found
+    return None
 
 
 def repair(solutions: dict[str, str], results: dict, lang: str, tasks: list[Task]) -> str:
