@@ -22,6 +22,7 @@ never on the hidden tests.
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import json
 import os
@@ -413,13 +414,51 @@ def score(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int) ->
     return res
 
 
+FIELDS = ("code", "message", "expected", "actual", "hint")
+
+
 def readable(error: str) -> str:
-    """Prefer the checker's plain-language fields over the raw JSON envelope."""
-    fields = {k: m.group(1) for k in ("code", "message", "expected", "actual", "hint")
-              if (m := re.search(rf"'{k}': '((?:[^'\\]|\\.)*)'", error))}
+    """Prefer the checker's plain-language fields over the raw JSON envelope.
+
+    The runner reports a failure as JSON whose `error` string ends in the Python
+    repr of the diagnostic list. Python quotes a string that holds an apostrophe
+    with double quotes, so the fields are read from the decoded structure, not by
+    matching single-quoted text: a hint such as "`xs` is a name in the word's stack
+    effect" was dropped that way, and authors never saw it."""
+    fields = _diagnostic_fields(error)
     if "message" not in fields:
         return error
     return "\n".join(f"{k}: {v}" for k, v in fields.items())
+
+
+def _diagnostic_fields(error: str) -> dict[str, str]:
+    """The first string value of each of FIELDS, in the order the diagnostic
+    lists them, or {} when the envelope cannot be decoded."""
+    text = error
+    try:
+        text = json.loads(error).get("error", error)
+    except (ValueError, AttributeError):
+        pass
+    start = text.find("[{")
+    try:
+        found = ast.literal_eval(text[start:]) if start >= 0 else None
+    except (ValueError, SyntaxError, MemoryError, RecursionError):
+        found = None
+    if found is None:
+        return {}
+    fields: dict[str, str] = {}
+
+    def walk(v) -> None:
+        if isinstance(v, dict):
+            for k, x in v.items():
+                if k in FIELDS and isinstance(x, str) and k not in fields:
+                    fields[k] = x
+                walk(x)
+        elif isinstance(v, (list, tuple)):
+            for x in v:
+                walk(x)
+    walk(found)
+    return {k: fields[k] for k in FIELDS if k in fields}
 
 
 def repair(solutions: dict[str, str], results: dict, lang: str, tasks: list[Task]) -> str:

@@ -14,6 +14,7 @@
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -173,6 +174,22 @@ def rounds_prompt() -> None:
     check("try --lang" in harness.prompt(list(MVP), "firth", mvp=True), "the mvp prompt still offers try")
 
 
+def feedback_keeps_hints() -> None:
+    # The runner's error ends in the repr of the diagnostics, and Python puts a
+    # string holding an apostrophe in double quotes. The authors' feedback must
+    # still carry that hint (in run 5 it was dropped, so none saw it).
+    diag = [{"body": {"code": "firth.name.unresolved",
+                      "message_params": {"hint": "`xs` is a name in the word's stack effect.",
+                                         "message": "`xs` is not a defined word, primitive or local."},
+                      "cause": {"kind": "validation", "data": {"actual": "xs"}}}}]
+    raw = json.dumps({"error": f"application elaborate: status 'failure', expected 'success': {diag!r}",
+                      "status": "error"})
+    got = harness.compact(raw)
+    check("hint: `xs` is a name in the word's stack effect." in got
+          and "message: `xs` is not a defined word" in got and "actual: xs" in got,
+          "feedback keeps a hint that holds an apostrophe")
+
+
 def unsandboxed_python_refused() -> None:
     real = harness.os.geteuid
     try:
@@ -201,6 +218,7 @@ def main() -> int:
     scorer_rejects_wrong_python()
     hashes_recorded()
     rounds_prompt()
+    feedback_keeps_hints()
     unsandboxed_python_refused()
     if "--no-firth" not in sys.argv:
         firth_references()

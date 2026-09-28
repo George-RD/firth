@@ -417,6 +417,63 @@ describes Firth but gives no syntax.
   20, Haiku 0), more samples would narrow the Haiku figure but not change it
   from "fails".
 
+## Run 5: 28 September 2026, Haiku after the hint fix
+
+Main at `cec3707` (#142: the unresolved-name hint names `locals`, the
+getting-started guide explains stack-effect names, and every hint lists all
+primitives). The eval code is run 4's with the feedback fix below. Author:
+`claude-haiku-4-5-20251001` only, Firth only, set up as in run 4. Sonnet was
+left out because it was already at 20 of 20. Everything is in
+`runs/2026-09-28-haiku-cec3707/`.
+`cec3707` also has `prim div` and `prim mod` (#139), so `digits` and
+`primes-up-to` no longer need division built from subtraction. Run 4 and
+run 5 differ in more than the hints.
+
+**The feedback had been dropping hints.** `readable` picked the checker's
+fields out of the runner's error by matching single-quoted text. Python
+quotes a string that holds an apostrophe with double quotes, so the new hint
+("`xs` is a name in the word's stack effect ...") was silently left out.
+The same happened to the whole `untracked-local` message ("can't"). Sample 1's
+feedback rounds therefore never showed Haiku the new hints. `readable` now
+decodes the diagnostic, and `test_mvp.py` checks that a hint with an
+apostrophe survives. That check fails with the old parser. Sample 2 ran with
+the fix. Runs 3 and 4 were not affected: none of their feedback hints held an
+apostrophe. Runs 1 and 2 were. In their repair files, 21 answers got a raw
+envelope cut to 300 characters in place of the checker's message.
+
+| Haiku 4.5, Firth, passed (of 20) | First answer | Round 1 | Round 2 |
+|---|---|---|---|
+| Sample 1 (feedback without the new hints) | 2 | 2 | 2 |
+| Sample 2 (feedback fixed) | 6 | 7 | 8 |
+| Run 4, for comparison | 0 | 0 | 0 |
+
+- **The locals failure is gone from first answers.** In run 4, all 20 first
+  answers stopped at `firth.name.unresolved`. Here it was 1 of 20 in sample 1
+  and 0 in sample 2. Sample 1 fell back to it in its last round, in 16
+  tasks, after two rounds of feedback that had lost the hint. Sample 2, which
+  saw the hint, never did. Its one later `unresolved` (round 1, `allocate-batch`) was a local used out of its block.
+- **The next cause is stack shape.** Jev puts sample 2's first-answer failures
+  at 8 `stack_effect`, 5 `stack_order` and 1 `logic`, and its last round at 6,
+  3 and 2, plus one run out of steps (`has-pair-sum`, by rule). By
+  diagnostic, the largest group in the last round is
+  `firth.elaboration.untracked-local` (4 of 12). Then come word-input
+  mismatches (3), wrong answers (2: `is-sorted`, `primes-up-to`), and one
+  each of branch and compose mismatches.
+- **The untracked-local slice is a misleading diagnostic.** Looking closer,
+  the two failures checked by hand (`keep-positive`, `ledger`) hold an `if`
+  whose branches leave different stacks, inside a `locals` block. The checker reports
+  that as "the local is used after `if` ran a quotation whose stack effect is
+  not known", and its hint says inline quotations are fine. The actual
+  mistake is a branch mismatch, which the same `if` outside `locals`
+  reports as `firth.type.branch-mismatch`. With the one branch fixed
+  (`[ drop result ]` to `[ result ]`), `keep-positive` passes its example.
+  Recorded in `meta/todos/todo.s7-untracked-local-misreport.md`.
+- Two samples, three answers each. The transcripts are clean: every call was
+  a read of the prompt or feedback or a write of the answer, and each
+  recorded write matches the answer that was scored (checked with a planted
+  change to one answer). Sample 1's directory was renamed after the run, so
+  its transcript's paths say `haiku-firth/`.
+
 ## What the three runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from
