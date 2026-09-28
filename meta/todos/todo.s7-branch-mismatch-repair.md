@@ -39,9 +39,12 @@ diagnostic, in `eval/s7/runs/2026-09-28-haiku-470c6d0/`:
 ## Progress
 
 - Run 7 (`eval/s7/README.md`, "Run 7"; `runs/2026-09-28-haiku-c6a964a/`)
-  is the rerun after #153 and #156. It meets the second criterion: of 18
+  is the rerun after #153 and #156. For the second criterion: of 18
   resubmitted branch mismatches, 12 failed on it again and none passed
-  (run 6: 15 of 23, one pass). For the third, the extra first answers on
+  (run 6: 15 of 23, one pass). The other 6 failed first on a different
+  error, which may be reported before the same unrepaired branch, so how
+  many of those 6 fixed their branch is not known. The criterion stays
+  open until the branch source itself is compared. For the third, the extra first answers on
   the run 5 prompt gave 20 and 13 unresolved-name failures, so sample
   variance alone can account for the rise; four answers per prompt are
   too few to rule out a smaller prompt effect.
