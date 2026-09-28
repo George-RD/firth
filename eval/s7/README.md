@@ -681,8 +681,11 @@ Failures by the checker's first diagnostic (`results-N.json`):
 - **Branch-mismatch repair did not improve.** Of the answers that failed
   on `firth.type.branch-mismatch` and were resubmitted, 12 of 18 failed on
   it again in the next round and none passed. In run 6 it was 15 of 23,
-  with one pass. Two samples each, so this is no evidence that the new
-  message is worse either.
+  with one pass. Sample 2, which did not reverse its locals (below),
+  passed 0 in both feedback rounds against run 6 sample 2's 2 and 6 on
+  the same prompt, from the same first-answer score of 0. Only the
+  diagnostics changed, and two samples cannot tell sample variance from a
+  regression caused by the new messages.
 - **Why sample 1 collapsed: it bound its locals in reverse from the
   first answer.** In sample 1's `answer-1.md`, 29 of the 34 `locals`
   blocks that open a word body list the word's inputs in reverse (for
@@ -760,9 +763,12 @@ fixed (#145). Run 6 confirmed that fix: no failure is misreported that
 way any more, and branch mismatches are the largest group left, which
 Haiku rarely repairs from the current message. Run 7 made that message
 say how the branches differ and how to fix them, and Haiku still did not
-repair them. It passed nothing in run 7, partly because one sample bound
-its locals in reverse from the start, and in most unrepaired mismatches
-one operation reaches below the branch without the message naming it. The checker found most
+repair them. It passed nothing in run 7. One sample bound its locals in
+reverse from the start; the other, which did not, also passed nothing
+after feedback where run 6's sample reached 6, and that is unexplained
+(variance or a regression from the new messages). In most unrepaired
+mismatches one operation reaches below the branch without the message
+naming it. The checker found most
 stack-shape errors before execution.
 Wrong answers at runtime were logic slips that a signature cannot catch.
 
