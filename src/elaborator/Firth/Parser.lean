@@ -15,6 +15,24 @@ inductive ParseCause where
   | lexical | grammar | delimiter | validation
   deriving Repr, BEq
 
+/-- A word's opening `locals` block that binds its inputs out of order, and
+the block to write instead. -/
+structure LocalsBlock where
+  word : String
+  /-- Each name of the block, the stack-effect input it binds and that
+  input's type, in the block's order. -/
+  pairs : List (String × String × String)
+  /-- The block to write: the stack effect's input names, from the deepest
+  input the block names up to the top. -/
+  block : List String
+  /-- Names the stack effect does not declare, each with the input name to
+  write for it in the body, since the new block binds that input under its
+  own name. -/
+  renames : List (String × String) := []
+  /-- Inputs the new block binds that the old one left on the stack. -/
+  deeper : List String := []
+  deriving Repr, BEq
+
 structure ParseError where
   code : String
   primary : Span
@@ -28,10 +46,8 @@ structure ParseError where
   effectInputs : List String := []
   effectOutputs : List String := []
   /-- For `firth.name.locals-order`: every word whose opening `locals` block
-  binds its inputs out of order, with each name of that block, the
-  stack-effect input it binds and that input's type, in the block's order.
-  Empty otherwise. -/
-  localsBlocks : List (String × List (String × String × String)) := []
+  binds its inputs out of order. Empty otherwise. -/
+  localsBlocks : List LocalsBlock := []
   deriving Repr, BEq
 
 structure Located (α : Type) where

@@ -149,21 +149,32 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
               "Define it (definitions may appear in any order), fix the spelling, or bind it as a local with `locals { name } { ... }`. Primitives are written with `prim`: " ++
                 primitiveList ++ ". " ++ definitionShape)
     | "firth.name.locals-order" =>
-        let block (pairs : List (String × String × String)) : String :=
-          s!"`locals \{ {" ".intercalate (pairs.map (·.1))} }`"
-        let fixed (pairs : List (String × String × String)) : String :=
-          s!"`locals \{ {" ".intercalate (pairs.map (·.2.1))} }`"
+        let names (list : List String) : String := s!"`locals \{ {" ".intercalate list} }`"
         let received (pairs : List (String × String × String)) : String :=
           ", ".intercalate (pairs.map fun (name, input, type) =>
             if name == input then s!"`{name}` the value named `{input}` ({type})"
             else s!"`{name}` the value the stack effect calls `{input}` ({type})")
-        let described := error.localsBlocks.map fun (word, pairs) =>
-          s!"{block pairs} in `{word}` gives {received pairs}"
-        let fixes := ", and ".intercalate (error.localsBlocks.map fun (word, pairs) =>
-          s!"{fixed pairs} in `{word}`")
+        let described := error.localsBlocks.map fun block =>
+          s!"{names (block.pairs.map (·.1))} in `{block.word}` gives {received block.pairs}"
+        let quoted (list : List String) := match (list.map (s!"`{·}`")).reverse with
+          | [] => ""
+          | [one] => one
+          | last :: rest => s!"{", ".intercalate rest.reverse} and {last}"
+        -- A reordering of the same names needs no change to the body.
+        let (plain, reaching) := error.localsBlocks.partition fun block =>
+          block.renames.isEmpty && block.deeper.isEmpty
+        let plainFix := if plain.isEmpty then "" else
+          s!" Write {", and ".intercalate (plain.map fun block => s!"{names block.block} in `{block.word}`")}, and keep {if plain.length == 1 then "the body" else "the bodies"} as {if plain.length == 1 then "it is" else "they are"}: each name then holds the value the stack effect gives it."
+        let reachingFix := reaching.map fun block =>
+          let renamed := if block.renames.isEmpty then "" else
+            s!" In its body, write {", ".intercalate (block.renames.map fun (name, input) => s!"`{input}` for `{name}`")}, since the new block binds {if block.renames.length == 1 then "that input" else "those inputs"} under the stack effect's {if block.renames.length == 1 then "name" else "names"}."
+          let deeper := if block.deeper.isEmpty then "" else
+            let (it, them) := if block.deeper.length == 1 then ("it", "it") else ("them", "they")
+            s!" The new block also binds {quoted block.deeper}, which the old one left on the stack: where the body takes {it} from the stack, remove what takes {it} and write the name instead, since {them} {if block.deeper.length == 1 then "is" else "are"} no longer there."
+          s!" Write {names block.block} in `{block.word}`: the block takes the inputs from the top of the stack, so for each name the stack effect declares to hold the value it gives that name, the block must bind every input from the deepest such name up to the top.{renamed}{deeper}"
         (s!"A `locals` block binds the word's inputs in a different order from its stack effect: " ++
             "; ".intercalate described ++ ".",
-          s!"A `locals` block takes one value off the stack for each name, the last name from the top, so the names must follow the stack effect's inputs from left to right. Write {fixes}, and keep the bodies as they are: each name then holds the value the stack effect gives it. Swapping values with `swap` would not help, because the names are what is wrong.")
+          s!"A `locals` block takes one value off the stack for each name, the last name from the top, so the names must follow the stack effect's inputs from left to right.{plainFix}{String.join reachingFix} Swapping values with `swap` would not help, because the names are what is wrong.")
     | _ =>
         let expected := match error.expected with
           | some expected => s!", expected `{expected}`"

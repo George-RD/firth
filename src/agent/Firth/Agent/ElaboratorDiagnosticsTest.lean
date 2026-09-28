@@ -373,6 +373,50 @@ def runElaboratorDiagnosticTests : IO Unit := do
       unless (encode envelope).contains "Write `locals { a b }` in `difference`" do
         fail s!"reversed same-typed locals: {encode envelope}"
   | _ => fail "reversed same-typed locals were accepted"
+  -- A block that binds only some inputs, or mixes in names the effect does
+  -- not declare, cannot be fixed by renaming its binders alone: the body
+  -- still uses the old names. The report says the whole edit, and applying
+  -- exactly what it says must make the program check. Each case also
+  -- carries the edit the earlier report suggested ("keep the body as it
+  -- is"), which must still be refused: that is the planted wrong hint.
+  let reachingLocals : List (String × String × List String × String × String) := [
+    ("fresh name beside a declared one",
+      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x a prim - };",
+      ["Write `locals { a b }` in `sub`: the block takes the inputs from the top of the stack",
+        "In its body, write `a` for `x`"],
+      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } { a a prim - };",
+      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } { x a prim - };"),
+    ("declared name for a shallower input",
+      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a } { drop a };",
+      ["Write `locals { a b }` in `sub`: the block takes the inputs from the top of the stack",
+        "The new block also binds `a`, which the old one left on the stack: where the body takes it from the stack, remove what takes it and write the name instead"],
+      -- The `drop` took `a` from the stack, so it goes.
+      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } { a };",
+      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { b } { drop a };"),
+    ("repeated label",
+      ": rep\n  (forall ρ; ρ a:Int^many n:Int^many n:Int^many -- ρ r:Int^many)\n  locals { x a } { x a prim + };",
+      ["Write `locals { a n n2 }` in `rep`: the block takes the inputs from the top of the stack",
+        "In its body, write `n` for `x`",
+        "The new block also binds `a`, which the old one left on the stack"],
+      ": rep\n  (forall ρ; ρ a:Int^many n:Int^many n:Int^many -- ρ r:Int^many)\n  locals { a n n2 } { n a prim + };",
+      ": rep\n  (forall ρ; ρ a:Int^many n:Int^many n:Int^many -- ρ r:Int^many)\n  locals { n n } { x a prim + };")]
+  for (label, source, needles, fixed, earlier) in reachingLocals do
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .failure [envelope] =>
+        let emitted := encode envelope
+        expectValidCode label "firth.name.locals-order" emitted
+        for needle in needles do
+          unless emitted.contains needle do
+            fail s!"{label}: the report does not say {needle}: {emitted}"
+        if emitted.contains "keep the body" then
+          fail s!"{label}: the report says to keep the body: {emitted}"
+    | _ => fail s!"{label}: expected one diagnostic"
+    match elaboratePipeline pipelineContext fixed agentConfig with
+    | .success _ => pure ()
+    | .failure diagnostics => fail s!"{label}: the edit the report suggests does not check: {diagnostics.map encode}"
+    match elaboratePipeline pipelineContext earlier agentConfig with
+    | .success _ => fail s!"{label}: the earlier suggestion was accepted"
+    | .failure _ => pure ()
   match elaboratePipeline pipelineContext
       s!": pair {repeated} locals \{ n n2 } \{ n n2 prim + } ;" agentConfig with
   | .success _ => pure ()

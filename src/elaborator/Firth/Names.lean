@@ -128,37 +128,58 @@ private partial def resolveScope (keys vocabularies : List String) (external : S
       let outside ← resolveScope keys vocabularies external scopeName uses rest
       return inside ++ outside
 
-/-- The names of the `locals` block that opens a word's body, each with the
-input it binds and that input's type, when a name the stack effect gives to
-one input binds another. The block binds the inputs the last name to the
-top, so `locals { b a }` for inputs `a b` binds `b` to the value the effect
-calls `a`; when the two share a type the body still checks and computes the
-wrong result. Names the effect does not declare, and blocks that reach below
-the declared inputs, are left to the checker. -/
-private def misorderedInputLocals (word : WordDefinition) :
-    Option (LocatedName × List (String × String × String)) :=
+/-- The `locals` block that opens a word's body, when a name the stack
+effect gives to one input binds another. The block binds the inputs the last
+name to the top, so `locals { b a }` for inputs `a b` binds `b` to the value
+the effect calls `a`; when the two share a type the body still checks and
+computes the wrong result. Names the effect does not declare, and blocks that
+reach below the declared inputs, are left to the checker.
+
+The block to write binds every input from the deepest one the block names up
+to the top, each under its own name, so that every declared name holds the
+value the stack effect gives it. When the old block was a reordering of those
+names the body stays as it is; otherwise the body must write an input's name
+for each undeclared name that bound it, and stop taking off the stack the
+inputs the new block now binds. -/
+private def misorderedInputLocals (word : WordDefinition) : Option (LocatedName × LocalsBlock) :=
   match word.body with
   | .locals names _ _ :: _ =>
       let inputs := word.effect.input.filterMap fun
         | .value name type _ => some (name, type.name)
         | .row _ _ => none
       if names.length > inputs.length then none else
-      let pairs := names.zip (inputs.drop (inputs.length - names.length))
+      let start := inputs.length - names.length
+      let pairs := names.zip (inputs.drop start)
       let declared := inputs.map (·.1)
       (pairs.find? fun (bound, input, _) => declared.contains bound.name && bound.name != input).map
-        fun (bound, _) => (bound, pairs.map fun (bound, input, type) => (bound.name, input, type))
+        fun (bound, _) =>
+          -- The deepest input the block names, by the name the effect gives it.
+          let named := names.filterMap fun name => declared.idxOf? name.name
+          let from_ := named.foldl min start
+          -- `locals` refuses a repeated name, so a label the effect repeats
+          -- is numbered from its second use, as `n n2`.
+          let numbered := (declared.foldl (fun (seen, out) name =>
+              let count := (seen.filter (· == name)).length
+              (name :: seen, out ++ [if count == 0 then name else s!"{name}{count + 1}"]))
+            (([] : List String), ([] : List String))).2
+          let renames := (names.zip (numbered.drop start)).filterMap fun (bound, input) =>
+            if declared.contains bound.name then none else some (bound.name, input)
+          (bound, { word := word.name
+                    pairs := pairs.map fun (bound, input, type) => (bound.name, input, type)
+                    block := numbered.drop from_
+                    renames
+                    deeper := (numbered.drop from_).take (start - from_) })
   | _ => none
 
 /-- Every word whose opening `locals` block binds its inputs out of order,
 refused as one `firth.name.locals-order` error at the first such name, so an
 author sees each block to fix in one report. -/
 def checkInputLocals (words : List WordDefinition) : Except ParseError Unit :=
-  match words.filterMap (fun word => (misorderedInputLocals word).map (word.name, ·)) with
+  match words.filterMap misorderedInputLocals with
   | [] => pure ()
-  | blocks@((word, bound, _) :: _) =>
+  | blocks@((bound, block) :: _) =>
       throw { code := "firth.name.locals-order", primary := bound.span, cause := .validation,
-              actual := some word,
-              localsBlocks := blocks.map fun (word, _, pairs) => (word, pairs) }
+              actual := some block.word, localsBlocks := blocks.map (·.2) }
 
 /-- Resolve lexical imports and canonical word names before erasure/checking.
 Local names remain sugar; they must not be rewritten into dictionary calls.
