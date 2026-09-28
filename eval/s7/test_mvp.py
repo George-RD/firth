@@ -190,6 +190,33 @@ def feedback_keeps_hints() -> None:
           "feedback keeps a hint that holds an apostrophe")
 
 
+def subagent_audit() -> None:
+    # The audit is what stands in for a sandbox around a sub-agent author, so
+    # it must flag a planted read of the hidden tests, a shell call and an
+    # answer file changed after the author wrote it.
+    import tempfile
+    from audit_subagent import audit
+    with tempfile.TemporaryDirectory() as tmp:
+        d = Path(tmp)
+        prompt, ans = d / "prompt-firth.md", d / "answer-1.md"
+        prompt.write_text("p")
+        ans.write_text("### task: sort\n")
+
+        def call(name, **inp):
+            return {"type": "assistant", "timestamp": "t",
+                    "message": {"model": "m", "content": [{"type": "tool_use", "name": name, "input": inp}]}}
+        ok = [call("Read", file_path=str(prompt)), call("Write", file_path=str(ans), content=ans.read_text()),
+              call("Read", file_path=str(d / "repair-1.md"))]
+        check(audit(ok, prompt, d, d)[1] == [], "the audit passes a prompt read, an answer write and feedback")
+        for what, ev in (("a read of the hidden tests", call("Read", file_path=str(HERE / "mvp_tasks.py"))),
+                         ("a shell call", call("Bash", command="cat eval/s7/reference/mvp/sort.firth")),
+                         ("a write outside the author's files", call("Write", file_path=str(HERE / "x.py"), content="")),
+                         ("a read of another directory's feedback", call("Read", file_path="/elsewhere/repair-1.md"))):
+            check(len(audit(ok + [ev], prompt, d, d)[1]) == 1, f"the audit flags {what}")
+        ans.write_text("### task: sort\nchanged\n")
+        check(len(audit(ok, prompt, d, d)[1]) == 1, "the audit flags an answer changed after it was written")
+
+
 def unsandboxed_python_refused() -> None:
     real = harness.os.geteuid
     try:
@@ -219,6 +246,7 @@ def main() -> int:
     hashes_recorded()
     rounds_prompt()
     feedback_keeps_hints()
+    subagent_audit()
     unsandboxed_python_refused()
     if "--no-firth" not in sys.argv:
         firth_references()

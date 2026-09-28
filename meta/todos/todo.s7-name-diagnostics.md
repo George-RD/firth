@@ -1,10 +1,13 @@
 ---
 node: firth.toolchain.agent
-status: open
+status: done
 created: 2026-09-28
 ---
 
 # Name diagnostics that steer an author to `locals`
+
+Done in #142 (`cec3707`). S7 run 5 measured the effect: Haiku's first answers
+had 1 and 0 unresolved-name failures in two samples, down from 20.
 
 Found in S7 run 4 (`eval/s7/runs/2026-09-28-mvp/`, see `eval/s7/README.md`).
 Haiku 4.5 failed all 20 MVP tasks in all three answers for one reason. It

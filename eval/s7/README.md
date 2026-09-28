@@ -368,11 +368,13 @@ author's own inputs, and the rounds are limited to two.
 scoring (`python_sandboxed`). The authors themselves were *not*
 process-isolated: a sub-agent has the same shell and files as the session,
 so it could have read `mvp_tasks.py` or the references. What covers that gap
-is the transcript audit. Each `transcript.json` lists every tool call the
-author made. All 21 calls across the four authors were Reads of their own
-prompt or feedback file, Writes of their own answer file, or the hand-back,
-and nothing else. The audit script was checked against a planted transcript
-with a `cat mvp_tasks.py` and a Read of a reference, and it flagged both. A
+is the transcript audit, `audit_subagent.py`. It writes each
+`transcript.json` from the sub-agent's log: every tool call the author made,
+and anything it flags. All 21 calls across the four authors were Reads of their own
+prompt or feedback file, Writes of their own answer file (each matching the
+kept answer by SHA-256), or the hand-back, and nothing else. `test_mvp.py`
+plants a read of `mvp_tasks.py`, a shell call, a stray write, another
+directory's feedback and a changed answer, and the audit flags each one. A
 sub-agent also sees the repository's `AGENTS.md` in its context, which
 describes Firth but gives no syntax.
 
@@ -468,11 +470,11 @@ envelope cut to 300 characters in place of the checker's message.
   reports as `firth.type.branch-mismatch`. With the one branch fixed
   (`[ drop result ]` to `[ result ]`), `keep-positive` passes its example.
   Recorded in `meta/todos/todo.s7-untracked-local-misreport.md`.
-- Two samples, three answers each. The transcripts are clean: every call was
+- Two samples, three answers each. The transcripts are clean (`audit_subagent.py`): every call was
   a read of the prompt or feedback or a write of the answer, and each
-  recorded write matches the answer that was scored (checked with a planted
-  change to one answer). Sample 1's directory was renamed after the run, so
-  its transcript's paths say `haiku-firth/`.
+  recorded write matches the answer that was scored. Sample 1 wrote to a
+  directory named `haiku-firth/`, renamed `haiku-firth-1/` afterwards; the
+  audit was given both (`--dir`, `--kept`).
 
 ## What the three runs say about the bet
 
