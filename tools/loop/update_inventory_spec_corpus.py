@@ -15,6 +15,13 @@ Usage: python3 tools/loop/update_inventory_spec_corpus.py [--check]
 
 `--check` exits non-zero if the checked-in file differs from what the corpus
 gives, so a corpus change cannot leave the check stale.
+`test_update_inventory_spec_corpus.py` plants stale output and an edited corpus
+and requires `--check` to reject both.
+
+Language need (AGENTS.md rule 5): the allocator's proofs show the program
+computes `allocateAll`, which is only worth something if `allocateAll` is the
+contract's rule. This ties the Lean statement to the frozen corpus's expected
+results, which were written independently of it (rule 10).
 """
 from __future__ import annotations
 
