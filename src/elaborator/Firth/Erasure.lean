@@ -34,6 +34,55 @@ structure LostTrack where
   span : Span
   deriving Repr, BEq
 
+/-- The first operation in a branch that takes a value the branch did not
+push itself. Values are named by the source that pushed them, such as `xs`,
+`0` or "the result of `prim +`". Diagnostics only. -/
+structure BranchReach where
+  /-- The operation, as written: `check-pair`, `prim seq-int.push`, `swap`. -/
+  operation : String
+  /-- What it takes, bottom to top: a word's declared inputs (`xs:Seq Int`),
+  a primitive's input types, or nothing for a stack atom. -/
+  inputs : List String := []
+  /-- The types it declares for what it takes, bottom to top, when it
+  declares them: a word's or a primitive's. Empty for a stack atom, which
+  takes values of any type. -/
+  types : List String := []
+  count : Nat
+  /-- The branch's own values it found, bottom to top. -/
+  own : List String := []
+  /-- The values from below the `if` it takes, bottom to top. -/
+  below : List String := []
+  /-- How many more it takes that are not there at all. -/
+  missing : Nat := 0
+  /-- Whether the word's inputs were bound by a `locals` block, so nothing of
+  them is left on the stack. -/
+  inLocals : Bool := false
+  /-- Whether the operation is inside a quotation within the branch, such as
+  a branch of an inner `if`, rather than in the branch itself. -/
+  nested : Bool := false
+  deriving Repr, BEq
+
+/-- What one branch of an `if` does, value by value. Diagnostics only. -/
+structure BranchAccount where
+  /-- The first operation that takes a value that is not there, or failing
+  that the first that takes a value from below the `if`. -/
+  reach : Option BranchReach := none
+  /-- The values from below the `if` the branch takes, in the order it takes
+  them, and how many more it takes that are not there at all. -/
+  took : List String := []
+  missing : Nat := 0
+  /-- The values the branch leaves above what it took, bottom to top. -/
+  leaves : List String := []
+  deriving Repr, BEq
+
+/-- Both branches of an `if`, and the start of its true branch as written, so
+a message can say which `if` it means without a location. Diagnostics only. -/
+structure IfAccount where
+  trueSource : String
+  onTrue : BranchAccount
+  onFalse : BranchAccount
+  deriving Repr, BEq
+
 /-- For a depth-mismatched `if`: what the condition and the values its
 branches take below it are looked for in place of. `reached` names the unused
 locals among them: a block's unused locals are names, not values on the stack.
@@ -64,6 +113,7 @@ inductive ErasureError where
   run on the same stack and must leave the same one, so the program is
   ill-typed wherever the `if` sits. -/
   | branchShape (span : Span) (onTrue onFalse : Nat × Nat) (locals : BranchLocals := {})
+      (account : Option IfAccount := none)
   /-- An operation would take a local that is not yet used, and it could not
   be moved out of the way. A block's locals are off the stack for its body. -/
   | hiddenLocal (name : String) (span : Span)
@@ -1199,7 +1249,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
             match eraseSubjectWithProof depth env (.item item visible) { state with stack := focused } with
             -- The local was moved out of the way before the `if` ran, so
             -- name the locals it reaches for from the stack before the move.
-            | .error (.branchShape span onTrue onFalse _) =>
+            | .error (.branchShape span onTrue onFalse _ _) =>
                 .error (.branchShape span onTrue onFalse (branchLocals state.stack onTrue onFalse))
             | .error error => .error error
             | .ok inner => .ok {

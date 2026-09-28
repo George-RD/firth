@@ -396,9 +396,8 @@ def runElaboratorDiagnosticTests : IO Unit := do
   | .failure [envelope] =>
       let emitted := encode envelope
       expectValidCode "branch shape" "firth.type.branch-mismatch" emitted
-      if emitted.contains "the true branch pushes 1 value, and the false branch leaves the stack as it is. So the true branch leaves 1 value more than the false branch." &&
-          emitted.contains "If the values below those already agree, either add `drop` at the end of the true branch, or make the false branch push 1 value more" &&
-          emitted.contains "in `keep-positive`" &&
+      if emitted.contains "The two branches of the `if` in `keep-positive` whose true branch is `[ x ]` leave different numbers of values. The true branch leaves `x`; the false branch leaves nothing." &&
+          emitted.contains "`x` is left by the true branch alone. If nothing is meant to use it, the mistake is where it is pushed" &&
           emitted.contains "\"start\":{\"line\":2,\"column\":39}" &&
           !emitted.contains "untracked" && !emitted.contains "are fine" then pure ()
       else fail s!"an if with branches of different depths was not reported at the if: {emitted}"
@@ -451,10 +450,10 @@ def runElaboratorDiagnosticTests : IO Unit := do
     ": g (forall ρ; ρ x:Int^many -- ρ r:Int^many)\n  locals { x } {\n    0 x prim <\n    [ 1 x prim < [ 2 x prim < [ x ] [ ] if ] [ 0 ] if ]\n    [ 0 ]\n    if\n    x prim + } ;"
     4 41
 
-  -- Branch mismatches as the authoring eval met them. Each report must say
-  -- what each branch does, which one leaves more and by how many, and an edit
-  -- that makes them agree. `branchReport` holds those checks, and the reports
-  -- the eval recorded before this change must fail them.
+  -- Branch mismatches as the authoring eval met them. Each report must name
+  -- the operation or the values responsible, from the source as written,
+  -- and say which `if` it means. `branchReport` holds those checks, and the
+  -- reports the eval recorded before this change must fail them.
   let branchReport (label source : String) (needles : List String) : IO Unit := do
     match elaboratePipeline pipelineContext source agentConfig with
     | .failure [envelope] =>
@@ -469,29 +468,29 @@ def runElaboratorDiagnosticTests : IO Unit := do
     needles.any (!report.contains ·)
   -- longest-run (eval/s7/runs/2026-09-28-haiku-cec3707/haiku-firth-2,
   -- answer 1): the loop is called with one argument too few, so the false
-  -- branch takes a value from below the `if`.
+  -- branch takes a value from below the `if`. The report names the call and
+  -- the inputs it takes, and what the branch pushed for it.
   let longestRun := [
-    "The two branches of `if` in `main` leave different numbers of values",
-    "the true branch pushes 1 value, and the false branch takes 1 value from the stack below the `if` and leaves 1 value",
-    "The false branch takes 1 value from below the `if` that this code does not have",
-    "Push what the branch needs inside the branch"]
+    "In the false branch of the `if` in `main` whose true branch is `[ 0 ]`, `longest-run-loop` needs 5 values (prev:Int, curr-run:Int, max-run:Int, idx:Int, xs:Seq Int), but the branch has pushed only 4 values before it (the result of `prim seq-int.at`, `1`, `1` and `xs`)",
+    "where there is none: everything the word was given is bound to locals or already used",
+    "Push every value `longest-run-loop` takes inside the branch, just before it and in this order: prev:Int, curr-run:Int, max-run:Int, idx:Int, xs:Seq Int"]
   branchReport "longest-run" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ length:Int^many)\n  locals { xs } {\n    xs prim seq-int.len 0 prim =\n    [ 0 ]\n    [ xs 0 prim seq-int.at 1 1 xs longest-run-loop ] if\n  };\n\n: longest-run-loop\n  (forall ρ; ρ prev:Int^many curr-run:Int^many max-run:Int^many idx:Int^many xs:Seq Int^many -- ρ result:Int^many)\n  locals { prev curr-run max-run idx xs } {\n    idx xs prim seq-int.len prim =\n    [ max-run curr-run prim < [ curr-run ] [ max-run ] if ]\n    [\n      xs idx prim seq-int.at dup prev prim =\n      [ curr-run 1 prim + ] [ 1 swap ] if\n      idx 1 prim +\n      xs\n      longest-run-loop\n    ]\n    if\n  };" longestRun
   -- keep-positive (the same run, answer 1): the false branch pushes the
   -- sequence on top of the element it means to append, so it takes a Seq Int
-  -- where there is an Int. Both answers are copied verbatim.
+  -- where there is an Int. Both answers are copied verbatim. The report says
+  -- what `prim seq-int.push` takes and what it gets, in order.
   let keepPositive := [
-    "The false branch of `if` in `keep-positive-loop` cannot run on the stack it is given",
-    "The top value there is Int, but the false branch expects Seq Int",
-    "`swap` exchanges the top two"]
+    "In the false branch of the `if` in `keep-positive-loop` whose true branch is `[ drop result ]`, `prim seq-int.push` takes 2 values (Seq Int, Int, bottom to top). It gets, bottom to top, the result of `prim seq-int.at` from below the `if` and `result`.",
+    "Check that it gets the values it should, in its order"]
   branchReport "keep-positive" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ positives:Seq Int^many)\n  locals { xs } { prim seq-int.empty 0 xs keep-positive-loop };\n\n: keep-positive-loop\n  (forall ρ; ρ result:Seq Int^many idx:Int^many xs:Seq Int^many -- ρ final:Seq Int^many)\n  locals { result idx xs } {\n    idx xs prim seq-int.len prim =\n    [ result ]\n    [\n      xs idx prim seq-int.at dup 0 prim <\n      [ drop result ]\n      [ result prim seq-int.push ] if\n      idx 1 prim +\n      xs\n      keep-positive-loop\n    ]\n    if\n  };" keepPositive
   -- The same depth, different types.
   let differentTypes := [
     "the true branch leaves ρ Int and the false branch leaves ρ Bool",
     "the top value is Int after the true branch and Bool after the false branch"]
   branchReport "different types" ": g (forall ρ; ρ -- ρ r:Int^many)\n  0 1 prim < [ 1 ] [ true ] if ;" differentTypes
-  -- Two values too many: the hint gives both `drop`s.
-  let twoExtra := ["So the true branch leaves 2 values more than the false branch",
-    "either add `drop drop` at the end of the true branch"]
+  -- Two values too many: the report names both, and where they are left.
+  let twoExtra := ["The true branch leaves 3 values, bottom to top: `1`, `2` and `3`; the false branch leaves `4`.",
+    "The true branch leaves 2 values more than the false branch: `1` and `2` are left below `3`."]
   branchReport "two extra" ": g (forall ρ; ρ -- ρ r:Int^many)\n  0 1 prim < [ 1 2 3 ] [ 4 ] if ;" twoExtra
   -- A branch, or the `if` itself, reaching for a local as if it were on the
   -- stack, or below everything the word was given: the commonest mistake in
@@ -524,14 +523,14 @@ def runElaboratorDiagnosticTests : IO Unit := do
       -- The earlier suggestion: a `drop` to even out the branches.
       ": main\n  (forall ρ; ρ p:Bool^many q:Bool^many -- ρ r:Bool^many)\n  locals { p q } { [ q drop ] [ drop false ] if };"),
     ("lcm (2026-09-27-hard/haiku-firth-2, answer 1)", ": lcm\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } {\n    a b gcd\n    a b prim *\n    swap\n    prim -\n    0 prim =\n    [\n      a b prim *\n    ]\n    [\n      a b prim * swap prim -\n    ]\n    if\n  };\n\n: gcd\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } {\n    b 0 prim =\n    [ a ]\n    [\n      a b prim =\n      [ b ]\n      [\n        b a b prim - gcd\n      ]\n      if\n    ]\n    if\n  };",
-      ["The false branch takes 1 value from below the `if` that this code does not have",
-        "computing the value there"],
+      ["In the false branch of the `if` in `lcm` whose true branch is `[ a b prim * ]`, `swap` needs 2 values, but the branch has pushed only 1 value before it (the result of `prim *`).",
+        "Remove it, or push the values it should work on first."],
       -- The value the false branch reaches for, computed inside it.
       ": lcm\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } {\n    a b gcd\n    a b prim *\n    swap\n    prim -\n    0 prim =\n    [\n      a b prim *\n    ]\n    [\n      a b prim * a b gcd prim -\n    ]\n    if\n  };\n\n: gcd\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } {\n    b 0 prim =\n    [ a ]\n    [\n      a b prim =\n      [ b ]\n      [\n        b a b prim - gcd\n      ]\n      if\n    ]\n    if\n  };",
       ": lcm\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } {\n    a b gcd\n    a b prim *\n    swap\n    prim -\n    0 prim =\n    [\n      a b prim * drop\n    ]\n    [\n      a b prim * swap prim -\n    ]\n    if\n  };\n\n: gcd\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } {\n    b 0 prim =\n    [ a ]\n    [\n      a b prim =\n      [ b ]\n      [\n        b a b prim - gcd\n      ]\n      if\n    ]\n    if\n  };"),
     ("digit-sum (2026-09-27-hard/haiku-firth-2, answer 2)", ": digit-sum-loop\n  (forall ρ; ρ s:Int^many n:Int^many -- ρ r:Int^many)\n  locals { s n } {\n    n 0 prim =\n    [\n      s\n    ]\n    [\n      n 10 prim -\n      0 prim =\n      [\n        s n prim +\n      ]\n      [\n        s n prim - prim +\n        n 10 prim -\n        digit-sum-loop\n      ]\n      if\n    ]\n    if\n  };\n\n: main\n  (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  locals { n } {\n    0 n digit-sum-loop\n  };",
-      ["The false branch takes 1 value from below the `if` that this code does not have",
-        "remove the operation that takes it if it should not be there"],
+      ["In the false branch of the `if` in `digit-sum-loop` whose true branch is `[ s n prim + ]`, `prim +` needs 2 values (Int, Int), but the branch has pushed only 1 value before it (the result of `prim -`).",
+        "If `prim +` should not be in this branch, remove it."],
       -- The operation that takes it, removed.
       ": digit-sum-loop\n  (forall ρ; ρ s:Int^many n:Int^many -- ρ r:Int^many)\n  locals { s n } {\n    n 0 prim =\n    [\n      s\n    ]\n    [\n      n 10 prim -\n      0 prim =\n      [\n        s n prim +\n      ]\n      [\n        s n prim -\n        n 10 prim -\n        digit-sum-loop\n      ]\n      if\n    ]\n    if\n  };\n\n: main\n  (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  locals { n } {\n    0 n digit-sum-loop\n  };",
       ": digit-sum-loop\n  (forall ρ; ρ s:Int^many n:Int^many -- ρ r:Int^many)\n  locals { s n } {\n    n 0 prim =\n    [\n      s\n    ]\n    [\n      n 10 prim -\n      0 prim =\n      [\n        s n prim + drop\n      ]\n      [\n        s n prim - prim +\n        n 10 prim -\n        digit-sum-loop\n      ]\n      if\n    ]\n    if\n  };\n\n: main\n  (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  locals { n } {\n    0 n digit-sum-loop\n  };")]
@@ -541,6 +540,159 @@ def runElaboratorDiagnosticTests : IO Unit := do
     checks s!"{label}, with the suggested edit" fixed true
     checks s!"{label}, with the earlier suggested edit" earlier false
   noEvening "longest-run" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ length:Int^many)\n  locals { xs } {\n    xs prim seq-int.len 0 prim =\n    [ 0 ]\n    [ xs 0 prim seq-int.at 1 1 xs longest-run-loop ] if\n  };\n\n: longest-run-loop\n  (forall ρ; ρ prev:Int^many curr-run:Int^many max-run:Int^many idx:Int^many xs:Seq Int^many -- ρ result:Int^many)\n  locals { prev curr-run max-run idx xs } {\n    idx xs prim seq-int.len prim =\n    [ max-run curr-run prim < [ curr-run ] [ max-run ] if ]\n    [\n      xs idx prim seq-int.at dup prev prim =\n      [ curr-run 1 prim + ] [ 1 swap ] if\n      idx 1 prim +\n      xs\n      longest-run-loop\n    ]\n    if\n  };"
+  -- Run 7 (eval/s7/runs/2026-09-28-haiku-c6a964a/haiku-firth-2): answers
+  -- copied verbatim, each with the edit its new report suggests and the
+  -- report the eval recorded for it, taken from the results file. The edit
+  -- must remove the mistake at this `if`: the program either checks or is
+  -- refused for something else, elsewhere. Most of these answers have more
+  -- than one mistake, so the next report is expected. The recorded report
+  -- must fail the needles, which is the planted old message.
+  let firstReport (source : String) : Option (String × String) :=
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .success _ => none
+    | .failure [] => none
+    | .failure (envelope :: _) =>
+        match Lean.Json.parse (encode envelope) with
+        | .ok json =>
+            let body := json.getObjValD "body"
+            some ((body.getObjValD "code").compress,
+              ((body.getObjValD "location").getObjValD "range").compress)
+        | .error _ => some ("unparsed", "")
+  let runSeven : List (String × String × List String × String × String) := [
+    ("has-pair-sum (answer 1)",
+      ": main\n  (forall ρ; ρ xs:Seq Int^many target:Int^many -- ρ found:Bool^many)\n  swap 0 false swap find-pair;\n\n: find-pair\n  (forall ρ; ρ xs:Seq Int^many idx:Int^many found:Bool^many target:Int^many -- ρ found:Bool^many)\n  locals { xs idx found target } {\n    found [\n      true\n    ] [\n      idx xs prim seq-int.len prim < [\n        idx 1 prim + check-pair\n      ] [ false ] if\n    ] if\n  };\n\n: check-pair\n  (forall ρ; ρ xs:Seq Int^many i:Int^many j:Int^many target:Int^many -- ρ found:Bool^many)\n  locals { xs i j target } {\n    j xs prim seq-int.len prim < [\n      i xs prim seq-int.at j xs prim seq-int.at prim + target prim = [\n        true\n      ] [\n        xs i j 1 prim + target check-pair\n      ] if\n    ] [\n      xs i 1 prim + find-pair\n    ] if\n  };\n",
+      ["In the true branch `[ idx 1 prim + check-pair ]` of the `if` in `find-pair`, `check-pair` needs 4 values (xs:Seq Int, i:Int, j:Int, target:Int), but the branch has pushed only 1 value before it (the result of `prim +`).",
+        "Push every value `check-pair` takes inside the branch, just before it and in this order: xs:Seq Int, i:Int, j:Int, target:Int"],
+      -- Every input of `check-pair` pushed in the branch, in its order.
+      ": main\n  (forall ρ; ρ xs:Seq Int^many target:Int^many -- ρ found:Bool^many)\n  swap 0 false swap find-pair;\n\n: find-pair\n  (forall ρ; ρ xs:Seq Int^many idx:Int^many found:Bool^many target:Int^many -- ρ found:Bool^many)\n  locals { xs idx found target } {\n    found [\n      true\n    ] [\n      idx xs prim seq-int.len prim < [\n        xs idx idx 1 prim + target check-pair\n      ] [ false ] if\n    ] if\n  };\n\n: check-pair\n  (forall ρ; ρ xs:Seq Int^many i:Int^many j:Int^many target:Int^many -- ρ found:Bool^many)\n  locals { xs i j target } {\n    j xs prim seq-int.len prim < [\n      i xs prim seq-int.at j xs prim seq-int.at prim + target prim = [\n        true\n      ] [\n        xs i j 1 prim + target check-pair\n      ] if\n    ] [\n      xs i 1 prim + find-pair\n    ] if\n  };\n",
+      "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `find-pair` leave different numbers of values: the true branch takes 3 values from the stack below the `if` and leaves 1 value, and the false branch pushes 1 value. The true branch takes 3 values from below the `if` that this code does not have: everything it was given is bound to locals or already used, so those values belong to the caller.\nhint: Push what the branch needs inside the branch, by writing a local's name or computing the value there, or remove the operation that takes it if it should not be there. If the branch means to use a value computed before the `if`, keep a copy of it before the condition (for example with `dup`). Adding a `drop` or pushing values to even out the branches would only move the mistake."),
+    ("sort (answer 1)",
+      ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Seq Int^many)\n  dup prim seq-int.len 0 insertion-sort;\n\n: insertion-sort\n  (forall ρ; ρ xs:Seq Int^many len:Int^many idx:Int^many -- ρ sorted:Seq Int^many)\n  locals { xs len idx } {\n    idx len prim < [\n      idx xs insert-at xs len idx 1 prim + insertion-sort\n    ] [ xs ] if\n  };\n\n: insert-at\n  (forall ρ; ρ xs:Seq Int^many idx:Int^many -- ρ sorted:Seq Int^many)\n  locals { xs idx } {\n    idx 0 prim = [\n      xs\n    ] [\n      idx 1 prim - xs prim seq-int.at idx xs prim seq-int.at prim < [\n        idx 1 prim - idx xs prim seq-int.at xs prim seq-int.set\n        idx 1 prim - xs prim seq-int.at xs idx 1 prim - prim seq-int.set\n        idx 1 prim - xs insert-at\n      ] [ xs ] if\n    ] if\n  };\n",
+      ["The true branch leaves 2 values, bottom to top: the result of `insert-at` and the result of `insertion-sort`; the false branch leaves `xs`.",
+        "the result of `insert-at` is left below the result of `insertion-sort`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it"],
+      -- The result of `insert-at` passed to `insertion-sort` as its sequence.
+      -- The edit also puts `insert-at`'s arguments in its order (`xs idx`),
+      -- a second mistake the report does not name.
+      ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Seq Int^many)\n  dup prim seq-int.len 0 insertion-sort;\n\n: insertion-sort\n  (forall ρ; ρ xs:Seq Int^many len:Int^many idx:Int^many -- ρ sorted:Seq Int^many)\n  locals { xs len idx } {\n    idx len prim < [\n      xs idx insert-at len idx 1 prim + insertion-sort\n    ] [ xs ] if\n  };\n\n: insert-at\n  (forall ρ; ρ xs:Seq Int^many idx:Int^many -- ρ sorted:Seq Int^many)\n  locals { xs idx } {\n    idx 0 prim = [\n      xs\n    ] [\n      idx 1 prim - xs prim seq-int.at idx xs prim seq-int.at prim < [\n        idx 1 prim - idx xs prim seq-int.at xs prim seq-int.set\n        idx 1 prim - xs prim seq-int.at xs idx 1 prim - prim seq-int.set\n        idx 1 prim - xs insert-at\n      ] [ xs ] if\n    ] if\n  };\n",
+      "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `insertion-sort` leave different numbers of values: the true branch pushes 2 values, and the false branch pushes 1 value. So the true branch leaves 1 value more than the false branch.\nhint: If the values below those already agree, either add `drop` at the end of the true branch, or make the false branch push 1 value more, of the same type the true branch leaves on top. If they do not, the branches also leave different types, and each must be changed until both leave the same values. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack."),
+    ("all-true (answer 2)",
+      ": main\n  (forall ρ; ρ flags:Seq Bool^many -- ρ all:Bool^many)\n  dup prim seq-bool.len 0 prim = [\n    drop true\n  ] [\n    swap 0 true all-loop\n  ] if;\n\n: all-loop\n  (forall ρ; ρ flags:Seq Bool^many idx:Int^many result:Bool^many -- ρ all:Bool^many)\n  locals { flags idx result } {\n    result [\n      idx flags prim seq-bool.len prim < [\n        idx flags prim seq-bool.at [\n          flags idx 1 prim + true all-loop\n        ] [\n          false flags idx 1 prim + all-loop\n        ] if\n      ] [ true ] if\n    ] [ false ] if\n  };\n",
+      ["In the false branch of the `if` in `main` whose true branch is `[ drop true ]`, `swap` needs 2 values, but the branch has pushed nothing before it. It would take the input `flags` from below the `if`, and 1 value more that is not there",
+        "Check whether `swap` belongs in this branch"],
+      -- The `swap` removed.
+      ": main\n  (forall ρ; ρ flags:Seq Bool^many -- ρ all:Bool^many)\n  dup prim seq-bool.len 0 prim = [\n    drop true\n  ] [\n    0 true all-loop\n  ] if;\n\n: all-loop\n  (forall ρ; ρ flags:Seq Bool^many idx:Int^many result:Bool^many -- ρ all:Bool^many)\n  locals { flags idx result } {\n    result [\n      idx flags prim seq-bool.len prim < [\n        idx flags prim seq-bool.at [\n          flags idx 1 prim + true all-loop\n        ] [\n          false flags idx 1 prim + all-loop\n        ] if\n      ] [ true ] if\n    ] [ false ] if\n  };\n",
+      "code: firth.type.branch-mismatch\nmessage: The false branch of `if` in `main` cannot run on the stack it is given. Below the condition and the two quotations the stack is ρ Seq Bool, but the false branch takes .. Seq Bool ?t2.\nexpected: .. Seq Bool ?t2\nactual: ρ Seq Bool\nhint: The top value there is Seq Bool, but the false branch expects ?t2. Check the order of the values the branch uses (`swap` exchanges the top two), or what was pushed before the condition. Both branches run on the stack that is left once `if` has taken the condition and the two quotations, so each branch must start from that stack."),
+    ("ledger (answer 3)",
+      ": main\n  (forall ρ; ρ start:Int^many txs:Seq Int^many -- ρ balance:Int^many rejected:Int^many)\n  0 swap 0 process-txns;\n\n: process-txns\n  (forall ρ; ρ balance:Int^many rejected:Int^many txs:Seq Int^many idx:Int^many -- ρ final-bal:Int^many final-rej:Int^many)\n  locals { balance rejected txs idx } {\n    idx txs prim seq-int.len prim < [\n      balance idx txs prim seq-int.at prim + dup 0 prim < [\n        drop balance rejected 1 prim + txs idx 1 prim + process-txns\n      ] [\n        balance rejected txs idx 1 prim + process-txns\n      ] if\n    ] [ balance rejected ] if\n  };\n",
+      ["The true branch takes the result of `prim +` from below the `if` and leaves 2 values, bottom to top: the output `final-bal` of `process-txns` and the output `final-rej` of `process-txns`",
+        "The true branch takes the result of `prim +` from below the `if`, and the false branch leaves it in place, so after the false branch it is still on the stack. If the false branch should use it too, use it there"],
+      -- The false branch uses the new balance instead of the old one.
+      ": main\n  (forall ρ; ρ start:Int^many txs:Seq Int^many -- ρ balance:Int^many rejected:Int^many)\n  0 swap 0 process-txns;\n\n: process-txns\n  (forall ρ; ρ balance:Int^many rejected:Int^many txs:Seq Int^many idx:Int^many -- ρ final-bal:Int^many final-rej:Int^many)\n  locals { balance rejected txs idx } {\n    idx txs prim seq-int.len prim < [\n      balance idx txs prim seq-int.at prim + dup 0 prim < [\n        drop balance rejected 1 prim + txs idx 1 prim + process-txns\n      ] [\n        rejected txs idx 1 prim + process-txns\n      ] if\n    ] [ balance rejected ] if\n  };\n",
+      "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `process-txns` leave different numbers of values: the true branch takes 1 value from the stack below the `if` and leaves 2 values, and the false branch pushes 2 values. So the false branch leaves 1 value more than the true branch.\nhint: If the values below those already agree, either add `drop` at the end of the false branch, or make the true branch push 1 value more, of the same type the false branch leaves on top. If they do not, the branches also leave different types, and each must be changed until both leave the same values. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack."),
+    ("reverse (answer 2)",
+      ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ reversed:Seq Int^many)\n  dup prim seq-int.len prim seq-int.empty swap 0 reverse-loop;\n\n: reverse-loop\n  (forall ρ; ρ result:Seq Int^many xs:Seq Int^many len:Int^many idx:Int^many -- ρ reversed:Seq Int^many)\n  locals { result xs len idx } {\n    idx len prim < [\n      len idx 1 prim - prim - xs prim seq-int.at result prim seq-int.push\n      result xs len idx 1 prim + reverse-loop\n    ] [ result ] if\n  };\n",
+      ["The true branch leaves 2 values, bottom to top: the result of `prim seq-int.push` and the result of `reverse-loop`; the false branch leaves `result`.",
+        "the result of `prim seq-int.push` is left below the result of `reverse-loop`"],
+      -- The pushed sequence passed on instead of the old `result`.
+      ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ reversed:Seq Int^many)\n  dup prim seq-int.len prim seq-int.empty swap 0 reverse-loop;\n\n: reverse-loop\n  (forall ρ; ρ result:Seq Int^many xs:Seq Int^many len:Int^many idx:Int^many -- ρ reversed:Seq Int^many)\n  locals { result xs len idx } {\n    idx len prim < [\n      len idx 1 prim - prim - xs prim seq-int.at result prim seq-int.push\n      xs len idx 1 prim + reverse-loop\n    ] [ result ] if\n  };\n",
+      "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `reverse-loop` leave different numbers of values: the true branch pushes 2 values, and the false branch pushes 1 value. So the true branch leaves 1 value more than the false branch.\nhint: If the values below those already agree, either add `drop` at the end of the true branch, or make the false branch push 1 value more, of the same type the true branch leaves on top. If they do not, the branches also leave different types, and each must be changed until both leave the same values. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.")]
+  for (label, source, needles, fixed, recorded) in runSeven do
+    branchReport label source needles
+    noEvening label source
+    match firstReport source, firstReport fixed with
+    | some (_, at_), some (code, again) =>
+        if at_ == again then
+          fail s!"{label}: the suggested edit leaves a report ({code}) at the same `if`"
+    | none, _ => fail s!"{label}: the answer was accepted"
+    | some _, none => pure ()
+    unless needlesMissing recorded needles do
+      fail s!"{label}: the report the eval recorded already says what the new one does"
+  -- The planted wrong edit: pushing only some of the values `check-pair`
+  -- takes leaves the report at the same `if`, which the check above refuses.
+  match runSeven.head? with
+  | some (_, source, _, _, _) =>
+      let short := source.replace "idx 1 prim + check-pair" "idx 1 prim + target check-pair"
+      if short == source then fail "has-pair-sum: the planted edit did not apply"
+      match firstReport source, firstReport short with
+      | some (_, at_), some (_, again) =>
+          unless at_ == again do fail "has-pair-sum: the planted edit moved the report"
+      | _, _ => fail "has-pair-sum: the planted edit was accepted"
+  | none => fail "run 7: no fixtures"
+  -- all-true, answer 1: the true branch drops twice, and only the second
+  -- `drop` finds nothing. The report names that `drop` and the input the
+  -- first one took; removing it leaves the false branch's `swap`, which the
+  -- report then names at the same `if`.
+  let allTrueFirst := ": main\n  (forall ρ; ρ flags:Seq Bool^many -- ρ all:Bool^many)\n  dup prim seq-bool.len 0 prim = [\n    drop drop true\n  ] [\n    swap 0 true all-loop\n  ] if;\n\n: all-loop\n  (forall ρ; ρ flags:Seq Bool^many idx:Int^many result:Bool^many -- ρ all:Bool^many)\n  locals { flags idx result } {\n    result [\n      idx flags prim seq-bool.len prim < [\n        idx flags prim seq-bool.at [\n          flags idx 1 prim + true all-loop\n        ] [\n          false flags idx 1 prim + all-loop\n        ] if\n      ] [ true ] if\n    ] [ false ] if\n  };\n"
+  let allTrueNeedles := ["In the true branch `[ drop drop true ]` of the `if` in `main`, `drop` needs 1 value, but the branch has pushed nothing before it. Earlier in the branch, the input `flags` was already taken from below the `if`. The remaining 1 value would come from below the `if`, where there is none"]
+  branchReport "all-true (answer 1)" allTrueFirst allTrueNeedles
+  branchReport "all-true (answer 1, one `drop` removed)"
+    (allTrueFirst.replace "drop drop true" "drop true")
+    ["In the false branch of the `if` in `main` whose true branch is `[ drop true ]`, `swap` needs 2 values"]
+  unless needlesMissing "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different numbers of values: the true branch takes 2 values from the stack below the `if` and leaves 1 value, and the false branch takes 2 values from the stack below the `if` and leaves 2 values. The `if` takes 1 value from below the `if` that this code does not have: everything it was given is bound to locals or already used, so that value belongs to the caller.\nhint: Push what the branch needs inside the branch, by writing a local's name or computing the value there, or remove the operation that takes it if it should not be there. If the branch means to use a value computed before the `if`, keep a copy of it before the condition (for example with `dup`). Adding a `drop` or pushing values to even out the branches would only move the mistake." allTrueNeedles do
+    fail "all-true (answer 1): the report the eval recorded already says what the new one does"
+  -- A word whose effect has no row constrains the whole stack, not only
+  -- its inputs, which the account does not model: the report keeps the
+  -- checker's own account instead of naming what `h` gets.
+  match elaboratePipeline pipelineContext ": h ( x:Int^many -- y:Int^many ) ;\n\n: g (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) true [ h ] [ ] if prim + ;" agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "closed word" "firth.type.branch-mismatch" emitted
+      unless emitted.contains "The true branch of `if` in `g` cannot run on the stack it is given." do
+        fail s!"closed word: the report does not keep the checker's account: {emitted}"
+      if emitted.contains "`h` takes" || emitted.contains "`h` needs" then
+        fail s!"closed word: the report accounts for `h` as if it kept the stack below: {emitted}"
+  | _ => fail "closed word: expected one diagnostic"
+  -- A branch that reaches below the `if` with `dup`, which takes a value of
+  -- any type, and then fails on the type `prim +` needs: `dup` is not to
+  -- blame, so the report keeps the checker's typed account.
+  match elaboratePipeline pipelineContext ": g (forall ρ; ρ b:Bool^many -- ρ r:Int^many) true [ dup prim + ] [ drop 0 ] if ;" agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "dup before prim +" "firth.type.branch-mismatch" emitted
+      if emitted.contains "`dup` takes" then
+        fail s!"dup before prim +: the report blames `dup`: {emitted}"
+      unless emitted.contains "cannot run on the stack it is given" do
+        fail s!"dup before prim +: the report does not keep the checker's account: {emitted}"
+  | _ => fail "dup before prim +: expected one diagnostic"
+  -- The first `prim +` takes `b`, an Int as it needs; the second takes `a`,
+  -- a Bool. The first is not to blame, so the report keeps the checker's
+  -- typed account rather than saying what the first `prim +` gets.
+  match elaboratePipeline pipelineContext ": g (forall ρ; ρ a:Bool^many b:Int^many -- ρ r:Int^many) true [ 1 prim + prim + ] [ drop drop 0 ] if ;" agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "second prim +" "firth.type.branch-mismatch" emitted
+      if emitted.contains "`prim +` takes" then
+        fail s!"second prim +: the report blames the first `prim +`: {emitted}"
+  | _ => fail "second prim +: expected one diagnostic"
+  -- max, copied verbatim from eval/s7/runs/2026-09-27-plus-only/haiku-firth,
+  -- solutions-1.json: the `swap` before the `if` decides which input each
+  -- branch takes, so the report names them only if the walk exchanges them.
+  branchReport "max (swap before the if)" ": main\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  swap dup [ drop drop ] [ drop ] if;\n"
+    ["The true branch takes the input `a` and the input `b` from below the `if` and leaves nothing; the false branch takes the input `a` from below the `if` and leaves nothing."]
+  -- A `swap` inside the branch: after it `a` is on top, so the `drop`
+  -- uses up `a` and the branch leaves `b`, the value it took and put back.
+  branchReport "swap in a branch" ": g (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) true [ swap drop ] [ ] if ;"
+    ["The true branch takes the input `b` and the input `a` from below the `if` and leaves the input `b`; the false branch leaves nothing.",
+      "The true branch takes the input `a` from below the `if`, and the false branch leaves it in place"]
+  -- The same two cases with a word instead of `prim +`: `add` declares
+  -- `x:Int y:Int`. Where it gets a Bool from below the `if` it is to blame
+  -- and the report says what it gets; where it gets the Int it declares, a
+  -- later `prim not` is, and the checker's account is kept.
+  let addWord := ": add (forall ρ; ρ x:Int^many y:Int^many -- ρ r:Int^many) prim + ;\n\n"
+  branchReport "word given a Bool" (addWord ++ ": g (forall ρ; ρ a:Bool^many -- ρ r:Int^many) true [ 1 add ] [ drop 0 ] if ;")
+    ["In the true branch `[ 1 add ]` of the `if` in `g`, `add` takes 2 values (x:Int, y:Int, bottom to top). It gets, bottom to top, the input `a` from below the `if` and `1`."]
+  match elaboratePipeline pipelineContext (addWord ++ ": g (forall ρ; ρ a:Bool^many b:Int^many -- ρ r:Int^many) true [ 1 add drop 1 prim + ] [ drop drop 0 ] if ;") agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "word given its Int" "firth.type.branch-mismatch" emitted
+      if emitted.contains "`add` takes" then
+        fail s!"word given its Int: the report blames `add`: {emitted}"
+  | _ => fail "word given its Int: expected one diagnostic"
+  -- Values from below the `if` are named bottom to top, as the word's
+  -- inputs were given.
+  branchReport "two inputs from below"
+    ": h (forall ρ; ρ x:Int^many y:Int^many z:Int^many -- ρ r:Int^many) prim + prim + ;\n\n: g (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) true [ h ] [ prim + ] if ;"
+    ["In the true branch `[ h ]` of the `if` in `g`, `h` needs 3 values (x:Int, y:Int, z:Int), but the branch has pushed nothing before it. It would take the input `a` and the input `b` from below the `if`, and 1 value more that is not there"]
   -- A branch that cannot run on the stack it is given keeps the compared
   -- stacks in the envelope and in the `expected` and `actual` params, which
   -- the authoring harness prints as its expected: and actual: lines.
@@ -550,7 +702,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
   | .failure [envelope] =>
       let emitted := encode envelope
       expectValidCode "filter-helper" "firth.type.branch-mismatch" emitted
-      for needle in ["The false branch of `if` in `filter-helper` cannot run on the stack it is given",
+      for needle in ["In the false branch of the `if` in `filter-helper` whose true branch is `[ drop result ]`, `prim seq-int.push` takes 2 values (Seq Int, Int, bottom to top). It gets, bottom to top, the result of `prim seq-int.at` from below the `if` and `result`.",
           "\"expected\":\".. Seq Int\"", "\"actual\":\".. Seq Int Int Int\""] do
         unless emitted.contains needle do
           fail s!"filter-helper: the report does not say {needle}: {emitted}"
@@ -558,13 +710,11 @@ def runElaboratorDiagnosticTests : IO Unit := do
           emitted.contains (structuredStack "actual_stack" ".. Seq Int Int Int") do
         fail s!"filter-helper: the envelope's stacks are not the branch's input and the stack below the condition: {emitted}"
   | _ => fail "filter-helper: expected one diagnostic"
-  -- Counts and types both differ: the locals pass knows only the counts, so
-  -- its drop-or-push edit is offered only on condition that the values below
-  -- already agree (`[ 1 true ]` against `[ false ]` would still leave Int
-  -- against Bool after a `drop`).
+  -- Counts and types both differ: the report names the values each branch
+  -- leaves and offers no `drop`, which would still leave Int against Bool.
   branchReport "counts and types" ": g (forall ρ; ρ -- ρ r:Int^many)\n  0 1 prim < [ 1 true ] [ false ] if ;"
-    ["If the values below those already agree, either add `drop`",
-      "If they do not, the branches also leave different types"]
+    ["The true branch leaves 2 values, bottom to top: `1` and `true`; the false branch leaves `false`.",
+      "`1` is left below `true`"]
   -- The reports these programs got before this change: the two the eval
   -- recorded at cec3707, verbatim, and the locals-pass report that main gave
   -- longest-run from #145 on. Each must fail the checks above, or the checks
@@ -572,6 +722,8 @@ def runElaboratorDiagnosticTests : IO Unit := do
   let recordedBefore := [
     ("longest-run at cec3707", "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: ρ\nactual: .. Int\nhint: Both branches must leave the same number and types of values. Expected ρ, found .. Int.", longestRun),
     ("keep-positive at cec3707", "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `keep-positive-loop` leave different stacks.\nexpected: Int\nactual: Seq Int\nhint: Both branches must leave the same number and types of values. Expected Int, found Seq Int.", keepPositive),
+    ("longest-run at c6a964a", "The two branches of `if` in `main` leave different numbers of values: the true branch pushes 1 value, and the false branch takes 1 value from the stack below the `if` and leaves 1 value. The false branch takes 1 value from below the `if` that this code does not have: everything it was given is bound to locals or already used, so that value belongs to the caller. Push what the branch needs inside the branch, by writing a local's name or computing the value there, or remove the operation that takes it if it should not be there.", longestRun),
+    ("keep-positive at c6a964a", "The false branch of `if` in `keep-positive-loop` cannot run on the stack it is given. Below the condition and the two quotations the stack is .. Seq Int Int Int, but the false branch takes .. Seq Int. The top value there is Int, but the false branch expects Seq Int. Check the order of the values the branch uses (`swap` exchanges the top two), or what was pushed before the condition.", keepPositive),
     ("longest-run on main", "The two branches of `if` leave different numbers of values: the true branch leaves 1 more value than it takes, and the false branch leaves as many values as it takes. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds the stack it expects. Change one branch, for example by pushing or dropping a value, until both leave the same stack.", longestRun)]
   for (label, report, needles) in recordedBefore do
     unless needlesMissing report needles do

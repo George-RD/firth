@@ -193,6 +193,122 @@ private structure ErasureDiagnostic where
   params : Json
   span : Firth.Elaborator.Span
 
+/-- Labels joined as a reader would list them: `a`, `a and b`, `a, b and c`. -/
+private def listing (labels : List String) : String :=
+  match labels.reverse with
+  | [] => "nothing"
+  | [one] => one
+  | last :: rest => s!"{", ".intercalate rest.reverse} and {last}"
+
+private def valueCount (count : Nat) : String :=
+  if count == 1 then "1 value" else s!"{count} values"
+
+/-- The message and hint for a refused `if` from the account of what each
+branch does, value by value (`Account`). A branch that takes a value that is
+not there is explained by the operation that takes it; branches that leave
+different numbers of values, by what each leaves. `none` when the account
+adds nothing, as when the branches differ only in types. -/
+private def accountExplanation (word : String) (account : Firth.Elaborator.IfAccount)
+    (cannotRun : Option (Bool × List String) := none) : Option (String × String) :=
+  let inWord := if word.isEmpty then "" else s!" in `{word}`"
+  let which := s!"the `if`{inWord} whose true branch is `{account.trueSource}`"
+  let noEvening := "Adding a `drop` or pushing values to even out the branches would only move the mistake."
+  let short (name : String) (branch : Firth.Elaborator.BranchAccount) :=
+    (branch.reach.filter (·.missing > 0)).map (name, ·)
+  let place (name : String) := if name == "true" then s!"In the true branch `{account.trueSource}` of the `if`{inWord}"
+    else s!"In the false branch of {which}"
+  -- A branch the checker says cannot run on the stack below the `if`, whose
+  -- first operation that reaches below it finds every value it takes: the
+  -- values are there but not the ones it takes, so say what it gets. Only
+  -- when that operation declares the types it takes, and the ones it
+  -- declares for the values from below are not what the stack below the
+  -- `if` holds there. A `dup` or `swap` takes values of any type, and an
+  -- operation whose types are met is not the one the branch fails on, so a
+  -- later operation is to blame and the checker's own account is kept.
+  -- (The checker's inferred input for the branch adds nothing here: every
+  -- declared word and primitive type is monomorphic, so at those positions
+  -- it is exactly the types the operation declares.)
+  let wrongValues : Option (String × Firth.Elaborator.BranchReach) := cannotRun.bind fun (onTrueBranch, below) =>
+    let name := if onTrueBranch then "true" else "false"
+    let branch := if onTrueBranch then account.onTrue else account.onFalse
+    let top (list : List String) (count : Nat) := list.drop (list.length - count)
+    let blamed (reach : Firth.Elaborator.BranchReach) : Bool :=
+      let count := reach.below.length
+      reach.missing == 0 && reach.types.length == reach.count && count > 0 &&
+        count ≤ below.length && reach.types.take count != top below count
+    (branch.reach.filter blamed).map (name, ·)
+  match wrongValues with
+  | some (name, reach) =>
+      let takes := if reach.inputs.isEmpty then s!"takes {valueCount reach.count}"
+        else s!"takes {valueCount reach.count} ({", ".intercalate reach.inputs}, bottom to top)"
+      let gets := (reach.below.map (s!"{·} from below the `if`")) ++ reach.own
+      some (s!"{place name}, {reach.operation} {takes}. It gets, bottom to top, {listing gets}.",
+        s!"Both branches start from the stack below the `if`, so a value {reach.operation} takes from there must be the one it expects at that position. Check that it gets the values it should, in its order, and push the ones it should use inside the branch, for example by writing the locals that hold them.")
+  | none =>
+  match short "true" account.onTrue <|> short "false" account.onFalse with
+  | some (name, reach) =>
+      let needs := if reach.inputs.isEmpty then s!"needs {valueCount reach.count}"
+        else s!"needs {valueCount reach.count} ({", ".intercalate reach.inputs})"
+      let own := if reach.own.isEmpty then "has pushed nothing before it"
+        else s!"has pushed only {valueCount reach.own.length} before it ({listing reach.own})"
+      let why := if reach.inLocals then "everything the word was given is bound to locals or already used"
+        else "the word's inputs are used up, and what lies below them belongs to the caller"
+      let notThere := if reach.missing == 1 then "is not there" else "are not there"
+      -- Once a value is missing, nothing is left below the `if`, so every
+      -- value the branch took from there was taken by this operation or an
+      -- earlier one.
+      let branch := if name == "true" then account.onTrue else account.onFalse
+      let earlier := branch.took.take (branch.took.length - reach.below.length)
+      let already := if earlier.isEmpty then ""
+        else s!"Earlier in the branch, {listing earlier} {if earlier.length == 1 then "was" else "were"} already taken from below the `if`. "
+      let below := if reach.below.isEmpty then
+          s!"{already}The remaining {valueCount reach.missing} would come from below the `if`, where there {if reach.missing == 1 then "is none" else "are none"}: {why}."
+        else
+          s!"{already}It would take {listing reach.below} from below the `if`, and {valueCount reach.missing} more that {notThere}: {why}."
+      let hint := if reach.inputs.isEmpty then
+          s!"Check whether {reach.operation} belongs in this branch: the values it would work on are not there. Remove it, or push the values it should work on first. {noEvening}"
+        else
+          s!"Push every value {reach.operation} takes inside the branch, just before it and in this order: {", ".intercalate reach.inputs}, for example by writing the locals that hold them. If {reach.operation} should not be in this branch, remove it. {noEvening}"
+      let inside := if reach.nested then " (inside a quotation in that branch)" else ""
+      some (s!"{place name}, {reach.operation}{inside} {needs}, but the branch {own}. {below}", hint)
+  | none =>
+      let taken (branch : Firth.Elaborator.BranchAccount) := branch.took.length + branch.missing
+      let net (branch : Firth.Elaborator.BranchAccount) : Int := (branch.leaves.length : Int) - (taken branch : Int)
+      if net account.onTrue == net account.onFalse then none else
+      let describe (branch : Firth.Elaborator.BranchAccount) :=
+        let took := if branch.took.isEmpty then "" else s!"takes {listing branch.took} from below the `if` and "
+        let leaves := if branch.leaves.isEmpty then "nothing"
+          else if branch.leaves.length == 1 then listing branch.leaves
+          else s!"{valueCount branch.leaves.length}, bottom to top: {listing branch.leaves}"
+        s!"{took}leaves {leaves}"
+      let (longer, shorter, branch) :=
+        if net account.onTrue > net account.onFalse then ("true", "false", account.onTrue)
+        else ("false", "true", account.onFalse)
+      let extra := (net account.onTrue - net account.onFalse).natAbs
+      let rule := "Both branches run on the same stack and must leave the same values."
+      let (shorterBranch, longerBranch) := if longer == "true" then (account.onFalse, account.onTrue) else (account.onTrue, account.onFalse)
+      -- The shorter branch may be shorter because it takes values from
+      -- below the `if` that the longer branch leaves in place.
+      -- A value the branch takes and puts back, as `swap` does, is not
+      -- one it uses up.
+      let usedUp (branch : Firth.Elaborator.BranchAccount) :=
+        branch.leaves.foldl List.erase branch.took
+      let kept := (usedUp shorterBranch).drop (usedUp longerBranch).length
+      let hint :=
+        if kept.length ≥ extra && extra > 0 then
+          let strays := kept.take extra
+          let (it, is) := if extra == 1 then ("it", "is") else ("them", "are")
+          s!"The {shorter} branch takes {listing strays} from below the `if`, and the {longer} branch leaves {it} in place, so after the {longer} branch {it} {is} still on the stack. If the {longer} branch should use {it} too, use {it} there, for example as an input of the operation that needs {it}, or drop {it}. If not, the {shorter} branch should not take {it}. {rule}"
+        else if extra > branch.leaves.length then
+          s!"The {longer} branch leaves {valueCount extra} more than the {shorter} branch. Make both branches take and leave the same values. {rule}"
+        else
+          let (strays, rest) := (branch.leaves.take extra, branch.leaves.drop extra)
+          let (it, is) := if extra == 1 then ("it", "is") else ("them", "are")
+          let place := if rest.isEmpty then s!"{listing strays} {is} left by the {longer} branch alone"
+            else s!"{listing strays} {is} left below {listing rest}"
+          s!"The {longer} branch leaves {valueCount extra} more than the {shorter} branch: {place}. If nothing is meant to use {it}, the mistake is where {if extra == 1 then "it is" else "they are"} pushed: pass {it} to the operation that should take {it}, or remove {it}. If the {shorter} branch should leave {it} too, change that branch instead. {rule}"
+      some (s!"The two branches of {which} leave different numbers of values. The true branch {describe account.onTrue}; the false branch {describe account.onFalse}.", hint)
+
 /-- What a branch does to the stack depth, in words: how many values it
 takes from the stack below the `if` and how many it leaves in their place. -/
 private def depthChange (effect : Nat × Nat) : String :=
@@ -264,8 +380,9 @@ private def erasureDiagnostic (word : String) : Firth.Elaborator.ErasureError �
       { code := "firth.elaboration.unsupported-literal", cause := "elaboration", params := .mkObj [], span }
   | .unsupportedAtom name span =>
       { code := "firth.elaboration.unsupported-atom", cause := "elaboration", params := namedParams name, span }
-  | .branchShape span onTrue onFalse locals =>
-      let (message, hint) := branchShapeExplanation word onTrue onFalse locals
+  | .branchShape span onTrue onFalse locals account =>
+      let (message, hint) := (account.bind (accountExplanation word)).getD
+        (branchShapeExplanation word onTrue onFalse locals)
       { code := "firth.type.branch-mismatch", cause := "type-checking"
         params := .mkObj ([("at", .str "if")] ++ (if word.isEmpty then [] else [("word", .str word)]) ++
           [("message", .str message), ("hint", .str hint)])
@@ -518,6 +635,12 @@ private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Str
       (s!"`{at_}`{inWord} needs a quotation, but the stack before it is {before}.",
         "Put a `[ ... ]` quotation where the operation expects one.")
   | "firth.type.branch-mismatch", _, _ =>
+      match diagnostic.ifAccount.bind fun account =>
+          accountExplanation (diagnostic.word.getD "") account
+            (diagnostic.branchInput.map fun (onTrueBranch, _) =>
+              (onTrueBranch, (stackValues diagnostic.state).1.map renderType)) with
+      | some explanation => explanation
+      | none =>
       match diagnostic.branchOutputs, diagnostic.branchInput with
       | some (onTrue, onFalse), _ => branchExplanation inWord diagnostic.state onTrue onFalse
       | none, some (onTrueBranch, takes) => branchInputExplanation inWord diagnostic.state onTrueBranch takes
