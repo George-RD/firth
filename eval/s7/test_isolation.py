@@ -174,6 +174,28 @@ def layout_checks(ws: Path) -> None:
               "a --tool path that is not absolute and real is refused")
     finally:
         shutil.rmtree(base, ignore_errors=True)
+    # Codex's probe: an unrelated copy of the task file under a shown system
+    # directory, which no git metadata links to this checkout. Refused by its
+    # content; planted: with the scan bypassed it is readable inside.
+    stray = Path(f"/usr/local/s7-copy-{os.getpid()}")
+    try:
+        stray.mkdir()
+        shutil.copyfile(HERE / "mvp_tasks.py", stray / "notes.txt")
+        isolate.hidden_copies.cache_clear()
+        check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"])),
+              "the sandbox refuses a system directory holding a copy of the hidden tests")
+        real_scan, isolate.hidden_copies = isolate.hidden_copies, lambda sources: []
+        try:
+            mutant = isolate.sandbox_command(ws, ["bash", "-c", f"grep -c allocate-batch {stray}/notes.txt"],
+                                             uid=isolate.NOBODY)
+        finally:
+            isolate.hidden_copies = real_scan
+        leaked = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+        check(leaked.stdout.strip() not in ("", "0"),
+              f"without the scan, the copy is readable in the sandbox (the planted case): {leaked.stdout.strip()!r}")
+    finally:
+        shutil.rmtree(stray, ignore_errors=True)
+        isolate.hidden_copies.cache_clear()
     # A repository under a system directory would be shown with it. Planted
     # under /usr/local: the sandbox refuses to start; the same layout under
     # /var/tmp, which is not shown, starts.
@@ -414,11 +436,14 @@ def main() -> int:
                   "--keep refuses a directory with a link inside it")
             check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"], keep=(str(nest),))),
                   "the sandbox refuses to copy a kept directory with a link inside it")
+            # The planted case bypasses both checks on kept content.
             real_plain, isolate.plain_tree = isolate.plain_tree, lambda k: None
+            real_scan, isolate.hidden_copies = isolate.hidden_copies, lambda sources: []
             try:
                 mutant = isolate.sandbox_command(ws, read_nest, keep=(str(nest),), uid=isolate.NOBODY)
             finally:
                 isolate.plain_tree = real_plain
+                isolate.hidden_copies = real_scan
             # Even past the refusal, the copy keeps the link a link, which
             # dangles inside.
             kept_link = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
@@ -447,11 +472,14 @@ def main() -> int:
                 check(refused_exit(lambda: isolate.run(ws, ["true"], keep=(str(hard / "tasks"),))),
                       "--keep refuses a file with a second hard link")
                 read_hard = ["bash", "-c", f"grep -c allocate-batch {hard}/tasks 2>/dev/null"]
+                # The planted case bypasses both checks on kept content.
                 real_plain, isolate.plain_tree = isolate.plain_tree, lambda k: None
+                real_scan, isolate.hidden_copies = isolate.hidden_copies, lambda sources: []
                 try:
                     mutant = isolate.sandbox_command(ws, read_hard, keep=(str(hard),), uid=isolate.NOBODY)
                 finally:
                     isolate.plain_tree = real_plain
+                    isolate.hidden_copies = real_scan
                 leaked = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
                 check(leaked.stdout.strip() not in ("", "0"),
                       f"without the check, a hard link brings the hidden tests in (the planted case): {leaked.stdout.strip()!r}")
@@ -476,6 +504,7 @@ try:
 except SystemExit:
     out["refused"] = True
 isolate.plain_tree = lambda k: None
+isolate.hidden_copies = lambda sources: []
 cmd = isolate.sandbox_command({str(ws)!r}, ["bash", "-c", "grep -c allocate-batch {bind}/sub/mvp_tasks.py"],
                               keep=({str(bind)!r},), uid=isolate.NOBODY)
 out["leak"] = subprocess.run(cmd, env=isolate.sandbox_env(), capture_output=True, text=True).stdout.strip()
@@ -497,12 +526,15 @@ print(json.dumps(out))
             shutil.copyfile(HERE / "reference/mvp/sort.firth", copied / "notes")
             check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"], keep=(str(copied),))),
                   "the sandbox refuses a kept copy of a reference solution")
+            # The planted case bypasses both checks on kept content.
             real_plain, isolate.plain_tree = isolate.plain_tree, lambda k: None
+            real_scan, isolate.hidden_copies = isolate.hidden_copies, lambda sources: []
             try:
                 mutant = isolate.sandbox_command(ws, ["cat", str(copied / "notes")], keep=(str(copied),),
                                                  uid=isolate.NOBODY)
             finally:
                 isolate.plain_tree = real_plain
+                isolate.hidden_copies = real_scan
             leaked = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
             check(leaked.stdout == (HERE / "reference/mvp/sort.firth").read_text(),
                   "without the check, the copy reaches the sandbox (the planted case)")

@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import fcntl
+import functools
 import hashlib
 import json
 import os
@@ -238,6 +239,35 @@ def check_exposure(dir: Path, sources: list[str]) -> None:
         for p in repo:
             if within(p, s) or within(s, p):
                 raise SystemExit(f"the sandbox would expose {p} through {s}; move one of them")
+    found = hidden_copies(tuple(sources))
+    if found:
+        raise SystemExit(f"the sandbox would show {found[0]}, which has the content of a hidden file")
+
+
+@functools.lru_cache(maxsize=None)
+def hidden_copies(sources: tuple[str, ...]) -> list[str]:
+    """Files under SOURCES with the content of a hidden file: a copy of the
+    repository unrelated to this checkout (a clone under /usr/local/src, say)
+    that no git metadata leads to (Codex's finding). Only files of a hidden
+    file's size are hashed, and each source set is scanned once per process.
+    Like the check on kept credentials, a partial or encoded copy is not
+    caught."""
+    hidden = {}
+    for f in [HERE / "mvp_tasks.py", *sorted((HERE / "reference").rglob("*.firth"))]:
+        hidden.setdefault(f.stat().st_size, set()).add(hashlib.sha256(f.read_bytes()).hexdigest())
+    found = []
+    for src in sources:
+        for top, _, files in os.walk(src, followlinks=False):
+            for n in files:
+                path = os.path.join(top, n)
+                try:
+                    st = os.lstat(path)
+                    if (stat.S_ISREG(st.st_mode) and st.st_size in hidden and
+                            hashlib.sha256(Path(path).read_bytes()).hexdigest() in hidden[st.st_size]):
+                        found.append(path)
+                except OSError:
+                    continue
+    return found
 
 
 def allowed_sources(tools: tuple[str, ...]) -> list[tuple[str, str]]:

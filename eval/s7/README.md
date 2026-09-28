@@ -125,7 +125,10 @@ include negative numbers and empty sequences.
   parent's and sibling's secrets and git gives back the stored one; inside,
   none of them exists, and a `--tool` naming any of those paths is refused.
   A repository placed under `/usr/local` is refused too, since `/usr` is
-  shown.
+  shown. So is any shown file with the content of the hidden tests or a
+  reference (an unrelated copy that no git metadata leads to): the shown
+  directories are scanned once per process, hashing only files of a hidden
+  file's size. A partial or encoded copy is not caught.
 - Submitted Python programs, run by `./try` or at scoring, also get an empty
   network namespace, so an answer cannot fetch anything. `test_isolation.py`
   plants one that reads from a local listener.
