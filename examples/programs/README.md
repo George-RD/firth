@@ -64,15 +64,19 @@ where the local sits afterwards, so it refuses the program with
 `firth.elaboration.untracked-local` rather than guess. Quotations written
 inline, like `[ 1 prim + ] call` or `[ 1 prim + ] [ ] compose call`, are fine
 (`quotations.firth`). An `if` whose two branches leave different numbers of
-values is a type error, reported as `firth.type.branch-mismatch` at the `if`
-even when a local is used after it (`refused/if-branch-shape.firth`). The
+values is a type error, reported as `firth.type.branch-mismatch` at that
+`if`, however deeply it is nested and whatever follows it
+(`refused/if-branch-shape.firth`). The
 programs under `refused/` must be rejected.
 
 ## Sequences
 
 `Seq Int` and `Seq Bool` hold any number of integers or Booleans. They are
-ordinary values: a sequence can be used any number of times, and `push`
-returns a new one. `sequences.firth` sums, counts, builds a range and indexes.
+ordinary values: a sequence can be used any number of times, and `push` and
+`set` return a new one. `sequences.firth` sums, counts, builds a range and
+indexes. `sieve.firth` finds primes with a sieve of Eratosthenes that clears
+entries in place, and `sort.firth` sorts by insertion, swapping neighbours
+with `set`.
 
 ```
 { 1 2 3 }                  \ -- Seq Int      (a literal; { true false } is a Seq Bool)
@@ -80,11 +84,13 @@ prim seq-int.empty         \ -- Seq Int
 xs prim seq-int.len        \ Seq Int -- Int
 xs i prim seq-int.at       \ Seq Int Int -- Int
 xs x prim seq-int.push     \ Seq Int Int -- Seq Int
+xs i x prim seq-int.set    \ Seq Int Int Int -- Seq Int   (element i becomes x)
 ```
 
-`seq-bool.empty`, `.len`, `.at` and `.push` are the same for `Seq Bool`. A
-negative index, or one at or past the length, traps with `primitive-fault`
-on both hosts; `at` never returns a default. A case with `expect_trap` checks that: both hosts
+`seq-bool.empty`, `.len`, `.at`, `.push` and `.set` are the same for
+`Seq Bool`. A negative index, or one at or past the length, traps with
+`primitive-fault` on both hosts; `at` never returns a default and `set`
+never grows the sequence. A case with `expect_trap` checks that: both hosts
 must stop with that trap at the same stack and kernel cost. `{ }` is refused
 because it has no element type; write `prim seq-int.empty`. On the command
 line and in `cases.json` a sequence is a JSON array, and `[]` takes its type

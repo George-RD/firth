@@ -117,4 +117,47 @@ example : step int64Gamma (fun _ => none) defaultCosts (divAt (-7) 2) =
 
 end Division
 
+/- `seq-int.set` and `seq-bool.set` replace one element inside the sequence
+and fault outside it: at an index past the end, and at a negative index,
+on both registries. -/
+section SequenceSet
+open Firth.Interpreter Firth.ReferenceRun
+
+private def setAt (values : List Int) (index value : Int) : Config :=
+  { stack := [.literal (.int value), .literal (.int index), .literal (.intSeq values)]
+    program := .cons (.prim "seq-int.set") .empty }
+
+example : step int64Gamma (fun _ => none) defaultCosts (setAt [4, 5, 6] 1 9) =
+    .stepped { stack := [.literal (.intSeq [4, 9, 6])], program := .empty } 1 := by rfl
+
+example : step adapterGamma (fun _ => none) defaultCosts (setAt [4, 5, 6] 2 (-1)) =
+    .stepped { stack := [.literal (.intSeq [4, 5, -1])], program := .empty } 1 := by rfl
+
+example : step int64Gamma (fun _ => none) defaultCosts (setAt [4, 5, 6] 3 9) =
+    .stuck (setAt [4, 5, 6] 3 9) := by rfl
+
+example : step adapterGamma (fun _ => none) defaultCosts (setAt [4, 5, 6] (-1) 9) =
+    .stuck (setAt [4, 5, 6] (-1) 9) := by rfl
+
+example : step adapterGamma (fun _ => none) defaultCosts (setAt [] 0 9) =
+    .stuck (setAt [] 0 9) := by rfl
+
+example : step int64Gamma (fun _ => none) defaultCosts
+    { stack := [.literal (.bool false), .literal (.int 0), .literal (.boolSeq [true, true])]
+      program := .cons (.prim "seq-bool.set") .empty } =
+    .stepped { stack := [.literal (.boolSeq [false, true])], program := .empty } 1 := by rfl
+
+/- The program-logic rule, for any sequence and in-bounds index, under the
+VM-matching registry. -/
+example (values : List Int) (index value : Int) (tail : Stack)
+    (hIndex : 0 ≤ index) (hBound : index.toNat < values.length) :
+    Runs int64Gamma (fun _ => none) defaultCosts
+      (.cons (.prim "seq-int.set") .empty)
+      (.literal (.int value) :: .literal (.int index) :: .literal (.intSeq values) :: tail)
+      (.literal (.intSeq (values.set index.toNat value)) :: tail) 1
+      (defaultCosts.primitive "seq-int.set") :=
+  runs_intSeq_set tail hIndex hBound
+
+end SequenceSet
+
 end Firth.LogicTest

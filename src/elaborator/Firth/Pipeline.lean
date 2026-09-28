@@ -73,10 +73,16 @@ private def signatureUsages : List StackItem → List Usage
   | .row _ _ :: rest => signatureUsages rest
   | .value _ type _ :: rest => type.usage :: signatureUsages rest
 
+private def signatureRows : List StackItem → List String
+  | [] => []
+  | .row name _ :: rest => name :: signatureRows rest
+  | .value .. :: rest => signatureRows rest
+
 private def signatureOfEffect (effect : StackEffect) : Signature :=
   -- Surface effects are bottom-to-top; erasure states and signatures are top-first.
   { input := signatureUsages effect.input.reverse
-    output := signatureUsages effect.output.reverse }
+    output := signatureUsages effect.output.reverse
+    rowPreserving := signatureRows effect.input == signatureRows effect.output }
 
 private def lookupSignature (name : String) : List (String × Signature) → Option Signature
   | [] => none

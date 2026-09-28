@@ -36,7 +36,7 @@ open Firth.Elaborator.StackEffect
 def languageVersion : String := "0.1"
 
 /-- The `Gamma` version this adapter speaks. -/
-def gammaVersion : String := "0.6"
+def gammaVersion : String := "0.7"
 
 private def err (message : String) : Except String α := .error message
 
@@ -139,14 +139,27 @@ private def schemeUsages : AStack → Option (List Usage)
   | .snoc rest (.base _ usage) | .snoc rest (.quotation _ _ usage) | .snoc rest (.mvar _ usage) =>
       return (← schemeUsages rest) ++ [← schemeUsage usage]
 
+/-- The row a kernel stack type sits on. -/
+private def stackRow : Firth.Interpreter.StackType → String
+  | .row name => name
+  | .snoc rest _ => stackRow rest
+
+/-- The row a scheme stack sits on, `none` for a closed stack. -/
+private def schemeRow : AStack → Option Row
+  | .empty => none
+  | .row tail => some tail
+  | .snoc rest _ => schemeRow rest
+
 /-- The manifest's `[gamma.primitive]` table, as the elaborator's erasure
-signature. Only the ownership classes matter at erasure time. -/
+signature: the ownership classes, and whether the rest of the stack is kept. -/
 def gammaErasure : EffectEnv :=
   { primitive := fun name =>
       match kernelSpec name with
-      | some spec => some { input := stackUsages spec.input, output := stackUsages spec.output }
+      | some spec => some { input := stackUsages spec.input, output := stackUsages spec.output
+                            rowPreserving := stackRow spec.input == stackRow spec.output }
       | none => (worldScheme name).bind fun scheme => do
-          pure { input := ← schemeUsages scheme.input, output := ← schemeUsages scheme.output } }
+          pure { input := ← schemeUsages scheme.input, output := ← schemeUsages scheme.output
+                 rowPreserving := schemeRow scheme.input == schemeRow scheme.output } }
 
 /-- The same table as a typing scheme, read from `defaultGamma` for every
 surface primitive and from `worldPrimitiveSchemes` for the rest. -/

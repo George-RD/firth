@@ -167,9 +167,9 @@ def main() -> int:
         gamma = data.get("gamma")
         if not isinstance(gamma, dict):
             fail("gamma: expected a table")
-        if gamma.get("version") != "0.6" or gamma.get("portable") is not True:
-            fail("gamma: expected portable version 0.6")
-        if gamma.get("primitives") != ["+", "-", "*", "<", "=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"]:
+        if gamma.get("version") != "0.7" or gamma.get("portable") is not True:
+            fail("gamma: expected portable version 0.7")
+        if gamma.get("primitives") != ["+", "-", "*", "<", "=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-int.set", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "seq-bool.set", "send"]:
             fail("gamma.primitives: unexpected profile")
         if gamma.get("values") != ["Int", "Bool", "Seq Int", "Seq Bool", "Handle", "Bytes", "World"]:
             fail("gamma.values: unexpected profile")
@@ -246,6 +246,11 @@ def main() -> int:
                 "transition": "deterministic-sequence-append",
                 "observation": "pure",
             },
+            "seq-int.set": {
+                "effect": "Seq Int^many Int^many Int^many -- Seq Int^many",
+                "transition": "deterministic-sequence-replace-faulting-outside-bounds",
+                "observation": "pure",
+            },
             "seq-bool.empty": {
                 "effect": "-- Seq Bool^many",
                 "transition": "deterministic-empty-sequence",
@@ -264,6 +269,11 @@ def main() -> int:
             "seq-bool.push": {
                 "effect": "Seq Bool^many Bool^many -- Seq Bool^many",
                 "transition": "deterministic-sequence-append",
+                "observation": "pure",
+            },
+            "seq-bool.set": {
+                "effect": "Seq Bool^many Int^many Bool^many -- Seq Bool^many",
+                "transition": "deterministic-sequence-replace-faulting-outside-bounds",
                 "observation": "pure",
             },
             "send": {

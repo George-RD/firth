@@ -417,6 +417,13 @@ inductive PrimitiveStackContract : Prim → AStack → AStack → Prop where
       PrimitiveStackContract "intSeqPush"
         (.literal valueTag (.int value) :: .literal seqTag (.intSeq values) :: rest)
         (.literal outputTag (.intSeq (values ++ [value])) :: rest)
+  | intSeqSet {valueTag indexTag seqTag outputTag : Tag} {value index : Int}
+      {values updated : List Int} {rest : AStack}
+      (replaced : replaceAt? values index value = some updated) :
+      PrimitiveStackContract "intSeqSet"
+        (.literal valueTag (.int value) :: .literal indexTag (.int index) ::
+          .literal seqTag (.intSeq values) :: rest)
+        (.literal outputTag (.intSeq updated) :: rest)
   | boolSeqEmpty {outputTag : Tag} {rest : AStack} :
       PrimitiveStackContract "boolSeqEmpty" rest (.literal outputTag (.boolSeq []) :: rest)
   | boolSeqLen {seqTag outputTag : Tag} {values : List Bool} {rest : AStack} :
@@ -433,6 +440,13 @@ inductive PrimitiveStackContract : Prim → AStack → AStack → Prop where
       PrimitiveStackContract "boolSeqPush"
         (.literal valueTag (.bool value) :: .literal seqTag (.boolSeq values) :: rest)
         (.literal outputTag (.boolSeq (values ++ [value])) :: rest)
+  | boolSeqSet {valueTag indexTag seqTag outputTag : Tag} {value : Bool} {index : Int}
+      {values updated : List Bool} {rest : AStack}
+      (replaced : replaceAt? values index value = some updated) :
+      PrimitiveStackContract "boolSeqSet"
+        (.literal valueTag (.bool value) :: .literal indexTag (.int index) ::
+          .literal seqTag (.boolSeq values) :: rest)
+        (.literal outputTag (.boolSeq updated) :: rest)
   | makeWorld {tag : Tag} {rest : AStack} :
       PrimitiveStackContract "makeWorld" rest (.world tag 0 :: rest)
   | consumeWorld {tag : Tag} {payload : Nat} {rest : AStack} :

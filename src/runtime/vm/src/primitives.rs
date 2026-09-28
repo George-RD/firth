@@ -84,6 +84,17 @@ fn element(bytes: &[u8], index: i64, width: usize) -> Result<&[u8], VmError> {
         .ok_or(VmError::PrimitiveFault)
 }
 
+/// The same element of a sequence, writable. Faults exactly where `element`
+/// does.
+fn element_mut(bytes: &mut [u8], index: i64, width: usize) -> Result<&mut [u8], VmError> {
+    let index = usize::try_from(index).map_err(|_| VmError::PrimitiveFault)?;
+    let start = index.checked_mul(width).ok_or(VmError::PrimitiveFault)?;
+    let end = start.checked_add(width).ok_or(VmError::PrimitiveFault)?;
+    bytes
+        .get_mut(start..end)
+        .ok_or(VmError::PrimitiveFault)
+}
+
 fn int_seq_empty(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     context.push_primitive(SEQ_INT_TAG, Vec::new())
 }
@@ -109,6 +120,16 @@ fn int_seq_push(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     context.push_primitive(SEQ_INT_TAG, bytes)
 }
 
+/// Replaces the element at an index, keeping the length. An index that is
+/// negative or past the end is a primitive fault, like `intSeqAt`.
+fn int_seq_set(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let value = context.pop_int()?;
+    let index = context.pop_int()?;
+    let mut bytes = context.pop_primitive(SEQ_INT_TAG)?;
+    element_mut(&mut bytes, index, 8)?.copy_from_slice(&value.to_le_bytes());
+    context.push_primitive(SEQ_INT_TAG, bytes)
+}
+
 fn bool_seq_empty(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     context.push_primitive(SEQ_BOOL_TAG, Vec::new())
 }
@@ -130,6 +151,14 @@ fn bool_seq_push(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     let mut bytes = context.pop_primitive(SEQ_BOOL_TAG)?;
     reserve(&mut bytes, 1)?;
     bytes.push(u8::from(value));
+    context.push_primitive(SEQ_BOOL_TAG, bytes)
+}
+
+fn bool_seq_set(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let value = context.pop_bool()?;
+    let index = context.pop_int()?;
+    let mut bytes = context.pop_primitive(SEQ_BOOL_TAG)?;
+    element_mut(&mut bytes, index, 1)?[0] = u8::from(value);
     context.push_primitive(SEQ_BOOL_TAG, bytes)
 }
 
@@ -275,6 +304,15 @@ pub fn default_registry() -> PrimitiveRegistry {
                 value_tags: &[],
             },
             PrimitiveDefinition {
+                name: "intSeqSet",
+                cost: 1,
+                handler: int_seq_set,
+                input: &[Usage::Many, Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
                 name: "boolSeqEmpty",
                 cost: 1,
                 handler: bool_seq_empty,
@@ -306,6 +344,15 @@ pub fn default_registry() -> PrimitiveRegistry {
                 cost: 1,
                 handler: bool_seq_push,
                 input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "boolSeqSet",
+                cost: 1,
+                handler: bool_seq_set,
+                input: &[Usage::Many, Usage::Many, Usage::Many],
                 output: &[Usage::Many],
                 world: false,
                 value_tags: &[],

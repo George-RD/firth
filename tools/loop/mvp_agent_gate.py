@@ -62,10 +62,10 @@ MANIFEST = ROOT / "tools" / "loop" / "mvp_agent_manifest.toml"
 HASH = re.compile(r"^[0-9a-f]{64}$")
 
 LANGUAGE_VERSION = "0.1"
-GAMMA_VERSION = "0.6"
+GAMMA_VERSION = "0.7"
 TARGET_VERSION = "0.1"
 IMAGE_FORMAT_VERSION = 1
-TARGET_GAMMA_VERSION = 6
+TARGET_GAMMA_VERSION = 7
 # The VM adapter refuses a larger budget (`firth_vm::MAX_FUEL`), so every
 # caller of this module shares one bound. `FUEL` is the default budget.
 MAX_FUEL = 1_000_000
@@ -118,7 +118,7 @@ ADAPTER_TIMEOUT_SECONDS = 60
 LEAN_ADAPTERS = ("firthElaborate", "firthCompile", "firthReferenceRun")
 # The primitives the portable elaborator, compiler and VM all execute
 # (`surfacePrimitives` in src/interpreter/Firth/Interpreter.lean).
-PORTABLE_PRIMITIVES = ("+", "-", "*", "<", "=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push")
+PORTABLE_PRIMITIVES = ("+", "-", "*", "<", "=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-int.set", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "seq-bool.set")
 VM_BINARY = ROOT / "src" / "runtime" / "vm" / "target" / "debug" / "firth-vm"
 LEAN_BIN = ROOT / ".lake" / "build" / "bin"
 

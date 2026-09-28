@@ -387,6 +387,24 @@ def runElaboratorDiagnosticTests : IO Unit := do
   expectInnerIf "two levels"
     ": g (forall ρ; ρ x:Int^many -- ρ r:Int^many)\n  locals { x } {\n    0 x prim <\n    [ 1 x prim < [ x ] [ ] if ]\n    [ 0 ]\n    if\n    x prim + } ;"
     4 28
+  -- Bound to a local first, then called: the mismatch is still found at the
+  -- inner `if`, since erasure refuses the `if` itself, wherever it sits.
+  expectInnerIf "bound to a local"
+    ": g (forall ρ; ρ x:Int^many -- ρ r:Int^many)\n  locals { x } {\n    [ true [ 1 ] [ ] if ] locals { q } { q call } x } ;"
+    3 22
+  -- Outside `locals` too, with the same message. The type checker reported
+  -- this one too, but inside a quotation its report was an occurs check.
+  expectInnerIf "outside locals"
+    ": g (forall ρ; ρ -- ρ r:Int^many)\n  0 1 prim < [ 1 ] [ ] if ;"
+    2 24
+  expectInnerIf "outside locals, in a quotation"
+    ": g (forall ρ; ρ -- ρ r:Int^many)\n  [ 0 1 prim < [ 1 ] [ ] if ] call ;"
+    2 26
+  -- Branches bound to locals keep their exact effects, so the `if` is
+  -- refused before the later use of `x` could report an untracked local.
+  expectInnerIf "branches from locals"
+    ": g (forall ρ; ρ -- ρ r:Int^many)\n  [ 1 ] [ ] 5 locals { t f x } { true t f if x prim + } ;"
+    2 43
   expectInnerIf "three levels"
     ": g (forall ρ; ρ x:Int^many -- ρ r:Int^many)\n  locals { x } {\n    0 x prim <\n    [ 1 x prim < [ 2 x prim < [ x ] [ ] if ] [ 0 ] if ]\n    [ 0 ]\n    if\n    x prim + } ;"
     4 41
@@ -402,6 +420,35 @@ def runElaboratorDiagnosticTests : IO Unit := do
       else fail s!"an untracked local did not name the atom that lost track: {emitted}"
   | _ => fail "unknown-effect result was not singular"
 
+  -- A quotation that loses track inside its own body, run later: the
+  -- message names the inner `call` (line 3), not the outer one (line 4).
+  let innerSource := ": g (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } {\n    a [ [ 1 prim + ] [ call ] call ]\n    call b prim - } ;"
+  match elaboratePipeline pipelineContext innerSource agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "inner unknown effect" "firth.elaboration.untracked-local" emitted
+      unless emitted.contains "used after `call` on line 3 ran a quotation" do
+        fail s!"an untracked local did not name the inner call: {emitted}"
+  | _ => fail "inner-unknown-effect result was not singular"
+
+  -- A word typed `ρ -- ρ2` may leave a stack of any depth, so a branch
+  -- running it has no exact effect and erasure does not refuse the `if`;
+  -- the type checker accepts this program, as it did before the refusal.
+  let rowSource := ": w (forall ρ ρ2; ρ -- ρ2) w ;\n: main (forall ρ; ρ -- ρ r:Int^many) true [ w ] [ 1 ] if ;"
+  match elaboratePipeline pipelineContext rowSource agentConfig with
+  | .success _ => pure ()
+  | .failure envelopes =>
+      fail s!"a branch running a row-changing word was refused: {envelopes.map encode}"
+  -- The same through a quotation that calls one, and through `compose`:
+  -- both are accepted outright, as on main.
+  for (label, body) in [("nested", "true [ [ w ] call ] [ 1 ] if"),
+      ("composed", "true [ w ] [ ] compose [ 1 ] if")] do
+    let source := s!": w (forall ρ ρ2; ρ -- ρ2) w ;\n: main (forall ρ; ρ -- ρ r:Int^many) {body} ;"
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .success _ => pure ()
+    | .failure envelopes =>
+        fail s!"{label}: a branch running a row-changing word was refused: {envelopes.map encode}"
+
   -- A name that is not in the stack effect keeps the general hint, which
   -- now also mentions `locals`.
   match elaboratePipeline pipelineContext ": double (forall ρ; ρ n:Int^many -- ρ r:Int^many) 2 prim * dobule ;" with
@@ -415,8 +462,8 @@ def runElaboratorDiagnosticTests : IO Unit := do
   -- are written out here, not read from `languagePrimitives`, so a hint
   -- that falls behind the language fails.
   let everyPrimitive := ["+", "-", "*", "<", "=", "div", "mod", "and", "or", "not",
-    "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push",
-    "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"]
+    "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-int.set",
+    "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "seq-bool.set", "send"]
   -- The list is the checker's: each name has a signature in the agent Gamma,
   -- which refuses a name that is not a primitive.
   for name in everyPrimitive do

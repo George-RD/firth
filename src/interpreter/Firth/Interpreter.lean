@@ -147,7 +147,7 @@ structure PrimitiveSpec where
   output : StackType
   delta : Stack → Option Stack
   /-- A partial primitive may fault on a well-typed stack (an out-of-range
-  sequence index, or a zero divisor); `delta` is then `none` and execution stops with a
+  sequence index to read or replace, or a zero divisor); `delta` is then `none` and execution stops with a
   primitive fault. Every other primitive must be total on its typed input,
   and progress is stated with that exception only. -/
   faults : Bool := false
@@ -235,6 +235,20 @@ def intSeqPushDelta : Stack → Option Stack
       some (.literal (.intSeq (values ++ [value])) :: rest)
   | _ => none
 
+/-- The list with the element at a signed index replaced. A negative index,
+like one past the end, has no element to replace. -/
+def replaceAt? {α : Type} (values : List α) : Int → α → Option (List α)
+  | .ofNat index, value => if index < values.length then some (values.set index value) else none
+  | .negSucc _, _ => none
+
+/-- `set` replaces the element at an index, keeping the length. Like `at`, it
+faults on an index that is negative or past the end; it never grows the
+sequence. -/
+def intSeqSetDelta : Stack → Option Stack
+  | .literal (.int value) :: .literal (.int index) :: .literal (.intSeq values) :: rest =>
+      (replaceAt? values index value).map fun values => .literal (.intSeq values) :: rest
+  | _ => none
+
 def boolSeqEmptyDelta : Stack → Option Stack
   | rest => some (.literal (.boolSeq []) :: rest)
 
@@ -250,6 +264,11 @@ def boolSeqAtDelta : Stack → Option Stack
 def boolSeqPushDelta : Stack → Option Stack
   | .literal (.bool value) :: .literal (.boolSeq values) :: rest =>
       some (.literal (.boolSeq (values ++ [value])) :: rest)
+  | _ => none
+
+def boolSeqSetDelta : Stack → Option Stack
+  | .literal (.bool value) :: .literal (.int index) :: .literal (.boolSeq values) :: rest =>
+      (replaceAt? values index value).map fun values => .literal (.boolSeq values) :: rest
   | _ => none
 
 def makeWorldDelta : Stack → Option Stack
@@ -298,6 +317,10 @@ def defaultGamma : Gamma :=
                              faults := true }
       | "intSeqPush" => some { input := .snoc (.snoc (.row "ρ") (.base .intSeq .many)) (.base .int .many),
                                output := .snoc (.row "ρ") (.base .intSeq .many), delta := intSeqPushDelta }
+      | "intSeqSet" => some { input := .snoc (.snoc (.snoc (.row "ρ") (.base .intSeq .many))
+                                  (.base .int .many)) (.base .int .many),
+                              output := .snoc (.row "ρ") (.base .intSeq .many), delta := intSeqSetDelta,
+                              faults := true }
       | "boolSeqEmpty" => some { input := .row "ρ",
                                  output := .snoc (.row "ρ") (.base .boolSeq .many), delta := boolSeqEmptyDelta }
       | "boolSeqLen" => some { input := .snoc (.row "ρ") (.base .boolSeq .many),
@@ -307,6 +330,10 @@ def defaultGamma : Gamma :=
                               faults := true }
       | "boolSeqPush" => some { input := .snoc (.snoc (.row "ρ") (.base .boolSeq .many)) (.base .bool .many),
                                 output := .snoc (.row "ρ") (.base .boolSeq .many), delta := boolSeqPushDelta }
+      | "boolSeqSet" => some { input := .snoc (.snoc (.snoc (.row "ρ") (.base .boolSeq .many))
+                                   (.base .int .many)) (.base .bool .many),
+                               output := .snoc (.row "ρ") (.base .boolSeq .many), delta := boolSeqSetDelta,
+                               faults := true }
       | "makeWorld" => some { input := .row "ρ",
                                output := .snoc (.row "ρ") (.base .world .linear), delta := makeWorldDelta }
       | "consumeWorld" => some { input := .snoc (.row "ρ") (.base .world .linear),
@@ -321,9 +348,9 @@ def surfacePrimitives : List (String × Prim) :=
    ("div", "divInt"), ("mod", "modInt"),
    ("and", "andBool"), ("or", "orBool"), ("not", "notBool"),
    ("seq-int.empty", "intSeqEmpty"), ("seq-int.len", "intSeqLen"),
-   ("seq-int.at", "intSeqAt"), ("seq-int.push", "intSeqPush"),
+   ("seq-int.at", "intSeqAt"), ("seq-int.push", "intSeqPush"), ("seq-int.set", "intSeqSet"),
    ("seq-bool.empty", "boolSeqEmpty"), ("seq-bool.len", "boolSeqLen"),
-   ("seq-bool.at", "boolSeqAt"), ("seq-bool.push", "boolSeqPush")]
+   ("seq-bool.at", "boolSeqAt"), ("seq-bool.push", "boolSeqPush"), ("seq-bool.set", "boolSeqSet")]
 
 def kernelPrimitive (surface : String) : Option Prim :=
   (surfacePrimitives.find? (·.1 == surface)).map (·.2)
