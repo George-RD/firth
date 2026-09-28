@@ -1,9 +1,9 @@
 {"records": [
   {
-    "evidence": "5c31c45ba252fdc279a26a45091b4ab0d233f01b19080c8f6f602dcf54911f09",
+    "evidence": "392b3a7d962e4cdc021d55f5ab6a33992e504f7d666a7aa32878f652b2725425",
     "theorem": "Firth.Proofs.Programs.SumTo.run_sum_to",
     "module": "proofs.Programs.SumTo",
-    "claim": "For every n, the reference runner takes sum-to's body from n to 1 + ... + n in 14n + 10 steps at kernel cost 13n + 10.",
+    "claim": "For every natural n whose sum 1 + ... + n fits in i64, the reference runner takes sum-to's body from n to that sum in 14n + 10 steps at kernel cost 13n + 10, with no i64 overflow on the way.",
     "statement_digest": "2e904c23cc5e08a93fc0184bae96f614e4eb7563bc5c5de81c4797a7744a8e61",
     "axioms": ["Classical.choice", "Quot.sound", "propext"],
     "cost_tables": [{"name": "Firth.Interpreter.defaultCosts", "digest": "e1ca9f7d23e83b190af851773feb6d3cc56a878c91c15ce6c8ebecdf87e4200c"}],

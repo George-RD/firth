@@ -1,5 +1,5 @@
 [
   {"theorem": "Firth.Proofs.Programs.SumTo.run_sum_to",
    "module": "proofs.Programs.SumTo",
-   "claim": "For every n, the reference runner takes sum-to's body from n to 1 + ... + n in 14n + 10 steps at kernel cost 13n + 10."}
+   "claim": "For every natural n whose sum 1 + ... + n fits in i64, the reference runner takes sum-to's body from n to that sum in 14n + 10 steps at kernel cost 13n + 10, with no i64 overflow on the way."}
 ]
