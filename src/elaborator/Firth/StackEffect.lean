@@ -57,6 +57,14 @@ structure Diagnostic where
   subject : Option String := none
   /-- The definition whose body was being checked. -/
   word : Option String := none
+  /-- For an `if` whose branches both accept the stack below it but leave
+  different stacks: what the true branch and the false branch leave. `state`
+  is then the stack below the condition and the two quotations. -/
+  branchOutputs : Option (AStack × AStack) := none
+  /-- For an `if` with a branch that cannot run on the stack below the
+  condition: whether it is the true branch, and the stack it takes. `state` is
+  then the stack below the condition and the two quotations. -/
+  branchInput : Option (Bool × AStack) := none
   deriving Repr, BEq, Nonempty
 
 structure TypedHole where
@@ -476,13 +484,45 @@ private partial def inferAtom (env : Env) (located : LocatedKernel)
       let (rest, trueBranch) ← pop "firth.type.stack-underflow" span diagnosticState rest
       let (rest, condition) ← pop "firth.type.stack-underflow" span diagnosticState rest
       unifyType "firth.type.expected-bool" span current (.base "Bool" .many) condition
-      let output ← freshRow
-      unifyType "firth.type.branch-mismatch" span current
-        (.quotation rest output .many) trueBranch
-      unifyType "firth.type.branch-mismatch" span current
-        (.quotation rest output .many) falseBranch
-      let state ← get
-      pure (resolveStack state output)
+      -- Each branch runs on the stack below the condition. What each leaves
+      -- is found first and compared afterwards, so a mismatch can report both.
+      -- A branch that cannot run on that stack is reported with what it
+      -- takes, beside what is there.
+      let runsOn (onTrueBranch : Bool) (branch : AType) (output : AStack) : InferM Unit := do
+        let before ← get
+        match (unifyType "firth.type.branch-mismatch" span current
+            (.quotation rest output .many) branch).run before with
+        | .ok ((), after) => set after
+        | .error error => match resolveType before branch with
+          | .quotation input _ _ =>
+              -- A linearity error stays as it is; any other failure here (including
+              -- an occurs check on the shared row) means the stacks differ.
+              if error.code == "firth.linearity.usage-mismatch" then throw error else
+              throw {
+                code := "firth.type.branch-mismatch"
+                primary := span
+                state := resolveStack before rest
+                branchInput := some (onTrueBranch, resolveStack before input) }
+          | _ => throw error
+      let onTrue ← freshRow
+      let onFalse ← freshRow
+      runsOn true trueBranch onTrue
+      runsOn false falseBranch onFalse
+      let before ← get
+      match (unifyStack "firth.type.branch-mismatch" span current onTrue onFalse).run before with
+      | .ok ((), after) =>
+          set after
+          pure (resolveStack after onTrue)
+      | .error error =>
+          -- As above: only a linearity error is reported as it is. Branches
+          -- that leave different depths over the same row fail the occurs
+          -- check, and that is a branch mismatch too.
+          if error.code == "firth.linearity.usage-mismatch" then throw error else
+          throw {
+            code := "firth.type.branch-mismatch"
+            primary := span
+            state := resolveStack before rest
+            branchOutputs := some (resolveStack before onTrue, resolveStack before onFalse) }
   | .word name => match env.word name with
       | none => failAt "firth.name.unknown-word" span current
       | some scheme => do
