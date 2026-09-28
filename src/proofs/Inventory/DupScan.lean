@@ -515,4 +515,3 @@ theorem has_repeat_reference (ids : List Int) (n : Nat) (hn : ids.length = 4 * n
   exact ⟨found, ⟨steps, cost, hRun.of_int64, hs, hc⟩, hIff⟩
 
 end Firth.Proofs.Inventory.DupScan
-
