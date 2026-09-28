@@ -117,7 +117,10 @@ include negative numbers and empty sequences.
   change what it runs. In the sandbox the client is mounted read-only, it
   runs as `python3 -I` so a `json.py` the author writes is not imported, and
   the audit flags any write to `try`, its socket or `workspace.json`.
-  `test_isolation.py` plants each of these.
+  The client reads only a plain file inside the workspace, reached without
+  links, so `./try` cannot be pointed at a host file (for example
+  `/etc/shadow`, which the author process could otherwise read) to echo it
+  back in a diagnostic. `test_isolation.py` plants each of these.
 - The host reads what an author wrote (answer files, transcripts) only as
   plain files with one link. It opens each path one component at a time from
   the workspace (`--workspace DIR` on `score`, `extract` and `audit`) with

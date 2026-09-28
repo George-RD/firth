@@ -234,6 +234,22 @@ def main() -> int:
         scored_litter = harness.score({"reverse": litter}, "python", [harness.BY_ID["reverse"]], 1)
         check(scored_litter["tasks"]["reverse"]["pass"],
               "a sandboxed program that writes a file still scores, and its files are removed")
+        # Codex's probe: the client runs as the author (root in the sandbox),
+        # so an allowed `./try` could read a host file and echo it back in a
+        # diagnostic. The planted case shows the file is readable there.
+        shadow = isolate.run(ws, ["bash", "-c", "head -c 5 /etc/shadow"],
+                             capture_output=True, text=True, timeout=300)
+        check(shadow.returncode == 0 and shadow.stdout,
+              "the author process can read /etc/shadow (the planted case)")
+        outside = isolate.run(ws, ["./try", "--task", "reverse", "/etc/shadow"],
+                              capture_output=True, text=True, timeout=300)
+        check("not a file in the workspace" in outside.stderr and shadow.stdout not in outside.stdout,
+              f"try refuses a file outside the workspace: {outside.stderr.strip()}")
+        linked_try = isolate.run(ws, ["bash", "-c", "ln -s /etc/shadow s.py && ./try --task reverse s.py"],
+                                 capture_output=True, text=True, timeout=300)
+        check("not a plain file" in linked_try.stderr and shadow.stdout not in linked_try.stdout,
+              f"try refuses a link to a file outside the workspace: {linked_try.stderr.strip()}")
+        (ws / "s.py").unlink()
         other = isolate.run(ws, ["./try", "--task", "fib", "reverse.py"],
                             capture_output=True, text=True, timeout=300)
         check("unknown task" in other.stdout, "try refuses tasks outside the workspace's set")

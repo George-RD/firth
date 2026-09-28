@@ -53,17 +53,42 @@ CLIENT = r'''#!/usr/bin/python3 -I
 
     ./try --task TASK_ID FILE [--stack JSON]
 """
-import argparse, json, socket, sys
+import argparse, json, os, socket, stat, sys
 from pathlib import Path
+HERE = Path(__file__).resolve().parent
+
+
+def read_here(name):
+    """FILE must be a plain file in this workspace, reached without links."""
+    rel = Path(os.path.relpath(os.path.normpath(os.path.abspath(name)), HERE))
+    if rel.parts[:1] == ("..",) or not rel.parts:
+        sys.exit(f"try: {name} is not a file in the workspace")
+    fd = os.open(HERE, os.O_RDONLY | os.O_DIRECTORY)
+    for i, part in enumerate(rel.parts):
+        last = i == len(rel.parts) - 1
+        flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | (0 if last else os.O_DIRECTORY)
+        try:
+            nfd = os.open(part, flags, dir_fd=fd)
+        except OSError:
+            sys.exit(f"try: {name} is not a plain file in the workspace")
+        os.close(fd)
+        fd = nfd
+    st = os.fstat(fd)
+    if not stat.S_ISREG(st.st_mode) or st.st_nlink != 1:
+        sys.exit(f"try: {name} is not a plain file in the workspace")
+    with os.fdopen(fd, encoding="utf-8") as f:
+        return f.read()
+
+
 cli = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 cli.add_argument("--task", required=True)
-cli.add_argument("file", type=Path)
+cli.add_argument("file")
 cli.add_argument("--stack")
 a = cli.parse_args()
-req = {"task": a.task, "source": a.file.read_text(),
+req = {"task": a.task, "source": read_here(a.file),
        "stack": None if a.stack is None else json.loads(a.stack)}
 s = socket.socket(socket.AF_UNIX)
-s.connect(str(Path(__file__).resolve().parent / "try.sock"))
+s.connect(str(HERE / "try.sock"))
 s.sendall(json.dumps(req).encode() + b"\n")
 s.shutdown(socket.SHUT_WR)
 print(b"".join(iter(lambda: s.recv(65536), b"")).decode())
