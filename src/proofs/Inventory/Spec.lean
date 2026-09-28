@@ -14,9 +14,9 @@ no request over its quantity, non-negative stock, conservation, the policy
 rule, the reason table, and priority (each request is decided on the stock
 left after every earlier request).
 
-A proof that `allocate-batch`'s kernel program computes `allocateAll` then
-carries all of these to the program. That proof waits on the allocator's
-locals rewrite; this file does not depend on it.
+`Allocate.lean` proves that `allocate-batch`'s kernel program computes
+`allocateAll` on every valid input, which carries all of these to the program.
+This file does not depend on the program.
 -/
 
 namespace Firth.Proofs.Inventory.Spec

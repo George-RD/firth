@@ -21,7 +21,8 @@ entry cost, a per-request cost that depends on the reason branch, and a
 per-pair cost for the repeated-ID scan. The script fits a, b and c from
 n = 2, 3 and 8, fails unless the fit is exact at every other measured size,
 and fails unless every measurement is within `run_cases.cost_bound`. That bound
-is measured, not proved (`language-06c`).
+is proved for the reference interpreter in `src/proofs/Inventory/Allocate.lean`
+(`batchCost`); this script checks the VM's costs against it.
 """
 from __future__ import annotations
 

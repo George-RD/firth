@@ -120,7 +120,21 @@ macro "word_chain" : tactic => `(tactic| (
     runs_expand
   repeat' runs_atom
   all_goals try (simp only [InInt64]; omega)
-  all_goals try (try clear hCond); (try clear hCond2); runs_arith))
+  all_goals try (try clear hCond); (try clear hCond2); (try clear hCond3); runs_arith))
+
+set_option hygiene false in
+/-- `word_chain` that stops at the step and cost equations, simplified, so the
+counts can be read off while a proof is written. -/
+macro "word_chain_counts" : tactic => `(tactic| (
+  apply Runs.congr
+  focus
+    apply runs_word (by rfl)
+    dsimp only
+    runs_expand
+  repeat' runs_atom
+  all_goals try (simp only [InInt64]; omega)
+  all_goals try simp only [defaultCosts_atom, defaultCosts_primitive, defaultCosts_unfold,
+    Nat.add_zero, Nat.zero_add]))
 
 /-- The IDs at offsets `p` and `q` are equal: their four parts agree. -/
 def blockMatch (ids : List Int) (p q : Nat) : Prop := ∀ k, k < 4 → ids[p + k]? = ids[q + k]?
