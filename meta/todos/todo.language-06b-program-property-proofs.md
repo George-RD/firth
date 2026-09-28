@@ -83,8 +83,8 @@ Two gaps remain and must be stated wherever the result is claimed:
 ## Non-goals
 
 Extending the SMT profile with sequences, sums or quantifiers is not part of
-this task and is not planned (proposed 27 September 2026, pending George's
-decision); it can be revisited. Proving the VM equal to the reference interpreter is not part of
+this task and is not planned (decided 28 September 2026 by the coordinator, on
+George's delegation); it can be revisited. Proving the VM equal to the reference interpreter is not part of
 it either.
 
 ## Traceability
