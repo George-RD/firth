@@ -341,7 +341,19 @@ names over inputs of one type check and compute the wrong result. Names the
 stack effect does not declare are unconstrained, as are blocks that are not the
 first item and blocks with more names than declared inputs, which the checker
 refuses on its own terms. Every word breaking the rule is reported in the one
-diagnostic, with what each name of its block would hold (`dec.locals-input-order`).
+diagnostic, with what each name of its block would hold and the block to write
+instead: the stack effect's input names from the deepest input the block names
+up to the top. A repeated label, or one the body already uses for a word or a
+local, is numbered with a name nothing else uses. When that
+block is not a reordering of the old one, the report also names the body edits
+it needs. Each declared name keeps the input it names; each other name stands
+for an input no name claims, and the body writes that input's name for it.
+The values the old block left on the stack for the body are read as the
+deepest inputs no name claims, and the body starts by pushing them. Each
+edit is applied to the word and checked before it is stated. When the edited
+word is refused where the word as written was accepted, or earlier in the
+source than the word as written, the report states no edit and says only that
+the body must be rewritten for the names it binds (`dec.locals-input-order`).
 
 ### 5.1 Complete erasure algorithm
 

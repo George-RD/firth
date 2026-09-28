@@ -107,24 +107,8 @@ private def availablePrimitives : String :=
 /-- The hint for a stack-effect name used as a variable. Stack-effect names
 document the stack; only `locals` binds names, taking one value from the
 stack for each, the last name from the top. -/
-private def freshBinder (name : String) (taken : List String) : Nat → Nat → String
-  | 0, _ => name
-  | fuel + 1, suffix =>
-      let candidate := s!"{name}{suffix}"
-      if taken.contains candidate then freshBinder name taken fuel (suffix + 1) else candidate
-
-/-- The names a `locals` block can bind for these inputs. A stack effect may
-repeat a label (`n:Int n:Int`), but `locals` refuses a repeated name, so each
-repeat gets the first numbered name (`n2`, `n3`, ...) that no input uses. -/
-def localBinders (inputs : List String) : List String :=
-  inputs.foldl (init := []) fun bound name =>
-    if bound.contains name then
-      let taken := inputs ++ bound
-      bound ++ [freshBinder name taken (taken.length + 1) 2]
-    else bound ++ [name]
-
 private def effectNameHint (name : String) (inputs : List String) : String :=
-  let names := localBinders inputs
+  let names := Firth.Elaborator.localBinders inputs
   let binders := " ".intercalate names
   let renamed := if names == inputs then "" else
     " The stack effect repeats a name and `locals` needs distinct names, so the repeats are numbered here."
@@ -149,21 +133,33 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
               "Define it (definitions may appear in any order), fix the spelling, or bind it as a local with `locals { name } { ... }`. Primitives are written with `prim`: " ++
                 primitiveList ++ ". " ++ definitionShape)
     | "firth.name.locals-order" =>
-        let block (pairs : List (String × String × String)) : String :=
-          s!"`locals \{ {" ".intercalate (pairs.map (·.1))} }`"
-        let fixed (pairs : List (String × String × String)) : String :=
-          s!"`locals \{ {" ".intercalate (pairs.map (·.2.1))} }`"
+        let names (list : List String) : String := s!"`locals \{ {" ".intercalate list} }`"
         let received (pairs : List (String × String × String)) : String :=
           ", ".intercalate (pairs.map fun (name, input, type) =>
             if name == input then s!"`{name}` the value named `{input}` ({type})"
             else s!"`{name}` the value the stack effect calls `{input}` ({type})")
-        let described := error.localsBlocks.map fun (word, pairs) =>
-          s!"{block pairs} in `{word}` gives {received pairs}"
-        let fixes := ", and ".intercalate (error.localsBlocks.map fun (word, pairs) =>
-          s!"{fixed pairs} in `{word}`")
+        let described := error.localsBlocks.map fun block =>
+          s!"{names (block.pairs.map (·.1))} in `{block.word}` gives {received block.pairs}"
+        -- Every edit stated here was applied to the word and checked by
+        -- the pipeline; a block whose edit was not accepted gets no edit.
+        let (checked, unchecked) := error.localsBlocks.partition (·.checked)
+        -- A reordering of the same names needs no change to the body.
+        let (plain, reaching) := checked.partition fun block =>
+          block.renames.isEmpty && block.prelude.isEmpty
+        let plainFix := if plain.isEmpty then "" else
+          s!" Write {", and ".intercalate (plain.map fun block => s!"{names block.block} in `{block.word}`")}, and keep {if plain.length == 1 then "the body" else "the bodies"} as {if plain.length == 1 then "it is" else "they are"}: each name then holds the value the stack effect gives it."
+        let reachingFix := reaching.map fun block =>
+          let renamed := if block.renames.isEmpty then "" else
+            s!" In its body, write {", ".intercalate (block.renames.map fun (name, input) => s!"`{input}` for `{name}`")}, since the new block binds {if block.renames.length == 1 then "that input" else "those inputs"} under the stack effect's {if block.renames.length == 1 then "name" else "names"}."
+          let prelude := if block.prelude.isEmpty then "" else
+            let count := block.prelude.length
+            s!" Then start the body with `{" ".intercalate block.prelude}`: the old block left {if count == 1 then "1 value" else s!"{count} values"} on the stack for the body, and the new block binds every input, so the body pushes {if count == 1 then "the input" else "the inputs"} none of the old names stood for."
+          s!" Write {names block.block} in `{block.word}`: the block takes the inputs from the top of the stack, so for each name the stack effect declares to hold the value it gives that name, the block must bind every input from the deepest such name up to the top.{renamed}{prelude}"
+        let uncheckedFix := unchecked.map fun block =>
+          s!" In `{block.word}` the body was written for the values the names hold now, so changing the block alone does not fix it: bind the inputs by their own names, as in {names block.block}, and rewrite the body so that each name is used for the value it holds."
         (s!"A `locals` block binds the word's inputs in a different order from its stack effect: " ++
             "; ".intercalate described ++ ".",
-          s!"A `locals` block takes one value off the stack for each name, the last name from the top, so the names must follow the stack effect's inputs from left to right. Write {fixes}, and keep the bodies as they are: each name then holds the value the stack effect gives it. Swapping values with `swap` would not help, because the names are what is wrong.")
+          s!"A `locals` block takes one value off the stack for each name, the last name from the top, so the names must follow the stack effect's inputs from left to right.{plainFix}{String.join reachingFix}{String.join uncheckedFix} Swapping values with `swap` would not help, because the names are what is wrong.")
     | _ =>
         let expected := match error.expected with
           | some expected => s!", expected `{expected}`"
