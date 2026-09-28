@@ -239,13 +239,16 @@ mutual
                   -- from the top down; only the order they were taken in
                   -- may differ, and the true path's is kept.
                   -- The same operation reaching below with as many of the
-                  -- branch's own values is one account, whichever path
+                  -- branch's own values, taking the same values from below
+                  -- and missing as many, is one account, whichever path
                   -- pushed them; a value the paths push differently is
-                  -- named by both.
+                  -- named by both. Paths whose reaches differ in anything
+                  -- else are lost. Equal counts, values below and missing
+                  -- values leave the two paths as many own values.
                   let reach : Option (Option BranchReach) := match afterTrue.reach, afterFalse.reach with
                     | none, none => some none
                     | some onTrue, some onFalse =>
-                        if onTrue.operation == onFalse.operation && onTrue.own.length == onFalse.own.length then
+                        if { onTrue with own := onFalse.own } == onFalse then
                           some (some { onTrue with own := (onTrue.own.zip onFalse.own).map fun (a, b) =>
                             if a == b then a else s!"{a} or {b}" })
                         else none

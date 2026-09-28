@@ -831,7 +831,8 @@ def runElaboratorDiagnosticTests : IO Unit := do
   -- path alone misreports: `a` stays in place on one path and is taken on
   -- the other; one path misses one value and the other two; the paths
   -- first reach below with different operations, or with the same one
-  -- after pushing different numbers of values. Each report keeps the
+  -- after pushing different numbers of values, or taking different values
+  -- from below and missing different numbers. Each report keeps the
   -- checker's account.
   let differentNumbers := "The two branches of `if` in `g` leave different numbers of values"
   let threeInputs := ": h (forall ρ; ρ x:Int^many y:Int^many z:Int^many -- ρ r:Int^many) prim + prim + ;\n\n"
@@ -843,7 +844,9 @@ def runElaboratorDiagnosticTests : IO Unit := do
       ("nested paths reach with different operations",
         ": g (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) true [ true [ swap drop ] [ prim + ] if ] [ ] if ;"),
       ("nested paths reach after pushing different numbers of values",
-        threeInputs ++ ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) true [ true [ 1 h ] [ dup h ] if ] [ ] if ;")] do
+        threeInputs ++ ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) true [ true [ 1 h ] [ dup h ] if ] [ ] if ;"),
+      ("nested paths reach taking different values below",
+        ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) true [ true [ prim + drop drop ] [ drop prim + drop ] if ] [ ] if ;")] do
     match elaboratePipeline pipelineContext source agentConfig with
     | .failure [envelope] =>
         let emitted := encode envelope
@@ -862,12 +865,16 @@ def runElaboratorDiagnosticTests : IO Unit := do
   let pushedOne := ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) drop true [ 1 prim + ] [ 0 ] if ;"
   branchReport "branch pushed one operand" pushedOne
     ["`prim +` needs 2 values (Int, Int), but the branch has pushed only 1 value before it (`1`).",
-      "Make the branch push, just before `prim +`, exactly the values it takes, in this order: Int, Int. The branch already pushes `1`: keep it in its place where it is one of these, and push the other one"]
+      "Make the branch push, just before `prim +`, exactly the values it takes, in this order: Int, Int. The branch already pushes `1`: keep it in its place where it is one of these and replace it where it is not, then push the other one"]
   match elaboratePipeline pipelineContext pushedOne agentConfig with
   | .failure [envelope] =>
       if (encode envelope).contains "Push every value" then
         fail s!"branch pushed one operand: the hint asks for every value again: {encode envelope}"
   | _ => pure ()
+  -- A pushed value of the wrong type is not to be kept: the hint says to
+  -- replace it.
+  branchReport "branch pushed a Bool operand" ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) drop true [ true prim + ] [ 0 ] if ;"
+    ["The branch already pushes `true`: keep it in its place where it is one of these and replace it where it is not, then push the other one"]
   -- Following the hint, with `2` as the other value, makes the program check.
   match elaboratePipeline pipelineContext ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) drop true [ 2 1 prim + ] [ 0 ] if ;" agentConfig with
   | .success _ => pure ()
