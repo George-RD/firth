@@ -13,9 +13,10 @@ set_option linter.unusedVariables false
 namespace Firth.LogicTest
 open Firth.Logic
 
-/- `runs_arith` with an `if` condition in context. Before `runs_clear_bool`,
-`omega` ran out of heartbeats at `whnf` whenever a Boolean equation was in
-context, even an unrelated `b = true`. -/
+/- `runs_arith` with an `if` condition in context. Before it cleared Boolean
+equations (now done by `runs_clear_nonarith`), `omega` ran out of heartbeats
+at `whnf` whenever a Boolean equation was in context, even an unrelated
+`b = true`. -/
 set_option maxHeartbeats 20000 in
 example (c : Nat) (b : Bool) (hCondition : b = true) :
     (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + c))))))))))))))))))))))))))))))))) = 33 + c := by
@@ -23,6 +24,14 @@ example (c : Nat) (b : Bool) (hCondition : b = true) :
 
 set_option maxHeartbeats 20000 in
 example (x y : Int) (c : Nat) (hCondition : decide (x < y) = false) :
+    (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + c))))))))))))))))))))))))))))))))) = 33 + c := by
+  runs_arith
+
+/- `runs_arith` with a list lookup in context, as a chain through
+`seq-int.at` has. Before `runs_clear_nonarith` cleared every equation that
+is not over `Int` or `Nat`, `omega` ran out of heartbeats at `whnf` here too. -/
+set_option maxHeartbeats 20000 in
+example (qs : List Int) (i q : Int) (c : Nat) (hq : qs[i.toNat]? = some q) :
     (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + c))))))))))))))))))))))))))))))))) = 33 + c := by
   runs_arith
 
@@ -44,9 +53,13 @@ example (p : Int) (b : Bool) (hCondition : b = true) (h0 : 0 ≤ p)
     (h1 : p < 4611686018427387904) : InInt64 (p + 8) := by
   runs_side
 
-/- Clearing is limited to Boolean equations: an integer fact stays and
-`omega` uses it. -/
+/- Clearing is limited to equations over types other than `Int` and `Nat`: an
+integer fact stays and `omega` uses it, including an integer equation. -/
 example (x : Int) (b : Bool) (hCondition : b = true) (h : x < 3) : x + 1 ≤ 3 := by
+  runs_arith
+
+example (x y : Int) (n : Nat) (qs : List Int) (hq : qs[n]? = some x) (h : x = y + 2)
+    (hn : n = 4) : x + n = y + 6 := by
   runs_arith
 
 /- `int64Gamma` refuses `div` where the VM traps: a zero divisor, and the one

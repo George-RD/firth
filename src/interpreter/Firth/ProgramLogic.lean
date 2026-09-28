@@ -779,25 +779,33 @@ rules leaves behind.
 @[simp] theorem defaultCosts_unfold : defaultCosts.unfold = 1 := rfl
 
 open Lean Elab Tactic Meta in
-/-- Clears every hypothesis that is an equation between Booleans, such as the
-condition `decide (x < y) = true` of an `if`. `omega` cannot use one, and with
-one in context it can run out of heartbeats normalising a long step or cost
-sum; `Firth.LogicTest` has the case. -/
-elab "runs_clear_bool" : tactic => withMainContext do
+/-- Clears every hypothesis that is an equation (or disequation) between
+values of a type other than `Int` or `Nat`: the condition
+`decide (x < y) = true` of an `if`, or a list lookup `xs[i]? = some q` from
+`seq-int.at`. `omega` cannot use one, and with one in context it can run out
+of heartbeats normalising a long step or cost sum; `Firth.LogicTest` has both
+cases. Equations over `Int` or `Nat`, and every other hypothesis, stay. -/
+elab "runs_clear_nonarith" : tactic => withMainContext do
   let mut goal ← getMainGoal
   for decl in ← getLCtx do
     if decl.isImplementationDetail then continue
     let type ← instantiateMVars decl.type
-    if type.isAppOfArity ``Eq 3 && (type.getArg! 0).isConstOf ``Bool then
-      goal ← goal.tryClear decl.fvarId
+    let carrier? :=
+      if type.isAppOfArity ``Eq 3 then some (type.getArg! 0)
+      else if type.isAppOfArity ``Ne 3 then some (type.getArg! 0)
+      else none
+    if let some carrier := carrier? then
+      unless carrier.isConstOf ``Int || carrier.isConstOf ``Nat do
+        goal ← goal.tryClear decl.fvarId
   replaceMainGoal [goal]
 
-/-- Closes a step or cost equation or inequality under `defaultCosts`. Boolean
-equations in context are cleared first (see `runs_clear_bool`), so a fact
-`omega` needs must be stated over `Int` or `Nat`, not as a `decide`. -/
+/-- Closes a step or cost equation or inequality under `defaultCosts`.
+Equations over types other than `Int` and `Nat` are cleared first (see
+`runs_clear_nonarith`), so a fact `omega` needs must be stated over `Int` or
+`Nat`, not as a `decide` or a lookup. -/
 macro "runs_arith" : tactic =>
   `(tactic| ((try simp only [defaultCosts_atom, defaultCosts_primitive, defaultCosts_unfold]) <;>
-    (runs_clear_bool; omega)))
+    (runs_clear_nonarith; omega)))
 
 section Bounds
 variable {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
@@ -974,7 +982,7 @@ out of heartbeats. -/
 macro "runs_side" : tactic => `(tactic| first
   | with_reducible assumption
   | runs_arith
-  | (runs_clear_bool; simp only [InInt64] at *; omega))
+  | (runs_clear_nonarith; simp only [InInt64] at *; omega))
 
 /-- Settles the condition of an `if` in a chain, or fails. -/
 macro "runs_condition" : tactic => `(tactic| first
