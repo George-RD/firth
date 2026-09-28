@@ -1,6 +1,6 @@
 {"records": [
   {
-    "evidence": "8e499e1feea3a87d04891977f35259068175271aba1a0a0b6a23e60cbbc36ee5",
+    "evidence": "d25e5483958147551baba5e23a79a5286a8342289ec687fe688e5fc91e5ee267",
     "theorem": "Firth.Proofs.Programs.SumTo.sum_to_contract",
     "module": "proofs.Programs.SumTo",
     "export": "Programs.SumTo",
@@ -18,13 +18,14 @@
       "cost": "fun n => HAdd.hAdd (HMul.hMul 13 n) 10"},
     "statement_digest": "02453cdb0baec6cb4dc6e56079599e18c8b75350cdbe4bec536c0b344aea833d",
     "axioms": ["Classical.choice", "Quot.sound", "propext"],
+    "lean": "4.30.0",
     "gamma_binding": {"name": "Firth.Logic.int64Gamma", "digest": "cc02e721b4e62bf0938bcf4851b41a17a0ea9d9948a0ccbe884ae5b61379d317"},
     "cost_binding": {"name": "Firth.Interpreter.defaultCosts", "digest": "e1ca9f7d23e83b190af851773feb6d3cc56a878c91c15ce6c8ebecdf87e4200c"},
     "covers": [
       {"module": "Programs.SumTo", "source": "examples/programs/sum-to.firth", "word": "sum-to", "body_digest": "ef719ea2f5c0dfd9cdd6a21149a833aa34431bb0b50f87d378e5eecfe439d6dc", "erased_type": "(forallρ;ρ,v0:Int^many--ρ,v0:Int^many)"},
       {"module": "Programs.SumTo", "source": "examples/programs/sum-to.firth", "word": "sum-acc", "body_digest": "6eca79a71d906194ae54383cdb1c0e704fc1b143f937f564241c0f0461ddfc95", "erased_type": "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many)"}]},
   {
-    "evidence": "004db6637885d3fc4e1f6486943ae84e84875e0fdfd2dbc1422577d4f49a25da",
+    "evidence": "071bda633052f330831d0d6a8163cb6ad44af0bdd7777f09b2dc0f132484318b",
     "theorem": "Firth.Proofs.Programs.Signed.abs_contract",
     "module": "proofs.Programs.Signed",
     "export": "Programs.Signed",
@@ -42,6 +43,7 @@
       "cost": "fun x => 15"},
     "statement_digest": "25d8a763a6adcb9fd2bf08369222a96847787fb0f99400ee2116134f7eb52e62",
     "axioms": ["Classical.choice", "Quot.sound", "propext"],
+    "lean": "4.30.0",
     "gamma_binding": {"name": "Firth.Logic.int64Gamma", "digest": "cc02e721b4e62bf0938bcf4851b41a17a0ea9d9948a0ccbe884ae5b61379d317"},
     "cost_binding": {"name": "Firth.Interpreter.defaultCosts", "digest": "e1ca9f7d23e83b190af851773feb6d3cc56a878c91c15ce6c8ebecdf87e4200c"},
     "covers": [

@@ -37,8 +37,8 @@ theorem that assumes one is not of the admitted shape.
 A record covers the named word and every exported word it calls, directly or
 through quotations, closed under calls. Each covered word is recorded with its
 body digest and erased type. The registry and the cost table are recorded with
-the digest of their definitions and every definition under `Firth` they rest
-on. The contract's arguments, precondition, stacks and bounds are printed into
+the digest of their definitions and every definition of this repository
+they rest on. The contract's arguments, precondition, stacks and bounds are printed into
 the record, so a reader sees every assumption. The record's evidence id is the
 SHA-256 of its canonical text.
 
@@ -83,7 +83,7 @@ structure Covered where
   erasedType : String
 
 /-- A definition a contract names, bound to the digest of its definition and
-every definition under `Firth` it rests on. -/
+every definition of this repository it rests on. -/
 structure Binding where
   name : Name
   digest : String
@@ -201,11 +201,20 @@ def coveredWords (exportModule word : String) : Except String (List Covered) := 
       some { module := exportModule, source, word := name, bodyDigest, erasedType }
     else none
 
-/-- The definitions of `roots` and of every definition under `Firth` they rest
-on, as `name := value` lines in name order. Each root is always included, and
-refused (`none`) when it has no definition. Definitions outside `Firth` that a
-root uses (Lean's own `Nat`, `List`, …) are not followed: they are not the
-language's semantics and do not change with it. -/
+/-- Whether `name` comes from Lean's own toolchain (`Init`, `Std`, `Lean`,
+`Lake`), which `lean-toolchain` pins, rather than from this repository. -/
+def fromToolchain (env : Environment) (name : Name) : Bool :=
+  match env.getModuleIdxFor? name with
+  | some index => match env.header.moduleNames[index.toNat]? with
+      | some module => [`Init, `Std, `Lean, `Lake].contains module.getRoot
+      | none => false
+  | none => false
+
+/-- The definitions of `roots` and of every definition of this repository they
+rest on, whatever its namespace, as `name := value` lines in name order. Each
+root is always included, and refused (`none`) when it has no definition.
+Definitions from Lean's toolchain (`Nat`, `List`, …) are not followed: they
+are pinned by `lean-toolchain` and are not the language's semantics. -/
 partial def firthDefinitionsOf (env : Environment) (roots : List Name) : Option String := do
   for root in roots do
     let info ← env.find? root
@@ -218,7 +227,7 @@ where
       Option (List (Name × String))
     | [], _, lines, _ => some lines
     | name :: rest, seen, lines, roots =>
-        if seen.contains name || !(roots.contains name || (`Firth).isPrefixOf name) then
+        if seen.contains name || (!roots.contains name && fromToolchain env name) then
           go rest seen lines roots
         else do
           let info ← env.find? name
@@ -233,14 +242,14 @@ where
 def firthDefinitions (env : Environment) (root : Name) : Option String :=
   firthDefinitionsOf env [root]
 
-/-- The digest of a definition and every definition under `Firth` it rests
-on, or `none` when there is no such definition. A change to it, or to anything
-under `Firth` it uses, changes the digest. -/
+/-- The digest of a definition and every definition of this repository it
+rests on, or `none` when there is no such definition. A change to it, or to
+anything of this repository it uses, changes the digest. -/
 def definitionDigest (env : Environment) (name : Name) : Option String :=
   (firthDefinitions env name).map Digest.hexOfString
 
 /-- The digest of a statement: its text, and the definitions of every constant
-it names with every definition under `Firth` they rest on. The text alone
+it names with every definition of this repository they rest on. The text alone
 names `triangle` but not what `triangle` is, so a changed helper in a
 contract's precondition or output would otherwise leave the digest as it was. -/
 def statementDigest (env : Environment) (statement : Expr) : Option String :=
@@ -272,11 +281,6 @@ theorem's own type, and the contract's fields as printed. -/
 def statementOf (contract : Contract) (theoremType : Expr) : MetaM (Expr × Statement) := do
   unless allowedGammas.contains contract.gamma do
     throwError "{contract.gamma} is not a reference registry (adapterGamma or int64Gamma)"
-  -- Only definitions under `Firth` are followed when binding digests, so a
-  -- cost table or contract elsewhere could rest on definitions no digest sees.
-  for (name, what) in [(contract.costs, "cost table"), (contract.contract, "contract")] do
-    unless (`Firth).isPrefixOf name do
-      throwError "{what} {name} is outside Firth, so what it rests on would not be bound"
   let gamma ← constOfType contract.gamma ``Firth.Interpreter.Gamma "registry"
   let costs ← constOfType contract.costs ``Firth.Interpreter.CostTable "cost table"
   let wordContract ← constOfType contract.contract ``Firth.Logic.WordContract "contract"
@@ -369,6 +373,7 @@ private def recordBody (record : ProofRecord) : String :=
       \"cost\": {quote s.cost}},
     \"statement_digest\": {quote record.statementDigest},
     \"axioms\": [{axioms}],
+    \"lean\": {quote Lean.versionString},
     \"gamma_binding\": {bindingJson record.gamma},
     \"cost_binding\": {bindingJson record.costTable},
     \"covers\": [

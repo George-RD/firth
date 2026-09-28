@@ -21,7 +21,7 @@ It then reads the new report back with `firthProofRecords --status`, which
 audits every record again and counts it only when the audit reproduces it
 exactly. It plants one change at a time into the report: a stale cost table
 digest, a stale registry digest, a stale body digest, a stale erased type, a
-stale statement digest, an edited precondition, and a forged cover for a word
+stale statement digest, a stale Lean version, an edited precondition, and a forged cover for a word
 the record does not cover. Each must withdraw contract_verified from the words that record covers, and
 the forged cover must not verify its word.
 
@@ -61,7 +61,6 @@ EXPECTED_REFUSALS = {
     f"{REFUSED}.vacuousPrecondition": NOT_THE_CONTRACT,
     f"{REFUSED}.otherRegistry": f"{REFUSED}.renamedGamma is not a reference registry",
     f"{REFUSED}.foreignDictionary": NOT_THE_CONTRACT,
-    f"{REFUSED}.outsideCosts": "cost table Elsewhere.costs is outside Firth",
     f"{ACCEPTED}.absOnly": NOT_THE_CONTRACT,
     "Firth.ProofTests.Gone.anything": "the source of prooftests.Gone",
 }
@@ -193,6 +192,8 @@ def plant(record: dict, change: str, words: list[dict]) -> str | None:
         record["covers"][0]["body_digest"] = "0" * 64
     elif change == "erased type":
         record["covers"][0]["erased_type"] += " "
+    elif change == "toolchain":
+        record["lean"] = "0.0.0"
     elif change == "statement digest":
         record["statement_digest"] = "0" * 64
     elif change == "precondition":
@@ -226,7 +227,7 @@ def check_staleness(report: str) -> list[str]:
               if other is not record for item in other["covers"]}
     expected = verified_words(parsed["words"]) - (covered - others)
     for change in ("cost table", "registry", "body digest", "erased type", "statement digest",
-                   "precondition", "forged cover"):
+                   "toolchain", "precondition", "forged cover"):
         planted = json.loads(report)
         plant(planted["records"][0], change, parsed["words"])
         result = status(json.dumps(planted))

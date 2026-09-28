@@ -75,20 +75,3 @@ theorem foreignDictionary :
   exact (show Runs int64Gamma _ defaultCosts _ _ _ 1 1 by runs_chain).within
 
 end Firth.ProofTests.Refused
-
-/-- The default cost table under a name outside `Firth`. Digests follow only
-definitions under `Firth`, so a table here could rest on definitions no
-digest sees; the audit refuses it by name, however honest the proof. -/
-def Elsewhere.costs : Firth.Interpreter.CostTable := Firth.Interpreter.defaultCosts
-
-namespace Firth.ProofTests.Refused
-open Firth.Logic Firth.ProofTests.Accepted
-
-/-- `diff`'s contract under that table: a sound proof, refused for where the
-table lives. -/
-theorem outsideCosts :
-    diffContract.Holds int64Gamma Firth.Exports.Programs.Signed.dictionary Elsewhere.costs
-      Firth.Exports.Programs.Signed.«diff».body :=
-  int64Diff
-
-end Firth.ProofTests.Refused
