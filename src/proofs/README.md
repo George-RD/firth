@@ -41,7 +41,9 @@ Also in the library:
   such as an `if` condition `decide (x < y) = true` before calling `omega`,
   which can time out with one in context, so state any fact the arithmetic
   needs over `Int` or `Nat`. The side goals match assumptions up to
-  reducible unfolding only. `src/interpreter/FirthLogicTest.lean` holds the
+  reducible unfolding only, so a hypothesis that wraps `InInt64` in a
+  definition of your own (`h : MyRange x`) must be unfolded first, or used
+  with `exact h`. `src/interpreter/FirthLogicTest.lean` holds the
   regression cases.
 
 `Programs/Signed.lean` proves `abs`, whose local compiles to `pick` and
