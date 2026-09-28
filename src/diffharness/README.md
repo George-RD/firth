@@ -1,8 +1,9 @@
 # Portable differential execution
 
 The driver builds and invokes the real Firth elaborator, Lean reference
-interpreter, compiler and Rust VM. Python generates source and coordinates
-processes; it is not an alternative language interpreter.
+interpreter, compiler and Rust VM. Python generates source, coordinates
+processes and states what each generated fragment must compute (the oracle
+below); it does not run Firth source.
 
 From the repository root with the pinned Lean and Rust toolchains installed:
 
@@ -20,17 +21,44 @@ with independently seeded literals and row inputs. The same seed and index
 produce the same recipe for this generator version. Replay checks the saved
 source against its recipe and executes those exact bytes, not a new random case.
 
-The profile includes non-negative integers, Booleans, addition, row-polymorphic
-inputs, both external conditional branches, multiword calls, qualified names,
-locals, nested quotations, quote/call, compose, dip and swap. Integers and
-composition are bounded so generated executions stay below the portable signed
-64-bit limit. Every original and reduced source is re-elaborated.
+The profile includes signed integers, Booleans, row-polymorphic inputs, both
+external conditional branches, multiword calls, qualified names, locals, nested
+quotations, quote/call, compose, dip and swap, and the integer primitives `+`,
+`-`, `*`, `div` and `mod` with both operand orders. Conditionals are also driven
+by `<` and `=` combined with `and`, `or` and `not`. One literal in five is an
+edge value (`MIN`, `MAX`, their neighbours, `-1`, `0`, `1`, `2`, `±2^31`,
+`±2^32`); the rest are from -50 to 50. Cases therefore reach zero divisors,
+`MIN div -1` and signed 64-bit overflow. Every original and reduced source is
+re-elaborated.
 
-Only successful, well-formed pure observations with matching stacks and kernel
-cost count as agreement. Raw VM cost may differ. Both hosts exhausting fuel is
-`bounded-fuel-inconclusive`, not agreement. One-sided exhaustion, traps,
-portable integer overflow, checker/compiler rejection, malformed transport and
+### Expected results
+
+`expected()` in `harness.py` is an oracle written from the documented meaning
+of each fragment, not from either host: division is Euclidean (the remainder is
+never negative), a zero divisor faults, the reference's integers are unbounded
+and the portable VM faults when `+`, `-`, `*` or `div` leaves the signed 64-bit
+range. For each host it gives the final stack, or the fault with the faulting
+primitive's two operands left above the row input. Each host must match it
+exactly; otherwise the case is `oracle-mismatch`, naming the host. This catches
+a bug the reference and the VM share, which host agreement cannot (rule 10 in
+`AGENTS.md`). Its hand-worked checks and planted shared bugs (truncating
+division, a signed remainder, swapped operands, a reversed `<`, a VM that
+returns 0 for a zero divisor, a bounded reference) are in
+`tools/loop/test_diffharness.py`.
+
+Three outcomes pass, each only when both hosts match the oracle:
+
+- `agreement`: both succeed, and stacks, kernel cost and traces match.
+- `expected-trap`: both fault where the oracle says a zero divisor faults.
+- `expected-portable-overflow`: the reference succeeds with its unbounded
+  result and the VM faults at the first primitive that leaves the 64-bit range.
+  This is the documented difference between the two hosts, not an agreement.
+
+Raw VM cost may differ. Both hosts exhausting fuel is
+`bounded-fuel-inconclusive`, not agreement. One-sided exhaustion, a trap the
+oracle does not predict, checker/compiler rejection, malformed transport and
 process failures have separate failure classes and all fail the finite gate.
+The oracle does not model cost, traces or fuel; those keep the checks below.
 A process timeout is distinct from interpreter/VM fuel exhaustion. The fuel
 budget defaults to 4096 per generated case and is bounded by the gate's
 `MAX_FUEL`, the largest budget the VM adapter accepts. Each host records at
@@ -70,14 +98,14 @@ commands and paths are diagnostic data and are never executed. Shrinking does
 not proceed when the saved failure signature is not reproduced.
 
 Shrinking removes unused words, whole typed fragments and row inputs before
-reducing literals and branch flags. A reduction must re-elaborate, retain the
+reducing literals (towards zero, for negative ones too) and branch flags. A reduction must re-elaborate, retain the
 same failure kind, stage and traps, and decrease the recipe's complexity.
 `--shrink-steps` caps candidate executions (default 32; maximum 256).
 `budget-exhausted` is not a minimality claim; `fixed-point` describes only the
 implemented reduction rules. Fuel and quotation depth are not independently
 minimised in this initial source-fragment shrinker.
 
-Exit 0 means every executed case agreed, including a formerly failing replay
+Exit 0 means every executed case passed, including a formerly failing replay
 that now succeeds. Exit 1 means a mismatch, trap, inconclusive result or other
 case failure. Exit 2 means configuration, build or replay validation failed.
 
