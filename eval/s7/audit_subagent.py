@@ -93,6 +93,7 @@ def solutions_mismatch(kept: Path) -> list[str]:
                 bad.append(f"{sol}: not the answers as written (tasks {', '.join(diff)[:200]})")
             prev = got
         else:
+            bad.append(f"{sol}: missing, so what was scored is not kept (Codex, on #147)")
             prev = want
         n += 1
     return bad

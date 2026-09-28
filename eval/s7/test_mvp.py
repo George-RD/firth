@@ -215,6 +215,7 @@ def subagent_audit() -> None:
         prompt, ans = d / "prompt-firth.md", d / "answer-1.md"
         prompt.write_text("p")
         ans.write_text("### task: sort\n")
+        (d / "solutions-1.json").write_text(json.dumps(harness.extract(ans.read_text())))
 
         def call(name, **inp):
             return {"type": "assistant", "timestamp": "t",
@@ -238,7 +239,10 @@ def subagent_audit() -> None:
         sol.write_text(json.dumps({**harness.extract(ans.read_text()), "sort": "changed after the answer"}))
         check(len(audit(ok, prompt, d, d)[1]) == 1, "the audit flags scored solutions that differ from the answer")
         sol.unlink()
+        check(len(audit(ok, prompt, d, d)[1]) == 1, "the audit flags an answer round with no scored solutions kept")
+        sol.write_text(json.dumps(harness.extract(ans.read_text())))
         ans.write_text("### task: sort\nchanged\n")
+        sol.write_text(json.dumps(harness.extract(ans.read_text())))
         check(len(audit(ok, prompt, d, d)[1]) == 1, "the audit flags an answer changed after it was written")
     from audit_subagent import solutions_mismatch
     kept = sorted(p for p in (HERE / "runs").glob("2026-09-28-*/*") if (p / "answer-1.md").is_file())
