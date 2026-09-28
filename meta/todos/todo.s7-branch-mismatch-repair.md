@@ -31,7 +31,7 @@ diagnostic, in `eval/s7/runs/2026-09-28-haiku-470c6d0/`:
 - A separate scored Haiku rerun of the MVP set after that change, recorded
   under `eval/s7/runs/` and in `eval/s7/README.md`, reports how many
   branch mismatches were repaired between rounds.
-- That rerun also takes several first answers on the run 6 prompt and on
-  its own, so the first-answer `firth.name.unresolved` rise from run 5 to
+- That rerun also takes several first answers on each of the run 5 prompt
+  (`cec3707`) and the run 6 prompt (`470c6d0`), so the first-answer `firth.name.unresolved` rise from run 5 to
   run 6 (7 and 19, against 1 and 0) can be put down to sample variance or
   to the prompt's additions (README, "Run 6").
