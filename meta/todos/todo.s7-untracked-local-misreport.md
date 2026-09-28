@@ -8,7 +8,7 @@ created: 2026-09-28
 
 Done in #145 (`42330f6`): an `if` whose branches leave different depths is
 reported at the `if`, with its expected and actual stacks, not as an
-untracked local. #148 (open) extends that to every depth-mismatched `if`,
+untracked local. #148 (merged as `e1e698a`) extends that to every depth-mismatched `if`,
 wherever it sits, including one whose quotation is bound to a local. The
 last criterion, a separate scored re-run of the MVP set, moves to
 `todo.s7-mvp-rerun`.

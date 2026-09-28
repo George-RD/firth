@@ -406,7 +406,23 @@ def tree_state() -> tuple[str, str]:
                           cwd=ROOT, capture_output=True).stdout
     status = subprocess.run(["git", "status", "--porcelain", "--untracked-files=all", "--", ".", ":(exclude)eval"],
                             cwd=ROOT, capture_output=True).stdout
-    return firth_commit(), hashlib.sha256(diff + b"\0" + status).hexdigest()
+    return firth_commit(), hashlib.sha256(diff + b"\0" + status + b"\0" + untracked_digest()).hexdigest()
+
+
+def untracked_digest() -> bytes:
+    """The names and contents of the untracked files outside eval/, which
+    `git diff` leaves out and `git status` lists only by name."""
+    names = subprocess.run(["git", "ls-files", "-z", "--others", "--exclude-standard", "--", ".", ":(exclude)eval"],
+                           cwd=ROOT, capture_output=True).stdout
+    h = hashlib.sha256()
+    for name in sorted(n for n in names.split(b"\0") if n):
+        path = ROOT / os.fsdecode(name)
+        h.update(name + b"\0")
+        if path.is_file() and not path.is_symlink():
+            h.update(hashlib.sha256(path.read_bytes()).digest())
+        elif path.is_symlink():
+            h.update(b"link:" + os.fsencode(os.readlink(path)))
+    return h.digest()
 
 
 def firth_commit() -> str:

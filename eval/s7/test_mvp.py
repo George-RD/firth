@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -293,6 +294,22 @@ def hashes_recorded() -> None:
     state = harness.tree_state()
     check(state == harness.tree_state() and state[0] == harness.firth_commit(),
           "the tree state is stable and names the commit firth_commit reports")
+    probe = harness.ROOT / f"s7-untracked-probe-{os.getpid()}"
+    real_digest = harness.untracked_digest
+    try:
+        probe.write_text("before")
+        before = harness.tree_state()
+        probe.write_text("after!")
+        check(harness.tree_state() != before, "an untracked file edited during a run changes the tree state")
+        harness.untracked_digest = lambda: b""
+        probe.write_text("before")
+        names_only = harness.tree_state()
+        probe.write_text("after!")
+        check(harness.tree_state() == names_only,
+              "without its contents hashed, the same edit goes unseen (the planted case)")
+    finally:
+        harness.untracked_digest = real_digest
+        probe.unlink(missing_ok=True)
 
 
 def main() -> int:
