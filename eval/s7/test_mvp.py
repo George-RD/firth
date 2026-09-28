@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -203,6 +204,34 @@ def feedback_keeps_hints() -> None:
     check("hint: `xs` is a name in the word's stack effect." in got
           and "message: `xs` is not a defined word" in got and "actual: xs" in got,
           "feedback keeps a hint that holds an apostrophe")
+
+
+def feedback_shows_location() -> None:
+    # The checker says where in the program it failed; the feedback must show
+    # that line and column, or an author cannot tell which `if` a branch
+    # mismatch means (run 7's `sort` edited the wrong word). The `if` below is
+    # on line 5, from column 21.
+    source = (": main\n"
+              "  (forall ρ; ρ xs:Seq Int^many -- ρ out:Seq Int^many)\n"
+              "  locals { xs } {\n"
+              "    xs prim seq-int.len 0 prim <\n"
+              "    [ xs 1 ] [ xs ] if\n"
+              "  };\n")
+    real = harness.compact
+    harness.compact = lambda text: text  # keep the runner's raw output
+    try:
+        raw = harness.run_firth(source, ([1, 2],), harness.MVP_FUEL).get("error", "")
+    finally:
+        harness.compact = real
+    got = harness.compact(raw)
+    check("code: firth.type.branch-mismatch\nat: line 5, column 21\n" in got,
+          f"feedback names the line and column of the mismatched `if`: {got[:200]!r}")
+    # Planted: the same checker output without its location shows none, so the
+    # check above depends on the location reaching the text.
+    stripped = re.sub(r"'location': \{'path': '[^']*', 'range': \{'start': \{[^}]*\}, "
+                      r"'end': \{[^}]*\}\}\}, ", "", raw)
+    check(stripped != raw and "at: line" not in harness.compact(stripped),
+          "without the location the feedback shows none (the planted case)")
 
 
 def subagent_audit() -> None:
@@ -458,6 +487,7 @@ def main() -> int:
     hashes_recorded()
     rounds_prompt()
     feedback_keeps_hints()
+    feedback_shows_location()
     subagent_audit()
     run_options_parsed()
     unsandboxed_python_refused()
