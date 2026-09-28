@@ -20,10 +20,12 @@ unchanged. The file is restored and rebuilt afterwards.
 
 It then reads the new report back with `firthProofRecords --status`, which
 audits every record again and counts it only when the audit reproduces it
-exactly. It plants one change at a time into the report: a stale cost table
-digest, a stale registry digest, a stale body digest, a stale erased type, a
-stale statement digest, a stale Lean version, an edited precondition, and a forged cover for a word
-the record does not cover. Each must withdraw contract_verified from the words that record covers, and
+exactly. It plants one change at a time into each record of the report: a
+stale cost table digest, a stale registry digest, a stale body digest, a stale
+erased type, a stale statement digest, a stale Lean version, an edited
+precondition, and a forged cover for a word the record does not cover. The
+stale body digest is planted on each covered word in turn, callees included.
+Each must withdraw contract_verified from the words that record covers, and
 the forged cover must not verify its word.
 
 Usage: python3 tools/loop/update_proof_records.py [--check]
@@ -192,17 +194,18 @@ def verified_words(words: list[dict]) -> set[tuple[str, str]]:
             if word["status"] == "contract_verified"}
 
 
-def plant(record: dict, change: str, words: list[dict]) -> str | None:
+def plant(record: dict, change: str, words: list[dict], cover: int = 0) -> str | None:
     """Applies one planted change to a record, returning the word a forged
-    cover adds, if any."""
+    cover adds, if any. `cover` picks which covered word a body digest or
+    erased type change goes to."""
     if change == "cost table":
         record["cost_binding"]["digest"] = "0" * 64
     elif change == "registry":
         record["gamma_binding"]["digest"] = "0" * 64
     elif change == "body digest":
-        record["covers"][0]["body_digest"] = "0" * 64
+        record["covers"][cover]["body_digest"] = "0" * 64
     elif change == "erased type":
-        record["covers"][0]["erased_type"] += " "
+        record["covers"][cover]["erased_type"] += " "
     elif change == "toolchain":
         record["lean"] = "0.0.0"
     elif change == "statement digest":
@@ -220,9 +223,11 @@ def plant(record: dict, change: str, words: list[dict]) -> str | None:
 
 def check_staleness(report: str) -> list[str]:
     """Reads the report back with `--status`, which must reproduce its words.
-    Then plants one change at a time into one record. Each must turn every word
-    only that record covers from contract_verified to type_checked, and verify
-    nothing new."""
+    Then, for every record in turn, plants one change at a time into it. Each
+    must turn every word only that record covers from contract_verified to
+    type_checked, and verify nothing new. A stale body digest is planted on
+    each covered word separately, so a change to any callee (for example
+    `allocate-one` under `allocate-batch`) must withdraw the whole record."""
     problems: list[str] = []
     parsed = json.loads(report)
     result = status(report)
@@ -232,23 +237,30 @@ def check_staleness(report: str) -> list[str]:
         problems.append("--status does not reproduce the report's words")
     if not parsed["records"]:
         return problems + ["no record, so staleness is untested"]
-    record = parsed["records"][0]
-    covered = {(item["module"], item["word"]) for item in record["covers"]}
-    others = {(item["module"], item["word"]) for other in parsed["records"]
-              if other is not record for item in other["covers"]}
-    expected = verified_words(parsed["words"]) - (covered - others)
-    for change in ("cost table", "registry", "body digest", "erased type", "statement digest",
-                   "toolchain", "precondition", "forged cover"):
-        planted = json.loads(report)
-        plant(planted["records"][0], change, parsed["words"])
-        result = status(json.dumps(planted))
-        if result.returncode != 0:
-            problems.append(f"--status failed on a planted {change}:\n{result.stderr}")
-            continue
-        still = verified_words(json.loads(result.stdout)["words"])
-        if still != expected:
-            problems.append(f"a planted {change} left {sorted(still - expected)} contract_verified"
-                            f" or withdrew {sorted(expected - still)}")
+    for index, record in enumerate(parsed["records"]):
+        covered = {(item["module"], item["word"]) for item in record["covers"]}
+        others = {(item["module"], item["word"]) for other in parsed["records"]
+                  if other is not record for item in other["covers"]}
+        expected = verified_words(parsed["words"]) - (covered - others)
+        plants = [(change, 0) for change in ("cost table", "registry", "erased type",
+                                             "statement digest", "toolchain",
+                                             "precondition", "forged cover")]
+        plants += [("body digest", cover) for cover in range(len(record["covers"]))]
+        for change, cover in plants:
+            planted = json.loads(report)
+            plant(planted["records"][index], change, parsed["words"], cover)
+            label = f"{change} ({record['covers'][cover]['word']})" if change == "body digest" \
+                else change
+            result = status(json.dumps(planted))
+            if result.returncode != 0:
+                problems.append(f"--status failed on a planted {label} in "
+                                f"{record['theorem']}:\n{result.stderr}")
+                continue
+            still = verified_words(json.loads(result.stdout)["words"])
+            if still != expected:
+                problems.append(f"a planted {label} in {record['theorem']} left "
+                                f"{sorted(still - expected)} contract_verified"
+                                f" or withdrew {sorted(expected - still)}")
     return problems
 
 
