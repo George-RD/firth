@@ -700,7 +700,10 @@ def normal(path: str) -> str:
     return str(Path("/", *parts))
 
 
-def main() -> int:
+def parser(remainder: bool = False) -> argparse.ArgumentParser:
+    """The command line, without `run`'s author command, which parse_args
+    splits off at `--`. REMAINDER (REMAINDER=True, the old parser) would take
+    `--tool` and the options after the workspace as the command (Codex, on #134)."""
     cli = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = cli.add_subparsers(dest="cmd", required=True)
     w = sub.add_parser("workspace"); w.add_argument("dir", type=Path)
@@ -717,8 +720,21 @@ def main() -> int:
                    help="a directory the author CLI needs (its install), shown read-only at its path")
     r.add_argument("--pass-env", action="append", default=[],
                    help="a host variable the author needs (its API key); nothing else is passed")
-    r.add_argument("command", nargs=argparse.REMAINDER)
-    a = cli.parse_args()
+    if remainder:
+        r.add_argument("command", nargs=argparse.REMAINDER)
+    return cli
+
+
+def parse_args(argv: list[str]) -> argparse.Namespace:
+    """ARGV parsed, with everything after the first `--` as `run`'s command."""
+    cut = argv.index("--") if "--" in argv else len(argv)
+    a = parser().parse_args(argv[:cut])
+    a.command = argv[cut + 1:]
+    return a
+
+
+def main() -> int:
+    a = parse_args(sys.argv[1:])
     if a.cmd == "workspace":
         workspace(a.dir.resolve(), a.lang, a.tier)
     elif a.cmd == "serve":
@@ -737,8 +753,9 @@ def main() -> int:
         print("\n".join(bad) if bad else "clean: only try and workspace files")
         return 1 if bad else 0
     elif a.cmd == "run":
-        cmd = a.command[1:] if a.command[:1] == ["--"] else a.command
-        return run(a.dir.resolve(), cmd, tuple(a.keep), tuple(a.pass_env), tools=tuple(a.tool)).returncode
+        if not a.command:
+            raise SystemExit("run: name the author command after `--`")
+        return run(a.dir.resolve(), a.command, tuple(a.keep), tuple(a.pass_env), tools=tuple(a.tool)).returncode
     return 0
 
 

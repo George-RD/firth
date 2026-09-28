@@ -246,6 +246,20 @@ def subagent_audit() -> None:
           f"every kept round's scored solutions are its answers as written ({len(kept)} authors)")
 
 
+def run_options_parsed() -> None:
+    # Codex's case: the README's `run DIR --tool X -- CMD` must parse --tool as
+    # an option, not as the author command. Planted: with the old REMAINDER
+    # positional, --tool lands in the command and no tool is shown.
+    import isolate
+    argv = ["run", "/var/tmp/ws", "--tool", "/opt/cli", "--keep", "/root/.cred", "--", "author", "--flag"]
+    a = isolate.parse_args(argv)
+    check(a.tool == ["/opt/cli"] and a.keep == ["/root/.cred"] and a.command == ["author", "--flag"],
+          f"run parses its options before -- and the command after it: {a.tool} {a.keep} {a.command}")
+    old = isolate.parser(remainder=True).parse_args(argv)
+    check(old.tool == [] and old.command[:1] == ["--tool"],
+          f"with REMAINDER, --tool is taken as the command (the planted case): {old.command[:2]}")
+
+
 def unsandboxed_python_refused() -> None:
     real = harness.os.geteuid
     try:
@@ -334,6 +348,7 @@ def main() -> int:
     rounds_prompt()
     feedback_keeps_hints()
     subagent_audit()
+    run_options_parsed()
     unsandboxed_python_refused()
     if "--no-firth" not in sys.argv:
         firth_references()
