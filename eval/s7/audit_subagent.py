@@ -128,8 +128,9 @@ def solutions_mismatch(kept: Path) -> list[str]:
     for n in range(1, last + 1):
         if not (kept / f"answer-{n}.md").is_file():
             # A gap would otherwise end the walk before later rounds were compared.
-            bad.append(f"{kept / f'answer-{n}.md'}: missing, so later rounds cannot be checked (Codex, on #152)")
-            break
+            # Keep walking so a later round's mismatch is listed too (CodeRabbit, on #152).
+            bad.append(f"{kept / f'answer-{n}.md'}: missing (Codex, on #152)")
+            continue
         want = {**prev, **extract((kept / f"answer-{n}.md").read_text())}
         sol = kept / f"solutions-{n}.json"
         if sol.is_file():

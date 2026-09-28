@@ -280,6 +280,8 @@ def subagent_audit() -> None:
         (gap / "solutions-2.json").write_text(json.dumps({"sort": "not what was written"}))
         check(any("answer-1.md" in b for b in solutions(gap)),
               "the audit flags answers kept after a missing round")
+        check(any("solutions-2.json" in b for b in solutions(gap)),
+              "after a missing round, the next round's mismatch is still listed")
         (gap / "repair-2.md").write_text("hidden case: [[3, 1, 2]] -> [[1, 2, 3]]\n")
         check(any("repair-2.md" in b for b in repairs(gap, "firth")),
               "the audit checks feedback kept after a missing round")
