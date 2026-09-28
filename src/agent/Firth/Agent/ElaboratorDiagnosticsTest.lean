@@ -337,6 +337,42 @@ def runElaboratorDiagnosticTests : IO Unit := do
           emitted.contains "the repeats are numbered" then pure ()
       else fail s!"a repeated effect name got a duplicate-binder hint: {emitted}"
   | _ => fail "repeated-effect-name result was not singular"
+
+  -- `locals` blocks that bind the inputs top first, the mode that failed
+  -- every task of one authoring-eval sample. Copied verbatim from count-below
+  -- in eval/s7/runs/2026-09-28-haiku-c6a964a/haiku-firth-1/answer-2.md. The
+  -- report names what every misordered block binds, in every word at once,
+  -- and the blocks it says to write make the program check.
+  let reversedLocals := ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { k xs } {\n    0 0 xs k helper-count\n  };\n\n: helper-count\n  (forall ρ; ρ acc:Int^many idx:Int^many xs:Seq Int^many k:Int^many -- ρ result:Int^many)\n  locals { k xs idx acc } {\n    idx xs prim seq-int.len prim <\n    [\n      xs idx prim seq-int.at locals { v } {\n        v k prim <\n        [ acc 1 prim + idx 1 prim + xs k helper-count ]\n        [ acc idx 1 prim + xs k helper-count ]\n        if\n      }\n    ]\n    [ acc ]\n    if\n  };\n"
+  let localsNeedles := [
+    "`locals { k xs }` in `main` gives `k` the value the stack effect calls `xs` (Seq Int), `xs` the value the stack effect calls `k` (Int)",
+    "`locals { k xs idx acc }` in `helper-count` gives `k` the value the stack effect calls `acc` (Int)",
+    "Write `locals { xs k }` in `main`, and `locals { acc idx xs k }` in `helper-count`",
+    "Swapping values with `swap` would not help"]
+  match elaboratePipeline pipelineContext reversedLocals agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "reversed locals" "firth.name.locals-order" emitted
+      for needle in localsNeedles do
+        unless emitted.contains needle do
+          fail s!"reversed locals: the report does not say {needle}: {emitted}"
+  | _ => fail "reversed locals: expected one diagnostic"
+  let suggested := (reversedLocals.replace "locals { k xs }" "locals { xs k }").replace
+    "locals { k xs idx acc }" "locals { acc idx xs k }"
+  match elaboratePipeline pipelineContext suggested agentConfig with
+  | .success _ => pure ()
+  | .failure _ => fail "reversed locals: the blocks the report suggests do not check"
+  -- What the author saw before: a type error at the call, pointing to `swap`.
+  let beforeLocals := "code: firth.type.word-input-mismatch\nmessage: `helper-count` in `main` needs Int Int Seq Int Int on top of the stack, but the stack before it is ρ Int Int Int Seq Int.\nhint: The top value is Seq Int but `helper-count` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation."
+  if localsNeedles.all (beforeLocals.contains ·) then
+    fail "reversed locals: the report from before this change passes the checks"
+  -- Same-typed inputs bound in reverse check and compute the wrong value,
+  -- so the refusal is the only report such a program gets.
+  match elaboratePipeline pipelineContext ": difference\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { b a } { a b prim - };" agentConfig with
+  | .failure [envelope] =>
+      unless (encode envelope).contains "Write `locals { a b }` in `difference`" do
+        fail s!"reversed same-typed locals: {encode envelope}"
+  | _ => fail "reversed same-typed locals were accepted"
   match elaboratePipeline pipelineContext
       s!": pair {repeated} locals \{ n n2 } \{ n n2 prim + } ;" agentConfig with
   | .success _ => pure ()

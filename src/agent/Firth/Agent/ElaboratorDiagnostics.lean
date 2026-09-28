@@ -148,6 +148,22 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
             (s!"{actual} is not a defined word, primitive or local.",
               "Define it (definitions may appear in any order), fix the spelling, or bind it as a local with `locals { name } { ... }`. Primitives are written with `prim`: " ++
                 primitiveList ++ ". " ++ definitionShape)
+    | "firth.name.locals-order" =>
+        let block (pairs : List (String × String × String)) : String :=
+          s!"`locals \{ {" ".intercalate (pairs.map (·.1))} }`"
+        let fixed (pairs : List (String × String × String)) : String :=
+          s!"`locals \{ {" ".intercalate (pairs.map (·.2.1))} }`"
+        let received (pairs : List (String × String × String)) : String :=
+          ", ".intercalate (pairs.map fun (name, input, type) =>
+            if name == input then s!"`{name}` the value named `{input}` ({type})"
+            else s!"`{name}` the value the stack effect calls `{input}` ({type})")
+        let described := error.localsBlocks.map fun (word, pairs) =>
+          s!"{block pairs} in `{word}` gives {received pairs}"
+        let fixes := ", and ".intercalate (error.localsBlocks.map fun (word, pairs) =>
+          s!"{fixed pairs} in `{word}`")
+        (s!"A `locals` block binds the word's inputs in a different order from its stack effect: " ++
+            "; ".intercalate described ++ ".",
+          s!"A `locals` block takes one value off the stack for each name, the last name from the top, so the names must follow the stack effect's inputs from left to right. Write {fixes}, and keep the bodies as they are: each name then holds the value the stack effect gives it. Swapping values with `swap` would not help, because the names are what is wrong.")
     | _ =>
         let expected := match error.expected with
           | some expected => s!", expected `{expected}`"

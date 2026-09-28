@@ -99,6 +99,10 @@ name, the last name from the top:
 
 Inside the second braces, `a` and `b` can be used any number of times. The
 result is whatever the block leaves on the stack; `r` is never assigned.
+The names follow the stack effect from left to right, so the top input is the
+last name. A block that opens the body and uses the stack effect's names in
+another order, such as `locals { b a }` here, is refused with
+`firth.name.locals-order`: it would give `b` the value the effect calls `a`.
 
 Brackets create a quotation: code that runs only when called or selected.
 `if` consumes the Boolean below the two quotations and executes the first
