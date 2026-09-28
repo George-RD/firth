@@ -401,6 +401,35 @@ def main() -> int:
                   f"a kept credential is readable by the author as a copy: {kept.stdout!r} {kept.stderr.strip()}")
         finally:
             shutil.rmtree(creds)
+        # Codex's probe: a kept directory with a link inside it to the hidden
+        # tests. Copying it through the link would bring them into the sandbox.
+        # The planted case is the old copy command, which follows links.
+        nest = Path(tempfile.mkdtemp(dir="/root", prefix="s7-keep-"))
+        try:
+            (nest / "token").write_text("token")
+            os.symlink(HERE / "mvp_tasks.py", nest / "tasks")
+            read_nest = ["bash", "-c", f"cat {nest}/tasks 2>/dev/null | grep -c allocate-batch"]
+            check(refused_exit(lambda: isolate.run(ws, ["true"], keep=(str(nest),))),
+                  "--keep refuses a directory with a link inside it")
+            check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"], keep=(str(nest),))),
+                  "the sandbox refuses to copy a kept directory with a link inside it")
+            real_plain, isolate.plain_tree = isolate.plain_tree, lambda k: None
+            try:
+                mutant = isolate.sandbox_command(ws, read_nest, keep=(str(nest),), uid=isolate.NOBODY)
+            finally:
+                isolate.plain_tree = real_plain
+            # Even past the refusal, the copy keeps the link a link, which
+            # dangles inside.
+            kept_link = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+            check(kept_link.stdout.strip() in ("", "0"),
+                  f"copied without following links, the hidden tests stay out: {kept_link.stdout.strip()!r}")
+            i = mutant.index("-c") + 1
+            mutant[i] = mutant[i].replace("cp -r --no-dereference", "cp -rL")
+            leaked = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+            check(leaked.stdout.strip() not in ("", "0"),
+                  f"copied through the link, the hidden tests reach the sandbox (the planted case): {leaked.stdout.strip()!r}")
+        finally:
+            shutil.rmtree(nest)
         # A credential path the author could have planted or redirected is refused:
         # in the workspace, under a world-writable directory, or through a link.
         (ws / "planted.json").write_text("x")

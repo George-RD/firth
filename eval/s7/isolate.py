@@ -270,6 +270,8 @@ def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = (),
     if os.geteuid() != 0:
         raise SystemExit("the sandbox needs root (unshare and mount)")
     sources = allowed_sources(tools)
+    for k in keep:
+        plain_tree(k)
     check_exposure(dir, [s for s, _ in sources] + [os.path.realpath(k) for k in keep])
     stage, new = "/run/s7-stage", "/run/s7-root"
     lines = ["set -e", f"mkdir -p {stage} {new}", f"mount -t tmpfs tmpfs {stage}",
@@ -277,7 +279,7 @@ def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = (),
     # Credentials the author needs come in as copies its uid can read, not as
     # the host's files. They are staged outside the new root.
     for i, k in enumerate(keep):
-        lines.append(f"cp -rL {q(k)} {stage}/k{i}")
+        lines.append(f"cp -r --no-dereference {q(k)} {stage}/k{i}")
         if uid is not None:
             lines.append(f"chown -R {uid}:{uid} {stage}/k{i}")
     for t in SYSTEM:
@@ -351,10 +353,24 @@ def hand_over(dir: Path, uid: int) -> None:
             os.lchown(path, uid, uid)
 
 
+def plain_tree(k: str) -> None:
+    """Refuse a kept credential that holds anything but plain files and
+    directories. A link nested in a kept directory could point at the
+    repository, and copying through it would bring the hidden tests in
+    (Codex's finding); a device or FIFO has no place among credentials."""
+    for top, dirs, files in os.walk(k, followlinks=False):
+        for n in [top] + [os.path.join(top, e) for e in dirs + files]:
+            mode = os.lstat(n).st_mode
+            if not (stat.S_ISDIR(mode) or stat.S_ISREG(mode)):
+                raise SystemExit(f"--keep {k}: {n} is not a plain file or directory")
+    if not os.path.isdir(k) and not stat.S_ISREG(os.lstat(k).st_mode):
+        raise SystemExit(f"--keep {k}: not a plain file or directory")
+
+
 def check_keep(keep: tuple[str, ...], dir: Path) -> None:
     """Refuse a credential path an author could have planted or redirected: one
     inside the workspace, one through a link, or one under a directory that
-    `nobody` or anyone at all can write (`cp -rL` would follow what it found)."""
+    `nobody` or anyone at all can write (something could be swapped in there)."""
     work = os.path.realpath(dir)
     for k in keep:
         path = os.path.abspath(k)
