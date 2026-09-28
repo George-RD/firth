@@ -75,6 +75,56 @@ theorem stackTyping_snoc_inv {rest : StackType} {type : ValueType} {stack : Stac
   cases hs with
   | cons valueType tailType => exact ⟨_, _, rfl, valueType, tailType⟩
 
+theorem stackTyping_pickAt {stack : Stack} {stackType : StackType}
+    (typing : StackTyping gamma dictionary stack stackType) :
+    ∀ {depth : Nat} {type : ValueType}, stackType.pickAt depth = some type →
+      ∃ value, stack[depth]? = some value ∧ ValueTyping gamma dictionary value type := by
+  induction stack generalizing stackType with
+  | nil =>
+      cases typing
+      intro depth type found; simp [StackType.pickAt] at found
+  | cons head tail ih =>
+      cases typing with
+      | cons valueTyping tailTyping =>
+        intro depth type found
+        cases depth with
+        | zero =>
+            simp [StackType.pickAt] at found
+            subst found
+            exact ⟨_, rfl, valueTyping⟩
+        | succ depth =>
+            simp only [StackType.pickAt] at found
+            rcases ih tailTyping found with ⟨value, valueEq, typed⟩
+            exact ⟨value, by simpa using valueEq, typed⟩
+
+theorem stackTyping_rollAt {stack : Stack} {stackType : StackType}
+    (typing : StackTyping gamma dictionary stack stackType) :
+    ∀ {depth : Nat} {rest : StackType} {type : ValueType},
+      stackType.rollAt depth = some (rest, type) →
+      ∃ value tail, rollOut stack depth = some (value, tail) ∧
+        ValueTyping gamma dictionary value type ∧ StackTyping gamma dictionary tail rest := by
+  induction stack generalizing stackType with
+  | nil =>
+      cases typing
+      intro depth rest type found; simp [StackType.rollAt] at found
+  | cons head tail ih =>
+      cases typing with
+      | cons valueTyping tailTyping =>
+        intro depth rest type found
+        cases depth with
+        | zero =>
+            simp [StackType.rollAt] at found
+            rcases found with ⟨rfl, rfl⟩
+            exact ⟨_, _, rfl, valueTyping, tailTyping⟩
+        | succ depth =>
+            simp only [StackType.rollAt, Option.map_eq_some_iff] at found
+            rcases found with ⟨⟨remaining, moved⟩, inner, pairEq⟩
+            simp only [Prod.mk.injEq] at pairEq
+            rcases pairEq with ⟨rfl, rfl⟩
+            rcases ih tailTyping inner with ⟨value, rolledTail, rolled, typed, tailTyped⟩
+            exact ⟨value, head :: rolledTail, by simp [rollOut, rolled], typed,
+              StackTyping.cons valueTyping tailTyped⟩
+
 theorem step_deterministic (gamma : Gamma) (dictionary : Dictionary)
     (costs : CostTable) (config : Config) :
     ∀ next₁ next₂,
@@ -360,6 +410,21 @@ theorem preservation (gamma : Gamma) (dictionary : Dictionary) (costs : CostTabl
                 simp [step] at successor
                 rcases successor with ⟨rfl, rfl⟩
                 exact preservation_swap firstTyping secondTyping tailTyping restTyping
+        | pick depth =>
+            cases headTyping with
+            | pick h many =>
+                rcases stackTyping_pickAt stackTyping h with ⟨value, found, valueTyping⟩
+                simp [step, found] at successor
+                rcases successor with ⟨rfl, rfl⟩
+                exact ⟨_, _, StackTyping.cons valueTyping stackTyping, restTyping⟩
+        | roll depth =>
+            cases headTyping with
+            | roll h =>
+                rcases stackTyping_rollAt stackTyping h with
+                  ⟨value, tail, found, valueTyping, tailTyping⟩
+                simp [step, found] at successor
+                rcases successor with ⟨rfl, rfl⟩
+                exact ⟨_, _, StackTyping.cons valueTyping tailTyping, restTyping⟩
         | call =>
             cases headTyping with
             | call =>
@@ -464,7 +529,8 @@ mutual
     | .lit _ => some []
     | .push value => resolveKernelValueDependencies gamma dictionary value
     | .quotation body => resolveKernelProgramDependencies gamma dictionary body
-    | .dup | .drop | .swap | .dip | .call | .compose | .quote | .ifThenElse => some []
+    | .dup | .drop | .swap | .pick _ | .roll _ | .dip | .call | .compose | .quote
+    | .ifThenElse => some []
     | .word name =>
         match dictionary name with
         | some entry => some [.word name entry.type]
@@ -515,6 +581,8 @@ mutual
     | dup => exact ⟨[], rfl⟩
     | drop => exact ⟨[], rfl⟩
     | swap => exact ⟨[], rfl⟩
+    | pick => exact ⟨[], rfl⟩
+    | roll => exact ⟨[], rfl⟩
     | call => exact ⟨[], rfl⟩
     | dip => exact ⟨[], rfl⟩
     | compose => exact ⟨[], rfl⟩

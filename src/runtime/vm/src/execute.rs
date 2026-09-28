@@ -531,6 +531,8 @@ fn step<'x>(
             Op::Dup => step_dup(environment, machine),
             Op::Drop => step_drop(environment, machine),
             Op::Swap => step_swap(machine),
+            Op::Pick => step_pick(instruction, machine),
+            Op::Roll => step_roll(instruction, machine),
             Op::Call => step_call(image, environment, machine, current_word),
             Op::Dip => step_dip(image, environment, machine, current_word),
             Op::Compose => step_compose(machine),

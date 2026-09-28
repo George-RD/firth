@@ -50,7 +50,9 @@ fn measure_code(code: &[Instruction], depth: usize, size: &mut usize) -> Result<
         match instruction.operand.as_ref() {
             Some(Operand::Literal(value)) => measure_value(value, depth, size)?,
             Some(Operand::Quote(quotation)) => measure_quotation(quotation, depth + 1, size)?,
-            Some(Operand::Capture(index)) => measure_add(size, unsigned_size(*index))?,
+            Some(Operand::Capture(index)) | Some(Operand::Depth(index)) => {
+                measure_add(size, unsigned_size(*index))?
+            }
             Some(Operand::Word(name)) | Some(Operand::Primitive(name)) => {
                 measure_bytes(name.len(), size)?;
             }

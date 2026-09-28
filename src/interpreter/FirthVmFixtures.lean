@@ -29,6 +29,8 @@ def renderAtom : Atom → String
   | .dup => "dup"
   | .drop => "drop"
   | .swap => "swap"
+  | .pick depth => s!"pick:{depth}"
+  | .roll depth => s!"roll:{depth}"
   | .dip => "dip"
   | .call => "call"
   | .compose => "compose"
@@ -77,6 +79,14 @@ def main : IO Unit := do
     { stack := [], program := one .drop }
   emit "swap" "-" "1" emptyDictionary
     { stack := [.literal (.int 2), .literal (.int 1)], program := one .swap }
+  emit "pick" "-" "1" emptyDictionary
+    { stack := [.literal (.int 3), .literal (.int 2), .literal (.int 1)], program := one (.pick 2) }
+  emit "pick-fault" "-" "0" emptyDictionary
+    { stack := [.literal (.int 1)], program := one (.pick 1) }
+  emit "roll" "-" "1" emptyDictionary
+    { stack := [.literal (.int 3), .literal (.int 2), .literal (.int 1)], program := one (.roll 2) }
+  emit "roll-fault" "-" "0" emptyDictionary
+    { stack := [.literal (.int 1)], program := one (.roll 1) }
   emit "dip" "-" "4" emptyDictionary
     { stack := [], program := .cons (.lit (.int 4))
         (.cons (.quotation (one (.lit (.int 5)))) (one .dip)) }

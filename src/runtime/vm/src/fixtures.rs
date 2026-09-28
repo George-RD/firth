@@ -75,6 +75,12 @@ fn fixture_instruction(token: &str) -> Result<Instruction, VmError> {
         "compose" => Ok(instruction(Op::Compose)),
         "quote" => Ok(instruction(Op::Quote)),
         "if" => Ok(instruction(Op::If)),
+        token if token.starts_with("pick:") || token.starts_with("roll:") => Ok(Instruction {
+            op: if token.starts_with("pick:") { Op::Pick } else { Op::Roll },
+            operand: Some(Operand::Depth(
+                token[5..].parse().map_err(|_| VmError::InvalidLeb128)?,
+            )),
+        }),
         token if token.starts_with("word:") => Ok(Instruction {
             op: Op::CallWord,
             operand: Some(Operand::Word(String::from(&token[5..]))),

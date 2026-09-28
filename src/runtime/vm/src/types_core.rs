@@ -91,6 +91,8 @@ pub enum Op {
     If,
     CallWord,
     Prim,
+    Pick,
+    Roll,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -98,6 +100,8 @@ pub enum Operand {
     Literal(Value),
     Quote(Quotation),
     Capture(u64),
+    /// How many values below the top a `PICK` or `ROLL` reaches.
+    Depth(u64),
     Word(String),
     Primitive(String),
 }

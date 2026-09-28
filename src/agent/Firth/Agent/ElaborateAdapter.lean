@@ -180,6 +180,8 @@ mutual
     | .dup => obj [("kind", quote "dup")]
     | .drop => obj [("kind", quote "drop")]
     | .swap => obj [("kind", quote "swap")]
+    | .pick depth => obj [("kind", quote "pick"), ("depth", number depth)]
+    | .roll depth => obj [("kind", quote "roll"), ("depth", number depth)]
     | .dip => obj [("kind", quote "dip")]
     | .call => obj [("kind", quote "call")]
     | .compose => obj [("kind", quote "compose")]

@@ -289,6 +289,13 @@ fn adapter_instruction(value: &Json, context: &str) -> Result<Instruction, Adapt
                 )?)),
             )
         }
+        "pick" | "roll" => {
+            object(value, context, &["op", "depth"])?;
+            (
+                if op == "pick" { Op::Pick } else { Op::Roll },
+                Some(Operand::Depth(unsigned(member(value, context, "depth")?, context)?)),
+            )
+        }
         "call-word" => {
             object(value, context, &["op", "name"])?;
             (

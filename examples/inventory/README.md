@@ -29,14 +29,14 @@ before it looks for repeated IDs.
 
 For a batch of n valid requests with no repeated ID, the kernel cost is at most
 
-    417 + 767·n + 264·n(n−1)/2
+    166 + 199·n + 264·n(n−1)/2
 
-which is 581,729 at the 64-request maximum, inside the VM's 1,000,000-step fuel
+which is 545,126 at the 64-request maximum, inside the VM's 1,000,000-step fuel
 cap. `measure_cost.py` measures n = 0 to 64 on both hosts. It uses IDs sharing
 their first 24 characters, which is the slowest case for the repeated-ID
 scan, and one run for each allocation branch. For n ≥ 2 each run's cost is
-exactly `333 + b·n + 264·n(n−1)/2`, where b is 689 (out-of-stock), 756
-(fulfilled) or 766 (insufficient-stock), plus 78 once for the single partial
+exactly `82 + b·n + 264·n(n−1)/2`, where b is 169 (out-of-stock), 191
+(fulfilled) or 198 (insufficient-stock), plus 30 once for the single partial
 request a batch can have. The stated bound is deliberately looser than any one
 of those: it uses the largest per-request cost and the n = 0 entry cost, so it
 also covers mixed batches and the one partial request. An invalid input stops
@@ -83,11 +83,13 @@ toolchain produces:
 
 ## What the language needed
 
-- **Locals are expensive in hot loops.** A local costs tens of kernel steps per
-  use. The first version of the repeated-ID scan used six locals and ran out of
-  the 1,000,000-step fuel at 64 requests. The scan is now written with stack
+- **Locals were expensive in hot loops.** A local cost tens of kernel steps
+  per use, so the first version of the repeated-ID scan, with six locals, ran
+  out of the 1,000,000-step fuel at 64 requests. The scan is written with stack
   words, and the IDs arrive as one sequence (four Ints per request) instead of
-  four. The rest of the program uses locals.
+  four. Since `pick` and `roll` a local costs one step per use, which cut the
+  per-request cost from 689 to 766 steps down to 169 to 198; the scan's 264 per
+  pair was already hand-written and is unchanged.
 - **There is no Boolean `and` or absolute difference.** Both are written with
   nested `if`.
 - **There are no imports.** `vocab` groups words inside one file, but a
