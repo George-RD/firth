@@ -1,0 +1,14 @@
+\ Division by repeated subtraction: n = q * d + r with 0 <= r < d.
+: div-from
+  (forall ρ; ρ n:Int^many d:Int^many q:Int^many -- ρ quotient:Int^many rest:Int^many)
+  locals { n d q }
+  { n d prim < [ q n ] [ n d prim - d q 1 prim + div-from ] if };
+
+\ Not tail recursive: the last digit is pushed after the others. A 64-bit
+\ number has at most 19 digits, well under the frame limit.
+: main
+  (forall ρ; ρ n:Int^many -- ρ digits:Seq Int^many)
+  locals { n }
+  { n 10 prim <
+    [ prim seq-int.empty n prim seq-int.push ]
+    [ n 10 0 div-from locals { q r } { q main r prim seq-int.push } ] if };

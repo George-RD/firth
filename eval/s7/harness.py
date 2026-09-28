@@ -4,15 +4,20 @@
 The author model sees only the language docs, each task's description, its
 input/output shape and one visible example. Hidden tests stay here.
 
-    harness.py prompt  --lang firth --tier today|all|hard [--extra-doc F] > prompt.md
+    harness.py prompt  --lang firth --tier today|all|hard|mvp [--extra-doc F] > prompt.md
     harness.py extract --lang firth answer.md > solutions.json
-    harness.py score   --lang firth solutions.json > results.json
+    harness.py score   --lang firth solutions.json|DIR > results.json
     harness.py repair  --lang firth solutions.json results.json > repair.md
+    harness.py try     --lang firth --task ID program.firth [--stack JSON]
     harness.py report  runs/*/results-*.json
 
 A task passes only when every hidden test returns exactly the expected stack.
 Firth runs go through tools/loop/firth_run.py, so a pass also means the VM and
 the Lean reference interpreter agreed.
+
+`try` is the author's diagnostics loop for the MVP tier: it checks and runs a
+program on the task's visible example, or on inputs the author chooses, and
+never on the hidden tests.
 """
 from __future__ import annotations
 
@@ -26,13 +31,19 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from tasks import BY_ID, HARD, TASKS, Task  # noqa: E402
+from tasks import BY_ID, HARD, MVP, TASKS, Task  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 RUNNER = ROOT / "tools/loop/firth_run.py"
 # The docs a newcomer would read. Nothing under src/, tools/ or examples/.
 FIRTH_DOCS = ("docs/getting-started.md", "docs/firth-agent-guide.md")
+# The MVP tier also needs sequences, which the getting-started guide documents
+# by pointing to this README.
+MVP_DOCS = FIRTH_DOCS + ("examples/programs/README.md",)
+# MVP tasks run with the runner's largest step budget, so real loops fit.
+MVP_FUEL = 1_000_000
 TIMEOUT = 300
+MVP_IDS = frozenset(t.id for t in MVP)
 
 
 def select(tier: str) -> list[Task]:
@@ -42,6 +53,8 @@ def select(tier: str) -> list[Task]:
         return list(HARD)
     if tier == "everything":
         return list(TASKS + HARD)
+    if tier == "mvp":
+        return list(MVP)
     if tier == "today":
         return [t for t in TASKS if t.needs <= {"add"}]
     if tier == "later":
@@ -50,14 +63,22 @@ def select(tier: str) -> list[Task]:
 
 
 def lit(v, lang: str) -> str:
+    if isinstance(v, list):
+        if lang != "firth":
+            return repr(v)
+        return "{ " + " ".join(lit(x, lang) for x in v) + " }" if v else "an empty sequence"
     if isinstance(v, bool):
         return ("true" if v else "false") if lang == "firth" else str(v)
     return str(v)
 
 
+PY_TYPES = {"Int": "int", "Bool": "bool", "Seq Int": "list[int]", "Seq Bool": "list[bool]"}
+
+
 def shape(task: Task, lang: str) -> str:
-    ins = ", ".join(f"{n}: {ty}" for n, ty in task.inputs) or "none"
-    outs = ", ".join(f"{n}: {ty}" for n, ty in task.outputs)
+    ty = (lambda t: t) if lang == "firth" else PY_TYPES.__getitem__
+    ins = ", ".join(f"{n}: {ty(t)}" for n, t in task.inputs) or "none"
+    outs = ", ".join(f"{n}: {ty(t)}" for n, t in task.outputs)
     ex_in = ", ".join(lit(v, lang) for v in task.example)
     ex_out = ", ".join(lit(v, lang) for v in task.expected(task.example))
     if lang == "firth":
@@ -69,8 +90,24 @@ def shape(task: Task, lang: str) -> str:
             f"Example: main({ex_in}) returns {ex_out if len(task.outputs) == 1 else '(' + ex_out + ')'}.")
 
 
-def prompt(tasks: list[Task], lang: str, extra_docs: tuple[str, ...] = ()) -> str:
+TRY = "python3 eval/s7/harness.py try --lang {lang} --task <task id> <file>"
+
+
+def prompt(tasks: list[Task], lang: str, extra_docs: tuple[str, ...] = (),
+           mvp: bool = False) -> str:
+    """The author's prompt. With `mvp`, the author may use the `try` loop and
+    nothing else; without it, the author answers from the prompt alone."""
     parts = []
+    loop = (
+        "While you work you may check and run a program with\n\n"
+        f"    {TRY.format(lang=lang)}\n\n"
+        "which runs it on that task's example and shows the result, or the diagnostics "
+        "if it fails. Add `--stack '<JSON array>'` to run it on inputs of your own instead "
+        + ("(bottom of the stack first; a sequence is a JSON array). " if lang == "firth" else
+           "(the arguments in order; a list is a JSON array). ")
+        + "Use it as often as you "
+        "like. Do not open, read or search any other file, and do not use the internet.\n"
+        if mvp else "")
     if lang == "firth":
         parts.append(
             "You are writing programs in Firth, a new stack language. You have never seen "
@@ -78,9 +115,10 @@ def prompt(tasks: list[Task], lang: str, extra_docs: tuple[str, ...] = ()) -> st
             "are run with the portable runner described in 'Getting started', so only what "
             "that runner supports will execute.\n\n"
             "For each task, write a complete Firth source file whose entry word is named "
-            "`main`. Helper words are allowed. Do not use tools, files or the internet; "
-            "answer from the documentation alone.\n")
-        for doc in FIRTH_DOCS:
+            "`main`. Helper words are allowed. "
+            + (f"Each run may take up to {MVP_FUEL:,} steps.\n\n" + loop if mvp else
+               "Do not use tools, files or the internet; answer from the documentation alone.\n"))
+        for doc in (MVP_DOCS if mvp else FIRTH_DOCS):
             parts.append(f"<document path=\"{doc}\">\n{(ROOT / doc).read_text()}\n</document>\n")
         for doc in extra_docs:
             parts.append(f"<document path=\"{Path(doc).name}\">\n{Path(doc).read_text()}\n</document>\n")
@@ -88,7 +126,7 @@ def prompt(tasks: list[Task], lang: str, extra_docs: tuple[str, ...] = ()) -> st
     else:
         parts.append(
             "For each task, write a Python 3 function named `main`. Use only the standard "
-            "library. Do not use tools; answer directly.\n")
+            "library." + ("\n\n" + loop if mvp else " Do not use tools; answer directly.\n"))
         fence = "python"
     parts.append(
         f"Answer every task in this exact format, one block per task, and nothing that "
@@ -107,14 +145,27 @@ def extract(text: str) -> dict[str, str]:
     return {m.group(1): m.group(2) for m in BLOCK.finditer(text)}
 
 
-def run_firth(source: str, args: tuple) -> dict:
+def load_solutions(path: Path) -> dict[str, str]:
+    """A solutions JSON file, or a directory of `<task id>.firth` / `<task id>.py` files."""
+    if path.is_dir():
+        return {f.stem: f.read_text() for f in sorted(path.iterdir()) if f.suffix in (".firth", ".py")}
+    return json.loads(path.read_text())
+
+
+def fuel_for(task: Task) -> int | None:
+    """The step budget a task runs with; None means the runner's default."""
+    return MVP_FUEL if task.id in MVP_IDS else None
+
+
+def run_firth(source: str, args: tuple, fuel: int | None = None, outputs: int = 0) -> dict:
     with tempfile.NamedTemporaryFile("w", suffix=".firth", delete=False) as f:
         f.write(source)
         path = f.name
     try:
         p = subprocess.run(
             [sys.executable, str(RUNNER), "run", path, "--entry", "main",
-             "--stack", json.dumps(list(args))],
+             "--stack", json.dumps(list(args)),
+             *(["--fuel", str(fuel)] if fuel is not None else [])],
             cwd=ROOT, capture_output=True, text=True, timeout=TIMEOUT)
     except subprocess.TimeoutExpired:
         return {"ok": False, "error": "timeout"}
@@ -145,13 +196,19 @@ import json, sys
 ns = {}
 exec(compile(sys.stdin.read(), "solution.py", "exec"), ns)
 r = ns["main"](*json.loads(sys.argv[1]))
-print(json.dumps(list(r) if isinstance(r, (tuple, list)) else [r]))
+# A task with one output returns it bare, even when it is a list; with several,
+# a tuple (or list) of them.
+if int(sys.argv[2]) == 1:
+    out = list(r) if isinstance(r, tuple) and len(r) == 1 else [r]
+else:
+    out = list(r) if isinstance(r, (tuple, list)) else [r]
+print(json.dumps(out))
 """
 
 
-def run_python(source: str, args: tuple) -> dict:
+def run_python(source: str, args: tuple, fuel: int | None = None, outputs: int = 0) -> dict:
     try:
-        p = subprocess.run([sys.executable, "-c", PY_DRIVER, json.dumps(list(args))],
+        p = subprocess.run([sys.executable, "-c", PY_DRIVER, json.dumps(list(args)), str(outputs)],
                            input=source, capture_output=True, text=True, timeout=30)
     except subprocess.TimeoutExpired:
         return {"ok": False, "error": "timeout"}
@@ -160,10 +217,14 @@ def run_python(source: str, args: tuple) -> dict:
     return {"ok": False, "error": p.stderr.strip()[-2000:]}
 
 
-def same(got: list, want: list) -> bool:
-    # Booleans and integers must not coerce into each other (True == 1 in Python).
-    return len(got) == len(want) and all(
-        type(g) is type(w) and g == w for g, w in zip(got, want))
+def same(got, want) -> bool:
+    """Exact equality of stacks, recursing into sequences. Booleans and integers
+    must not coerce into each other (True == 1 in Python), at any depth."""
+    if type(got) is not type(want):
+        return False
+    if isinstance(want, list):
+        return len(got) == len(want) and all(same(g, w) for g, w in zip(got, want))
+    return got == want
 
 
 def firth_commit() -> str:
@@ -183,9 +244,10 @@ def score(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int) ->
     work = [(t, args, i == 0) for t in tasks if t.id in solutions
             for i, args in enumerate((t.example, *t.hidden))]
     if lang == "firth" and work:
-        runner(solutions[work[0][0].id], work[0][1])  # build the toolchain once, serially
+        runner(solutions[work[0][0].id], work[0][1], fuel_for(work[0][0]))  # build the toolchain once, serially
     with ThreadPoolExecutor(jobs) as pool:
-        outs = list(pool.map(lambda w: runner(solutions[w[0].id], w[1]), work))
+        outs = list(pool.map(
+            lambda w: runner(solutions[w[0].id], w[1], fuel_for(w[0]), len(w[0].outputs)), work))
     per: dict[str, dict] = {t.id: {"needs": sorted(t.needs), "submitted": t.id in solutions,
                                     "cases": []} for t in tasks}
     for (t, args, visible), out in zip(work, outs):
@@ -230,6 +292,24 @@ def repair(solutions: dict[str, str], results: dict, lang: str, tasks: list[Task
     return "\n".join(parts)
 
 
+def try_run(source: str, lang: str, task: Task, stack: list | None) -> str:
+    """The author's diagnostics loop: run on the visible example, or on the author's
+    own inputs (with no expected answer). Never touches the hidden tests."""
+    runner = run_firth if lang == "firth" else run_python
+    args = tuple(task.example) if stack is None else tuple(stack)
+    out = runner(source, args, fuel_for(task), len(task.outputs))
+    lines = [f"input: {json.dumps(list(args))}"]
+    if stack is None:
+        lines.append(f"expected: {json.dumps(list(task.expected(args)))}")
+    if not out["ok"]:
+        return "\n".join(lines + ["failed:", readable(out["error"])])
+    lines.append(f"got: {json.dumps(out['stack'])}")
+    if stack is None:
+        lines.append("PASS on the example" if same(out["stack"], list(task.expected(args)))
+                     else "WRONG on the example")
+    return "\n".join(lines)
+
+
 def report(paths: list[Path]) -> str:
     rows = {}
     for p in paths:
@@ -240,7 +320,7 @@ def report(paths: list[Path]) -> str:
     labels = sorted({l for r in rows.values() for l in r})
     out = ["| task | needs | " + " | ".join(labels) + " |",
            "|---|---|" + "---|" * len(labels)]
-    for t in TASKS + HARD:
+    for t in TASKS + HARD + MVP:
         if t.id not in rows:
             continue
         cells = []
@@ -273,20 +353,29 @@ def main() -> int:
     r = sub.add_parser("repair"); r.add_argument("--lang", required=True)
     r.add_argument("solutions", type=Path); r.add_argument("results", type=Path)
     r.add_argument("--tier", default="all")
+    tr = sub.add_parser("try"); tr.add_argument("--lang", required=True, choices=["firth", "python"])
+    tr.add_argument("--task", required=True, choices=sorted(BY_ID))
+    tr.add_argument("program", type=Path)
+    tr.add_argument("--stack", help="JSON array of inputs, bottom of the stack first")
     rep = sub.add_parser("report"); rep.add_argument("results", type=Path, nargs="+")
     a = cli.parse_args()
     if a.cmd == "prompt":
-        print(prompt(select(a.tier), a.lang, tuple(a.extra_doc)).rstrip("\n"))
+        print(prompt(select(a.tier), a.lang, tuple(a.extra_doc), mvp=a.tier == "mvp").rstrip("\n"))
     elif a.cmd == "extract":
         print(json.dumps(extract(a.answer.read_text()), indent=2))
     elif a.cmd == "score":
-        res = score(json.loads(a.solutions.read_text()), a.lang, select(a.tier), a.jobs)
+        res = score(load_solutions(a.solutions), a.lang, select(a.tier), a.jobs)
         res.update(label=a.label, firth_commit=firth_commit(),
                    prompt_docs=[d for d in a.prompt_docs.split(",") if d])
         print(json.dumps(res, indent=2))
     elif a.cmd == "repair":
         print(repair(json.loads(a.solutions.read_text()), json.loads(a.results.read_text()),
                      a.lang, select(a.tier)).rstrip("\n"))
+    elif a.cmd == "try":
+        stack = None if a.stack is None else json.loads(a.stack)
+        if stack is not None and not isinstance(stack, list):
+            cli.error("--stack must be a JSON array")
+        print(try_run(a.program.read_text(), a.lang, BY_ID[a.task], stack))
     elif a.cmd == "report":
         print(report(a.results))
     return 0

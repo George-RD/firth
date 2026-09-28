@@ -1,0 +1,10 @@
+: index-from
+  (forall ρ; ρ xs:Seq Int^many x:Int^many i:Int^many -- ρ r:Int^many)
+  locals { xs x i }
+  { i xs prim seq-int.len prim <
+    [ xs i prim seq-int.at x prim = [ i ] [ xs x i 1 prim + index-from ] if ]
+    [ -1 ] if };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many x:Int^many -- ρ index:Int^many)
+  0 index-from;

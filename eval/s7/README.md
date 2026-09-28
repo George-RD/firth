@@ -63,6 +63,46 @@ ending in `-dirty` if files outside `eval/` had uncommitted changes) and
 messages are kept in compact form: the VM trap class, and the checker's code,
 message, expected and actual stacks and hint.
 
+## The MVP task set
+
+`mvp_tasks.py` is the fixed task set for the roadmap's "MVP agent authoring"
+row, frozen in its own reviewed change before any model attempted it. It has
+20 tasks that need real loops over `Seq Int` and `Seq Bool`, locals and
+several cooperating words. Five are at allocator weight (`merge-sorted`,
+`histogram`, `sort`, `ledger` and `allocate-batch`, the last a whole batch of
+the inventory allocator's rules), and two (`digits`, `primes-up-to`) need
+division, which Firth lacks, so the author builds it from subtraction. Inputs
+include negative numbers and empty sequences.
+
+- Each task's Python `ref` defines the answer. `test_mvp.py` checks every ref
+  against values worked out by hand from the description.
+- `reference/mvp/` has a Firth solution for each task. All 20 pass their
+  example and hidden tests on both hosts. `test_mvp.py` checks that, and that
+  the scorer fails a planted mutant, a Python answer with a Bool where an Int
+  is due, and a single list output read as several values. CI runs it.
+- MVP tasks run with a budget of 1,000,000 steps (`--fuel`), the runner's
+  largest. The references use far less.
+- `prompt --tier mvp` gives the author `docs/getting-started.md`,
+  `docs/firth-agent-guide.md` and `examples/programs/README.md` (the
+  getting-started guide points there for sequences), plus one diagnostics
+  loop, `harness.py try`. It checks and runs a program on the task's visible
+  example, or on inputs the author passes with `--stack`, and shows the
+  result or the checker's diagnostics. It never runs hidden tests. The author
+  may use it as often as it likes and nothing else.
+- Writing the references hit three gaps: no division or remainder, no way to
+  replace one element of a sequence, and no Boolean `not`, `and` or `or`. They
+  are recorded in `meta/todos/todo.language-14-authoring-gaps.md`.
+
+A run gives each task to a fresh author several times, in Firth and in Python,
+keeps every transcript, and reports the pass rate per task and overall.
+
+```sh
+python3 eval/s7/harness.py prompt --lang firth --tier mvp > prompt.md
+python3 eval/s7/harness.py try --lang firth --task sort sort.firth [--stack '[[3, 1, 2]]']
+python3 eval/s7/harness.py score --lang firth --tier mvp solutions.json > results.json
+python3 eval/s7/test_mvp.py
+```
+
 ## Run 1: 27 September 2026, `prim +` only
 
 Main at `c6b1a19`. Authors: Claude Sonnet 5 and Claude Haiku 4.5, one answer

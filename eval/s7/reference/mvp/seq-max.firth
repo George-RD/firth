@@ -1,0 +1,14 @@
+: max2
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b } { a b prim < [ b ] [ a ] if };
+
+: max-from
+  (forall ρ; ρ xs:Seq Int^many best:Int^many i:Int^many -- ρ r:Int^many)
+  locals { xs best i }
+  { i xs prim seq-int.len prim <
+    [ xs best xs i prim seq-int.at max2 i 1 prim + max-from ]
+    [ best ] if };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ largest:Int^many)
+  locals { xs } { xs xs 0 prim seq-int.at 1 max-from };

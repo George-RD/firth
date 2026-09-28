@@ -1,0 +1,12 @@
+: ledger-from
+  (forall ρ; ρ balance:Int^many rejected:Int^many txs:Seq Int^many i:Int^many -- ρ final:Int^many count:Int^many)
+  locals { balance rejected txs i }
+  { i txs prim seq-int.len prim <
+    [ balance txs i prim seq-int.at prim + 0 prim <
+      [ balance rejected 1 prim + txs i 1 prim + ledger-from ]
+      [ balance txs i prim seq-int.at prim + rejected txs i 1 prim + ledger-from ] if ]
+    [ balance rejected ] if };
+
+: main
+  (forall ρ; ρ start:Int^many txs:Seq Int^many -- ρ balance:Int^many rejected:Int^many)
+  locals { start txs } { start 0 txs 0 ledger-from };

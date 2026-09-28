@@ -1,0 +1,11 @@
+\ Walks i down from the last index, pushing each element.
+: reverse-from
+  (forall ρ; ρ xs:Seq Int^many acc:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { xs acc i }
+  { i 0 prim <
+    [ acc ]
+    [ xs acc xs i prim seq-int.at prim seq-int.push i 1 prim - reverse-from ] if };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ reversed:Seq Int^many)
+  locals { xs } { xs prim seq-int.empty xs prim seq-int.len 1 prim - reverse-from };

@@ -1,0 +1,13 @@
+: sums-from
+  (forall ρ; ρ xs:Seq Int^many out:Seq Int^many acc:Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { xs out acc i }
+  { i xs prim seq-int.len prim <
+    [ xs
+      out acc xs i prim seq-int.at prim + prim seq-int.push
+      acc xs i prim seq-int.at prim +
+      i 1 prim + sums-from ]
+    [ out ] if };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ sums:Seq Int^many)
+  prim seq-int.empty 0 0 sums-from;

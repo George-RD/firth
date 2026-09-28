@@ -1,0 +1,10 @@
+: all-from
+  (forall ρ; ρ flags:Seq Bool^many i:Int^many -- ρ r:Bool^many)
+  locals { flags i }
+  { i flags prim seq-bool.len prim <
+    [ flags i prim seq-bool.at [ flags i 1 prim + all-from ] [ false ] if ]
+    [ true ] if };
+
+: main
+  (forall ρ; ρ flags:Seq Bool^many -- ρ all:Bool^many)
+  0 all-from;

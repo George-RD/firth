@@ -22,8 +22,8 @@ from typing import Callable
 class Task:
     id: str
     description: str
-    inputs: tuple[tuple[str, str], ...]   # (name, "Int" | "Bool"), bottom to top
-    outputs: tuple[tuple[str, str], ...]  # (name, "Int" | "Bool"), bottom to top
+    inputs: tuple[tuple[str, str], ...]   # (name, type), bottom to top
+    outputs: tuple[tuple[str, str], ...]  # (name, type), bottom to top
     ref: Callable[..., tuple]
     example: tuple
     hidden: tuple[tuple, ...]
@@ -227,5 +227,7 @@ HARD: tuple[Task, ...] = (
        ["cmp", "sub"]),
 )
 
-BY_ID = {t.id: t for t in TASKS + HARD}
-assert len(BY_ID) == len(TASKS) + len(HARD)
+from mvp_tasks import MVP  # noqa: E402  (defined in its own file, frozen separately)
+
+BY_ID = {t.id: t for t in TASKS + HARD + MVP}
+assert len(BY_ID) == len(TASKS) + len(HARD) + len(MVP)

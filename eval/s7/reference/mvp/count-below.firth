@@ -1,0 +1,12 @@
+: count-from
+  (forall ρ; ρ xs:Seq Int^many k:Int^many acc:Int^many i:Int^many -- ρ r:Int^many)
+  locals { xs k acc i }
+  { i xs prim seq-int.len prim <
+    [ xs k
+      xs i prim seq-int.at k prim < [ acc 1 prim + ] [ acc ] if
+      i 1 prim + count-from ]
+    [ acc ] if };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)
+  0 0 count-from;

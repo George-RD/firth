@@ -1,0 +1,16 @@
+: merge-from
+  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many out:Seq Int^many i:Int^many j:Int^many -- ρ r:Seq Int^many)
+  locals { xs ys out i j }
+  { i xs prim seq-int.len prim <
+    [ j ys prim seq-int.len prim <
+      [ ys j prim seq-int.at xs i prim seq-int.at prim <
+        [ xs ys out ys j prim seq-int.at prim seq-int.push i j 1 prim + merge-from ]
+        [ xs ys out xs i prim seq-int.at prim seq-int.push i 1 prim + j merge-from ] if ]
+      [ xs ys out xs i prim seq-int.at prim seq-int.push i 1 prim + j merge-from ] if ]
+    [ j ys prim seq-int.len prim <
+      [ xs ys out ys j prim seq-int.at prim seq-int.push i j 1 prim + merge-from ]
+      [ out ] if ] if };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many -- ρ merged:Seq Int^many)
+  prim seq-int.empty 0 0 merge-from;
