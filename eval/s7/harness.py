@@ -149,7 +149,7 @@ def extract(text: str) -> dict[str, str]:
     return {m.group(1): m.group(2) for m in BLOCK.finditer(text)}
 
 
-def load_solutions(path: Path, root: Path | None = None) -> dict[str, str]:
+def load_solutions(path: Path, root: Path) -> dict[str, str]:
     """A solutions JSON file, or a directory of `<task id>.firth` / `<task id>.py`
     files. Read as `read_regular` reads: nothing below `root` may be a link."""
     try:
@@ -166,21 +166,21 @@ def load_solutions(path: Path, root: Path | None = None) -> dict[str, str]:
 READ = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
 
 
-def read_regular(path: Path, root: Path | None = None) -> str:
+def read_regular(path: Path, root: Path) -> str:
     """Read a file an author may have written. In the sandbox an author can make a
     symlink to a path it cannot see (the target need not exist); read on the host,
     the link would follow to that path, for example a reference solution. So no
-    component of `path` below `root` (the workspace; by default the parent
-    directory) may be a link, and the file must be a plain file with one link:
+    component of `path` below `root` (the workspace) may be a link, and the file must be a plain file with one link:
     FIFOs, devices and hard links are refused too."""
     return _read_plain(open_under(path, root, directory=False), path)
 
 
-def open_under(path: Path, root: Path | None, directory: bool) -> int:
+def open_under(path: Path, root: Path, directory: bool) -> int:
     """A descriptor for `path`, opened one component at a time from `root` with
     O_NOFOLLOW, so a link anywhere below `root` is refused rather than followed.
-    `root` itself is trusted; `path` must lie under it, lexically."""
-    root = Path(os.path.normpath(root if root is not None else path.parent))
+    `root` itself is trusted; `path` must lie under it, lexically. There is no
+    default: a caller names the workspace, or uses `plain_parent`."""
+    root = Path(os.path.normpath(root))
     rel = Path(os.path.relpath(os.path.normpath(path), root))
     if rel.parts[:1] == ("..",):
         raise ValueError(f"{path} is not under {root}")
@@ -198,6 +198,16 @@ def open_under(path: Path, root: Path | None, directory: bool) -> int:
     except BaseException:
         os.close(fd)
         raise
+
+
+def plain_parent(path: Path) -> Path:
+    """The root to use when no workspace is named: the parent directory, and only
+    if no directory on its path is a link (the parent could be one an author
+    made). Fails closed otherwise."""
+    root = Path(os.path.abspath(path.parent))
+    if os.path.realpath(root) != str(root):
+        raise ValueError(f"{path}: a directory on its path is a link; name the workspace to read it")
+    return root
 
 
 def _read_plain(fd: int, label: Path) -> str:
@@ -463,6 +473,7 @@ def main() -> int:
     p.add_argument("--extra-doc", action="append", default=[],
                    help="extra document appended after the repo docs, e.g. a primitives supplement")
     e = sub.add_parser("extract"); e.add_argument("--lang"); e.add_argument("answer", type=Path)
+    e.add_argument("--workspace", type=Path, help="the author's workspace, when the answer is in it")
     s = sub.add_parser("score"); s.add_argument("--lang", required=True, choices=["firth", "python"])
     s.add_argument("solutions", type=Path); s.add_argument("--tier", default="all")
     s.add_argument("--label"); s.add_argument("--jobs", type=int, default=4)
@@ -482,10 +493,10 @@ def main() -> int:
     if a.cmd == "prompt":
         print(prompt(select(a.tier), a.lang, tuple(a.extra_doc), mvp=a.tier == "mvp").rstrip("\n"))
     elif a.cmd == "extract":
-        print(json.dumps(extract(read_regular(a.answer)), indent=2))
+        print(json.dumps(extract(read_regular(a.answer, a.workspace or plain_parent(a.answer))), indent=2))
     elif a.cmd == "score":
         require_sandbox(a.lang, select(a.tier))
-        res = score(load_solutions(a.solutions, a.workspace), a.lang, select(a.tier), a.jobs)
+        res = score(load_solutions(a.solutions, a.workspace or plain_parent(a.solutions)), a.lang, select(a.tier), a.jobs)
         res.update(label=a.label, firth_commit=firth_commit(), eval_sha256=eval_hashes(),
                    prompt_docs=[d for d in a.prompt_docs.split(",") if d])
         print(json.dumps(res, indent=2))

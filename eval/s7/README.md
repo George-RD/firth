@@ -120,9 +120,10 @@ include negative numbers and empty sequences.
   `test_isolation.py` plants each of these.
 - The host reads what an author wrote (answer files, transcripts) only as
   plain files with one link. It opens each path one component at a time from
-  the workspace (`score --workspace DIR`; by default the parent directory) with
+  the workspace (`--workspace DIR` on `score`, `extract` and `audit`) with
   `O_NOFOLLOW`, so no link is followed, in a directory component or the file
-  itself. Otherwise a link made in the sandbox to a reference path, dangling
+  itself. Without `--workspace`, a path with any link in its directories is
+  refused. Otherwise a link made in the sandbox to a reference path, dangling
   there, would read the reference on the host. Such a workspace is refused.
 - Submitted programs run as `nobody` with a fresh `/dev` holding only `null`,
   `zero`, `full`, `random`, `urandom` and `tty`, so no disk device or root-only

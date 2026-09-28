@@ -255,6 +255,7 @@ def main() -> int:
     w.add_argument("--tier", default="mvp")
     s = sub.add_parser("serve"); s.add_argument("dir", type=Path)
     au = sub.add_parser("audit"); au.add_argument("transcript", type=Path)
+    au.add_argument("--workspace", type=Path, help="the author's workspace, when the transcript is in it")
     r = sub.add_parser("run"); r.add_argument("dir", type=Path)
     r.add_argument("--keep", action="append", default=[])
     r.add_argument("command", nargs=argparse.REMAINDER)
@@ -269,7 +270,7 @@ def main() -> int:
         except KeyboardInterrupt:
             stop.set()
     elif a.cmd == "audit":
-        events = [json.loads(l) for l in harness.read_regular(a.transcript).splitlines() if l.strip()]
+        events = [json.loads(l) for l in harness.read_regular(a.transcript, a.workspace or harness.plain_parent(a.transcript)).splitlines() if l.strip()]
         bad = audit(events)
         print("\n".join(bad) if bad else "clean: only try and workspace files")
         return 1 if bad else 0

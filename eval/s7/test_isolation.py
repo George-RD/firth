@@ -267,17 +267,17 @@ def main() -> int:
         linked = answers / "sort.firth"
         check(linked.is_symlink() and linked.read_text() == ref.read_text(),
               "a link made in the sandbox reads the reference on the host (the planted case)")
-        check(refused(lambda: harness.load_solutions(answers)),
+        check(refused(lambda: harness.load_solutions(answers, ws)),
               "loading answers refuses a symlink the author made")
         linked.unlink()
         os.mkfifo(answers / "pipe.py")
-        check(refused(lambda: harness.load_solutions(answers)), "loading answers refuses a FIFO")
+        check(refused(lambda: harness.load_solutions(answers, ws)), "loading answers refuses a FIFO")
         (answers / "pipe.py").unlink()
         (answers / "sort.firth").write_text("x")
         os.link(answers / "sort.firth", ws / "twin")
-        check(refused(lambda: harness.load_solutions(answers)), "loading answers refuses a hard link")
+        check(refused(lambda: harness.load_solutions(answers, ws)), "loading answers refuses a hard link")
         (ws / "twin").unlink()
-        check(harness.load_solutions(answers) == {"sort": "x"}, "a plain answer file still loads")
+        check(harness.load_solutions(answers, ws) == {"sort": "x"}, "a plain answer file still loads")
 
         # The reviewer's next probes: a link in a directory component. O_NOFOLLOW
         # alone only covers the last component.
@@ -285,12 +285,21 @@ def main() -> int:
                     capture_output=True, text=True, timeout=300)
         check(len(list((ws / "linked").iterdir())) == 20 and (ws / "sub/mvp/sort.firth").is_file(),
               "directory links made in the sandbox reach the references on the host (the planted case)")
-        check(refused(lambda: harness.load_solutions(ws / "linked")),
+        check(refused(lambda: harness.load_solutions(ws / "linked", ws)),
               "loading answers refuses a directory that is a link")
         check(refused(lambda: harness.load_solutions(ws / "sub/mvp", ws)),
               "loading answers refuses a link in a directory component below the workspace")
         check(refused(lambda: harness.read_regular(ws / "sub/mvp/sort.firth", ws)),
               "reading a file refuses a link in a directory component below the workspace")
+        # With no workspace named, the parent is the root only if nothing on
+        # its path is a link; here the parent runs through the author's `sub`.
+        check(refused(lambda: harness.load_solutions(ws / "sub/mvp", harness.plain_parent(ws / "sub/mvp"))),
+              "without a workspace, loading answers refuses a link in the parent")
+        sub_ref = ws / "sub/mvp/sort.firth"
+        check(refused(lambda: harness.read_regular(sub_ref, harness.plain_parent(sub_ref))),
+              "without a workspace, reading a file refuses a link in the parent")
+        check(harness.plain_parent(answers / "sort.firth") == answers.resolve(),
+              "without a workspace, a path with no links still reads")
         check(harness.load_solutions(answers, ws) == {"sort": "x"},
               "a plain answer directory still loads with the workspace as root")
     audit_checks()

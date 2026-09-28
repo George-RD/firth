@@ -132,7 +132,7 @@ def scorer_rejects_wrong_python() -> None:
 
 
 def firth_references() -> None:
-    sols = harness.load_solutions(HERE / "reference/mvp")
+    sols = harness.load_solutions(HERE / "reference/mvp", HERE)
     check(set(sols) == {t.id for t in MVP}, "there is one Firth reference per MVP task")
     res = harness.score(sols, "firth", list(MVP), 8)
     for tid, r in res["tasks"].items():
