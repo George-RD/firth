@@ -22,14 +22,19 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools" / "loop"))
 import mvp_agent_gate as gate
 
-VERSION = "firth-portable-diff-v1"
+VERSION = "firth-portable-diff-v2"
 SCHEMA = "firth-differential-failure-v1"
 MIN_INT = -(2**63)
 MAX_INT = 2**63 - 1
 MAX_OUTPUT = 4 * 1024 * 1024
 MAX_ARTIFACT = 64 * 1024 * 1024
 OPS = ("add", "double", "call", "qualified", "local", "quote-call",
-       "quoted-value", "compose", "dip", "if", "nested", "swap")
+       "quoted-value", "compose", "dip", "if", "nested", "swap",
+       "sub", "rsub", "mul", "div", "rdiv", "mod", "rmod", "less", "equal", "and")
+# Operands are mostly small signed values; the rest sit at the portable edges,
+# where overflow, `MIN div -1` and zero divisors live.
+EDGES = (MIN_INT, MIN_INT + 1, -(2**32), -(2**31), -1, 0, 1, 2, 2**31, 2**32,
+         MAX_INT - 1, MAX_INT)
 SIGNATURE = "(forall ρ; ρ n:Int^many -- ρ result:Int^many)"
 
 
@@ -62,8 +67,8 @@ class Step:
     def validate(self) -> None:
         if self.op not in OPS or type(self.flag) is not bool:
             raise HarnessError("invalid generated step")
-        bounded_int(self.a, 0, 100, "step.a")
-        bounded_int(self.b, 0, 100, "step.b")
+        bounded_int(self.a, MIN_INT, MAX_INT, "step.a")
+        bounded_int(self.b, MIN_INT, MAX_INT, "step.b")
 
     def render(self, index: int) -> tuple[str, str]:
         a, b = self.a, self.b
@@ -71,6 +76,7 @@ class Step:
             return f"bump{index}", f": bump{index} {SIGNATURE} {a} prim +;"
         if self.op == "qualified":
             return f"v{index}.bump", f"vocab v{index} {{ : bump {SIGNATURE} {a} prim +; }}"
+        flag = str(self.flag).lower()
         bodies = {
             "add": f"{a} prim +",
             "double": "dup prim +",
@@ -82,6 +88,16 @@ class Step:
             "if": f"{str(self.flag).lower()} [ {a} prim + ] [ {b} prim + ] if",
             "nested": f"[ [ {a} prim + ] call ] call",
             "swap": f"{a} swap prim +",
+            "sub": f"{a} prim -",
+            "rsub": f"{a} swap prim -",
+            "mul": f"{a} prim *",
+            "div": f"{a} prim div",
+            "rdiv": f"{a} swap prim div",
+            "mod": f"{a} prim mod",
+            "rmod": f"{a} swap prim mod",
+            "less": f"dup {a} prim < [ {b} prim + ] [ {b} prim * ] if",
+            "equal": f"dup {a} prim = {flag} prim or prim not [ {b} prim - ] [ {b} prim div ] if",
+            "and": f"dup {a} swap prim < {flag} prim and [ {b} prim mod ] [ ] if",
         }
         return bodies[self.op], ""
 
@@ -100,7 +116,7 @@ class Case:
     def validate(self) -> None:
         bounded_int(self.seed, 0, 2**64 - 1, "seed")
         bounded_int(self.index, 0, 1000000, "index")
-        bounded_int(self.value, 0, 100, "input")
+        bounded_int(self.value, MIN_INT, MAX_INT, "input")
         bounded_int(self.fuel, 0, gate.MAX_FUEL, "fuel")
         if type(self.flag) is not bool or type(self.unused) is not bool:
             raise HarnessError("case flags must be Boolean")
@@ -139,8 +155,8 @@ class Case:
     @property
     def complexity(self) -> tuple[int, int, int, int]:
         return (int(self.unused), len(self.steps), len(self.prefix),
-                self.value + int(self.flag) + sum(int(x) for x in self.prefix)
-                + sum(s.a + s.b + int(s.flag) for s in self.steps))
+                abs(self.value) + int(self.flag) + sum(abs(int(x)) for x in self.prefix)
+                + sum(abs(s.a) + abs(s.b) + int(s.flag) for s in self.steps))
 
     def payload(self) -> dict[str, Any]:
         return {"seed": self.seed, "index": self.index,
@@ -175,13 +191,95 @@ def generate(seed: int, index: int, size: int = 6, fuel: int = 4096) -> Case:
     # One rotating feature provides a coverage floor; the remaining composition
     # and all operands vary by seed. Indexing does not consume earlier cases.
     ops = [OPS[index % len(OPS)]] + [rng.choice(OPS) for _ in range(rng.randrange(size))]
-    case = Case(seed, index, tuple(Step(op, rng.randrange(51), rng.randrange(51),
+
+    def operand() -> int:
+        return rng.choice(EDGES) if rng.randrange(5) == 0 else rng.randrange(-50, 51)
+
+    case = Case(seed, index, tuple(Step(op, operand(), operand(),
                                       bool(rng.getrandbits(1))) for op in ops),
-                rng.randrange(101), bool(index % 2),
+                operand(), bool(index % 2),
                 tuple(rng.choice((False, True, rng.randrange(101))) for _ in range(rng.randrange(3))),
                 fuel=fuel)
     case.validate()
     return case
+
+
+class Fault(Exception):
+    """The expected primitive fault, with the operands left on the stack."""
+
+    def __init__(self, operands: tuple[int, int]):
+        super().__init__("primitive-fault")
+        self.operands = operands
+
+
+def primitive(name: str, left: int, right: int, portable: bool) -> int:
+    """The documented meaning of an integer primitive, written independently.
+
+    Division is Euclidean: the remainder is never negative. A zero divisor
+    faults on both hosts. The reference's integers are unbounded; the portable
+    VM faults when `+`, `-`, `*` or `div` leaves the signed 64-bit range.
+    """
+    if name in ("div", "mod"):
+        if right == 0:
+            raise Fault((left, right))
+        remainder = left % abs(right)
+        value = remainder if name == "mod" else (left - remainder) // right
+    else:
+        value = {"+": left + right, "-": left - right, "*": left * right}[name]
+    if portable and not MIN_INT <= value <= MAX_INT:
+        raise Fault((left, right))
+    return value
+
+
+def apply_step(step: Step, n: int, portable: bool) -> int:
+    """What one generated fragment does to the value on top of the stack."""
+    def p(name: str, left: int, right: int) -> int:
+        return primitive(name, left, right, portable)
+    a, b, op = step.a, step.b, step.op
+    if op in ("add", "call", "qualified", "local", "quote-call", "quoted-value", "nested"):
+        return p("+", n, a)
+    if op == "double":
+        return p("+", n, n)
+    if op == "compose":
+        return p("+", p("+", n, a), b)
+    if op == "dip":
+        return p("+", p("+", n, n), a)
+    if op == "if":
+        return p("+", n, a if step.flag else b)
+    if op == "swap":
+        return p("+", a, n)
+    if op in ("sub", "mul", "div", "mod"):
+        return p({"sub": "-", "mul": "*"}.get(op, op), n, a)
+    if op in ("rsub", "rdiv", "rmod"):
+        return p({"rsub": "-", "rdiv": "div", "rmod": "mod"}[op], a, n)
+    if op == "less":
+        return p("+", n, b) if n < a else p("*", n, b)
+    if op == "equal":
+        return p("-", n, b) if not (n == a or step.flag) else p("div", n, b)
+    if op == "and":
+        return p("mod", n, b) if a < n and step.flag else n
+    raise HarnessError(f"no expected meaning for {op}")
+
+
+def expected(case: Case, portable: bool) -> tuple[str, list[int | bool]]:
+    """The final status and stack the case must produce on one host.
+
+    `main` first consumes the external flag with an `if` whose branches leave
+    the stack alone, then each fragment rewrites the value above the prefix.
+    A fault leaves the faulting primitive's two operands above the prefix.
+    """
+    n = case.value
+    try:
+        for step in case.steps:
+            n = apply_step(step, n, portable)
+    except Fault as fault:
+        return "trap", [*case.prefix, *fault.operands]
+    return "success", [*case.prefix, n]
+
+
+def encode(values: list[int | bool]) -> list[dict[str, Any]]:
+    return [{"kind": "literal", "literal": {"type": "bool" if type(v) is bool else "int", "value": v}}
+            for v in values]
 
 
 @dataclasses.dataclass
@@ -318,13 +416,12 @@ def compare(reference: Any, target: Any, fuel: int) -> Result:
     if any(traps):
         # The reference's unbounded integers are wider than the portable Rust
         # profile. An overflow is explicit non-success, never an agreement.
-        if traps == (None, "primitive-fault") and isinstance(reference["stack"], list) \
-                and any(isinstance(v, dict) and isinstance(v.get("literal"), dict)
-                        and v["literal"].get("type") == "int"
-                        and type(v["literal"].get("value")) is int
-                        and not MIN_INT <= v["literal"]["value"] <= MAX_INT
-                        for v in reference["stack"]):
-            return Result("portable-integer-overflow", traps=traps)
+        # Whether the VM should have faulted is the oracle's call (`judge`);
+        # here the VM's run must be the reference's up to the fault.
+        if traps == (None, "primitive-fault"):
+            return overflow_prefix(reference, target, fuel)
+        if traps == ("primitive-fault", "primitive-fault"):
+            return both_faulted(reference, target, fuel)
         return Result("runtime-trap" if traps[0] == traps[1] else "trap-mismatch", traps=traps)
     try:
         for side, observation in (("reference", reference), ("target", target)):
@@ -355,6 +452,112 @@ def compare(reference: Any, target: Any, fuel: int) -> Result:
     except gate.GateError as error:
         return Result("invalid-observation", detail=str(error))
     return Result("agreement", trace_comparison=trace_comparison)
+
+
+def both_faulted(reference: dict[str, Any], target: dict[str, Any], fuel: int) -> Result:
+    """Both hosts faulted: compare them up to the fault as for a success.
+
+    The stack at the fault alone cannot tell a fault at the right step from
+    one at an earlier step that happens to leave the same operands, so the
+    kernel cost and the traces are compared too, after the gate removes the
+    VM's charge for the faulting instruction (`gate.without_faulting_step`).
+    """
+    traps = ("primitive-fault", "primitive-fault")
+    if reference["stack"] != target["stack"]:
+        return Result("stack-mismatch", traps=traps)
+    try:
+        lined_up = gate.without_faulting_step(target, "case")
+        cost = reference["cost"]
+        if not isinstance(cost, dict) or type(cost.get("total")) is not int:
+            raise gate.GateError("reference: invalid cost")
+    except gate.GateError as error:
+        return Result("invalid-observation", detail=str(error), traps=traps)
+    if cost["total"] != lined_up["cost"]["kernel"]:
+        return Result("kernel-cost-mismatch", traps=traps)
+    try:
+        trace_comparison = gate.compare(reference, target, "case", fuel, expected_trap="primitive-fault")
+    except gate.TraceMismatch as error:
+        return Result("trace-mismatch", detail=str(error), traps=traps)
+    except gate.GateError as error:
+        return Result("invalid-observation", detail=str(error), traps=traps)
+    return Result("runtime-trap", traps=traps, trace_comparison=trace_comparison)
+
+
+def overflow_prefix(reference: dict[str, Any], target: dict[str, Any], fuel: int) -> Result:
+    """The VM overflowed where the unbounded reference ran on.
+
+    Up to the VM's fault the two runs are the same computation, so the VM's
+    kernel-charged trace, less its faulting instruction, must be a prefix of
+    the reference's: the same charge at every step, the same stack wherever
+    neither holds a quotation, and the VM's stack at the fault equal to the
+    reference's stack before the same step. Its kernel cost must be the sum
+    of the reference's charges over that prefix.
+    """
+    traps = (None, "primitive-fault")
+    try:
+        lined_up = gate.without_faulting_step(target, "case")
+        gate.validate_trace(reference["trace"], gate.REFERENCE_EVENT_FIELDS, ("cost",), "case: reference")
+        gate.validate_portable_stack(target["stack"], "target")
+        gate.validate_pure_world(reference["world_observation"], target["world_observation"], "case")
+    except gate.GateError as error:
+        return Result("invalid-observation", detail=str(error), traps=traps)
+    projected_reference = [event for event in reference["trace"] if event["cost"] > 0]
+    projected_target = [event for event in lined_up["trace"] if event["kernel_cost"] > 0]
+    if len(reference["trace"]) >= gate.MAX_TRACE_EVENTS \
+            and len(projected_target) >= len(projected_reference):
+        return Result("invalid-observation", traps=traps,
+                      detail="reference trace cut before the VM's fault")
+    if len(projected_target) >= len(projected_reference):
+        return Result("trace-mismatch", traps=traps,
+                      detail=f"VM faulted after {len(projected_target)} kernel steps; "
+                             f"the reference ran only {len(projected_reference)}")
+    for index, (left, right) in enumerate(zip(projected_reference, projected_target)):
+        if left["cost"] != right["kernel_cost"]:
+            return Result("trace-mismatch", traps=traps,
+                          detail=f"trace event {index} charges {left['cost']} against {right['kernel_cost']}")
+        if not gate.holds_quotation(left["stack"]) and not gate.holds_quotation(right["stack"]) \
+                and left["stack"] != right["stack"]:
+            return Result("trace-mismatch", traps=traps, detail=f"trace event {index} stack differs")
+    at_fault = projected_reference[len(projected_target)]["stack"]
+    if not gate.holds_quotation(at_fault) and at_fault != target["stack"]:
+        return Result("stack-mismatch", traps=traps,
+                      detail="the VM's stack at the fault is not the reference's before that step")
+    if sum(event["cost"] for event in projected_reference[:len(projected_target)]) \
+            != lined_up["cost"]["kernel"]:
+        return Result("kernel-cost-mismatch", traps=traps)
+    return Result("portable-integer-overflow", traps=traps)
+
+
+# Outcomes that pass the campaign. The two expected classes are the documented
+# difference between the unbounded reference and the portable VM, or a fault
+# both must raise, and each counts only when both hosts match the oracle.
+PASSING = ("agreement", "expected-trap", "expected-portable-overflow")
+# Classes the oracle can refine. Fuel, cost, trace and malformed observations
+# are outside its model and keep their own failure class.
+ORACLE_CLASSES = ("agreement", "runtime-trap", "trap-mismatch", "portable-integer-overflow", "stack-mismatch")
+
+
+def judge(case: Case, reference: dict[str, Any], target: dict[str, Any], result: Result) -> Result:
+    """Check each host against the expected meaning, not only against the other."""
+    for side, observation, portable in (("reference", reference, False), ("target", target, True)):
+        status, values = expected(case, portable)
+        want = {"stack": encode(values), "status": status,
+                "trap": None if status == "success" else "primitive-fault"}
+        got = {key: observation.get(key) for key in want}
+        # Serialised comparison, so a Boolean never equals the integer 1.
+        if json.dumps(got, sort_keys=True) != json.dumps(want, sort_keys=True):
+            return Result("oracle-mismatch", "oracle",
+                          f"{side}: expected {json.dumps(want, sort_keys=True)}, observed {json.dumps(got, sort_keys=True)}",
+                          traps=result.traps)
+    if result.kind == "agreement":
+        return result
+    # Only a trap already compared up to the fault is promoted; a stack, cost
+    # or trace difference keeps its own failure class.
+    if result.kind == "runtime-trap" and result.traps == ("primitive-fault", "primitive-fault"):
+        return Result("expected-trap", traps=result.traps, trace_comparison=result.trace_comparison)
+    if result.kind == "portable-integer-overflow":
+        return Result("expected-portable-overflow", traps=result.traps)
+    return result
 
 
 class Executor:
@@ -412,6 +615,8 @@ class Executor:
                     "gamma_version": gate.TARGET_GAMMA_VERSION},
                     "gamma_version": gate.GAMMA_VERSION, "fuel": case.fuel})
                 result = compare(reference, target, case.fuel)
+                if result.kind in ORACLE_CLASSES:
+                    result = judge(case, reference, target, result)
                 result.records = records
                 return result
             except AdapterError as error:
@@ -420,6 +625,11 @@ class Executor:
                 return Result(error.kind, stage, records=records)
             except (gate.GateError, ValueError, TypeError, KeyError, IndexError, RecursionError) as error:
                 return Result("adapter-schema-error", stage, str(error), records)
+
+
+def half(value: int) -> int:
+    """Halve towards zero, so a negative literal also shrinks."""
+    return value // 2 if value >= 0 else -(-value // 2)
 
 
 def reductions(case: Case) -> Iterator[Case]:
@@ -432,13 +642,13 @@ def reductions(case: Case) -> Iterator[Case]:
     for index, step in enumerate(case.steps):
         for field in ("a", "b", "flag"):
             value = getattr(step, field)
-            for smaller in ((False,) if field == "flag" else (0, value // 2)):
+            for smaller in ((False,) if field == "flag" else (0, half(value))):
                 if smaller == value:
                     continue
                 steps = list(case.steps)
                 steps[index] = dataclasses.replace(step, **{field: smaller})
                 yield dataclasses.replace(case, steps=tuple(steps))
-    for value in (0, case.value // 2):
+    for value in (0, half(case.value)):
         if value != case.value:
             yield dataclasses.replace(case, value=value)
     if case.flag:
@@ -449,7 +659,7 @@ def shrink(case: Case, result: Result, execute: Callable[[Case], Result], budget
     bounded_int(budget, 0, 256, "shrink budget")
     # Do not shrink a generator rejection into a smaller invalid program, nor
     # conflate a passing execution with a reproducer.
-    if result.kind in ("agreement", "elaboration-rejected") or result.stage == "elaborate":
+    if result.kind in (*PASSING, "elaboration-rejected") or result.stage == "elaborate":
         return case, result, {"attempts": 0, "accepted": 0, "stop": "ineligible"}
     attempts, accepted = 0, 0
     signature = result.signature
@@ -585,7 +795,7 @@ def main(argv: list[str] | None = None) -> int:
                 trace_comparisons[result.trace_comparison] = trace_comparisons.get(result.trace_comparison, 0) + 1
             for feature in case.features:
                 coverage[feature] = coverage.get(feature, 0) + 1
-            if result.kind != "agreement" or args.command != "run":
+            if result.kind not in PASSING or args.command != "run":
                 # Each run owns an exclusive directory; do not overwrite earlier evidence.
                 args.artifacts.mkdir(parents=True, exist_ok=True)
                 directory = Path(tempfile.mkdtemp(prefix=f"seed-{case.seed}-case-{case.index}-", dir=args.artifacts))
@@ -594,7 +804,7 @@ def main(argv: list[str] | None = None) -> int:
                 record["replay_signature_matches"] = replay_matches
                 original = save_failure(directory, "original", record)
                 artifacts.append(str(original))
-                if args.command != "replay" and result.kind != "agreement" and replay_matches is not False:
+                if args.command != "replay" and result.kind not in PASSING and replay_matches is not False:
                     reduced, reduced_result, report = shrink(case, result, execute, args.shrink_steps)
                     record = failure_record(reduced, reduced_result, toolchain)
                     record["shrinking"] = report
@@ -602,7 +812,7 @@ def main(argv: list[str] | None = None) -> int:
                     record["toolchain_drift"] = drift
                     record["replay_signature_matches"] = replay_matches
                     artifacts.append(str(save_failure(directory, "reduced", record)))
-        ok = counts.get("agreement", 0) == len(cases)
+        ok = sum(counts.get(kind, 0) for kind in PASSING) == len(cases)
         summary = {"status": "ok" if ok else "failed", "command": args.command,
                    "cases": len(cases), "outcomes": counts, "generated_features": coverage,
                    "trace_comparisons": trace_comparisons,

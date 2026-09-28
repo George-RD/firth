@@ -83,10 +83,154 @@ class GenerationTests(unittest.TestCase):
                      {"prefix": [2**63]}, {"prefix": [None]}, {"prefix": [1] * 5},
                      {"steps": {}}, {"steps": [{"op": "eval", "a": 0, "b": 0, "flag": False}]},
                      {"steps": [{"op": [], "a": 0, "b": 0, "flag": False}]},
-                     {"steps": [{"op": "add", "a": True, "b": 0, "flag": False}]})
+                     {"steps": [{"op": "add", "a": True, "b": 0, "flag": False}]},
+                     {"value": 2**63}, {"value": -(2**63) - 1},
+                     {"steps": [{"op": "div", "a": -(2**63) - 1, "b": 0, "flag": False}]},
+                     {"steps": [{"op": "mod", "a": 0, "b": 2**63, "flag": False}]})
         for mutation in mutations:
             with self.subTest(mutation=mutation), self.assertRaises(h.HarnessError):
                 h.Case.from_payload({**recipe, **mutation})
+
+
+def reference_event(index, stack, cost=1):
+    return {"index": index, "stack": stack, "program": [], "cost": cost}
+
+
+def target_event(index, stack, kernel_cost=1):
+    return {"index": index, "word": "main", "pc": index, "stack": stack, "cost": kernel_cost,
+            "kernel_cost": kernel_cost, "image_version": 1, "frames": []}
+
+
+def judged(case, reference_side, target_side):
+    """Observations built by hand, then compared and judged as the executor does.
+
+    A faulting VM run ends with the charged event of its faulting instruction,
+    whose stack is the stack at the fault; where the reference runs on, its
+    trace holds the same step with the same stack.
+    """
+    reference, target = observations()
+    for observation, (status, values) in ((reference, reference_side), (target, target_side)):
+        observation.update(status=status, trap=None if status == "success" else "primitive-fault",
+                           stack=h.encode(values))
+    if target_side[0] == "trap":
+        target.update(trace=[target_event(0, h.encode(target_side[1]))],
+                      cost={"total": 1, "kernel": 1, "steps": 1})
+        if reference_side[0] == "success":
+            reference.update(trace=[reference_event(0, h.encode(target_side[1]))],
+                             cost={"total": 1, "steps": 1})
+    result = h.compare(reference, target, 4096)
+    return result.kind, h.judge(case, reference, target, result).kind
+
+
+def case_of(value, *steps, prefix=()):
+    return h.Case(0, 0, tuple(steps), value, False, prefix)
+
+
+class OracleTests(unittest.TestCase):
+    # Expected values are written out by hand from the documented meaning:
+    # Euclidean division, a zero divisor faults, the VM faults outside i64.
+    def test_euclidean_division_by_hand(self):
+        for left, right, quotient, remainder in ((7, 2, 3, 1), (-7, 2, -4, 1), (7, -2, -3, 1),
+                                                 (-7, -2, 4, 1), (6, -3, -2, 0), (-1, 5, -1, 4),
+                                                 (h.MIN_INT, -1, 2**63, 0), (h.MIN_INT, 2, -(2**62), 0)):
+            with self.subTest(left=left, right=right):
+                self.assertEqual(h.primitive("div", left, right, False), quotient)
+                self.assertEqual(h.primitive("mod", left, right, False), remainder)
+                self.assertEqual(h.primitive("mod", left, right, True), remainder)
+
+    def test_faults_by_hand(self):
+        for portable in (False, True):
+            for name in ("div", "mod"):
+                with self.assertRaises(h.Fault) as raised:
+                    h.primitive(name, 5, 0, portable)
+                self.assertEqual(raised.exception.operands, (5, 0))
+        for name, left, right in (("div", h.MIN_INT, -1), ("+", h.MAX_INT, 1), ("-", h.MIN_INT, 1),
+                                  ("*", 2**32, 2**31), ("*", h.MIN_INT, -1)):
+            with self.subTest(name=name), self.assertRaises(h.Fault):
+                h.primitive(name, left, right, True)
+            self.assertIsInstance(h.primitive(name, left, right, False), int)
+        self.assertEqual(h.primitive("mod", h.MIN_INT, -1, True), 0)
+        self.assertEqual(h.primitive("*", -(2**32), 2**31, True), h.MIN_INT)
+
+    def test_every_fragment_has_a_meaning(self):
+        # Each value is the fragment's rendered source worked by hand for n = 10.
+        cases = {"add": 13, "double": 20, "call": 13, "qualified": 13, "local": 13,
+                 "quote-call": 13, "quoted-value": 13, "compose": 17, "dip": 23, "if": 13,
+                 "nested": 13, "swap": 13, "sub": 7, "rsub": -7, "mul": 30, "div": 3,
+                 "rdiv": 0, "mod": 1, "rmod": 3, "less": 40, "equal": 2, "and": 2}
+        self.assertEqual(set(cases), set(h.OPS))
+        for op, value in cases.items():
+            with self.subTest(op=op):
+                self.assertEqual(h.apply_step(h.Step(op, 3, 4, True), 10, True), value)
+        self.assertEqual(h.apply_step(h.Step("if", 3, 4, False), 10, True), 14)
+        self.assertEqual(h.apply_step(h.Step("less", 30, 4, False), 10, True), 14)
+        self.assertEqual(h.apply_step(h.Step("equal", 10, 4, False), 10, True), 2)
+        self.assertEqual(h.apply_step(h.Step("equal", 3, 4, False), 10, True), 6)
+        self.assertEqual(h.apply_step(h.Step("and", 3, 4, False), 10, True), 10)
+        self.assertEqual(h.apply_step(h.Step("and", 30, 4, True), 10, True), 10)
+
+    def test_fault_leaves_the_operands_above_the_prefix(self):
+        case = case_of(9, h.Step("add", 1), h.Step("div", 0), h.Step("add", 1), prefix=(True, 4))
+        self.assertEqual(h.expected(case, True), ("trap", [True, 4, 10, 0]))
+        case = case_of(h.MAX_INT, h.Step("add", 1), h.Step("sub", 2), prefix=(3,))
+        self.assertEqual(h.expected(case, False), ("success", [3, h.MAX_INT - 1]))
+        self.assertEqual(h.expected(case, True), ("trap", [3, h.MAX_INT, 1]))
+
+    def test_expected_classes_pass_only_when_both_hosts_match(self):
+        division = case_of(-7, h.Step("div", 2))
+        self.assertEqual(judged(division, ("success", [-4]), ("success", [-4])), ("agreement", "agreement"))
+        zero = case_of(7, h.Step("mod", 0))
+        self.assertEqual(judged(zero, ("trap", [7, 0]), ("trap", [7, 0])), ("runtime-trap", "expected-trap"))
+        overflow = case_of(h.MAX_INT, h.Step("add", 1), h.Step("sub", 2))
+        self.assertEqual(judged(overflow, ("success", [h.MAX_INT - 1]), ("trap", [h.MAX_INT, 1])),
+                         ("portable-integer-overflow", "expected-portable-overflow"))
+        for kind in ("expected-trap", "expected-portable-overflow"):
+            self.assertIn(kind, h.PASSING)
+
+    def test_planted_shared_bugs_are_caught(self):
+        # Both hosts agree with each other on each of these, or differ only
+        # in a way the plain comparison cannot name. Each is a planted bug.
+        division = case_of(-7, h.Step("div", 2))
+        self.assertEqual(judged(division, ("success", [-3]), ("success", [-3])),  # truncating division
+                         ("agreement", "oracle-mismatch"))
+        remainder = case_of(-7, h.Step("mod", 2))
+        self.assertEqual(judged(remainder, ("success", [-1]), ("success", [-1])),  # remainder takes the sign
+                         ("agreement", "oracle-mismatch"))
+        order = case_of(10, h.Step("rsub", 3))
+        self.assertEqual(judged(order, ("success", [7]), ("success", [7])),  # operands swapped
+                         ("agreement", "oracle-mismatch"))
+        branch = case_of(10, h.Step("less", 30, 4))
+        self.assertEqual(judged(branch, ("success", [40]), ("success", [40])),  # `<` reversed
+                         ("agreement", "oracle-mismatch"))
+        zero = case_of(7, h.Step("div", 0))
+        self.assertEqual(judged(zero, ("trap", [7, 0]), ("success", [0])),  # VM returns 0
+                         ("trap-mismatch", "oracle-mismatch"))
+        self.assertEqual(judged(zero, ("trap", [7]), ("trap", [7])),  # fault leaves the wrong stack
+                         ("runtime-trap", "oracle-mismatch"))
+        edge = case_of(h.MIN_INT, h.Step("div", -1))
+        self.assertEqual(judged(edge, ("trap", [h.MIN_INT, -1]), ("trap", [h.MIN_INT, -1])),  # reference bounded
+                         ("runtime-trap", "oracle-mismatch"))
+        self.assertEqual(judged(edge, ("success", [2**63]), ("trap", [h.MIN_INT, -1])),
+                         ("portable-integer-overflow", "expected-portable-overflow"))
+        boolean = case_of(1, h.Step("mul", 1), prefix=(True,))
+        reference, target = observations()
+        for observation in (reference, target):
+            observation["stack"] = h.encode([1, 1])  # a Boolean prefix read back as 1
+        result = h.compare(reference, target, 4096)
+        self.assertEqual(h.judge(boolean, reference, target, result).kind, "oracle-mismatch")
+
+    def test_generation_reaches_signed_edges_and_faults(self):
+        operands, outcomes = set(), set()
+        for index in range(200):
+            case = h.generate(0, index)
+            operands.update(v for s in case.steps for v in (s.a, s.b))
+            outcomes.add((h.expected(case, False)[0], h.expected(case, True)[0]))
+        self.assertTrue({h.MIN_INT, h.MAX_INT, -1, 0} <= operands)
+        self.assertTrue(any(v < 0 for v in operands))
+        self.assertEqual(outcomes, {("success", "success"), ("success", "trap"), ("trap", "trap")})
+
+    def test_negative_literals_shrink_towards_zero(self):
+        self.assertEqual([h.half(v) for v in (-7, -1, 0, 7, h.MIN_INT)], [-3, 0, 0, 3, -(2**62)])
 
 
 class ComparisonTests(unittest.TestCase):
@@ -142,7 +286,8 @@ class ComparisonTests(unittest.TestCase):
     def test_traps_are_not_passing_cases(self):
         reference, target = observations()
         reference.update(status="trap", trap="primitive-fault")
-        target.update(status="trap", trap="primitive-fault")
+        target.update(status="trap", trap="primitive-fault", trace=[target_event(0, [])],
+                      cost={"total": 1, "kernel": 1, "steps": 1})
         self.assertEqual(h.compare(reference, target, 8).kind, "runtime-trap")
         target["trap"] = "type-mismatch"
         self.assertEqual(h.compare(reference, target, 8).kind, "trap-mismatch")
@@ -150,8 +295,90 @@ class ComparisonTests(unittest.TestCase):
     def test_target_integer_overflow_is_explicit(self):
         reference, target = observations()
         reference["stack"] = [{"kind": "literal", "literal": {"type": "int", "value": h.MAX_INT + 1}}]
-        target.update(status="trap", trap="primitive-fault")
+        reference.update(trace=[reference_event(0, [])], cost={"total": 1, "steps": 1})
+        target.update(status="trap", trap="primitive-fault", trace=[target_event(0, [])],
+                      cost={"total": 1, "kernel": 1, "steps": 1})
         self.assertEqual(h.compare(reference, target, 8).kind, "portable-integer-overflow")
+
+    def test_faults_are_compared_up_to_the_fault(self):
+        # `7 0 mod`: the reference stops before `mod` after two charged pushes;
+        # the VM also charges the faulting `mod`. Both leave 7 0 at the fault.
+        seven, zero = h.encode([7]), h.encode([7, 0])
+        case = case_of(7, h.Step("mod", 0))
+
+        def faulted(target_trace):
+            reference, target = observations()
+            reference.update(status="trap", trap="primitive-fault", stack=zero,
+                             trace=[reference_event(0, []), reference_event(1, seven)],
+                             cost={"total": 2, "steps": 2})
+            target.update(status="trap", trap="primitive-fault", stack=zero, trace=target_trace,
+                          cost={"total": len(target_trace), "kernel": len(target_trace),
+                                "steps": len(target_trace)})
+            result = h.compare(reference, target, 8)
+            return result.kind, h.judge(case, reference, target, result).kind
+
+        right = [target_event(0, []), target_event(1, seven), target_event(2, zero)]
+        self.assertEqual(faulted(right), ("runtime-trap", "expected-trap"))
+        # Planted: the VM faults a step later with the same operands, and
+        # before this check the stack at the fault alone passed it.
+        late = right[:2] + [target_event(2, zero), target_event(3, zero)]
+        self.assertEqual(faulted(late), ("kernel-cost-mismatch", "kernel-cost-mismatch"))
+        # Planted: same charges, a different stack on the way.
+        detour = [target_event(0, []), target_event(1, h.encode([8])), target_event(2, zero)]
+        self.assertEqual(faulted(detour)[0], "trace-mismatch")
+        self.assertEqual(faulted(detour)[1], "trace-mismatch")
+
+    def test_an_overflow_must_follow_the_reference_up_to_the_fault(self):
+        # `MAX 1 +` then `2 -`: the VM faults at `+` with MAX 1 on the stack;
+        # the reference runs on and leaves MAX - 1.
+        top, both = h.encode([h.MAX_INT]), h.encode([h.MAX_INT, 1])
+        case = case_of(h.MAX_INT, h.Step("add", 1), h.Step("sub", 2))
+        reference_trace = [reference_event(0, []), reference_event(1, top), reference_event(2, both),
+                           reference_event(3, h.encode([h.MAX_INT + 1])),
+                           reference_event(4, h.encode([h.MAX_INT + 1, 2]))]
+
+        def overflowed(target_trace, stack=both, kernel=None):
+            reference, target = observations()
+            reference.update(stack=h.encode([h.MAX_INT - 1]), trace=copy.deepcopy(reference_trace),
+                             cost={"total": 5, "steps": 5})
+            kernel = len(target_trace) if kernel is None else kernel
+            target.update(status="trap", trap="primitive-fault", stack=stack, trace=target_trace,
+                          cost={"total": kernel, "kernel": kernel, "steps": len(target_trace)})
+            result = h.compare(reference, target, 8)
+            return result.kind, h.judge(case, reference, target, result).kind
+
+        right = [target_event(0, []), target_event(1, top), target_event(2, both)]
+        self.assertEqual(overflowed(right), ("portable-integer-overflow", "expected-portable-overflow"))
+        # Planted: the VM took a different path to the same operands.
+        detour = [target_event(0, []), target_event(1, h.encode([1])), target_event(2, both)]
+        self.assertEqual(overflowed(detour), ("trace-mismatch", "trace-mismatch"))
+        # Planted: a pure program that touched the World on either host.
+        for side, world in ((0, {"ids": [1]}), (1, {"bytes": [1]})):
+            reference, target = observations()
+            reference.update(stack=h.encode([h.MAX_INT - 1]), trace=copy.deepcopy(reference_trace),
+                             cost={"total": 5, "steps": 5})
+            target.update(status="trap", trap="primitive-fault", stack=both, trace=copy.deepcopy(right),
+                          cost={"total": 3, "kernel": 3, "steps": 3})
+            (reference, target)[side]["world_observation"] = world
+            self.assertEqual(h.compare(reference, target, 8).kind, "invalid-observation")
+        # Planted: the VM's stack at the fault is not the reference's there.
+        self.assertEqual(overflowed(right, h.encode([h.MAX_INT, 2]))[0], "stack-mismatch")
+        # Planted: the VM faults a step early, at the push of 1. Its run is a
+        # true prefix of the reference's, so only the oracle can name it.
+        early = [target_event(0, []), target_event(1, top)]
+        self.assertEqual(overflowed(early, top), ("portable-integer-overflow", "oracle-mismatch"))
+        # Planted: one step charged differently, the reported total unchanged,
+        # so only the per-event charge check can name it.
+        charged = [target_event(0, []), target_event(1, top, kernel_cost=2), target_event(2, both)]
+        self.assertEqual(overflowed(charged, kernel=3)[0], "trace-mismatch")
+        # Planted: every event right, the reported kernel cost not the sum of
+        # the reference's charges up to the fault.
+        self.assertEqual(overflowed(right, kernel=4)[0], "kernel-cost-mismatch")
+        # Planted: the VM follows the reference step for step and faults
+        # after the reference's last step.
+        longer = [target_event(i, event["stack"]) for i, event in enumerate(reference_trace)]
+        longer.append(target_event(len(longer), h.encode([h.MAX_INT - 1])))
+        self.assertEqual(overflowed(longer, h.encode([h.MAX_INT - 1]))[0], "trace-mismatch")
 
     def test_per_event_trace_differences_have_their_own_failure_class(self):
         one, two = h.gate.initial_values([1, 2])
@@ -254,7 +481,13 @@ class ProcessTests(unittest.TestCase):
 
 
 class ExecutionTests(unittest.TestCase):
-    def fixture(self, directory, *, target_mode="success", compiler_mode="success", elaborate_mode="success"):
+    def fixture(self, directory, *, target_mode="success", compiler_mode="success", elaborate_mode="success",
+                stack=None):
+        # Both fake hosts answer with the stack the case is expected to leave,
+        # so these plumbing tests reach the comparison rather than the oracle.
+        status, values = h.expected(h.generate(0, 0), portable=True)
+        assert status == "success"
+        (Path(directory) / "stack.json").write_text(json.dumps(h.encode(values) if stack is None else stack))
         path = Path(directory) / "adapter.py"
         path.write_text('''import json,sys
 r=json.load(sys.stdin); stage=sys.argv[1]
@@ -267,12 +500,18 @@ if stage=="elaborate":
 elif stage=="compile":
   response={**common,"target_program":{},"status":sys.argv[3]}
 else:
-  response={**common,"trap":None,"stack":[],"trace":[],"cost":{"total":0,"steps":0},"world_observation":{"ids":[]}}
+  stack=json.load(open(__file__.replace("adapter.py","stack.json")))
+  response={**common,"trap":None,"stack":stack,"trace":[],"cost":{"total":0,"steps":0},"world_observation":{"ids":[]}}
   if stage=="target":
     response["cost"]["kernel"]=0; response["world_observation"]={"bytes":[0]}
     if sys.argv[2]=="mismatch": response["cost"].update(total=2,kernel=1)
-    if sys.argv[2]=="trap": response.update(status="trap",trap="primitive-fault")
+    if sys.argv[2]=="trap":
+      response.update(status="trap",trap="primitive-fault",cost={"total":1,"kernel":1,"steps":1})
+      response["trace"]=[{"index":0,"word":"main","pc":0,"stack":stack,"cost":1,"kernel_cost":1,"image_version":1,"frames":[]}]
     if sys.argv[2]=="malformed": response.pop("stack")
+  elif sys.argv[2]=="trap":
+    # The reference runs on through the step at which the VM faults.
+    response.update(cost={"total":1,"steps":1},trace=[{"index":0,"stack":stack,"program":[],"cost":1}])
 print(json.dumps(response))
 ''', encoding="utf-8")
         return {stage: (sys.executable, "-S", str(path), stage, target_mode, compiler_mode, elaborate_mode)
@@ -291,7 +530,8 @@ print(json.dumps(response))
             ({"elaborate_mode": "error"}, "elaboration-rejected", "elaborate", 1),
             ({"compiler_mode": "error"}, "compiler-rejected", "compile", 3),
             ({"target_mode": "mismatch"}, "kernel-cost-mismatch", "compare", 4),
-            ({"target_mode": "trap"}, "trap-mismatch", "compare", 4),
+            # The oracle expects success, so a trapping VM is named against it.
+            ({"target_mode": "trap"}, "oracle-mismatch", "oracle", 4),
             ({"target_mode": "malformed"}, "invalid-observation", "compare", 4)):
             with self.subTest(kwargs=kwargs), tempfile.TemporaryDirectory() as directory:
                 result = h.Executor(self.fixture(directory, **kwargs))(h.generate(0, 0))
