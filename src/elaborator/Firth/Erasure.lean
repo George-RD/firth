@@ -17,6 +17,10 @@ abbrev KernelProgram := List LocatedKernel
 structure Signature where
   input : List Usage := []
   output : List Usage := []
+  /-- Whether the effect keeps the rest of the stack, as `ρ ... -- ρ ...`
+  does. One that does not, like `ρ -- ρ2`, can leave a stack of any depth,
+  so its input and output counts do not give the depth it leaves. -/
+  rowPreserving : Bool := true
   deriving Repr, BEq
 
 structure EffectEnv where
@@ -77,6 +81,9 @@ structure Slot where
   /-- The stack effect of the quotation the local holds, when known, so that
   running a selected copy keeps the tracked stack exact. -/
   effect : Option (Nat × Nat) := none
+  /-- Whether `effect` is the depth change the quotation really makes: see
+  `StackEntry.exact`. -/
+  exact : Bool := false
   deriving Repr, BEq
 
 structure StackEntry where
@@ -85,6 +92,13 @@ structure StackEntry where
   /-- For a quotation built in this body: how many values it consumes and
   produces, as inferred when it was erased. -/
   effect : Option (Nat × Nat) := none
+  /-- Whether `effect` is the depth change the quotation really makes: its
+  body runs only signatures that keep the rest of the stack. `effect` alone
+  may count a word typed `ρ -- ρ2` as taking and leaving nothing. -/
+  exact : Bool := false
+  /-- For a quotation built in this body whose effect is unknown because
+  erasing its body lost track of the stack: where that happened. -/
+  lost : Option LostTrack := none
   deriving Repr, BEq
 
 structure State where
@@ -95,6 +109,10 @@ structure State where
   untracked : Bool := false
   /-- The atom that set `untracked`, for the diagnostic. -/
   lostAt : Option LostTrack := none
+  /-- Set once a signature that does not keep the rest of the stack has run,
+  directly or inside a quotation: from then on a quotation built here has no
+  exact effect. -/
+  inexact : Bool := false
   deriving Repr, BEq
 
 private def located (span : Span) (atom : Atom) : LocatedKernel := { span, atom }
@@ -222,20 +240,37 @@ private def dipMove : List StackEntry → Option (List StackEntry × Bool)
       runKnown quotation.effect rest (quotation :: preserved :: rest) (preserved :: ·)
   | _ => none
 
-/-- The branch effects of an `if` whose branches are both known and change
-the stack depth by different amounts. -/
+/-- The branch effects of an `if` whose branches are both exactly known and
+change the stack depth by different amounts. -/
 private def ifMismatch : List StackEntry → Option ((Nat × Nat) × (Nat × Nat))
-  | { effect := some falseEffect, .. } :: { effect := some trueEffect, .. } :: _ :: _ =>
+  | { effect := some falseEffect, exact := true, .. }
+      :: { effect := some trueEffect, exact := true, .. } :: _ :: _ =>
       if (branchEffect (some trueEffect) (some falseEffect)).isNone then
         some (trueEffect, falseEffect)
       else none
   | _ => none
 
-/-- `lostAt` after an atom: kept once the stack is untracked, recorded when
-this atom is the one that loses track. -/
+/-- Where the quotations `atom` runs lost track of the stack inside their own
+bodies, if they did. -/
+private def runLost : String → List StackEntry → Option LostTrack
+  | "call", quotation :: _ | "dip", quotation :: _ => quotation.lost
+  | "if", falseBranch :: trueBranch :: _ => falseBranch.lost <|> trueBranch.lost
+  | _, _ => none
+
+/-- Whether a quotation `atom` runs has no exact effect. -/
+private def runInexact : String → List StackEntry → Bool
+  | "call", quotation :: _ | "dip", quotation :: _ => !quotation.exact
+  | "if", falseBranch :: trueBranch :: _ => !falseBranch.exact || !trueBranch.exact
+  | _, _ => false
+
+/-- `lostAt` after an atom: kept once the stack is untracked, and otherwise
+recorded when this atom loses track. When the quotation it runs lost track
+inside its own body, that inner place is the one recorded, so the message
+names the atom whose quotation really has the unknown effect. -/
 private def lostAfter (state : State) (exact : Bool) (atom : String) (span : Span) :
     Option LostTrack :=
-  if state.untracked || exact then state.lostAt else some { atom, span }
+  if state.untracked || exact then state.lostAt else
+    (runLost atom state.stack).orElse fun _ => some { atom, span }
 
 private def ifMove : List StackEntry → Option (List StackEntry × Bool)
   | falseBranch :: trueBranch :: condition :: rest =>
@@ -247,13 +282,19 @@ private def ifMove : List StackEntry → Option (List StackEntry × Bool)
 private def bodyEffect (seedCount : Nat) (final : State) : Option (Nat × Nat) :=
   if final.untracked then none else some (seedCount, final.stack.length)
 
+/-- Where a quotation body lost track of the stack, if it did. -/
+private def bodyLost (final : State) : Option LostTrack :=
+  if final.untracked then final.lostAt else none
+
 private def composeEffect : Option (Nat × Nat) → Option (Nat × Nat) → Option (Nat × Nat)
   | some (i₁, o₁), some (i₂, o₂) => some (i₁ + (i₂ - o₁), o₂ + (o₁ - i₂))
   | _, _ => none
 
 private def composeMove : List StackEntry → Option (List StackEntry × Bool)
   | second :: first :: rest =>
-      some ({ usage := .many, effect := composeEffect first.effect second.effect } :: rest, true)
+      some ({ usage := .many, effect := composeEffect first.effect second.effect,
+              exact := first.exact && second.exact,
+              lost := first.lost <|> second.lost } :: rest, true)
   | _ => none
 
 /-- The nearest value marked `id` sits `depth` places below the top; moving it
@@ -327,7 +368,9 @@ private def applySignature (name : String) (span : Span) (signature : Signature)
   else
     let remaining := state.stack.drop signature.input.length
     let produced := signature.output.map (fun usage => { usage })
-    .ok { state with stack := produced ++ remaining }
+    .ok { state with
+          stack := produced ++ remaining
+          inexact := state.inexact || !signature.rowPreserving }
 
 private def initialState (effect : StackEffect) : State :=
   let usages := effect.input.reverse.map (fun item => match item with
@@ -360,7 +403,7 @@ private def boundSlots (names : List LocatedName) (state : State) : List Slot :=
   let slots : List Slot := (names.zip top.reverse).map (fun (name, entry) =>
     { id := 0, name := name.name, usage := entry.usage, origin := name.span,
       family := state.nextId,
-      restoredId := entry.slot.map (·.id), effect := entry.effect })
+      restoredId := entry.slot.map (·.id), effect := entry.effect, exact := entry.exact })
   slots.zip (List.range slots.length) |>.map (fun (slot, index) =>
     { slot with id := state.nextId + index })
 
@@ -368,7 +411,7 @@ private def boundSlots (names : List LocatedName) (state : State) : List Slot :=
 private def enteredLocalState (names : List LocatedName) (state : State) : State :=
   let slots := boundSlots names state
   let named := slots.reverse.map (fun slot =>
-      { slot := some slot, usage := slot.usage, effect := slot.effect })
+      { slot := some slot, usage := slot.usage, effect := slot.effect, exact := slot.exact })
   { state with stack := nameInPlace named state.stack, nextId := state.nextId + names.length }
 
 private def localStack (names : List LocatedName) (state : State) : Except ErasureError (State × List Slot) :=
@@ -608,7 +651,8 @@ inductive AppliesSignature (signature : Signature) (state : State) : State → P
       AppliesSignature signature state
         { state with
           stack := signature.output.map (fun usage => { usage }) ++
-            state.stack.drop signature.input.length }
+            state.stack.drop signature.input.length
+          inexact := state.inexact || !signature.rowPreserving }
 
 inductive BindsLocals (names : List LocatedName) (state : State) : State → List Slot → Prop where
   | bind (enough : names.length ≤ (bindable names.length state.stack).length) :
@@ -644,7 +688,8 @@ one copy at a time. Copying every later use up front made the stack, and the
 code that reaches into it, grow with the number of uses. -/
 private def demandCopies (slot : Slot) (name : String) (count : Nat) (state : State) : List Slot :=
   List.range (if count > 1 then 1 else 0) |>.map (fun index =>
-    Slot.mk (state.nextId + index) name slot.usage slot.origin none slot.family true true slot.effect)
+    Slot.mk (state.nextId + index) name slot.usage slot.origin none slot.family true true slot.effect
+      slot.exact)
 
 /-- `dup` applied to the value `depth` places below the top, leaving the
 values above it where they are: `[dup]`, `[[dup] dip]`, `[[[dup] dip] dip]`... -/
@@ -658,7 +703,7 @@ private def copyProgram (span : Span) (depth : Nat) (copies : List Slot) : Kerne
   (List.replicate copies.length (dupAtDepth span depth)).flatten
 
 private def copyEntries (copies : List Slot) : List StackEntry :=
-  copies.reverse.map (fun fresh => { slot := some fresh, usage := fresh.usage, effect := fresh.effect })
+  copies.reverse.map (fun fresh => { slot := some fresh, usage := fresh.usage, effect := fresh.effect, exact := fresh.exact })
 
 /-- The stack after `copyProgram`: the copies sit at `depth`, above the local. -/
 private def spliceCopies (depth : Nat) (copies : List Slot) (stack : List StackEntry) :
@@ -689,7 +734,8 @@ inductive DemandCopiesRel (slot : Slot) (name : String) (count : Nat) (state : S
   | generate :
       DemandCopiesRel slot name count state
         (List.range (if count > 1 then 1 else 0) |>.map (fun index =>
-          Slot.mk (state.nextId + index) name slot.usage slot.origin none slot.family true true slot.effect))
+          Slot.mk (state.nextId + index) name slot.usage slot.origin none slot.family true true slot.effect
+      slot.exact))
 
 inductive DemandStateRel (slot : Slot) (state : State) (focused : List StackEntry)
     (copies : List Slot) : State → Prop where
@@ -709,7 +755,7 @@ inductive ExpandsDemand (slot : Slot) (name : String) (span : Span) (count : Nat
       (located : state.stack.findIdx? (isFocusTarget slot.id) = some depth)
       (focusedBy : FocusRel ((copies.getLast?).map (·.id) |>.getD slot.id)
         (state.stack.take depth ++
-          copies.reverse.map (fun fresh => { slot := some fresh, usage := fresh.usage, effect := fresh.effect }) ++
+          copies.reverse.map (fun fresh => { slot := some fresh, usage := fresh.usage, effect := fresh.effect, exact := fresh.exact }) ++
           state.stack.drop depth) focusDepth focused)
       (stateRule : DemandStateRel slot state focused copies next) :
       ExpandsDemand slot name span count state
@@ -734,21 +780,23 @@ inductive ErasesAtomTo : String → Span → State → KernelProgram → State �
       (shape : state.stack = a :: rest) :
       ErasesAtomTo "quote" span state
         (atomList .quote span)
-        { state with stack := { usage := a.usage, effect := some (0, 1) } :: rest }
+        { state with stack := { usage := a.usage, effect := some (0, 1), exact := true } :: rest }
   | dip {span : Span} {state : State} {next : List StackEntry} {exact : Bool}
       (moved : dipMove state.stack = some (next, exact)) :
       ErasesAtomTo "dip" span state (atomList .dip span)
         { state with
           stack := next
           untracked := state.untracked || !exact
-          lostAt := lostAfter state exact "dip" span }
+          lostAt := lostAfter state exact "dip" span
+          inexact := state.inexact || runInexact "dip" state.stack }
   | call {span : Span} {state : State} {next : List StackEntry} {exact : Bool}
       (moved : callMove state.stack = some (next, exact)) :
       ErasesAtomTo "call" span state (atomList .call span)
         { state with
           stack := next
           untracked := state.untracked || !exact
-          lostAt := lostAfter state exact "call" span }
+          lostAt := lostAfter state exact "call" span
+          inexact := state.inexact || runInexact "call" state.stack }
   | compose {span : Span} {state : State} {next : List StackEntry} {exact : Bool}
       (moved : composeMove state.stack = some (next, exact)) :
       ErasesAtomTo "compose" span state (atomList .compose span)
@@ -762,7 +810,8 @@ inductive ErasesAtomTo : String → Span → State → KernelProgram → State �
         { state with
           stack := next
           untracked := state.untracked || !exact
-          lostAt := lostAfter state exact "if" span }
+          lostAt := lostAfter state exact "if" span
+          inexact := state.inexact || runInexact "if" state.stack }
 
 private def NonWord : Item → Prop
   | .word _ _ => False
@@ -851,7 +900,8 @@ inductive ErasureRel (env : EffectEnv) :
       (bodyRun : ErasureRel env (.items body visible)
         { stack := List.replicate seedCount { usage := .many } } program bodyFinal) :
       ErasureRel env (.item (.quotation body span) visible) state [locatedQuotation span program]
-        { state with stack := { usage := .many, effect := bodyEffect seedCount bodyFinal } ::
+        { state with stack := { usage := .many, effect := bodyEffect seedCount bodyFinal,
+                                exact := !bodyFinal.inexact, lost := bodyLost bodyFinal } ::
           state.stack }
   | locals {names : List LocatedName} {body : List Item} {span : Span}
       {state entered final : State} {visible : List String} {slots : List Slot}
@@ -996,7 +1046,8 @@ private def applySignatureWithProof (name : String) (span : Span) (signature : S
     else
       let next := { state with
         stack := signature.output.map (fun usage => { usage }) ++
-          state.stack.drop signature.input.length }
+          state.stack.drop signature.input.length
+        inexact := state.inexact || !signature.rowPreserving }
       have compatible : bad = false := bool_eq_false_of_not_true mismatch
       .ok ⟨next, .apply (Nat.le_of_not_gt short) clearEq compatible⟩
 
@@ -1166,7 +1217,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
         | "quote" => match stackEq : state.stack with
           | a :: rest => .ok {
               program := atomList .quote span
-              final := { state with stack := { usage := a.usage, effect := some (0, 1) } :: rest }
+              final := { state with stack := { usage := a.usage, effect := some (0, 1), exact := true } :: rest }
               evidence := .atom clearEq (.quote stackEq) }
           | _ => .error (.effectUnderflow name span)
         | "dip" => match movedEq : dipMove state.stack with
@@ -1175,7 +1226,8 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
               final := { state with
                          stack := next
                          untracked := state.untracked || !exact
-                         lostAt := lostAfter state exact "dip" span }
+                         lostAt := lostAfter state exact "dip" span
+                         inexact := state.inexact || runInexact "dip" state.stack }
               evidence := .atom clearEq (.dip movedEq) }
           | none => .error (.effectUnderflow name span)
         | "call" => match movedEq : callMove state.stack with
@@ -1184,7 +1236,8 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
               final := { state with
                          stack := next
                          untracked := state.untracked || !exact
-                         lostAt := lostAfter state exact "call" span }
+                         lostAt := lostAfter state exact "call" span
+                         inexact := state.inexact || runInexact "call" state.stack }
               evidence := .atom clearEq (.call movedEq) }
           | none => .error (.effectUnderflow name span)
         | "compose" => match movedEq : composeMove state.stack with
@@ -1204,7 +1257,8 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                 final := { state with
                            stack := next
                            untracked := state.untracked || !exact
-                           lostAt := lostAfter state exact "if" span }
+                           lostAt := lostAfter state exact "if" span
+                           inexact := state.inexact || runInexact "if" state.stack }
                 evidence := .atom clearEq (.ifThenElse movedEq) }
             | none => .error (.effectUnderflow name span)
         | _ => .error (.unsupportedAtom name span)))
@@ -1218,7 +1272,8 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
           | .ok bodyRun => .ok {
               program := [locatedQuotation quotationSpan bodyRun.program]
               final := { state with stack :=
-                { usage := .many, effect := bodyEffect bodyRun.seedCount bodyRun.final } ::
+                { usage := .many, effect := bodyEffect bodyRun.seedCount bodyRun.final,
+                  exact := !bodyRun.final.inexact, lost := bodyLost bodyRun.final } ::
                   state.stack }
               evidence := .quotation closedEq bodyRun.evidence }
       | .locals names body _ => match uniqueEq : duplicateName names with
