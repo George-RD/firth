@@ -613,7 +613,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
   let longestRun := [
     "In the false branch of the `if` in `main` whose true branch is `[ 0 ]`, `longest-run-loop` needs 5 values (prev:Int, curr-run:Int, max-run:Int, idx:Int, xs:Seq Int), but the branch has pushed only 4 values before it (the result of `prim seq-int.at`, `1`, `1` and `xs`)",
     "where there is none: everything the word was given is bound to locals or already used",
-    "Make the branch push, just before `longest-run-loop`, exactly the values it takes, in this order: prev:Int, curr-run:Int, max-run:Int, idx:Int, xs:Seq Int. The branch already pushes"]
+    "Make the branch push, just before `longest-run-loop`, exactly the values it takes, in this order: prev:Int, curr-run:Int, max-run:Int, idx:Int, xs:Seq Int. The branch already pushes the result of `prim seq-int.at`, `1`, `1` and `xs`: keep each in its place where it is one of these and replace it where it is not, and push the other one in its place"]
   branchReport "longest-run" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ length:Int^many)\n  locals { xs } {\n    xs prim seq-int.len 0 prim =\n    [ 0 ]\n    [ xs 0 prim seq-int.at 1 1 xs longest-run-loop ] if\n  };\n\n: longest-run-loop\n  (forall ρ; ρ prev:Int^many curr-run:Int^many max-run:Int^many idx:Int^many xs:Seq Int^many -- ρ result:Int^many)\n  locals { prev curr-run max-run idx xs } {\n    idx xs prim seq-int.len prim =\n    [ max-run curr-run prim < [ curr-run ] [ max-run ] if ]\n    [\n      xs idx prim seq-int.at dup prev prim =\n      [ curr-run 1 prim + ] [ 1 swap ] if\n      idx 1 prim +\n      xs\n      longest-run-loop\n    ]\n    if\n  };" longestRun
   -- keep-positive (the same run, answer 1): the false branch pushes the
   -- sequence on top of the element it means to append, so it takes a Seq Int
@@ -863,6 +863,17 @@ def runElaboratorDiagnosticTests : IO Unit := do
   branchReport "paths reach differently before the refused if"
     ": g (forall ρ; ρ x:Int^many -- ρ r:Int^many) locals { x } { true [ x prim + ] [ x prim - ] if true [ 1 ] [ ] if } ;"
     ["The true branch leaves `1`; the false branch leaves nothing."]
+  -- Two quotations whose labels agree, since a label shows only a long
+  -- quotation's start, but whose bodies differ: an earlier `if` pushes one
+  -- or the other, so a later `call` runs neither body, and the report keeps
+  -- the checker's account instead of naming the true path's `prim +`.
+  match elaboratePipeline pipelineContext ": g (forall ρ; ρ -- ρ r:Int^many) true [ [ 1 1 1 1 1 1 1 1 drop drop drop drop drop drop drop prim + ] ] [ [ 1 1 1 1 1 1 1 1 drop drop drop drop drop drop drop prim - ] ] if true [ call ] [ ] if ;" agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "quotations with one label" "firth.type.branch-mismatch" emitted
+      if emitted.contains "`prim +`" then
+        fail s!"quotations with one label: the report runs the true path's quotation: {emitted}"
+  | _ => fail "quotations with one label: expected one diagnostic"
   -- The same operation reached after as many values on both paths, which
   -- differ: the report names both.
   branchReport "nested paths push different values"
@@ -893,16 +904,12 @@ def runElaboratorDiagnosticTests : IO Unit := do
   match elaboratePipeline pipelineContext ": g (forall ρ; ρ a:Int^many -- ρ r:Seq Int^many) drop true [ prim seq-int.empty 1 prim seq-int.push ] [ prim seq-int.empty ] if ;" agentConfig with
   | .success _ => pure ()
   | .failure _ => fail "branch pushed the top operand: the program following the hint is refused"
-  -- The pushed values have the types of the first inputs only, so the
-  -- missing last one goes after them: Haiku's histogram answer at c6a964a
-  -- (haiku-firth-2, solutions-1) left out `v`, the last argument of
-  -- `count-value`, which is a local in scope.
-  let countValue := ": count-value (forall ρ; ρ cnt:Int^many xs:Seq Int^many idx:Int^many v:Int^many -- ρ count:Int^many) locals { cnt xs idx v } { cnt } ;\n\n"
-  let pushedFirst := countValue ++ ": g (forall ρ; ρ xs:Seq Int^many idx:Int^many v:Int^many -- ρ r:Int^many) locals { xs idx v } { true [ 0 xs idx count-value ] [ 0 ] if } ;"
+  -- The pushed values fit the inputs in one way only, as the first ones,
+  -- so the missing last one goes after them.
+  let takesThree := ": f (forall ρ; ρ xs:Seq Int^many n:Int^many b:Bool^many -- ρ r:Int^many) locals { xs n b } { n } ;\n\n"
+  let pushedFirst := takesThree ++ ": g (forall ρ; ρ xs:Seq Int^many b:Bool^many -- ρ r:Int^many) locals { xs b } { true [ xs 1 f ] [ 0 ] if } ;"
   branchReport "branch pushed the first operands" pushedFirst
-    ["The branch already pushes `0`, `xs` and `idx`, in the place of the first 3 (cnt:Int, xs:Seq Int, idx:Int): keep each where it has that type and replace it where it does not. Then push the last one (v:Int) after them"]
-  branchReport "histogram at c6a964a" ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ counts:Seq Int^many)\n  swap prim seq-int.empty 0 0 build-histogram swap drop;\n\n: build-histogram\n  (forall ρ; ρ xs:Seq Int^many result:Seq Int^many k:Int^many v:Int^many idx:Int^many -- ρ counts:Seq Int^many)\n  locals { xs result k v idx } {\n    v k prim < [\n      0 xs idx count-value result prim seq-int.push xs k v 1 prim + build-histogram\n    ] [ result ] if\n  };\n\n: count-value\n  (forall ρ; ρ cnt:Int^many xs:Seq Int^many idx:Int^many v:Int^many -- ρ count:Int^many)\n  locals { cnt xs idx v } {\n    idx xs prim seq-int.len prim < [\n      idx xs prim seq-int.at v prim = [\n        cnt 1 prim +\n      ] [ cnt ] if\n      xs idx 1 prim + v count-value\n    ] [ cnt ] if\n  };"
-    ["Then push the last one (v:Int) after them"]
+    ["The branch already pushes `xs` and `1`, in the place of the first 2 (xs:Seq Int, n:Int): keep each where it has that type and replace it where it does not. Then push the last one (b:Bool) after them"]
   -- Following the hint as written: the name before the colon of the input
   -- it asks for, written after the values the branch pushes.
   match elaboratePipeline pipelineContext pushedFirst agentConfig with
@@ -911,12 +918,33 @@ def runElaboratorDiagnosticTests : IO Unit := do
       match (emitted.splitOn "Then push the last one (").drop 1 with
       | rest :: _ =>
           let name := ((rest.splitOn ":").headD "").trimAscii.toString
-          let followed := pushedFirst.replace "[ 0 xs idx count-value ]" s!"[ 0 xs idx {name} count-value ]"
+          let followed := pushedFirst.replace "[ xs 1 f ]" s!"[ xs 1 {name} f ]"
           match elaboratePipeline pipelineContext followed agentConfig with
           | .success _ => pure ()
-          | .failure _ => fail s!"branch pushed the first operands: the program following the hint (`{name}` after `idx`) is refused"
+          | .failure _ => fail s!"branch pushed the first operands: the program following the hint (`{name}` after `1`) is refused"
       | [] => fail s!"branch pushed the first operands: the hint names no last input: {emitted}"
   | _ => fail "branch pushed the first operands: expected one diagnostic"
+  -- Where the pushed values fit the inputs in more than one way, the hint
+  -- names no side: Haiku's histogram answer at c6a964a (haiku-firth-2,
+  -- solutions-1) pushes `0 xs idx` for `count-value (cnt xs idx v)`, which
+  -- fits as the first three or with `idx` as `v`, and longest-run above
+  -- pushes four values for five inputs, where the missing `idx` goes in the
+  -- middle (review of #166), which the right edit shows.
+  branchReport "histogram at c6a964a" ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ counts:Seq Int^many)\n  swap prim seq-int.empty 0 0 build-histogram swap drop;\n\n: build-histogram\n  (forall ρ; ρ xs:Seq Int^many result:Seq Int^many k:Int^many v:Int^many idx:Int^many -- ρ counts:Seq Int^many)\n  locals { xs result k v idx } {\n    v k prim < [\n      0 xs idx count-value result prim seq-int.push xs k v 1 prim + build-histogram\n    ] [ result ] if\n  };\n\n: count-value\n  (forall ρ; ρ cnt:Int^many xs:Seq Int^many idx:Int^many v:Int^many -- ρ count:Int^many)\n  locals { cnt xs idx v } {\n    idx xs prim seq-int.len prim < [\n      idx xs prim seq-int.at v prim = [\n        cnt 1 prim +\n      ] [ cnt ] if\n      xs idx 1 prim + v count-value\n    ] [ cnt ] if\n  };"
+    ["The branch already pushes `0`, `xs` and `idx`: keep each in its place where it is one of these and replace it where it is not, and push the other one in its place"]
+  match elaboratePipeline pipelineContext ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ length:Int^many)\n  locals { xs } {\n    xs prim seq-int.len 0 prim =\n    [ 0 ]\n    [ xs 0 prim seq-int.at 1 1 0 xs longest-run-loop ] if\n  };\n\n: longest-run-loop\n  (forall ρ; ρ prev:Int^many curr-run:Int^many max-run:Int^many idx:Int^many xs:Seq Int^many -- ρ result:Int^many)\n  locals { prev curr-run max-run idx xs } { max-run } ;" agentConfig with
+  | .success _ => pure ()
+  | .failure _ => fail "longest-run: the edit that puts `idx` in the middle is refused"
+  -- A quotation's locals are those where it was written: `[ a ]` pushes the
+  -- outer `a:Int`, though it runs where `a` is the Seq Int. So `a` stands
+  -- for the last input of `prim seq-int.push`, and the Seq Int goes before
+  -- it (review of #166).
+  let captured := ": w (forall ρ; ρ a:Int^many b:Seq Int^many c:Bool^many -- ρ r:Seq Int^many) locals { a b c } { c [ [ a ] b locals { a } { call prim seq-int.push } ] [ b ] if } ;"
+  branchReport "captured local" captured
+    ["The branch already pushes `a`, in the place of the last one (Int): keep it where it has that type and replace it where it does not. Then push the first one (Seq Int) before it"]
+  match elaboratePipeline pipelineContext (captured.replace "{ call prim" "{ a swap call prim") agentConfig with
+  | .success _ => pure ()
+  | .failure _ => fail "captured local: the program following the hint is refused"
   -- Following the hint, with `2` as the other value, makes the program check.
   match elaboratePipeline pipelineContext ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) drop true [ 2 1 prim + ] [ 0 ] if ;" agentConfig with
   | .success _ => pure ()

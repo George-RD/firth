@@ -42,6 +42,9 @@ structure Entry where
   type : Option String := none
   own : Bool := true
   quotation : Option (List Item × Span) := none
+  /-- For a quotation, the types of the locals where it was written: a
+  local it names is that one, whatever the locals where it runs. -/
+  scope : List (String × String) := []
 
 /-- The stack (top first), the locals in scope, whether the word's inputs
 were bound by `locals`, and the first operation that took a value its branch
@@ -158,16 +161,18 @@ mutual
         | other => other
 
   /-- Runs a quotation body on `walk`, keeping the locals of the caller: a
-  quotation sees the locals of the block it is written in. -/
-  partial def runQuotation (context : Context) (walk : Walk) (body : List Item) : Outcome :=
-    match walkItems context { walk with nesting := walk.nesting + 1 } body with
-    | .next after => .next { after with nesting := walk.nesting }
+  quotation sees the locals of the block it is written in. The types of
+  those locals are the ones in `scope`, recorded where it was written. -/
+  partial def runQuotation (context : Context) (walk : Walk) (body : List Item)
+      (scope : List (String × String)) : Outcome :=
+    match walkItems context { walk with nesting := walk.nesting + 1, localTypes := scope } body with
+    | .next after => .next { after with nesting := walk.nesting, localTypes := walk.localTypes }
     | other => other
 
   partial def step (context : Context) (walk : Walk) : Item → Outcome
     | .literal literal _ => .next (pushTyped walk [(s!"`{literalText literal.value}`", literalType literal.value)])
     | .quotation items span =>
-        .next { walk with stack := { label := s!"the quotation `{quotationStart context.source span}`", quotation := some (items, span) } :: walk.stack }
+        .next { walk with stack := { label := s!"the quotation `{quotationStart context.source span}`", quotation := some (items, span), scope := walk.localTypes } :: walk.stack }
     | .word name _ =>
         if walk.locals.contains name then
           .next (pushTyped walk [(s!"`{name}`", (walk.localTypes.lookup name))]) else
@@ -214,20 +219,21 @@ mutual
     | .atom "call" _ =>
         let (taken, walk) := take walk "`call`" [] 1
         match taken with
-        | [{ quotation := some (body, _), .. }] => runQuotation context walk body
+        | [{ quotation := some (body, _), scope, .. }] => runQuotation context walk body scope
         | _ => .lost
     | .atom "dip" _ =>
         let (taken, walk) := take walk "`dip`" [] 2
         match taken with
-        | [{ quotation := some (body, _), .. }, kept] =>
-            match runQuotation context walk body with
+        | [{ quotation := some (body, _), scope, .. }, kept] =>
+            match runQuotation context walk body scope with
             | .next after => .next { after with stack := { kept with own := true } :: after.stack }
             | other => other
         | _ => .lost
     | .atom "if" span =>
         let (taken, below) := take walk "`if`" [] 3
         match taken with
-        | [{ quotation := some (onFalse, _), .. }, { quotation := some (onTrue, trueSpan), .. }, _] =>
+        | [{ quotation := some (onFalse, _), scope := falseScope, .. },
+            { quotation := some (onTrue, trueSpan), scope := trueScope, .. }, _] =>
             if span.start.offset == context.target then
               -- An `if` that takes its own condition or quotations from where
               -- there are none is its own mistake, not its branches'; the
@@ -235,21 +241,22 @@ mutual
               if below.missing > walk.missing then .lost else
               -- The refused `if`: each branch starts from the stack below
               -- the condition, none of it its own.
-              let base := { below with stack := below.stack.map ({ · with own := false }),
-                                       reach := none, took := [], missing := 0, nesting := 0,
-                                       inBranch := true }
-              let branch (body : List Item) : Option BranchAccount :=
-                match walkItems context base body with
+              let base : Walk :=
+                { below with stack := below.stack.map ({ · with own := false }),
+                             reach := none, took := [], missing := 0, nesting := 0,
+                             inBranch := true }
+              let branch (body : List Item) (scope : List (String × String)) : Option BranchAccount :=
+                match walkItems context { base with localTypes := scope } body with
                 | .next after => some { reach := after.reach, took := after.took,
                                         missing := after.missing, leaves := ownValues after }
                 | _ => none
-              match branch onTrue, branch onFalse with
+              match branch onTrue trueScope, branch onFalse falseScope with
               | some onTrueAccount, some onFalseAccount =>
                   .found { trueSource := quotationStart context.source trueSpan,
                            onTrue := onTrueAccount, onFalse := onFalseAccount }
               | _, _ => .lost
             else
-              match runQuotation context below onTrue, runQuotation context below onFalse with
+              match runQuotation context below onTrue trueScope, runQuotation context below onFalse falseScope with
               | .found account, _ | _, .found account => .found account
               | .next afterTrue, .next afterFalse =>
                   -- Either path may run, so the walk goes on only where
@@ -298,7 +305,10 @@ mutual
                   -- Where the branches leave different values, the value is
                   -- whichever branch ran.
                   let merged := (afterTrue.stack.zip afterFalse.stack).map fun (onTrue, onFalse) =>
-                    if onTrue.label == onFalse.label && onTrue.type == onFalse.type then onTrue
+                    -- Two quotations can share a label, which shows only a
+                    -- long quotation's start: only the same quotation is kept.
+                    if onTrue.label == onFalse.label && onTrue.type == onFalse.type &&
+                        onTrue.quotation == onFalse.quotation then onTrue
                     else { label := "the result of an `if`", own := onTrue.own,
                            type := if onTrue.type == onFalse.type then onTrue.type else none }
                   .next { afterTrue with stack := merged, reach }

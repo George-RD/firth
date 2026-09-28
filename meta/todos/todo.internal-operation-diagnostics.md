@@ -49,6 +49,12 @@ the checker wrote, not the author:
   loses the walk (#166 review). Following the true path when only the
   lengths differ gets main's account back, but describes a path that may
   not run; the fix is to account for the placeholder at the merge.
+- The branch account labels a local by its name alone, so where a
+  quotation that names an outer local runs inside a `locals` block that
+  binds the same name again, two values both read `a` (`locals { a b c }
+  { c [ [ a ] b locals { a } { call prim seq-int.push } ] [ b ] if }` in
+  the #166 review). The types are those where the quotation was written,
+  but the report cannot say which `a` it means.
 - `firth.name.locals-order` (#165) states an edit when the edited word is
   refused no earlier in the source than the word as written. That compares
   only first errors, so an edit can add an error hidden behind an earlier,

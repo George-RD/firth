@@ -269,24 +269,33 @@ private def accountExplanation (word : String) (account : Firth.Elaborator.IfAcc
           -- The branch's own values are the top of what the operation
           -- takes, but which inputs the author left out is told by their
           -- types: `1` before `prim seq-int.push` stands for the last
-          -- input, `0 xs idx` before a word of four inputs for the first
-          -- three. Where the types match only one side, the hint says where
-          -- the missing inputs go; otherwise it does not choose.
+          -- input, `xs 1` before a word taking `xs:Seq Int n:Int b:Bool` for
+          -- the first two. The hint says where the missing inputs go only
+          -- when the pushed values, in their order, fit the inputs in one
+          -- way alone, and that way is the first or the last inputs;
+          -- otherwise it does not choose.
           let pushed := reach.own.length
           let lacking := reach.count - pushed
           let one := pushed == 1
-          let known := reach.types.length == reach.count
-          let asLast := known && reach.ownTypes == (reach.types.drop lacking).map some
-          let asFirst := known && reach.ownTypes == (reach.types.take pushed).map some
+          -- The ways to fit `own` in order among `inputs`, counted up to 2.
+          let rec fits : List (Option String) → List String → Nat
+            | [], _ => 1
+            | _ :: _, [] => 0
+            | own@(value :: rest), input :: inputs =>
+                let here := if value == some input then fits rest inputs else 0
+                if here ≥ 2 then 2 else min 2 (here + fits own inputs)
+          let unique := reach.types.length == reach.count && fits reach.ownTypes reach.types == 1
+          let asLast := unique && reach.ownTypes == (reach.types.drop lacking).map some
+          let asFirst := unique && reach.ownTypes == (reach.types.take pushed).map some
           let order := s!"Make the branch push, just before {reach.operation}, exactly the values it takes, in this order: {", ".intercalate reach.inputs}. The branch already pushes {listing reach.own}"
           let keep := s!"keep {if one then "it" else "each"} where it has that type and replace it where it does not"
           let them := if one then "it" else "them"
           let locals := s!"for example by writing the locals that hold {if lacking == 1 then "it" else "them"}"
           let count (n : Nat) := if n == 1 then "one" else toString n
           let tail := s!"If {reach.operation} should not be in this branch, remove it. {noEvening}"
-          if asLast && !asFirst then
+          if asLast then
             s!"{order}, in the place of the last {count pushed} ({", ".intercalate (reach.inputs.drop lacking)}): {keep}. Then push the first {count lacking} ({", ".intercalate (reach.inputs.take lacking)}) before {them}, {locals}. {tail}"
-          else if asFirst && !asLast then
+          else if asFirst then
             s!"{order}, in the place of the first {count pushed} ({", ".intercalate (reach.inputs.take pushed)}): {keep}. Then push the last {count lacking} ({", ".intercalate (reach.inputs.drop pushed)}) after {them}, {locals}. {tail}"
           else
             s!"{order}: keep {if one then "it" else "each"} in its place where it is one of these and replace it where it is not, and push the other {count lacking} in {if lacking == 1 then "its place" else "their places"}, {locals}. {tail}"
