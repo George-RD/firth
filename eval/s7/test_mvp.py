@@ -61,10 +61,14 @@ HAND = [
     ("digits", (305,), ([3, 0, 5],)),
     ("digits", (0,), ([0],)),
     ("digits", (10,), ([1, 0],)),
+    ("digits", (1005,), ([1, 0, 0, 5],)),
+    ("digits", (40213,), ([4, 0, 2, 1, 3],)),
     ("primes-up-to", (10,), ([2, 3, 5, 7],)),
     ("primes-up-to", (1,), ([],)),
     ("histogram", ([0, 2, 2, 1, 2], 3), ([1, 1, 3],)),
     ("histogram", ([], 2), ([0, 0],)),
+    # The largest value is below k - 1, so the result is longer than max + 1.
+    ("histogram", ([1, 0, 1], 4), ([1, 2, 0, 0],)),
     ("sort", ([3, 1, 2],), ([1, 2, 3],)),
     ("sort", ([9, -1, 4, -1, 0, 7, 3],), ([-1, -1, 0, 3, 4, 7, 9],)),
     # 10+5=15; 15-20<0 rejected; 15-15=0; 0+4=4.
@@ -112,6 +116,16 @@ def scorer_rejects_wrong_python() -> None:
     flag = harness.run_python("def main(xs):\n    return [x > 0 for x in xs]\n", ([1, 2],), None,
                               ("Seq Int",))
     check(not flag["ok"], "Bools returned inside a Seq Int output fail")
+    # A reviewer's wrong answer that the first hidden set let through: it sizes
+    # the histogram by the largest value instead of by k.
+    hist = harness.score({"histogram": "def main(xs, k):\n    return [xs.count(v) for v in "
+                          "range(max(xs) + 1)] if xs else [0] * k\n"}, "python",
+                         [BY_ID["histogram"]], 1)
+    check(not hist["tasks"]["histogram"]["pass"], "the scorer fails a histogram sized by max(xs)")
+    # Another that got through: it keeps at most three digits.
+    three = harness.score({"digits": "def main(n):\n    return [int(c) for c in str(n)[:3]]\n"},
+                          "python", [BY_ID["digits"]], 1)
+    check(not three["tasks"]["digits"]["pass"], "the scorer fails digits truncated to three")
     res = harness.score({"reverse": "def main(xs):\n    return list(xs)\n"}, "python",
                         [BY_ID["reverse"]], 1)
     check(not res["tasks"]["reverse"]["pass"], "the scorer fails a wrong Python answer")

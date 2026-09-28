@@ -120,6 +120,8 @@ jobs:
         run: python3 examples/programs/check_programs.py 2>&1 | tee /tmp/language-programs.log
       - name: Check the frozen S7 MVP authoring tasks and their Firth references
         run: python3 eval/s7/test_mvp.py 2>&1 | tee /tmp/language-s7-mvp.log
+      - name: Check that an S7 author cannot read the hidden tests
+        run: sudo python3 eval/s7/test_isolation.py 2>&1 | tee /tmp/language-s7-isolation.log
       - name: Run the inventory allocator against the fixed acceptance corpus
         run: python3 examples/inventory/run_cases.py 2>&1 | tee /tmp/language-inventory.log
       - name: Check the inventory allocator's worst-case cost bound

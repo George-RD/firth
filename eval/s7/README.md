@@ -86,10 +86,29 @@ include negative numbers and empty sequences.
 - `prompt --tier mvp` gives the author `docs/getting-started.md`,
   `docs/firth-agent-guide.md` and `examples/programs/README.md` (the
   getting-started guide points there for sequences), plus one diagnostics
-  loop, `harness.py try`. It checks and runs a program on the task's visible
+  loop, `./try` (`harness.py try` underneath). It checks and runs a program on the task's visible
   example, or on inputs the author passes with `--stack`, and shows the
   result or the checker's diagnostics. It never runs hidden tests. The author
   may use it as often as it likes and nothing else.
+- **An author cannot read the hidden tests or the references.** This is
+  enforced, not just asked. `isolate.py workspace` makes a workspace holding
+  only the prompt and a `./try` client. `isolate.py run` runs the author
+  inside a sandbox (a mount and PID namespace with every capability dropped)
+  where the repository, `/home`, `/root`, `/tmp`, `/var/tmp`, `/mnt` and
+  `/srv` are empty and the workspace is `/tmp/work`. `./try` talks to a server
+  the harness runs outside, over a socket in the workspace, so `mvp_tasks.py`,
+  `reference/mvp/` and the git history stay out of reach.
+  `test_isolation.py` (CI, as root) runs a probe that finds them without the
+  sandbox and finds nothing inside it, by direct path, `/proc/<pid>/root`,
+  `git show`, `umount` or a filesystem search.
+- The network stays open, because the author model needs its API. So every
+  run limits the author's tools to `./try` and workspace files, and
+  `isolate.py audit` checks each retained transcript for any other tool call.
+  A run with a flagged call is void. The audit is tested against planted
+  calls.
+- Each results file records a SHA-256 of `task.py`, `tasks.py` and
+  `mvp_tasks.py`, so an edit to the frozen set after a run shows in its
+  results.
 - Writing the references hit two gaps: no division or remainder, and no way
   to replace one element of a sequence. They are recorded in
   `meta/todos/todo.language-14-authoring-gaps.md`. Boolean `and`, `or` and
@@ -100,9 +119,12 @@ keeps every transcript, and reports the pass rate per task and overall.
 
 ```sh
 python3 eval/s7/harness.py prompt --lang firth --tier mvp > prompt.md
-python3 eval/s7/harness.py try --lang firth --task sort sort.firth [--stack '[[3, 1, 2]]']
+sudo python3 eval/s7/isolate.py workspace --lang firth ws   # prompt.md and ./try
+sudo python3 eval/s7/isolate.py run ws -- <author command>    # the author, sandboxed
+sudo python3 eval/s7/isolate.py audit ws/transcript.jsonl
 python3 eval/s7/harness.py score --lang firth --tier mvp solutions.json > results.json
 python3 eval/s7/test_mvp.py
+sudo python3 eval/s7/test_isolation.py
 ```
 
 ## Run 1: 27 September 2026, `prim +` only
