@@ -263,6 +263,17 @@ def main() -> int:
               f"the author sees no host variable and runs as nobody: {clean.stdout.strip()}")
         passed = isolate.run(ws, echo, passed=("S7_PLANTED_SECRET",), capture_output=True, text=True, timeout=300)
         check("[hunter2]" in passed.stdout, "a variable named with --pass-env does reach the author")
+        # CI's runner lists / in /etc/fstab by UUID, and the sandbox's fresh /dev
+        # has no by-uuid links: a remount that consults fstab fails there. Planted
+        # here by binding such an fstab over the real one in an outer namespace.
+        fstab = ws.parent / "fstab"
+        fstab.write_text("UUID=00000000-0000-4000-8000-000000000000 / ext4 defaults 0 1\n")
+        outer = ["unshare", "--mount", "--propagation", "private", "sh", "-c",
+                 'mount --bind "$0" /etc/fstab && exec "$@"', str(fstab)]
+        uuid = subprocess.run(outer + isolate.sandbox_command(ws, ["id", "-u"], uid=isolate.NOBODY),
+                              capture_output=True, text=True, timeout=300)
+        check(uuid.stdout.strip() == str(isolate.NOBODY),
+              f"the sandbox starts when fstab names the root by UUID: {uuid.stderr.strip()}")
         (ws / "env.py").write_text("import os\ndef main(xs):\n    return [len(os.environ.get('S7_PLANTED_SECRET', ''))]\n")
         envtry = isolate.run(ws, ["./try", "--task", "reverse", "env.py"], capture_output=True, text=True, timeout=300)
         check("got: [[0]]" in envtry.stdout, f"a submitted program sees no host variable: {envtry.stdout.strip()}")

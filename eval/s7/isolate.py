@@ -220,7 +220,7 @@ def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = (),
               '  m=$(printf "%b" "$m")',
               f'  case "$m" in /tmp|{INSIDE}|{INSIDE}/*|/dev/shm|/proc|/proc/*) continue;; esac',
               '  [ -e "$m" ] || continue  # covered by a mount above: unreachable',
-              '  mount -o remount,bind,ro "$m"',
+              '  mount -o remount,bind,ro "$m" "$m"  # both named: no fstab lookup',
               "done"]
     lines += [f"cd {INSIDE}",
               "exec setpriv --bounding-set=-all --inh-caps=-all --no-new-privs"
