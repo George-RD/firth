@@ -94,8 +94,9 @@ include negative numbers and empty sequences.
   enforced, not just asked. `isolate.py workspace` makes a workspace holding
   only the prompt and a `./try` client. `isolate.py run` runs the author
   inside a sandbox (a mount and PID namespace with every capability dropped)
-  whose root is built from an allowlist: `/usr`, `/etc` and the other system
-  directories, the author CLI's install (`--tool DIR`), read-only copies of
+  whose root is built from an allowlist: `/usr` (with `/usr/local` and
+  `/usr/src`, where local installs and source trees live, covered by empty
+  directories), `/etc` and the other system directories, the author CLI's install (`--tool DIR`), read-only copies of
   its credentials (`--keep`), a fresh `/tmp`, `/dev` and `/proc`, and the
   workspace at `/tmp/work`. The host's root is dropped with `pivot_root`, so
   the repository, `/home`, `/root`, `/opt`, `/var`, `/mnt`, `/sys` and
@@ -125,7 +126,24 @@ include negative numbers and empty sequences.
   parent's and sibling's secrets and git gives back the stored one; inside,
   none of them exists, and a `--tool` naming any of those paths is refused.
   A repository placed under `/usr/local` is refused too, since `/usr` is
-  shown.
+  shown. Copies that no git metadata leads to are refused too: the shown
+  directories are scanned once per process for git storage of any kind (a
+  `.git` entry, or HEAD, `objects` and `refs` as in a bare mirror), for a
+  file named `mvp_tasks.py` or a directory ending in `eval/s7/reference`
+  (older revisions), and for a file with the content of a hidden file
+  (hashing only files of a hidden file's size). `test_isolation.py` plants
+  each under `/usr/share`, and an older revision and a bare mirror under
+  `/usr/local`, which are unreachable.
+- **Threat model.** The sandbox guarantees that an author, and every
+  program it submits, cannot reach this repository's checkouts or git
+  storage, nor any shown file that is named like the hidden tests or the
+  references, holds their exact content, or is git storage. It trusts the
+  operator's environment: what `--tool` and `--keep` name, the contents of
+  kept credentials, and the host itself. A copy of the hidden tests that
+  someone renamed and edited and placed on the host on purpose is outside
+  the model; so is anything reached through the author's network, which the
+  transcript audit covers instead. A finding outside this model goes to a
+  todo, not to this sandbox.
 - Submitted Python programs, run by `./try` or at scoring, also get an empty
   network namespace, so an answer cannot fetch anything. `test_isolation.py`
   plants one that reads from a local listener.
@@ -149,17 +167,26 @@ include negative numbers and empty sequences.
   itself. Without `--workspace`, a path with any link in its directories is
   refused. Otherwise a link made in the sandbox to a reference path, dangling
   there, would read the reference on the host. Such a workspace is refused.
-- The author and the programs it submits run as `nobody`, with a fresh `/dev`
+- The author and each program it submits run as a fresh uid, drawn at random
+  from 2^30 to 2^31 for each run, not as a shared `nobody`: the kernel keeps
+  a user keyring per uid outside every namespace here, so one uid shared
+  across runs could leave a note there for the next (`test_isolation.py`
+  plants it). They get a fresh `/dev`
   holding only `null`, `zero`, `full`, `random`, `urandom` and `tty`, so no
   disk device or root-only file is readable below the path mounts. The
-  workspace is handed to `nobody`, except `try` and `workspace.json`.
+  workspace is handed to that uid, except `try` and `workspace.json`.
 - Nothing from the host environment reaches the sandbox except `PATH`, and
   what `isolate.py run --pass-env NAME` names (the model API key). `HOME` is
   the workspace. Credentials passed with `--keep` come in as read-only copies
-  `nobody` can read. A `--keep` path inside the workspace, through a link, or
-  under a directory `nobody` or everyone can write is refused, and so is a
-  kept directory holding anything but plain files and directories (a link
-  inside it could lead to the repository). The copy never follows links.
+  the author's uid can read. A `--keep` path inside the workspace, through a
+  link, or under a directory an author uid or everyone can write is refused, and so is a
+  kept path holding anything but directories and plain files with one link
+  (a symbolic or hard link could lead to the repository), with a mount point
+  at or below it (read from `/proc/self/mountinfo`, since a same-filesystem
+  bind looks like a plain directory), or with a file whose SHA-256 equals a
+  hidden file's (a copy or reflink). The copy never follows links. A kept
+  file holding part of a hidden file, or an encoding of it, is not caught:
+  kept contents are trusted to be credentials.
 - Inside the sandbox the root and everything shown are read-only except the
   workspace, a fresh `/tmp` and `/dev/shm`, and there is no `/run` (it holds
   host sockets). So one attempt cannot leave notes for a later one.

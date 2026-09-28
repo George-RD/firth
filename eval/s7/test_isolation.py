@@ -9,6 +9,7 @@ probe that finds nothing anywhere cannot pass for isolation.
 """
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import socket
@@ -41,6 +42,21 @@ done
 git -C {isolate.q(ROOT)} show HEAD:eval/s7/mvp_tasks.py 2>/dev/null | grep -q allocate-batch && echo "FOUND git"
 find / \\( -path /proc -o -path /sys -o -path /mnt \\) -prune -o \\( -name mvp_tasks.py -o -name sort.firth \\) -print 2>/dev/null | grep . && echo "FOUND find"
 true
+"""
+
+# Stores or reads back a key in the caller's user keyring (add_key, keyctl).
+KEYRING_FN = """
+def keyring(mode):
+    libc = ctypes.CDLL(None, use_errno=True)
+    if mode == "put":
+        return 1 if libc.syscall(248, b"user", b"s7note", b"S7-NOTE", 7, -4) > 0 else 0
+    kid = libc.syscall(250, 10, -4, b"user", b"s7note", 0)
+    buf = ctypes.create_string_buffer(16)
+    return 1 if kid > 0 and libc.syscall(250, 11, kid, buf, 16) > 0 and buf.value == b"S7-NOTE" else 0
+"""
+KEYRING = "import ctypes, sys\n" + KEYRING_FN + """
+r = keyring(sys.argv[1])
+print(("put " if sys.argv[1] == "put" else "get ") + str(r) + (" S7-NOTE" if sys.argv[1] == "get" and r else ""))
 """
 
 failures: list[str] = []
@@ -104,6 +120,21 @@ def audit_checks() -> None:
     }
     for name, ev in planted.items():
         check(len(isolate.audit(clean + [ev])) == 1, f"the audit flags a planted {name} call")
+
+
+def mirror(under: Path) -> Path:
+    """A bare mirror under UNDER of a small repository whose one commit holds
+    a secret with the hidden tests' marker; `git show` reads it back."""
+    src = under / "mirror-src"
+    git = ["git", "-c", "user.email=s7@probe", "-c", "user.name=s7", "-c", "safe.directory=*"]
+    subprocess.run(git + ["init", "-q", str(src)], check=True)
+    (src / "secret.txt").write_text("S7-MIRROR-SECRET allocate-batch\n")
+    subprocess.run(git + ["-C", str(src), "add", "secret.txt"], check=True)
+    subprocess.run(git + ["-C", str(src), "commit", "-qm", "s"], check=True)
+    bare = under / "mirror.git"
+    subprocess.run(git + ["clone", "-q", "--bare", "--no-local", str(src), str(bare)], check=True)
+    shutil.rmtree(src)
+    return bare
 
 
 def layout_checks(ws: Path) -> None:
@@ -173,6 +204,94 @@ def layout_checks(ws: Path) -> None:
               "a --tool path that is not absolute and real is refused")
     finally:
         shutil.rmtree(base, ignore_errors=True)
+    # Copies that no git metadata links to this checkout (Codex's and the
+    # reviewer's probes): an exact copy, an older revision of the task file, a
+    # directory named like the references, and a bare mirror read with
+    # `git show`. Under /usr/share, which is shown, each makes the sandbox
+    # refuse; planted: with the scan bypassed each is readable inside.
+    share = Path(f"/usr/share/s7-copies-{os.getpid()}")
+    old_rev = (HERE / "mvp_tasks.py").read_text() + "\n# an older revision\n"
+    marker = "S7-MIRROR-SECRET allocate-batch"
+
+    def plant(kind: str) -> tuple[Path, str]:
+        """Plant one copy under SHARE; return it and a command that reads it."""
+        if kind == "exact":
+            f = share / "notes.txt"
+            shutil.copyfile(HERE / "mvp_tasks.py", f)
+        elif kind == "old revision":
+            f = share / "eval/s7/mvp_tasks.py"
+            f.parent.mkdir(parents=True)
+            f.write_text(old_rev)
+        elif kind == "references":
+            f = share / "eval/s7/reference/notes.txt"
+            f.parent.mkdir(parents=True)
+            f.write_text(marker + "\n")
+        else:
+            f = mirror(share)
+            return f, f"git -c safe.directory='*' --git-dir={f} show HEAD:secret.txt | grep -c allocate-batch"
+        return f, f"grep -c allocate-batch {f}"
+    for kind in ("exact", "old revision", "references", "mirror"):
+        try:
+            share.mkdir()
+            f, read = plant(kind)
+            isolate.hidden_copies.cache_clear()
+            check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"])),
+                  f"the sandbox refuses a shown directory holding {kind}")
+            real_scan, isolate.hidden_copies = isolate.hidden_copies, lambda sources: []
+            try:
+                mutant = isolate.sandbox_command(ws, ["bash", "-c", read], uid=isolate.NOBODY)
+            finally:
+                isolate.hidden_copies = real_scan
+            leaked = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+            check(leaked.stdout.strip() not in ("", "0"),
+                  f"without the scan, the {kind} copy is readable in the sandbox (the planted case): {leaked.stdout.strip()!r}")
+        finally:
+            shutil.rmtree(share, ignore_errors=True)
+            isolate.hidden_copies.cache_clear()
+    # Codex's probe: a --tool that is a single file, a renamed exact copy of a
+    # reference. Refused; planted: with the scan bypassed it is readable.
+    lone = Path(f"/opt/s7-tool-{os.getpid()}")
+    try:
+        shutil.copyfile(HERE / "reference/mvp/sort.firth", lone)
+        isolate.hidden_copies.cache_clear()
+        check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"], tools=(str(lone),))),
+              "the sandbox refuses a --tool file holding a copy of a reference")
+        real_scan, isolate.hidden_copies = isolate.hidden_copies, lambda sources: []
+        try:
+            mutant = isolate.sandbox_command(ws, ["cat", str(lone)], uid=isolate.NOBODY, tools=(str(lone),))
+        finally:
+            isolate.hidden_copies = real_scan
+        leaked = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+        check(leaked.stdout == (HERE / "reference/mvp/sort.firth").read_text(),
+              "without the scan, the --tool file is readable in the sandbox (the planted case)")
+    finally:
+        lone.unlink(missing_ok=True)
+        isolate.hidden_copies.cache_clear()
+    # /usr/local and /usr/src are not shown at all: an older revision and a
+    # bare mirror there are unreachable. Planted: with the covering mounts
+    # removed from the sandbox, both are readable.
+    local = Path(f"/usr/local/s7-copies-{os.getpid()}")
+    try:
+        (local / "eval/s7").mkdir(parents=True)
+        (local / "eval/s7/mvp_tasks.py").write_text(old_rev)
+        git_dir = mirror(local)
+        read = ["bash", "-c", f"grep -c allocate-batch {local}/eval/s7/mvp_tasks.py; "
+                f"git -c safe.directory='*' --git-dir={git_dir} show HEAD:secret.txt | grep -c allocate-batch; true"]
+        isolate.hidden_copies.cache_clear()
+        inside = subprocess.run(isolate.sandbox_command(ws, read, uid=isolate.NOBODY), env=isolate.sandbox_env(),
+                                capture_output=True, text=True, timeout=300)
+        check(inside.returncode == 0 and inside.stdout.split() in ([], ["0"], ["0", "0"]),
+              f"an older revision and a bare mirror under /usr/local are not in the sandbox: {inside.stdout.strip()!r}")
+        mutant = isolate.sandbox_command(ws, read, uid=isolate.NOBODY)
+        i = mutant.index("-c") + 1
+        mutant[i] = "\n".join(l for l in mutant[i].splitlines() if not any(u in l for u in isolate.UNSHOWN))
+        leaked = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+        counts = leaked.stdout.split()
+        check(len(counts) == 2 and all(c != "0" for c in counts),
+              f"with /usr/local shown, both are readable (the planted case): {leaked.stdout.strip()!r}")
+    finally:
+        shutil.rmtree(local, ignore_errors=True)
+        isolate.hidden_copies.cache_clear()
     # A repository under a system directory would be shown with it. Planted
     # under /usr/local: the sandbox refuses to start; the same layout under
     # /var/tmp, which is not shown, starts.
@@ -369,8 +488,9 @@ def main() -> int:
                                capture_output=True, text=True, timeout=300)
         check("[hunter2]" in leaky.stdout, "with the host's environment the secret reaches the sandbox (the planted case)")
         clean = isolate.run(ws, echo, capture_output=True, text=True, timeout=300)
-        check(clean.stdout.strip() == f"[] {isolate.NOBODY}",
-              f"the author sees no host variable and runs as nobody: {clean.stdout.strip()}")
+        shown = clean.stdout.strip().split()
+        check(shown[:1] == ["[]"] and len(shown) == 2 and int(shown[1]) in isolate.AUTHOR_UIDS,
+              f"the author sees no host variable and runs as a fresh uid: {clean.stdout.strip()}")
         passed = isolate.run(ws, echo, passed=("S7_PLANTED_SECRET",), capture_output=True, text=True, timeout=300)
         check("[hunter2]" in passed.stdout, "a variable named with --pass-env does reach the author")
         # CI's runner lists / in /etc/fstab by UUID, and the sandbox's fresh /dev
@@ -413,11 +533,14 @@ def main() -> int:
                   "--keep refuses a directory with a link inside it")
             check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"], keep=(str(nest),))),
                   "the sandbox refuses to copy a kept directory with a link inside it")
+            # The planted case bypasses both checks on kept content.
             real_plain, isolate.plain_tree = isolate.plain_tree, lambda k: None
+            real_scan, isolate.hidden_copies = isolate.hidden_copies, lambda sources: []
             try:
                 mutant = isolate.sandbox_command(ws, read_nest, keep=(str(nest),), uid=isolate.NOBODY)
             finally:
                 isolate.plain_tree = real_plain
+                isolate.hidden_copies = real_scan
             # Even past the refusal, the copy keeps the link a link, which
             # dangles inside.
             kept_link = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
@@ -430,6 +553,90 @@ def main() -> int:
                   f"copied through the link, the hidden tests reach the sandbox (the planted case): {leaked.stdout.strip()!r}")
         finally:
             shutil.rmtree(nest)
+        # Codex's next probe: a hard link to the hidden tests inside a kept
+        # directory is a regular file, and a plain copy brings its content in.
+        # Planted: with the check bypassed, the copy does bring it.
+        hard = Path(tempfile.mkdtemp(dir="/root", prefix="s7-keep-"))
+        try:
+            (hard / "token").write_text("token")
+            try:
+                os.link(HERE / "mvp_tasks.py", hard / "tasks")
+            except OSError as e:
+                print(f"skip no hard link to the tests from /root here ({e}), so no hard-link case")
+            else:
+                check(refused_exit(lambda: isolate.run(ws, ["true"], keep=(str(hard),))),
+                      "--keep refuses a directory holding a hard link")
+                check(refused_exit(lambda: isolate.run(ws, ["true"], keep=(str(hard / "tasks"),))),
+                      "--keep refuses a file with a second hard link")
+                read_hard = ["bash", "-c", f"grep -c allocate-batch {hard}/tasks 2>/dev/null"]
+                # The planted case bypasses both checks on kept content.
+                real_plain, isolate.plain_tree = isolate.plain_tree, lambda k: None
+                real_scan, isolate.hidden_copies = isolate.hidden_copies, lambda sources: []
+                try:
+                    mutant = isolate.sandbox_command(ws, read_hard, keep=(str(hard),), uid=isolate.NOBODY)
+                finally:
+                    isolate.plain_tree = real_plain
+                    isolate.hidden_copies = real_scan
+                leaked = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+                check(leaked.stdout.strip() not in ("", "0"),
+                      f"without the check, a hard link brings the hidden tests in (the planted case): {leaked.stdout.strip()!r}")
+        finally:
+            shutil.rmtree(hard)
+        # The reviewer's probe: a bind mount of eval/s7 inside a kept directory.
+        # To lstat it is a plain directory, and a copy brings the tests in. It
+        # runs in its own mount namespace, so the host never sees the mount.
+        bind = Path(tempfile.mkdtemp(dir="/root", prefix="s7-keep-"))
+        try:
+            (bind / "token").write_text("token")
+            (bind / "sub").mkdir()
+            probe = f"""
+import json, subprocess, sys
+sys.path.insert(0, {str(HERE)!r})
+import isolate
+subprocess.run(["mount", "--bind", {str(HERE)!r}, {str(bind / "sub")!r}], check=True)
+out = {{}}
+try:
+    isolate.sandbox_command({str(ws)!r}, ["true"], keep=({str(bind)!r},))
+    out["refused"] = False
+except SystemExit:
+    out["refused"] = True
+isolate.plain_tree = lambda k: None
+isolate.hidden_copies = lambda sources: []
+cmd = isolate.sandbox_command({str(ws)!r}, ["bash", "-c", "grep -c allocate-batch {bind}/sub/mvp_tasks.py"],
+                              keep=({str(bind)!r},), uid=isolate.NOBODY)
+out["leak"] = subprocess.run(cmd, env=isolate.sandbox_env(), capture_output=True, text=True).stdout.strip()
+print(json.dumps(out))
+"""
+            got = subprocess.run(["unshare", "--mount", "--propagation", "private", sys.executable, "-c", probe],
+                                 capture_output=True, text=True, timeout=300)
+            res = json.loads(got.stdout or "{}")
+            check(res.get("refused") is True, f"the sandbox refuses a kept directory with a mount inside it: {got.stderr.strip()[-200:]}")
+            check(res.get("leak") not in (None, "", "0"),
+                  f"without the check, the bind mount brings the hidden tests in (the planted case): {res.get('leak')!r}")
+        finally:
+            shutil.rmtree(bind)
+        # A kept file with the content of a hidden file (a copy or a reflink) is
+        # refused by its hash. Planted: with the check bypassed it comes in.
+        copied = Path(tempfile.mkdtemp(dir="/root", prefix="s7-keep-"))
+        try:
+            (copied / "token").write_text("token")
+            shutil.copyfile(HERE / "reference/mvp/sort.firth", copied / "notes")
+            check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"], keep=(str(copied),))),
+                  "the sandbox refuses a kept copy of a reference solution")
+            # The planted case bypasses both checks on kept content.
+            real_plain, isolate.plain_tree = isolate.plain_tree, lambda k: None
+            real_scan, isolate.hidden_copies = isolate.hidden_copies, lambda sources: []
+            try:
+                mutant = isolate.sandbox_command(ws, ["cat", str(copied / "notes")], keep=(str(copied),),
+                                                 uid=isolate.NOBODY)
+            finally:
+                isolate.plain_tree = real_plain
+                isolate.hidden_copies = real_scan
+            leaked = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+            check(leaked.stdout == (HERE / "reference/mvp/sort.firth").read_text(),
+                  "without the check, the copy reaches the sandbox (the planted case)")
+        finally:
+            shutil.rmtree(copied)
         # A credential path the author could have planted or redirected is refused:
         # in the workspace, under a world-writable directory, or through a link.
         (ws / "planted.json").write_text("x")
@@ -484,11 +691,28 @@ def main() -> int:
         check(second, "a second author run is refused while one is running")
         check(isolate.run(ws, ["true"], timeout=60).returncode == 0, "once it ends, the next run starts")
 
+        # Codex's keyring probe: a key stored in the user keyring by one run is
+        # read back by the next. Planted: two runs forced onto one uid share it;
+        # two ordinary runs, each with a fresh uid, do not.
+        (ws / "kr.py").write_text(KEYRING)
+        put = isolate.run(ws, ["python3", "kr.py", "put"], uid=isolate.NOBODY, capture_output=True, text=True, timeout=300)
+        got = isolate.run(ws, ["python3", "kr.py", "get"], uid=isolate.NOBODY, capture_output=True, text=True, timeout=300)
+        check("S7-NOTE" in got.stdout, f"two runs as one uid share its keyring (the planted case): {put.stdout.strip()} {got.stdout.strip()}")
+        put = isolate.run(ws, ["python3", "kr.py", "put"], capture_output=True, text=True, timeout=300)
+        got = isolate.run(ws, ["python3", "kr.py", "get"], capture_output=True, text=True, timeout=300)
+        check(put.stdout.startswith("put") and "S7-NOTE" not in got.stdout,
+              f"a key stored by one author run is gone for the next: {put.stdout.strip()} {got.stdout.strip()}")
+        (ws / "kr.py").unlink()
+        keyed = [harness.run_python(f"import ctypes\n{KEYRING_FN}\ndef main(xs):\n    return [keyring(m) for m in {mode!r}]\n",
+                                    ([1],), None, ("Seq Int",), sandboxed=True) for mode in (["put"], ["get"])]
+        check(keyed[0].get("stack") == [[1]] and keyed[1].get("stack") == [[0]],
+              f"a key stored by one submitted program is gone for the next: {keyed}")
         # The reviewer's IPC probe: a shared-memory segment made by the author
         # must not outlive the run on the host.
         def nobody_segments() -> list[str]:
+            """Every shared-memory segment on the host (authors no longer share a uid)."""
             out = subprocess.run(["ipcs", "-m"], capture_output=True, text=True).stdout
-            return [l.split()[1] for l in out.splitlines() if len(l.split()) > 2 and l.split()[2] == "nobody"]
+            return [l.split()[1] for l in out.splitlines() if l[:2] == "0x"]
         before = nobody_segments()
         made = isolate.run(ws, ["ipcmk", "-M", "4096"], capture_output=True, text=True, timeout=300)
         after = nobody_segments()

@@ -325,14 +325,15 @@ def python_install() -> tuple[str, ...]:
     """The interpreter's install, when the sandbox's system directories lack it."""
     import isolate
     prefix = os.path.realpath(sys.base_prefix)
-    return () if any(isolate.within(prefix, os.path.realpath(d)) for d in isolate.SYSTEM
-                     if os.path.isdir(d)) else (prefix,)
+    shown = any(isolate.within(prefix, os.path.realpath(d)) for d in isolate.SYSTEM if os.path.isdir(d))
+    unshown = any(isolate.within(prefix, u) for u in isolate.UNSHOWN)
+    return () if shown and not unshown else (prefix,)
 
 
 def run_python(source: str, args: tuple, fuel: int | None = None,
                outputs: tuple[str, ...] = (), sandboxed: bool = False) -> dict:
     """Run `main`; `outputs` are the task's output types, which the result must match.
-    With `sandboxed`, the author's code runs as `nobody`, with no network or disk
+    With `sandboxed`, the author's code runs as a fresh uid, with no network or disk
     devices, where the hidden tests, the references and the repository cannot be
     read (isolate.py; needs root)."""
     cmd = [sys.executable, "-c", PY_DRIVER, json.dumps(list(args)), json.dumps(list(outputs))]
@@ -340,8 +341,9 @@ def run_python(source: str, args: tuple, fuel: int | None = None,
     if sandboxed:
         import isolate  # imports this module, so only when needed
         empty = tempfile.mkdtemp(dir="/var/tmp", prefix="s7py-")
-        os.chown(empty, isolate.NOBODY, isolate.NOBODY)
-        cmd = isolate.sandbox_command(Path(empty), cmd, network=False, uid=isolate.NOBODY,
+        uid = isolate.fresh_uid()
+        os.chown(empty, uid, uid)
+        cmd = isolate.sandbox_command(Path(empty), cmd, network=False, uid=uid,
                                       tools=python_install())
     try:
         p = (isolate.contained(cmd, input=source, capture_output=True, text=True, timeout=PY_TIMEOUT,
