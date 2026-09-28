@@ -12,12 +12,17 @@ every contract in `accepted.json` must be accepted with exactly its expected
 coverage and cost table. An audit that stopped refusing, or began to
 overclaim coverage, fails here rather than admitting a proof.
 
+It also plants a narrowed helper in the precondition of the `abs` fixture in
+`src/prooftests/Helper.lean`, rebuilds that module, and requires `--status` to
+stop counting the record written before the edit, although the printed
+precondition is unchanged. The file is restored and rebuilt afterwards.
+
 It then reads the new report back with `firthProofRecords --status`, which
 audits every record again and counts it only when the audit reproduces it
 exactly. It plants one change at a time into the report: a stale cost table
-digest, a stale registry digest, a stale body digest, a stale erased type, an
-edited precondition, and a forged cover for a word the record does not cover.
-Each must withdraw contract_verified from the words that record covers, and
+digest, a stale registry digest, a stale body digest, a stale erased type, a
+stale statement digest, an edited precondition, and a forged cover for a word
+the record does not cover. Each must withdraw contract_verified from the words that record covers, and
 the forged cover must not verify its word.
 
 Usage: python3 tools/loop/update_proof_records.py [--check]
@@ -56,6 +61,7 @@ EXPECTED_REFUSALS = {
     f"{REFUSED}.vacuousPrecondition": NOT_THE_CONTRACT,
     f"{REFUSED}.otherRegistry": f"{REFUSED}.renamedGamma is not a reference registry",
     f"{REFUSED}.foreignDictionary": NOT_THE_CONTRACT,
+    f"{REFUSED}.outsideCosts": "cost table Elsewhere.costs is outside Firth",
     f"{ACCEPTED}.absOnly": NOT_THE_CONTRACT,
     "Firth.ProofTests.Gone.anything": "the source of prooftests.Gone",
 }
@@ -64,6 +70,10 @@ EXPECTED_REFUSALS = {
 # its source's other words stay uncovered. The last two differ only in the
 # cost table, so their digests must differ.
 DEFAULT_COSTS = "Firth.Interpreter.defaultCosts"
+HELPER = FIXTURES / "Helper.lean"
+HELPER_THEOREM = "Firth.ProofTests.Helper.absAllowed"
+HELPER_ORIGINAL = "InInt64 (0 - x) ∧ True"
+HELPER_PLANTED = "InInt64 (0 - x) ∧ x = 0"
 EXPECTED_ACCEPTED = {
     f"{ACCEPTED}.sumTo": ([("Programs.SumTo", "sum-to"), ("Programs.SumTo", "sum-acc")],
                           DEFAULT_COSTS),
@@ -71,12 +81,59 @@ EXPECTED_ACCEPTED = {
     f"{ACCEPTED}.int64Diff": ([("Programs.Signed", "diff")], DEFAULT_COSTS),
     f"{ACCEPTED}.int64DiffDoubled": ([("Programs.Signed", "diff")],
                                      f"{ACCEPTED}.doubledPrimitives"),
+    HELPER_THEOREM: ([("Programs.Signed", "abs")], DEFAULT_COSTS),
 }
 
 
 def audit(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(["lake", "env", str(AUDIT), *args], cwd=ROOT,
                           capture_output=True, text=True, check=False)
+
+
+def fixture_status(report: str) -> subprocess.CompletedProcess[str]:
+    with tempfile.TemporaryDirectory() as scratch:
+        path = Path(scratch) / "accepted-records.json"
+        path.write_text(report, encoding="utf-8")
+        return audit("--fixtures", "--status", str(path))
+
+
+def covering(words: list[dict], word: str) -> list[str]:
+    return next((entry.get("theorems", []) for entry in words
+                 if entry["module"] == "Programs.Signed" and entry["word"] == word), [])
+
+
+def check_helper_edit(report: str) -> list[str]:
+    """Plants the reviewer's probe on #138: narrows the helper behind
+    `absAllowed`'s precondition from `∧ True` to `∧ x = 0`, which leaves the
+    proof, the printed precondition and every body alone. `--status` on the
+    report written before the edit must stop counting that record. The file
+    is restored and rebuilt whatever happens."""
+    original = HELPER.read_text(encoding="utf-8")
+    if HELPER_ORIGINAL not in original:
+        return [f"{HELPER.relative_to(ROOT)} no longer defines Allowed as {HELPER_ORIGINAL}"]
+    before = fixture_status(report)
+    if before.returncode != 0 or HELPER_THEOREM not in covering(
+            json.loads(before.stdout)["words"], "abs"):
+        return [f"--status does not count {HELPER_THEOREM} before the edit:\n{before.stderr}"]
+    try:
+        HELPER.write_text(original.replace(HELPER_ORIGINAL, HELPER_PLANTED), encoding="utf-8")
+        built = subprocess.run(["lake", "build", "prooftests.Helper"], cwd=ROOT,
+                               capture_output=True, text=True, check=False)
+        if built.returncode != 0:
+            return [f"the planted helper edit did not build:\n{built.stdout}{built.stderr}"]
+        after = fixture_status(report)
+    finally:
+        HELPER.write_text(original, encoding="utf-8")
+        subprocess.run(["lake", "build", "prooftests.Helper"], cwd=ROOT,
+                       capture_output=True, text=True, check=False)
+    if after.returncode != 0:
+        return [f"--status failed after the planted helper edit:\n{after.stderr}"]
+    theorems = covering(json.loads(after.stdout)["words"], "abs")
+    if HELPER_THEOREM in theorems:
+        return [f"a narrowed helper left {HELPER_THEOREM} counted for abs"]
+    if f"{ACCEPTED}.absOnly" not in theorems:
+        return [f"the planted helper edit also withdrew {ACCEPTED}.absOnly: {theorems}"]
+    return []
 
 
 def check_fixtures() -> list[str]:
@@ -110,7 +167,7 @@ def check_fixtures() -> list[str]:
         digests[binding["name"]] = binding["digest"]
     if len(set(digests.values())) != len(digests):
         problems.append(f"different cost tables share a digest: {digests}")
-    return problems
+    return problems + check_helper_edit(result.stdout)
 
 
 def status(report: str) -> subprocess.CompletedProcess[str]:
@@ -136,6 +193,8 @@ def plant(record: dict, change: str, words: list[dict]) -> str | None:
         record["covers"][0]["body_digest"] = "0" * 64
     elif change == "erased type":
         record["covers"][0]["erased_type"] += " "
+    elif change == "statement digest":
+        record["statement_digest"] = "0" * 64
     elif change == "precondition":
         record["statement"]["pre"] = "fun _ => True"
     elif change == "forged cover":
@@ -166,8 +225,8 @@ def check_staleness(report: str) -> list[str]:
     others = {(item["module"], item["word"]) for other in parsed["records"]
               if other is not record for item in other["covers"]}
     expected = verified_words(parsed["words"]) - (covered - others)
-    for change in ("cost table", "registry", "body digest", "erased type", "precondition",
-                   "forged cover"):
+    for change in ("cost table", "registry", "body digest", "erased type", "statement digest",
+                   "precondition", "forged cover"):
         planted = json.loads(report)
         plant(planted["records"][0], change, parsed["words"])
         result = status(json.dumps(planted))

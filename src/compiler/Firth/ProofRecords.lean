@@ -201,32 +201,53 @@ def coveredWords (exportModule word : String) : Except String (List Covered) := 
       some { module := exportModule, source, word := name, bodyDigest, erasedType }
     else none
 
-/-- The definition of `root` and of every definition under `Firth` it rests
-on, as `name := value` lines in name order. Definitions outside `Firth` (Lean's
-own `Nat`, `List`, …) are not followed: they are not the language's semantics
-and do not change with it. -/
-partial def firthDefinitions (env : Environment) (root : Name) : Option String :=
-  (go [root] {} []).map fun lines =>
-    "\n".intercalate ((lines.mergeSort (fun a b => a.1.toString ≤ b.1.toString)).map
+/-- The definitions of `roots` and of every definition under `Firth` they rest
+on, as `name := value` lines in name order. Each root is always included, and
+refused (`none`) when it has no definition. Definitions outside `Firth` that a
+root uses (Lean's own `Nat`, `List`, …) are not followed: they are not the
+language's semantics and do not change with it. -/
+partial def firthDefinitionsOf (env : Environment) (roots : List Name) : Option String := do
+  for root in roots do
+    let info ← env.find? root
+    let _ ← info.value? (allowOpaque := true)
+  let lines ← go roots {} [] roots
+  pure <| "\n".intercalate ((lines.mergeSort (fun a b => a.1.toString ≤ b.1.toString)).map
       fun (name, value) => s!"{name} := {value}")
 where
-  go : List Name → NameSet → List (Name × String) → Option (List (Name × String))
-    | [], _, lines => some lines
-    | name :: rest, seen, lines =>
-        if seen.contains name || !(`Firth).isPrefixOf name then go rest seen lines
+  go : List Name → NameSet → List (Name × String) → List Name →
+      Option (List (Name × String))
+    | [], _, lines, _ => some lines
+    | name :: rest, seen, lines, roots =>
+        if seen.contains name || !(roots.contains name || (`Firth).isPrefixOf name) then
+          go rest seen lines roots
         else do
           let info ← env.find? name
           let seen := seen.insert name
           match info.value? (allowOpaque := true) with
           | some value =>
               go (value.getUsedConstants.toList ++ rest) seen (lines ++ [(name, toString value)])
-          | none => go rest seen lines
+                roots
+          | none => go rest seen lines roots
+
+/-- `firthDefinitionsOf` for one root. -/
+def firthDefinitions (env : Environment) (root : Name) : Option String :=
+  firthDefinitionsOf env [root]
 
 /-- The digest of a definition and every definition under `Firth` it rests
 on, or `none` when there is no such definition. A change to it, or to anything
 under `Firth` it uses, changes the digest. -/
 def definitionDigest (env : Environment) (name : Name) : Option String :=
   (firthDefinitions env name).map Digest.hexOfString
+
+/-- The digest of a statement: its text, and the definitions of every constant
+it names with every definition under `Firth` they rest on. The text alone
+names `triangle` but not what `triangle` is, so a changed helper in a
+contract's precondition or output would otherwise leave the digest as it was. -/
+def statementDigest (env : Environment) (statement : Expr) : Option String :=
+  let roots := statement.getUsedConstants.toList.filter fun name =>
+    (env.find? name).any (·.value? (allowOpaque := true) |>.isSome)
+  (firthDefinitionsOf env roots).map fun definitions =>
+    Digest.hexOfString (toString statement ++ "\n" ++ definitions)
 
 /-- Runs `x` against `env`, under a heartbeat limit. -/
 def runMeta (env : Environment) (x : MetaM α) : IO (Except String α) := do
@@ -251,6 +272,11 @@ theorem's own type, and the contract's fields as printed. -/
 def statementOf (contract : Contract) (theoremType : Expr) : MetaM (Expr × Statement) := do
   unless allowedGammas.contains contract.gamma do
     throwError "{contract.gamma} is not a reference registry (adapterGamma or int64Gamma)"
+  -- Only definitions under `Firth` are followed when binding digests, so a
+  -- cost table or contract elsewhere could rest on definitions no digest sees.
+  for (name, what) in [(contract.costs, "cost table"), (contract.contract, "contract")] do
+    unless (`Firth).isPrefixOf name do
+      throwError "{what} {name} is outside Firth, so what it rests on would not be bound"
   let gamma ← constOfType contract.gamma ``Firth.Interpreter.Gamma "registry"
   let costs ← constOfType contract.costs ``Firth.Interpreter.CostTable "cost table"
   let wordContract ← constOfType contract.contract ``Firth.Logic.WordContract "contract"
@@ -306,10 +332,11 @@ def audit (env : Environment) (contract : Contract) : IO (Except String ProofRec
   let bind (name : Name) : Except String Binding := match definitionDigest env name with
     | some digest => .ok { name, digest }
     | none => .error s!"{name} has no definition to bind"
+  let some statementDigest := statementDigest env expected
+    | fail "its statement names a constant with no definition to bind"
   match bind contract.gamma, bind contract.costs with
   | .ok gamma, .ok costTable =>
-      pure (.ok { contract, statement, axioms, gamma, costTable, covers,
-                  statementDigest := Digest.hexOfString (toString expected) })
+      pure (.ok { contract, statement, axioms, gamma, costTable, covers, statementDigest })
   | .error message, _ => fail message
   | _, .error message => fail message
 

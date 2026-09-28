@@ -94,21 +94,32 @@ names the word. It also refuses an entry when:
   `sorryAx` and the auxiliary axioms `native_decide` declares;
 - the registry is not `adapterGamma` or `int64Gamma` itself (a definition
   equal to one of them is refused too);
+- the cost table or the contract is not under `Firth`, since digests follow
+  only definitions under `Firth`;
 - the module's source file is gone, since its `.olean` may be stale.
 
 Coverage comes from the declared word alone: the record covers that word and
 every word its body calls, closed under calls, never the rest of the export.
 Each record carries the contract's fields pretty-printed (`pre`, `input`,
 `output`, `steps`, `cost`) so a reader sees what was proved, a digest of the
-statement, the axioms used, a digest of the registry and of the cost table
+statement (its text and the definition of every constant it names, followed
+through every definition under `Firth`, so editing a helper such as `triangle`
+changes it), the axioms used, a digest of the registry and of the cost table
 (each over its definition and every definition under `Firth` it uses), and
 each covered word's body digest and erased type. Its evidence id is the
 SHA-256 of the record's text. `records.json` reports every exported word as
 `contract_verified`, naming the theorems that cover it, or `type_checked`.
 
+What the audit cannot judge is whether a precondition is the right one. The
+witness shows it can be met, not that it is broad enough: a precondition of
+`x = 0` has a witness too. So review each record's printed `pre` against its
+`claim` in the `records.json` diff; a claim broader than the printed
+precondition is wrong even though the audit accepts it.
+
 `firthProofRecords --status records.json` audits every record in a written
 report again and counts it only when the audit reproduces it exactly. A record
-whose registry, cost table, word body, erased type or statement changed, or
+whose registry, cost table, word body, erased type, statement or any
+definition the statement rests on changed, or
 whose covers list was edited, stops making its words `contract_verified`.
 
 CI runs the script with `--check`. It fails if any contract is refused, if
@@ -117,9 +128,14 @@ the checked-in report differs, or if the audit's behaviour on the fixtures in
 its expected reason, and every entry in `accepted.json` accepted with exactly
 its expected coverage and cost table. It also reads the new report back with
 `--status`, then plants a changed cost table digest, registry digest, body
-digest, erased type, precondition and a forged cover, one at a time, and fails
+digest, erased type, statement digest, precondition and a forged cover, one
+at a time, and fails
 unless each withdraws `contract_verified` from the words that record covers
-and verifies nothing new.
+and verifies nothing new. Last, it narrows the helper behind the precondition
+of the `abs` fixture in `src/prooftests/Helper.lean` from `∧ True` to
+`∧ x = 0`, rebuilds that module (the proof still holds and the printed
+precondition is unchanged), and fails unless `--status` stops counting the
+record written before the edit. The file is restored and rebuilt afterwards.
 
 Adding a contract: define its `WordContract` and prove `Holds` here, add it to
 `contracts.json`, then run `lake build` and
