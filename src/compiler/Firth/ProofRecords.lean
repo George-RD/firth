@@ -210,18 +210,18 @@ def fromToolchain (env : Environment) (name : Name) : Bool :=
       | none => false
   | none => false
 
-/-- The definitions of `roots` and of every definition of this repository they
-rest on, whatever its namespace, as `name := value` lines in name order. Each
-root is always included, and refused (`none`) when it has no definition.
-Definitions from Lean's toolchain (`Nat`, `List`, …) are not followed: they
-are pinned by `lean-toolchain` and are not the language's semantics. -/
+/-- The declarations of `roots` and of every declaration of this repository
+they rest on, whatever its namespace, as one line each in name order: its
+type, its value when it has one, and an inductive type's constructors. The
+walk follows types, values and constructors, as `reach` does, so a changed
+inductive such as `Trace` changes the text as a changed definition does.
+Declarations from Lean's toolchain (`Nat`, `List`, …) are not followed: they
+are pinned by `lean-toolchain` and are not the language's semantics. `none`
+when a name is unknown. -/
 partial def firthDefinitionsOf (env : Environment) (roots : List Name) : Option String := do
-  for root in roots do
-    let info ← env.find? root
-    let _ ← info.value? (allowOpaque := true)
   let lines ← go roots {} [] roots
   pure <| "\n".intercalate ((lines.mergeSort (fun a b => a.1.toString ≤ b.1.toString)).map
-      fun (name, value) => s!"{name} := {value}")
+      fun (name, text) => s!"{name} {text}")
 where
   go : List Name → NameSet → List (Name × String) → List Name →
       Option (List (Name × String))
@@ -232,11 +232,16 @@ where
         else do
           let info ← env.find? name
           let seen := seen.insert name
-          match info.value? (allowOpaque := true) with
-          | some value =>
-              go (value.getUsedConstants.toList ++ rest) seen (lines ++ [(name, toString value)])
-                roots
-          | none => go rest seen lines roots
+          let value := info.value? (allowOpaque := true)
+          let ctors := match info with
+            | .inductInfo induct => induct.ctors
+            | _ => []
+          let text := s!": {info.type}" ++
+            (value.map (s!" := {·}")).getD "" ++
+            (if ctors.isEmpty then "" else s!" with {ctors}")
+          let used := info.type.getUsedConstants.toList ++
+            ((value.map (·.getUsedConstants.toList)).getD []) ++ ctors
+          go (used ++ rest) seen (lines ++ [(name, text)]) roots
 
 /-- `firthDefinitionsOf` for one root. -/
 def firthDefinitions (env : Environment) (root : Name) : Option String :=
@@ -245,17 +250,17 @@ def firthDefinitions (env : Environment) (root : Name) : Option String :=
 /-- The digest of a definition and every definition of this repository it
 rests on, or `none` when there is no such definition. A change to it, or to
 anything of this repository it uses, changes the digest. -/
-def definitionDigest (env : Environment) (name : Name) : Option String :=
+def definitionDigest (env : Environment) (name : Name) : Option String := do
+  let _ ← (← env.find? name).value? (allowOpaque := true)
   (firthDefinitions env name).map Digest.hexOfString
 
-/-- The digest of a statement: its text, and the definitions of every constant
-it names with every definition of this repository they rest on. The text alone
-names `triangle` but not what `triangle` is, so a changed helper in a
+/-- The digest of a statement: its text, and the declarations of every
+constant it names with every declaration of this repository they rest on
+(`firthDefinitionsOf`). The text alone names `triangle` but not what
+`triangle` is, so a changed helper definition or inductive type in a
 contract's precondition or output would otherwise leave the digest as it was. -/
 def statementDigest (env : Environment) (statement : Expr) : Option String :=
-  let roots := statement.getUsedConstants.toList.filter fun name =>
-    (env.find? name).any (·.value? (allowOpaque := true) |>.isSome)
-  (firthDefinitionsOf env roots).map fun definitions =>
+  (firthDefinitionsOf env statement.getUsedConstants.toList).map fun definitions =>
     Digest.hexOfString (toString statement ++ "\n" ++ definitions)
 
 /-- Runs `x` against `env`, under a heartbeat limit. -/
@@ -337,7 +342,7 @@ def audit (env : Environment) (contract : Contract) : IO (Except String ProofRec
     | some digest => .ok { name, digest }
     | none => .error s!"{name} has no definition to bind"
   let some statementDigest := statementDigest env expected
-    | fail "its statement names a constant with no definition to bind"
+    | fail "its statement names an unknown constant"
   match bind contract.gamma, bind contract.costs with
   | .ok gamma, .ok costTable =>
       pure (.ok { contract, statement, axioms, gamma, costTable, covers, statementDigest })

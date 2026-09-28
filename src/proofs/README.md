@@ -100,9 +100,10 @@ Coverage comes from the declared word alone: the record covers that word and
 every word its body calls, closed under calls, never the rest of the export.
 Each record carries the contract's fields pretty-printed (`pre`, `input`,
 `output`, `steps`, `cost`) so a reader sees what was proved. It also carries a
-digest of the statement: its text and the definition of every constant it
-names, followed through every definition this repository declares, in any
-namespace, so editing a helper such as `triangle` changes it. Only Lean's own
+digest of the statement: its text and the declaration (type, value, and an
+inductive type's constructors) of every constant it names, followed through
+every declaration this repository declares, in any namespace, so editing a
+helper such as `triangle`, or an inductive type such as `Trace`, changes it. Only Lean's own
 `Init`, `Std`, `Lean` and `Lake` are not followed, since `lean-toolchain` pins
 them. Then come the axioms used, a digest of the registry and of the cost
 table (each over its definition and every repository definition it uses), the
@@ -132,11 +133,11 @@ its expected coverage and cost table. It also reads the new report back with
 digest, erased type, statement digest, Lean version, precondition and a
 forged cover, one at a time, and fails
 unless each withdraws `contract_verified` from the words that record covers
-and verifies nothing new. Last, it narrows the helper behind the precondition
-of the `abs` fixture in `src/prooftests/Helper.lean`, declared outside the
-`Firth` namespace, from `∧ True` to
-`∧ x = 0`, rebuilds that module (the proof still holds and the printed
-precondition is unchanged), and fails unless `--status` stops counting the
+and verifies nothing new. Last, it narrows the helpers behind the preconditions
+of the `abs` fixtures in `src/prooftests/Helper.lean`, declared outside the
+`Firth` namespace: a definition, `Allowed`, and an inductive type, `Ok`. For
+each it rebuilds that module (the proofs still hold and the printed
+preconditions are unchanged) and fails unless `--status` stops counting that
 record written before the edit. The file is restored and rebuilt afterwards.
 
 Adding a contract: define its `WordContract` and prove `Holds` here, add it to

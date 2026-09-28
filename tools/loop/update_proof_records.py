@@ -12,10 +12,11 @@ every contract in `accepted.json` must be accepted with exactly its expected
 coverage and cost table. An audit that stopped refusing, or began to
 overclaim coverage, fails here rather than admitting a proof.
 
-It also plants a narrowed helper in the precondition of the `abs` fixture in
-`src/prooftests/Helper.lean`, rebuilds that module, and requires `--status` to
-stop counting the record written before the edit, although the printed
-precondition is unchanged. The file is restored and rebuilt afterwards.
+It also plants two narrowed helpers, a definition and an inductive type, in
+the preconditions of the `abs` fixtures in `src/prooftests/Helper.lean`. For
+each it rebuilds that module and requires `--status` to stop counting that
+record written before the edit, although the printed precondition is
+unchanged. The file is restored and rebuilt afterwards.
 
 It then reads the new report back with `firthProofRecords --status`, which
 audits every record again and counts it only when the audit reproduces it
@@ -70,9 +71,16 @@ EXPECTED_REFUSALS = {
 # cost table, so their digests must differ.
 DEFAULT_COSTS = "Firth.Interpreter.defaultCosts"
 HELPER = FIXTURES / "Helper.lean"
-HELPER_THEOREM = "Firth.ProofTests.Helper.absAllowed"
-HELPER_ORIGINAL = "InInt64 (0 - x) ∧ True"
-HELPER_PLANTED = "InInt64 (0 - x) ∧ x = 0"
+# Each planted helper edit: the theorem whose record it must withdraw, the
+# text it replaces and what it puts there. Both narrow the precondition to
+# x = 0 without changing the printed precondition or the contract's own
+# definition. The second edits an inductive type, which has no value.
+HELPER_EDITS = [
+    ("Firth.ProofTests.Helper.absAllowed",
+     "InInt64 (0 - x) ∧ True", "InInt64 (0 - x) ∧ x = 0"),
+    ("Firth.ProofTests.Helper.absOk",
+     "→ 0 = x * 0 → ProofTestHelpers.Ok x", "→ 0 = x → ProofTestHelpers.Ok x"),
+]
 EXPECTED_ACCEPTED = {
     f"{ACCEPTED}.sumTo": ([("Programs.SumTo", "sum-to"), ("Programs.SumTo", "sum-acc")],
                           DEFAULT_COSTS),
@@ -80,7 +88,8 @@ EXPECTED_ACCEPTED = {
     f"{ACCEPTED}.int64Diff": ([("Programs.Signed", "diff")], DEFAULT_COSTS),
     f"{ACCEPTED}.int64DiffDoubled": ([("Programs.Signed", "diff")],
                                      f"{ACCEPTED}.doubledPrimitives"),
-    HELPER_THEOREM: ([("Programs.Signed", "abs")], DEFAULT_COSTS),
+    "Firth.ProofTests.Helper.absAllowed": ([("Programs.Signed", "abs")], DEFAULT_COSTS),
+    "Firth.ProofTests.Helper.absOk": ([("Programs.Signed", "abs")], DEFAULT_COSTS),
 }
 
 
@@ -101,37 +110,37 @@ def covering(words: list[dict], word: str) -> list[str]:
                  if entry["module"] == "Programs.Signed" and entry["word"] == word), [])
 
 
-def check_helper_edit(report: str) -> list[str]:
-    """Plants the reviewer's probe on #138: narrows the helper behind
-    `absAllowed`'s precondition from `∧ True` to `∧ x = 0`, which leaves the
-    proof, the printed precondition and every body alone. `--status` on the
-    report written before the edit must stop counting that record. The file
-    is restored and rebuilt whatever happens."""
+def check_helper_edit(report: str, theorem: str, original_text: str,
+                      planted_text: str) -> list[str]:
+    """Plants one of the reviewer's probes on #138: narrows a helper behind a
+    fixture's precondition, which leaves the proof, the printed precondition,
+    the contract's definition and every body alone. `--status` on the report
+    written before the edit must stop counting that record and keep the
+    others. The file is restored and rebuilt whatever happens."""
     original = HELPER.read_text(encoding="utf-8")
-    if HELPER_ORIGINAL not in original:
-        return [f"{HELPER.relative_to(ROOT)} no longer defines Allowed as {HELPER_ORIGINAL}"]
+    if original.count(original_text) != 1:
+        return [f"{HELPER.relative_to(ROOT)} no longer contains {original_text!r} once"]
     before = fixture_status(report)
-    if before.returncode != 0 or HELPER_THEOREM not in covering(
-            json.loads(before.stdout)["words"], "abs"):
-        return [f"--status does not count {HELPER_THEOREM} before the edit:\n{before.stderr}"]
+    if before.returncode != 0 or theorem not in covering(json.loads(before.stdout)["words"], "abs"):
+        return [f"--status does not count {theorem} before the edit:\n{before.stderr}"]
     try:
-        HELPER.write_text(original.replace(HELPER_ORIGINAL, HELPER_PLANTED), encoding="utf-8")
+        HELPER.write_text(original.replace(original_text, planted_text), encoding="utf-8")
         built = subprocess.run(["lake", "build", "prooftests.Helper"], cwd=ROOT,
                                capture_output=True, text=True, check=False)
         if built.returncode != 0:
-            return [f"the planted helper edit did not build:\n{built.stdout}{built.stderr}"]
+            return [f"the planted edit for {theorem} did not build:\n{built.stdout}{built.stderr}"]
         after = fixture_status(report)
     finally:
         HELPER.write_text(original, encoding="utf-8")
         subprocess.run(["lake", "build", "prooftests.Helper"], cwd=ROOT,
                        capture_output=True, text=True, check=False)
     if after.returncode != 0:
-        return [f"--status failed after the planted helper edit:\n{after.stderr}"]
-    theorems = covering(json.loads(after.stdout)["words"], "abs")
-    if HELPER_THEOREM in theorems:
-        return [f"a narrowed helper left {HELPER_THEOREM} counted for abs"]
-    if f"{ACCEPTED}.absOnly" not in theorems:
-        return [f"the planted helper edit also withdrew {ACCEPTED}.absOnly: {theorems}"]
+        return [f"--status failed after the planted edit for {theorem}:\n{after.stderr}"]
+    remaining = set(covering(json.loads(after.stdout)["words"], "abs"))
+    expected = set(covering(json.loads(before.stdout)["words"], "abs")) - {theorem}
+    if remaining != expected:
+        return [f"a narrowed helper left {sorted(remaining - expected)} counted for abs"
+                f" or withdrew {sorted(expected - remaining)}"]
     return []
 
 
@@ -166,7 +175,9 @@ def check_fixtures() -> list[str]:
         digests[binding["name"]] = binding["digest"]
     if len(set(digests.values())) != len(digests):
         problems.append(f"different cost tables share a digest: {digests}")
-    return problems + check_helper_edit(result.stdout)
+    for theorem, original_text, planted_text in HELPER_EDITS:
+        problems += check_helper_edit(result.stdout, theorem, original_text, planted_text)
+    return problems
 
 
 def status(report: str) -> subprocess.CompletedProcess[str]:

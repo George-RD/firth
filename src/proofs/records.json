@@ -1,6 +1,6 @@
 {"records": [
   {
-    "evidence": "d25e5483958147551baba5e23a79a5286a8342289ec687fe688e5fc91e5ee267",
+    "evidence": "dea77d7f3e9e40bcec247107a02d5d373ece053f833a92edaf716ec796816fc6",
     "theorem": "Firth.Proofs.Programs.SumTo.sum_to_contract",
     "module": "proofs.Programs.SumTo",
     "export": "Programs.SumTo",
@@ -16,16 +16,16 @@
       "output": "fun n =>\n  List.cons (Firth.Interpreter.Value.literal (Firth.Interpreter.Literal.int (Firth.Proofs.Programs.SumTo.triangle n)))\n    List.nil",
       "steps": "fun n => HAdd.hAdd (HMul.hMul 14 n) 10",
       "cost": "fun n => HAdd.hAdd (HMul.hMul 13 n) 10"},
-    "statement_digest": "02453cdb0baec6cb4dc6e56079599e18c8b75350cdbe4bec536c0b344aea833d",
+    "statement_digest": "93a43f029da4be9b62a99fb09e79039ddf688e3b7df117a041c970ad1854c09c",
     "axioms": ["Classical.choice", "Quot.sound", "propext"],
     "lean": "4.30.0",
-    "gamma_binding": {"name": "Firth.Logic.int64Gamma", "digest": "cc02e721b4e62bf0938bcf4851b41a17a0ea9d9948a0ccbe884ae5b61379d317"},
-    "cost_binding": {"name": "Firth.Interpreter.defaultCosts", "digest": "e1ca9f7d23e83b190af851773feb6d3cc56a878c91c15ce6c8ebecdf87e4200c"},
+    "gamma_binding": {"name": "Firth.Logic.int64Gamma", "digest": "82e43a3027b70829857ed2490168411b3d3a7d4c17077b4a5dc405ffab6a7e38"},
+    "cost_binding": {"name": "Firth.Interpreter.defaultCosts", "digest": "08038da51e4a7c0563be58b5b9f8216cbfead466dbc355d8bc748b48bb586f09"},
     "covers": [
       {"module": "Programs.SumTo", "source": "examples/programs/sum-to.firth", "word": "sum-to", "body_digest": "ef719ea2f5c0dfd9cdd6a21149a833aa34431bb0b50f87d378e5eecfe439d6dc", "erased_type": "(forallρ;ρ,v0:Int^many--ρ,v0:Int^many)"},
       {"module": "Programs.SumTo", "source": "examples/programs/sum-to.firth", "word": "sum-acc", "body_digest": "6eca79a71d906194ae54383cdb1c0e704fc1b143f937f564241c0f0461ddfc95", "erased_type": "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many)"}]},
   {
-    "evidence": "071bda633052f330831d0d6a8163cb6ad44af0bdd7777f09b2dc0f132484318b",
+    "evidence": "35eb199d4ecf609443b8c01af9efd065026988a896b840257b3a7da4a3020439",
     "theorem": "Firth.Proofs.Programs.Signed.abs_contract",
     "module": "proofs.Programs.Signed",
     "export": "Programs.Signed",
@@ -33,7 +33,7 @@
     "contract": "Firth.Proofs.Programs.Signed.absContract",
     "gamma": "Firth.Logic.int64Gamma",
     "costs": "Firth.Interpreter.defaultCosts",
-    "claim": "For every integer other than -2^63, abs's body takes it to its absolute value within 16 steps at kernel cost at most 15, with no i64 overflow on the way.",
+    "claim": "For every integer x whose negation is in i64 (-(2^63 - 1) <= x <= 2^63, so every i64 value except -2^63), abs's body takes x to its absolute value within 16 steps at kernel cost at most 15, with no i64 overflow on the way.",
     "statement": {
       "args": "Int",
       "pre": "fun x => Firth.Logic.InInt64 (HSub.hSub 0 x)",
@@ -41,11 +41,11 @@
       "output": "fun x => List.cons (Firth.Interpreter.Value.literal (Firth.Interpreter.Literal.int (Nat.cast (Int.natAbs x)))) List.nil",
       "steps": "fun x => 16",
       "cost": "fun x => 15"},
-    "statement_digest": "25d8a763a6adcb9fd2bf08369222a96847787fb0f99400ee2116134f7eb52e62",
+    "statement_digest": "405bbdf9cf3ffd011720bec557a470c5a7ed643dfaba998eddd3f27e9334f6db",
     "axioms": ["Classical.choice", "Quot.sound", "propext"],
     "lean": "4.30.0",
-    "gamma_binding": {"name": "Firth.Logic.int64Gamma", "digest": "cc02e721b4e62bf0938bcf4851b41a17a0ea9d9948a0ccbe884ae5b61379d317"},
-    "cost_binding": {"name": "Firth.Interpreter.defaultCosts", "digest": "e1ca9f7d23e83b190af851773feb6d3cc56a878c91c15ce6c8ebecdf87e4200c"},
+    "gamma_binding": {"name": "Firth.Logic.int64Gamma", "digest": "82e43a3027b70829857ed2490168411b3d3a7d4c17077b4a5dc405ffab6a7e38"},
+    "cost_binding": {"name": "Firth.Interpreter.defaultCosts", "digest": "08038da51e4a7c0563be58b5b9f8216cbfead466dbc355d8bc748b48bb586f09"},
     "covers": [
       {"module": "Programs.Signed", "source": "examples/programs/signed.firth", "word": "abs", "body_digest": "472591df6d2517e379b8604d7a3a522f79a99deb3df8f0436edce970f7eadb09", "erased_type": "(forallρ;ρ,v0:Int^many--ρ,v0:Int^many)"}]}],
 "words": [

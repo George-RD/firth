@@ -46,8 +46,9 @@ theorem abs_natAbs (x : Int) (tail : Stack) (hRange : InInt64 (0 - x)) :
     rw [hAbs]
     exact ((abs_of_nonneg x tail hx).within).weaken (by omega) (by omega)
 
-/-- `abs`'s contract: every integer other than -2^63 becomes its absolute
-value within 16 transitions at a cost of at most 15. -/
+/-- `abs`'s contract: every integer whose negation is in i64
+(`-(2^63 - 1) ≤ x ≤ 2^63`) becomes its absolute value within 16 transitions
+at a cost of at most 15. -/
 def absContract : WordContract where
   Args := Int
   pre x := InInt64 (0 - x)
