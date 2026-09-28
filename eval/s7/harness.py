@@ -321,13 +321,23 @@ result.flush()
 PY_TIMEOUT = 30  # seconds per Python case
 
 
-def python_install() -> tuple[str, ...]:
-    """The interpreter's install, when the sandbox's system directories lack it."""
+def sandbox_python() -> str:
+    """The interpreter the sandbox runs: sys.executable with its links resolved,
+    since a virtual environment's bin/ is not in the sandbox (CodeRabbit, #134)."""
+    return os.path.realpath(sys.executable)
+
+
+def python_install(exe: str) -> tuple[str, ...]:
+    """The interpreter's install and EXE's directory, where the sandbox's system
+    directories lack them."""
     import isolate
-    prefix = os.path.realpath(sys.base_prefix)
-    shown = any(isolate.within(prefix, os.path.realpath(d)) for d in isolate.SYSTEM if os.path.isdir(d))
-    unshown = any(isolate.within(prefix, u) for u in isolate.UNSHOWN)
-    return () if shown and not unshown else (prefix,)
+    out = []
+    for path in sorted({os.path.realpath(sys.base_prefix), os.path.dirname(exe)}):
+        shown = any(isolate.within(path, os.path.realpath(d)) for d in isolate.SYSTEM if os.path.isdir(d))
+        unshown = any(isolate.within(path, u) for u in isolate.UNSHOWN)
+        if not shown or unshown:
+            out.append(path)
+    return tuple(out)
 
 
 def run_python(source: str, args: tuple, fuel: int | None = None,
@@ -343,8 +353,9 @@ def run_python(source: str, args: tuple, fuel: int | None = None,
         empty = tempfile.mkdtemp(dir="/var/tmp", prefix="s7py-")
         uid = isolate.fresh_uid()
         os.chown(empty, uid, uid)
-        cmd = isolate.sandbox_command(Path(empty), cmd, network=False, uid=uid,
-                                      tools=python_install())
+        exe = sandbox_python()
+        cmd = isolate.sandbox_command(Path(empty), [exe, *cmd[1:]], network=False, uid=uid,
+                                      tools=python_install(exe))
     try:
         p = (isolate.contained(cmd, input=source, capture_output=True, text=True, timeout=PY_TIMEOUT,
                                env=isolate.sandbox_env()) if empty else

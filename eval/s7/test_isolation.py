@@ -875,6 +875,26 @@ print(json.dumps(out))
         check(found.stdout and not extra,
               f"the author can write only the workspace, /tmp and /dev/shm: {extra[:10]}")
 
+        # CodeRabbit's case: an interpreter reached through a virtual
+        # environment's link, whose bin/ is not in the sandbox.
+        venv = Path(f"/var/tmp/s7-venv-{os.getpid()}")
+        (venv / "bin").mkdir(parents=True, exist_ok=True)
+        (venv / "bin" / "python3").symlink_to(os.path.realpath(sys.executable))
+        plain = "def main(xs):\n    return xs\n"
+        saved_exe, saved_resolve = sys.executable, harness.sandbox_python
+        try:
+            sys.executable = str(venv / "bin" / "python3")
+            via_venv = harness.run_python(plain, ([4],), None, ("Seq Int",), sandboxed=True)
+            harness.sandbox_python = lambda: sys.executable
+            unresolved = harness.run_python(plain, ([4],), None, ("Seq Int",), sandboxed=True)
+        finally:
+            sys.executable, harness.sandbox_python = saved_exe, saved_resolve
+            shutil.rmtree(venv, ignore_errors=True)
+        check(not unresolved["ok"],
+              f"run through the venv's link, the sandbox cannot start Python (the planted case): {unresolved}")
+        check(via_venv == {"ok": True, "stack": [[4]]},
+              f"a venv interpreter still runs sandboxed answers: {via_venv}")
+
         # Codex's probe: an answer that never returns and starts a child. When
         # the case times out, nothing it started may keep running.
         runaway = ("import subprocess, time\ndef main(xs):\n"
