@@ -14,10 +14,10 @@ open Firth.Proofs.Programs.SumTo
 /-- Uses the whole `sum-to` dictionary but states a fact about `sum-acc`
 only, so it covers `sum-acc` and not `sum-to`. -/
 theorem narrow (tail : Stack) :
-    Runs adapterGamma dictionary defaultCosts (.cons (.word "sum-acc") .empty)
+    Runs int64Gamma dictionary defaultCosts (.cons (.word "sum-acc") .empty)
       (.literal (.int ((0 : Nat) : Int)) :: .literal (.int 0) :: tail)
       (.literal (.int (0 + triangle 0)) :: tail) (14 * 0 + 8) (13 * 0 + 8) :=
-  sum_acc 0 0 tail
+  sum_acc 0 0 tail (Int.le_refl 0) (by simp only [triangle, InInt64]; omega)
 
 /-- A body stated under `int64Gamma` and proved by `runs_chain` alone, which
 closes the `InInt64` side goal of `-` from the assumption. It covers `diff`. -/
