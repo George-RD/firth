@@ -28,14 +28,16 @@ approach that is harder now if the easier one would cause pain later.
    kernel program the elaborator emits, run by the Lean reference
    interpreter, with the cost bound proved the same way. The proofs also show
    every value stays within the VM's i64. The detailed acceptance is in
-   `language-06b` and `language-06c`.
+   `language-06b` and `language-06c`, which #127 adds to `meta/todos/`. None
+   of these proofs exist yet; this decision chooses the route, it is not
+   evidence that S5 is met.
 2. The VM and the compiler's lowering are tied to the reference interpreter by
    differential tests, not by a proof. This gap is stated with every S5
    claim and tracked as open work. It is not closed by more testing, and it
    does not block S5.
-3. Extending the SMT path to sequences is a non-goal for now. Lean already
-   covers sequence properties, and a second route would mean a second trusted
-   translator to keep honest.
+3. Extending the SMT path to sequences is a non-goal for now. The Lean route
+   can state and prove sequence properties, and a second route would mean a
+   second trusted translator to keep honest.
 
 ## Consequences
 

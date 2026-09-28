@@ -106,8 +106,9 @@ insufficient: allocating nothing can conserve stock but violate fulfilment.
 
 Do not start a language server, package registry, web framework, general I/O
 layer or new autonomous orchestration system before the consumer exposes a
-need. Do not extend the SMT path to sequences: Lean proofs cover them
-(`dec.s5-proof-standard`). Do not market runtime hashes as authenticated
+need. Do not extend the SMT path to sequences: the chosen route for sequence
+properties is Lean proofs (`dec.s5-proof-standard`), which are not written
+yet. Do not market runtime hashes as authenticated
 proofs, finite tests as a compiler theorem, or kernel cost as a hardware
 timing guarantee.
 
