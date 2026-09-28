@@ -486,6 +486,20 @@ def main() -> int:
               "harness.py try runs a Python answer in the sandbox too")
         check("allocate-batch" in harness.try_run((ws / "leak.py").read_text(), "python", harness.BY_ID["reverse"], None),
               "unsandboxed, try_run returns the hidden tests (the planted case)")
+        # Not as root, any task id: an older-tier id is not an MVP task, but the
+        # answer could still read the MVP tests (the reviewer, on #134).
+        shutil.copy(ws / "leak.py", "/tmp/s7-leak.py")
+        os.chmod("/tmp/s7-leak.py", 0o644)
+        try:
+            for tid in ("sum3", "seq-sum"):
+                user = subprocess.run(["runuser", "-u", "nobody", "--", sys.executable, str(HERE / "harness.py"), "try",
+                                       "--lang", "python", "--task", tid, "/tmp/s7-leak.py"],
+                                      capture_output=True, text=True, timeout=300)
+                check(user.returncode != 0 and "allocate-batch" not in user.stdout + user.stderr
+                      and "needs the sandbox" in user.stderr,
+                      f"not as root, harness.py try refuses a Python answer to {tid}: {user.stderr.strip()[-80:]}")
+        finally:
+            os.unlink("/tmp/s7-leak.py")
         scored = harness.score({"reverse": (ws / "leak.py").read_text()}, "python",
                                [harness.BY_ID["reverse"]], 1)
         check(scored["python_sandboxed"]
