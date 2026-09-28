@@ -319,6 +319,33 @@ def runElaboratorDiagnosticTests : IO Unit := do
       else fail s!"an effect output used as a variable was not explained: {emitted}"
   | _ => fail "effect-output result was not singular"
 
+  -- A stack effect may repeat a label, but `locals` refuses a repeated name,
+  -- so the hint numbers the repeats. The suggested block is checked by the
+  -- real checker, which refused the unnumbered `locals { n n }` it used to
+  -- suggest with `firth.name.duplicate-local`.
+  let agentConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := Elaborate.gammaErasure, typingEnv := Elaborate.gammaTyping }
+  let repeated := "(forall ρ; ρ n:Int^many n:Int^many -- ρ r:Int^many)"
+  match elaboratePipeline pipelineContext s!": pair {repeated} n n prim + ;" agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      if emitted.contains "`locals { n n2 } { ... }`" &&
+          emitted.contains "the repeats are numbered" then pure ()
+      else fail s!"a repeated effect name got a duplicate-binder hint: {emitted}"
+  | _ => fail "repeated-effect-name result was not singular"
+  match elaboratePipeline pipelineContext
+      s!": pair {repeated} locals \{ n n2 } \{ n n2 prim + } ;" agentConfig with
+  | .success _ => pure ()
+  | .failure diagnostics =>
+      fail s!"the suggested locals block does not check: {diagnostics.map encode}"
+  match elaboratePipeline pipelineContext
+      s!": pair {repeated} locals \{ n n } \{ n n prim + } ;" agentConfig with
+  | .failure [envelope] => expectValidCode "duplicate local" "firth.name.duplicate-local" (encode envelope)
+  | _ => fail "a repeated local name was accepted"
+  expectEqual "binders keep distinct names" (localBinders ["xs", "n"]) ["xs", "n"]
+  expectEqual "binders skip a name an input uses" (localBinders ["n", "n", "n2"]) ["n", "n3", "n2"]
+  expectEqual "binders number every repeat" (localBinders ["a", "a", "a"]) ["a", "a2", "a3"]
+
   -- A name that is not in the stack effect keeps the general hint, which
   -- now also mentions `locals`.
   match elaboratePipeline pipelineContext ": double (forall ρ; ρ n:Int^many -- ρ r:Int^many) 2 prim * dobule ;" with
@@ -341,6 +368,21 @@ def runElaboratorDiagnosticTests : IO Unit := do
       fail s!"`prim {name}` is listed but the agent Gamma has no signature for it"
   if (Elaborate.gammaTyping.primitive "nope").isSome then
     fail "the agent Gamma gave `prim nope` a signature"
+  if (Elaborate.gammaErasure.primitive "nope").isSome then
+    fail "the agent erasure Gamma gave `prim nope` a signature"
+  -- The World primitives come from `worldPrimitiveSchemes` alone. Their
+  -- signatures are written out here, not read from that table, so a scheme
+  -- that drifts, or an erasure signature that disagrees with its typing,
+  -- fails.
+  expectEqual "world primitives" worldPrimitives ["send"]
+  let row : Firth.Elaborator.StackEffect.AStack := .row (.rigid "ρ")
+  expectEqual "send typing" (Elaborate.gammaTyping.primitive "send")
+    (some { rowVariables := ["ρ"]
+            input := .snoc (.snoc (.snoc row (.base "World" .linear))
+              (.base "Handle" .linear)) (.base "Bytes" .linear)
+            output := .snoc row (.base "World" .linear) })
+  expectEqual "send erasure" (Elaborate.gammaErasure.primitive "send")
+    (some { input := [.linear, .linear, .linear], output := [.linear] })
   let listsEvery (label emitted : String) : IO Unit := do
     for name in everyPrimitive do
       unless emitted.contains s!"`prim {name}`" do

@@ -85,8 +85,6 @@ def decodeRequest (value : Json) : Except String Request := do
          sourcePath := ← nonempty "request.source_path" =<< reqStr "request" "source_path" values
          sourceText := ← reqStr "request" "source_text" values }
 
-private def rowTail : AStack := .row (.rigid "ρ")
-
 private def surfaceUsage : Firth.Interpreter.Usage → AUsage
   | .many => .many
   | .linear => .linear
@@ -125,19 +123,33 @@ it. `surfacePrimitives` is the one table all hosts read. -/
 private def kernelSpec (name : String) : Option Firth.Interpreter.PrimitiveSpec :=
   (Firth.Interpreter.kernelPrimitive name).bind Firth.Interpreter.defaultGamma.primitive
 
+/-- The scheme `worldPrimitiveSchemes` gives a primitive outside the kernel. -/
+private def worldScheme (name : String) : Option Scheme :=
+  (worldPrimitiveSchemes.find? (·.1 == name)).map (·.2)
+
+private def schemeUsage : AUsage → Option Usage
+  | .many => some .many
+  | .linear => some .linear
+  | _ => none
+
+/-- The ownership class of each value a closed scheme stack holds, bottom
+first. A scheme with an unsolved usage has none. -/
+private def schemeUsages : AStack → Option (List Usage)
+  | .empty | .row _ => some []
+  | .snoc rest (.base _ usage) | .snoc rest (.quotation _ _ usage) | .snoc rest (.mvar _ usage) =>
+      return (← schemeUsages rest) ++ [← schemeUsage usage]
+
 /-- The manifest's `[gamma.primitive]` table, as the elaborator's erasure
 signature. Only the ownership classes matter at erasure time. -/
 def gammaErasure : EffectEnv :=
   { primitive := fun name =>
       match kernelSpec name with
       | some spec => some { input := stackUsages spec.input, output := stackUsages spec.output }
-      | none =>
-        if name == "send" then some { input := [.linear, .linear, .linear], output := [.linear] }
-        else none }
+      | none => (worldScheme name).bind fun scheme => do
+          pure { input := ← schemeUsages scheme.input, output := ← schemeUsages scheme.output } }
 
 /-- The same table as a typing scheme, read from `defaultGamma` for every
-surface primitive. `send` threads one linear `World` past a `Handle` and a
-`Bytes`. -/
+surface primitive and from `worldPrimitiveSchemes` for the rest. -/
 def gammaTyping : Env :=
   { literal := defaultLiteralType
     primitive := fun name =>
@@ -145,13 +157,7 @@ def gammaTyping : Env :=
       | some spec => some { rowVariables := ["ρ"]
                             input := surfaceStack spec.input
                             output := surfaceStack spec.output }
-      | none =>
-        if name == "send" then
-          some { rowVariables := ["ρ"]
-                 input := .snoc (.snoc (.snoc rowTail (.base "World" .linear))
-                   (.base "Handle" .linear)) (.base "Bytes" .linear)
-                 output := .snoc rowTail (.base "World" .linear) }
-        else none }
+      | none => worldScheme name }
 
 private def quote (value : String) : String := (Json.str value).compress
 

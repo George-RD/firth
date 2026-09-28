@@ -75,10 +75,20 @@ private def definitionShape : String :=
   "A definition looks like `: name (forall ρ; ρ n:Int^many -- ρ r:Int^many) body;`."
 
 /-- The primitives the agent language accepts beyond the kernel's
-`surfacePrimitives`: `send`, which threads the linear `World` past a `Handle`
-and `Bytes`. `ElaborateAdapter.gammaErasure` and `gammaTyping` give each its
-signature. -/
-def worldPrimitives : List String := ["send"]
+`surfacePrimitives`, each with its typing scheme: `send`, which threads the
+linear `World` past a `Handle` and `Bytes`. This is the one table for them:
+`ElaborateAdapter.gammaTyping` and `gammaErasure` read their signatures from
+it, and `Lowering.targetPrimitive` refuses exactly these names. -/
+def worldPrimitiveSchemes : List (String × Firth.Elaborator.StackEffect.Scheme) :=
+  let row : Firth.Elaborator.StackEffect.AStack := .row (.rigid "ρ")
+  [("send",
+    { rowVariables := ["ρ"]
+      input := .snoc (.snoc (.snoc row (.base "World" .linear))
+        (.base "Handle" .linear)) (.base "Bytes" .linear)
+      output := .snoc row (.base "World" .linear) })]
+
+/-- The names in `worldPrimitiveSchemes`. -/
+def worldPrimitives : List String := worldPrimitiveSchemes.map (·.1)
 
 /-- Every primitive a program can write: the kernel's `surfacePrimitives`,
 the one table the elaborator, the reference and the compiler share, then
@@ -97,10 +107,29 @@ private def availablePrimitives : String :=
 /-- The hint for a stack-effect name used as a variable. Stack-effect names
 document the stack; only `locals` binds names, taking one value from the
 stack for each, the last name from the top. -/
+private def freshBinder (name : String) (taken : List String) : Nat → Nat → String
+  | 0, _ => name
+  | fuel + 1, suffix =>
+      let candidate := s!"{name}{suffix}"
+      if taken.contains candidate then freshBinder name taken fuel (suffix + 1) else candidate
+
+/-- The names a `locals` block can bind for these inputs. A stack effect may
+repeat a label (`n:Int n:Int`), but `locals` refuses a repeated name, so each
+repeat gets the first numbered name (`n2`, `n3`, ...) that no input uses. -/
+def localBinders (inputs : List String) : List String :=
+  inputs.foldl (init := []) fun bound name =>
+    if bound.contains name then
+      let taken := inputs ++ bound
+      bound ++ [freshBinder name taken (taken.length + 1) 2]
+    else bound ++ [name]
+
 private def effectNameHint (name : String) (inputs : List String) : String :=
-  let binders := " ".intercalate inputs
+  let names := localBinders inputs
+  let binders := " ".intercalate names
+  let renamed := if names == inputs then "" else
+    " The stack effect repeats a name and `locals` needs distinct names, so the repeats are numbered here."
   let shape := if inputs.isEmpty then "" else
-    s!" To use the inputs by name, bind them first: `locals \{ {binders} } \{ ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces."
+    s!" To use the inputs by name, bind them first: `locals \{ {binders} } \{ ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces." ++ renamed
   if inputs.contains name then
     s!"`{name}` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body." ++ shape
   else
