@@ -128,6 +128,38 @@ private partial def resolveScope (keys vocabularies : List String) (external : S
       let outside ← resolveScope keys vocabularies external scopeName uses rest
       return inside ++ outside
 
+/-- The names of the `locals` block that opens a word's body, each with the
+input it binds and that input's type, when a name the stack effect gives to
+one input binds another. The block binds the inputs the last name to the
+top, so `locals { b a }` for inputs `a b` binds `b` to the value the effect
+calls `a`; when the two share a type the body still checks and computes the
+wrong result. Names the effect does not declare, and blocks that reach below
+the declared inputs, are left to the checker. -/
+private def misorderedInputLocals (word : WordDefinition) :
+    Option (LocatedName × List (String × String × String)) :=
+  match word.body with
+  | .locals names _ _ :: _ =>
+      let inputs := word.effect.input.filterMap fun
+        | .value name type _ => some (name, type.name)
+        | .row _ _ => none
+      if names.length > inputs.length then none else
+      let pairs := names.zip (inputs.drop (inputs.length - names.length))
+      let declared := inputs.map (·.1)
+      (pairs.find? fun (bound, input, _) => declared.contains bound.name && bound.name != input).map
+        fun (bound, _) => (bound, pairs.map fun (bound, input, type) => (bound.name, input, type))
+  | _ => none
+
+/-- Every word whose opening `locals` block binds its inputs out of order,
+refused as one `firth.name.locals-order` error at the first such name, so an
+author sees each block to fix in one report. -/
+def checkInputLocals (words : List WordDefinition) : Except ParseError Unit :=
+  match words.filterMap (fun word => (misorderedInputLocals word).map (word.name, ·)) with
+  | [] => pure ()
+  | blocks@((word, bound, _) :: _) =>
+      throw { code := "firth.name.locals-order", primary := bound.span, cause := .validation,
+              actual := some word,
+              localsBlocks := blocks.map fun (word, _, pairs) => (word, pairs) }
+
 /-- Resolve lexical imports and canonical word names before erasure/checking.
 Local names remain sugar; they must not be rewritten into dictionary calls.
 `external` names words the caller's environment defines outside the file; any

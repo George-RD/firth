@@ -27,6 +27,11 @@ structure ParseError where
   the `locals` block that binds the inputs. Empty otherwise. -/
   effectInputs : List String := []
   effectOutputs : List String := []
+  /-- For `firth.name.locals-order`: every word whose opening `locals` block
+  binds its inputs out of order, with each name of that block, the
+  stack-effect input it binds and that input's type, in the block's order.
+  Empty otherwise. -/
+  localsBlocks : List (String × List (String × String × String)) := []
   deriving Repr, BEq
 
 structure Located (α : Type) where

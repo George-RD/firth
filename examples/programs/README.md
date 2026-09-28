@@ -57,6 +57,11 @@ inside a quotation can use the outer block's names too.
 A block takes its values off the stack: in `locals { a } { swap }` the
 `swap` exchanges the two values below `a` (`swap-below`).
 
+The last name takes the top value, so a block that opens a word's body lists
+the inputs in the stack effect's order. Using the effect's names in another
+order is refused with `firth.name.locals-order`, which says what each name
+would have held.
+
 A local can't be used after `call`, `dip` or `if` runs a quotation whose stack
 effect isn't known at that point: a quotation passed in as a value, one
 returned by another quotation, or `[ call ]` itself. The checker can't tell

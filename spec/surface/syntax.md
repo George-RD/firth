@@ -114,6 +114,7 @@ below.
 | `firth.name.duplicate-alias` | an alias repeats or collides with a visible canonical vocabulary prefix |
 | `firth.name.ambiguous-use` | an unqualified reference has multiple candidates |
 | `firth.name.unresolved` | a use target or qualified or unqualified reference has no candidate |
+| `firth.name.locals-order` | a `locals` block that opens a word's body binds a name the stack effect gives one input to another input (section 5) |
 
 Name diagnostics identify the declaration or reference span that caused the
 failure and include related spans for every colliding declaration or candidate.
@@ -330,6 +331,17 @@ not a list and does not introduce a new data type.
 values, naming them in declaration order from bottom to top, and elaborates
 each name occurrence in `body` as a demand for that value. It creates no
 variable or environment in the kernel.
+
+A block that is the first item of a word's body binds that word's inputs: its
+`k` names bind the top `k` inputs of the stack effect, in the effect's order.
+When one of those names is a name the stack effect gives to an input, it must
+be bound to that input; otherwise the program is refused with
+`firth.name.locals-order`, before erasure. The rule exists because reversed
+names over inputs of one type check and compute the wrong result. Names the
+stack effect does not declare are unconstrained, as are blocks that are not the
+first item and blocks with more names than declared inputs, which the checker
+refuses on its own terms. Every word breaking the rule is reported in the one
+diagnostic, with what each name of its block would hold (`dec.locals-input-order`).
 
 ### 5.1 Complete erasure algorithm
 

@@ -169,6 +169,9 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
       match resolveNames file.declarations (fun name => (config.erasureEnv.word name).isSome) with
       | .error error => .failure [.parse error]
       | .ok words =>
+          match checkInputLocals words with
+          | .error error => .failure [.parse error]
+          | .ok () =>
           if words.isEmpty then
             .failure [.parse { code := "firth.elaboration.empty-program"
                                primary := file.span, cause := .validation }]
