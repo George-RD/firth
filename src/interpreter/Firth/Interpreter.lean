@@ -147,7 +147,7 @@ structure PrimitiveSpec where
   output : StackType
   delta : Stack → Option Stack
   /-- A partial primitive may fault on a well-typed stack (an out-of-range
-  sequence index); `delta` is then `none` and execution stops with a
+  sequence index, or a zero divisor); `delta` is then `none` and execution stops with a
   primitive fault. Every other primitive must be total on its typed input,
   and progress is stated with that exception only. -/
   faults : Bool := false
@@ -179,6 +179,21 @@ def ltIntDelta : Stack → Option Stack
 def eqIntDelta : Stack → Option Stack
   | .literal (.int right) :: .literal (.int left) :: rest =>
       some (.literal (.bool (decide (left = right))) :: rest)
+  | _ => none
+
+/-- Euclidean division: `left = right * q + r` with `0 ≤ r < |right|`, which
+is Lean's `Int./` (`Int.ediv`). A zero divisor faults; it never returns a
+default (Lean's own `x / 0 = 0` is not used). -/
+def divIntDelta : Stack → Option Stack
+  | .literal (.int right) :: .literal (.int left) :: rest =>
+      if right = 0 then none else some (.literal (.int (left / right)) :: rest)
+  | _ => none
+
+/-- The Euclidean remainder, Lean's `Int.%` (`Int.emod`): never negative and
+below `|right|`. A zero divisor faults, like `divInt`. -/
+def modIntDelta : Stack → Option Stack
+  | .literal (.int right) :: .literal (.int left) :: rest =>
+      if right = 0 then none else some (.literal (.int (left % right)) :: rest)
   | _ => none
 
 def andBoolDelta : Stack → Option Stack
@@ -262,6 +277,12 @@ def defaultGamma : Gamma :=
                           output := .snoc (.row "ρ") (.base .bool .many), delta := ltIntDelta }
       | "eqInt" => some { input := .snoc (.snoc (.row "ρ") (.base .int .many)) (.base .int .many),
                           output := .snoc (.row "ρ") (.base .bool .many), delta := eqIntDelta }
+      | "divInt" => some { input := .snoc (.snoc (.row "ρ") (.base .int .many)) (.base .int .many),
+                           output := .snoc (.row "ρ") (.base .int .many), delta := divIntDelta,
+                           faults := true }
+      | "modInt" => some { input := .snoc (.snoc (.row "ρ") (.base .int .many)) (.base .int .many),
+                           output := .snoc (.row "ρ") (.base .int .many), delta := modIntDelta,
+                           faults := true }
       | "andBool" => some { input := .snoc (.snoc (.row "ρ") (.base .bool .many)) (.base .bool .many),
                             output := .snoc (.row "ρ") (.base .bool .many), delta := andBoolDelta }
       | "orBool" => some { input := .snoc (.snoc (.row "ρ") (.base .bool .many)) (.base .bool .many),
@@ -297,6 +318,7 @@ the reference-run adapter and the compiler all read this one table, so the
 three hosts accept exactly the same primitive names. -/
 def surfacePrimitives : List (String × Prim) :=
   [("+", "addInt"), ("-", "subInt"), ("*", "mulInt"), ("<", "ltInt"), ("=", "eqInt"),
+   ("div", "divInt"), ("mod", "modInt"),
    ("and", "andBool"), ("or", "orBool"), ("not", "notBool"),
    ("seq-int.empty", "intSeqEmpty"), ("seq-int.len", "intSeqLen"),
    ("seq-int.at", "intSeqAt"), ("seq-int.push", "intSeqPush"),

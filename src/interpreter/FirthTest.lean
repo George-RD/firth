@@ -7,8 +7,8 @@ open Firth.Interpreter
 
 def testPolicy : PrimitiveOwnershipPolicy where
   authorised := fun name consumed produced =>
-    (name ∈ ["addInt", "subInt", "mulInt", "ltInt", "eqInt", "andBool", "orBool", "notBool",
-        "intSeqEmpty", "intSeqLen", "intSeqAt", "intSeqPush",
+    (name ∈ ["addInt", "subInt", "mulInt", "ltInt", "eqInt", "divInt", "modInt", "andBool", "orBool",
+        "notBool", "intSeqEmpty", "intSeqLen", "intSeqAt", "intSeqPush",
         "boolSeqEmpty", "boolSeqLen", "boolSeqAt", "boolSeqPush"] ∧
       consumed = [] ∧ produced = []) ∨
     (name == "makeWorld" ∧ consumed = [] ∧ produced.length = 1) ∨
@@ -1662,6 +1662,74 @@ theorem examplePrimitiveTagLift_notBool :
         (out := [.literal tag (.bool (!value))]) hname rfl rfl
         (by simp [notBoolDelta, eraseValue]) .notBool (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
 
+theorem examplePrimitiveTagLift_divInt :
+    PrimitiveTagLift examplePolicy exampleGamma "divInt" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp [divIntDelta] at hdelta
+  | cons top tail =>
+    cases top with
+    | quotation => simp [divIntDelta, eraseValue] at hdelta
+    | world => simp [divIntDelta, eraseValue] at hdelta
+    | literal rightTag rightLiteral =>
+      cases tail with
+      | nil => cases rightLiteral <;> simp [divIntDelta, eraseValue] at hdelta
+      | cons below tail =>
+        cases below with
+        | quotation => cases rightLiteral <;> simp [divIntDelta, eraseValue] at hdelta
+        | world => cases rightLiteral <;> simp [divIntDelta, eraseValue] at hdelta
+        | literal leftTag leftLiteral =>
+          cases rightLiteral <;> cases leftLiteral <;>
+            first | (simp [divIntDelta, eraseValue] at hdelta; done) | skip
+          rename_i right left
+          by_cases hzero : right = 0
+          · simp [divIntDelta, eraseValue, hzero] at hdelta
+          · simp only [divIntDelta, eraseValue, List.map, hzero, if_false, Option.some.injEq] at hdelta
+            subst hdelta
+            exact literalPrimitiveTagLift
+              (top := [.literal rightTag (.int right), .literal leftTag (.int left)])
+              (out := [.literal rightTag (.int (left / right))]) hname rfl rfl
+              (by simp [divIntDelta, eraseValue, hzero]) (.divInt hzero)
+              (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+
+theorem examplePrimitiveTagLift_modInt :
+    PrimitiveTagLift examplePolicy exampleGamma "modInt" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp [modIntDelta] at hdelta
+  | cons top tail =>
+    cases top with
+    | quotation => simp [modIntDelta, eraseValue] at hdelta
+    | world => simp [modIntDelta, eraseValue] at hdelta
+    | literal rightTag rightLiteral =>
+      cases tail with
+      | nil => cases rightLiteral <;> simp [modIntDelta, eraseValue] at hdelta
+      | cons below tail =>
+        cases below with
+        | quotation => cases rightLiteral <;> simp [modIntDelta, eraseValue] at hdelta
+        | world => cases rightLiteral <;> simp [modIntDelta, eraseValue] at hdelta
+        | literal leftTag leftLiteral =>
+          cases rightLiteral <;> cases leftLiteral <;>
+            first | (simp [modIntDelta, eraseValue] at hdelta; done) | skip
+          rename_i right left
+          by_cases hzero : right = 0
+          · simp [modIntDelta, eraseValue, hzero] at hdelta
+          · simp only [modIntDelta, eraseValue, List.map, hzero, if_false, Option.some.injEq] at hdelta
+            subst hdelta
+            exact literalPrimitiveTagLift
+              (top := [.literal rightTag (.int right), .literal leftTag (.int left)])
+              (out := [.literal rightTag (.int (left % right))]) hname rfl rfl
+              (by simp [modIntDelta, eraseValue, hzero]) (.modInt hzero)
+              (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+
 theorem examplePrimitiveTagLift_unknown (name : Prim)
     (haddInt : name ≠ "addInt")
     (hsubInt : name ≠ "subInt")
@@ -1678,14 +1746,15 @@ theorem examplePrimitiveTagLift_unknown (name : Prim)
     (hboolSeqLen : name ≠ "boolSeqLen")
     (hboolSeqAt : name ≠ "boolSeqAt")
     (hboolSeqPush : name ≠ "boolSeqPush")
-    (handBool : name ≠ "andBool") (horBool : name ≠ "orBool") (hnotBool : name ≠ "notBool") :
+    (handBool : name ≠ "andBool") (horBool : name ≠ "orBool") (hnotBool : name ≠ "notBool")
+    (hdivInt : name ≠ "divInt") (hmodInt : name ≠ "modInt") :
     PrimitiveTagLift examplePolicy exampleGamma name := by
   intro input residue nextTag specification plainInput plainOutput hname
     hinput hdelta hwellformed
   have hnone : exampleGamma.primitive name = none := by
     simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, exampleGamma, defaultGamma, haddInt, hsubInt, hmulInt, hltInt, heqInt, hmakeWorld, hconsumeWorld,
       hintSeqEmpty, hintSeqLen, hintSeqAt, hintSeqPush, hboolSeqEmpty, hboolSeqLen, hboolSeqAt, hboolSeqPush,
-      handBool, horBool, hnotBool]
+      handBool, horBool, hnotBool, hdivInt, hmodInt]
   rw [hnone] at hname
   cases hname
 
@@ -1746,10 +1815,17 @@ theorem examplePrimitiveTagLift :
                                   · by_cases hnotBool : name = "notBool"
                                     · subst name
                                       exact examplePrimitiveTagLift_notBool
-                                    · exact examplePrimitiveTagLift_unknown name haddInt hsubInt hmulInt
-                                        hltInt heqInt hmakeWorld hconsumeWorld hintSeqEmpty hintSeqLen
-                                        hintSeqAt hintSeqPush hboolSeqEmpty hboolSeqLen hboolSeqAt
-                                        hboolSeqPush handBool horBool hnotBool
+                                    · by_cases hdivInt : name = "divInt"
+                                      · subst name
+                                        exact examplePrimitiveTagLift_divInt
+                                      · by_cases hmodInt : name = "modInt"
+                                        · subst name
+                                          exact examplePrimitiveTagLift_modInt
+                                        · exact examplePrimitiveTagLift_unknown name haddInt hsubInt
+                                            hmulInt hltInt heqInt hmakeWorld hconsumeWorld hintSeqEmpty
+                                            hintSeqLen hintSeqAt hintSeqPush hboolSeqEmpty hboolSeqLen
+                                            hboolSeqAt hboolSeqPush handBool horBool hnotBool hdivInt
+                                            hmodInt
 
 #print axioms filterContainsEqSelf_explicit
 #print axioms examplePrimitiveTagLift_addInt
@@ -1757,6 +1833,8 @@ theorem examplePrimitiveTagLift :
 #print axioms examplePrimitiveTagLift_consumeWorld
 #print axioms literalPrimitiveTagLift
 #print axioms examplePrimitiveTagLift_intSeqAt
+#print axioms examplePrimitiveTagLift_divInt
+#print axioms examplePrimitiveTagLift_modInt
 #print axioms examplePrimitiveTagLift_unknown
 #print axioms examplePrimitiveTagLift
 

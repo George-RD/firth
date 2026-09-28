@@ -20,6 +20,32 @@ fn mul_int(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     context.push_int(left.checked_mul(right).ok_or(VmError::PrimitiveFault)?)
 }
 
+/// Euclidean division, as Lean's `Int./`: `left = right * q + r` with
+/// `0 <= r < |right|`. A zero divisor is a primitive fault, and so is
+/// `i64::MIN / -1`, whose quotient is past `i64`.
+fn div_int(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let (left, right) = pop_int_pair(context)?;
+    context.push_int(
+        left.checked_div_euclid(right)
+            .ok_or(VmError::PrimitiveFault)?,
+    )
+}
+
+/// The Euclidean remainder, as Lean's `Int.%`: never negative. A zero divisor
+/// is a primitive fault. Every remainder by `-1` is `0`, including that of
+/// `i64::MIN`, which `checked_rem_euclid` would refuse only because the
+/// quotient beside it overflows; the remainder itself is in range.
+fn mod_int(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let (left, right) = pop_int_pair(context)?;
+    if right == 0 {
+        return Err(VmError::PrimitiveFault);
+    }
+    if right == -1 {
+        return context.push_int(0);
+    }
+    context.push_int(left.rem_euclid(right))
+}
+
 fn lt_int(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     let (left, right) = pop_int_pair(context)?;
     context.push_bool(left < right)
@@ -162,6 +188,24 @@ pub fn default_registry() -> PrimitiveRegistry {
                 name: "eqInt",
                 cost: 1,
                 handler: eq_int,
+                input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "divInt",
+                cost: 1,
+                handler: div_int,
+                input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "modInt",
+                cost: 1,
+                handler: mod_int,
                 input: &[Usage::Many, Usage::Many],
                 output: &[Usage::Many],
                 world: false,

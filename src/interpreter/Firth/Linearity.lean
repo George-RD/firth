@@ -379,6 +379,16 @@ inductive PrimitiveStackContract : Prim → AStack → AStack → Prop where
       PrimitiveStackContract "eqInt"
         (.literal rightTag (.int right) :: .literal leftTag (.int left) :: rest)
         (.literal outputTag (.bool (decide (left = right))) :: rest)
+  | divInt {rightTag leftTag outputTag : Tag} {right left : Int} {rest : AStack}
+      (nonzero : right ≠ 0) :
+      PrimitiveStackContract "divInt"
+        (.literal rightTag (.int right) :: .literal leftTag (.int left) :: rest)
+        (.literal outputTag (.int (left / right)) :: rest)
+  | modInt {rightTag leftTag outputTag : Tag} {right left : Int} {rest : AStack}
+      (nonzero : right ≠ 0) :
+      PrimitiveStackContract "modInt"
+        (.literal rightTag (.int right) :: .literal leftTag (.int left) :: rest)
+        (.literal outputTag (.int (left % right)) :: rest)
   | andBool {rightTag leftTag outputTag : Tag} {right left : Bool} {rest : AStack} :
       PrimitiveStackContract "andBool"
         (.literal rightTag (.bool right) :: .literal leftTag (.bool left) :: rest)

@@ -1,0 +1,36 @@
+\ Euclidean integer division. For `a b`, `a b prim div` is the quotient q and
+\ `a b prim mod` the remainder r with a = b*q + r and 0 <= r < |b|: the
+\ remainder is never negative, whatever the signs (`-7 2 prim div` is -4 and
+\ `-7 2 prim mod` is 1). A zero divisor traps with `primitive-fault` on both
+\ hosts. `-9223372036854775808 -1 prim div` is past the signed 64-bit range
+\ and traps on the VM, like `prim *`; the reference's integers are unbounded,
+\ so the gate reports it as a disagreement rather than a result.
+
+\ Quotient and remainder of `a b`, the remainder on top.
+: divmod
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ q:Int^many r:Int^many)
+  locals { a b } { a b prim div a b prim mod };
+
+: abs
+  (forall ρ; ρ n:Int^many -- ρ r:Int^many)
+  locals { n } { n 0 prim < [ 0 n prim - ] [ n ] if };
+
+\ Adds the decimal digits of n >= 0 to acc, one `mod 10` and `div 10` a step.
+: digit-sum-from
+  (forall ρ; ρ n:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { n acc }
+  { n 0 prim =
+    [ acc ]
+    [ n 10 prim div acc n 10 prim mod prim + digit-sum-from ]
+    if };
+
+\ The sum of the decimal digits of |n|.
+: digit-sum
+  (forall ρ; ρ n:Int^many -- ρ r:Int^many)
+  abs 0 digit-sum-from;
+
+\ The greatest common divisor by Euclid's algorithm: gcd(a, b) = gcd(b, a mod b)
+\ until b is 0. `mod` is never negative, so the result is too; gcd(0, 0) is 0.
+: gcd
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b } { b 0 prim = [ a abs ] [ b a b prim mod gcd ] if };
