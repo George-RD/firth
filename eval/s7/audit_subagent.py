@@ -16,7 +16,12 @@ Each kept `solutions-<n>.json`, which is what `score` read, must also be the
 previous round's solutions updated with the tasks `extract` finds in
 `answer-<n>.md`, so a merge between rounds cannot change what was scored.
 
-    audit_subagent.py LOG.jsonl --prompt P --dir D [--kept K] > transcript.json
+`--rounds` is the number of feedback rounds the prompt allowed (`harness.py
+prompt --rounds`): `repair-1` to `repair-<rounds>` and `answer-1` to
+`answer-<rounds + 1>`. A read, write or kept file beyond that is flagged, so a
+run cannot score more feedback than it reports (Codex, on #147).
+
+    audit_subagent.py LOG.jsonl --prompt P --dir D --rounds R [--kept K] > transcript.json
 
 `--dir` is where the author wrote (as its log records it); `--kept` is where
 the answers are kept now, when they were moved. Exits 1 if any call is flagged.
@@ -34,10 +39,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from harness import extract  # noqa: E402
 
 
-def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path) -> tuple[dict, list[str]]:
+def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: int) -> tuple[dict, list[str]]:
     reads = {str(prompt)}
-    answer = re.compile(re.escape(str(run_dir)) + r"/answer-[1-9]\.md")
-    repair = re.compile(re.escape(str(run_dir)) + r"/repair-[1-9]\.md")
+    answer = re.compile(re.escape(str(run_dir)) + r"/answer-([1-9][0-9]*)\.md")
+    repair = re.compile(re.escape(str(run_dir)) + r"/repair-([1-9][0-9]*)\.md")
     calls, models, times, bad = [], set(), [], []
     for ev in events:
         msg = ev.get("message") or {}
@@ -56,9 +61,10 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path) -> tuple[
             name, inp = b.get("name"), b.get("input") or {}
             path = str(inp.get("file_path", ""))
             rec = {"at": ev.get("timestamp"), "tool": name}
-            if name == "Read" and (path in reads or repair.fullmatch(path)):
+            r, w = repair.fullmatch(path), answer.fullmatch(path)
+            if name == "Read" and (path in reads or (r and int(r[1]) <= rounds)):
                 rec["path"] = Path(path).name
-            elif name == "Write" and answer.fullmatch(path):
+            elif name == "Write" and w and int(w[1]) <= rounds + 1:
                 content = str(inp.get("content", ""))
                 rec.update(path=Path(path).name, content_chars=len(content),
                            content_sha256=hashlib.sha256(content.encode()).hexdigest())
@@ -72,11 +78,19 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path) -> tuple[
                 bad.append(f"{name}: {json.dumps(inp)[:200]}")
             calls.append(rec)
     bad += solutions_mismatch(kept)
+    bad += [f"{p}: beyond the {rounds} feedback round(s) the prompt allowed"
+            for p in sorted(kept.iterdir()) if beyond(p.name, rounds)]
     log = {"note": "Trimmed log of the author sub-agent: every tool call it made, with written "
                    "content reduced to a hash. The full answers are the answer-*.md files next to this one.",
            "models": sorted(models), "started": min(times, default=None),
            "finished": max(times, default=None), "tool_calls": calls, "flagged": bad}
     return log, bad
+
+
+def beyond(name: str, rounds: int) -> bool:
+    """A kept answer, solutions or feedback file from a round the prompt did not allow."""
+    m = re.fullmatch(r"(answer|solutions|repair|results)-([0-9]+)\.(md|json)", name)
+    return bool(m) and int(m[2]) > (rounds if m[1] == "repair" else rounds + 1)
 
 
 def solutions_mismatch(kept: Path) -> list[str]:
@@ -105,9 +119,10 @@ def main() -> int:
     cli.add_argument("--prompt", type=Path, required=True)
     cli.add_argument("--dir", type=Path, required=True)
     cli.add_argument("--kept", type=Path)
+    cli.add_argument("--rounds", type=int, required=True, help="the feedback rounds the prompt allowed")
     a = cli.parse_args()
     events = [json.loads(l) for l in a.log.read_text().splitlines() if l.strip()]
-    log, bad = audit(events, a.prompt, a.dir, a.kept or a.dir)
+    log, bad = audit(events, a.prompt, a.dir, a.kept or a.dir, a.rounds)
     print(json.dumps(log, indent=2))
     for b in bad:
         print("FLAGGED", b, file=sys.stderr)

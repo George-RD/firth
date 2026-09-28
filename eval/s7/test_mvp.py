@@ -222,28 +222,40 @@ def subagent_audit() -> None:
                     "message": {"model": "m", "content": [{"type": "tool_use", "name": name, "input": inp}]}}
         ok = [call("Read", file_path=str(prompt)), call("Write", file_path=str(ans), content=ans.read_text()),
               call("Read", file_path=str(d / "repair-1.md"))]
-        check(audit(ok, prompt, d, d)[1] == [], "the audit passes a prompt read, an answer write and feedback")
+        check(audit(ok, prompt, d, d, 2)[1] == [], "the audit passes a prompt read, an answer write and feedback")
         inherited = {"type": "user", "timestamp": "2026-01-01T00:00:00Z", "message": {"content": "context"}}
         timed = [dict(e, timestamp=f"2026-01-01T01:00:0{i}Z") for i, e in enumerate(ok)]
-        log = audit([inherited, *timed], prompt, d, d)[0]
+        log = audit([inherited, *timed], prompt, d, d, 2)[0]
         check((log["started"], log["finished"]) == ("2026-01-01T01:00:00Z", "2026-01-01T01:00:02Z"),
               f"the audit times the author's own turns, not inherited context: {log['started']} {log['finished']}")
         for what, ev in (("a read of the hidden tests", call("Read", file_path=str(HERE / "mvp_tasks.py"))),
                          ("a shell call", call("Bash", command="cat eval/s7/reference/mvp/sort.firth")),
                          ("a write outside the author's files", call("Write", file_path=str(HERE / "x.py"), content="")),
                          ("a read of another directory's feedback", call("Read", file_path="/elsewhere/repair-1.md"))):
-            check(len(audit(ok + [ev], prompt, d, d)[1]) == 1, f"the audit flags {what}")
+            check(len(audit(ok + [ev], prompt, d, d, 2)[1]) == 1, f"the audit flags {what}")
         sol = d / "solutions-1.json"
         sol.write_text(json.dumps(harness.extract(ans.read_text())))
-        check(audit(ok, prompt, d, d)[1] == [], "the audit passes solutions that are the answer as written")
+        check(audit(ok, prompt, d, d, 2)[1] == [], "the audit passes solutions that are the answer as written")
         sol.write_text(json.dumps({**harness.extract(ans.read_text()), "sort": "changed after the answer"}))
-        check(len(audit(ok, prompt, d, d)[1]) == 1, "the audit flags scored solutions that differ from the answer")
+        check(len(audit(ok, prompt, d, d, 2)[1]) == 1, "the audit flags scored solutions that differ from the answer")
         sol.unlink()
-        check(len(audit(ok, prompt, d, d)[1]) == 1, "the audit flags an answer round with no scored solutions kept")
+        check(len(audit(ok, prompt, d, d, 2)[1]) == 1, "the audit flags an answer round with no scored solutions kept")
         sol.write_text(json.dumps(harness.extract(ans.read_text())))
         ans.write_text("### task: sort\nchanged\n")
         sol.write_text(json.dumps(harness.extract(ans.read_text())))
-        check(len(audit(ok, prompt, d, d)[1]) == 1, "the audit flags an answer changed after it was written")
+        check(len(audit(ok, prompt, d, d, 2)[1]) == 1, "the audit flags an answer changed after it was written")
+        ans.write_text("### task: sort\n")
+        sol.write_text(json.dumps(harness.extract(ans.read_text())))
+        # Codex's case: a third repair under --rounds 2 would score more
+        # feedback than the prompt allowed. Planted: the reads, the write and
+        # the kept files of that round.
+        extra = [call("Read", file_path=str(d / "repair-3.md")), call("Write", file_path=str(d / "answer-4.md"), content="x")]
+        check(audit(ok + [call("Read", file_path=str(d / "repair-2.md"))], prompt, d, d, 2)[1] == [],
+              "the audit passes feedback up to the round limit")
+        check(len(audit(ok + extra, prompt, d, d, 2)[1]) == 2, "the audit flags a read and a write past the round limit")
+        (d / "repair-3.md").write_text("r")
+        check(len(audit(ok, prompt, d, d, 2)[1]) == 1, "the audit flags a kept feedback file past the round limit")
+        check(audit(ok, prompt, d, d, 3)[1] == [], "with three rounds allowed, that file passes")
     from audit_subagent import solutions_mismatch
     kept = sorted(p for p in (HERE / "runs").glob("2026-09-28-*/*") if (p / "answer-1.md").is_file())
     check(kept and all(solutions_mismatch(p) == [] for p in kept),
