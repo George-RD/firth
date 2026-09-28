@@ -2,7 +2,7 @@
 id: dec.agent-development-rules
 nodes: [firth.governance]
 status: accepted
-related: [dec.loop-freeze, dec.review-mandatory, dec.usable-language-milestones]
+related: [dec.loop-freeze, dec.review-mandatory, dec.usable-language-milestones, dec.kernel-indexed-shuffles]
 date: 2026-09-28
 ---
 # Rules for agents developing Firth
@@ -54,10 +54,9 @@ pain later.
 - A rule is added only when a real shortcut shows it is needed, and it must
   say how a reviewer checks it. Rules that cannot be checked are not added.
 - Examples of choices made under the "harder now" principle on 28 September
-  2026: the maintainer's delegate chose to add `pick n` and `roll n` to the
-  kernel rather than leave every program to hand-written stack shuffles (the
-  decision record and the change land together in #125, and until then the
-  kernel is unchanged), and
+  2026: `pick n` and `roll n` entered the kernel
+  (`dec.kernel-indexed-shuffles`, #125) rather than leaving every program to
+  hand-written stack shuffles, and
   S5 is proved in Lean over the reference interpreter
   (`dec.s5-proof-standard`) rather than resting on tests.
 - Honest limit: review is done by agents too. The rules make shortcuts

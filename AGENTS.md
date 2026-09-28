@@ -39,7 +39,7 @@ The reasons are in `dec.agent-development-rules`.
    *Check:* the gap has a todo, and host code only does what the spec assigns
    to the host.
 7. The kernel is frozen. Changing it needs an accepted decision and keeps the
-   metatheory complete, as #125 does for `pick n` and `roll n`.
+   metatheory complete (for example `dec.kernel-indexed-shuffles`).
 
 **Evidence**
 
