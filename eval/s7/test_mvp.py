@@ -251,23 +251,32 @@ def hashes_recorded() -> None:
     h = harness.eval_hashes()
     check(set(h) == {"task.py", "tasks.py", "mvp_tasks.py", "harness.py", "isolate.py"}
           and all(len(v) == 64 for v in h.values()), "results can record the eval sources' SHA-256")
-    # Hashes are taken before scoring, and a change during scoring is refused.
-    # Planted: a scoring run during which the files' hashes change.
-    real = harness.eval_hashes
-    seen = iter([{"harness.py": "a"}, {"harness.py": "b"}])
-    try:
-        harness.eval_hashes = lambda: next(seen)
-        changed = False
+    # Hashes are those of the files as first loaded, before the task sets were
+    # imported; an edit after that, before or during scoring, is refused.
+    # Planted: files edited after loading, and files edited mid-run.
+    real, loaded = harness.eval_hashes, harness.IMPORT_HASHES
+    check(loaded == real(), "the hashes taken at import match the files on disk")
+
+    ran: list[bool] = []
+
+    def refused(seq: list[str]) -> bool:
+        seen = iter({"harness.py": v} for v in seq)
+        harness.eval_hashes = lambda: next(seen, {"harness.py": seq[-1]})
+        ran.clear()
         try:
-            harness.scored_with_hashes(lambda: "result")
+            harness.scored_with_hashes(lambda: ran.append(True) or "result")
         except SystemExit:
-            changed = True
-        check(changed, "scoring refuses to record hashes when the eval files change while it runs")
+            return True
+        return False
+    try:
+        harness.IMPORT_HASHES = {"harness.py": "a"}
+        check(refused(["b"]) and not ran, "scoring refuses, before running, when the eval files changed after they were loaded")
+        check(refused(["a", "b"]), "scoring refuses when the eval files change while it runs")
         harness.eval_hashes = lambda: {"harness.py": "a"}
         check(harness.scored_with_hashes(lambda: "result") == ("result", {"harness.py": "a"}),
-              "unchanged files give the result with the hashes taken before scoring")
+              "unchanged files give the result with the hashes taken at load")
     finally:
-        harness.eval_hashes = real
+        harness.eval_hashes, harness.IMPORT_HASHES = real, loaded
 
 
 def main() -> int:

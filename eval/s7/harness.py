@@ -36,6 +36,11 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+# The eval sources as they were before any of them was imported: what this
+# process scores with, whatever happens to the files later.
+EVAL_FILES = ("task.py", "tasks.py", "mvp_tasks.py", "harness.py", "isolate.py")
+IMPORT_HASHES = {n: hashlib.sha256((Path(__file__).resolve().parent / n).read_bytes()).hexdigest()
+                 for n in EVAL_FILES}
 from tasks import BY_ID, HARD, MVP, TASKS, Task  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -370,20 +375,21 @@ def eval_hashes() -> dict[str, str]:
     `firth_commit` ignores eval/ (rescores copy it onto other builds), so this is
     what shows an edit to the frozen tasks or the harness, committed or not."""
     here = Path(__file__).resolve().parent
-    return {n: hashlib.sha256((here / n).read_bytes()).hexdigest()
-            for n in ("task.py", "tasks.py", "mvp_tasks.py", "harness.py", "isolate.py")}
+    return {n: hashlib.sha256((here / n).read_bytes()).hexdigest() for n in EVAL_FILES}
 
 
 def scored_with_hashes(run):
-    """RUN's result and the eval hashes taken before it started. Refuses when
-    the files change while it runs: scoring keeps the definitions it imported,
-    so hashes taken afterwards would name an evaluator that did not score it
-    (Codex's finding)."""
-    before = eval_hashes()
+    """RUN's result and the eval hashes taken when this module was first loaded,
+    before the task sets were imported. Refuses when the files differ from those
+    before or after the run: scoring keeps the definitions it imported, so later
+    hashes would name an evaluator that did not score it (Codex's finding; the
+    reviewer's note moved the snapshot to import time)."""
+    if eval_hashes() != IMPORT_HASHES:
+        raise SystemExit("the task sets or the scorer changed since they were loaded; nothing is scored")
     out = run()
-    if eval_hashes() != before:
+    if eval_hashes() != IMPORT_HASHES:
         raise SystemExit("the task sets or the scorer changed while scoring; nothing is recorded")
-    return out, before
+    return out, dict(IMPORT_HASHES)
 
 
 def firth_commit() -> str:
