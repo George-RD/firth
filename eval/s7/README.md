@@ -71,8 +71,10 @@ row, frozen in its own reviewed change before any model attempted it. It has
 several cooperating words. Five are at allocator weight (`merge-sorted`,
 `histogram`, `sort`, `ledger` and `allocate-batch`, the last a whole batch of
 the inventory allocator's rules), and two (`digits`, `primes-up-to`) need
-division, which Firth lacks, so the author builds it from subtraction. Inputs
-include negative numbers and empty sequences.
+division. When the set was frozen Firth had no division, so an author built
+it from subtraction; `prim div` and `prim mod` landed in #139 and
+`seq-int.set` in #149, and the tasks are unchanged. Inputs include negative
+numbers and empty sequences.
 
 - Each task's Python `ref` defines the answer. `test_mvp.py` checks every ref
   against values worked out by hand from the description.
@@ -222,8 +224,11 @@ include negative numbers and empty sequences.
   scorer, committed or not.
 - Writing the references hit two gaps: no division or remainder, and no way
   to replace one element of a sequence. They are recorded in
-  `meta/todos/todo.language-14-authoring-gaps.md`. Boolean `and`, `or` and
-  `not` landed in #131 and are in the author's docs.
+  `meta/todos/todo.language-14-authoring-gaps.md`, and both are now closed:
+  `prim div` and `prim mod` in #139, `seq-int.set` and `seq-bool.set` in
+  #149. The references still use the words built from older primitives, and
+  pass on main (`test_mvp.py`). Boolean `and`, `or` and `not` landed in #131 and
+  are in the author's docs.
 
 A run gives each task to a fresh author several times, in Firth and in Python,
 keeps every transcript, and reports the pass rate per task and overall.
