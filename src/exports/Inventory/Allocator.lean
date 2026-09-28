@@ -593,18 +593,19 @@ def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Bool^many,v2:SeqInt^many
 
 end «allocate-batch»
 
-/-- Every word, in declaration order: its name, body and body digest. -/
-def words : List (String × Program × String) := [
-  ("quantities-in-range-from", «quantities-in-range-from».body, «quantities-in-range-from».bodyDigest),
-  ("in-range", «in-range».body, «in-range».bodyDigest),
-  ("distance", «distance».body, «distance».bodyDigest),
-  ("part-distance", «part-distance».body, «part-distance».bodyDigest),
-  ("same-id", «same-id».body, «same-id».bodyDigest),
-  ("repeat-from", «repeat-from».body, «repeat-from».bodyDigest),
-  ("has-repeat", «has-repeat».body, «has-repeat».bodyDigest),
-  ("allocate-one", «allocate-one».body, «allocate-one».bodyDigest),
-  ("allocate-from", «allocate-from».body, «allocate-from».bodyDigest),
-  ("allocate-batch", «allocate-batch».body, «allocate-batch».bodyDigest)]
+/-- Every word, in declaration order: its name, body, body digest and erased
+type. -/
+def words : List (String × Program × String × String) := [
+  ("quantities-in-range-from", «quantities-in-range-from».body, «quantities-in-range-from».bodyDigest, «quantities-in-range-from».erasedType),
+  ("in-range", «in-range».body, «in-range».bodyDigest, «in-range».erasedType),
+  ("distance", «distance».body, «distance».bodyDigest, «distance».erasedType),
+  ("part-distance", «part-distance».body, «part-distance».bodyDigest, «part-distance».erasedType),
+  ("same-id", «same-id».body, «same-id».bodyDigest, «same-id».erasedType),
+  ("repeat-from", «repeat-from».body, «repeat-from».bodyDigest, «repeat-from».erasedType),
+  ("has-repeat", «has-repeat».body, «has-repeat».bodyDigest, «has-repeat».erasedType),
+  ("allocate-one", «allocate-one».body, «allocate-one».bodyDigest, «allocate-one».erasedType),
+  ("allocate-from", «allocate-from».body, «allocate-from».bodyDigest, «allocate-from».erasedType),
+  ("allocate-batch", «allocate-batch».body, «allocate-batch».bodyDigest, «allocate-batch».erasedType)]
 
 /-- The dictionary the reference runner builds for this source. -/
 def dictionary : Dictionary

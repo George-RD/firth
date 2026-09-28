@@ -71,10 +71,11 @@ def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many
 
 end «fact-acc»
 
-/-- Every word, in declaration order: its name, body and body digest. -/
-def words : List (String × Program × String) := [
-  ("fact", «fact».body, «fact».bodyDigest),
-  ("fact-acc", «fact-acc».body, «fact-acc».bodyDigest)]
+/-- Every word, in declaration order: its name, body, body digest and erased
+type. -/
+def words : List (String × Program × String × String) := [
+  ("fact", «fact».body, «fact».bodyDigest, «fact».erasedType),
+  ("fact-acc", «fact-acc».body, «fact-acc».bodyDigest, «fact-acc».erasedType)]
 
 /-- The dictionary the reference runner builds for this source. -/
 def dictionary : Dictionary

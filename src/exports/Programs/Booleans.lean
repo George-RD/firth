@@ -161,13 +161,14 @@ def erasedType : String := "(forallρ;ρ,v0:SeqBool^many--ρ,v0:Bool^many)"
 
 end «all»
 
-/-- Every word, in declaration order: its name, body and body digest. -/
-def words : List (String × Program × String) := [
-  ("in-range", «in-range».body, «in-range».bodyDigest),
-  ("outside", «outside».body, «outside».bodyDigest),
-  ("xor", «xor».body, «xor».bodyDigest),
-  ("all-from", «all-from».body, «all-from».bodyDigest),
-  ("all", «all».body, «all».bodyDigest)]
+/-- Every word, in declaration order: its name, body, body digest and erased
+type. -/
+def words : List (String × Program × String × String) := [
+  ("in-range", «in-range».body, «in-range».bodyDigest, «in-range».erasedType),
+  ("outside", «outside».body, «outside».bodyDigest, «outside».erasedType),
+  ("xor", «xor».body, «xor».bodyDigest, «xor».erasedType),
+  ("all-from", «all-from».body, «all-from».bodyDigest, «all-from».erasedType),
+  ("all", «all».body, «all».bodyDigest, «all».erasedType)]
 
 /-- The dictionary the reference runner builds for this source. -/
 def dictionary : Dictionary
