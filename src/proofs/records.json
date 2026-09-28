@@ -49,7 +49,7 @@
     "covers": [
       {"module": "Programs.Signed", "source": "examples/programs/signed.firth", "word": "abs", "body_digest": "472591df6d2517e379b8604d7a3a522f79a99deb3df8f0436edce970f7eadb09", "erased_type": "(forallρ;ρ,v0:Int^many--ρ,v0:Int^many)"}]},
   {
-    "evidence": "a023d11b54d7cef1669563fb2702198994037970a88d70e7eef75438a8435292",
+    "evidence": "d6bf40517260638acac417bdc2174a611f5bc62965c95e3075d8f73e86d20503",
     "theorem": "Firth.Proofs.Programs.Division.divmod_contract",
     "module": "proofs.Programs.Division",
     "export": "Programs.Division",
@@ -65,7 +65,7 @@
       "output": "fun args =>\n  List.cons\n    (Firth.Interpreter.Value.literal (Firth.Interpreter.Literal.int (HMod.hMod (Prod.fst args) (Prod.snd args))))\n    (List.cons\n      (Firth.Interpreter.Value.literal (Firth.Interpreter.Literal.int (HDiv.hDiv (Prod.fst args) (Prod.snd args))))\n      List.nil)",
       "steps": "fun x => 6",
       "cost": "fun x => 6"},
-    "statement_digest": "1505d47777279f652129942ec9b27b77a48bbfbb8f8658c54e5b8efc6a306e5a",
+    "statement_digest": "644124e336abf480f5f50a35d582fa6736efbe3dfccbffdda8f7139bd3f3bcbd",
     "axioms": ["Classical.choice", "Quot.sound", "propext"],
     "lean": "4.30.0",
     "gamma_binding": {"name": "Firth.Logic.int64Gamma", "digest": "4610ee3d187485b3c32e03642ee3fa9a278fb24cfd429664fa8ed17d97759df2"},
@@ -73,7 +73,7 @@
     "covers": [
       {"module": "Programs.Division", "source": "examples/programs/division.firth", "word": "divmod", "body_digest": "5f5542c10cc26bca94b8417cd7a59d21661b470145b45bcb5e4579f97c6b5669", "erased_type": "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many,v1:Int^many)"}]},
   {
-    "evidence": "d940c5adfedea3b4c0e801370bf24b296b9473eb6c3fa580d340f9c7983c50ef",
+    "evidence": "8863a2115734d1d534c485c4bf3b72cfd6292490406e44e27bbf0c79f721b807",
     "theorem": "Firth.Proofs.Programs.Division.gcd_contract",
     "module": "proofs.Programs.Division",
     "export": "Programs.Division",
@@ -89,7 +89,7 @@
       "output": "fun args =>\n  List.cons\n    (Firth.Interpreter.Value.literal\n      (Firth.Interpreter.Literal.int (Nat.cast (Int.gcd (Prod.fst args) (Prod.snd args)))))\n    List.nil",
       "steps": "fun args => HAdd.hAdd (HMul.hMul 22 (Int.natAbs (Prod.snd args))) 33",
       "cost": "fun args => HAdd.hAdd (HMul.hMul 20 (Int.natAbs (Prod.snd args))) 31"},
-    "statement_digest": "a2aa451ae055f7a97cc980886d5be729b7904a46fd955902b27f9773a9f2c30e",
+    "statement_digest": "a795bf551dba9defb81e02269178f7a4dbf1738eaec8defa96e59fb93867ea47",
     "axioms": ["Classical.choice", "Quot.sound", "propext"],
     "lean": "4.30.0",
     "gamma_binding": {"name": "Firth.Logic.int64Gamma", "digest": "4610ee3d187485b3c32e03642ee3fa9a278fb24cfd429664fa8ed17d97759df2"},
@@ -112,7 +112,8 @@
   {"module": "Programs.Division", "source": "examples/programs/division.firth", "word": "divmod", "body_digest": "5f5542c10cc26bca94b8417cd7a59d21661b470145b45bcb5e4579f97c6b5669", "erased_type": "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many,v1:Int^many)", "status": "contract_verified", "theorems": ["Firth.Proofs.Programs.Division.divmod_contract"]},
   {"module": "Programs.Division", "source": "examples/programs/division.firth", "word": "abs", "body_digest": "472591df6d2517e379b8604d7a3a522f79a99deb3df8f0436edce970f7eadb09", "erased_type": "(forallρ;ρ,v0:Int^many--ρ,v0:Int^many)", "status": "contract_verified", "theorems": ["Firth.Proofs.Programs.Division.gcd_contract"]},
   {"module": "Programs.Division", "source": "examples/programs/division.firth", "word": "digit-sum-from", "body_digest": "0d87c3583e3faa7ed3d97ce8621ad6cf7375b269f24206ee4bd021a03f8cbfdb", "erased_type": "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many)", "status": "type_checked", "theorems": []},
-  {"module": "Programs.Division", "source": "examples/programs/division.firth", "word": "digit-sum", "body_digest": "b76fe2fdac488cf3ffbbfbbb64f0f1b967c98f0f8be7bdb2fd82d9c1ae54fe2b", "erased_type": "(forallρ;ρ,v0:Int^many--ρ,v0:Int^many)", "status": "type_checked", "theorems": []},
+  {"module": "Programs.Division", "source": "examples/programs/division.firth", "word": "digit-sum-negative", "body_digest": "2f449b6485aa3e633e44f22d8556c914d32f0253539c93f81c89a041a00bf7d1", "erased_type": "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many)", "status": "type_checked", "theorems": []},
+  {"module": "Programs.Division", "source": "examples/programs/division.firth", "word": "digit-sum", "body_digest": "ad81f2214cd66ba7a7be1d187c24a88084054a341438245f9026daca6857e1fc", "erased_type": "(forallρ;ρ,v0:Int^many--ρ,v0:Int^many)", "status": "type_checked", "theorems": []},
   {"module": "Programs.Division", "source": "examples/programs/division.firth", "word": "gcd", "body_digest": "b1d8e39c2215f534b05b84f7df4fdce4fd1e3664f4df4d2f942e48597f571f31", "erased_type": "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many)", "status": "contract_verified", "theorems": ["Firth.Proofs.Programs.Division.gcd_contract"]},
   {"module": "Programs.Factorial", "source": "examples/programs/factorial.firth", "word": "fact", "body_digest": "62e25e6cc26e034dde258375d1f5109164ba32521c7147a9af28636c6e97a85b", "erased_type": "(forallρ;ρ,v0:Int^many--ρ,v0:Int^many)", "status": "type_checked", "theorems": []},
   {"module": "Programs.Factorial", "source": "examples/programs/factorial.firth", "word": "fact-acc", "body_digest": "f9d4217abf8c69c5b7f7536a88890867a42070e99d417a3a56d2ff9f7db5b825", "erased_type": "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many)", "status": "type_checked", "theorems": []},

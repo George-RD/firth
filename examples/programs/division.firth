@@ -24,10 +24,22 @@
     [ n 10 prim div acc n 10 prim mod prim + digit-sum-from ]
     if };
 
-\ The sum of the decimal digits of |n|.
+\ For n < 0 and d its last decimal digit of |n|: the digit sum of |n|. It
+\ never negates n itself, which overflows at -2^63, only n + d, which is a
+\ multiple of 10 above -2^63, so |n| div 10 fits in i64.
+: digit-sum-negative
+  (forall ρ; ρ n:Int^many d:Int^many -- ρ r:Int^many)
+  locals { n d } { 0 n d prim + prim - 10 prim div d digit-sum-from };
+
+\ The sum of the decimal digits of |n|, for every i64 n, -2^63 included. For
+\ n < 0 the last digit of |n| is (10 - n mod 10) mod 10.
 : digit-sum
   (forall ρ; ρ n:Int^many -- ρ r:Int^many)
-  abs 0 digit-sum-from;
+  locals { n }
+  { n 0 prim <
+    [ n 10 n 10 prim mod prim - 10 prim mod digit-sum-negative ]
+    [ n 0 digit-sum-from ]
+    if };
 
 \ The greatest common divisor by Euclid's algorithm: gcd(a, b) = gcd(b, a mod b)
 \ until b is 0. `mod` is never negative, so the result is too; gcd(0, 0) is 0.

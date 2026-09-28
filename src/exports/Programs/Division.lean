@@ -19,7 +19,7 @@ open Firth.Interpreter
 open Firth.ReferenceRun
 
 /-- SHA-256 of the source text these definitions were generated from. -/
-def sourceDigest : String := "b47405afb5a12d480f4b5eee04d450fac224e32daafcee74bb6d001c0679faed"
+def sourceDigest : String := "472fda7dbfcdb2dd27b6be3c90b461324926ecdb52d17ef5ff9aef4f3923722c"
 
 namespace «divmod»
 
@@ -113,18 +113,64 @@ def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many
 
 end «digit-sum-from»
 
+namespace «digit-sum-negative»
+
+/-- The erased kernel program of `digit-sum-negative`. -/
+def body : Program :=
+  .cons (.lit (.int 0)) <|
+  .cons (.roll 2) <|
+  .cons (.pick 2) <|
+  .cons (.prim "+") <|
+  .cons (.prim "-") <|
+  .cons (.lit (.int 10)) <|
+  .cons (.prim "div") <|
+  .cons .swap <|
+  .cons (.word "digit-sum-from") <|
+  .empty
+
+/-- The image's `body_digest` for `digit-sum-negative`: SHA-256 of `body` lowered to
+target code, hex encoded. -/
+def bodyDigest : String := "2f449b6485aa3e633e44f22d8556c914d32f0253539c93f81c89a041a00bf7d1"
+
+/-- The erased word type the image records for `digit-sum-negative`. -/
+def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many)"
+
+end «digit-sum-negative»
+
 namespace «digit-sum»
 
 /-- The erased kernel program of `digit-sum`. -/
 def body : Program :=
-  .cons (.word "abs") <|
+  .cons .dup <|
   .cons (.lit (.int 0)) <|
-  .cons (.word "digit-sum-from") <|
+  .cons (.prim "<") <|
+  .cons (.pick 1) <|
+  .cons .quote <|
+  .cons (.quotation (
+    .cons .dup <|
+    .cons (.lit (.int 10)) <|
+    .cons (.roll 2) <|
+    .cons (.lit (.int 10)) <|
+    .cons (.prim "mod") <|
+    .cons (.prim "-") <|
+    .cons (.lit (.int 10)) <|
+    .cons (.prim "mod") <|
+    .cons (.word "digit-sum-negative") <|
+    .empty)) <|
+  .cons .compose <|
+  .cons (.roll 2) <|
+  .cons .quote <|
+  .cons (.quotation (
+    .cons (.lit (.int 0)) <|
+    .cons (.word "digit-sum-from") <|
+    .empty)) <|
+  .cons .compose <|
+  .cons .ifThenElse <|
   .empty
 
 /-- The image's `body_digest` for `digit-sum`: SHA-256 of `body` lowered to
 target code, hex encoded. -/
-def bodyDigest : String := "b76fe2fdac488cf3ffbbfbbb64f0f1b967c98f0f8be7bdb2fd82d9c1ae54fe2b"
+def bodyDigest : String := "ad81f2214cd66ba7a7be1d187c24a88084054a341438245f9026daca6857e1fc"
 
 /-- The erased word type the image records for `digit-sum`. -/
 def erasedType : String := "(forallρ;ρ,v0:Int^many--ρ,v0:Int^many)"
@@ -175,6 +221,7 @@ def words : List (String × Program × String × String) := [
   ("divmod", «divmod».body, «divmod».bodyDigest, «divmod».erasedType),
   ("abs", «abs».body, «abs».bodyDigest, «abs».erasedType),
   ("digit-sum-from", «digit-sum-from».body, «digit-sum-from».bodyDigest, «digit-sum-from».erasedType),
+  ("digit-sum-negative", «digit-sum-negative».body, «digit-sum-negative».bodyDigest, «digit-sum-negative».erasedType),
   ("digit-sum", «digit-sum».body, «digit-sum».bodyDigest, «digit-sum».erasedType),
   ("gcd", «gcd».body, «gcd».bodyDigest, «gcd».erasedType)]
 
@@ -183,6 +230,7 @@ def dictionary : Dictionary
   | "divmod" => some { type := adapterWordType, body := «divmod».body }
   | "abs" => some { type := adapterWordType, body := «abs».body }
   | "digit-sum-from" => some { type := adapterWordType, body := «digit-sum-from».body }
+  | "digit-sum-negative" => some { type := adapterWordType, body := «digit-sum-negative».body }
   | "digit-sum" => some { type := adapterWordType, body := «digit-sum».body }
   | "gcd" => some { type := adapterWordType, body := «gcd».body }
   | _ => none
@@ -197,6 +245,9 @@ theorem «abs».entry :
 
 theorem «digit-sum-from».entry :
     dictionary "digit-sum-from" = some { type := adapterWordType, body := «digit-sum-from».body } := rfl
+
+theorem «digit-sum-negative».entry :
+    dictionary "digit-sum-negative" = some { type := adapterWordType, body := «digit-sum-negative».body } := rfl
 
 theorem «digit-sum».entry :
     dictionary "digit-sum" = some { type := adapterWordType, body := «digit-sum».body } := rfl
