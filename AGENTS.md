@@ -66,9 +66,10 @@ The reasons are in `dec.agent-development-rules`.
     *Check:* `check_zero_admit.py` rejects all four by name, then audits the
     built environment (`firthAxiomAudit`): every declaration under `src` may
     rest only on `propext`, `Classical.choice` and `Quot.sound`, which also
-    refuses `decide +native` and a direct `Lean.ofReduceBool`. Its planted
-    modules run with it; the source scan's are in
-    `tools/loop/test_check_zero_admit.py`.
+    refuses `decide +native` and a direct `Lean.ofReduceBool`. The one
+    exception is the proof-record audit's planted refusal
+    `Refused.trustsCompiler`. The audit's planted modules run with it; the
+    source scan's are in `tools/loop/test_check_zero_admit.py`.
 12. The VM and the reference interpreter agree on every example. The reference
     interpreter defines behaviour, so a divergence is a VM or compiler bug,
     unless the reference itself disagrees with the kernel specification

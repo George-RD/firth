@@ -4,7 +4,7 @@ import compiler.Firth.ProofRecords
 /-!
 The audit of axioms behind AGENTS.md rule 11: every declaration of this
 repository's built modules may rest only on `propext`, `Classical.choice` and
-`Quot.sound`.
+`Quot.sound`, except the declarations in `exempt`.
 
 The source scan in `tools/loop/check_zero_admit.py` finds the escape-hatch
 keywords by name, but not every spelling of the same trust: `decide +native` and a direct use of
@@ -26,12 +26,21 @@ it once for each `.lean` file under `src`.
 namespace Firth.Compiler.AxiomAudit
 open Lean
 
-/-- Declarations allowed to rest on refused axioms, and why. The walk still
-passes through them, so anything else that uses one is refused, and a renamed
-one is refused under its new name. -/
-def exempt : List (Name × String) :=
-  [(`Firth.ProofTests.Refused.trustsCompiler,
+/-- Declarations allowed to rest on refused axioms, each with the module that
+must declare it, and why. The same name declared in any other module is
+audited like any declaration. The walk still passes through an exempt
+declaration, so anything else that uses one is refused, and a renamed one is
+refused under its new name. -/
+def exempt : List (Name × Name × String) :=
+  [(`Firth.ProofTests.Refused.trustsCompiler, `prooftests.Refused,
     "the proof-record audit's planted refusal (src/prooftests/Refused.lean)")]
+
+/-- Whether `name`, as declared in `env`, is exempt: its name and its
+declaring module must both match an entry. -/
+def isExempt (env : Environment) (name : Name) : Bool :=
+  exempt.any fun (exemptName, module, _) =>
+    exemptName == name && (env.getModuleIdx? module).isSome &&
+      env.getModuleIdxFor? name == env.getModuleIdx? module
 
 /-- The refused axioms `name` reaches. -/
 def refusedFrom (env : Environment) (roots : List Name) : Except String (List Name) := do
@@ -44,7 +53,7 @@ def declaredIn (env : Environment) (modules : List Name) : List Name :=
   let indices := modules.filterMap env.getModuleIdx?
   let names := env.constants.map₁.toList.filterMap fun (name, _) =>
     match env.getModuleIdxFor? name with
-    | some index => if indices.contains index && !(exempt.any (·.1 == name)) then some name else none
+    | some index => if indices.contains index && !isExempt env name then some name else none
     | none => none
   names.mergeSort (fun a b => a.toString ≤ b.toString)
 

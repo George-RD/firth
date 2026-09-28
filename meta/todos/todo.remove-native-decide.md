@@ -34,7 +34,8 @@ starts one above its two budgets, so accepted formulas are unchanged.
 (`decide +native` and a direct `Lean.ofReduceBool` carry the same trust), so
 it also runs `firthAxiomAudit` (`src/compiler/Firth/AxiomAudit.lean`) over the
 built environment: every declaration of every `.lean` file under `src` may
-rest only on `propext`, `Classical.choice` and `Quot.sound`. Its planted
+rest only on `propext`, `Classical.choice` and `Quot.sound`, except the
+proof-record audit's planted refusal `Refused.trustsCompiler`. Its planted
 modules (`decide +native`, `native_decide`, `Lean.ofReduceBool`,
 `Lean.ofReduceNat`, `Lean.trustCompiler`, `sorry`, a declared constant
 without a proof, and an indirect use) must each be refused before the
