@@ -23,9 +23,10 @@ Run and modify an inventory-allocation component written in Firth.
   calculation with its bounds and repeated-ID checks. `run_cases.py` is the
   host, and CI runs the fixed corpus on both hosts: all 53 cases pass (the 3
   negative-input cases since signed `Int`). The worst case cost is at most
-  165 + 202n + 157n(n-1)/2 kernel steps since `pick` and `roll` (#125) and
-  the scan's move to locals (417 + 767n + 264n(n-1)/2 before); that bound is
-  measured, not proved.
+  165 + 202n + 163n(n-1)/2 kernel steps since `pick` and `roll` (#125) and
+  the scan's move to locals (417 + 767n + 264n(n-1)/2 before, which the
+  costliest ID shape exceeded); that bound is measured over every ID shape,
+  not proved.
   Still open: toolchain-checked properties and a proved cost bound
   (`language-06b`, `language-06c`).
 - 27 September 2026: `examples/inventory/policy_change.py` changes a
