@@ -145,8 +145,6 @@ theorem from_step {q left amount reason : Int} {s₁ c₁ s₂ c₂ : Nat} {left
         saved qs whole i taken reasons tail)
       (.literal (.int q) :: .literal (.int remaining) :: saved qs whole i taken reasons tail) 1 1 :=
     runs_intSeq_at_int _ hi hq
-  -- `runs_arith` still unfolds a list lookup equation in context.
-  clear hq
   apply Runs.congr
   focus
     apply runs_word (by rfl)
@@ -216,7 +214,7 @@ macro "at_chain" : tactic => `(tactic| (
     runs_expand
   repeat' (first | runs_atom | apply runs_cons (runs_intSeq_at_int _ hi hAt))
   all_goals try (simp only [InInt64]; omega)
-  all_goals try (clear hAt; runs_arith)))
+  all_goals try runs_arith))
 
 section Range
 variable {qs : List Int} {i q : Int} {tail : Stack}
