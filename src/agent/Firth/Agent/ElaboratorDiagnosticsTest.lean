@@ -361,6 +361,17 @@ def runElaboratorDiagnosticTests : IO Unit := do
           !emitted.contains "untracked" && !emitted.contains "are fine" then pure ()
       else fail s!"an if with branches of different depths was not reported at the if: {emitted}"
   | _ => fail "branch-shape result was not singular"
+  -- The same mistake inside a quotation that is then called: the quotation's
+  -- effect is unknown because of the inner `if`, and the report still points
+  -- at that `if`, not at the `call` that runs it.
+  let nestedSource := ": keep-positive (forall ρ; ρ x:Int^many -- ρ r:Int^many)\n  locals { x } { [ true [ 1 ] [ ] if ] call x prim + } ;"
+  match elaboratePipeline pipelineContext nestedSource agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "nested branch shape" "firth.type.branch-mismatch" emitted
+      if emitted.contains "\"start\":{\"line\":2,\"column\":35}" && !emitted.contains "untracked" then pure ()
+      else fail s!"an if with branches of different depths inside a called quotation was not reported at the if: {emitted}"
+  | _ => fail "nested branch-shape result was not singular"
   -- A quotation of unknown effect still gives untracked-local, now naming
   -- the atom that lost track and its line.
   let unknownSource := ": call-unknown-effect\n  (forall ρ; ρ z:Int^many a:Int^many b:Int^many -- ρ z:Int^many r:Int^many)\n  locals { a b } { a [ 1 prim + ] [ call ] call b prim - };"
