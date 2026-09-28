@@ -15,11 +15,12 @@ it sees the constant each spelling leaves behind (`sorryAx`,
 `_native` axioms and any other constant declared without a proof), however it
 was written.
 
-`firthAxiomAudit MODULE...` imports each named module and walks every constant
-declared in it, through types, values and inductive constructors, as
+`firthAxiomAudit MODULE...` imports the named modules and walks every constant
+declared in one of them, through types, values and inductive constructors, as
 `ProofRecords.reach` does for a record. It prints each constant that reaches any
 other axioms, naming them, and exits 1. `exempt` names the one declaration
-that rests on refused axioms on purpose.
+that rests on refused axioms on purpose. `tools/loop/check_zero_admit.py` runs
+it once for each `.lean` file under `src`.
 -/
 
 namespace Firth.Compiler.AxiomAudit
