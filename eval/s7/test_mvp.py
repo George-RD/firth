@@ -280,6 +280,18 @@ def subagent_audit() -> None:
         (gap / "solutions-2.json").write_text(json.dumps({"sort": "not what was written"}))
         check(any("answer-1.md" in b for b in solutions(gap)),
               "the audit flags answers kept after a missing round")
+        check(any("solutions-2.json" in b for b in solutions(gap)),
+              "after a missing round, the next round's mismatch is still listed")
+        # A later round that is the kept round's solutions plus its own answer
+        # is not a mismatch (Codex, on #154). Planted: without carrying the
+        # kept solutions over the gap, round 2 is flagged.
+        carry = d / "carry"
+        carry.mkdir()
+        (carry / "solutions-1.json").write_text(json.dumps({"reverse": "kept"}))
+        (carry / "answer-2.md").write_text("### task: sort\n")
+        (carry / "solutions-2.json").write_text(json.dumps({"reverse": "kept", **harness.extract("### task: sort\n")}))
+        check(solutions(carry) == [f"{carry / 'answer-1.md'}: missing (Codex, on #152)"],
+              "across a missing answer, the kept solutions carry to the next round")
         (gap / "repair-2.md").write_text("hidden case: [[3, 1, 2]] -> [[1, 2, 3]]\n")
         check(any("repair-2.md" in b for b in repairs(gap, "firth")),
               "the audit checks feedback kept after a missing round")
@@ -413,6 +425,33 @@ def hashes_recorded() -> None:
         probe.unlink(missing_ok=True)
 
 
+def classify_default() -> None:
+    import subprocess
+    import tempfile
+    import classify
+    check(all(t.needs <= classify.ALL for t in MVP), "classify's default capabilities cover every MVP task")
+    plain = {"cases": [{"visible": True, "pass": False, "ok": False, "error": "code: firth.type.branch-mismatch"}]}
+    check(classify.by_rule("sort", plain, set(classify.ALL)) is None,
+          "with every capability, an ordinary MVP failure goes to Jev")
+    check(classify.by_rule("sort", plain, {"add"}) == "missing_primitive",
+          "with only add, the same failure is missing_primitive by rule (the planted case)")
+    # Run the CLI with no flags on a failure the fuel rule catches, so Jev is never
+    # asked: the old "add" default labelled it missing_primitive instead.
+    fuel = {"tasks": {"sort": {"pass": False, "cases": [{"visible": True, "pass": False, "ok": False,
+                                                          "error": "fuel exhausted"}]}}}
+    with tempfile.TemporaryDirectory() as d:
+        (Path(d) / "s.json").write_text("{}")
+        (Path(d) / "r.json").write_text(json.dumps(fuel))
+        cli = [sys.executable, str(HERE / "classify.py"), f"{d}/s.json", f"{d}/r.json"]
+        got = json.loads(subprocess.run(cli, capture_output=True, text=True, check=True).stdout)
+        old = json.loads(subprocess.run(cli + ["--available", "add"], capture_output=True, text=True,
+                                        check=True).stdout)
+    check(got["tasks"]["sort"] == {"mode": "resource_limit", "by": "rule"},
+          "classify.py with no flags labels an MVP failure by what went wrong")
+    check(old["tasks"]["sort"]["mode"] == "missing_primitive",
+          "with the old add default it is missing_primitive (the planted case)")
+
+
 def main() -> int:
     hand_values()
     scorer_rejects_wrong_python()
@@ -422,6 +461,7 @@ def main() -> int:
     subagent_audit()
     run_options_parsed()
     unsandboxed_python_refused()
+    classify_default()
     if "--no-firth" not in sys.argv:
         firth_references()
     print(f"\n{len(failures)} failure(s)")

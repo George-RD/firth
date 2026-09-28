@@ -28,6 +28,18 @@ as accidents.
   present, and fails closed only when git errors, so a later lazy fetch
   inside the sandbox is blocked by the missing network, not by the scan.
   The scan should refuse a repository with a promisor remote outright.
+- **Operator-side tampering with kept feedback** (Codex and CodeRabbit, on
+  #152). The sub-agent audit checks each kept `repair-N.md` against the
+  feedback rebuilt from that round's kept results. It does not tie an
+  allowed read of `repair-N.md` to a kept copy, so a repair file deleted
+  after the author read it goes unchecked. It also trusts `results-N.json`,
+  so editing results and repair together (marking a hidden case visible)
+  passes. The audit already flags every author write other than
+  `answer-N.md`, so only the operator could do either.
+- **Unsandboxed authors and direct `try`** (the reviewer, on #152).
+  `isolate.audit` allows only `./try`, so an unsandboxed author following
+  the MVP prompt's `harness.py try` line is flagged even for legitimate
+  calls. Either drop that prompt variant or teach the audit its form.
 
 ## Acceptance criteria
 
@@ -40,3 +52,10 @@ as accidents.
 - A shown repository whose only tree holding the references is rooted at
   `eval/s7` is refused, with the bypass mutant reading it.
 - A shown partial clone (a `remote.*.promisor` setting) is refused.
+- Every repair file the author read is kept and matches its rebuild; a
+  planted read of a deleted repair is flagged. The visible case in each
+  kept `results-N.json` is checked against the task's own example (or the
+  round is rescored); a planted results-plus-repair edit is flagged.
+- The unsandboxed MVP prompt either no longer names `harness.py try`, or
+  the audit accepts exactly that form; a planted legitimate call passes
+  and a planted `--workspace /` call is flagged.
