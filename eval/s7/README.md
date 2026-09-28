@@ -225,7 +225,7 @@ See `runs/rescore-main-9ac3bc8.json`.
   reference used the same trick and was rewritten in #122.
 - Sonnet's run 2 `collatz-steps` and run 3 `lcm` now fit in the step budget,
   which went from 4096 to 100,000 steps. Its run 2 `majority` no longer hits
-  the top-local bug. With `abs-diff` set aside, Sonnet now passes every task.
+  the top-local bug. Apart from run 2's `abs-diff`, Sonnet now passes every task.
 - Haiku's run 2 first try gains six tasks that used locals inside quotations.
   Its repaired answers still pass 11, but a different 11: the repair round
   had steered it away from locals and it broke other tasks doing so. Its
@@ -239,8 +239,9 @@ See `runs/rescore-main-9ac3bc8.json`.
 ## What the three runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from
-the docs alone. On main, Sonnet is at Python's level on every task set:
-its failures when first scored were checker bugs and a step budget that
+the docs alone. On main, Sonnet matches Python on every task set except
+for one run 2 `abs-diff` answer that the signed-Int change invalidated; its
+other failures when first scored were checker bugs and a step budget that
 have since been fixed. They did not carry a weaker
 model: Haiku wrote correct Python every time and mostly failed in Firth, in
 ways the checker caught but Haiku could not repair. The checker found most
