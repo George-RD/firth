@@ -189,11 +189,10 @@ private def depthChange (effect : Nat × Nat) : String :=
   else "leaves as many values as it takes"
 
 /-- The message and hint for an `if` whose branches change the stack depth
-by different amounts, noticed when the local `name` was used after it. -/
-private def branchShapeExplanation (name : String) (onTrue onFalse : Nat × Nat) :
-    String × String :=
+by different amounts. -/
+private def branchShapeExplanation (onTrue onFalse : Nat × Nat) : String × String :=
   (s!"The two branches of `if` leave different numbers of values: the true branch {depthChange onTrue}, and the false branch {depthChange onFalse}.",
-    s!"Both branches run on the same stack and must leave the same number and types of values, so that `{name}` and the rest of the stack are where the code after the `if` expects them. Change one branch, for example by pushing or dropping a value, until both leave the same stack.")
+    "Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds the stack it expects. Change one branch, for example by pushing or dropping a value, until both leave the same stack.")
 
 private def erasureDiagnostic : Firth.Elaborator.ErasureError → ErasureDiagnostic
   | .duplicateLocal name span =>
@@ -218,15 +217,11 @@ private def erasureDiagnostic : Firth.Elaborator.ErasureError → ErasureDiagnos
       { code := "firth.elaboration.unsupported-literal", cause := "elaboration", params := .mkObj [], span }
   | .unsupportedAtom name span =>
       { code := "firth.elaboration.unsupported-atom", cause := "elaboration", params := namedParams name, span }
-  | .untrackedStack name _ (some { atom := "if", span := ifSpan, branches := some (onTrue, onFalse) }) =>
-      -- Both branches have known effects that change the depth differently:
-      -- the program is ill-typed, and that is the error to report, at the
-      -- `if`, rather than the later use of `name` where it was noticed.
-      let (message, hint) := branchShapeExplanation name onTrue onFalse
+  | .branchShape span onTrue onFalse =>
+      let (message, hint) := branchShapeExplanation onTrue onFalse
       { code := "firth.type.branch-mismatch", cause := "type-checking"
-        params := .mkObj [("name", .str name), ("at", .str "if"),
-          ("message", .str message), ("hint", .str hint)]
-        span := ifSpan }
+        params := .mkObj [("at", .str "if"), ("message", .str message), ("hint", .str hint)]
+        span }
   | .untrackedStack name span lost =>
       let params := match lost with
         | some lost => .mkObj [("name", .str name), ("at", .str lost.atom),

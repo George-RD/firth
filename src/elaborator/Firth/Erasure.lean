@@ -24,14 +24,10 @@ structure EffectEnv where
   primitive : String → Option Signature := fun _ => none
 
 /-- Where erasure lost track of the stack: the higher-order atom that ran a
-quotation of unknown stack effect. For an `if` whose two branches both have
-known effects that change the stack depth by different amounts, `branches`
-holds the true and false branch effects (values consumed, values produced);
-such a program is ill-typed, since both branches must leave the same stack. -/
+quotation of unknown stack effect. -/
 structure LostTrack where
   atom : String
   span : Span
-  branches : Option ((Nat × Nat) × (Nat × Nat)) := none
   deriving Repr, BEq
 
 inductive ErasureError where
@@ -49,6 +45,11 @@ inductive ErasureError where
   /-- A local is used after `call`, `dip` or `if` ran a quotation whose stack
   effect is not known here, so where the local sits can't be determined. -/
   | untrackedStack (name : String) (span : Span) (lost : Option LostTrack)
+  /-- An `if` whose two branches have known effects (values consumed, values
+  produced) that change the stack depth by different amounts. Both branches
+  run on the same stack and must leave the same one, so the program is
+  ill-typed wherever the `if` sits. -/
+  | branchShape (span : Span) (onTrue onFalse : Nat × Nat)
   /-- An operation would take a local that is not yet used, and it could not
   be moved out of the way. A block's locals are off the stack for its body. -/
   | hiddenLocal (name : String) (span : Span)
@@ -84,9 +85,6 @@ structure StackEntry where
   /-- For a quotation built in this body: how many values it consumes and
   produces, as inferred when it was erased. -/
   effect : Option (Nat × Nat) := none
-  /-- For a quotation built in this body whose effect is unknown because
-  erasing its body lost track of the stack: where that happened. -/
-  lost : Option LostTrack := none
   deriving Repr, BEq
 
 structure State where
@@ -224,27 +222,20 @@ private def dipMove : List StackEntry → Option (List StackEntry × Bool)
       runKnown quotation.effect rest (quotation :: preserved :: rest) (preserved :: ·)
   | _ => none
 
-/-- Both branch effects of an `if`, when both are known. -/
-private def ifBranches : List StackEntry → Option ((Nat × Nat) × (Nat × Nat))
+/-- The branch effects of an `if` whose branches are both known and change
+the stack depth by different amounts. -/
+private def ifMismatch : List StackEntry → Option ((Nat × Nat) × (Nat × Nat))
   | { effect := some falseEffect, .. } :: { effect := some trueEffect, .. } :: _ :: _ =>
-      some (trueEffect, falseEffect)
+      if (branchEffect (some trueEffect) (some falseEffect)).isNone then
+        some (trueEffect, falseEffect)
+      else none
   | _ => none
 
-/-- Where the quotations `atom` runs lost track of the stack inside their own
-bodies, if they did. -/
-private def runLost : String → List StackEntry → Option LostTrack
-  | "call", quotation :: _ | "dip", quotation :: _ => quotation.lost
-  | "if", falseBranch :: trueBranch :: _ => falseBranch.lost <|> trueBranch.lost
-  | _, _ => none
-
-/-- `lostAt` after an atom: kept once the stack is untracked, and otherwise
-recorded when this atom loses track. When the quotation it runs lost track
-inside its own body, that inner place is the one recorded, so a mismatched
-`if` inside `[ ... ] call` is still reported at that `if`. -/
-private def lostAfter (state : State) (exact : Bool) (atom : String) (span : Span)
-    (branches : Option ((Nat × Nat) × (Nat × Nat)) := none) : Option LostTrack :=
-  if state.untracked || exact then state.lostAt else
-    (runLost atom state.stack).orElse fun _ => some { atom, span, branches }
+/-- `lostAt` after an atom: kept once the stack is untracked, recorded when
+this atom is the one that loses track. -/
+private def lostAfter (state : State) (exact : Bool) (atom : String) (span : Span) :
+    Option LostTrack :=
+  if state.untracked || exact then state.lostAt else some { atom, span }
 
 private def ifMove : List StackEntry → Option (List StackEntry × Bool)
   | falseBranch :: trueBranch :: condition :: rest =>
@@ -256,18 +247,13 @@ private def ifMove : List StackEntry → Option (List StackEntry × Bool)
 private def bodyEffect (seedCount : Nat) (final : State) : Option (Nat × Nat) :=
   if final.untracked then none else some (seedCount, final.stack.length)
 
-/-- Where a quotation body lost track of the stack, if it did. -/
-private def bodyLost (final : State) : Option LostTrack :=
-  if final.untracked then final.lostAt else none
-
 private def composeEffect : Option (Nat × Nat) → Option (Nat × Nat) → Option (Nat × Nat)
   | some (i₁, o₁), some (i₂, o₂) => some (i₁ + (i₂ - o₁), o₂ + (o₁ - i₂))
   | _, _ => none
 
 private def composeMove : List StackEntry → Option (List StackEntry × Bool)
   | second :: first :: rest =>
-      some ({ usage := .many, effect := composeEffect first.effect second.effect,
-              lost := first.lost <|> second.lost } :: rest, true)
+      some ({ usage := .many, effect := composeEffect first.effect second.effect } :: rest, true)
   | _ => none
 
 /-- The nearest value marked `id` sits `depth` places below the top; moving it
@@ -776,7 +762,7 @@ inductive ErasesAtomTo : String → Span → State → KernelProgram → State �
         { state with
           stack := next
           untracked := state.untracked || !exact
-          lostAt := lostAfter state exact "if" span (ifBranches state.stack) }
+          lostAt := lostAfter state exact "if" span }
 
 private def NonWord : Item → Prop
   | .word _ _ => False
@@ -865,8 +851,7 @@ inductive ErasureRel (env : EffectEnv) :
       (bodyRun : ErasureRel env (.items body visible)
         { stack := List.replicate seedCount { usage := .many } } program bodyFinal) :
       ErasureRel env (.item (.quotation body span) visible) state [locatedQuotation span program]
-        { state with stack := { usage := .many, effect := bodyEffect seedCount bodyFinal,
-                                lost := bodyLost bodyFinal } ::
+        { state with stack := { usage := .many, effect := bodyEffect seedCount bodyFinal } ::
           state.stack }
   | locals {names : List LocatedName} {body : List Item} {span : Span}
       {state entered final : State} {visible : List String} {slots : List Slot}
@@ -1211,15 +1196,17 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                          lostAt := lostAfter state exact "compose" span }
               evidence := .atom clearEq (.compose movedEq) }
           | none => .error (.effectUnderflow name span)
-        | "if" => match movedEq : ifMove state.stack with
-          | some (next, exact) => .ok {
-              program := atomList .ifThenElse span
-              final := { state with
-                         stack := next
-                         untracked := state.untracked || !exact
-                         lostAt := lostAfter state exact "if" span (ifBranches state.stack) }
-              evidence := .atom clearEq (.ifThenElse movedEq) }
-          | none => .error (.effectUnderflow name span)
+        | "if" => match ifMismatch state.stack with
+          | some (onTrue, onFalse) => .error (.branchShape span onTrue onFalse)
+          | none => match movedEq : ifMove state.stack with
+            | some (next, exact) => .ok {
+                program := atomList .ifThenElse span
+                final := { state with
+                           stack := next
+                           untracked := state.untracked || !exact
+                           lostAt := lostAfter state exact "if" span }
+                evidence := .atom clearEq (.ifThenElse movedEq) }
+            | none => .error (.effectUnderflow name span)
         | _ => .error (.unsupportedAtom name span)))
       | .quotation body quotationSpan => match closedEq : captureIn visible body with
         | some (name, localSpan) => .error (.unsupportedCapture name localSpan)
@@ -1231,8 +1218,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
           | .ok bodyRun => .ok {
               program := [locatedQuotation quotationSpan bodyRun.program]
               final := { state with stack :=
-                { usage := .many, effect := bodyEffect bodyRun.seedCount bodyRun.final,
-                  lost := bodyLost bodyRun.final } ::
+                { usage := .many, effect := bodyEffect bodyRun.seedCount bodyRun.final } ::
                   state.stack }
               evidence := .quotation closedEq bodyRun.evidence }
       | .locals names body _ => match uniqueEq : duplicateName names with

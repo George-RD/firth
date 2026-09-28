@@ -387,6 +387,15 @@ def runElaboratorDiagnosticTests : IO Unit := do
   expectInnerIf "two levels"
     ": g (forall ρ; ρ x:Int^many -- ρ r:Int^many)\n  locals { x } {\n    0 x prim <\n    [ 1 x prim < [ x ] [ ] if ]\n    [ 0 ]\n    if\n    x prim + } ;"
     4 28
+  -- Bound to a local first, then called: the mismatch is still found at the
+  -- inner `if`, since erasure refuses the `if` itself, wherever it sits.
+  expectInnerIf "bound to a local"
+    ": g (forall ρ; ρ x:Int^many -- ρ r:Int^many)\n  locals { x } {\n    [ true [ 1 ] [ ] if ] locals { q } { q call } x } ;"
+    3 22
+  -- Outside `locals` too, with the same message.
+  expectInnerIf "outside locals"
+    ": g (forall ρ; ρ -- ρ r:Int^many)\n  0 1 prim < [ 1 ] [ ] if ;"
+    2 24
   expectInnerIf "three levels"
     ": g (forall ρ; ρ x:Int^many -- ρ r:Int^many)\n  locals { x } {\n    0 x prim <\n    [ 1 x prim < [ 2 x prim < [ x ] [ ] if ] [ 0 ] if ]\n    [ 0 ]\n    if\n    x prim + } ;"
     4 41
