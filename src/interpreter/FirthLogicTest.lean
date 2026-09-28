@@ -70,6 +70,30 @@ example (n c : Nat) (i j : Fin n) (h : i = j) : i.val + c = j.val + c := by
 example (n : Nat) (i j : Fin n) (h : i ≠ j) : i.val ≠ j.val := by
   runs_arith
 
+example (i j : Fin 5) (h : i = j) (h2 : j.val = 3) : i.val = 3 := by
+  runs_arith
+
+/- The carriers `omegaEqCarrier` refuses are ones `omega` itself cannot use.
+If a Lean upgrade teaches `omega` one of these, `fail_if_success` fails
+here, and `omegaEqCarrier` must learn it too. -/
+example (i j : UInt8) (h : i = j) : i.toNat = j.toNat := by
+  fail_if_success omega
+  exact congrArg _ h
+
+example (i j : BitVec 8) (h : i = j) : i.toNat = j.toNat := by
+  fail_if_success omega
+  exact congrArg _ h
+
+example (i j : Int8) (h : i = j) : i.toInt = j.toInt := by
+  fail_if_success omega
+  exact congrArg _ h
+
+/- `omega` does not unfold an `abbrev` for `Int` to read an equation over it. -/
+abbrev LogicTestQty := Int
+example (x y : LogicTestQty) (h : x = y) (hy : (y : Int) = 3) : (x : Int) + 1 = 4 := by
+  fail_if_success omega
+  rw [show (x : Int) = y from h, hy]; rfl
+
 /- `int64Gamma` refuses `div` where the VM traps: a zero divisor, and the one
 quotient past i64, `-2^63 div -1`. The reference registry refuses only the
 zero divisor; its `-2^63 div -1` is the unbounded 2^63. -/

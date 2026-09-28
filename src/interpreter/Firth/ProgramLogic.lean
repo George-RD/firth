@@ -778,14 +778,31 @@ rules leaves behind.
     defaultCosts.primitive primitive = 1 := rfl
 @[simp] theorem defaultCosts_unfold : defaultCosts.unfold = 1 := rfl
 
+open Lean Meta in
+/-- Whether `omega` reads an equation or disequation over `carrier`. This
+mirrors the `match_expr` on the carrier in `omega`'s own frontend
+(`Lean.Elab.Tactic.Omega.Frontend`, `omegaNat`/`asLinearCombo` facts for
+`Eq` and `Not (Eq ..)`), which accepts exactly `Int`, `Nat` and `Fin n` and
+matches them without unfolding definitions. `Firth.LogicTest` pins both
+directions: each accepted carrier's equation is used, and `omega` itself
+still cannot use an equation over the nearest carriers it refuses
+(`UInt8`, `BitVec`, `Int8`, an `abbrev` for `Int`), so a Lean upgrade that teaches `omega` a new
+carrier fails that test instead of silently losing facts here. -/
+def omegaEqCarrier (carrier : Expr) : Bool :=
+  match_expr carrier with
+  | Int => true
+  | Nat => true
+  | Fin _ => true
+  | _ => false
+
 open Lean Elab Tactic Meta in
 /-- Clears every hypothesis that is an equation (or disequation) between
-values of a type other than `Int`, `Nat` or `Fin n`: the condition
-`decide (x < y) = true` of an `if`, or a list lookup `xs[i]? = some q` from
-`seq-int.at`. `omega` cannot use one, and with one in context it can run out
-of heartbeats normalising a long step or cost sum; `Firth.LogicTest` has both
-cases. Equations over `Int`, `Nat` or `Fin n`, which `omega` reads, and every
-other hypothesis, stay. -/
+values of a type `omega` does not read (see `omegaEqCarrier`): the
+condition `decide (x < y) = true` of an `if`, or a list lookup
+`xs[i]? = some q` from `seq-int.at`. `omega` cannot use one, and with one in
+context it can run out of heartbeats normalising a long step or cost sum;
+`Firth.LogicTest` has both cases. Equations over `Int`, `Nat` or `Fin n`,
+and every other hypothesis, stay. -/
 elab "runs_clear_nonarith" : tactic => withMainContext do
   let mut goal ← getMainGoal
   for decl in ← getLCtx do
@@ -796,7 +813,7 @@ elab "runs_clear_nonarith" : tactic => withMainContext do
       else if type.isAppOfArity ``Ne 3 then some (type.getArg! 0)
       else none
     if let some carrier := carrier? then
-      unless carrier.isConstOf ``Int || carrier.isConstOf ``Nat || carrier.isAppOfArity ``Fin 1 do
+      unless omegaEqCarrier (← instantiateMVars carrier) do
         goal ← goal.tryClear decl.fvarId
   replaceMainGoal [goal]
 
