@@ -62,7 +62,10 @@ The reasons are in `dec.agent-development-rules`.
     existing uses in `src/elaborator/FirthRefinementTest.lean` are tracked for
     removal in `todo.remove-native-decide`.
 12. The VM and the reference interpreter agree on every example. The reference
-    interpreter defines behaviour; a divergence is a VM or compiler bug.
+    interpreter defines behaviour, so a divergence is a VM or compiler bug,
+    unless the reference itself disagrees with the kernel specification
+    (`files/firth-kernel-spec-draft.md`). Then the reference is fixed, with a
+    test, before anything is changed to match it.
 
 **Changes**
 

@@ -31,10 +31,11 @@ approach that is harder now if the easier one would cause pain later.
    `language-06b` and `language-06c`, which #127 adds to `meta/todos/`. None
    of these proofs exist yet; this decision chooses the route, it is not
    evidence that S5 is met.
-2. The VM and the compiler's lowering are tied to the reference interpreter by
-   differential tests, not by a proof. This gap is stated with every S5
-   claim and tracked as open work. It is not closed by more testing, and it
-   does not block S5.
+2. Two gaps are stated with every S5 claim and tracked as open work. The VM
+   and the compiler's lowering are tied to the reference interpreter by
+   differential tests, not by a proof. The Python host (JSON decoding and
+   encoding, and the ID encoding) is tested, not proved. Neither gap is
+   closed by more testing, and neither blocks S5.
 3. Extending the SMT path to sequences is a non-goal for now. The Lean route
    can state and prove sequence properties, and a second route would mean a
    second trusted translator to keep honest.
@@ -47,5 +48,5 @@ approach that is harder now if the easier one would cause pain later.
 - The easier route rejected here, SMT over sequences or tests standing in for
   proofs, would have needed a quantifier-heavy solver fragment or left S5 as
   "checked by tests", which is the reading that was reopened.
-- #127 changes the S5 row of `docs/roadmap.md` to this standard. Until it
-  merges, the row there still says the definition is pending.
+- The S5 row of `docs/roadmap.md` carries this standard through #127. If
+  that row still calls the definition pending, this decision is the answer.
