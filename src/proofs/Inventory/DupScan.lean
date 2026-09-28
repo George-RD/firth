@@ -110,8 +110,8 @@ theorem part_distance {ids : List Int} {p q k : Int} {a b : Int}
   leaf_chain
 
 set_option hygiene false in
-/-- `runs_unfold`, but the step and cost arithmetic runs without the `if`
-condition `hCond`, which `omega` would otherwise try to decide. -/
+/-- `runs_unfold` for a word whose body the chain proves atom by atom, with
+the word calls it makes taken from `Runs` hypotheses in context. -/
 macro "word_chain" : tactic => `(tactic| (
   apply Runs.congr
   focus
@@ -120,7 +120,7 @@ macro "word_chain" : tactic => `(tactic| (
     runs_expand
   repeat' runs_atom
   all_goals try (simp only [InInt64]; omega)
-  all_goals try (try clear hCond); (try clear hCond2); (try clear hCond3); runs_arith))
+  all_goals try runs_arith))
 
 set_option hygiene false in
 /-- `word_chain` that stops at the step and cost equations, simplified, so the
@@ -466,6 +466,18 @@ theorem repeat_from {ids : List Int} (hIds : IdParts ids) (hLen : ids.length < i
 /-- Two of the `n` IDs in `ids` (four parts each) are equal. -/
 def HasRepeat (ids : List Int) (n : Nat) : Prop :=
   ∃ i j, i < j ∧ j < n ∧ blockMatch ids (4 * i) (4 * j)
+
+instance (ids : List Int) (p q : Nat) : Decidable (blockMatch ids p q) := by
+  unfold blockMatch; infer_instance
+
+/-- `HasRepeat` is decidable, so the specification can be evaluated on concrete
+inputs. -/
+instance (ids : List Int) (n : Nat) : Decidable (HasRepeat ids n) :=
+  decidable_of_iff (∃ j, j < n ∧ ∃ i, i < j ∧ blockMatch ids (4 * i) (4 * j)) (by
+    unfold HasRepeat
+    constructor
+    · rintro ⟨j, hj, i, hi, hm⟩; exact ⟨i, j, hi, hj, hm⟩
+    · rintro ⟨i, j, hi, hj, hm⟩; exact ⟨j, hj, i, hi, hm⟩)
 
 theorem scanBound_start (perPair perRow finish n : Nat) :
     scanBound perPair perRow finish (4 * n) 0 4 = perPair * tri n + perRow * n + finish := by
