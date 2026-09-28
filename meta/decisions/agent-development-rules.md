@@ -37,8 +37,8 @@ pain later.
    same text. There is no separate rules document and no tooling that
    enforces them: each rule names what a reviewer checks, and the independent
    review of each PR is where they are enforced.
-2. The rules cover what done means (the roadmap's "Goal status", moved to
-   "Met" only by the maintainer, never narrowed), how to choose an approach
+2. The rules cover what done means (the roadmap's "Goal status", never
+   narrowed; see point 4 for who moves a goal), how to choose an approach
    (harder now beats painful later; language before machinery; report gaps
    instead of working around them; the kernel is frozen), evidence (claims
    name evidence; a new check comes with a planted bug it rejects; tests use
@@ -48,6 +48,16 @@ pain later.
    comments; one owner per area at a time).
 3. The cairn change workflow (`meta/changes/`) is optional. It was part of the
    process machinery that the freeze retired from the default path.
+4. Amended later on 28 September 2026 at the maintainer's request ("I would
+   like to not be the constraint as much as possible"): agents may change a
+   goal's status without him. The change goes in a PR that touches only the
+   status and names the evidence. The independent reviewer approves it only
+   if the evidence meets the goal as written in the PRD and the roadmap row,
+   with no narrowed reading, and every remaining gap is stated in the row and
+   filed as a todo. The maintainer can reverse any status change. Earlier
+   runs failed by redefining goals downward, not by marking them without
+   permission, so the guard is the unchanged goal wording plus a review that
+   sees nothing but the claim and its evidence.
 
 ## Consequences
 

@@ -96,7 +96,9 @@ before ending the session. It must not survive only in a PR comment.
 
 Record these separately: implemented, verified at a commit, merged, and
 accepted on main. A branch-local `done` status is not a landed release.
-Only the maintainer moves a goal in the table above to "Met".
+A goal in the table above moves to "Met" only as `AGENTS.md` rule 1 says: a
+status-only PR whose independent review finds the evidence meets the goal as
+written, with every gap stated and filed. The maintainer can reverse it.
 
 The acceptance specification and expected results are not writable targets for
 an implementation agent trying to get green tests. Changes require a reviewed
