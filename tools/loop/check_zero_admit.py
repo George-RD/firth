@@ -23,6 +23,7 @@ must pass. `--source-only` runs the scan alone (for hosts without Lean).
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 import os
 from pathlib import Path
 import re
@@ -37,9 +38,6 @@ BUILD = Path(".lake/build/lib/lean")
 # collide with a repository module's.
 SCRIPT_PREFIX = "FirthAuditScripts"
 PLANT_PREFIX = "FirthAuditPlants"
-# The module that holds the audit's one exempt declaration; every audit run
-# includes it, since the audit refuses an exemption it cannot find.
-EXEMPT_MODULE = "prooftests.Refused"
 
 # Each plant must be refused, and the refusal must name its axiom.
 PLANTS = {
@@ -123,7 +121,7 @@ def environment() -> None:
         for name, (source, axiom_name) in {**PLANTS, "Clean": (CLEAN_PLANT, None)}.items():
             module = f"{PLANT_PREFIX}.{name}"
             compile_into(scratch, module, source, f"the planted {name}")
-            result = audit([EXEMPT_MODULE, module], scratch_path)
+            result = audit([module], scratch_path)
             output = result.stdout + result.stderr
             if axiom_name is None:
                 if result.returncode != 0:
@@ -145,10 +143,20 @@ def environment() -> None:
                 elif result.returncode != 0:
                     fail(f"cannot build {module}", result.stdout[-4000:] + result.stderr[-4000:])
             modules.append(module)
-        result = audit(modules, scratch_path)
-        print((result.stdout + result.stderr).rstrip())
-        if result.returncode != 0:
-            fail("repository declarations rest on refused axioms")
+        # Each module gets an environment of its own: modules that are never
+        # imported together may declare the same name (every executable's
+        # `main`, for one).
+        with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as pool:
+            results = list(pool.map(lambda module: audit([module], scratch_path), modules))
+        refused = [result for result in results if result.returncode != 0]
+        for result in refused:
+            print((result.stdout + result.stderr).rstrip())
+        if refused:
+            fail(f"{len(refused)} of {len(modules)} modules rest on refused axioms")
+        declarations = sum(int(re.search(r"passed: (\d+) declarations", result.stdout).group(1))
+                           for result in results)
+        print(f"audit of axioms passed: {declarations} declarations in {len(modules)} modules "
+              "rest only on propext, Classical.choice and Quot.sound")
         print(f"axiom audit refused all {len(PLANTS)} planted modules and passed the clean one")
 
 

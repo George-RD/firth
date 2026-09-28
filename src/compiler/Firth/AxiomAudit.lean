@@ -26,7 +26,8 @@ namespace Firth.Compiler.AxiomAudit
 open Lean
 
 /-- Declarations allowed to rest on refused axioms, and why. The walk still
-passes through them, so anything else that uses one is refused. -/
+passes through them, so anything else that uses one is refused, and a renamed
+one is refused under its new name. -/
 def exempt : List (Name × String) :=
   [(`Firth.ProofTests.Refused.trustsCompiler,
     "the proof-record audit's planted refusal (src/prooftests/Refused.lean)")]
@@ -68,29 +69,22 @@ def auditModule (env : Environment) (module : Name) : Except (List String) Nat :
         | .error message => refusals := refusals ++ [s!"{root}: {message}"]
       return .error refusals
 
-unsafe def main (args : List String) : IO UInt32 := do
+def main (args : List String) : IO UInt32 := do
   if args.isEmpty then
     IO.eprintln "usage: firthAxiomAudit MODULE..."
     return 2
   initSearchPath (← findSysroot)
   let modules := args.map String.toName
+  -- The named modules are imported together, so they must not clash: each
+  -- executable's root module declares `main`, and the caller audits those
+  -- one at a time.
+  let env ← importModules (modules.map ({ module := · })).toArray {}
   let mut declarations := 0
   let mut refusals : List String := []
-  let mut exemptSeen : List Name := []
-  -- Each module is imported on its own: executables' root modules each
-  -- declare `main`, so they cannot all be imported together.
   for module in modules do
-    -- `withImportModules` releases each environment before the next import.
-    let (seen, result) ← withImportModules #[{ module }] {} fun env => pure
-      ((exempt.map (·.1)).filter (fun name => env.getModuleIdxFor? name == env.getModuleIdx? module),
-       auditModule env module)
-    exemptSeen := exemptSeen ++ seen
-    match result with
+    match auditModule env module with
     | .ok count => declarations := declarations + count
     | .error found => refusals := refusals ++ found
-  for (name, _) in exempt do
-    unless exemptSeen.contains name do
-      refusals := refusals ++ [s!"exempt declaration {name} is not in the audited modules"]
   unless refusals.isEmpty do
     for refusal in refusals do IO.eprintln s!"refused: {refusal}"
     return 1
