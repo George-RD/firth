@@ -12,8 +12,10 @@ its proof is by strong induction on `|b|`: `mod` is Euclidean, so
 one iteration per unit of `|b|`. They are sound but loose: Euclid's algorithm
 needs only logarithmically many iterations, which is not proved.
 
-Neither argument of `gcd` may be the least i64 value, -2^63: `gcd` ends with
-`abs`, and `abs` of -2^63 overflows. `gcd 0 -2^63` reaches it.
+`gcd` ends with `abs`, and `abs` of -2^63 overflows. It reaches that only when
+the greatest common divisor is 2^63, which is not an i64 (`gcd -2^63 0`,
+`gcd 0 -2^63`, `gcd -2^63 -2^63`), so the contract assumes only that the result
+is in i64: `gcd -2^63 6` is 2 and is covered.
 -/
 
 namespace Firth.Proofs.Programs.Division
@@ -76,9 +78,9 @@ theorem gcd_emod (a b : Int) : Int.gcd b (a % b) = Int.gcd a b := by
 
 /-- `gcd` leaves the greatest common divisor of `a` and `b`, within
 `22·|b| + 34` transitions at a cost of at most `20·|b| + 32`, for any `a` and
-`b` in i64 other than -2^63. -/
+`b` in i64 whose greatest common divisor is in i64. -/
 theorem gcd (a b : Int) (tail : Stack)
-    (ha : InInt64 a) (ha' : InInt64 (0 - a)) (hb : InInt64 b) (hb' : InInt64 (0 - b)) :
+    (ha : InInt64 a) (hb : InInt64 b) (hGcd : (Int.gcd a b : Int) < 2 ^ 63) :
     RunsWithin int64Gamma dictionary defaultCosts (.cons (.word "gcd") .empty)
       (.literal (.int b) :: .literal (.int a) :: tail)
       (.literal (.int (Int.gcd a b)) :: tail) (22 * b.natAbs + 34) (20 * b.natAbs + 32) := by
@@ -86,15 +88,16 @@ theorem gcd (a b : Int) (tail : Stack)
   | ind n ih =>
     by_cases hZero : b = 0
     · subst hZero
-      rcases abs_natAbs a tail ha' with ⟨steps, cost, hAbs, hs, hc⟩
-      rw [Int.gcd_zero_right]
+      rw [Int.gcd_zero_right] at hGcd ⊢
+      rcases abs_natAbs a tail (by simp only [InInt64] at ha ⊢; omega)
+        with ⟨steps, cost, hAbs, hs, hc⟩
       exact ⟨_, _, gcd_zero hAbs, by omega, by omega⟩
     · have hNonneg := Int.emod_nonneg a hZero
       have hLt := Int.emod_lt a hZero
-      simp only [InInt64] at ha ha' hb hb'
+      rw [← gcd_emod] at hGcd
+      simp only [InInt64] at ha hb
       have hRec := ih (a % b).natAbs (by omega) b (a % b)
-        (by simp only [InInt64]; omega) (by simp only [InInt64]; omega)
-        (by simp only [InInt64]; omega) (by simp only [InInt64]; omega) rfl
+        (by simp only [InInt64]; omega) (by simp only [InInt64]; omega) hGcd rfl
       rw [gcd_emod] at hRec
       rcases hRec with ⟨steps, cost, hRuns, hs, hc⟩
       exact ⟨_, _, gcd_step hZero hRuns, by omega, by omega⟩
@@ -116,34 +119,35 @@ theorem gcd_body_step {a b : Int} {tail after : Stack} {steps cost : Nat} (hb : 
       (.literal (.int b) :: .literal (.int a) :: tail) after (21 + steps) (19 + cost) := by
   runs_chain
 
-/-- `gcd`'s contract: for `a` and `b` in i64 other than -2^63, `gcd`'s body
-leaves `gcd(a, b)` within `22·|b| + 33` transitions at a cost of at most
-`20·|b| + 31`. -/
+/-- `gcd`'s contract: for `a` and `b` in i64 whose greatest common divisor is
+in i64 (every pair but those with gcd 2^63), `gcd`'s body leaves `gcd(a, b)`
+within `22·|b| + 33` transitions at a cost of at most `20·|b| + 31`. -/
 def gcdContract : WordContract where
   Args := Int × Int
-  pre args := InInt64 args.1 ∧ InInt64 (0 - args.1) ∧ InInt64 args.2 ∧ InInt64 (0 - args.2)
+  pre args := InInt64 args.1 ∧ InInt64 args.2 ∧ (Int.gcd args.1 args.2 : Int) < 2 ^ 63
   input args := [.literal (.int args.2), .literal (.int args.1)]
   output args := [.literal (.int (Int.gcd args.1 args.2))]
   steps args := 22 * args.2.natAbs + 33
   cost args := 20 * args.2.natAbs + 31
-  witness := ⟨(0, 0), by simp only [InInt64]; omega⟩
+  witness := ⟨(0, 0), by simp only [InInt64, Int.gcd_zero_right]; omega⟩
 
 /-- The recorded contract of `gcd`, under the i64 registry. -/
 theorem gcd_contract : gcdContract.Holds int64Gamma dictionary defaultCosts «gcd».body := by
-  intro ⟨a, b⟩ tail ⟨ha, ha', hb, hb'⟩
+  intro ⟨a, b⟩ tail ⟨ha, hb, hGcd⟩
   show RunsWithin _ _ _ _ (.literal (.int b) :: .literal (.int a) :: tail)
     (.literal (.int (Int.gcd a b)) :: tail) (22 * b.natAbs + 33) (20 * b.natAbs + 31)
   by_cases hZero : b = 0
   · subst hZero
-    rcases abs_natAbs a tail ha' with ⟨steps, cost, hAbs, hs, hc⟩
-    rw [Int.gcd_zero_right]
+    rw [Int.gcd_zero_right] at hGcd ⊢
+    rcases abs_natAbs a tail (by simp only [InInt64] at ha ⊢; omega)
+      with ⟨steps, cost, hAbs, hs, hc⟩
     exact ⟨_, _, gcd_body_zero hAbs, by omega, by omega⟩
   · have hNonneg := Int.emod_nonneg a hZero
     have hLt := Int.emod_lt a hZero
-    simp only [InInt64] at ha ha' hb hb'
+    rw [← gcd_emod] at hGcd
+    simp only [InInt64] at ha hb
     have hRec := gcd b (a % b) tail
-      (by simp only [InInt64]; omega) (by simp only [InInt64]; omega)
-      (by simp only [InInt64]; omega) (by simp only [InInt64]; omega)
+      (by simp only [InInt64]; omega) (by simp only [InInt64]; omega) hGcd
     rw [gcd_emod] at hRec
     rcases hRec with ⟨steps, cost, hRuns, hs, hc⟩
     exact ⟨_, _, gcd_body_step hZero hRuns, by omega, by omega⟩

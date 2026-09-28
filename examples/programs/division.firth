@@ -43,6 +43,10 @@
 
 \ The greatest common divisor by Euclid's algorithm: gcd(a, b) = gcd(b, a mod b)
 \ until b is 0. `mod` is never negative, so the result is too; gcd(0, 0) is 0.
+\ Either argument may be -2^63 (`gcd -2^63 6` is 2). The one result that is not
+\ an i64 is 2^63, from `-2^63 0`, `0 -2^63` and `-2^63 -2^63`: there the final
+\ `abs` overflows and traps on the VM, like `prim *`, while the reference's
+\ unbounded integers give 2^63.
 : gcd
   (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
   locals { a b } { b 0 prim = [ a abs ] [ b a b prim mod gcd ] if };

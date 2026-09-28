@@ -73,7 +73,7 @@
     "covers": [
       {"module": "Programs.Division", "source": "examples/programs/division.firth", "word": "divmod", "body_digest": "5f5542c10cc26bca94b8417cd7a59d21661b470145b45bcb5e4579f97c6b5669", "erased_type": "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many,v1:Int^many)"}]},
   {
-    "evidence": "8863a2115734d1d534c485c4bf3b72cfd6292490406e44e27bbf0c79f721b807",
+    "evidence": "ee5bcf5371aca9e95fba5f3f91fd68c7e8128b1b8c27817d6f2ef5b929979d54",
     "theorem": "Firth.Proofs.Programs.Division.gcd_contract",
     "module": "proofs.Programs.Division",
     "export": "Programs.Division",
@@ -81,15 +81,15 @@
     "contract": "Firth.Proofs.Programs.Division.gcdContract",
     "gamma": "Firth.Logic.int64Gamma",
     "costs": "Firth.Interpreter.defaultCosts",
-    "claim": "For all a and b in i64 other than -2^63, gcd's body takes a b to their greatest common divisor within 22|b| + 33 steps at kernel cost at most 20|b| + 31 (a linear bound, looser than Euclid's logarithmic one), with no i64 overflow on the way.",
+    "claim": "For all a and b in i64 whose greatest common divisor is in i64 (every pair except those with gcd 2^63: -2^63 0, 0 -2^63 and -2^63 -2^63), gcd's body takes a b to their greatest common divisor within 22|b| + 33 steps at kernel cost at most 20|b| + 31 (a linear bound, looser than Euclid's logarithmic one), with no i64 overflow on the way.",
     "statement": {
       "args": "Prod Int Int",
-      "pre": "fun args =>\n  And (Firth.Logic.InInt64 (Prod.fst args))\n    (And (Firth.Logic.InInt64 (HSub.hSub 0 (Prod.fst args)))\n      (And (Firth.Logic.InInt64 (Prod.snd args)) (Firth.Logic.InInt64 (HSub.hSub 0 (Prod.snd args)))))",
+      "pre": "fun args =>\n  And (Firth.Logic.InInt64 (Prod.fst args))\n    (And (Firth.Logic.InInt64 (Prod.snd args))\n      (LT.lt (Nat.cast (Int.gcd (Prod.fst args) (Prod.snd args))) (HPow.hPow 2 63)))",
       "input": "fun args =>\n  List.cons (Firth.Interpreter.Value.literal (Firth.Interpreter.Literal.int (Prod.snd args)))\n    (List.cons (Firth.Interpreter.Value.literal (Firth.Interpreter.Literal.int (Prod.fst args))) List.nil)",
       "output": "fun args =>\n  List.cons\n    (Firth.Interpreter.Value.literal\n      (Firth.Interpreter.Literal.int (Nat.cast (Int.gcd (Prod.fst args) (Prod.snd args)))))\n    List.nil",
       "steps": "fun args => HAdd.hAdd (HMul.hMul 22 (Int.natAbs (Prod.snd args))) 33",
       "cost": "fun args => HAdd.hAdd (HMul.hMul 20 (Int.natAbs (Prod.snd args))) 31"},
-    "statement_digest": "a795bf551dba9defb81e02269178f7a4dbf1738eaec8defa96e59fb93867ea47",
+    "statement_digest": "d0f41e18cc6b3236d3d2abb0969021bf2c7622cd93215c731aff29205357f181",
     "axioms": ["Classical.choice", "Quot.sound", "propext"],
     "lean": "4.30.0",
     "gamma_binding": {"name": "Firth.Logic.int64Gamma", "digest": "4610ee3d187485b3c32e03642ee3fa9a278fb24cfd429664fa8ed17d97759df2"},

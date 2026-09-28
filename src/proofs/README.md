@@ -52,8 +52,9 @@ Also in the library:
 `roll`, under `int64Gamma` with `runs_chain` alone.
 
 `Programs/Division.lean` proves `divmod` with `runs_chain`, and that `gcd`
-leaves `Int.gcd a b` for any `a` and `b` in i64 other than -2^63, by strong
-induction on `|b|`. Its step and cost bounds are linear in `|b|`: sound, but
+leaves `Int.gcd a b` for any `a` and `b` in i64 whose gcd is in i64 (all but
+the pairs with gcd 2^63, where the final `abs` overflows), by strong induction
+on `|b|`. Its step and cost bounds are linear in `|b|`: sound, but
 not the logarithmic bound Euclid's algorithm meets. Both are recorded as
 contracts (`divmodContract`, `gcdContract`); `gcd`'s record also covers the
 `abs` it calls, and `digit-sum-from` has no contract yet.

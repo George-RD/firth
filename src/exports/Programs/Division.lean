@@ -19,7 +19,7 @@ open Firth.Interpreter
 open Firth.ReferenceRun
 
 /-- SHA-256 of the source text these definitions were generated from. -/
-def sourceDigest : String := "472fda7dbfcdb2dd27b6be3c90b461324926ecdb52d17ef5ff9aef4f3923722c"
+def sourceDigest : String := "8d9697f04235bf0ddf6b4de0b74305a48c8cacedd6ccd2ea9c62abafbf492bdc"
 
 namespace «divmod»
 
