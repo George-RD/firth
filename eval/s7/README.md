@@ -606,14 +606,17 @@ Failures by the checker's first diagnostic (`results-N.json`):
   of 14). The diagnostic says where the branches disagree but Haiku does
   not act on it.
 - **The rise in first-answer `firth.name.unresolved`** (7 and 19, against 1
-  and 0 in run 5) is sample variance, not a regression. The prompt diff
-  from `cec3707` to `470c6d0` has four hunks, all additions (the `set`
-  primitives, a note on `if` branch diagnostics, `sieve.firth` and
-  `sort.firth`); the guidance on binding stack-effect names with `locals` is
-  byte-identical. First answers are written before any checker message, so
-  the #148 diagnostic changes cannot reach them. Every such failure is the
-  known mistake of using a stack-effect name without `locals`, and the
-  hint fixed all of them by round 1 in both samples.
+  and 0 in run 5) is unexplained. The #148 diagnostic changes cannot cause
+  it, because first answers are written before any checker message. The
+  guidance on binding stack-effect names with `locals` is byte-identical
+  between `cec3707` and `470c6d0`. The prompt did change, though: its diff
+  has four hunks, all additions (the `set` primitives, a note on `if`
+  branch diagnostics, `sieve.firth` and `sort.firth`). With two samples
+  per run, this data cannot separate sample variance from an effect of
+  those additions. A controlled rerun (several first answers on each
+  prompt) would. Every such failure is the known mistake of using a
+  stack-effect name without `locals`, and the hint fixed all of them by
+  round 1 in both samples.
 - **Jev** (`modes-1.json`, `modes-3.json`, with every capability
   available) puts the first answers at mostly `stack_effect` and
   `invented_syntax` (the unresolved names), and the last rounds at 6
