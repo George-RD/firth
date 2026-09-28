@@ -854,6 +854,15 @@ def runElaboratorDiagnosticTests : IO Unit := do
         unless emitted.contains differentNumbers do
           fail s!"{label}: the report does not keep the checker's account: {emitted}"
     | _ => fail s!"{label}: expected one diagnostic"
+  -- An `if` before the refused one whose paths first reach below with
+  -- different operations (`prim +` and `prim -`, each short of a value)
+  -- but leave the same stack, as in `find-longest` (470c6d0 longest-run
+  -- answer 2) before its `swap` is followed: the reaches are dropped
+  -- when the refused `if`'s branches start, so only the stacks must agree
+  -- and the account is kept.
+  branchReport "paths reach differently before the refused if"
+    ": g (forall ρ; ρ x:Int^many -- ρ r:Int^many) locals { x } { true [ x prim + ] [ x prim - ] if true [ 1 ] [ ] if } ;"
+    ["The true branch leaves `1`; the false branch leaves nothing."]
   -- The same operation reached after as many values on both paths, which
   -- differ: the report names both.
   branchReport "nested paths push different values"
@@ -865,7 +874,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
   let pushedOne := ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) drop true [ 1 prim + ] [ 0 ] if ;"
   branchReport "branch pushed one operand" pushedOne
     ["`prim +` needs 2 values (Int, Int), but the branch has pushed only 1 value before it (`1`).",
-      "Make the branch push, just before `prim +`, exactly the values it takes, in this order: Int, Int. The branch already pushes `1`: keep it in its place where it is one of these and replace it where it is not, then push the other one"]
+      "Make the branch push, just before `prim +`, exactly the values it takes, in this order: Int, Int. The branch already pushes `1`, in the place of the last one (Int): keep it where it has that type and replace it where it does not. Then push the first one (Int) before it"]
   match elaboratePipeline pipelineContext pushedOne agentConfig with
   | .failure [envelope] =>
       if (encode envelope).contains "Push every value" then
@@ -874,7 +883,14 @@ def runElaboratorDiagnosticTests : IO Unit := do
   -- A pushed value of the wrong type is not to be kept: the hint says to
   -- replace it.
   branchReport "branch pushed a Bool operand" ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) drop true [ true prim + ] [ 0 ] if ;"
-    ["The branch already pushes `true`: keep it in its place where it is one of these and replace it where it is not, then push the other one"]
+    ["The branch already pushes `true`, in the place of the last one (Int): keep it where it has that type and replace it where it does not."]
+  -- The pushed value is the operation's last input, so the missing first
+  -- one goes before it: for `prim seq-int.push` after `1`, the sequence.
+  branchReport "branch pushed the top operand" ": g (forall ρ; ρ a:Int^many -- ρ r:Seq Int^many) drop true [ 1 prim seq-int.push ] [ prim seq-int.empty ] if ;"
+    ["The branch already pushes `1`, in the place of the last one (Int): keep it where it has that type and replace it where it does not. Then push the first one (Seq Int) before it"]
+  match elaboratePipeline pipelineContext ": g (forall ρ; ρ a:Int^many -- ρ r:Seq Int^many) drop true [ prim seq-int.empty 1 prim seq-int.push ] [ prim seq-int.empty ] if ;" agentConfig with
+  | .success _ => pure ()
+  | .failure _ => fail "branch pushed the top operand: the program following the hint is refused"
   -- Following the hint, with `2` as the other value, makes the program check.
   match elaboratePipeline pipelineContext ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) drop true [ 2 1 prim + ] [ 0 ] if ;" agentConfig with
   | .success _ => pure ()

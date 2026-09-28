@@ -55,6 +55,9 @@ structure Walk where
   missing : Nat := 0
   /-- How many quotations deep the walk is inside the branch it accounts for. -/
   nesting : Nat := 0
+  /-- Whether the walk is inside a branch of the refused `if`, where it
+  records reaches. Before it, reaches are discarded when the branches start. -/
+  inBranch : Bool := false
 
 inductive Outcome where
   | lost
@@ -212,7 +215,8 @@ mutual
               -- The refused `if`: each branch starts from the stack below
               -- the condition, none of it its own.
               let base := { below with stack := below.stack.map ({ · with own := false }),
-                                       reach := none, took := [], missing := 0, nesting := 0 }
+                                       reach := none, took := [], missing := 0, nesting := 0,
+                                       inBranch := true }
               let branch (body : List Item) : Option BranchAccount :=
                 match walkItems context base body with
                 | .next after => some { reach := after.reach, took := after.took,
@@ -245,7 +249,11 @@ mutual
                   -- named by both. Paths whose reaches differ in anything
                   -- else are lost. Equal counts, values below and missing
                   -- values leave the two paths as many own values.
-                  let reach : Option (Option BranchReach) := match afterTrue.reach, afterFalse.reach with
+                  -- Before the refused `if`, reaches are dropped when its
+                  -- branches start, so only the stacks need to agree.
+                  let reach : Option (Option BranchReach) :=
+                    if !walk.inBranch then some afterTrue.reach else
+                    match afterTrue.reach, afterFalse.reach with
                     | none, none => some none
                     | some onTrue, some onFalse =>
                         if { onTrue with own := onFalse.own } == onFalse then

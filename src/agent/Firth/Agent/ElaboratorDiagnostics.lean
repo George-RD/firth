@@ -266,12 +266,15 @@ private def accountExplanation (word : String) (account : Firth.Elaborator.IfAcc
         else if reach.own.isEmpty then
           s!"Push every value {reach.operation} takes inside the branch, just before it and in this order: {", ".intercalate reach.inputs}, for example by writing the locals that hold them. If {reach.operation} should not be in this branch, remove it. {noEvening}"
         else
-          -- The branch already pushes some of the operation's inputs, and
-          -- which ones is not known, so the hint asks for the whole list
-          -- once, keeping what is there where it fits: a value of another
+          -- The branch already pushes the operation's last inputs: its own
+          -- values are the top of what the operation takes. The first
+          -- inputs are missing and go below them. A pushed value of another
           -- type, such as `true` before `prim +`, is replaced.
           let lacking := reach.count - reach.own.length
-          s!"Make the branch push, just before {reach.operation}, exactly the values it takes, in this order: {", ".intercalate reach.inputs}. The branch already pushes {listing reach.own}: keep {if reach.own.length == 1 then "it" else "each"} in its place where it is one of these and replace it where it is not, then push the other {if lacking == 1 then "one" else toString lacking}, for example by writing the locals that hold them. If {reach.operation} should not be in this branch, remove it. {noEvening}"
+          let one := reach.own.length == 1
+          let firstInputs := ", ".intercalate (reach.inputs.take lacking)
+          let lastInputs := ", ".intercalate (reach.inputs.drop lacking)
+          s!"Make the branch push, just before {reach.operation}, exactly the values it takes, in this order: {", ".intercalate reach.inputs}. The branch already pushes {listing reach.own}, in the place of the last {if one then "one" else toString reach.own.length} ({lastInputs}): keep {if one then "it" else "each"} where it has that type and replace it where it does not. Then push the first {if lacking == 1 then "one" else toString lacking} ({firstInputs}) before {if one then "it" else "them"}, for example by writing the locals that hold {if lacking == 1 then "it" else "them"}. If {reach.operation} should not be in this branch, remove it. {noEvening}"
       let inside := if reach.nested then " (inside a quotation in that branch)" else ""
       some (s!"{place name}, {reach.operation}{inside} {needs}, but the branch {own}. {below}", hint)
   | none =>

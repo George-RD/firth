@@ -33,6 +33,17 @@ the checker wrote, not the author:
   can blame the wrong branch (the cec3707 ledger answer 1 in the #164
   review, where the hint still came out right). Giving each walk entry an
   identity, such as a counter, instead of comparing labels would fix it.
+- The branch account falls back where the paths of an `if` nested in the
+  refused `if`'s branch first reach below differently (7 of the recorded
+  reports in the #166 review: keep-positive, count-distinct twice,
+  longest-run-loop twice, allocate-batch, 470c6d0 longest-run answer 3).
+  The report could name both paths' operations instead.
+- The walk gives up on a stack atom short of a value (`swap` or `dup` with
+  nothing of the branch's below it inside `locals`), since it cannot name
+  the value the kernel program takes there. Where that atom is on one path
+  of an `if` before the refused one, the report falls back although the
+  paths leave the same stack: 470c6d0 longest-run answer 2, `find-longest`,
+  whose false path `[ swap drop 1 ]` does this (#166 review).
 - `firth.name.locals-order` (#165) states an edit when the edited word is
   refused no earlier in the source than the word as written. That compares
   only first errors, so an edit can add an error hidden behind an earlier,
