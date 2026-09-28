@@ -21,6 +21,12 @@ structure ParseError where
   expected : Option String := none
   actual : Option String := none
   cause : ParseCause := .grammar
+  /-- For `firth.name.unresolved` when the name is one the enclosing word's
+  stack effect declares: that effect's input and output names, in order, so
+  the diagnostic can say that stack-effect names are not variables and show
+  the `locals` block that binds the inputs. Empty otherwise. -/
+  effectInputs : List String := []
+  effectOutputs : List String := []
   deriving Repr, BEq
 
 structure Located (α : Type) where

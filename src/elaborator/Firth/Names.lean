@@ -86,6 +86,25 @@ private partial def resolveItems (keys : List String) (external : String → Boo
       let tail ← resolveItems keys external scopeName uses locals rest
       pure (resolved :: tail)
 
+private def effectNames (items : List StackItem) : List String :=
+  items.filterMap fun
+    | .value name _ _ => some name
+    | .row _ _ => none
+
+/-- A name the word's stack effect declares is not in scope in its body: the
+effect documents the stack, and only `locals` binds names. When an
+unresolved name is one of them, the error carries the effect's names so the
+diagnostic can say so. -/
+private def withEffectNames (effect : StackEffect) (error : ParseError) : ParseError :=
+  let inputs := effectNames effect.input
+  let outputs := effectNames effect.output
+  match error.code, error.actual with
+  | "firth.name.unresolved", some name =>
+      if inputs.contains name || outputs.contains name then
+        { error with effectInputs := inputs, effectOutputs := outputs }
+      else error
+  | _, _ => error
+
 private partial def resolveScope (keys vocabularies : List String) (external : String → Bool)
     (scopeName : String) (uses : List UseDecl) :
     List Declaration → Except ParseError (List WordDefinition)
@@ -99,7 +118,9 @@ private partial def resolveScope (keys vocabularies : List String) (external : S
           throw (nameError "firth.name.duplicate-alias" alias use.span)
       resolveScope keys vocabularies external scopeName (uses ++ [use]) rest
   | .word word :: rest => do
-      let body ← resolveItems keys external scopeName uses [] word.body
+      let body ← match resolveItems keys external scopeName uses [] word.body with
+        | .ok body => pure body
+        | .error error => throw (withEffectNames word.effect error)
       let tail ← resolveScope keys vocabularies external scopeName uses rest
       return { word with name := qualified scopeName word.name, body } :: tail
   | .vocabulary name body _ :: rest => do
