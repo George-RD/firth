@@ -40,6 +40,13 @@ as accidents.
   `isolate.audit` allows only `./try`, so an unsandboxed author following
   the MVP prompt's `harness.py try` line is flagged even for legitimate
   calls. Either drop that prompt variant or teach the audit its form.
+- **Default capabilities come from the tasks** (Codex, on #154).
+  `classify.py --available` defaults to the union of every task's `needs`.
+  Every current tag exists on main, but a task added before its capability
+  lands would be treated as supported, so its failures would go to Jev
+  instead of `missing_primitive`. The default should come from the build
+  (for example a capability list kept beside the Gamma registry), or the
+  flag should be required.
 
 ## Acceptance criteria
 
@@ -59,3 +66,6 @@ as accidents.
 - The unsandboxed MVP prompt either no longer names `harness.py try`, or
   the audit accepts exactly that form; a planted legitimate call passes
   and a planted `--workspace /` call is flagged.
+- A task needing a capability missing from the build's list is labelled
+  `missing_primitive` by a no-flag classify run; a planted task with an
+  unknown tag shows it.
