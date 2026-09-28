@@ -1,0 +1,52 @@
+\ Euclidean integer division. For `a b`, `a b prim div` is the quotient q and
+\ `a b prim mod` the remainder r with a = b*q + r and 0 <= r < |b|: the
+\ remainder is never negative, whatever the signs (`-7 2 prim div` is -4 and
+\ `-7 2 prim mod` is 1). A zero divisor traps with `primitive-fault` on both
+\ hosts. `-9223372036854775808 -1 prim div` is past the signed 64-bit range
+\ and traps on the VM, like `prim *`; the reference's integers are unbounded,
+\ so the gate reports it as a disagreement rather than a result.
+
+\ Quotient and remainder of `a b`, the remainder on top.
+: divmod
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ q:Int^many r:Int^many)
+  locals { a b } { a b prim div a b prim mod };
+
+: abs
+  (forall ρ; ρ n:Int^many -- ρ r:Int^many)
+  locals { n } { n 0 prim < [ 0 n prim - ] [ n ] if };
+
+\ Adds the decimal digits of n >= 0 to acc, one `mod 10` and `div 10` a step.
+: digit-sum-from
+  (forall ρ; ρ n:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { n acc }
+  { n 0 prim =
+    [ acc ]
+    [ n 10 prim div acc n 10 prim mod prim + digit-sum-from ]
+    if };
+
+\ For n < 0 and d its last decimal digit of |n|: the digit sum of |n|. It
+\ never negates n itself, which overflows at -2^63, only n + d, which is a
+\ multiple of 10 above -2^63, so |n| div 10 fits in i64.
+: digit-sum-negative
+  (forall ρ; ρ n:Int^many d:Int^many -- ρ r:Int^many)
+  locals { n d } { 0 n d prim + prim - 10 prim div d digit-sum-from };
+
+\ The sum of the decimal digits of |n|, for every i64 n, -2^63 included. For
+\ n < 0 the last digit of |n| is (10 - n mod 10) mod 10.
+: digit-sum
+  (forall ρ; ρ n:Int^many -- ρ r:Int^many)
+  locals { n }
+  { n 0 prim <
+    [ n 10 n 10 prim mod prim - 10 prim mod digit-sum-negative ]
+    [ n 0 digit-sum-from ]
+    if };
+
+\ The greatest common divisor by Euclid's algorithm: gcd(a, b) = gcd(b, a mod b)
+\ until b is 0. `mod` is never negative, so the result is too; gcd(0, 0) is 0.
+\ Either argument may be -2^63 (`gcd -2^63 6` is 2). The one result that is not
+\ an i64 is 2^63, from `-2^63 0`, `0 -2^63` and `-2^63 -2^63`: there the final
+\ `abs` overflows and traps on the VM, like `prim *`, while the reference's
+\ unbounded integers give 2^63.
+: gcd
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b } { b 0 prim = [ a abs ] [ b a b prim mod gcd ] if };

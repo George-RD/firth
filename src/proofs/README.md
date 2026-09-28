@@ -26,17 +26,19 @@ Also in the library:
   equation;
 - `runs_intSeq_at_int` and `runs_boolSeq_at_int`, for an index computed as an
   `Int`;
-- `int64Gamma`, the registry with `+`, `-` and `*` faulting outside i64 as the
-  VM's do. The literal lemmas and the comparison and sequence primitive
-  lemmas hold under either registry (`[ReferenceRegistry gamma]`); for the
-  arithmetic, use `runs_add_int64` and friends. `Runs.of_int64` gives the same
+- `int64Gamma`, the registry with `+`, `-`, `*` and `div` faulting outside i64
+  as the VM's do. The literal lemmas and the comparison, `mod` and sequence
+  primitive lemmas hold under either registry (`[ReferenceRegistry gamma]`);
+  for the arithmetic, use `runs_add_int64` and friends, and `runs_div_int64`,
+  which also needs a nonzero divisor. `Runs.of_int64` gives the same
   fact under the reference registry, now with no overflow on the way;
 - tactics: `runs_chain` proves a straight-line body one atom at a time,
   `runs_unfold` does the same through one word call, and `runs_arith` closes
   the step and cost arithmetic under `defaultCosts`. Word calls inside a
   body are discharged only from `Runs` hypotheses in context, so recursion
   stays explicit. Under `int64Gamma` the chain leaves an `InInt64` side goal
-  per `+`, `-` and `*`, closed when it is an assumption or follows from the
+  per `+`, `-`, `*` and `div`, and a nonzero-divisor goal per `div` and `mod`,
+  closed when it is an assumption or follows from the
   assumptions by linear arithmetic. `runs_arith` clears Boolean equations
   such as an `if` condition `decide (x < y) = true` before calling `omega`,
   which can time out with one in context, so state any fact the arithmetic
@@ -48,6 +50,14 @@ Also in the library:
 
 `Programs/Signed.lean` proves `abs`, whose local compiles to `pick` and
 `roll`, under `int64Gamma` with `runs_chain` alone.
+
+`Programs/Division.lean` proves `divmod` with `runs_chain`, and that `gcd`
+leaves `Int.gcd a b` for any `a` and `b` in i64 whose gcd is in i64 (all but
+the pairs with gcd 2^63, where the final `abs` overflows), by strong induction
+on `|b|`. Its step and cost bounds are linear in `|b|`: sound, but
+not the logarithmic bound Euclid's algorithm meets. Both are recorded as
+contracts (`divmodContract`, `gcdContract`); `gcd`'s record also covers the
+`abs` it calls, and `digit-sum-from` has no contract yet.
 
 `Programs/SumTo.lean` is the worked example: under `int64Gamma`, for every
 `n ≥ 0` whose sum is in i64 range, `sum-to` returns `1 + ... + n` at a cost of

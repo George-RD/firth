@@ -34,9 +34,9 @@ sha256 = "b323f26ab221ed0c49b53da02b21bc3751a253437cf4c9b3f66139c18da6105d"
 role = "elaborator-to-envelope-adapters"
 
 [gamma]
-version = "0.5"
+version = "0.6"
 portable = true
-primitives = ["+", "-", "*", "<", "=", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"]
+primitives = ["+", "-", "*", "<", "=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"]
 values = ["Int", "Bool", "Seq Int", "Seq Bool", "Handle", "Bytes", "World"]
 predicates = ["positive", "nonzero", "is-open"]
 
@@ -63,6 +63,16 @@ observation = "pure"
 [gamma.primitive."="]
 effect = "Int^many Int^many -- Bool^many"
 transition = "deterministic-integer-equality"
+observation = "pure"
+
+[gamma.primitive."div"]
+effect = "Int^many Int^many -- Int^many"
+transition = "deterministic-euclidean-division-faulting-on-zero-divisor"
+observation = "pure"
+
+[gamma.primitive."mod"]
+effect = "Int^many Int^many -- Int^many"
+transition = "deterministic-euclidean-remainder-faulting-on-zero-divisor"
 observation = "pure"
 
 [gamma.primitive."and"]

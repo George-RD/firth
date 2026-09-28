@@ -339,7 +339,7 @@ theorem induction_on_measure {α : Sort _} (size : α → Nat) {P : α → Prop}
 ## Registries
 
 `adapterGamma` is the reference runner's registry. `int64Gamma` is the same
-registry with `+`, `-` and `*` faulting outside i64, as the VM's do (see the
+registry with `+`, `-`, `*` and `div` faulting outside i64, as the VM's do (see the
 Overflow section). `ReferenceRegistry` holds for both: they agree on literals
 and on every other primitive, so the literal and non-arithmetic primitive
 lemmas below hold under either.
@@ -362,21 +362,34 @@ def checkedIntDelta (operation : Int → Int → Int) : Stack → Option Stack
       else none
   | _ => none
 
+/-- Euclidean division that faults on a zero divisor, as the reference's does,
+and also when the quotient leaves i64. The only such quotient is
+`-2^63 div -1`. -/
+def checkedDivDelta : Stack → Option Stack
+  | .literal (.int right) :: .literal (.int left) :: rest =>
+      if right = 0 then none
+      else if InInt64 (left / right) then some (.literal (.int (left / right)) :: rest)
+      else none
+  | _ => none
+
 /-- The delta `int64Gamma` gives a surface primitive whose reference delta is
 `delta`. -/
 def int64Delta (primitive : Prim) (delta : Stack → Option Stack) : Stack → Option Stack :=
   if primitive = "+" then checkedIntDelta (· + ·)
   else if primitive = "-" then checkedIntDelta (· - ·)
   else if primitive = "*" then checkedIntDelta (· * ·)
+  else if primitive = "div" then checkedDivDelta
   else delta
 
-/-- Whether `int64Gamma` checks a surface primitive for i64 overflow. -/
-def Int64Checked (primitive : Prim) : Prop := primitive = "+" ∨ primitive = "-" ∨ primitive = "*"
+/-- Whether `int64Gamma` checks a surface primitive for i64 overflow. `mod`
+is not checked: its result lies between 0 and its divisor. -/
+def Int64Checked (primitive : Prim) : Prop :=
+  primitive = "+" ∨ primitive = "-" ∨ primitive = "*" ∨ primitive = "div"
 
 instance (primitive : Prim) : Decidable (Int64Checked primitive) := by
   unfold Int64Checked; exact inferInstance
 
-/-- The reference registry with `+`, `-` and `*` checked for i64 overflow.
+/-- The reference registry with `+`, `-`, `*` and `div` checked for i64 overflow.
 The checked primitives are declared `faults := true`, since an overflow is a
 primitive fault on a well-typed stack, as the VM's trap is. The kernel's
 progress theorem is not yet proved for this registry. -/
@@ -397,23 +410,25 @@ theorem int64Gamma_checked_faults {primitive : Prim} {specification : PrimitiveS
   simp [hChecked]
 
 /-- A registry that agrees with the reference runner's on literal types and on
-every primitive other than `+`, `-` and `*`. -/
+every primitive other than `+`, `-`, `*` and `div`. -/
 class ReferenceRegistry (gamma : Gamma) : Prop where
   literalType : gamma.literalType = defaultGamma.literalType
-  primitive : ∀ primitive : Prim, primitive ≠ "+" → primitive ≠ "-" → primitive ≠ "*" →
+  primitive : ∀ primitive : Prim, ¬ Int64Checked primitive →
     gamma.primitive primitive = adapterGamma.primitive primitive
 
 instance : ReferenceRegistry adapterGamma where
   literalType := rfl
-  primitive _ _ _ _ := rfl
+  primitive _ _ := rfl
 
 instance : ReferenceRegistry int64Gamma where
   literalType := rfl
-  primitive primitive hAdd hSub hMul := by
+  primitive primitive hChecked := by
+    simp only [Int64Checked, not_or] at hChecked
+    obtain ⟨hAdd, hSub, hMul, hDiv⟩ := hChecked
     cases h : adapterGamma.primitive primitive with
     | none => simp [int64Gamma, h]
     | some specification =>
-        simp [int64Gamma, h, int64Delta, Int64Checked, hAdd, hSub, hMul]
+        simp [int64Gamma, h, int64Delta, Int64Checked, hAdd, hSub, hMul, hDiv]
 
 end Registries
 
@@ -438,11 +453,11 @@ private theorem adapter_prim {surface kernel : String} {specification : Primitiv
 /-- A non-arithmetic primitive resolves under any reference registry as under
 the runner's own. -/
 private theorem registry_prim {surface kernel : String} {specification : PrimitiveSpec}
-    (hOther : surface ≠ "+" ∧ surface ≠ "-" ∧ surface ≠ "*")
+    (hOther : ¬ Int64Checked surface)
     (hSurface : kernelPrimitive surface = some kernel)
     (hKernel : defaultGamma.primitive kernel = some specification) :
     gamma.primitive surface = some specification := by
-  rw [ReferenceRegistry.primitive surface hOther.1 hOther.2.1 hOther.2.2]
+  rw [ReferenceRegistry.primitive surface hOther]
   exact adapter_prim hSurface hKernel
 
 theorem runs_literal_int (value : Int) (stack : Stack) :
@@ -472,6 +487,23 @@ theorem runs_mul (left right : Int) (tail : Stack) :
       (.literal (.int right) :: .literal (.int left) :: tail)
       (.literal (.int (left * right)) :: tail) 1 (costs.primitive "*") :=
   runs_prim (adapter_prim (kernel := "mulInt") rfl rfl) rfl
+
+/-- `div` is Euclidean division, Lean's `Int./` (`Int.ediv`). A zero divisor
+faults, so it has no rule. -/
+theorem runs_div {left right : Int} (tail : Stack) (hNonzero : right ≠ 0) :
+    Runs adapterGamma dictionary costs (.cons (.prim "div") .empty)
+      (.literal (.int right) :: .literal (.int left) :: tail)
+      (.literal (.int (left / right)) :: tail) 1 (costs.primitive "div") :=
+  runs_prim (adapter_prim (kernel := "divInt") rfl rfl) (by simp [divIntDelta, hNonzero])
+
+/-- `mod` is the Euclidean remainder, Lean's `Int.%` (`Int.emod`): at least 0
+and below `|right|`, so it needs no i64 check. -/
+theorem runs_mod {left right : Int} (tail : Stack) (hNonzero : right ≠ 0) :
+    Runs gamma dictionary costs (.cons (.prim "mod") .empty)
+      (.literal (.int right) :: .literal (.int left) :: tail)
+      (.literal (.int (left % right)) :: tail) 1 (costs.primitive "mod") :=
+  runs_prim (registry_prim (kernel := "modInt") (by decide) rfl rfl)
+    (by simp [modIntDelta, hNonzero])
 
 theorem runs_lt (left right : Int) (tail : Stack) :
     Runs gamma dictionary costs (.cons (.prim "<") .empty)
@@ -562,10 +594,10 @@ end Primitives
 /-!
 ## Overflow
 
-The VM's integers are signed 64-bit and `+`, `-` and `*` trap on overflow,
-while the reference interpreter's `Int` is unbounded. `int64Gamma` is the
-reference registry with those three primitives faulting outside the i64 range,
-as the VM's do. A `Runs` fact under `int64Gamma` therefore also says that no
+The VM's integers are signed 64-bit and `+`, `-`, `*` and `div` trap on
+overflow (for `div`, only `-2^63 div -1`), while the reference interpreter's
+`Int` is unbounded. `int64Gamma` is the reference registry with those four
+primitives faulting outside the i64 range, as the VM's do. A `Runs` fact under `int64Gamma` therefore also says that no
 arithmetic step overflowed, and `Runs.of_int64` recovers the same fact under
 `adapterGamma`. Literals need no check: the compiler refuses an out-of-range
 literal, and `seq-int.len` of a sequence the VM can hold fits in i64.
@@ -609,6 +641,18 @@ private theorem int64Delta_sound {primitive : Prim} {specification : PrimitiveSp
     unfold checkedIntDelta at h
     split at h
     · split at h <;> simp_all [mulIntDelta]
+    · simp at h
+  split at h
+  · subst primitive
+    have : specification.delta = divIntDelta := by
+      simp [adapterGamma, kernelPrimitive, surfacePrimitives, defaultGamma] at hSpec
+      rw [← hSpec]
+    rw [this]
+    unfold checkedDivDelta at h
+    split at h
+    · split at h
+      · simp at h
+      · split at h <;> simp_all [divIntDelta]
     · simp at h
   exact h
 
@@ -676,6 +720,13 @@ theorem runs_mul_int64 {left right : Int} (tail : Stack) (hRange : InInt64 (left
       (.literal (.int (left * right)) :: tail) 1 (costs.primitive "*") :=
   runs_prim (int64_prim rfl) (by simp [int64Delta, checkedIntDelta, hRange])
 
+theorem runs_div_int64 {left right : Int} (tail : Stack) (hNonzero : right ≠ 0)
+    (hRange : InInt64 (left / right)) :
+    Runs int64Gamma dictionary costs (.cons (.prim "div") .empty)
+      (.literal (.int right) :: .literal (.int left) :: tail)
+      (.literal (.int (left / right)) :: tail) 1 (costs.primitive "div") :=
+  runs_prim (int64_prim rfl) (by simp [int64Delta, checkedDivDelta, hNonzero, hRange])
+
 private theorem single_step {gamma : Gamma} {start finish : Config}
     (trace : Trace gamma dictionary costs start finish) (h : traceLength trace = 1) :
     ∃ stepCost, step gamma dictionary costs start = .stepped finish stepCost ∧
@@ -690,7 +741,7 @@ private theorem single_step {gamma : Gamma} {start finish : Config}
 /-- Any other primitive step proved under `adapterGamma` holds under
 `int64Gamma` unchanged. -/
 theorem runs_prim_int64 {primitive : Prim} {before after : Stack} {cost : Nat}
-    (hOther : primitive ≠ "+" ∧ primitive ≠ "-" ∧ primitive ≠ "*")
+    (hOther : ¬ Int64Checked primitive)
     (h : Runs adapterGamma dictionary costs (.cons (.prim primitive) .empty) before after 1 cost) :
     Runs int64Gamma dictionary costs (.cons (.prim primitive) .empty) before after 1 cost := by
   intro rest
@@ -706,7 +757,9 @@ theorem runs_prim_int64 {primitive : Prim} {before after : Stack} {cost : Nat}
     | none => simp [hSpec] at stepProof
     | some specification =>
         simp only [hSpec] at stepProof
-        simpa [int64Gamma, hSpec, int64Delta, hOther.1, hOther.2.1, hOther.2.2] using stepProof
+        simp only [Int64Checked, not_or] at hOther
+        obtain ⟨hAdd, hSub, hMul, hDiv⟩ := hOther
+        simpa [int64Gamma, hSpec, int64Delta, hAdd, hSub, hMul, hDiv] using stepProof
   simpa using Reaches.head hStep (Reaches.refl (gamma := int64Gamma) (dictionary := dictionary)
     (costs := costs) { stack := after, program := rest })
 
@@ -951,6 +1004,9 @@ macro "runs_atom" : tactic => `(tactic| first
   | apply runs_cons (runs_add_int64 _ ?_)
   | apply runs_cons (runs_sub_int64 _ ?_)
   | apply runs_cons (runs_mul_int64 _ ?_)
+  | apply runs_cons (runs_div _ ?_)
+  | apply runs_cons (runs_div_int64 _ ?_ ?_)
+  | apply runs_cons (runs_mod _ ?_)
   | apply runs_cons (runs_lt _ _ _)
   | apply runs_cons (runs_eq _ _ _)
   | apply runs_cons (runs_intSeq_empty _)

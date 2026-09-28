@@ -167,9 +167,9 @@ def main() -> int:
         gamma = data.get("gamma")
         if not isinstance(gamma, dict):
             fail("gamma: expected a table")
-        if gamma.get("version") != "0.5" or gamma.get("portable") is not True:
-            fail("gamma: expected portable version 0.5")
-        if gamma.get("primitives") != ["+", "-", "*", "<", "=", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"]:
+        if gamma.get("version") != "0.6" or gamma.get("portable") is not True:
+            fail("gamma: expected portable version 0.6")
+        if gamma.get("primitives") != ["+", "-", "*", "<", "=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"]:
             fail("gamma.primitives: unexpected profile")
         if gamma.get("values") != ["Int", "Bool", "Seq Int", "Seq Bool", "Handle", "Bytes", "World"]:
             fail("gamma.values: unexpected profile")
@@ -199,6 +199,16 @@ def main() -> int:
             "=": {
                 "effect": "Int^many Int^many -- Bool^many",
                 "transition": "deterministic-integer-equality",
+                "observation": "pure",
+            },
+            "div": {
+                "effect": "Int^many Int^many -- Int^many",
+                "transition": "deterministic-euclidean-division-faulting-on-zero-divisor",
+                "observation": "pure",
+            },
+            "mod": {
+                "effect": "Int^many Int^many -- Int^many",
+                "transition": "deterministic-euclidean-remainder-faulting-on-zero-divisor",
                 "observation": "pure",
             },
             "and": {

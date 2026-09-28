@@ -49,4 +49,27 @@ example (p : Int) (b : Bool) (hCondition : b = true) (h0 : 0 ≤ p)
 example (x : Int) (b : Bool) (hCondition : b = true) (h : x < 3) : x + 1 ≤ 3 := by
   runs_arith
 
+/- `int64Gamma` refuses `div` where the VM traps: a zero divisor, and the one
+quotient past i64, `-2^63 div -1`. The reference registry refuses only the
+zero divisor; its `-2^63 div -1` is the unbounded 2^63. -/
+section Division
+open Firth.Interpreter Firth.ReferenceRun
+
+private def divAt (left right : Int) : Config :=
+  { stack := [.literal (.int right), .literal (.int left)], program := .cons (.prim "div") .empty }
+
+example : step int64Gamma (fun _ => none) defaultCosts (divAt (-9223372036854775808) (-1)) =
+    .stuck (divAt (-9223372036854775808) (-1)) := by rfl
+
+example : step adapterGamma (fun _ => none) defaultCosts (divAt (-9223372036854775808) (-1)) =
+    .stepped { stack := [.literal (.int 9223372036854775808)], program := .empty } 1 := by rfl
+
+example : step int64Gamma (fun _ => none) defaultCosts (divAt 7 0) = .stuck (divAt 7 0) := by
+  rfl
+
+example : step int64Gamma (fun _ => none) defaultCosts (divAt (-7) 2) =
+    .stepped { stack := [.literal (.int (-4))], program := .empty } 1 := by rfl
+
+end Division
+
 end Firth.LogicTest
