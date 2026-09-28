@@ -352,6 +352,15 @@ class ComparisonTests(unittest.TestCase):
         # Planted: the VM took a different path to the same operands.
         detour = [target_event(0, []), target_event(1, h.encode([1])), target_event(2, both)]
         self.assertEqual(overflowed(detour), ("trace-mismatch", "trace-mismatch"))
+        # Planted: a pure program that touched the World on either host.
+        for side, world in ((0, {"ids": [1]}), (1, {"bytes": [1]})):
+            reference, target = observations()
+            reference.update(stack=h.encode([h.MAX_INT - 1]), trace=copy.deepcopy(reference_trace),
+                             cost={"total": 5, "steps": 5})
+            target.update(status="trap", trap="primitive-fault", stack=both, trace=copy.deepcopy(right),
+                          cost={"total": 3, "kernel": 3, "steps": 3})
+            (reference, target)[side]["world_observation"] = world
+            self.assertEqual(h.compare(reference, target, 8).kind, "invalid-observation")
         # Planted: the VM's stack at the fault is not the reference's there.
         self.assertEqual(overflowed(right, h.encode([h.MAX_INT, 2]))[0], "stack-mismatch")
         # Planted: the VM faults a step early, at the push of 1. Its run is a

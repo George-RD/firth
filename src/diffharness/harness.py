@@ -498,6 +498,7 @@ def overflow_prefix(reference: dict[str, Any], target: dict[str, Any], fuel: int
         lined_up = gate.without_faulting_step(target, "case")
         gate.validate_trace(reference["trace"], gate.REFERENCE_EVENT_FIELDS, ("cost",), "case: reference")
         gate.validate_portable_stack(target["stack"], "target")
+        gate.validate_pure_world(reference["world_observation"], target["world_observation"], "case")
     except gate.GateError as error:
         return Result("invalid-observation", detail=str(error), traps=traps)
     projected_reference = [event for event in reference["trace"] if event["cost"] > 0]
