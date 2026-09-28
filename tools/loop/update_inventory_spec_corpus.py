@@ -8,8 +8,13 @@ the frozen contract, so this script writes one `#guard` per successful case in
 specs/inventory-allocation-cases.json to
 `src/proofs/Inventory/SpecCorpus.lean`: `lake build` evaluates each and
 fails if `allocateAll` gives a different remaining stock, allocation or reason
-for any of them. Error cases are not covered: `allocateAll` is the calculation
-after validation.
+for any of them.
+
+It also writes one `#guard` on `Allocate.batchSpec`, the result `allocate_batch`
+proves the program returns, for every case the host passes to the component
+(error cases included): the input goes through the host's own checks and ID
+encoding (`examples/inventory/run_cases.py`), and the expected code, stock,
+allocations and reasons come from the corpus.
 
 Usage: python3 tools/loop/update_inventory_spec_corpus.py [--check]
 
