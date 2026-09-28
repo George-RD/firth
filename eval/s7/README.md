@@ -564,7 +564,79 @@ envelope cut to 300 characters in place of the checker's message.
   directory named `haiku-firth/`, renamed `haiku-firth-1/` afterwards; the
   audit was given both (`--dir`, `--kept`).
 
-## What the five runs say about the bet
+## Run 6: 28 September 2026, Haiku after the branch-mismatch fixes
+
+Main at `470c6d0`, which has #145 and #148 (a mismatched `if` is reported at
+the `if` as `firth.type.branch-mismatch`, at any depth, instead of as
+`firth.elaboration.untracked-local`) and #149 (`seq-int.set`,
+`seq-bool.set`). The prompt is `prompt --lang firth --tier mvp --rounds 2`
+at `470c6d0`, byte-identical on main after #152. The answers were scored at
+`7fa99fc`, the #152 branch, whose only changes against `470c6d0` are in
+`eval/` and `meta/`. Every round was rescored on main after #152 merged and
+the task results are identical. Author: `claude-haiku-4-5-20251001`,
+Firth only, two samples, set up as in run 5. Everything is in
+`runs/2026-09-28-haiku-470c6d0/`. This measures `todo.s7-mvp-rerun`.
+
+| Haiku 4.5, Firth, passed (of 20) | First answer | Round 1 | Round 2 |
+|---|---|---|---|
+| Sample 1 | 3 | 3 | 5 |
+| Sample 2 | 0 | 2 | 6 |
+| Run 5 sample 2, for comparison | 6 | 7 | 8 |
+
+Failures by the checker's first diagnostic (`results-N.json`):
+
+| | S1 first | S1 last | S2 first | S2 last |
+|---|---|---|---|---|
+| `firth.name.unresolved` | 7 | 0 | 19 | 0 |
+| `firth.type.branch-mismatch` | 8 | 6 | 0 | 10 |
+| `firth.type.word-input-mismatch` | 1 | 5 | 0 | 1 |
+| other type errors | 0 | 0 | 1 | 2 |
+| wrong answer or runtime fault | 1 | 4 | 0 | 1 |
+
+- **No failure is `firth.elaboration.untracked-local` in any round of
+  either sample.** In run 5 it was the largest last-round group (4 of 12),
+  and hand checks showed it hid branch mismatches. Those now surface as
+  `firth.type.branch-mismatch`.
+- **Branch mismatches are reported but rarely repaired.** Sample 1 had 8
+  at its first answer; 6 of them moved on to a word-input mismatch, which
+  is progress to the next error, not a fix. Of its 5 in round 1, 4 were
+  still branch mismatches in round 2. Sample 2 had 10 in round 1 and 9 of
+  them were still branch mismatches in round 2; one passed. Branch
+  mismatch is the largest last-round group in both samples (6 of 15, 10
+  of 14). The diagnostic says where the branches disagree but Haiku does
+  not act on it.
+- **The rise in first-answer `firth.name.unresolved`** (7 and 19, against 1
+  and 0 in run 5) is sample variance, not a regression. The prompt diff
+  from `cec3707` to `470c6d0` has four hunks, all additions (the `set`
+  primitives, a note on `if` branch diagnostics, `sieve.firth` and
+  `sort.firth`); the guidance on binding stack-effect names with `locals` is
+  byte-identical. First answers are written before any checker message, so
+  the #148 diagnostic changes cannot reach them. Every such failure is the
+  known mistake of using a stack-effect name without `locals`, and the
+  hint fixed all of them by round 1 in both samples.
+- **Jev** (`modes-1.json`, `modes-3.json`, with every capability
+  available) puts the first answers at mostly `stack_effect` and
+  `invented_syntax` (the unresolved names), and the last rounds at 6
+  `stack_effect`, 5 `stack_order`, 3 `logic` and 1 `toolchain` (sample 1)
+  and 11 `stack_effect`, 2 `stack_order` and 1 `logic` (sample 2). The one
+  `toolchain` label (0.12 confidence) is a `count-distinct` answer that
+  indexed past the end of its sequence, an author error.
+- **Fixtures for the branch-mismatch diagnostic.** The last-round answers
+  that failed on `firth.type.branch-mismatch` are, in sample 1's
+  `answer-3.md`: `reverse`, `merge-sorted`, `digits`, `histogram`,
+  `ledger`, `allocate-batch`; and in sample 2's `answer-3.md`:
+  `prefix-sums`, `keep-positive`, `longest-run`, `has-pair-sum`,
+  `merge-sorted`, `digits`, `primes-up-to`, `histogram`, `ledger`,
+  `allocate-batch`.
+- The transcripts are clean (`audit_subagent.py --rounds 2 --lang firth`):
+  every call was a read of the prompt or its own feedback or a write of an
+  answer, within the round limit, and each kept `solutions-N.json` and
+  `repair-N.md` is what its answer and results give.
+- Two samples, three answers each, so the comparison with run 5 is weak.
+  Sample 2 of run 5 reached 8; here the best is 6. The next rerun should
+  follow the next change to the branch-mismatch diagnostic.
+
+## What the six runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from
 the docs alone. On main, Sonnet matches Python on every task set except
@@ -580,7 +652,10 @@ could not repair. Once the checker's hint named the fix (#142) and that
 hint reached it, Haiku passed 6 of 20 first answers and 8 after two rounds
 of feedback (run 5, sample 2). Its remaining failures are mostly stack
 shape, and the largest slice of those was a misleading diagnostic, since
-fixed (#145). The checker found most stack-shape errors before execution.
+fixed (#145). Run 6 confirmed that fix: no failure is misreported that
+way any more, and branch mismatches are the largest group left, which
+Haiku rarely repairs from the current message. The checker found most
+stack-shape errors before execution.
 Wrong answers at runtime were logic slips that a signature cannot catch.
 
 So the bet holds for strong models and not yet for weak ones, and the

@@ -34,3 +34,10 @@ them is hidden in host code; each costs the author extra words and steps.
   kept out by a decision in `meta/decisions/` that says why.
 - The S7 MVP task set is re-run after any change, as a separate scored run, so
   the effect on the authoring pass rate is measured rather than assumed.
+
+## Progress
+
+- Run 6 of the S7 eval (`eval/s7/README.md`) is the scored rerun on a main
+  with both primitives (`470c6d0`). It stays open on the first criterion:
+  the differential fuzzer on main (`src/diffharness/harness.py`) does not
+  yet generate `div` or `mod`.

@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.agent
-status: open
+status: done
 created: 2026-09-28
 ---
 
@@ -20,3 +20,11 @@ an author repair it.
 - The run reports how many last-round failures are still
   `firth.elaboration.untracked-local` and whether branch-mismatch
   diagnostics were repaired.
+
+## Result
+
+Run 6 (`eval/s7/README.md`, `runs/2026-09-28-haiku-470c6d0/`), at main
+`470c6d0`, which has #145, #148 and #149. No failure in any round of either
+sample is `firth.elaboration.untracked-local`. Branch mismatches are now
+reported as such but rarely repaired (4 of 5 and 9 of 10 persist from round
+1 to round 2); that is `todo.s7-branch-mismatch-repair`.
