@@ -26,99 +26,34 @@ namespace «quantities-in-range-from»
 /-- The erased kernel program of `quantities-in-range-from`. -/
 def body : Program :=
   .cons .dup <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .dup <|
-      .empty)) <|
-    .cons .dip <|
-    .empty)) <|
-  .cons .dip <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.pick 2) <|
   .cons (.prim "seq-int.len") <|
   .cons (.prim "<") <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 2) <|
   .cons .quote <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 2) <|
   .cons .quote <|
   .cons .compose <|
   .cons (.quotation (
     .cons (.lit (.int 0)) <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.pick 2) <|
+    .cons (.pick 2) <|
     .cons (.prim "seq-int.at") <|
     .cons (.prim "<") <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 2) <|
     .cons .quote <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 2) <|
     .cons .quote <|
     .cons .compose <|
     .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
+      .cons (.pick 1) <|
+      .cons (.pick 1) <|
       .cons (.prim "seq-int.at") <|
       .cons (.lit (.int 1000001)) <|
       .cons (.prim "<") <|
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
+      .cons (.roll 2) <|
       .cons .quote <|
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
+      .cons (.roll 2) <|
       .cons .quote <|
       .cons .compose <|
       .cons (.quotation (
@@ -149,7 +84,7 @@ def body : Program :=
 
 /-- The image's `body_digest` for `quantities-in-range-from`: SHA-256 of `body` lowered to
 target code, hex encoded. -/
-def bodyDigest : String := "6d82009e5d0edeb75435e9eb81823b1551e7ac898c18397fa54badb284fe6dc9"
+def bodyDigest : String := "6997392fc891c3e6a1715d95714b888e67b7b98005245b8392a6673e4f9189f9"
 
 /-- The erased word type the image records for `quantities-in-range-from`. -/
 def erasedType : String := "(forallρ;ρ,v0:SeqInt^many,v1:Int^many--ρ,v0:Bool^many)"
@@ -161,30 +96,11 @@ namespace «in-range»
 /-- The erased kernel program of `in-range`. -/
 def body : Program :=
   .cons (.lit (.int (-1))) <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .dup <|
-      .empty)) <|
-    .cons .dip <|
-    .empty)) <|
-  .cons .dip <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.pick 2) <|
   .cons (.prim "<") <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 2) <|
   .cons .quote <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 2) <|
   .cons .quote <|
   .cons .compose <|
   .cons (.quotation (
@@ -225,7 +141,7 @@ def body : Program :=
 
 /-- The image's `body_digest` for `in-range`: SHA-256 of `body` lowered to
 target code, hex encoded. -/
-def bodyDigest : String := "1ec852949c439a06503264f1f03662213cf6057be78f31d55c8b9cd0e7a72c83"
+def bodyDigest : String := "abda68038b27cfb8f954600ebf0ff9fc297f2126d2fe975dc2fed885f4b70136"
 
 /-- The erased word type the image records for `in-range`. -/
 def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:SeqInt^many--ρ,v0:Bool^many)"
@@ -508,18 +424,7 @@ namespace «allocate-one»
 
 /-- The erased kernel program of `allocate-one`. -/
 def body : Program :=
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .dup <|
-      .empty)) <|
-    .cons .dip <|
-    .empty)) <|
-  .cons .dip <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.pick 2) <|
   .cons (.lit (.int 0)) <|
   .cons (.prim "=") <|
   .cons (.quotation (
@@ -527,145 +432,48 @@ def body : Program :=
     .cons (.lit (.int 0)) <|
     .cons (.lit (.int 2)) <|
     .empty)) <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 3) <|
   .cons .quote <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 4) <|
+  .cons .quote <|
+  .cons .compose <|
+  .cons (.roll 3) <|
   .cons .quote <|
   .cons .compose <|
   .cons (.quotation (
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .cons .quote <|
-  .cons .compose <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.pick 2) <|
+    .cons (.pick 2) <|
     .cons (.lit (.int 1)) <|
     .cons (.prim "+") <|
     .cons (.prim "<") <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.pick 2) <|
     .cons .quote <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 4) <|
     .cons .quote <|
     .cons .compose <|
     .cons (.quotation (
       .cons .swap <|
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
+      .cons (.pick 1) <|
       .cons (.prim "-") <|
       .cons .swap <|
       .cons (.lit (.int 0)) <|
       .empty)) <|
     .cons .compose <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 2) <|
     .cons .quote <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 3) <|
     .cons .quote <|
     .cons .compose <|
     .cons (.quotation (
       .cons .swap <|
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
+      .cons (.pick 1) <|
       .cons .quote <|
       .cons (.quotation (
         .cons (.lit (.int 0)) <|
         .cons (.lit (.int 3)) <|
         .empty)) <|
       .cons .compose <|
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
+      .cons (.roll 2) <|
       .cons .quote <|
       .cons (.quotation (
         .cons (.lit (.int 0)) <|
@@ -684,7 +492,7 @@ def body : Program :=
 
 /-- The image's `body_digest` for `allocate-one`: SHA-256 of `body` lowered to
 target code, hex encoded. -/
-def bodyDigest : String := "2df12cf9a9f82ab4c86d9c3b59580671f43aaf205d1e12a67882614a1c3f8045"
+def bodyDigest : String := "58dc5c42e10b308edf20ecf16549f1b0db3b54aa54c886424efe122abb06e0b2"
 
 /-- The erased word type the image records for `allocate-one`. -/
 def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many,v2:Bool^many--ρ,v0:Int^many,v1:Int^many,v2:Int^many)"
@@ -695,691 +503,71 @@ namespace «allocate-from»
 
 /-- The erased kernel program of `allocate-from`. -/
 def body : Program :=
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .dup <|
-      .empty)) <|
-    .cons .dip <|
-    .empty)) <|
-  .cons .dip <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons (.quotation (
-              .cons .dup <|
-              .empty)) <|
-            .cons .dip <|
-            .empty)) <|
-          .cons .dip <|
-          .empty)) <|
-        .cons .dip <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .empty)) <|
-  .cons .dip <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons .swap <|
-            .empty)) <|
-          .cons .dip <|
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.pick 2) <|
+  .cons (.pick 6) <|
   .cons (.prim "seq-int.len") <|
   .cons (.prim "<") <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons .dup <|
-          .empty)) <|
-        .cons .dip <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .empty)) <|
-  .cons .dip <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.pick 4) <|
   .cons .quote <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons (.quotation (
-              .cons .swap <|
-              .empty)) <|
-            .cons .dip <|
-            .cons .swap <|
-            .empty)) <|
-          .cons .dip <|
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 7) <|
+  .cons .quote <|
+  .cons .compose <|
+  .cons (.roll 4) <|
+  .cons .quote <|
+  .cons .compose <|
+  .cons (.roll 5) <|
+  .cons .quote <|
+  .cons .compose <|
+  .cons (.pick 3) <|
+  .cons .quote <|
+  .cons .compose <|
+  .cons (.pick 2) <|
   .cons .quote <|
   .cons .compose <|
   .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .cons .quote <|
-  .cons .compose <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .cons .quote <|
-  .cons .compose <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .empty)) <|
-  .cons .dip <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .cons .quote <|
-  .cons .compose <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .dup <|
-      .empty)) <|
-    .cons .dip <|
-    .empty)) <|
-  .cons .dip <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .cons .quote <|
-  .cons .compose <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons .swap <|
-            .empty)) <|
-          .cons .dip <|
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons (.quotation (
-              .cons .dup <|
-              .empty)) <|
-            .cons .dip <|
-            .empty)) <|
-          .cons .dip <|
-          .empty)) <|
-        .cons .dip <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons .swap <|
-            .empty)) <|
-          .cons .dip <|
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons (.quotation (
-              .cons .dup <|
-              .empty)) <|
-            .cons .dip <|
-            .empty)) <|
-          .cons .dip <|
-          .empty)) <|
-        .cons .dip <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons .swap <|
-            .empty)) <|
-          .cons .dip <|
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 5) <|
+    .cons (.pick 5) <|
+    .cons (.pick 5) <|
     .cons (.prim "seq-int.at") <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons .dup <|
-            .empty)) <|
-          .cons .dip <|
-          .empty)) <|
-        .cons .dip <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.pick 4) <|
     .cons (.word "allocate-one") <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons (.quotation (
-              .cons (.quotation (
-                .cons (.quotation (
-                  .cons .dup <|
-                  .empty)) <|
-                .cons .dip <|
-                .empty)) <|
-              .cons .dip <|
-              .empty)) <|
-            .cons .dip <|
-            .empty)) <|
-          .cons .dip <|
-          .empty)) <|
-        .cons .dip <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons (.quotation (
-              .cons (.quotation (
-                .cons .swap <|
-                .empty)) <|
-              .cons .dip <|
-              .cons .swap <|
-              .empty)) <|
-            .cons .dip <|
-            .cons .swap <|
-            .empty)) <|
-          .cons .dip <|
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons (.quotation (
-              .cons (.quotation (
-                .cons .dup <|
-                .empty)) <|
-              .cons .dip <|
-              .empty)) <|
-            .cons .dip <|
-            .empty)) <|
-          .cons .dip <|
-          .empty)) <|
-        .cons .dip <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons (.quotation (
-              .cons .swap <|
-              .empty)) <|
-            .cons .dip <|
-            .cons .swap <|
-            .empty)) <|
-          .cons .dip <|
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons (.quotation (
-              .cons (.quotation (
-                .cons (.quotation (
-                  .cons (.quotation (
-                    .cons .dup <|
-                    .empty)) <|
-                  .cons .dip <|
-                  .empty)) <|
-                .cons .dip <|
-                .empty)) <|
-              .cons .dip <|
-              .empty)) <|
-            .cons .dip <|
-            .empty)) <|
-          .cons .dip <|
-          .empty)) <|
-        .cons .dip <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons (.quotation (
-              .cons (.quotation (
-                .cons (.quotation (
-                  .cons .swap <|
-                  .empty)) <|
-                .cons .dip <|
-                .cons .swap <|
-                .empty)) <|
-              .cons .dip <|
-              .cons .swap <|
-              .empty)) <|
-            .cons .dip <|
-            .cons .swap <|
-            .empty)) <|
-          .cons .dip <|
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.pick 7) <|
+    .cons (.pick 6) <|
+    .cons (.roll 4) <|
+    .cons (.pick 8) <|
     .cons (.lit (.int 1)) <|
     .cons (.prim "+") <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons (.quotation (
-              .cons (.quotation (
-                .cons (.quotation (
-                  .cons .dup <|
-                  .empty)) <|
-                .cons .dip <|
-                .empty)) <|
-              .cons .dip <|
-              .empty)) <|
-            .cons .dip <|
-            .empty)) <|
-          .cons .dip <|
-          .empty)) <|
-        .cons .dip <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons (.quotation (
-              .cons (.quotation (
-                .cons .swap <|
-                .empty)) <|
-              .cons .dip <|
-              .cons .swap <|
-              .empty)) <|
-            .cons .dip <|
-            .cons .swap <|
-            .empty)) <|
-          .cons .dip <|
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons (.quotation (
-              .cons .swap <|
-              .empty)) <|
-            .cons .dip <|
-            .cons .swap <|
-            .empty)) <|
-          .cons .dip <|
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.pick 7) <|
+    .cons (.roll 6) <|
     .cons (.prim "seq-int.push") <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons (.quotation (
-              .cons (.quotation (
-                .cons .dup <|
-                .empty)) <|
-              .cons .dip <|
-              .empty)) <|
-            .cons .dip <|
-            .empty)) <|
-          .cons .dip <|
-          .empty)) <|
-        .cons .dip <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons (.quotation (
-              .cons .swap <|
-              .empty)) <|
-            .cons .dip <|
-            .cons .swap <|
-            .empty)) <|
-          .cons .dip <|
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons (.quotation (
-              .cons .swap <|
-              .empty)) <|
-            .cons .dip <|
-            .cons .swap <|
-            .empty)) <|
-          .cons .dip <|
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.pick 6) <|
+    .cons (.roll 6) <|
     .cons (.prim "seq-int.push") <|
     .cons (.word "allocate-from") <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 3) <|
     .cons .drop <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 3) <|
     .cons .drop <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 3) <|
     .cons .drop <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 3) <|
     .cons .drop <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 3) <|
     .cons .drop <|
     .empty)) <|
   .cons .compose <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 4) <|
   .cons .quote <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 4) <|
+  .cons .quote <|
+  .cons .compose <|
+  .cons (.roll 3) <|
   .cons .quote <|
   .cons .compose <|
   .cons (.quotation (
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .cons .quote <|
-  .cons .compose <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 2) <|
+    .cons (.roll 2) <|
+    .cons (.roll 2) <|
     .empty)) <|
   .cons .compose <|
   .cons .ifThenElse <|
@@ -1387,7 +575,7 @@ def body : Program :=
 
 /-- The image's `body_digest` for `allocate-from`: SHA-256 of `body` lowered to
 target code, hex encoded. -/
-def bodyDigest : String := "1d47fbe5290d6de7b34baa5fceb5b7cdf72b5809f57fe0e33ef8ac64d047503d"
+def bodyDigest : String := "8b791d929fa24456d4c5ce0a1e004f585b59fccf3827b09e3d5943b977292bd9"
 
 /-- The erased word type the image records for `allocate-from`. -/
 def erasedType : String := "(forallρ;ρ,v0:SeqInt^many,v1:Bool^many,v2:Int^many,v3:Int^many,v4:SeqInt^many,v5:SeqInt^many--ρ,v0:Int^many,v1:SeqInt^many,v2:SeqInt^many)"
@@ -1398,68 +586,22 @@ namespace «allocate-batch»
 
 /-- The erased kernel program of `allocate-batch`. -/
 def body : Program :=
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .empty)) <|
-  .cons .dip <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .cons (.quotation (
-    .cons .dup <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.pick 3) <|
+  .cons (.pick 1) <|
   .cons (.word "in-range") <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 2) <|
   .cons .quote <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 2) <|
+  .cons .quote <|
+  .cons .compose <|
+  .cons (.roll 2) <|
+  .cons .quote <|
+  .cons .compose <|
+  .cons (.roll 2) <|
   .cons .quote <|
   .cons .compose <|
   .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .cons .quote <|
-  .cons .compose <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .cons .quote <|
-  .cons .compose <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 3) <|
     .cons (.word "has-repeat") <|
     .cons (.quotation (
       .cons (.lit (.int 2)) <|
@@ -1467,75 +609,19 @@ def body : Program :=
       .cons (.prim "seq-int.empty") <|
       .cons (.prim "seq-int.empty") <|
       .empty)) <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 4) <|
     .cons .quote <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 4) <|
     .cons .quote <|
     .cons .compose <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 3) <|
     .cons .quote <|
     .cons .compose <|
     .cons (.quotation (
       .cons (.lit (.int 0)) <|
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
+      .cons (.roll 3) <|
+      .cons (.roll 3) <|
+      .cons (.roll 3) <|
       .cons (.lit (.int 0)) <|
       .cons (.prim "seq-int.empty") <|
       .cons (.prim "seq-int.empty") <|
@@ -1556,7 +642,7 @@ def body : Program :=
 
 /-- The image's `body_digest` for `allocate-batch`: SHA-256 of `body` lowered to
 target code, hex encoded. -/
-def bodyDigest : String := "9d334da6100fe84f1e4119727a0b6c6bd78fe5a7b5c7c8b1ceb565b4f16c9449"
+def bodyDigest : String := "527a8583a4f31cb62d5a4eda4e749464dbf09ff2dcd1f3bf3876458aabbf9eba"
 
 /-- The erased word type the image records for `allocate-batch`. -/
 def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Bool^many,v2:SeqInt^many,v3:SeqInt^many--ρ,v0:Int^many,v1:Int^many,v2:SeqInt^many,v3:SeqInt^many)"

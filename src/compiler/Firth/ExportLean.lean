@@ -88,6 +88,8 @@ mutual
     | .compose => ".compose"
     | .quote => ".quote"
     | .ifThenElse => ".ifThenElse"
+    | .pick depth => s!"(.pick {depth})"
+    | .roll depth => s!"(.roll {depth})"
     | .word name => s!"(.word {quote name})"
     | .prim name => s!"(.prim {quote name})"
 end

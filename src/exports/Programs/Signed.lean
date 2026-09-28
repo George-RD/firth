@@ -44,11 +44,7 @@ def body : Program :=
   .cons .dup <|
   .cons (.lit (.int 0)) <|
   .cons (.prim "<") <|
-  .cons (.quotation (
-    .cons .dup <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.pick 1) <|
   .cons .quote <|
   .cons (.quotation (
     .cons (.lit (.int 0)) <|
@@ -56,11 +52,7 @@ def body : Program :=
     .cons (.prim "-") <|
     .empty)) <|
   .cons .compose <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 2) <|
   .cons .quote <|
   .cons (.quotation (.empty)) <|
   .cons .compose <|
@@ -69,7 +61,7 @@ def body : Program :=
 
 /-- The image's `body_digest` for `abs`: SHA-256 of `body` lowered to
 target code, hex encoded. -/
-def bodyDigest : String := "ca78727ee88de0b4b06b01117bd70d4f04564a446a0ca810ba1342ef83f7bfd1"
+def bodyDigest : String := "472591df6d2517e379b8604d7a3a522f79a99deb3df8f0436edce970f7eadb09"
 
 /-- The erased word type the image records for `abs`. -/
 def erasedType : String := "(forallρ;ρ,v0:Int^many--ρ,v0:Int^many)"
@@ -81,163 +73,27 @@ namespace «minimum-from»
 /-- The erased kernel program of `minimum-from`. -/
 def body : Program :=
   .cons .dup <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .empty)) <|
-  .cons .dip <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.pick 3) <|
   .cons (.prim "seq-int.len") <|
   .cons (.prim "<") <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 3) <|
   .cons .quote <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 2) <|
+  .cons .quote <|
+  .cons .compose <|
+  .cons (.pick 2) <|
   .cons .quote <|
   .cons .compose <|
   .cons (.quotation (
-    .cons (.quotation (
-      .cons .dup <|
-      .empty)) <|
-    .cons .dip <|
-    .empty)) <|
-  .cons .dip <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .cons .quote <|
-  .cons .compose <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons .dup <|
-          .empty)) <|
-        .cons .dip <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons .dup <|
-          .empty)) <|
-        .cons .dip <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.pick 2) <|
+    .cons (.pick 3) <|
+    .cons (.pick 3) <|
     .cons (.prim "seq-int.at") <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.pick 2) <|
     .cons (.prim "<") <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 4) <|
     .cons .quote <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons (.quotation (
-            .cons .dup <|
-            .empty)) <|
-          .cons .dip <|
-          .empty)) <|
-        .cons .dip <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons .swap <|
-          .empty)) <|
-        .cons .dip <|
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.pick 4) <|
     .cons .quote <|
     .cons .compose <|
     .cons (.quotation (
@@ -246,34 +102,18 @@ def body : Program :=
       .cons (.prim "seq-int.at") <|
       .empty)) <|
     .cons .compose <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 3) <|
     .cons .quote <|
     .cons (.quotation (.empty)) <|
     .cons .compose <|
     .cons .ifThenElse <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 2) <|
     .cons (.lit (.int 1)) <|
     .cons (.prim "+") <|
     .cons (.word "minimum-from") <|
     .empty)) <|
   .cons .compose <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 2) <|
   .cons .quote <|
   .cons (.quotation (.empty)) <|
   .cons .compose <|
@@ -282,7 +122,7 @@ def body : Program :=
 
 /-- The image's `body_digest` for `minimum-from`: SHA-256 of `body` lowered to
 target code, hex encoded. -/
-def bodyDigest : String := "86dc70ffd94efbdd32f352d0560f17cb0d0f1034a7553aabc28d7eace50e377a"
+def bodyDigest : String := "8981cbf9b4f5f01425c98573338bb5f6365c9f8b64cb5c313800b25e7027c9bb"
 
 /-- The erased word type the image records for `minimum-from`. -/
 def erasedType : String := "(forallρ;ρ,v0:SeqInt^many,v1:Int^many,v2:Int^many--ρ,v0:Int^many)"

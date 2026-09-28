@@ -78,11 +78,7 @@ def body : Program :=
   .cons .quote <|
   .cons (.quotation (
     .cons .swap <|
-    .cons (.quotation (
-      .cons .dup <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.pick 1) <|
     .cons (.prim "+") <|
     .cons .swap <|
     .cons .drop <|
@@ -95,7 +91,7 @@ def body : Program :=
 
 /-- The image's `body_digest` for `add-step-twice`: SHA-256 of `body` lowered to
 target code, hex encoded. -/
-def bodyDigest : String := "e3468bc4791a987ee4a9e3f48e07cf55c4fc181fa972817f91cc6326637e20a6"
+def bodyDigest : String := "25247d243986594f17d2e833911c187c9b94c1fc59d7a9da7db227a2e2a98b1b"
 
 /-- The erased word type the image records for `add-step-twice`. -/
 def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many)"

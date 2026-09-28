@@ -1,4 +1,5 @@
 import exports.Programs.Allocate
+import exports.Programs.Booleans
 import exports.Programs.Factorial
 import exports.Programs.Fib
 import exports.Programs.Locals
@@ -19,6 +20,7 @@ namespace Firth.Exports
 kernel program, body digest) in declaration order. -/
 def all : List (String × String × List (String × Firth.Interpreter.Program × String)) := [
   ("Programs.Allocate", "examples/programs/allocate.firth", Firth.Exports.Programs.Allocate.words),
+  ("Programs.Booleans", "examples/programs/booleans.firth", Firth.Exports.Programs.Booleans.words),
   ("Programs.Factorial", "examples/programs/factorial.firth", Firth.Exports.Programs.Factorial.words),
   ("Programs.Fib", "examples/programs/fib.firth", Firth.Exports.Programs.Fib.words),
   ("Programs.Locals", "examples/programs/locals.firth", Firth.Exports.Programs.Locals.words),

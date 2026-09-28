@@ -26,128 +26,31 @@ namespace «sum-from»
 /-- The erased kernel program of `sum-from`. -/
 def body : Program :=
   .cons .dup <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .empty)) <|
-  .cons .dip <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.pick 3) <|
   .cons (.prim "seq-int.len") <|
   .cons (.prim "<") <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 3) <|
   .cons .quote <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .empty)) <|
-  .cons .dip <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.pick 3) <|
+  .cons .quote <|
+  .cons .compose <|
+  .cons (.roll 2) <|
   .cons .quote <|
   .cons .compose <|
   .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .cons .quote <|
-  .cons .compose <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons .dup <|
-          .empty)) <|
-        .cons .dip <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.pick 2) <|
+    .cons (.roll 2) <|
+    .cons (.roll 3) <|
+    .cons (.pick 3) <|
     .cons (.prim "seq-int.at") <|
     .cons (.prim "+") <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 2) <|
     .cons (.lit (.int 1)) <|
     .cons (.prim "+") <|
     .cons (.word "sum-from") <|
     .empty)) <|
   .cons .compose <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 2) <|
   .cons .quote <|
   .cons (.quotation (.empty)) <|
   .cons .compose <|
@@ -156,7 +59,7 @@ def body : Program :=
 
 /-- The image's `body_digest` for `sum-from`: SHA-256 of `body` lowered to
 target code, hex encoded. -/
-def bodyDigest : String := "a5a145ed6bf9d24565534720091965a6c5d3d174fcf29b1593fbe6bae37f0b5c"
+def bodyDigest : String := "244b8415af26b25000b32d0173fe6433e9765966aee77b2959c693a6b4f41e99"
 
 /-- The erased word type the image records for `sum-from`. -/
 def erasedType : String := "(forallρ;ρ,v0:SeqInt^many,v1:Int^many,v2:Int^many--ρ,v0:Int^many)"
@@ -185,94 +88,29 @@ namespace «range-from»
 
 /-- The erased kernel program of `range-from`. -/
 def body : Program :=
-  .cons (.quotation (
-    .cons .dup <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .cons (.quotation (
-    .cons .dup <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.pick 1) <|
+  .cons (.pick 1) <|
   .cons (.prim "<") <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .empty)) <|
-  .cons .dip <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.pick 3) <|
   .cons .quote <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 3) <|
+  .cons .quote <|
+  .cons .compose <|
+  .cons (.roll 2) <|
   .cons .quote <|
   .cons .compose <|
   .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .cons .quote <|
-  .cons .compose <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 2) <|
+    .cons (.pick 2) <|
     .cons (.prim "seq-int.push") <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 2) <|
     .cons (.lit (.int 1)) <|
     .cons (.prim "+") <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 2) <|
     .cons (.word "range-from") <|
     .empty)) <|
   .cons .compose <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 2) <|
   .cons .quote <|
   .cons (.quotation (.empty)) <|
   .cons .compose <|
@@ -281,7 +119,7 @@ def body : Program :=
 
 /-- The image's `body_digest` for `range-from`: SHA-256 of `body` lowered to
 target code, hex encoded. -/
-def bodyDigest : String := "e00a054fa7a16f8704b84183b5b4111a74b744c90286076bf50eeaf08811ba91"
+def bodyDigest : String := "70b3c80d3afd4d04ac32964499e06559f14fc59ff9fc4d7397347d30f7f22b5c"
 
 /-- The erased word type the image records for `range-from`. -/
 def erasedType : String := "(forallρ;ρ,v0:SeqInt^many,v1:Int^many,v2:Int^many--ρ,v0:SeqInt^many)"
@@ -315,146 +153,41 @@ namespace «count-from»
 /-- The erased kernel program of `count-from`. -/
 def body : Program :=
   .cons .dup <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .empty)) <|
-  .cons .dip <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.pick 3) <|
   .cons (.prim "seq-bool.len") <|
   .cons (.prim "<") <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 3) <|
   .cons .quote <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 2) <|
+  .cons .quote <|
+  .cons .compose <|
+  .cons (.pick 2) <|
   .cons .quote <|
   .cons .compose <|
   .cons (.quotation (
-    .cons (.quotation (
-      .cons .dup <|
-      .empty)) <|
-    .cons .dip <|
-    .empty)) <|
-  .cons .dip <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .cons .quote <|
-  .cons .compose <|
-  .cons (.quotation (
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.quotation (
-          .cons .dup <|
-          .empty)) <|
-        .cons .dip <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.pick 2) <|
+    .cons (.roll 3) <|
+    .cons (.pick 3) <|
     .cons (.prim "seq-bool.at") <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .dup <|
-        .empty)) <|
-      .cons .dip <|
-      .empty)) <|
-    .cons .dip <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.pick 2) <|
     .cons .quote <|
     .cons (.quotation (
       .cons (.lit (.int 1)) <|
       .cons (.prim "+") <|
       .empty)) <|
     .cons .compose <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons .swap <|
-        .empty)) <|
-      .cons .dip <|
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 3) <|
     .cons .quote <|
     .cons (.quotation (.empty)) <|
     .cons .compose <|
     .cons .ifThenElse <|
-    .cons (.quotation (
-      .cons .swap <|
-      .empty)) <|
-    .cons .dip <|
-    .cons .swap <|
+    .cons (.roll 2) <|
     .cons (.lit (.int 1)) <|
     .cons (.prim "+") <|
     .cons (.word "count-from") <|
     .empty)) <|
   .cons .compose <|
-  .cons (.quotation (
-    .cons .swap <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 2) <|
   .cons .quote <|
   .cons (.quotation (.empty)) <|
   .cons .compose <|
@@ -463,7 +196,7 @@ def body : Program :=
 
 /-- The image's `body_digest` for `count-from`: SHA-256 of `body` lowered to
 target code, hex encoded. -/
-def bodyDigest : String := "ccbbfa704db374e0e9351f8880b4d46a7e330643191ea1cea9488d512aeaa9b1"
+def bodyDigest : String := "a9d668929520be7f7082380f346b62f392651d2af84ad81b41152c2667a2f1cb"
 
 /-- The erased word type the image records for `count-from`. -/
 def erasedType : String := "(forallρ;ρ,v0:SeqBool^many,v1:Int^many,v2:Int^many--ρ,v0:Int^many)"
