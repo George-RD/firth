@@ -85,8 +85,6 @@ def decodeRequest (value : Json) : Except String Request := do
          sourcePath := ← nonempty "request.source_path" =<< reqStr "request" "source_path" values
          sourceText := ← reqStr "request" "source_text" values }
 
-private def rowTail : AStack := .row (.rigid "ρ")
-
 private def surfaceUsage : Firth.Interpreter.Usage → AUsage
   | .many => .many
   | .linear => .linear
@@ -125,19 +123,33 @@ it. `surfacePrimitives` is the one table all hosts read. -/
 private def kernelSpec (name : String) : Option Firth.Interpreter.PrimitiveSpec :=
   (Firth.Interpreter.kernelPrimitive name).bind Firth.Interpreter.defaultGamma.primitive
 
+/-- The scheme `worldPrimitiveSchemes` gives a primitive outside the kernel. -/
+private def worldScheme (name : String) : Option Scheme :=
+  (worldPrimitiveSchemes.find? (·.1 == name)).map (·.2)
+
+private def schemeUsage : AUsage → Option Usage
+  | .many => some .many
+  | .linear => some .linear
+  | _ => none
+
+/-- The ownership class of each value a closed scheme stack holds, bottom
+first. A scheme with an unsolved usage has none. -/
+private def schemeUsages : AStack → Option (List Usage)
+  | .empty | .row _ => some []
+  | .snoc rest (.base _ usage) | .snoc rest (.quotation _ _ usage) | .snoc rest (.mvar _ usage) =>
+      return (← schemeUsages rest) ++ [← schemeUsage usage]
+
 /-- The manifest's `[gamma.primitive]` table, as the elaborator's erasure
 signature. Only the ownership classes matter at erasure time. -/
 def gammaErasure : EffectEnv :=
   { primitive := fun name =>
       match kernelSpec name with
       | some spec => some { input := stackUsages spec.input, output := stackUsages spec.output }
-      | none =>
-        if name == "send" then some { input := [.linear, .linear, .linear], output := [.linear] }
-        else none }
+      | none => (worldScheme name).bind fun scheme => do
+          pure { input := ← schemeUsages scheme.input, output := ← schemeUsages scheme.output } }
 
 /-- The same table as a typing scheme, read from `defaultGamma` for every
-surface primitive. `send` threads one linear `World` past a `Handle` and a
-`Bytes`. -/
+surface primitive and from `worldPrimitiveSchemes` for the rest. -/
 def gammaTyping : Env :=
   { literal := defaultLiteralType
     primitive := fun name =>
@@ -145,13 +157,75 @@ def gammaTyping : Env :=
       | some spec => some { rowVariables := ["ρ"]
                             input := surfaceStack spec.input
                             output := surfaceStack spec.output }
-      | none =>
-        if name == "send" then
-          some { rowVariables := ["ρ"]
-                 input := .snoc (.snoc (.snoc rowTail (.base "World" .linear))
-                   (.base "Handle" .linear)) (.base "Bytes" .linear)
-                 output := .snoc rowTail (.base "World" .linear) }
-        else none }
+      | none => worldScheme name }
+
+/-- A `find?` by key succeeds exactly when the key is listed. -/
+private theorem find?_key_isSome {β : Type} (table : List (String × β)) (name : String) :
+    (table.find? (·.1 == name)).isSome = (table.map (·.1)).contains name := by
+  rw [Bool.eq_iff_iff]
+  simp [List.find?_isSome]
+
+/-- Every surface primitive's kernel name has a `defaultGamma` entry. -/
+private theorem surface_primitives_specified :
+    ∀ entry ∈ Firth.Interpreter.surfacePrimitives,
+      (Firth.Interpreter.defaultGamma.primitive entry.2).isSome = true := by
+  decide
+
+private theorem kernelSpec_isSome (name : String) :
+    (kernelSpec name).isSome =
+      (Firth.Interpreter.surfacePrimitives.map (·.1)).contains name := by
+  rw [← find?_key_isSome]
+  unfold kernelSpec Firth.Interpreter.kernelPrimitive
+  cases found : Firth.Interpreter.surfacePrimitives.find? (·.1 == name) with
+  | none => rfl
+  | some entry =>
+      simpa using surface_primitives_specified entry (List.mem_of_find?_eq_some found)
+
+private theorem worldScheme_isSome (name : String) :
+    (worldScheme name).isSome = worldPrimitives.contains name := by
+  unfold worldScheme worldPrimitives
+  rw [Option.isSome_map, find?_key_isSome]
+
+/-- Every scheme in `worldPrimitiveSchemes` is closed, so its erasure
+signature exists. -/
+private theorem world_schemes_closed :
+    ∀ entry ∈ worldPrimitiveSchemes,
+      (schemeUsages entry.2.input).isSome = true ∧ (schemeUsages entry.2.output).isSome = true := by
+  decide
+
+/-- `gammaTyping` gives a signature to exactly the `languagePrimitives`, the
+list checker hints print, for every name. A primitive special-cased in
+`gammaTyping` instead of added to `surfacePrimitives` or
+`worldPrimitiveSchemes` breaks this theorem. -/
+theorem gammaTyping_primitive_isSome (name : String) :
+    (gammaTyping.primitive name).isSome = languagePrimitives.contains name := by
+  unfold languagePrimitives
+  rw [List.contains_append, ← kernelSpec_isSome, ← worldScheme_isSome]
+  simp only [gammaTyping]
+  cases kernelSpec name <;> simp
+
+/-- The same for `gammaErasure`, whose World signatures are derived from the
+schemes in the table. -/
+theorem gammaErasure_primitive_isSome (name : String) :
+    (gammaErasure.primitive name).isSome = languagePrimitives.contains name := by
+  unfold languagePrimitives
+  rw [List.contains_append, ← kernelSpec_isSome, ← worldScheme_isSome]
+  simp only [gammaErasure]
+  cases kernelSpec name with
+  | some _ => simp
+  | none =>
+      cases found : worldScheme name with
+      | none => simp
+      | some scheme =>
+          have listed : (name, scheme) ∈ worldPrimitiveSchemes := by
+            unfold worldScheme at found
+            obtain ⟨entry, hFind, hEntry⟩ := Option.map_eq_some_iff.mp found
+            have := List.mem_of_find?_eq_some hFind
+            have hName : entry.1 = name := by simpa using List.find?_some hFind
+            cases entry; subst hEntry; simp_all
+          obtain ⟨hIn, hOut⟩ := world_schemes_closed _ listed
+          cases hi : schemeUsages scheme.input <;> cases ho : schemeUsages scheme.output <;>
+            simp_all
 
 private def quote (value : String) : String := (Json.str value).compress
 
