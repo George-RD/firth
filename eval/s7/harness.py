@@ -379,17 +379,32 @@ def eval_hashes() -> dict[str, str]:
 
 
 def scored_with_hashes(run):
-    """RUN's result and the eval hashes taken when this module was first loaded,
-    before the task sets were imported. Refuses when the files differ from those
-    before or after the run: scoring keeps the definitions it imported, so later
-    hashes would name an evaluator that did not score it (Codex's finding; the
-    reviewer's note moved the snapshot to import time)."""
+    """RUN's result, the eval hashes taken when this module was first loaded
+    (before the task sets were imported), and the Firth commit taken before the
+    run. Refuses when the eval files differ from those hashes before or after
+    the run, or when the Firth tree outside eval/ changed during it: scoring
+    keeps the definitions it imported and builds against the tree it finds, so
+    anything read afterwards would name what did not score it (Codex's
+    findings; the reviewer's note moved the eval snapshot to import time)."""
     if eval_hashes() != IMPORT_HASHES:
         raise SystemExit("the task sets or the scorer changed since they were loaded; nothing is scored")
+    tree = tree_state()
     out = run()
     if eval_hashes() != IMPORT_HASHES:
         raise SystemExit("the task sets or the scorer changed while scoring; nothing is recorded")
-    return out, dict(IMPORT_HASHES)
+    if tree_state() != tree:
+        raise SystemExit("the Firth tree changed while scoring; nothing is recorded")
+    return out, dict(IMPORT_HASHES), tree[0]
+
+
+def tree_state() -> tuple[str, str]:
+    """The Firth commit (firth_commit) and a digest of every uncommitted change
+    outside eval/, so a dirty tree that changes again is still seen."""
+    diff = subprocess.run(["git", "diff", "HEAD", "--", ".", ":(exclude)eval"],
+                          cwd=ROOT, capture_output=True).stdout
+    status = subprocess.run(["git", "status", "--porcelain", "--untracked-files=all", "--", ".", ":(exclude)eval"],
+                            cwd=ROOT, capture_output=True).stdout
+    return firth_commit(), hashlib.sha256(diff + b"\0" + status).hexdigest()
 
 
 def firth_commit() -> str:
@@ -608,8 +623,8 @@ def main() -> int:
     elif a.cmd == "score":
         require_sandbox(a.lang, select(a.tier))
         sols = load_solutions(a.solutions, a.workspace or plain_parent(a.solutions))
-        res, hashes = scored_with_hashes(lambda: score(sols, a.lang, select(a.tier), a.jobs))
-        res.update(label=a.label, firth_commit=firth_commit(), eval_sha256=hashes,
+        res, hashes, commit = scored_with_hashes(lambda: score(sols, a.lang, select(a.tier), a.jobs))
+        res.update(label=a.label, firth_commit=commit, eval_sha256=hashes,
                    prompt_docs=[d for d in a.prompt_docs.split(",") if d])
         print(json.dumps(res, indent=2))
     elif a.cmd == "repair":

@@ -273,10 +273,26 @@ def hashes_recorded() -> None:
         check(refused(["b"]) and not ran, "scoring refuses, before running, when the eval files changed after they were loaded")
         check(refused(["a", "b"]), "scoring refuses when the eval files change while it runs")
         harness.eval_hashes = lambda: {"harness.py": "a"}
-        check(harness.scored_with_hashes(lambda: "result") == ("result", {"harness.py": "a"}),
-              "unchanged files give the result with the hashes taken at load")
+        real_tree = harness.tree_state
+        try:
+            harness.tree_state = lambda: ("c0ffee", "d")
+            check(harness.scored_with_hashes(lambda: "result") == ("result", {"harness.py": "a"}, "c0ffee"),
+                  "unchanged files give the result with the hashes taken at load and the commit taken before")
+            trees = iter([("c0ffee", "d"), ("c0ffee", "e")])
+            harness.tree_state = lambda: next(trees)
+            moved = False
+            try:
+                harness.scored_with_hashes(lambda: "result")
+            except SystemExit:
+                moved = True
+            check(moved, "scoring refuses when the Firth tree changes while it runs, even dirty to dirty")
+        finally:
+            harness.tree_state = real_tree
     finally:
         harness.eval_hashes, harness.IMPORT_HASHES = real, loaded
+    state = harness.tree_state()
+    check(state == harness.tree_state() and state[0] == harness.firth_commit(),
+          "the tree state is stable and names the commit firth_commit reports")
 
 
 def main() -> int:
