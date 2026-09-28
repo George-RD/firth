@@ -248,6 +248,25 @@ def layout_checks(ws: Path) -> None:
         finally:
             shutil.rmtree(share, ignore_errors=True)
             isolate.hidden_copies.cache_clear()
+    # Codex's probe: a --tool that is a single file, a renamed exact copy of a
+    # reference. Refused; planted: with the scan bypassed it is readable.
+    lone = Path(f"/opt/s7-tool-{os.getpid()}")
+    try:
+        shutil.copyfile(HERE / "reference/mvp/sort.firth", lone)
+        isolate.hidden_copies.cache_clear()
+        check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"], tools=(str(lone),))),
+              "the sandbox refuses a --tool file holding a copy of a reference")
+        real_scan, isolate.hidden_copies = isolate.hidden_copies, lambda sources: []
+        try:
+            mutant = isolate.sandbox_command(ws, ["cat", str(lone)], uid=isolate.NOBODY, tools=(str(lone),))
+        finally:
+            isolate.hidden_copies = real_scan
+        leaked = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+        check(leaked.stdout == (HERE / "reference/mvp/sort.firth").read_text(),
+              "without the scan, the --tool file is readable in the sandbox (the planted case)")
+    finally:
+        lone.unlink(missing_ok=True)
+        isolate.hidden_copies.cache_clear()
     # /usr/local and /usr/src are not shown at all: an older revision and a
     # bare mirror there are unreachable. Planted: with the covering mounts
     # removed from the sandbox, both are readable.

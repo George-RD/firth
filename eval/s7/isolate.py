@@ -274,7 +274,22 @@ def hidden_copies(sources: tuple[str, ...]) -> list[str]:
     for f in [HERE / "mvp_tasks.py", *sorted((HERE / "reference").rglob("*.firth"))]:
         hidden.setdefault(f.stat().st_size, set()).add(hashlib.sha256(f.read_bytes()).hexdigest())
     found = []
+
+    def check_file(path: str, name: str) -> None:
+        if name == "mvp_tasks.py":
+            found.append(f"{path} (named like the hidden tests)")
+            return
+        try:
+            st = os.lstat(path)
+            if (stat.S_ISREG(st.st_mode) and st.st_size in hidden and
+                    hashlib.sha256(Path(path).read_bytes()).hexdigest() in hidden[st.st_size]):
+                found.append(f"{path} (the content of a hidden file)")
+        except OSError:
+            pass
     for src in sources:
+        if not os.path.isdir(src):  # a single file shown on its own (a --tool file)
+            check_file(src, os.path.basename(src))
+            continue
         for top, dirs, files in os.walk(src, followlinks=False):
             dirs[:] = [d for d in dirs if os.path.join(top, d) not in UNSHOWN]
             if ".git" in dirs + files or {"objects", "refs"} <= set(dirs) and "HEAD" in files:
@@ -282,17 +297,7 @@ def hidden_copies(sources: tuple[str, ...]) -> list[str]:
             if top.endswith("/eval/s7/reference") or top.endswith("/eval/s7/reference/mvp"):
                 found.append(f"{top} (named like the references)")
             for n in files:
-                path = os.path.join(top, n)
-                if n == "mvp_tasks.py":
-                    found.append(f"{path} (named like the hidden tests)")
-                    continue
-                try:
-                    st = os.lstat(path)
-                    if (stat.S_ISREG(st.st_mode) and st.st_size in hidden and
-                            hashlib.sha256(Path(path).read_bytes()).hexdigest() in hidden[st.st_size]):
-                        found.append(f"{path} (the content of a hidden file)")
-                except OSError:
-                    continue
+                check_file(os.path.join(top, n), n)
     return found
 
 
