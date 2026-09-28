@@ -79,11 +79,8 @@ jobs:
           python3 tools/loop/update_smt_proof_bindings.py --check
           python3 tools/loop/update_proof_manifest.py --check
           python3 tools/loop/update_kernel_exports.py --check
-<<<<<<< HEAD
           python3 tools/loop/update_inventory_spec_corpus.py --check
-=======
           python3 tools/loop/update_proof_records.py --check
->>>>>>> origin/main
           python3 tools/loop/check_smt_attestation.py
       - name: Run Lean suites
         run: lake test 2>&1 | tee /tmp/language-lean-tests.log
