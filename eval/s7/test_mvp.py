@@ -14,6 +14,8 @@
 """
 from __future__ import annotations
 
+import json
+import os
 import sys
 from pathlib import Path
 
@@ -167,6 +169,83 @@ def firth_references() -> None:
           "MVP tasks run past the default step budget")
 
 
+def rounds_prompt() -> None:
+    # A sub-agent author has no `try`: its prompt must not offer one, and it
+    # still gets the MVP documents and every MVP task.
+    for lang in ("firth", "python"):
+        text = harness.prompt(list(MVP), lang, rounds=2)
+        check("try --lang" not in text and "at most 2 such rounds" in text
+              and all(f"## {t.id}\n" in text for t in MVP), f"the {lang} --rounds prompt offers feedback, not try")
+    firth = harness.prompt(list(MVP), "firth", rounds=2)
+    check(all(f'<document path="{d}">' in firth for d in harness.MVP_DOCS),
+          "the --rounds prompt carries the MVP documents")
+    check("try --lang" in harness.prompt(list(MVP), "firth", mvp=True), "the mvp prompt still offers try")
+    try:
+        harness.prompt([BY_ID["fib"]], "firth", rounds=2)
+        outside = False
+    except ValueError:
+        outside = True
+    check(outside, "feedback rounds are refused outside the MVP tier, whose step budget they promise")
+
+
+def feedback_keeps_hints() -> None:
+    # The runner's error ends in the repr of the diagnostics, and Python puts a
+    # string holding an apostrophe in double quotes. The authors' feedback must
+    # still carry that hint (in run 5 it was dropped, so none saw it).
+    diag = [{"body": {"code": "firth.name.unresolved",
+                      "message_params": {"hint": "`xs` is a name in the word's stack effect.",
+                                         "message": "`xs` is not a defined word, primitive or local."},
+                      "cause": {"kind": "validation", "data": {"actual": "xs"}}}}]
+    raw = json.dumps({"error": f"application elaborate: status 'failure', expected 'success': {diag!r}",
+                      "status": "error"})
+    got = harness.compact(raw)
+    check("hint: `xs` is a name in the word's stack effect." in got
+          and "message: `xs` is not a defined word" in got and "actual: xs" in got,
+          "feedback keeps a hint that holds an apostrophe")
+
+
+def subagent_audit() -> None:
+    # The audit is what stands in for a sandbox around a sub-agent author, so
+    # it must flag a planted read of the hidden tests, a shell call and an
+    # answer file changed after the author wrote it.
+    import tempfile
+    from audit_subagent import audit
+    with tempfile.TemporaryDirectory() as tmp:
+        d = Path(tmp)
+        prompt, ans = d / "prompt-firth.md", d / "answer-1.md"
+        prompt.write_text("p")
+        ans.write_text("### task: sort\n")
+
+        def call(name, **inp):
+            return {"type": "assistant", "timestamp": "t",
+                    "message": {"model": "m", "content": [{"type": "tool_use", "name": name, "input": inp}]}}
+        ok = [call("Read", file_path=str(prompt)), call("Write", file_path=str(ans), content=ans.read_text()),
+              call("Read", file_path=str(d / "repair-1.md"))]
+        check(audit(ok, prompt, d, d)[1] == [], "the audit passes a prompt read, an answer write and feedback")
+        inherited = {"type": "user", "timestamp": "2026-01-01T00:00:00Z", "message": {"content": "context"}}
+        timed = [dict(e, timestamp=f"2026-01-01T01:00:0{i}Z") for i, e in enumerate(ok)]
+        log = audit([inherited, *timed], prompt, d, d)[0]
+        check((log["started"], log["finished"]) == ("2026-01-01T01:00:00Z", "2026-01-01T01:00:02Z"),
+              f"the audit times the author's own turns, not inherited context: {log['started']} {log['finished']}")
+        for what, ev in (("a read of the hidden tests", call("Read", file_path=str(HERE / "mvp_tasks.py"))),
+                         ("a shell call", call("Bash", command="cat eval/s7/reference/mvp/sort.firth")),
+                         ("a write outside the author's files", call("Write", file_path=str(HERE / "x.py"), content="")),
+                         ("a read of another directory's feedback", call("Read", file_path="/elsewhere/repair-1.md"))):
+            check(len(audit(ok + [ev], prompt, d, d)[1]) == 1, f"the audit flags {what}")
+        sol = d / "solutions-1.json"
+        sol.write_text(json.dumps(harness.extract(ans.read_text())))
+        check(audit(ok, prompt, d, d)[1] == [], "the audit passes solutions that are the answer as written")
+        sol.write_text(json.dumps({**harness.extract(ans.read_text()), "sort": "changed after the answer"}))
+        check(len(audit(ok, prompt, d, d)[1]) == 1, "the audit flags scored solutions that differ from the answer")
+        sol.unlink()
+        ans.write_text("### task: sort\nchanged\n")
+        check(len(audit(ok, prompt, d, d)[1]) == 1, "the audit flags an answer changed after it was written")
+    from audit_subagent import solutions_mismatch
+    kept = sorted(p for p in (HERE / "runs").glob("2026-09-28-*/*") if (p / "answer-1.md").is_file())
+    check(kept and all(solutions_mismatch(p) == [] for p in kept),
+          f"every kept round's scored solutions are its answers as written ({len(kept)} authors)")
+
+
 def unsandboxed_python_refused() -> None:
     real = harness.os.geteuid
     try:
@@ -188,29 +267,73 @@ def hashes_recorded() -> None:
     h = harness.eval_hashes()
     check(set(h) == {"task.py", "tasks.py", "mvp_tasks.py", "harness.py", "isolate.py"}
           and all(len(v) == 64 for v in h.values()), "results can record the eval sources' SHA-256")
-    # Hashes are taken before scoring, and a change during scoring is refused.
-    # Planted: a scoring run during which the files' hashes change.
-    real = harness.eval_hashes
-    seen = iter([{"harness.py": "a"}, {"harness.py": "b"}])
-    try:
-        harness.eval_hashes = lambda: next(seen)
-        changed = False
+    # Hashes are those of the files as first loaded, before the task sets were
+    # imported; an edit after that, before or during scoring, is refused.
+    # Planted: files edited after loading, and files edited mid-run.
+    real, loaded = harness.eval_hashes, harness.IMPORT_HASHES
+    check(loaded == real(), "the hashes taken at import match the files on disk")
+
+    ran: list[bool] = []
+
+    def refused(seq: list[str]) -> bool:
+        seen = iter({"harness.py": v} for v in seq)
+        harness.eval_hashes = lambda: next(seen, {"harness.py": seq[-1]})
+        ran.clear()
         try:
-            harness.scored_with_hashes(lambda: "result")
+            harness.scored_with_hashes(lambda: ran.append(True) or "result")
         except SystemExit:
-            changed = True
-        check(changed, "scoring refuses to record hashes when the eval files change while it runs")
+            return True
+        return False
+    try:
+        harness.IMPORT_HASHES = {"harness.py": "a"}
+        check(refused(["b"]) and not ran, "scoring refuses, before running, when the eval files changed after they were loaded")
+        check(refused(["a", "b"]), "scoring refuses when the eval files change while it runs")
         harness.eval_hashes = lambda: {"harness.py": "a"}
-        check(harness.scored_with_hashes(lambda: "result") == ("result", {"harness.py": "a"}),
-              "unchanged files give the result with the hashes taken before scoring")
+        real_tree = harness.tree_state
+        try:
+            harness.tree_state = lambda: ("c0ffee", "d")
+            check(harness.scored_with_hashes(lambda: "result") == ("result", {"harness.py": "a"}, "c0ffee"),
+                  "unchanged files give the result with the hashes taken at load and the commit taken before")
+            trees = iter([("c0ffee", "d"), ("c0ffee", "e")])
+            harness.tree_state = lambda: next(trees)
+            moved = False
+            try:
+                harness.scored_with_hashes(lambda: "result")
+            except SystemExit:
+                moved = True
+            check(moved, "scoring refuses when the Firth tree changes while it runs, even dirty to dirty")
+        finally:
+            harness.tree_state = real_tree
     finally:
-        harness.eval_hashes = real
+        harness.eval_hashes, harness.IMPORT_HASHES = real, loaded
+    state = harness.tree_state()
+    check(state == harness.tree_state() and state[0] == harness.firth_commit(),
+          "the tree state is stable and names the commit firth_commit reports")
+    probe = harness.ROOT / f"s7-untracked-probe-{os.getpid()}"
+    real_digest = harness.untracked_digest
+    try:
+        probe.write_text("before")
+        before = harness.tree_state()
+        probe.write_text("after!")
+        check(harness.tree_state() != before, "an untracked file edited during a run changes the tree state")
+        harness.untracked_digest = lambda: b""
+        probe.write_text("before")
+        names_only = harness.tree_state()
+        probe.write_text("after!")
+        check(harness.tree_state() == names_only,
+              "without its contents hashed, the same edit goes unseen (the planted case)")
+    finally:
+        harness.untracked_digest = real_digest
+        probe.unlink(missing_ok=True)
 
 
 def main() -> int:
     hand_values()
     scorer_rejects_wrong_python()
     hashes_recorded()
+    rounds_prompt()
+    feedback_keeps_hints()
+    subagent_audit()
     unsandboxed_python_refused()
     if "--no-firth" not in sys.argv:
         firth_references()

@@ -1,0 +1,3 @@
+# Kept author output is recorded byte for byte: the audit compares each
+# answer with the SHA-256 of what the author wrote, so its whitespace stays.
+* -whitespace

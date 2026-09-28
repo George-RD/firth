@@ -1,0 +1,14 @@
+{
+  "model": "jev-1.13.0",
+  "counts": {
+    "logic": 1
+  },
+  "tasks": {
+    "ledger": {
+      "mode": "logic",
+      "by": "jev",
+      "confidence": 0.56,
+      "review": true
+    }
+  }
+}

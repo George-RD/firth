@@ -4,7 +4,7 @@
 The author model sees only the language docs, each task's description, its
 input/output shape and one visible example. Hidden tests stay here.
 
-    harness.py prompt  --lang firth --tier today|all|hard|mvp [--extra-doc F] > prompt.md
+    harness.py prompt  --lang firth --tier today|all|hard|mvp [--extra-doc F] [--rounds N] > prompt.md
     harness.py extract --lang firth answer.md > solutions.json
     harness.py score   --lang firth solutions.json|DIR > results.json
     harness.py repair  --lang firth solutions.json results.json > repair.md
@@ -22,6 +22,7 @@ never on the hidden tests.
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import json
 import os
@@ -35,6 +36,11 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+# The eval sources as they were before any of them was imported: what this
+# process scores with, whatever happens to the files later.
+EVAL_FILES = ("task.py", "tasks.py", "mvp_tasks.py", "harness.py", "isolate.py")
+IMPORT_HASHES = {n: hashlib.sha256((Path(__file__).resolve().parent / n).read_bytes()).hexdigest()
+                 for n in EVAL_FILES}
 from tasks import BY_ID, HARD, MVP, TASKS, Task  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -98,11 +104,24 @@ TRY = "python3 eval/s7/harness.py try --lang {lang} --task <task id> <file>"
 
 
 def prompt(tasks: list[Task], lang: str, extra_docs: tuple[str, ...] = (),
-           mvp: bool = False) -> str:
+           mvp: bool = False, rounds: int = 0) -> str:
     """The author's prompt. With `mvp`, the author may use the `try` loop and
-    nothing else; without it, the author answers from the prompt alone."""
+    nothing else; without it, the author answers from the prompt alone. With
+    `rounds`, an author that cannot run `try` (a sub-agent, which the sandbox
+    does not hold) gets the MVP documents instead, answers without tools, and is
+    shown up to `rounds` times how its answers did on the visible examples
+    (`repair`), which is what `try` would have shown it."""
+    if rounds and any(t.id not in MVP_IDS for t in tasks):
+        # The rounds prompt carries the MVP documents and step budget, which
+        # scoring grants only to MVP tasks (Codex's finding).
+        raise ValueError("feedback rounds are for the MVP tier only")
     parts = []
     loop = (
+        "Do not use any tool except reading this prompt file and writing your answer "
+        "file, and do not use the internet. After you answer, you will be shown how each "
+        "answer did on its task's example: the result, or the diagnostics if it failed. "
+        f"You may then fix your answers; there are at most {rounds} such rounds.\n"
+        if rounds else
         "While you work you may check and run a program with\n\n"
         f"    {TRY.format(lang=lang)}\n\n"
         "which runs it on that task's example and shows the result, or the diagnostics "
@@ -112,6 +131,7 @@ def prompt(tasks: list[Task], lang: str, extra_docs: tuple[str, ...] = (),
         + "Use it as often as you "
         "like. Do not open, read or search any other file, and do not use the internet.\n"
         if mvp else "")
+    mvp = mvp or bool(rounds)
     if lang == "firth":
         parts.append(
             "You are writing programs in Firth, a new stack language. You have never seen "
@@ -357,20 +377,52 @@ def eval_hashes() -> dict[str, str]:
     `firth_commit` ignores eval/ (rescores copy it onto other builds), so this is
     what shows an edit to the frozen tasks or the harness, committed or not."""
     here = Path(__file__).resolve().parent
-    return {n: hashlib.sha256((here / n).read_bytes()).hexdigest()
-            for n in ("task.py", "tasks.py", "mvp_tasks.py", "harness.py", "isolate.py")}
+    return {n: hashlib.sha256((here / n).read_bytes()).hexdigest() for n in EVAL_FILES}
 
 
 def scored_with_hashes(run):
-    """RUN's result and the eval hashes taken before it started. Refuses when
-    the files change while it runs: scoring keeps the definitions it imported,
-    so hashes taken afterwards would name an evaluator that did not score it
-    (Codex's finding)."""
-    before = eval_hashes()
+    """RUN's result, the eval hashes taken when this module was first loaded
+    (before the task sets were imported), and the Firth commit taken before the
+    run. Refuses when the eval files differ from those hashes before or after
+    the run, or when the Firth tree outside eval/ changed during it: scoring
+    keeps the definitions it imported and builds against the tree it finds, so
+    anything read afterwards would name what did not score it (Codex's
+    findings; the reviewer's note moved the eval snapshot to import time)."""
+    if eval_hashes() != IMPORT_HASHES:
+        raise SystemExit("the task sets or the scorer changed since they were loaded; nothing is scored")
+    tree = tree_state()
     out = run()
-    if eval_hashes() != before:
+    if eval_hashes() != IMPORT_HASHES:
         raise SystemExit("the task sets or the scorer changed while scoring; nothing is recorded")
-    return out, before
+    if tree_state() != tree:
+        raise SystemExit("the Firth tree changed while scoring; nothing is recorded")
+    return out, dict(IMPORT_HASHES), tree[0]
+
+
+def tree_state() -> tuple[str, str]:
+    """The Firth commit (firth_commit) and a digest of every uncommitted change
+    outside eval/, so a dirty tree that changes again is still seen."""
+    diff = subprocess.run(["git", "diff", "HEAD", "--", ".", ":(exclude)eval"],
+                          cwd=ROOT, capture_output=True).stdout
+    status = subprocess.run(["git", "status", "--porcelain", "--untracked-files=all", "--", ".", ":(exclude)eval"],
+                            cwd=ROOT, capture_output=True).stdout
+    return firth_commit(), hashlib.sha256(diff + b"\0" + status + b"\0" + untracked_digest()).hexdigest()
+
+
+def untracked_digest() -> bytes:
+    """The names and contents of the untracked files outside eval/, which
+    `git diff` leaves out and `git status` lists only by name."""
+    names = subprocess.run(["git", "ls-files", "-z", "--others", "--exclude-standard", "--", ".", ":(exclude)eval"],
+                           cwd=ROOT, capture_output=True).stdout
+    h = hashlib.sha256()
+    for name in sorted(n for n in names.split(b"\0") if n):
+        path = ROOT / os.fsdecode(name)
+        h.update(name + b"\0")
+        if path.is_file() and not path.is_symlink():
+            h.update(hashlib.sha256(path.read_bytes()).digest())
+        elif path.is_symlink():
+            h.update(b"link:" + os.fsencode(os.readlink(path)))
+    return h.digest()
 
 
 def firth_commit() -> str:
@@ -435,13 +487,51 @@ def score(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int) ->
     return res
 
 
+FIELDS = ("code", "message", "expected", "actual", "hint")
+
+
 def readable(error: str) -> str:
-    """Prefer the checker's plain-language fields over the raw JSON envelope."""
-    fields = {k: m.group(1) for k in ("code", "message", "expected", "actual", "hint")
-              if (m := re.search(rf"'{k}': '((?:[^'\\]|\\.)*)'", error))}
+    """Prefer the checker's plain-language fields over the raw JSON envelope.
+
+    The runner reports a failure as JSON whose `error` string ends in the Python
+    repr of the diagnostic list. Python quotes a string that holds an apostrophe
+    with double quotes, so the fields are read from the decoded structure, not by
+    matching single-quoted text: a hint such as "`xs` is a name in the word's stack
+    effect" was dropped that way, and authors never saw it."""
+    fields = _diagnostic_fields(error)
     if "message" not in fields:
         return error
     return "\n".join(f"{k}: {v}" for k, v in fields.items())
+
+
+def _diagnostic_fields(error: str) -> dict[str, str]:
+    """The first string value of each of FIELDS, in the order the diagnostic
+    lists them, or {} when the envelope cannot be decoded."""
+    text = error
+    try:
+        text = json.loads(error).get("error", error)
+    except (ValueError, AttributeError):
+        pass
+    start = text.find("[{")
+    try:
+        found = ast.literal_eval(text[start:]) if start >= 0 else None
+    except (ValueError, SyntaxError, MemoryError, RecursionError):
+        found = None
+    if found is None:
+        return {}
+    fields: dict[str, str] = {}
+
+    def walk(v) -> None:
+        if isinstance(v, dict):
+            for k, x in v.items():
+                if k in FIELDS and isinstance(x, str) and k not in fields:
+                    fields[k] = x
+                walk(x)
+        elif isinstance(v, (list, tuple)):
+            for x in v:
+                walk(x)
+    walk(found)
+    return {k: fields[k] for k in FIELDS if k in fields}
 
 
 def repair(solutions: dict[str, str], results: dict, lang: str, tasks: list[Task]) -> str:
@@ -520,6 +610,9 @@ def main() -> int:
     p.add_argument("--tier", default="all")
     p.add_argument("--extra-doc", action="append", default=[],
                    help="extra document appended after the repo docs, e.g. a primitives supplement")
+    p.add_argument("--rounds", type=int, default=0,
+                   help="for an author without `try`: answer without tools, then this many rounds "
+                        "of feedback on the visible examples")
     e = sub.add_parser("extract"); e.add_argument("--lang"); e.add_argument("answer", type=Path)
     e.add_argument("--workspace", type=Path, help="the author's workspace, when the answer is in it")
     s = sub.add_parser("score"); s.add_argument("--lang", required=True, choices=["firth", "python"])
@@ -539,14 +632,17 @@ def main() -> int:
     rep = sub.add_parser("report"); rep.add_argument("results", type=Path, nargs="+")
     a = cli.parse_args()
     if a.cmd == "prompt":
-        print(prompt(select(a.tier), a.lang, tuple(a.extra_doc), mvp=a.tier == "mvp").rstrip("\n"))
+        if a.rounds and a.tier != "mvp":
+            raise SystemExit("--rounds is for --tier mvp only")
+        print(prompt(select(a.tier), a.lang, tuple(a.extra_doc), mvp=a.tier == "mvp" and not a.rounds,
+                     rounds=a.rounds).rstrip("\n"))
     elif a.cmd == "extract":
         print(json.dumps(extract(read_regular(a.answer, a.workspace or plain_parent(a.answer))), indent=2))
     elif a.cmd == "score":
         require_sandbox(a.lang, select(a.tier))
         sols = load_solutions(a.solutions, a.workspace or plain_parent(a.solutions))
-        res, hashes = scored_with_hashes(lambda: score(sols, a.lang, select(a.tier), a.jobs))
-        res.update(label=a.label, firth_commit=firth_commit(), eval_sha256=hashes,
+        res, hashes, commit = scored_with_hashes(lambda: score(sols, a.lang, select(a.tier), a.jobs))
+        res.update(label=a.label, firth_commit=commit, eval_sha256=hashes,
                    prompt_docs=[d for d in a.prompt_docs.split(",") if d])
         print(json.dumps(res, indent=2))
     elif a.cmd == "repair":

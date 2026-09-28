@@ -411,19 +411,168 @@ See `runs/rescore-main-9ac3bc8.json`.
   `prim =`) are the ones that were added. The Haiku `count-true` answer the
   checker rejected in run 1 also passes now.
 
-## What the three runs say about the bet
+## Run 4: 28 September 2026, the MVP task set
+
+Scored on `eb2208f` (the #134 branch: the frozen MVP set and the sandbox).
+Authors: `claude-sonnet-5` and `claude-haiku-4-5-20251001`, one sample each
+per language. Everything is in `runs/2026-09-28-mvp/`.
+
+**How the authors ran.** The maintainer ruled out an API key for these runs,
+so the authors are sub-agents of the session running the eval, as in runs 1
+to 3, not sandboxed `isolate.py run` processes. A sub-agent cannot use
+`./try` without a shell that could also read the hidden tests, so it got
+`prompt --tier mvp --rounds 2` instead: the MVP documents and tasks, no
+tools except reading the prompt and writing its answer, then up to two rounds
+of `repair` feedback. Each round shows only the visible example's result or
+diagnostics, which is what `./try` shows. Unlike `./try`, it cannot run the
+author's own inputs, and the rounds are limited to two.
+
+**What is and is not isolated.** Submitted Python ran in the sandbox at
+scoring (`python_sandboxed`). The authors themselves were *not*
+process-isolated: a sub-agent has the same shell and files as the session,
+so it could have read `mvp_tasks.py` or the references. What covers that gap
+is the transcript audit, `audit_subagent.py`. It writes each
+`transcript.json` from the sub-agent's log: every tool call the author made,
+and anything it flags. All 21 calls across the four authors were Reads of their own
+prompt or feedback file, Writes of their own answer file (each matching the
+kept answer by SHA-256), or the hand-back, and nothing else. The audit also
+rebuilds each round's `solutions-<n>.json`, the file `score` read, from the
+previous round's and the tasks in `answer-<n>.md`, and flags any difference;
+every kept round matches (`test_mvp.py`). `test_mvp.py`
+plants a read of `mvp_tasks.py`, a shell call, a stray write, another
+directory's feedback and a changed answer, and the audit flags each one. A
+sub-agent also sees the repository's `AGENTS.md` in its context, which
+describes Firth but gives no syntax.
+
+| Passed (of 20) | First answer | After feedback |
+|---|---|---|
+| Sonnet 5, Firth | 19 | 20 (round 2) |
+| Haiku 4.5, Firth | 0 | 0 (round 3) |
+| Sonnet 5, Python | 20 | |
+| Haiku 4.5, Python | 20 | |
+
+- **Sonnet wrote all 20 in Firth**, including `allocate-batch`, `sort`,
+  `merge-sorted`, and `digits` and `primes-up-to` with division built from
+  subtraction. Its only first-answer miss was `ledger`, where the call
+  passed `start` into the loop's index slot (a stack-order slip; Jev said
+  `logic` at 0.56, and the hand label is `stack_order`). It fixed that from
+  the example's feedback. From reading the prompt to writing the first
+  answer, the Firth answer took 5 minutes 56 seconds and the Python answer
+  11 seconds (the tool-call times in `transcript.json`; the `started` field
+  of every committed transcript, runs 1 to 5, is the first event of the log,
+  which is context inherited from the session, so it is not the author's
+  start).
+- **Haiku failed every Firth task, in all three answers, for one reason.**
+  It used the names from a word's stack effect (`xs`, `n`, `k`, `start`) as
+  if they were bound, outside any `locals` block, so every program stopped
+  at `firth.name.unresolved`. The rule-based pass labelled nothing (no
+  resource limits, no missing capabilities); Jev put 39 of the 40 failures in
+  `invented_syntax` and one in `missing_primitive` (a guessed `prim %` in
+  round 3). A look at that slice found the cause is shared by the docs and
+  the diagnostic:
+  - `docs/getting-started.md` says once that "names such as `n` label the
+    type boundary; they are not ordinary mutable variables". That reads as
+    if they were variables of some other kind. No document says that they
+    are out of scope in the body and that `locals` is what binds them.
+  - The diagnostic says "`xs` is not a defined word, primitive or local" and
+    its hint is about spelling and `prim`. It never says that `xs` is the
+    word's own stack-effect name or that `locals { xs } { ... }` binds it.
+    Haiku read the feedback as a local-ordering problem, then as a problem
+    with quotations, and never found the fix.
+  - Both `firth.name.unresolved` and `firth.name.unresolved-effect` hints
+    list only `prim +`, `-`, `*`, `<` and `=`. That list is out of date: it
+    leaves out `and`, `or`, `not` and the `seq-int` and `seq-bool`
+    primitives. In round 3, Haiku guessed `prim %` and got that stale list back.
+  These are recorded in `meta/todos/todo.s7-name-diagnostics.md`.
+- One sample per cell. The roadmap row asks for several attempts per task,
+  so this run does not discharge it. With the results this one-sided (Sonnet
+  20, Haiku 0), more samples would narrow the Haiku figure but not change it
+  from "fails".
+
+## Run 5: 28 September 2026, Haiku after the hint fix
+
+Main at `cec3707` (#142: the unresolved-name hint names `locals`, the
+getting-started guide explains stack-effect names, and every hint lists all
+primitives). The eval code is run 4's with the feedback fix below. Author:
+`claude-haiku-4-5-20251001` only, Firth only, set up as in run 4. Sonnet was
+left out because it was already at 20 of 20. Everything is in
+`runs/2026-09-28-haiku-cec3707/`.
+`cec3707` also has `prim div` and `prim mod` (#139), so `digits` and
+`primes-up-to` no longer need division built from subtraction. Run 4 and
+run 5 differ in more than the hints.
+
+**The feedback had been dropping hints.** `readable` picked the checker's
+fields out of the runner's error by matching single-quoted text. Python
+quotes a string that holds an apostrophe with double quotes, so the new hint
+("`xs` is a name in the word's stack effect ...") was silently left out.
+The same happened to the whole `untracked-local` message ("can't"). Sample 1's
+feedback rounds therefore never showed Haiku the new hints. `readable` now
+decodes the diagnostic, and `test_mvp.py` checks that a hint with an
+apostrophe survives. That check fails with the old parser. Sample 2 ran with
+the fix. Runs 3 and 4 were not affected: none of their feedback hints held an
+apostrophe. Runs 1 and 2 were. In their repair files, 21 answers got a raw
+envelope cut to 300 characters in place of the checker's message.
+
+| Haiku 4.5, Firth, passed (of 20) | First answer | Round 1 | Round 2 |
+|---|---|---|---|
+| Sample 1 (feedback without the new hints) | 2 | 2 | 2 |
+| Sample 2 (feedback fixed) | 6 | 7 | 8 |
+| Run 4, for comparison | 0 | 0 | 0 |
+
+- **The locals failure is gone from first answers.** In run 4, all 20 first
+  answers stopped at `firth.name.unresolved`. Here it was 1 of 20 in sample 1
+  and 0 in sample 2. Sample 1 fell back to it in its last round, in 15
+  tasks, after two rounds of feedback that had lost the hint. Sample 2, which
+  saw the hint, never did. Its one later `unresolved` (round 1, `allocate-batch`) was a local used out of its block.
+- **The next cause is stack shape.** Jev puts sample 2's first-answer failures
+  at 8 `stack_effect`, 5 `stack_order` and 1 `logic`, and its last round at 6,
+  3 and 2, plus one run out of steps (`has-pair-sum`, by rule). By
+  diagnostic, the largest group in the last round is
+  `firth.elaboration.untracked-local` (4 of 12). Then come word-input
+  mismatches (3), wrong answers (2: `is-sorted`, `primes-up-to`), and one
+  each of branch and compose mismatches.
+- **The untracked-local slice is a misleading diagnostic.** Looking closer,
+  the two failures checked by hand (`keep-positive`, `ledger`) hold an `if`
+  whose branches leave different stacks, inside a `locals` block. The checker reports
+  that as "the local is used after `if` ran a quotation whose stack effect is
+  not known", and its hint says inline quotations are fine. The actual
+  mistake is a branch mismatch, which the same `if` outside `locals`
+  reports as `firth.type.branch-mismatch`. With the one branch fixed
+  (`[ drop result ]` to `[ result ]`), `keep-positive` passes its example.
+  Recorded in `meta/todos/todo.s7-untracked-local-misreport.md` and fixed
+  in #145; the re-run that measures it is `todo.s7-mvp-rerun`.
+- Two samples, three answers each. The transcripts are clean (`audit_subagent.py`): every call was
+  a read of the prompt or feedback or a write of the answer, and each
+  recorded write matches the answer that was scored. Sample 1 wrote to a
+  directory named `haiku-firth/`, renamed `haiku-firth-1/` afterwards; the
+  audit was given both (`--dir`, `--kept`).
+
+## What the five runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from
 the docs alone. On main, Sonnet matches Python on every task set except
 for one run 2 `abs-diff` answer that the signed-Int change invalidated; its
 other failures when first scored were checker bugs and a step budget that
-have since been fixed. They did not carry a weaker
-model: Haiku wrote correct Python every time and mostly failed in Firth, in
-ways the checker caught but Haiku could not repair. The checker found most
-stack-shape errors before execution. Wrong answers at runtime were logic slips
-that a signature cannot catch. So the bet holds for strong models and not yet
-for weak ones, and the costs are real: Sonnet spent 20 to 100 times longer per
-Firth attempt than per Python attempt.
+have since been fixed. On the MVP set (run 4) it wrote all 20 tasks, 19 on
+the first answer and the last from the example's feedback.
+
+A weaker model is not there yet, but the gap moved with the diagnostics.
+Haiku wrote correct Python every time. In Firth it failed all 20 MVP tasks
+in run 4, all for one naming mistake that the checker caught and Haiku
+could not repair. Once the checker's hint named the fix (#142) and that
+hint reached it, Haiku passed 6 of 20 first answers and 8 after two rounds
+of feedback (run 5, sample 2). Its remaining failures are mostly stack
+shape, and the largest slice of those was a misleading diagnostic, since
+fixed (#145). The checker found most stack-shape errors before execution.
+Wrong answers at runtime were logic slips that a signature cannot catch.
+
+So the bet holds for strong models and not yet for weak ones, and the
+checker's diagnostics are the lever that has moved the weak model most.
+The costs are real. From reading the prompt to writing the first answer,
+Sonnet took about 50 to 250 times longer in Firth than in Python in runs 1
+and 3 (6 to 28 minutes against 7 to 8 seconds; run 2 kept no Sonnet Python
+transcript), and about 31 times longer in run 4 (5 minutes 56 seconds
+against 11 seconds).
 
 ## Limits and next steps
 
