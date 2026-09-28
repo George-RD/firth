@@ -27,6 +27,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -152,7 +153,26 @@ def load_solutions(path: Path) -> dict[str, str]:
     """A solutions JSON file, or a directory of `<task id>.firth` / `<task id>.py` files."""
     if path.is_dir():
         return {f.stem: f.read_text() for f in sorted(path.iterdir()) if f.suffix in (".firth", ".py")}
-    return json.loads(path.read_text())
+    return json.loads(read_regular(path))
+
+
+def read_regular(path: Path) -> str:
+    """Read a file an author may have written, refusing anything but a plain file
+    with one link. In the sandbox an author can make a symlink to a path it cannot
+    see (the target need not exist); read on the host, the link would follow to
+    that path, for example a reference solution. So links are never followed,
+    and FIFOs, devices and hard links are refused too."""
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    try:
+        st = os.fstat(fd)
+        if not stat.S_ISREG(st.st_mode) or st.st_nlink != 1:
+            raise ValueError(f"{path}: not a plain file with one link; refusing to read it")
+        with os.fdopen(fd, encoding="utf-8") as f:
+            fd = -1
+            return f.read()
+    finally:
+        if fd >= 0:
+            os.close(fd)
 
 
 def types(task: Task) -> tuple[str, ...]:
@@ -420,7 +440,7 @@ def main() -> int:
     if a.cmd == "prompt":
         print(prompt(select(a.tier), a.lang, tuple(a.extra_doc), mvp=a.tier == "mvp").rstrip("\n"))
     elif a.cmd == "extract":
-        print(json.dumps(extract(a.answer.read_text()), indent=2))
+        print(json.dumps(extract(read_regular(a.answer)), indent=2))
     elif a.cmd == "score":
         require_sandbox(a.lang, select(a.tier))
         res = score(load_solutions(a.solutions), a.lang, select(a.tier), a.jobs)

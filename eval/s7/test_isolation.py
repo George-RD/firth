@@ -54,6 +54,23 @@ def call(name: str, **inp) -> dict:
         {"type": "tool_use", "name": name, "input": inp}]}}
 
 
+def refused(load) -> bool:
+    """True when `load` raises. A load that hangs (a FIFO opened without
+    O_NONBLOCK blocks) counts as not refused, after ten seconds."""
+    out: list[bool] = []
+
+    def go() -> None:
+        try:
+            load()
+            out.append(False)
+        except (ValueError, OSError):
+            out.append(True)
+    t = threading.Thread(target=go, daemon=True)
+    t.start()
+    t.join(10)
+    return out == [True]
+
+
 def audit_checks() -> None:
     clean = [call("Write", file_path="/tmp/work/sort.firth", content="..."),
              call("Bash", command="./try --task sort sort.firth"),
@@ -220,6 +237,28 @@ def main() -> int:
         other = isolate.run(ws, ["./try", "--task", "fib", "reverse.py"],
                             capture_output=True, text=True, timeout=300)
         check("unknown task" in other.stdout, "try refuses tasks outside the workspace's set")
+
+        # The reviewer's probe: inside the sandbox an author links to a reference
+        # it cannot see. The link dangles there, but on the host it resolves.
+        ref = HERE / "reference/mvp/sort.firth"
+        answers = ws / "answers"
+        answers.mkdir()
+        isolate.run(ws, ["bash", "-c", f"ln -s {ref} answers/sort.firth"],
+                    capture_output=True, text=True, timeout=300)
+        linked = answers / "sort.firth"
+        check(linked.is_symlink() and linked.read_text() == ref.read_text(),
+              "a link made in the sandbox reads the reference on the host (the planted case)")
+        check(refused(lambda: harness.load_solutions(answers)),
+              "loading answers refuses a symlink the author made")
+        linked.unlink()
+        os.mkfifo(answers / "pipe.py")
+        check(refused(lambda: harness.load_solutions(answers)), "loading answers refuses a FIFO")
+        (answers / "pipe.py").unlink()
+        (answers / "sort.firth").write_text("x")
+        os.link(answers / "sort.firth", ws / "twin")
+        check(refused(lambda: harness.load_solutions(answers)), "loading answers refuses a hard link")
+        (ws / "twin").unlink()
+        check(harness.load_solutions(answers) == {"sort": "x"}, "a plain answer file still loads")
     audit_checks()
     print(f"\n{len(failures)} failure(s)")
     return 1 if failures else 0

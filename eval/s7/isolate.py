@@ -252,7 +252,7 @@ def main() -> int:
         except KeyboardInterrupt:
             stop.set()
     elif a.cmd == "audit":
-        events = [json.loads(l) for l in a.transcript.read_text().splitlines() if l.strip()]
+        events = [json.loads(l) for l in harness.read_regular(a.transcript).splitlines() if l.strip()]
         bad = audit(events)
         print("\n".join(bad) if bad else "clean: only try and workspace files")
         return 1 if bad else 0

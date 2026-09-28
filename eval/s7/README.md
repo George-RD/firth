@@ -118,6 +118,12 @@ include negative numbers and empty sequences.
   runs as `python3 -I` so a `json.py` the author writes is not imported, and
   the audit flags any write to `try`, its socket or `workspace.json`.
   `test_isolation.py` plants each of these.
+- The host reads what an author wrote (answer files, transcripts) only as
+  plain files with one link, never following a symlink. Otherwise a link made
+  in the sandbox to a reference path, dangling there, would read the reference
+  on the host. A workspace holding such a file is refused.
+- An author can delete `try.sock`. That only breaks its own `./try`, and the
+  audit flags the command.
 - Each results file records `eval_sha256`, a SHA-256 of `task.py`,
   `tasks.py`, `mvp_tasks.py`, `harness.py` and `isolate.py` as scored. `firth_commit`
   ignores `eval/`, so this is what shows an edit to the frozen set or the
