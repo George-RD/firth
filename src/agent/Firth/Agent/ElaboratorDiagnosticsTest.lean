@@ -628,6 +628,18 @@ def runElaboratorDiagnosticTests : IO Unit := do
     ["In the false branch of the `if` in `main` whose true branch is `[ drop true ]`, `swap` needs 2 values"]
   unless needlesMissing "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different numbers of values: the true branch takes 2 values from the stack below the `if` and leaves 1 value, and the false branch takes 2 values from the stack below the `if` and leaves 2 values. The `if` takes 1 value from below the `if` that this code does not have: everything it was given is bound to locals or already used, so that value belongs to the caller.\nhint: Push what the branch needs inside the branch, by writing a local's name or computing the value there, or remove the operation that takes it if it should not be there. If the branch means to use a value computed before the `if`, keep a copy of it before the condition (for example with `dup`). Adding a `drop` or pushing values to even out the branches would only move the mistake." allTrueNeedles do
     fail "all-true (answer 1): the report the eval recorded already says what the new one does"
+  -- A word whose effect has no row constrains the whole stack, not only
+  -- its inputs, which the account does not model: the report keeps the
+  -- checker's own account instead of naming what `h` gets.
+  match elaboratePipeline pipelineContext ": h ( x:Int^many -- y:Int^many ) ;\n\n: g (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) true [ h ] [ ] if prim + ;" agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "closed word" "firth.type.branch-mismatch" emitted
+      unless emitted.contains "The true branch of `if` in `g` cannot run on the stack it is given." do
+        fail s!"closed word: the report does not keep the checker's account: {emitted}"
+      if emitted.contains "`h` takes" || emitted.contains "`h` needs" then
+        fail s!"closed word: the report accounts for `h` as if it kept the stack below: {emitted}"
+  | _ => fail "closed word: expected one diagnostic"
   -- Values from below the `if` are named bottom to top, as the word's
   -- inputs were given.
   branchReport "two inputs from below"

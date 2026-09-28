@@ -78,6 +78,14 @@ private def literalText : Firth.Elaborator.Literal → String
   | .boolean value => if value then "true" else "false"
   | _ => "a literal"
 
+/-- Whether a stack effect keeps the stack below its inputs as it is: both
+sides start with the same row variable. A closed effect, or one whose output
+row differs, constrains the whole stack, which the walk does not model. -/
+private def keepsRow (effect : StackEffect) : Bool :=
+  match effect.input, effect.output with
+  | .row input _ :: _, .row output _ :: _ => input == output
+  | _, _ => false
+
 private def valueItems (items : List StackItem) : List (String × String) :=
   items.filterMap fun
     | .value name type _ => some (name, type.name)
@@ -147,6 +155,7 @@ mutual
         if walk.locals.contains name then .next (push walk [s!"`{name}`"]) else
         match context.words.find? (·.name == name) with
         | some word =>
+            if !keepsRow word.effect then .lost else
             let inputs := valueItems word.effect.input
             let outputs := valueItems word.effect.output
             let (_, walk) := take walk s!"`{name}`" (inputs.map fun (n, t) => s!"{n}:{t}") inputs.length
@@ -253,8 +262,11 @@ def ofIf (context : Context) (span : Span) : Option IfAccount :=
     if word.span.start.offset ≤ span.start.offset && span.start.offset < word.span.stop.offset
     then ofWord context word else none
 
-/-- A primitive's input types, bottom to top, and output count, from its scheme. -/
-def primitiveShape (scheme : Scheme) : List String × Nat :=
-  ((stackValues scheme.input).1.map renderType, (stackValues scheme.output).1.length)
+/-- A primitive's input types, bottom to top, and output count, from its
+scheme, when the scheme keeps the stack below its inputs as it is. -/
+def primitiveShape (scheme : Scheme) : Option (List String × Nat) :=
+  let (inputs, below) := stackValues scheme.input
+  let (outputs, after) := stackValues scheme.output
+  if below.isSome && below == after then some (inputs.map renderType, outputs.length) else none
 
 end Firth.Elaborator.Account

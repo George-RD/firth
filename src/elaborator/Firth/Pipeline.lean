@@ -170,8 +170,9 @@ private def accountFor (config : PipelineConfig) (source : String)
     (words : List WordDefinition) (span : Span) : Option IfAccount :=
   Account.ofIf {
     words
-    primitive := fun name => (config.typingEnv.primitive name).map Account.primitiveShape
-    external := fun name => (config.erasureEnv.word name).map fun signature =>
+    primitive := fun name => (config.typingEnv.primitive name).bind Account.primitiveShape
+    external := fun name => (config.erasureEnv.word name).bind fun signature =>
+      if !signature.rowPreserving then none else some
       (signature.input.length, signature.output.length)
     source
     target := span.start.offset } span
