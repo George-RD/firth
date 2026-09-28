@@ -321,13 +321,23 @@ result.flush()
 PY_TIMEOUT = 30  # seconds per Python case
 
 
-def python_install() -> tuple[str, ...]:
-    """The interpreter's install, when the sandbox's system directories lack it."""
+def sandbox_python() -> str:
+    """The interpreter the sandbox runs: sys.executable with its links resolved,
+    since a virtual environment's bin/ is not in the sandbox (CodeRabbit, #134)."""
+    return os.path.realpath(sys.executable)
+
+
+def python_install(exe: str) -> tuple[str, ...]:
+    """The interpreter's install and EXE's directory, where the sandbox's system
+    directories lack them."""
     import isolate
-    prefix = os.path.realpath(sys.base_prefix)
-    shown = any(isolate.within(prefix, os.path.realpath(d)) for d in isolate.SYSTEM if os.path.isdir(d))
-    unshown = any(isolate.within(prefix, u) for u in isolate.UNSHOWN)
-    return () if shown and not unshown else (prefix,)
+    out = []
+    for path in sorted({os.path.realpath(sys.base_prefix), os.path.dirname(exe)}):
+        shown = any(isolate.within(path, os.path.realpath(d)) for d in isolate.SYSTEM if os.path.isdir(d))
+        unshown = any(isolate.within(path, u) for u in isolate.UNSHOWN)
+        if not shown or unshown:
+            out.append(path)
+    return tuple(out)
 
 
 def run_python(source: str, args: tuple, fuel: int | None = None,
@@ -343,8 +353,9 @@ def run_python(source: str, args: tuple, fuel: int | None = None,
         empty = tempfile.mkdtemp(dir="/var/tmp", prefix="s7py-")
         uid = isolate.fresh_uid()
         os.chown(empty, uid, uid)
-        cmd = isolate.sandbox_command(Path(empty), cmd, network=False, uid=uid,
-                                      tools=python_install())
+        exe = sandbox_python()
+        cmd = isolate.sandbox_command(Path(empty), [exe, *cmd[1:]], network=False, uid=uid,
+                                      tools=python_install(exe))
     try:
         p = (isolate.contained(cmd, input=source, capture_output=True, text=True, timeout=PY_TIMEOUT,
                                env=isolate.sandbox_env()) if empty else
@@ -396,7 +407,9 @@ def scored_with_hashes(run):
         raise SystemExit("the task sets or the scorer changed while scoring; nothing is recorded")
     if tree_state() != tree:
         raise SystemExit("the Firth tree changed while scoring; nothing is recorded")
-    return out, dict(IMPORT_HASHES), tree[0]
+    # A dirty tree is named by its digest too, so two different uncommitted
+    # patches do not record the same firth_commit (Codex, on #147).
+    return out, dict(IMPORT_HASHES), tree[0] + (f"+{tree[1]}" if tree[0].endswith("-dirty") else "")
 
 
 def tree_state() -> tuple[str, str]:
@@ -629,6 +642,8 @@ def main() -> int:
     tr.add_argument("--task", required=True, choices=sorted(BY_ID))
     tr.add_argument("program", type=Path)
     tr.add_argument("--stack", help="JSON array of inputs, bottom of the stack first")
+    tr.add_argument("--workspace", type=Path, default=None,
+                    help="the directory the program must be in (default: the current directory)")
     rep = sub.add_parser("report"); rep.add_argument("results", type=Path, nargs="+")
     a = cli.parse_args()
     if a.cmd == "prompt":
@@ -658,7 +673,13 @@ def main() -> int:
         # reviewer, on #134).
         if a.lang == "python" and os.geteuid() != 0:
             raise SystemExit("running a Python answer with try needs the sandbox; run as root")
-        print(try_run(a.program.read_text(), a.lang, BY_ID[a.task], stack, sandboxed=a.lang == "python"))
+        # Read the program as `./try` does: a plain file in the workspace, so a
+        # diagnostic cannot echo a host file such as /etc/shadow (Codex, on #134).
+        try:
+            source = read_regular(a.program, a.workspace or Path.cwd())
+        except (OSError, ValueError) as e:
+            raise SystemExit(f"try: {a.program} is not a plain file in the workspace ({e})")
+        print(try_run(source, a.lang, BY_ID[a.task], stack, sandboxed=a.lang == "python"))
     elif a.cmd == "report":
         print(report(a.results))
     return 0

@@ -14,10 +14,12 @@ Close, or decide against with a recorded reason, the gaps that the reference
 solutions in `eval/s7/reference/mvp/` had to work around in Firth code. None of
 them is hidden in host code; each costs the author extra words and steps.
 
-- **Integer division and remainder.** There is no `prim` for either. `digits`
+- **Integer division and remainder.** Closed by `prim div` and `prim mod`
+  (#139, Euclidean). Before that there was no `prim` for either. `digits`
   and `primes-up-to` divide by repeated subtraction (`div-from`, `mod`), which
   is linear in the quotient and so only fits the step budget for small inputs.
-- **Replacing a sequence element.** `seq-int` has `empty`, `len`, `at` and
+- **Replacing a sequence element.** Closed by `seq-int.set` and
+  `seq-bool.set` (#149). Before that `seq-int` had `empty`, `len`, `at` and
   `push` only. `allocate-batch` rebuilds the whole stock sequence to change one
   entry (`set-from`), and `sort` rebuilds the output on every insertion, so
   both are quadratic where an update primitive would make them linear.

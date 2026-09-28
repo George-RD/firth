@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -215,35 +216,112 @@ def subagent_audit() -> None:
         prompt, ans = d / "prompt-firth.md", d / "answer-1.md"
         prompt.write_text("p")
         ans.write_text("### task: sort\n")
+        (d / "solutions-1.json").write_text(json.dumps(harness.extract(ans.read_text())))
 
         def call(name, **inp):
             return {"type": "assistant", "timestamp": "t",
                     "message": {"model": "m", "content": [{"type": "tool_use", "name": name, "input": inp}]}}
         ok = [call("Read", file_path=str(prompt)), call("Write", file_path=str(ans), content=ans.read_text()),
               call("Read", file_path=str(d / "repair-1.md"))]
-        check(audit(ok, prompt, d, d)[1] == [], "the audit passes a prompt read, an answer write and feedback")
+        check(audit(ok, prompt, d, d, 2, "firth")[1] == [], "the audit passes a prompt read, an answer write and feedback")
         inherited = {"type": "user", "timestamp": "2026-01-01T00:00:00Z", "message": {"content": "context"}}
         timed = [dict(e, timestamp=f"2026-01-01T01:00:0{i}Z") for i, e in enumerate(ok)]
-        log = audit([inherited, *timed], prompt, d, d)[0]
+        log = audit([inherited, *timed], prompt, d, d, 2, "firth")[0]
         check((log["started"], log["finished"]) == ("2026-01-01T01:00:00Z", "2026-01-01T01:00:02Z"),
               f"the audit times the author's own turns, not inherited context: {log['started']} {log['finished']}")
         for what, ev in (("a read of the hidden tests", call("Read", file_path=str(HERE / "mvp_tasks.py"))),
                          ("a shell call", call("Bash", command="cat eval/s7/reference/mvp/sort.firth")),
                          ("a write outside the author's files", call("Write", file_path=str(HERE / "x.py"), content="")),
                          ("a read of another directory's feedback", call("Read", file_path="/elsewhere/repair-1.md"))):
-            check(len(audit(ok + [ev], prompt, d, d)[1]) == 1, f"the audit flags {what}")
+            check(len(audit(ok + [ev], prompt, d, d, 2, "firth")[1]) == 1, f"the audit flags {what}")
         sol = d / "solutions-1.json"
         sol.write_text(json.dumps(harness.extract(ans.read_text())))
-        check(audit(ok, prompt, d, d)[1] == [], "the audit passes solutions that are the answer as written")
+        check(audit(ok, prompt, d, d, 2, "firth")[1] == [], "the audit passes solutions that are the answer as written")
         sol.write_text(json.dumps({**harness.extract(ans.read_text()), "sort": "changed after the answer"}))
-        check(len(audit(ok, prompt, d, d)[1]) == 1, "the audit flags scored solutions that differ from the answer")
+        check(len(audit(ok, prompt, d, d, 2, "firth")[1]) == 1, "the audit flags scored solutions that differ from the answer")
         sol.unlink()
+        check(len(audit(ok, prompt, d, d, 2, "firth")[1]) == 1, "the audit flags an answer round with no scored solutions kept")
+        sol.write_text(json.dumps(harness.extract(ans.read_text())))
         ans.write_text("### task: sort\nchanged\n")
-        check(len(audit(ok, prompt, d, d)[1]) == 1, "the audit flags an answer changed after it was written")
+        sol.write_text(json.dumps(harness.extract(ans.read_text())))
+        check(len(audit(ok, prompt, d, d, 2, "firth")[1]) == 1, "the audit flags an answer changed after it was written")
+        ans.write_text("### task: sort\n")
+        sol.write_text(json.dumps(harness.extract(ans.read_text())))
+        # Codex's case: a third repair under --rounds 2 would score more
+        # feedback than the prompt allowed. Planted: the reads, the write and
+        # the kept files of that round.
+        extra = [call("Read", file_path=str(d / "repair-3.md")), call("Write", file_path=str(d / "answer-4.md"), content="x")]
+        check(audit(ok + [call("Read", file_path=str(d / "repair-2.md"))], prompt, d, d, 2, "firth")[1] == [],
+              "the audit passes feedback up to the round limit")
+        check(len(audit(ok + extra, prompt, d, d, 2, "firth")[1]) == 2, "the audit flags a read and a write past the round limit")
+        (d / "repair-3.md").write_text("r")
+        (d / "repair-3.md").unlink()
+        # Codex's case: feedback is allowed by its name only if it is what the
+        # round's results give. Planted: a repair file edited to show more.
+        (d / "results-1.json").write_text(json.dumps({"tasks": {"sort": {"submitted": True, "cases": [
+            {"visible": True, "pass": False, "ok": True, "stack": [[2, 1]], "expected": [[1, 2]]}]}}}))
+        (d / "repair-1.md").write_text(harness.repair(harness.extract(ans.read_text()),
+                                                      json.loads((d / "results-1.json").read_text()),
+                                                      "firth", harness.select("mvp")))
+        check(audit(ok, prompt, d, d, 2, "firth")[1] == [], "the audit passes feedback that its round's results give")
+        (d / "repair-1.md").write_text((d / "repair-1.md").read_text() + "\nhidden case: [[3, 1, 2]] -> [[1, 2, 3]]\n")
+        check(len(audit(ok, prompt, d, d, 2, "firth")[1]) == 1, "the audit flags feedback edited to show more than its results")
+        (d / "repair-3.md").write_text("r")
+        check(any("past" in b or "beyond" in b for b in audit(ok, prompt, d, d, 2, "firth")[1]),
+              "the audit flags a kept feedback file past the round limit")
+        (d / "repair-3.md").unlink()
+        # Codex's case (#152): a numbering gap ended the walk, so round 2's
+        # files went unchecked when round 1's were not kept. Planted: answer-2
+        # with differing solutions-2, and a made-up repair-2, with no round 1.
+        from audit_subagent import repair_mismatch as repairs, solutions_mismatch as solutions
+        gap = d / "gap"
+        gap.mkdir()
+        (gap / "answer-2.md").write_text("### task: sort\n")
+        (gap / "solutions-2.json").write_text(json.dumps({"sort": "not what was written"}))
+        check(any("answer-1.md" in b for b in solutions(gap)),
+              "the audit flags answers kept after a missing round")
+        (gap / "repair-2.md").write_text("hidden case: [[3, 1, 2]] -> [[1, 2, 3]]\n")
+        check(any("repair-2.md" in b for b in repairs(gap, "firth")),
+              "the audit checks feedback kept after a missing round")
+        # Codex's case (#152): the CLI defaulted to Firth, so a Python author's
+        # real feedback was rebuilt as Firth feedback and flagged. --lang is now
+        # required. Planted: the same Python feedback checked as Firth.
+        py = d / "python"
+        py.mkdir()
+        (py / "answer-1.md").write_text("### task: sort\n```python\ndef main(xs):\n    return xs\n```\n")
+        (py / "solutions-1.json").write_text(json.dumps(harness.extract((py / "answer-1.md").read_text())))
+        (py / "results-1.json").write_text(json.dumps({"tasks": {"sort": {"submitted": True, "cases": [
+            {"visible": True, "pass": False, "ok": True, "stack": [[2, 1]], "expected": [[1, 2]]}]}}}))
+        (py / "repair-1.md").write_text(harness.repair(json.loads((py / "solutions-1.json").read_text()),
+                                                       json.loads((py / "results-1.json").read_text()),
+                                                       "python", harness.select("mvp")))
+        check(repairs(py, "python") == [], "the audit passes a Python author's own feedback")
+        check(repairs(py, "firth") != [], "checked as Firth, the same feedback is flagged (the planted case)")
+        cli = subprocess.run([sys.executable, str(HERE / "audit_subagent.py"), str(d / "none.jsonl"),
+                              "--prompt", str(prompt), "--dir", str(py), "--rounds", "2"],
+                             capture_output=True, text=True)
+        check(cli.returncode == 2 and "--lang" in cli.stderr, "the audit CLI refuses to guess the language")
     from audit_subagent import solutions_mismatch
     kept = sorted(p for p in (HERE / "runs").glob("2026-09-28-*/*") if (p / "answer-1.md").is_file())
     check(kept and all(solutions_mismatch(p) == [] for p in kept),
           f"every kept round's scored solutions are its answers as written ({len(kept)} authors)")
+    from audit_subagent import repair_mismatch
+    check(all(repair_mismatch(p, "python" if "python" in p.name else "firth") == [] for p in kept),
+          "every kept feedback file is what its round's results give")
+
+
+def run_options_parsed() -> None:
+    # Codex's case: the README's `run DIR --tool X -- CMD` must parse --tool as
+    # an option, not as the author command. Planted: with the old REMAINDER
+    # positional, --tool lands in the command and no tool is shown.
+    import isolate
+    argv = ["run", "/var/tmp/ws", "--tool", "/opt/cli", "--keep", "/root/.cred", "--", "author", "--flag"]
+    a = isolate.parse_args(argv)
+    check(a.tool == ["/opt/cli"] and a.keep == ["/root/.cred"] and a.command == ["author", "--flag"],
+          f"run parses its options before -- and the command after it: {a.tool} {a.keep} {a.command}")
+    old = isolate.parser(remainder=True).parse_args(argv)
+    check(old.tool == [] and old.command[:1] == ["--tool"],
+          f"with REMAINDER, --tool is taken as the command (the planted case): {old.command[:2]}")
 
 
 def unsandboxed_python_refused() -> None:
@@ -302,6 +380,14 @@ def hashes_recorded() -> None:
             except SystemExit:
                 moved = True
             check(moved, "scoring refuses when the Firth tree changes while it runs, even dirty to dirty")
+            # Codex's case: two different uncommitted patches must not record
+            # the same firth_commit. Planted: the same dirty head, two digests.
+            got = []
+            for digest in ("p1", "p2"):
+                harness.tree_state = lambda d=digest: ("c0ffee-dirty", d)
+                got.append(harness.scored_with_hashes(lambda: "result")[2])
+            check(got == ["c0ffee-dirty+p1", "c0ffee-dirty+p2"],
+                  f"a dirty tree's firth_commit names its digest, so two patches differ: {got}")
         finally:
             harness.tree_state = real_tree
     finally:
@@ -334,6 +420,7 @@ def main() -> int:
     rounds_prompt()
     feedback_keeps_hints()
     subagent_audit()
+    run_options_parsed()
     unsandboxed_python_refused()
     if "--no-firth" not in sys.argv:
         firth_references()

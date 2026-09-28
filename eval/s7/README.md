@@ -57,8 +57,9 @@ the `answer-*.md` next to it. In all 18 author sessions the only files read
 were the prompt and repair files, and the only files written were the
 answers. This is an instruction plus an audit, not a sandbox.
 
-Each `results-*.json` records `firth_commit` (the build it was scored on,
-ending in `-dirty` if files outside `eval/` had uncommitted changes) and
+Each `results-*.json` records `firth_commit` (the build it was scored on;
+if files outside `eval/` had uncommitted changes, it ends in `-dirty+` and
+a digest of those changes, so two different patches never share a value) and
 `prompt_docs` (the documents the author's prompt was built from). Failure
 messages are kept in compact form: the VM trap class, and the checker's code,
 message, expected and actual stacks and hint.
@@ -71,8 +72,10 @@ row, frozen in its own reviewed change before any model attempted it. It has
 several cooperating words. Five are at allocator weight (`merge-sorted`,
 `histogram`, `sort`, `ledger` and `allocate-batch`, the last a whole batch of
 the inventory allocator's rules), and two (`digits`, `primes-up-to`) need
-division, which Firth lacks, so the author builds it from subtraction. Inputs
-include negative numbers and empty sequences.
+division. When the set was frozen Firth had no division, so an author built
+it from subtraction; `prim div` and `prim mod` landed in #139 and
+`seq-int.set` in #149, and the tasks are unchanged. Inputs include negative
+numbers and empty sequences.
 
 - Each task's Python `ref` defines the answer. `test_mvp.py` checks every ref
   against values worked out by hand from the description.
@@ -222,8 +225,11 @@ include negative numbers and empty sequences.
   scorer, committed or not.
 - Writing the references hit two gaps: no division or remainder, and no way
   to replace one element of a sequence. They are recorded in
-  `meta/todos/todo.language-14-authoring-gaps.md`. Boolean `and`, `or` and
-  `not` landed in #131 and are in the author's docs.
+  `meta/todos/todo.language-14-authoring-gaps.md`, and both are now closed:
+  `prim div` and `prim mod` in #139, `seq-int.set` and `seq-bool.set` in
+  #149. The references still use the words built from older primitives, and
+  pass on main (`test_mvp.py`). Boolean `and`, `or` and `not` landed in #131 and
+  are in the author's docs.
 
 A run gives each task to a fresh author several times, in Firth and in Python,
 keeps every transcript, and reports the pass rate per task and overall.
@@ -440,8 +446,14 @@ rebuilds each round's `solutions-<n>.json`, the file `score` read, from the
 previous round's and the tasks in `answer-<n>.md`, and flags any difference;
 every kept round matches (`test_mvp.py`). `test_mvp.py`
 plants a read of `mvp_tasks.py`, a shell call, a stray write, another
-directory's feedback and a changed answer, and the audit flags each one. A
-sub-agent also sees the repository's `AGENTS.md` in its context, which
+directory's feedback and a changed answer, and the audit flags each one.
+It is given the rounds the prompt allowed (`--rounds`) and flags any
+feedback read, answer written or file kept from a later round, so a run
+cannot score more feedback than it reports; `test_mvp.py` plants a third
+repair under `--rounds 2`. It also rebuilds each kept `repair-<n>.md` from
+that round's solutions and results and flags any difference, so feedback
+cannot show more than the visible example; a planted repair that shows a
+hidden case is flagged, and every kept one matches. A sub-agent also sees the repository's `AGENTS.md` in its context, which
 describes Firth but gives no syntax.
 
 | Passed (of 20) | First answer | After feedback |

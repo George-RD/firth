@@ -481,13 +481,39 @@ def main() -> int:
         # The MVP prompt outside a workspace names `harness.py try` directly;
         # that path must sandbox Python too (Codex, on #134).
         direct = subprocess.run([sys.executable, str(HERE / "harness.py"), "try", "--lang", "python",
-                                 "--task", "reverse", str(ws / "leak.py")], capture_output=True, text=True, timeout=300)
+                                 "--task", "reverse", str(ws / "leak.py"), "--workspace", str(ws)],
+                                capture_output=True, text=True, timeout=300)
         check("allocate-batch" not in direct.stdout and "FileNotFoundError" in direct.stdout,
               "harness.py try runs a Python answer in the sandbox too")
         check("allocate-batch" in harness.try_run((ws / "leak.py").read_text(), "python", harness.BY_ID["reverse"], None),
               "unsandboxed, try_run returns the hidden tests (the planted case)")
         # Not as root, any task id: an older-tier id is not an MVP task, but the
         # answer could still read the MVP tests (the reviewer, on #134).
+        # The direct command reads its program only from the workspace, as
+        # ./try does, so a diagnostic cannot echo a host file (Codex, on #134).
+        host = subprocess.run([sys.executable, str(HERE / "harness.py"), "try", "--lang", "python", "--task", "reverse",
+                               "/etc/shadow"], cwd=ws, capture_output=True, text=True, timeout=300)
+        check(host.returncode != 0 and "not a plain file in the workspace" in host.stderr and "root:" not in host.stdout,
+              f"harness.py try refuses a program outside the workspace: {host.stderr.strip()[-70:]}")
+        inside = subprocess.run([sys.executable, str(HERE / "harness.py"), "try", "--lang", "python", "--task", "reverse",
+                                 "leak.py"], cwd=ws, capture_output=True, text=True, timeout=300)
+        check("FileNotFoundError" in inside.stdout, "harness.py try still runs a program in the workspace")
+        # A root-only file outside the workspace whose first line is known, so the
+        # plant does not depend on what the host's /etc/shadow holds (CI's first
+        # line did not come back).
+        secret_dir = Path(tempfile.mkdtemp(dir="/var/tmp"))
+        try:
+            secret = secret_dir / "secret"
+            secret.write_text("S7-HOST-SECRET ::\n")
+            secret.chmod(0o600)
+            away = subprocess.run([sys.executable, str(HERE / "harness.py"), "try", "--lang", "python", "--task", "reverse",
+                                   str(secret)], cwd=ws, capture_output=True, text=True, timeout=300)
+            check(away.returncode != 0 and "S7-HOST-SECRET" not in away.stdout + away.stderr,
+                  "harness.py try refuses a root-only host file outside the workspace")
+            echoed = harness.try_run(secret.read_text(), "python", harness.BY_ID["reverse"], None, sandboxed=True)
+            check("S7-HOST-SECRET" in echoed, "read without the check, the host file comes back in the diagnostic (the planted case)")
+        finally:
+            shutil.rmtree(secret_dir)
         leak_any = Path("/tmp/s7-leak.py")
         leak_any.write_text(f"def main(*args):\n    raise Exception(open({str(HERE / 'mvp_tasks.py')!r}).read()[:60])\n")
         os.chmod(leak_any, 0o644)
@@ -847,7 +873,7 @@ print(json.dumps(out))
         check("S7-NOTE" in got.stdout, f"two runs as one uid share its keyring (the planted case): {put.stdout.strip()} {got.stdout.strip()}")
         put = isolate.run(ws, ["python3", "kr.py", "put"], capture_output=True, text=True, timeout=300)
         got = isolate.run(ws, ["python3", "kr.py", "get"], capture_output=True, text=True, timeout=300)
-        check(put.stdout.startswith("put") and "S7-NOTE" not in got.stdout,
+        check(put.stdout.split()[:2] == ["put", "1"] and "S7-NOTE" not in got.stdout,
               f"a key stored by one author run is gone for the next: {put.stdout.strip()} {got.stdout.strip()}")
         (ws / "kr.py").unlink()
         keyed = [harness.run_python(f"import ctypes\n{KEYRING_FN}\ndef main(xs):\n    return [keyring(m) for m in {mode!r}]\n",
@@ -874,6 +900,29 @@ print(json.dumps(out))
                  if not any(f == a or f.startswith(a + "/") for a in allowed)]
         check(found.stdout and not extra,
               f"the author can write only the workspace, /tmp and /dev/shm: {extra[:10]}")
+
+        # CodeRabbit's case: an interpreter reached through a virtual
+        # environment's link, whose bin/ is not in the sandbox.
+        venv = Path(f"/var/tmp/s7-venv-{os.getpid()}")
+        (venv / "bin").mkdir(parents=True, exist_ok=True)
+        (venv / "bin" / "python3").symlink_to(os.path.realpath(sys.executable))
+        plain = "def main(xs):\n    return xs\n"
+        saved_exe, saved_resolve, saved_install = sys.executable, harness.sandbox_python, harness.python_install
+        try:
+            sys.executable = str(venv / "bin" / "python3")
+            via_venv = harness.run_python(plain, ([4],), None, ("Seq Int",), sandboxed=True)
+            # As before the fix: the link run as it is, with only the base install shown.
+            harness.sandbox_python = lambda: sys.executable
+            harness.python_install = lambda exe: saved_install(os.path.realpath(saved_exe))
+            unresolved = harness.run_python(plain, ([4],), None, ("Seq Int",), sandboxed=True)
+        finally:
+            sys.executable, harness.sandbox_python = saved_exe, saved_resolve
+            harness.python_install = saved_install
+            shutil.rmtree(venv, ignore_errors=True)
+        check(not unresolved["ok"],
+              f"run through the venv's link, the sandbox cannot start Python (the planted case): {unresolved}")
+        check(via_venv == {"ok": True, "stack": [[4]]},
+              f"a venv interpreter still runs sandboxed answers: {via_venv}")
 
         # Codex's probe: an answer that never returns and starts a child. When
         # the case times out, nothing it started may keep running.
