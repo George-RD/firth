@@ -129,13 +129,15 @@ include negative numbers and empty sequences.
   shown. Copies that no git metadata leads to are refused too: the shown
   directories are scanned once per process for git storage (a `.git`
   entry, or HEAD, `objects` and `refs` as in a bare mirror) that holds the
-  hidden files: a blob of any revision this repository knows, or a commit
-  on any ref that touches their paths. The scan also looks for a file named
+  hidden files: a blob of any revision this repository knows, or any tree
+  object, reachable or not, holding `mvp_tasks.py` or an `eval/s7/reference`
+  directory. The scan also looks for a file named
   `mvp_tasks.py` or a directory ending in `eval/s7/reference` (older
   revisions), and for a file with the content of a hidden file (hashing only
   files of a hidden file's size). `test_isolation.py` plants each under
-  `/usr/share`, including a repository with a revision of the task file
-  that matches no known blob. It plants an older revision and a bare mirror
+  `/usr/share`, including repositories with a revision of the task file
+  that matches no known blob, in a reachable commit and in an unreachable
+  one. It plants an older revision and a bare mirror
   under `/usr/local`, which are unreachable. An unrelated repository, such
   as the CI runner's `/etc/skel/.nvm`, is shown.
 - **Threat model.** The sandbox guarantees that an author, and every
