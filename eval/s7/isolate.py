@@ -28,7 +28,9 @@ import argparse
 import json
 import os
 import re
+import signal
 import socket
+import stat
 import subprocess
 import sys
 import threading
@@ -204,11 +206,27 @@ def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = (),
         make = (f"mkdir -p {q(k)}" if Path(k).is_dir() else
                 f"[ -e {q(k)} ] || {{ mkdir -p {q(str(Path(k).parent))} && touch {q(k)}; }}")
         lines += [make, f"mount --bind -o ro {stage}/k{i} {q(k)}"]
-    lines += [f"umount -l {stage}", f"cd {INSIDE}",
+    # Everything else read-only: remount every mount point except the workspace,
+    # the fresh /tmp and /dev/shm, and /proc. Listing world-writable directories
+    # instead would miss some, and one attempt could leave notes for the next.
+    # A remount that fails stops the sandbox (set -e with pipefail).
+    # /run holds the host's sockets (a read-only mount still lets a socket be
+    # connected), so it is replaced by an empty directory, once staging is done.
+    lines += [f"umount -l {stage}", "mount -t tmpfs -o mode=755 tmpfs /run"]
+    lines += ["set -o pipefail",
+              "awk '{print $5}' /proc/self/mountinfo | sort -u | while read -r m; do",
+              '  m=$(printf "%b" "$m")',
+              f'  case "$m" in /tmp|{INSIDE}|{INSIDE}/*|/dev/shm|/proc|/proc/*) continue;; esac',
+              '  [ -e "$m" ] || continue  # covered by a mount above: unreachable',
+              '  mount -o remount,bind,ro "$m"',
+              "done"]
+    lines += [f"cd {INSIDE}",
               "exec setpriv --bounding-set=-all --inh-caps=-all --no-new-privs"
               + (f" --reuid={uid} --regid={uid} --clear-groups" if uid is not None else "")
               + ' -- "$@"']
-    return ["unshare", "--mount", "--pid", "--fork", "--mount-proc", "--propagation", "private",
+    # --kill-child alone does not stop a runaway: dropping to another uid clears
+    # the death signal it sets. `contained` kills the namespace itself.
+    return ["unshare", "--mount", "--pid", "--fork", "--kill-child", "--mount-proc", "--propagation", "private",
             *([] if network else ["--net"]),
             "bash", "-c", "\n".join(lines), "sandbox", *command]
 
@@ -234,6 +252,54 @@ def hand_over(dir: Path, uid: int) -> None:
             os.lchown(path, uid, uid)
 
 
+def check_keep(keep: tuple[str, ...], dir: Path) -> None:
+    """Refuse a credential path an author could have planted or redirected: one
+    inside the workspace, one through a link, or one under a directory that
+    `nobody` or anyone at all can write (`cp -rL` would follow what it found)."""
+    work = os.path.realpath(dir)
+    for k in keep:
+        path = os.path.abspath(k)
+        if os.path.realpath(path) != path:
+            raise SystemExit(f"--keep {k}: a link on its path; name the real file")
+        if path == work or path.startswith(work + "/"):
+            raise SystemExit(f"--keep {k}: inside the workspace")
+        p = Path(path)
+        for d in [p, *p.parents]:
+            st = os.lstat(d)
+            if st.st_uid == NOBODY or st.st_mode & 0o002:
+                raise SystemExit(f"--keep {k}: {d} is writable by the author")
+
+
+def contained(command: list[str], timeout: float | None = None, input: str | None = None,
+              **kw) -> subprocess.CompletedProcess:
+    """subprocess.run for a sandbox command line. On a timeout it kills the
+    namespace's first process, which takes every process in the PID namespace
+    with it (however it forked or set its session), then raises TimeoutExpired."""
+    if kw.pop("capture_output", False):
+        kw["stdout"] = kw["stderr"] = subprocess.PIPE
+    with subprocess.Popen(command, stdin=subprocess.PIPE if input is not None else None, **kw) as p:
+        try:
+            out, err = p.communicate(input, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            for child in children(p.pid):
+                os.kill(child, signal.SIGKILL)
+            p.kill()
+            p.communicate()
+            raise
+        return subprocess.CompletedProcess(p.args, p.returncode, out, err)
+
+
+def children(pid: int) -> list[int]:
+    return [int(d) for d in os.listdir("/proc") if d.isdigit() and ppid(int(d)) == pid]
+
+
+def ppid(pid: int) -> int | None:
+    try:
+        return int(Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[1])
+    except (OSError, IndexError, ValueError):
+        return None
+
+
 def q(s: str | Path) -> str:
     return "'" + str(s).replace("'", "'\\''") + "'"
 
@@ -243,11 +309,12 @@ def run(dir: Path, command: list[str], keep: tuple[str, ...] = (), passed: tuple
     """COMMAND as the author: in the sandbox, as `nobody`, with `sandbox_env(passed)`.
     `uid` exists only so the isolation test can plant a root author."""
     uid = NOBODY if uid is None else uid
+    check_keep(keep, dir)
     stop = threading.Event()
     serve(dir, stop)
     hand_over(dir, uid)
     try:
-        return subprocess.run(sandbox_command(dir, command, keep, uid=uid), env=sandbox_env(passed), **kw)
+        return contained(sandbox_command(dir, command, keep, uid=uid), env=sandbox_env(passed), **kw)
     finally:
         stop.set()
 

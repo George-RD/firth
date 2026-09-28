@@ -10,11 +10,13 @@ probe that finds nothing anywhere cannot pass for isolation.
 from __future__ import annotations
 
 import os
+import shutil
 import socket
 import subprocess
 import sys
 import tempfile
 import threading
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -52,6 +54,14 @@ def check(ok: bool, what: str) -> None:
 def call(name: str, **inp) -> dict:
     return {"type": "assistant", "message": {"content": [
         {"type": "tool_use", "name": name, "input": inp}]}}
+
+
+def refused_exit(call) -> bool:
+    try:
+        call()
+    except SystemExit:
+        return True
+    return False
 
 
 def refused(load) -> bool:
@@ -259,12 +269,26 @@ def main() -> int:
         del os.environ["S7_PLANTED_SECRET"]
         # Credentials come in as a copy the author can read, at their own path,
         # while the host file stays root-only.
-        cred = Path(tmp) / "cred.json"
-        cred.write_text("token")
-        cred.chmod(0o600)
-        kept = isolate.run(ws, ["cat", str(cred)], keep=(str(cred),), capture_output=True, text=True, timeout=300)
-        check(kept.stdout == "token" and cred.stat().st_uid == 0,
-              f"a kept credential is readable by the author as a copy: {kept.stdout!r} {kept.stderr.strip()}")
+        creds = Path(tempfile.mkdtemp(dir="/root", prefix="s7-keep-"))
+        try:
+            cred = creds / "cred.json"
+            cred.write_text("token")
+            cred.chmod(0o600)
+            kept = isolate.run(ws, ["cat", str(cred)], keep=(str(cred),), capture_output=True, text=True,
+                               timeout=300)
+            check(kept.stdout == "token" and cred.stat().st_uid == 0,
+                  f"a kept credential is readable by the author as a copy: {kept.stdout!r} {kept.stderr.strip()}")
+        finally:
+            shutil.rmtree(creds)
+        # A credential path the author could have planted or redirected is refused:
+        # in the workspace, under a world-writable directory, or through a link.
+        (ws / "planted.json").write_text("x")
+        os.symlink(ws / "planted.json", Path(tmp) / "via-link.json")
+        for bad in (ws / "planted.json", Path(tmp) / "loose.json", Path(tmp) / "via-link.json"):
+            if not bad.exists():
+                bad.write_text("x")
+            check(refused_exit(lambda: isolate.run(ws, ["true"], keep=(str(bad),))),
+                  f"--keep refuses {bad.name}")
 
         # Codex's probe: an allowed `./try` naming a host file the author can
         # read would send it on, for a diagnostic to echo back.
@@ -281,6 +305,54 @@ def main() -> int:
         check("not a plain file" in linked_try.stderr and passwd.stdout not in linked_try.stdout,
               f"try refuses a link to a file outside the workspace: {linked_try.stderr.strip()}")
         (ws / "s.py").unlink()
+        # The reviewer's probes: nothing outside the workspace and a fresh /tmp is
+        # writable (links, which access() follows, excepted), so one attempt
+        # cannot leave notes for the next, nor reach a host socket (a socket
+        # counts as writable). The planted case is a world-writable directory
+        # on the host, which nobody can write there.
+        drop = Path(f"/var/lib/s7-drop-{os.getpid()}")
+        drop.mkdir(mode=0o1777)
+        drop.chmod(0o1777)
+        try:
+            note = drop / "note"
+            host = subprocess.run(["setpriv", f"--reuid={isolate.NOBODY}", f"--regid={isolate.NOBODY}",
+                                   "--clear-groups", "touch", str(note)], capture_output=True, text=True)
+            check(host.returncode == 0 and note.exists(),
+                  f"on the host, nobody can write a world-writable directory (the planted case): {host.stderr.strip()}")
+            note.unlink(missing_ok=True)
+            wrote = isolate.run(ws, ["touch", str(note)], capture_output=True, text=True, timeout=300)
+            check(wrote.returncode != 0 and not note.exists(),
+                  f"the author cannot write it: {wrote.stderr.strip()}")
+        finally:
+            shutil.rmtree(drop)
+        found = isolate.run(ws, ["bash", "-c", "find / -path /proc -prune -o -writable ! -type l -print 2>/dev/null"],
+                            capture_output=True, text=True, timeout=600)
+        allowed = ("/tmp", "/dev/shm", *(f"/dev/{d}" for d in isolate.DEVICES))
+        extra = [f for f in found.stdout.splitlines()
+                 if not any(f == a or f.startswith(a + "/") for a in allowed)]
+        check(found.stdout and not extra,
+              f"the author can write only the workspace, /tmp and /dev/shm: {extra[:10]}")
+
+        # Codex's probe: an answer that never returns and starts a child. When
+        # the case times out, nothing it started may keep running.
+        runaway = ("import subprocess, time\ndef main(xs):\n"
+                   "    subprocess.Popen(['sleep', '987654'])\n    while True:\n        time.sleep(1)\n")
+        saved, harness.PY_TIMEOUT = harness.PY_TIMEOUT, 3
+        try:
+            timed = harness.run_python(runaway, ([1],), None, ("Seq Int",), sandboxed=True)
+        finally:
+            harness.PY_TIMEOUT = saved
+        time.sleep(2)
+        # Running, that is: a killed child may linger a moment as a zombie.
+        # Matched by exact arguments: `pkill -f` would also hit any shell whose
+        # command line merely mentions them.
+        procs = [l.split(None, 2) for l in subprocess.run(
+            ["ps", "-eo", "pid=,stat=,args="], capture_output=True, text=True).stdout.splitlines()]
+        alive = [int(p[0]) for p in procs if p[2:] == ["sleep 987654"] and not p[1].startswith("Z")]
+        check(timed == {"ok": False, "error": "timeout"} and not alive,
+              f"a timed-out answer leaves nothing running: {timed} {alive}")
+        for pid in alive:
+            os.kill(pid, 9)
         other = isolate.run(ws, ["./try", "--task", "fib", "reverse.py"],
                             capture_output=True, text=True, timeout=300)
         check("unknown task" in other.stdout, "try refuses tasks outside the workspace's set")

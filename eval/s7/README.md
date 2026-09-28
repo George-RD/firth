@@ -135,7 +135,15 @@ include negative numbers and empty sequences.
 - Nothing from the host environment reaches the sandbox except `PATH`, and
   what `isolate.py run --pass-env NAME` names (the model API key). `HOME` is
   the workspace. Credentials passed with `--keep` come in as read-only copies
-  `nobody` can read.
+  `nobody` can read. A `--keep` path inside the workspace, through a link, or
+  under a directory `nobody` or everyone can write is refused.
+- Inside the sandbox every mount is remounted read-only except the workspace,
+  a fresh `/tmp` and `/dev/shm`, and `/run` is replaced by an empty directory
+  (it holds host sockets). So one attempt cannot leave notes for a later one.
+  `test_isolation.py` runs `find / -writable` as the author and allows nothing
+  else.
+- When a submitted program times out, the harness kills the sandbox's first
+  process, which ends every process in its PID namespace, however it forked.
 - An author can delete `try.sock`. That only breaks its own `./try`, and the
   audit flags the command.
 - Each results file records `eval_sha256`, a SHA-256 of `task.py`,

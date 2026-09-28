@@ -292,6 +292,9 @@ print(json.dumps(out))
 """
 
 
+PY_TIMEOUT = 30  # seconds per Python case
+
+
 def run_python(source: str, args: tuple, fuel: int | None = None,
                outputs: tuple[str, ...] = (), sandboxed: bool = False) -> dict:
     """Run `main`; `outputs` are the task's output types, which the result must match.
@@ -306,8 +309,9 @@ def run_python(source: str, args: tuple, fuel: int | None = None,
         os.chown(empty, isolate.NOBODY, isolate.NOBODY)
         cmd = isolate.sandbox_command(Path(empty), cmd, network=False, uid=isolate.NOBODY)
     try:
-        p = subprocess.run(cmd, input=source, capture_output=True, text=True, timeout=30,
-                           env=isolate.sandbox_env() if empty else None)
+        p = (isolate.contained(cmd, input=source, capture_output=True, text=True, timeout=PY_TIMEOUT,
+                               env=isolate.sandbox_env()) if empty else
+             subprocess.run(cmd, input=source, capture_output=True, text=True, timeout=PY_TIMEOUT))
     except subprocess.TimeoutExpired:
         return {"ok": False, "error": "timeout"}
     finally:
