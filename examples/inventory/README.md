@@ -45,7 +45,8 @@ CI also runs `measure_cost.py`, because the corpus's IDs never reach the slow
 path.
 
 This bound is measured and explained by the program's structure, not proved.
-The toolchain does not yet check refinements or cost claims (`language-06`).
+The toolchain does not yet check the allocator's properties or prove its cost
+bound; that work is `language-06b` and `language-06c`.
 
 ## Changing the policy
 
