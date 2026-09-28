@@ -127,17 +127,21 @@ include negative numbers and empty sequences.
   none of them exists, and a `--tool` naming any of those paths is refused.
   A repository placed under `/usr/local` is refused too, since `/usr` is
   shown. Copies that no git metadata leads to are refused too: the shown
-  directories are scanned once per process for git storage of any kind (a
-  `.git` entry, or HEAD, `objects` and `refs` as in a bare mirror), for a
-  file named `mvp_tasks.py` or a directory ending in `eval/s7/reference`
-  (older revisions), and for a file with the content of a hidden file
-  (hashing only files of a hidden file's size). `test_isolation.py` plants
-  each under `/usr/share`, and an older revision and a bare mirror under
-  `/usr/local`, which are unreachable.
+  directories are scanned once per process for git storage (a `.git`
+  entry, or HEAD, `objects` and `refs` as in a bare mirror) that holds the
+  hidden files: a blob of any revision this repository knows, or a commit
+  on any ref that touches their paths. The scan also looks for a file named
+  `mvp_tasks.py` or a directory ending in `eval/s7/reference` (older
+  revisions), and for a file with the content of a hidden file (hashing only
+  files of a hidden file's size). `test_isolation.py` plants each under
+  `/usr/share`, including a repository with a revision of the task file
+  that matches no known blob. It plants an older revision and a bare mirror
+  under `/usr/local`, which are unreachable. An unrelated repository, such
+  as the CI runner's `/etc/skel/.nvm`, is shown.
 - **Threat model.** The sandbox guarantees that an author, and every
   program it submits, cannot reach this repository's checkouts or git
   storage, nor any shown file that is named like the hidden tests or the
-  references, holds their exact content, or is git storage. It trusts the
+  references, holds their exact content, or is git storage holding them. It trusts the
   operator's environment: what `--tool` and `--keep` name, the contents of
   kept credentials, and the host itself. A copy of the hidden tests that
   someone renamed and edited and placed on the host on purpose is outside
