@@ -85,8 +85,20 @@ portable compiler implementation. `run` also compiles and executes.
 ```
 
 `ρ` is the untouched part of the stack. `forall ρ` binds it. The rightmost
-input is the top of the stack. Names such as `n` label the type boundary;
-they are not ordinary mutable variables.
+input is the top of the stack. Names such as `n` and `result` only document
+the stack: they are not variables, and writing `n` in the body is an
+unresolved name. The body works on the stack itself. To refer to inputs by
+name, bind them with `locals`, which takes one value off the stack for each
+name, the last name from the top:
+
+```firth
+: difference
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b } { a b prim - };
+```
+
+Inside the second braces, `a` and `b` can be used any number of times. The
+result is whatever the block leaves on the stack; `r` is never assigned.
 
 Brackets create a quotation: code that runs only when called or selected.
 `if` consumes the Boolean below the two quotations and executes the first

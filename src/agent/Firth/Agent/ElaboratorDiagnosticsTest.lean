@@ -293,4 +293,57 @@ def runElaboratorDiagnosticTests : IO Unit := do
       else fail "pipeline name-resolution message did not name the word"
   | _ => fail "pipeline name-resolution result was not singular"
 
+  -- A stack-effect name used as a variable, the mistake that stopped every
+  -- attempt of a weaker model in the authoring eval: the hint says effect
+  -- names are not variables and shows the `locals` block that binds the
+  -- inputs, in declared order.
+  let effectSource := ": second (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many)\n  xs 1 prim seq-int.at n prim + ;"
+  match elaboratePipeline pipelineContext effectSource with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "effect-name path" "firth.name.unresolved" emitted
+      if emitted.contains "`xs` is a name in the word's stack effect" &&
+          emitted.contains "they are not variables" &&
+          emitted.contains "`locals { xs n } { ... }`" &&
+          emitted.contains "the last name from the top" then pure ()
+      else fail s!"an effect input used as a variable did not point to locals: {emitted}"
+  | _ => fail "effect-name result was not singular"
+
+  match elaboratePipeline pipelineContext ": double (forall ρ; ρ n:Int^many -- ρ r:Int^many) 2 prim * r ;" with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      if emitted.contains "`r` names an output in the word's stack effect" &&
+          emitted.contains "leave the result on the stack" &&
+          emitted.contains "`locals { n } { ... }`" then pure ()
+      else fail s!"an effect output used as a variable was not explained: {emitted}"
+  | _ => fail "effect-output result was not singular"
+
+  -- A name that is not in the stack effect keeps the general hint, which
+  -- now also mentions `locals`.
+  match elaboratePipeline pipelineContext ": double (forall ρ; ρ n:Int^many -- ρ r:Int^many) 2 prim * dobule ;" with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      if !emitted.contains "stack effect" && emitted.contains "bind it as a local with `locals" then pure ()
+      else fail s!"a misspelt word got the stack-effect hint: {emitted}"
+  | _ => fail "misspelt-word result was not singular"
+
+  -- Every hint that lists primitives lists all of them. The expected names
+  -- are written out here, not read from `surfacePrimitives`, so a hint
+  -- that falls behind the language fails.
+  let everyPrimitive := ["+", "-", "*", "<", "=", "div", "mod", "and", "or", "not",
+    "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push",
+    "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push"]
+  let listsEvery (label emitted : String) : IO Unit := do
+    for name in everyPrimitive do
+      unless emitted.contains s!"`prim {name}`" do
+        fail s!"the {label} hint leaves out `prim {name}`: {emitted}"
+  match elaboratePipeline pipelineContext ": bad ( -- ) prim nope ;" with
+  | .failure [envelope] => listsEvery "unresolved-effect" (encode envelope)
+  | _ => fail "unresolved-effect result was not singular"
+  match elaboratePipeline pipelineContext ": bad ( -- ) missing ;" with
+  | .failure [envelope] => listsEvery "unresolved-name" (encode envelope)
+  | _ => fail "unresolved-name result was not singular"
+  if Firth.Interpreter.surfacePrimitives.length != everyPrimitive.length then
+    fail s!"the language has {Firth.Interpreter.surfacePrimitives.length} primitives but this test lists {everyPrimitive.length}; add the new ones above"
+
 end Firth.Agent.Test

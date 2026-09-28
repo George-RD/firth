@@ -74,13 +74,40 @@ private def parseCauseData (error : Firth.Elaborator.ParseError) : Json :=
 private def definitionShape : String :=
   "A definition looks like `: name (forall ρ; ρ n:Int^many -- ρ r:Int^many) body;`."
 
+/-- Every primitive the language has, as a program writes it, read from
+`surfacePrimitives`, the one table the elaborator, the reference and the
+compiler share, so a hint cannot fall behind the language. -/
+def primitiveList : String :=
+  ", ".intercalate (Firth.Interpreter.surfacePrimitives.map fun (surface, _) => s!"`prim {surface}`")
+
+private def availablePrimitives : String :=
+  s!"The primitives are {primitiveList}."
+
+/-- The hint for a stack-effect name used as a variable. Stack-effect names
+document the stack; only `locals` binds names, taking one value from the
+stack for each, the last name from the top. -/
+private def effectNameHint (name : String) (inputs : List String) : String :=
+  let binders := " ".intercalate inputs
+  let shape := if inputs.isEmpty then "" else
+    s!" To use the inputs by name, bind them first: `locals \{ {binders} } \{ ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces."
+  if inputs.contains name then
+    s!"`{name}` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body." ++ shape
+  else
+    s!"`{name}` names an output in the word's stack effect. Stack-effect names only document the stack; leave the result on the stack instead of naming it." ++ shape
+
 /-- A plain-language sentence and a repair hint for a syntax or name error. -/
 private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
   let actual := error.actual.map (s!"`{·}`") |>.getD "the end of the input"
   let (message, hint) := match error.code with
     | "firth.name.unresolved" =>
-        (s!"{actual} is not a defined word, primitive or local.",
-          "Define it (definitions may appear in any order), fix the spelling, or write primitives as `prim +`, `prim -`, `prim *`, `prim <`, `prim =`. " ++ definitionShape)
+        match error.actual, error.effectInputs ++ error.effectOutputs with
+        | some name, _ :: _ =>
+            (s!"{actual} is not a defined word, primitive or local.",
+              effectNameHint name error.effectInputs)
+        | _, _ =>
+            (s!"{actual} is not a defined word, primitive or local.",
+              "Define it (definitions may appear in any order), fix the spelling, or bind it as a local with `locals { name } { ... }`. Primitives are written with `prim`: " ++
+                primitiveList ++ ". " ++ definitionShape)
     | _ =>
         let expected := match error.expected with
           | some expected => s!", expected `{expected}`"
@@ -163,7 +190,7 @@ private def erasureExplanation (code name : String) : String × String :=
       (s!"The local `{name}` is used after `call`, `dip` or `if` ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.",
         "Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.")
   | "firth.name.unresolved-effect" =>
-      (s!"`prim {name}` is not a primitive.", "The available primitives are `prim +`, `prim -`, `prim *`, `prim <` and `prim =`.")
+      (s!"`prim {name}` is not a primitive.", availablePrimitives)
   | "firth.linearity.copy" =>
       (s!"The linear local `{name}` is used more than once.", "A linear value must be used exactly once.")
   | "firth.linearity.unconsumed-resource" =>
@@ -314,10 +341,9 @@ private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Str
         "Check what the quotation body consumes against the values available under it.")
   | "firth.name.unknown-word", _, _ =>
       (s!"`{at_}`{inWord} is not a defined word.",
-        s!"Define it with `: {at_} (forall ρ; ρ in:Int^many -- ρ out:Int^many) ...;` or fix the spelling. Primitives are written `prim +`, `prim -`, `prim *`, `prim <`, `prim =`.")
+        s!"Define it with `: {at_} (forall ρ; ρ in:Int^many -- ρ out:Int^many) ...;` or fix the spelling. Primitives are written with `prim`: {primitiveList}.")
   | "firth.name.unknown-primitive", _, _ =>
-      (s!"`{at_}`{inWord} is not a primitive.",
-        "The available primitives are `prim +`, `prim -`, `prim *`, `prim <` and `prim =`.")
+      (s!"`{at_}`{inWord} is not a primitive.", availablePrimitives)
   | "firth.linearity.usage-mismatch", _, _ =>
       (s!"`{at_}`{inWord} copies or drops a value that must be used exactly once.",
         "Linear values cannot be duplicated or dropped; pass them on instead.")
