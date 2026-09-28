@@ -227,6 +227,16 @@ def subagent_audit() -> None:
                          ("a write outside the author's files", call("Write", file_path=str(HERE / "x.py"), content="")),
                          ("a read of another directory's feedback", call("Read", file_path="/elsewhere/repair-1.md"))):
             check(len(audit(ok + [ev], prompt, d, d)[1]) == 1, f"the audit flags {what}")
+        sol = d / "solutions-1.json"
+        sol.write_text(json.dumps(harness.extract(ans.read_text())))
+        check(audit(ok, prompt, d, d)[1] == [], "the audit passes solutions that are the answer as written")
+        sol.write_text(json.dumps({**harness.extract(ans.read_text()), "sort": "changed after the answer"}))
+        check(len(audit(ok, prompt, d, d)[1]) == 1, "the audit flags scored solutions that differ from the answer")
+        sol.unlink()
+    from audit_subagent import solutions_mismatch
+    kept = sorted(p for p in (HERE / "runs").glob("2026-09-28-*/*") if (p / "answer-1.md").is_file())
+    check(kept and all(solutions_mismatch(p) == [] for p in kept),
+          f"every kept round's scored solutions are its answers as written ({len(kept)} authors)")
         ans.write_text("### task: sort\nchanged\n")
         check(len(audit(ok, prompt, d, d)[1]) == 1, "the audit flags an answer changed after it was written")
 

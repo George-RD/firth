@@ -12,6 +12,10 @@ assistant messages. Allowed, and nothing else:
   the file that was scored (its SHA-256 is compared with the kept copy);
 - the hand-back at the end.
 
+Each kept `solutions-<n>.json`, which is what `score` read, must also be the
+previous round's solutions updated with the tasks `extract` finds in
+`answer-<n>.md`, so a merge between rounds cannot change what was scored.
+
     audit_subagent.py LOG.jsonl --prompt P --dir D [--kept K] > transcript.json
 
 `--dir` is where the author wrote (as its log records it); `--kept` is where
@@ -25,6 +29,9 @@ import json
 import re
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from harness import extract  # noqa: E402
 
 
 def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path) -> tuple[dict, list[str]]:
@@ -61,11 +68,31 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path) -> tuple[
                 rec["input"] = inp
                 bad.append(f"{name}: {json.dumps(inp)[:200]}")
             calls.append(rec)
+    bad += solutions_mismatch(kept)
     log = {"note": "Trimmed log of the author sub-agent: every tool call it made, with written "
                    "content reduced to a hash. The full answers are the answer-*.md files next to this one.",
            "models": sorted(models), "started": min(times, default=None),
            "finished": max(times, default=None), "tool_calls": calls, "flagged": bad}
     return log, bad
+
+
+def solutions_mismatch(kept: Path) -> list[str]:
+    """Each kept solutions-N.json that is not solutions-(N-1) updated with the
+    tasks extracted from answer-N.md (Codex, on #147)."""
+    bad, prev, n = [], {}, 1
+    while (kept / f"answer-{n}.md").is_file():
+        want = {**prev, **extract((kept / f"answer-{n}.md").read_text())}
+        sol = kept / f"solutions-{n}.json"
+        if sol.is_file():
+            got = json.loads(sol.read_text())
+            if got != want:
+                diff = sorted(k for k in set(got) | set(want) if got.get(k) != want.get(k))
+                bad.append(f"{sol}: not the answers as written (tasks {', '.join(diff)[:200]})")
+            prev = got
+        else:
+            prev = want
+        n += 1
+    return bad
 
 
 def main() -> int:

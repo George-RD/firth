@@ -428,7 +428,10 @@ is the transcript audit, `audit_subagent.py`. It writes each
 `transcript.json` from the sub-agent's log: every tool call the author made,
 and anything it flags. All 21 calls across the four authors were Reads of their own
 prompt or feedback file, Writes of their own answer file (each matching the
-kept answer by SHA-256), or the hand-back, and nothing else. `test_mvp.py`
+kept answer by SHA-256), or the hand-back, and nothing else. The audit also
+rebuilds each round's `solutions-<n>.json`, the file `score` read, from the
+previous round's and the tasks in `answer-<n>.md`, and flags any difference;
+every kept round matches (`test_mvp.py`). `test_mvp.py`
 plants a read of `mvp_tasks.py`, a shell call, a stray write, another
 directory's feedback and a changed answer, and the audit flags each one. A
 sub-agent also sees the repository's `AGENTS.md` in its context, which
