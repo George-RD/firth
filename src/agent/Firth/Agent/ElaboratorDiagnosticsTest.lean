@@ -71,6 +71,10 @@ private def expectCauseState (name source : String)
           expectEqual name state.compress (expectedStackState expected).compress
       | .error jsonError => fail s!"{name}: missing cause.data.state {jsonError}"
 
+/-- The start of an envelope's structured stack field holding `stack`. -/
+private def structuredStack (field stack : String) : String :=
+  s!"\"{field}\":\{\"encoding\":\"opaque\",\"value\":\{\"firth\":\"{stack}\""
+
 private def warningByCode (code : String) : List Firth.Elaborator.LintWarning →
     Option Firth.Elaborator.LintWarning
   | [] => none
@@ -514,8 +518,9 @@ def runElaboratorDiagnosticTests : IO Unit := do
           "\"expected\":\".. Seq Int\"", "\"actual\":\".. Seq Int Int Int\""] do
         unless emitted.contains needle do
           fail s!"filter-helper: the report does not say {needle}: {emitted}"
-      if emitted.contains "\"expected_stack\":null" || emitted.contains "\"actual_stack\":null" then
-        fail s!"filter-helper: the compared stacks are missing from the envelope: {emitted}"
+      unless emitted.contains (structuredStack "expected_stack" ".. Seq Int") &&
+          emitted.contains (structuredStack "actual_stack" ".. Seq Int Int Int") do
+        fail s!"filter-helper: the envelope's stacks are not the branch's input and the stack below the condition: {emitted}"
   | _ => fail "filter-helper: expected one diagnostic"
   -- Counts and types both differ: the locals pass knows only the counts, so
   -- its drop-or-push edit is offered only on condition that the values below
@@ -557,8 +562,10 @@ def runElaboratorDiagnosticTests : IO Unit := do
           fail s!"branch depth: the report does not say {needle}: {emitted}"
       -- The compared stacks stay in the structured fields: the true branch's
       -- output as expected, the false branch's as actual.
-      if emitted.contains "\"expected_stack\":null" || emitted.contains "\"actual_stack\":null" then
-        fail s!"branch depth: the compared stacks are missing from the envelope: {emitted}"
+      unless emitted.contains "\"expected\":\".. Int Int\"" && emitted.contains "\"actual\":\".. Int\"" &&
+          emitted.contains (structuredStack "expected_stack" ".. Int Int") &&
+          emitted.contains (structuredStack "actual_stack" ".. Int") do
+        fail s!"branch depth: expected is not the true branch's output or actual is not the false branch's: {emitted}"
   -- The same in the type checker, which does know the types: when the values
   -- both branches leave differ, it offers no drop or push, and says where
   -- they differ.
