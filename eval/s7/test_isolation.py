@@ -48,6 +48,12 @@ true
 KEYRING_FN = """
 def keyring(mode):
     libc = ctypes.CDLL(None, use_errno=True)
+    # A process that inherited another uid's session keyring (sudo, pam_keyinit)
+    # does not possess its own user keyring, so it could not search or read the
+    # key. Join a fresh session and link the user keyring into it, as an author
+    # trying this channel would.
+    libc.syscall(250, 1, None)
+    libc.syscall(250, 8, -4, -3)
     if mode == "put":
         return 1 if libc.syscall(248, b"user", b"s7note", b"S7-NOTE", 7, -4) > 0 else 0
     kid = libc.syscall(250, 10, -4, b"user", b"s7note", 0)
@@ -727,20 +733,13 @@ print(json.dumps(out))
 
         # Codex's keyring probe: a key stored in the user keyring by one run is
         # read back by the next. Planted: two runs forced onto one uid share it;
-        # two ordinary runs, each with a fresh uid, do not. Some kernels drop a
-        # uid's keyring once it has no process left (the CI runner's does), so
-        # a process of that uid is kept alive on the host between the two runs,
-        # as any long-lived process of a shared uid would.
+        # two ordinary runs, each with a fresh uid, do not. The probe links the
+        # user keyring into a fresh session first: the CI runner's jobs inherit
+        # a session keyring, and without the link the key cannot be read back.
         (ws / "kr.py").write_text(KEYRING)
         shared = isolate.fresh_uid()
-        holder = subprocess.Popen(["setpriv", f"--reuid={shared}", f"--regid={shared}", "--clear-groups",
-                                   "sleep", "600"])
-        try:
-            put = isolate.run(ws, ["python3", "kr.py", "put"], uid=shared, capture_output=True, text=True, timeout=300)
-            got = isolate.run(ws, ["python3", "kr.py", "get"], uid=shared, capture_output=True, text=True, timeout=300)
-        finally:
-            holder.kill()
-            holder.wait()
+        put = isolate.run(ws, ["python3", "kr.py", "put"], uid=shared, capture_output=True, text=True, timeout=300)
+        got = isolate.run(ws, ["python3", "kr.py", "get"], uid=shared, capture_output=True, text=True, timeout=300)
         check("S7-NOTE" in got.stdout, f"two runs as one uid share its keyring (the planted case): {put.stdout.strip()} {got.stdout.strip()}")
         put = isolate.run(ws, ["python3", "kr.py", "put"], capture_output=True, text=True, timeout=300)
         got = isolate.run(ws, ["python3", "kr.py", "get"], capture_output=True, text=True, timeout=300)
