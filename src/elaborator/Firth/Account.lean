@@ -227,19 +227,44 @@ mutual
               match runQuotation context below onTrue, runQuotation context below onFalse with
               | .found account, _ | _, .found account => .found account
               | .next afterTrue, .next afterFalse =>
-                  -- A value taken that was not there still counts, so the
-                  -- depth is the stack less what was missing.
-                  let depth (walk : Walk) : Int := (walk.stack.length : Int) - (walk.missing : Int)
-                  if depth afterTrue != depth afterFalse then .lost else
-                  let reach := afterTrue.reach.orElse fun _ => afterFalse.reach
-                  if afterTrue.stack.length != afterFalse.stack.length then
-                    .next { afterTrue with reach }
+                  -- Either path may run, so the walk goes on only where
+                  -- both first reached below the refused `if` the same way
+                  -- and leave the same number of values, each pushed by the
+                  -- refused `if`'s branch on both paths or on neither.
+                  -- Otherwise what comes after depends on which ran. The
+                  -- checker accepted this `if`, so both paths leave the same
+                  -- depth: with the same number of values they missed the
+                  -- same number. With the same values left in place below,
+                  -- they took the same ones, since values below are taken
+                  -- from the top down; only the order they were taken in
+                  -- may differ, and the true path's is kept.
+                  -- The same operation reaching below with as many of the
+                  -- branch's own values is one account, whichever path
+                  -- pushed them; a value the paths push differently is
+                  -- named by both.
+                  let reach : Option (Option BranchReach) := match afterTrue.reach, afterFalse.reach with
+                    | none, none => some none
+                    | some onTrue, some onFalse =>
+                        if onTrue.operation == onFalse.operation && onTrue.own.length == onFalse.own.length then
+                          some (some { onTrue with own := (onTrue.own.zip onFalse.own).map fun (a, b) =>
+                            if a == b then a else s!"{a} or {b}" })
+                        else none
+                    -- A path that reaches below and one that does not also
+                    -- leave different values in place or a different number,
+                    -- so this case is caught below as well.
+                    | _, _ => none
+                  match reach with
+                  | none => .lost
+                  | some reach =>
+                  if afterTrue.stack.length != afterFalse.stack.length ||
+                      (afterTrue.stack.zip afterFalse.stack).any (fun (a, b) => a.own != b.own) then
+                    .lost
                   else
                   -- Where the branches leave different values, the value is
                   -- whichever branch ran.
                   let merged := (afterTrue.stack.zip afterFalse.stack).map fun (onTrue, onFalse) =>
                     if onTrue.label == onFalse.label then onTrue
-                    else { label := "the result of an `if`", own := onTrue.own || onFalse.own }
+                    else { label := "the result of an `if`", own := onTrue.own }
                   .next { afterTrue with stack := merged, reach }
               | _, _ => .lost
         | _ => .lost

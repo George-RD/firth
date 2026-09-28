@@ -613,7 +613,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
   let longestRun := [
     "In the false branch of the `if` in `main` whose true branch is `[ 0 ]`, `longest-run-loop` needs 5 values (prev:Int, curr-run:Int, max-run:Int, idx:Int, xs:Seq Int), but the branch has pushed only 4 values before it (the result of `prim seq-int.at`, `1`, `1` and `xs`)",
     "where there is none: everything the word was given is bound to locals or already used",
-    "Push every value `longest-run-loop` takes inside the branch, just before it and in this order: prev:Int, curr-run:Int, max-run:Int, idx:Int, xs:Seq Int"]
+    "Make the branch push, just before `longest-run-loop`, exactly the values it takes, in this order: prev:Int, curr-run:Int, max-run:Int, idx:Int, xs:Seq Int. The branch already pushes"]
   branchReport "longest-run" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ length:Int^many)\n  locals { xs } {\n    xs prim seq-int.len 0 prim =\n    [ 0 ]\n    [ xs 0 prim seq-int.at 1 1 xs longest-run-loop ] if\n  };\n\n: longest-run-loop\n  (forall ρ; ρ prev:Int^many curr-run:Int^many max-run:Int^many idx:Int^many xs:Seq Int^many -- ρ result:Int^many)\n  locals { prev curr-run max-run idx xs } {\n    idx xs prim seq-int.len prim =\n    [ max-run curr-run prim < [ curr-run ] [ max-run ] if ]\n    [\n      xs idx prim seq-int.at dup prev prim =\n      [ curr-run 1 prim + ] [ 1 swap ] if\n      idx 1 prim +\n      xs\n      longest-run-loop\n    ]\n    if\n  };" longestRun
   -- keep-positive (the same run, answer 1): the false branch pushes the
   -- sequence on top of the element it means to append, so it takes a Seq Int
@@ -702,7 +702,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
     ("has-pair-sum (answer 1)",
       ": main\n  (forall ρ; ρ xs:Seq Int^many target:Int^many -- ρ found:Bool^many)\n  swap 0 false swap find-pair;\n\n: find-pair\n  (forall ρ; ρ xs:Seq Int^many idx:Int^many found:Bool^many target:Int^many -- ρ found:Bool^many)\n  locals { xs idx found target } {\n    found [\n      true\n    ] [\n      idx xs prim seq-int.len prim < [\n        idx 1 prim + check-pair\n      ] [ false ] if\n    ] if\n  };\n\n: check-pair\n  (forall ρ; ρ xs:Seq Int^many i:Int^many j:Int^many target:Int^many -- ρ found:Bool^many)\n  locals { xs i j target } {\n    j xs prim seq-int.len prim < [\n      i xs prim seq-int.at j xs prim seq-int.at prim + target prim = [\n        true\n      ] [\n        xs i j 1 prim + target check-pair\n      ] if\n    ] [\n      xs i 1 prim + find-pair\n    ] if\n  };\n",
       ["In the true branch `[ idx 1 prim + check-pair ]` of the `if` in `find-pair`, `check-pair` needs 4 values (xs:Seq Int, i:Int, j:Int, target:Int), but the branch has pushed only 1 value before it (the result of `prim +`).",
-        "Push every value `check-pair` takes inside the branch, just before it and in this order: xs:Seq Int, i:Int, j:Int, target:Int"],
+        "Make the branch push, just before `check-pair`, exactly the values it takes, in this order: xs:Seq Int, i:Int, j:Int, target:Int. The branch already pushes"],
       -- Every input of `check-pair` pushed in the branch, in its order.
       ": main\n  (forall ρ; ρ xs:Seq Int^many target:Int^many -- ρ found:Bool^many)\n  swap 0 false swap find-pair;\n\n: find-pair\n  (forall ρ; ρ xs:Seq Int^many idx:Int^many found:Bool^many target:Int^many -- ρ found:Bool^many)\n  locals { xs idx found target } {\n    found [\n      true\n    ] [\n      idx xs prim seq-int.len prim < [\n        xs idx idx 1 prim + target check-pair\n      ] [ false ] if\n    ] if\n  };\n\n: check-pair\n  (forall ρ; ρ xs:Seq Int^many i:Int^many j:Int^many target:Int^many -- ρ found:Bool^many)\n  locals { xs i j target } {\n    j xs prim seq-int.len prim < [\n      i xs prim seq-int.at j xs prim seq-int.at prim + target prim = [\n        true\n      ] [\n        xs i j 1 prim + target check-pair\n      ] if\n    ] [\n      xs i 1 prim + find-pair\n    ] if\n  };\n",
       "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `find-pair` leave different numbers of values: the true branch takes 3 values from the stack below the `if` and leaves 1 value, and the false branch pushes 1 value. The true branch takes 3 values from below the `if` that this code does not have: everything it was given is bound to locals or already used, so those values belong to the caller.\nhint: Push what the branch needs inside the branch, by writing a local's name or computing the value there, or remove the operation that takes it if it should not be there. If the branch means to use a value computed before the `if`, keep a copy of it before the condition (for example with `dup`). Adding a `drop` or pushing values to even out the branches would only move the mistake."),
@@ -814,6 +814,64 @@ def runElaboratorDiagnosticTests : IO Unit := do
   branchReport "swap in a branch" ": g (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) true [ swap drop ] [ ] if ;"
     ["The true branch takes the input `b` and the input `a` from below the `if` and leaves the input `b`; the false branch leaves nothing.",
       "The true branch takes the input `a` from below the `if`, and the false branch leaves it in place"]
+  -- A nested `if` whose true path leaves `a` in place and whose false path
+  -- takes it and pushes `0`: what the outer true branch takes depends on
+  -- which runs, so the walk stops there and the report keeps the checker's
+  -- account rather than following the true path alone.
+  match elaboratePipeline pipelineContext ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) true [ true [ ] [ drop 0 ] if ] [ drop ] if ;" agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "nested paths differ" "firth.type.branch-mismatch" emitted
+      unless emitted.contains "The two branches of `if` in `g` leave different numbers of values" do
+        fail s!"nested paths differ: the report does not keep the checker's account: {emitted}"
+      if emitted.contains "the input `a` from below the `if`" || emitted.contains "leaves it in place" then
+        fail s!"nested paths differ: the report follows one path of the nested `if`: {emitted}"
+  | _ => fail "nested paths differ: expected one diagnostic"
+  -- Nested paths whose histories differ, each where following the true
+  -- path alone misreports: `a` stays in place on one path and is taken on
+  -- the other; one path misses one value and the other two; the paths
+  -- first reach below with different operations, or with the same one
+  -- after pushing different numbers of values. Each report keeps the
+  -- checker's account.
+  let differentNumbers := "The two branches of `if` in `g` leave different numbers of values"
+  let threeInputs := ": h (forall ρ; ρ x:Int^many y:Int^many z:Int^many -- ρ r:Int^many) prim + prim + ;\n\n"
+  for (label, source) in [
+      ("nested paths leave different values in place",
+        ": g (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) true [ true [ drop 0 ] [ drop drop 0 0 ] if ] [ drop ] if ;"),
+      ("nested paths miss different numbers",
+        ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) true [ true [ drop drop 0 0 ] [ drop drop drop 0 0 0 ] if prim + ] [ ] if ;"),
+      ("nested paths reach with different operations",
+        ": g (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) true [ true [ swap drop ] [ prim + ] if ] [ ] if ;"),
+      ("nested paths reach after pushing different numbers of values",
+        threeInputs ++ ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) true [ true [ 1 h ] [ dup h ] if ] [ ] if ;")] do
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .failure [envelope] =>
+        let emitted := encode envelope
+        expectValidCode label "firth.type.branch-mismatch" emitted
+        unless emitted.contains differentNumbers do
+          fail s!"{label}: the report does not keep the checker's account: {emitted}"
+    | _ => fail s!"{label}: expected one diagnostic"
+  -- The same operation reached after as many values on both paths, which
+  -- differ: the report names both.
+  branchReport "nested paths push different values"
+    ": g (forall ρ; ρ -- ρ r:Int^many) true [ true [ 0 prim + ] [ 1 prim + ] if ] [ ] if ;"
+    ["`prim +` (inside a quotation in that branch) needs 2 values (Int, Int), but the branch has pushed only 1 value before it (`0` or `1`)."]
+  -- A branch that pushes one of the two values `prim +` takes: the hint
+  -- keeps `1` and asks for the other, instead of asking for both, which
+  -- would leave `1` over.
+  let pushedOne := ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) drop true [ 1 prim + ] [ 0 ] if ;"
+  branchReport "branch pushed one operand" pushedOne
+    ["`prim +` needs 2 values (Int, Int), but the branch has pushed only 1 value before it (`1`).",
+      "Make the branch push, just before `prim +`, exactly the values it takes, in this order: Int, Int. The branch already pushes `1`: keep it in its place where it is one of these, and push the other one"]
+  match elaboratePipeline pipelineContext pushedOne agentConfig with
+  | .failure [envelope] =>
+      if (encode envelope).contains "Push every value" then
+        fail s!"branch pushed one operand: the hint asks for every value again: {encode envelope}"
+  | _ => pure ()
+  -- Following the hint, with `2` as the other value, makes the program check.
+  match elaboratePipeline pipelineContext ": g (forall ρ; ρ a:Int^many -- ρ r:Int^many) drop true [ 2 1 prim + ] [ 0 ] if ;" agentConfig with
+  | .success _ => pure ()
+  | .failure _ => fail "branch pushed one operand: the program following the hint is refused"
   -- The same two cases with a word instead of `prim +`: `add` declares
   -- `x:Int y:Int`. Where it gets a Bool from below the `if` it is to blame
   -- and the report says what it gets; where it gets the Int it declares, a

@@ -33,6 +33,21 @@ the checker wrote, not the author:
   can blame the wrong branch (the cec3707 ledger answer 1 in the #164
   review, where the hint still came out right). Giving each walk entry an
   identity, such as a counter, instead of comparing labels would fix it.
+- `firth.name.locals-order` (#165) states an edit when the edited word is
+  refused no earlier in the source than the word as written. That compares
+  only first errors, so an edit can add an error hidden behind an earlier,
+  independent one: for inputs `xs:Seq Int n:Int`,
+  `locals { xs } { true prim + drop xs prim seq-int.at }` is told to start
+  the body with `n`, and once `true prim + drop` is removed the body is
+  refused (review of #165). Stating only edits whose word is accepted moves
+  23 of the 40 recorded refusals to the fallback. The reviewer's suggestion:
+  keep the edit and add "after this edit, `w` is still refused at L:C".
+- `firth.name.locals-order` (#165, found by Codex after approval; fixed in
+  the next PR from `main`): a bare call inside a vocabulary is resolved
+  before binders are chosen, so a new binder can shadow it in the source; an
+  opening block that repeats a name gets contradictory renames and hides
+  `firth.name.duplicate-local`; and the edit check renames an inner block's
+  own binder of a renamed name.
 
 ## Goal
 
