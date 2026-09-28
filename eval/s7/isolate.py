@@ -17,7 +17,7 @@ repository. All capabilities are dropped before the author's command starts.
     isolate.py workspace --lang firth --tier mvp DIR   # prompt.md + try client
     isolate.py serve DIR                               # the try server, foreground
     isolate.py run DIR [--tool D] [--keep F] -- COMMAND...  # COMMAND inside the sandbox
-    isolate.py audit transcript.jsonl                  # tool calls beyond try, if any
+    isolate.py audit T.jsonl --workspace DIR           # tool calls beyond try, if any
 
 `run` starts the server itself. `test_isolation.py` checks that a command in
 the sandbox can use `try` and cannot read the hidden tests by any path we know
@@ -666,6 +666,19 @@ def audit(events: list[dict]) -> list[str]:
     return bad
 
 
+def audit_file(transcript: Path, ws: Path) -> list[str]:
+    """`audit` over a transcript file. The author can write its workspace, so a
+    transcript kept there could be replaced with a clean one after a forbidden
+    call; one inside the workspace is refused. Outside it the author cannot write
+    it: the sandbox shows the author no other host path it can write."""
+    t, w = Path(os.path.realpath(transcript)), Path(os.path.realpath(ws))
+    if t == w or w in t.parents:
+        raise ValueError(f"{transcript} is in the author's workspace {ws}, "
+                         "where the author can rewrite it; keep the transcript outside")
+    text = harness.read_regular(transcript, harness.plain_parent(transcript))
+    return audit([json.loads(l) for l in text.splitlines() if l.strip()])
+
+
 def in_workspace(path: str) -> bool:
     return normal(path).startswith(INSIDE + "/")
 
@@ -695,7 +708,8 @@ def main() -> int:
     w.add_argument("--tier", default="mvp")
     s = sub.add_parser("serve"); s.add_argument("dir", type=Path)
     au = sub.add_parser("audit"); au.add_argument("transcript", type=Path)
-    au.add_argument("--workspace", type=Path, help="the author's workspace, when the transcript is in it")
+    au.add_argument("--workspace", type=Path, required=True,
+                    help="the author's workspace; a transcript inside it is refused")
     r = sub.add_parser("run"); r.add_argument("dir", type=Path)
     r.add_argument("--keep", action="append", default=[],
                    help="a credential file or directory; the author gets a read-only copy at its path")
@@ -715,8 +729,11 @@ def main() -> int:
         except KeyboardInterrupt:
             stop.set()
     elif a.cmd == "audit":
-        events = [json.loads(l) for l in harness.read_regular(a.transcript, a.workspace or harness.plain_parent(a.transcript)).splitlines() if l.strip()]
-        bad = audit(events)
+        try:
+            bad = audit_file(a.transcript, a.workspace)
+        except ValueError as e:
+            print(f"audit: {e}", file=sys.stderr)
+            return 2
         print("\n".join(bad) if bad else "clean: only try and workspace files")
         return 1 if bad else 0
     elif a.cmd == "run":

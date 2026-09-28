@@ -157,7 +157,11 @@ include negative numbers and empty sequences.
   run limits the author's tools to `./try` and workspace files, and
   `isolate.py audit` checks each retained transcript for any other tool call.
   A run with a flagged call is void. The audit is tested against planted
-  calls.
+  calls. The transcript is kept outside the workspace, the one host
+  directory the author can write, so the author cannot replace it with a
+  clean one after a forbidden call: `audit` takes `--workspace` and refuses
+  a transcript inside it. `test_isolation.py` plants a rewritten transcript
+  in the workspace, which audits clean without that check.
 - Since `./try` is the one command allowed, the author must not be able to
   change what it runs. In the sandbox the client is mounted read-only, it
   runs as `python3 -I` so a `json.py` the author writes is not imported, and
@@ -168,7 +172,7 @@ include negative numbers and empty sequences.
   back in a diagnostic. `test_isolation.py` plants each of these.
 - The host reads what an author wrote (answer files, transcripts) only as
   plain files with one link. It opens each path one component at a time from
-  the workspace (`--workspace DIR` on `score`, `extract` and `audit`) with
+  the workspace (`--workspace DIR` on `score` and `extract`) with
   `O_NOFOLLOW`, so no link is followed, in a directory component or the file
   itself. Without `--workspace`, a path with any link in its directories is
   refused. Otherwise a link made in the sandbox to a reference path, dangling
@@ -226,8 +230,8 @@ keeps every transcript, and reports the pass rate per task and overall.
 ```sh
 python3 eval/s7/harness.py prompt --lang firth --tier mvp > prompt.md
 sudo python3 eval/s7/isolate.py workspace --lang firth /var/tmp/ws   # outside the repository
-sudo python3 eval/s7/isolate.py run /var/tmp/ws --tool <author CLI install> -- <author command>
-sudo python3 eval/s7/isolate.py audit /var/tmp/ws/transcript.jsonl
+sudo python3 eval/s7/isolate.py run /var/tmp/ws --tool <author CLI install> -- <author command> > /var/tmp/transcript.jsonl
+sudo python3 eval/s7/isolate.py audit /var/tmp/transcript.jsonl --workspace /var/tmp/ws
 python3 eval/s7/harness.py score --lang firth --tier mvp solutions.json > results.json
 python3 eval/s7/test_mvp.py
 sudo python3 eval/s7/test_isolation.py

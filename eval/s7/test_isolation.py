@@ -126,6 +126,40 @@ def audit_checks() -> None:
     }
     for name, ev in planted.items():
         check(len(isolate.audit(clean + [ev])) == 1, f"the audit flags a planted {name} call")
+    transcript_checks(clean, planted["cat"])
+
+
+def transcript_checks(clean: list[dict], bad: dict) -> None:
+    """A transcript in the workspace can be rewritten by the author after a
+    forbidden call, so the audit refuses one kept there."""
+    lines = lambda evs: "".join(json.dumps(e) + "\n" for e in evs)
+    with tempfile.TemporaryDirectory() as d:
+        ws, outside = Path(d) / "ws", Path(d) / "transcript.jsonl"
+        ws.mkdir()
+        outside.write_text(lines(clean + [bad]))
+        check(len(isolate.audit_file(outside, ws)) == 1, "the audit flags a forbidden call in a transcript outside the workspace")
+        inside = ws / "transcript.jsonl"
+        inside.write_text(lines(clean))  # the author's rewrite, after its forbidden call
+        try:
+            isolate.audit_file(inside, ws)
+            check(False, "the audit refuses a transcript in the workspace")
+        except ValueError as e:
+            check("in the author's workspace" in str(e), f"the audit refuses a transcript in the workspace: {e}")
+        nested = ws / "sub" / "t.jsonl"
+        nested.parent.mkdir()
+        nested.write_text(lines(clean))
+        try:
+            isolate.audit_file(nested, ws)
+            check(False, "the audit refuses a transcript below the workspace")
+        except ValueError:
+            check(True, "the audit refuses a transcript below the workspace")
+        # The planted case: without the check, the rewritten transcript audits clean.
+        text = harness.read_regular(inside, harness.plain_parent(inside))
+        check(isolate.audit([json.loads(l) for l in text.splitlines() if l.strip()]) == [],
+              "without the check, a rewritten transcript in the workspace audits clean (the planted case)")
+        cli = subprocess.run([sys.executable, str(HERE / "isolate.py"), "audit", str(inside), "--workspace", str(ws)],
+                             capture_output=True, text=True)
+        check(cli.returncode == 2 and "workspace" in cli.stderr, f"isolate.py audit refuses it too: {cli.returncode}")
 
 
 GIT = ["git", "-c", "user.email=s7@probe", "-c", "user.name=s7", "-c", "safe.directory=*"]
