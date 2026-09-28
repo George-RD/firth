@@ -54,7 +54,9 @@ Also in the library:
 `Programs/Division.lean` proves `divmod` with `runs_chain`, and that `gcd`
 leaves `Int.gcd a b` for any `a` and `b` in i64 other than -2^63, by strong
 induction on `|b|`. Its step and cost bounds are linear in `|b|`: sound, but
-not the logarithmic bound Euclid's algorithm meets.
+not the logarithmic bound Euclid's algorithm meets. Both are recorded as
+contracts (`divmodContract`, `gcdContract`); `gcd`'s record also covers the
+`abs` it calls, and `digit-sum-from` has no contract yet.
 
 `Programs/SumTo.lean` is the worked example: under `int64Gamma`, for every
 `n ≥ 0` whose sum is in i64 range, `sum-to` returns `1 + ... + n` at a cost of
