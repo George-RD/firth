@@ -873,9 +873,15 @@ print(json.dumps(out))
         check("S7-NOTE" in got.stdout, f"two runs as one uid share its keyring (the planted case): {put.stdout.strip()} {got.stdout.strip()}")
         put = isolate.run(ws, ["python3", "kr.py", "put"], capture_output=True, text=True, timeout=300)
         got = isolate.run(ws, ["python3", "kr.py", "get"], capture_output=True, text=True, timeout=300)
-        check(put.stdout.split()[:2] == ["put", "1"] and got.returncode == 0
-              and got.stdout.split()[:2] == ["get", "0"],
-              f"a key stored by one author run is gone for the next: {put.stdout.strip()} {got.stdout.strip()}")
+        def gone(put, got):
+            return (put.stdout.split()[:2] == ["put", "1"] and got.returncode == 0
+                    and got.stdout.split()[:2] == ["get", "0"])
+        check(gone(put, got), f"a key stored by one author run is gone for the next: {put.stdout.strip()} {got.stdout.strip()}")
+        # A read that fails prints nothing, so it lacks the note too; the old
+        # check (no S7-NOTE) passed it (Codex, on #154). Planted: a failing get.
+        broken = isolate.run(ws, ["python3", "-c", "raise SystemExit(3)"], capture_output=True, text=True, timeout=300)
+        check("S7-NOTE" not in broken.stdout and not gone(put, broken),
+              "a failed read is not taken for a key that is gone (the planted case)")
         (ws / "kr.py").unlink()
         keyed = [harness.run_python(f"import ctypes\n{KEYRING_FN}\ndef main(xs):\n    return [keyring(m) for m in {mode!r}]\n",
                                     ([1],), None, ("Seq Int",), sandboxed=True) for mode in (["put"], ["get"])]
