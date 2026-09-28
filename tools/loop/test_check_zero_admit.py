@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""The zero-admit check refuses each proof escape hatch, and passes clean source."""
+"""The source scan of the zero-admit check refuses each proof escape hatch by
+name, and passes clean source. The environment audit needs Lean; its planted
+modules run inside `check_zero_admit.py` itself on every CI run."""
 import subprocess
 import sys
 import tempfile
@@ -13,7 +15,7 @@ def run_on(source: str) -> subprocess.CompletedProcess:
     with tempfile.TemporaryDirectory() as root:
         (Path(root) / "src").mkdir()
         (Path(root) / "src" / "Planted.lean").write_text(source)
-        return subprocess.run([sys.executable, str(CHECK)], cwd=root,
+        return subprocess.run([sys.executable, str(CHECK), "--source-only"], cwd=root,
                               capture_output=True, text=True)
 
 
@@ -39,6 +41,11 @@ class ZeroAdmitTests(unittest.TestCase):
         # `sorryAx` in prose names the constant; `decide` is not `native_decide`.
         result = run_on("-- refuses sorryAx\ntheorem t : 3 = 3 := by decide\n")
         self.assertEqual(result.returncode, 0, result.stdout)
+
+    def test_unknown_arguments_are_refused(self):
+        result = subprocess.run([sys.executable, str(CHECK), "--skip-audit"],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2, result.stdout)
 
 
 if __name__ == "__main__":
