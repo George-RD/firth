@@ -77,7 +77,13 @@ QUOTE
 IF
 CALL_WORD    Name
 PRIM         PrimitiveId
+PICK         depth
+ROLL         depth
 ```
+
+`PICK` and `ROLL` were added after the other opcodes, so their numbers (13 and
+14) extend the table without renumbering it. An older VM refuses an image that
+uses them at decode, as an unknown opcode, rather than running it.
 
 `PUSH_LITERAL` and `PUSH_QUOTE` are the target forms of kernel literal and
 quotation construction. `PUSH_CAPTURE` is the one additional instruction
@@ -101,6 +107,8 @@ sequence.
 | `dup` | `DUP` | Duplicates the top many value; linear values trap. |
 | `drop` | `DROP` | Removes the top many value; linear values trap. |
 | `swap` | `SWAP` | Exchanges the top two values, preserving ownership. |
+| `pick n` | `PICK n` | Copies the many value `n` below the top to the top; a linear value traps. |
+| `roll n` | `ROLL n` | Moves the value `n` below the top to the top, keeping the others in order. |
 | `dip` | `DIP` | Consumes `v, quotation`; runs quotation below `v`, then restores `v`. |
 | `call` | `CALL` | Consumes a quotation and runs it on the current stack. |
 | `compose` | `COMPOSE` | Consumes two quotations and pushes their concatenation. |
@@ -409,7 +417,7 @@ and digests are SHA-256 over canonical body or evidence bytes.
 Boolean is tag 1 followed by byte `0` or `1`; integer and byte tags follow the
 value declaration order. Every instruction is its opcode followed by its
 canonical operands: names and primitive IDs are length-prefixed strings,
-capture indices are unsigned integers, and nested quotation code is a vector
+capture indices and `PICK`/`ROLL` depths are unsigned integers, and nested quotation code is a vector
 of instructions followed by its capture vector. Capture state is a bitmap of
 consumed slots plus canonical slot values; a `WorldMarker` has a dedicated
 zero-payload tag and `WorldState` is represented only by the registry's

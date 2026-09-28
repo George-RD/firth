@@ -109,6 +109,38 @@ fn step_swap(machine: &mut Machine) -> Result<(), VmError> {
     Ok(())
 }
 
+/// The stack index `depth` values below the top.
+fn depth_index(instruction: &Instruction, machine: &Machine) -> Result<usize, VmError> {
+    let Some(Operand::Depth(depth)) = instruction.operand.as_ref() else {
+        return Err(VmError::StackFault);
+    };
+    let depth = usize::try_from(*depth).map_err(|_| VmError::StackFault)?;
+    machine
+        .stack
+        .len()
+        .checked_sub(depth)
+        .and_then(|above| above.checked_sub(1))
+        .ok_or(VmError::StackFault)
+}
+
+/// `PICK n` copies the value `n` below the top; validation has already
+/// checked that it is a `many` value.
+fn step_pick(instruction: &Instruction, machine: &mut Machine) -> Result<(), VmError> {
+    let index = depth_index(instruction, machine)?;
+    let copy = machine.stack[index].clone();
+    reserve_stack(machine, 1)?;
+    machine.stack.push(copy);
+    Ok(())
+}
+
+/// `ROLL n` moves the value `n` below the top to the top.
+fn step_roll(instruction: &Instruction, machine: &mut Machine) -> Result<(), VmError> {
+    let index = depth_index(instruction, machine)?;
+    let moved = machine.stack.remove(index);
+    machine.stack.push(moved);
+    Ok(())
+}
+
 fn step_call(
     image: &Image,
     environment: &ExecutionEnvironment<'_>,

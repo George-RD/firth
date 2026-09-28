@@ -90,11 +90,12 @@ mutual
     | "world" => .world <$> nat "value.id" (← required "value" "id" values)
     | _ => err s!"unsupported value kind {kind}"
   private partial def decodeAtom (input : Json) : Except String Atom := do
-    let values ← object "atom" input ["kind", "value", "body", "name"] ["kind"]
+    let values ← object "atom" input ["kind", "value", "body", "name", "depth"] ["kind"]
     let kind ← reqStr "atom" "kind" values
     let allowed := if kind == "lit" || kind == "push" then ["kind", "value"]
       else if kind == "quotation" then ["kind", "body"]
-      else if kind == "word" || kind == "prim" then ["kind", "name"] else ["kind"]
+      else if kind == "word" || kind == "prim" then ["kind", "name"]
+      else if kind == "pick" || kind == "roll" then ["kind", "depth"] else ["kind"]
     let _ ← exactMembers "atom" values allowed allowed
     match kind with
     | "lit" => .lit <$> literal (← required "atom" "value" values)
@@ -102,6 +103,8 @@ mutual
     | "quotation" => .quotation <$> decodeProgram (← required "atom" "body" values)
     | "dup" => pure .dup | "drop" => pure .drop | "swap" => pure .swap | "dip" => pure .dip
     | "call" => pure .call | "compose" => pure .compose | "quote" => pure .quote | "if" => pure .ifThenElse
+    | "pick" => .pick <$> reqNat "atom" "depth" values
+    | "roll" => .roll <$> reqNat "atom" "depth" values
     | "word" => .word <$> (nonempty "atom.name" =<< reqStr "atom" "name" values)
     | "prim" => .prim <$> (nonempty "atom.name" =<< reqStr "atom" "name" values)
     | _ => err s!"unsupported atom kind {kind}"
@@ -241,6 +244,8 @@ mutual
     | .push value => obj [("kind", quote "push"), ("value", valueJson value)]
     | .quotation body => obj [("kind", quote "quotation"), ("body", programJson body)]
     | .dup => obj [("kind", quote "dup")] | .drop => obj [("kind", quote "drop")] | .swap => obj [("kind", quote "swap")]
+    | .pick depth => obj [("kind", quote "pick"), ("depth", number depth)]
+    | .roll depth => obj [("kind", quote "roll"), ("depth", number depth)]
     | .dip => obj [("kind", quote "dip")] | .call => obj [("kind", quote "call")] | .compose => obj [("kind", quote "compose")]
     | .quote => obj [("kind", quote "quote")] | .ifThenElse => obj [("kind", quote "if")]
     | .word name => obj [("kind", quote "word"), ("name", quote name)]

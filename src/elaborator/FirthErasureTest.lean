@@ -19,6 +19,8 @@ mutual
     | .dup => "dup"
     | .drop => "drop"
     | .swap => "swap"
+    | .pick depth => s!"pick{depth}"
+    | .roll depth => s!"roll{depth}"
     | .dip => "dip"
     | .prim name => "prim:" ++ name
     | .word name => "word:" ++ name
@@ -89,25 +91,25 @@ def main : IO Unit := do
   expectShapes add ["swap", "swap", "prim:+"]
 
   let deepFocus ← parsed ": deep-focus ( a:Int^many b:Int^many c:Int^many -- ) locals { a b c } { a } ;"
-  expectShapes deepFocus ["[swap]", "dip", "swap", "swap", "drop", "swap", "drop"]
+  expectShapes deepFocus ["roll2", "swap", "drop", "swap", "drop"]
   let focusSpan := match deepFocus.body with
     | [.locals _ [.word _ span] _] => span
     | _ => panic! "focus fixture changed"
   match erase arithmetic deepFocus.effect deepFocus.body with
   | .ok { program := first :: _, .. } =>
-      if first.childSpans == [focusSpan] then pure () else fail "focus quotation lost source provenance"
+      if first.span == focusSpan then pure () else fail "focus roll lost source provenance"
   | .ok _ => fail "focus fixture emitted no kernel"
   | .error error => fail s!"focus provenance failed: {repr error}"
 
   -- A use copies the local only while later uses remain, one copy at a time;
   -- the last use moves the local itself.
   let repeated ← parsed ": repeated ( a:Int^many -- ) locals { a } { a a a } ;"
-  expectShapes repeated ["dup", "[dup]", "dip", "swap", "[swap]", "dip", "swap"]
+  expectShapes repeated ["dup", "pick1", "roll2"]
 
   -- A later use of a local that is not on top copies it where it sits, so the
   -- value selected before it keeps its place: a b + b + is a + b + b.
   let reuse ← parsed ": reuse ( a:Int^many b:Int^many -- r:Int^many ) locals { a b } { a b prim + b prim + } ;"
-  expectShapes reuse ["swap", "[dup]", "dip", "swap", "prim:+", "swap", "prim:+"]
+  expectShapes reuse ["swap", "pick1", "prim:+", "swap", "prim:+"]
 
   -- A quotation may use a local: the value is quoted and composed in.
   let captured ← parsed ": captured ( a:Int^many -- q:Quote^many ) locals { a } { [ a 1 prim + ] } ;"
@@ -186,11 +188,8 @@ def main : IO Unit := do
   -- Fixed kernel goldens transcribed from the normative focus, demand, cleanup,
   -- and quotation rules. None of these expected programs is produced by `erase`.
   expectKernelAtoms add [.swap, .swap, .prim "+"]
-  expectKernelAtoms deepFocus
-    [.quotation (atomProgram [.swap]), .dip, .swap, .swap, .drop, .swap, .drop]
-  expectKernelAtoms repeated
-    [.dup, .quotation (atomProgram [.dup]), .dip, .swap,
-      .quotation (atomProgram [.swap]), .dip, .swap]
+  expectKernelAtoms deepFocus [.roll 2, .swap, .drop, .swap, .drop]
+  expectKernelAtoms repeated [.dup, .pick 1, .roll 2]
   expectKernelAtoms shadow [.lit (.int 1), .drop, .swap, .swap, .drop]
   expectKernelAtoms inferred
     [.quotation (atomProgram [.lit (.int 1), .lit (.int 2), .prim "+"])]

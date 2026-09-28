@@ -2,6 +2,10 @@ dup|7|-|dup|terminal|7,7|1|-|1
 drop|7|-|drop|terminal||1|-|1
 drop-fault||-|drop|stuck||0|main@0|0
 swap|1,2|-|swap|terminal|2,1|1|-|1
+pick|1,2,3|-|pick:2|terminal|1,2,3,1|1|-|1
+pick-fault|1|-|pick:1|stuck|1|0|main@0|0
+roll|1,2,3|-|roll:2|terminal|2,3,1|1|-|1
+roll-fault|1|-|roll:1|stuck|1|0|main@0|0
 dip||-|pushi:4,pushq:[pushi:5],dip|terminal|5,4|4|-|4
 call||-|pushq:[pushi:9],call|terminal|9|3|-|3
 compose||-|pushq:[pushi:1],pushq:[pushi:2],compose,call|terminal|1,2|6|-|6

@@ -60,6 +60,10 @@ mutual
     | dup
     | drop
     | swap
+    /-- Copy the value `depth` places below the top onto the top. -/
+    | pick (depth : Nat)
+    /-- Move the value `depth` places below the top onto the top. -/
+    | roll (depth : Nat)
     | dip
     | call
     | compose
@@ -102,6 +106,12 @@ structure CostTable where
 
 def defaultCosts : CostTable :=
   { atom := fun _ => 1, primitive := fun _ => 1, unfold := 1 }
+
+/-- The value `depth` places below the top, and the stack without it. -/
+def rollOut : Stack → Nat → Option (Value × Stack)
+  | value :: tail, 0 => some (value, tail)
+  | value :: tail, depth + 1 => (rollOut tail depth).map fun (moved, rest) => (moved, value :: rest)
+  | [], _ => none
 
 def Program.append : Program → Program → Program
   | .empty, right => right
@@ -316,6 +326,16 @@ def step (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable) : Config 
           | second :: first :: tail =>
               .stepped { stack := first :: second :: tail, program := rest } (costs.atom atom)
           | _ => .stuck config
+      | .pick depth =>
+          -- (S-PICK): the type system admits this only for many values.
+          match stack[depth]? with
+          | some value => .stepped { stack := value :: stack, program := rest } (costs.atom atom)
+          | none => .stuck config
+      | .roll depth =>
+          -- (S-ROLL): move one value to the top, keeping the others in order.
+          match rollOut stack depth with
+          | some (value, tail) => .stepped { stack := value :: tail, program := rest } (costs.atom atom)
+          | none => .stuck config
       | .call =>
           -- (S-CALL): consume one quotation and concatenate its body.
           match stack with
@@ -523,6 +543,19 @@ def runOracle (gamma : Gamma) (dictionary : Dictionary) (costs : CostTable)
 the symbolic row `ρ` from the bottom upwards; this matches the executable
 top-first stack representation with the specification's bottom-to-top rules. -/
 
+/-- The type `depth` places below the top of a stack type. -/
+def StackType.pickAt : StackType → Nat → Option ValueType
+  | .snoc _ type, 0 => some type
+  | .snoc rest _, depth + 1 => rest.pickAt depth
+  | .row _, _ => none
+
+/-- The type `depth` places below the top, and the stack type without it. -/
+def StackType.rollAt : StackType → Nat → Option (StackType × ValueType)
+  | .snoc rest type, 0 => some (rest, type)
+  | .snoc rest type, depth + 1 =>
+      (rest.rollAt depth).map fun (remaining, moved) => (.snoc remaining type, moved)
+  | .row _, _ => none
+
 def ValueType.usage : ValueType → Usage
   | .base _ usage => usage
   | .quotation _ _ usage => usage
@@ -568,6 +601,12 @@ mutual
     | swap {stack : StackType} {first second : ValueType} :
         AtomTyping gamma dictionary .swap (.snoc (.snoc stack first) second)
           (.snoc (.snoc stack second) first)
+    | pick {stack : StackType} {depth : Nat} {type : ValueType}
+        (h : stack.pickAt depth = some type) (many : type.usage = .many) :
+        AtomTyping gamma dictionary (.pick depth) stack (.snoc stack type)
+    | roll {stack rest : StackType} {depth : Nat} {type : ValueType}
+        (h : stack.rollAt depth = some (rest, type)) :
+        AtomTyping gamma dictionary (.roll depth) stack (.snoc rest type)
     | call {input output : StackType} {usage : Usage} :
         AtomTyping gamma dictionary .call
           (.snoc input (.quotation input output usage)) output

@@ -59,7 +59,7 @@
             }
             rows += 1;
         }
-        assert_eq!(rows, 15, "the frozen corpus lost or gained a row");
+        assert_eq!(rows, 19, "the frozen corpus lost or gained a row");
         assert_eq!(unsupported_rows, vec![String::from("quote")]);
     }
 
