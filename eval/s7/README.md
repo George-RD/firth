@@ -176,6 +176,9 @@ numbers and empty sequences.
   links, so `./try` cannot be pointed at a host file (for example
   `/etc/shadow`, which the author process could otherwise read) to echo it
   back in a diagnostic. `test_isolation.py` plants each of these.
+  Run directly, `harness.py try` is operator tooling that authors never
+  see: whoever passes its `--workspace` already has the host, so its own
+  workspace check guards against operator mistakes, not against authors.
 - The host reads what an author wrote (answer files, transcripts) only as
   plain files with one link. It opens each path one component at a time from
   the workspace (`--workspace DIR` on `score` and `extract`) with
