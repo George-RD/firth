@@ -360,11 +360,22 @@ def require_sandbox(lang: str, tasks: list[Task]) -> None:
         raise SystemExit("scoring Python answers to MVP tasks needs the sandbox; run as root")
 
 
+def sandbox_preflight() -> None:
+    """Refuse to score when the sandbox cannot start (root without namespace
+    rights, say): otherwise every answer would fail as if it were wrong, under
+    `python_sandboxed: true`."""
+    got = run_python("def main(xs):\n    return xs\n", ([1],), None, ("Seq Int",), sandboxed=True)
+    if got != {"ok": True, "stack": [[1]]}:
+        raise SystemExit(f"the Python sandbox does not work here, so nothing is scored: {got}")
+
+
 def score(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int) -> dict:
     """Score every answer. Python answers run in the sandbox when we are root, so
     an answer cannot read the expected results or change the files it is scored
     with; the result records whether they did."""
     sandboxed = lang == "python" and os.geteuid() == 0
+    if sandboxed:
+        sandbox_preflight()
     runner = run_firth if lang == "firth" else (
         lambda src, args, fuel=None, outputs=(): run_python(src, args, fuel, outputs, sandboxed))
     work = [(t, args, i == 0) for t in tasks if t.id in solutions

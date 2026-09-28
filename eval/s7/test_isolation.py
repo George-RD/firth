@@ -353,6 +353,16 @@ def main() -> int:
               f"a timed-out answer leaves nothing running: {timed} {alive}")
         for pid in alive:
             os.kill(pid, 9)
+        # Codex's probe: a sandbox that cannot start must stop scoring, not turn
+        # every answer into a failure. Planted: a sandbox command that fails.
+        real = isolate.sandbox_command
+        try:
+            isolate.sandbox_command = lambda *a, **k: ["sh", "-c", "echo 'unshare: Operation not permitted' >&2; exit 1"]
+            broken = refused_exit(lambda: harness.score({"reverse": "def main(xs):\n    return xs[::-1]\n"},
+                                                        "python", [harness.BY_ID["reverse"]], 1))
+        finally:
+            isolate.sandbox_command = real
+        check(broken, "scoring refuses to run when the sandbox cannot start")
         other = isolate.run(ws, ["./try", "--task", "fib", "reverse.py"],
                             capture_output=True, text=True, timeout=300)
         check("unknown task" in other.stdout, "try refuses tasks outside the workspace's set")

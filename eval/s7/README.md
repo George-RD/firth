@@ -142,6 +142,8 @@ include negative numbers and empty sequences.
   (it holds host sockets). So one attempt cannot leave notes for a later one.
   `test_isolation.py` runs `find / -writable` as the author and allows nothing
   else.
+- Scoring Python first checks that the sandbox starts, and refuses to score if
+  it does not, so a broken sandbox cannot pass for a set of wrong answers.
 - When a submitted program times out, the harness kills the sandbox's first
   process, which ends every process in its PID namespace, however it forked.
 - An author can delete `try.sock`. That only breaks its own `./try`, and the
