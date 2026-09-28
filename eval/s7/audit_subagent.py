@@ -40,11 +40,14 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path) -> tuple[
     repair = re.compile(re.escape(str(run_dir)) + r"/repair-[1-9]\.md")
     calls, models, times, bad = [], set(), [], []
     for ev in events:
-        if ev.get("timestamp"):
-            times.append(ev["timestamp"])
         msg = ev.get("message") or {}
         if ev.get("type") != "assistant":
             continue
+        # Only the author's own turns: the log also carries context the
+        # sub-agent inherited from the session that started it, whose times
+        # are hours earlier (Codex, on #147).
+        if ev.get("timestamp"):
+            times.append(ev["timestamp"])
         if msg.get("model"):
             models.add(msg["model"])
         for b in msg.get("content") or []:

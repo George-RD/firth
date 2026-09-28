@@ -451,8 +451,11 @@ describes Firth but gives no syntax.
   subtraction. Its only first-answer miss was `ledger`, where the call
   passed `start` into the loop's index slot (a stack-order slip; Jev said
   `logic` at 0.56, and the hand label is `stack_order`). It fixed that from
-  the example's feedback. The Firth answer took about 6 minutes, and the
-  Python answer 21 seconds.
+  the example's feedback. From reading the prompt to writing the first
+  answer, the Firth answer took 5 minutes 56 seconds and the Python answer
+  11 seconds (the tool-call times in `transcript.json`; the `started` field
+  of the run 4 and 5 transcripts is the first event of the log, which is
+  context inherited from the session, so it is not the author's start).
 - **Haiku failed every Firth task, in all three answers, for one reason.**
   It used the names from a word's stack effect (`xs`, `n`, `k`, `start`) as
   if they were bound, outside any `locals` block, so every program stopped
@@ -560,8 +563,8 @@ Wrong answers at runtime were logic slips that a signature cannot catch.
 So the bet holds for strong models and not yet for weak ones, and the
 checker's diagnostics are the lever that has moved the weak model most.
 The costs are real: Sonnet spent 20 to 100 times longer per Firth attempt
-than per Python attempt in runs 1 to 3, and about 17 times longer in run 4
-(about 6 minutes against 21 seconds).
+than per Python attempt in runs 1 to 3, and about 31 times longer to a first
+answer in run 4 (5 minutes 56 seconds against 11 seconds).
 
 ## Limits and next steps
 

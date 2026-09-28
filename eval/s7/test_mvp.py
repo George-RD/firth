@@ -222,6 +222,11 @@ def subagent_audit() -> None:
         ok = [call("Read", file_path=str(prompt)), call("Write", file_path=str(ans), content=ans.read_text()),
               call("Read", file_path=str(d / "repair-1.md"))]
         check(audit(ok, prompt, d, d)[1] == [], "the audit passes a prompt read, an answer write and feedback")
+        inherited = {"type": "user", "timestamp": "2026-01-01T00:00:00Z", "message": {"content": "context"}}
+        timed = [dict(e, timestamp=f"2026-01-01T01:00:0{i}Z") for i, e in enumerate(ok)]
+        log = audit([inherited, *timed], prompt, d, d)[0]
+        check((log["started"], log["finished"]) == ("2026-01-01T01:00:00Z", "2026-01-01T01:00:02Z"),
+              f"the audit times the author's own turns, not inherited context: {log['started']} {log['finished']}")
         for what, ev in (("a read of the hidden tests", call("Read", file_path=str(HERE / "mvp_tasks.py"))),
                          ("a shell call", call("Bash", command="cat eval/s7/reference/mvp/sort.firth")),
                          ("a write outside the author's files", call("Write", file_path=str(HERE / "x.py"), content="")),
