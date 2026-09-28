@@ -6,7 +6,7 @@ specs/inventory-allocation.md as `allocateAll` and proves the spec's required
 properties of it. Those proofs are only as good as the rule's agreement with
 the frozen contract, so this script writes one `#guard` per successful case in
 specs/inventory-allocation-cases.json to
-`src/prooftests/InventorySpecCorpus.lean`: `lake build` evaluates each and
+`src/proofs/Inventory/SpecCorpus.lean`: `lake build` evaluates each and
 fails if `allocateAll` gives a different remaining stock, allocation or reason
 for any of them. Error cases are not covered: `allocateAll` is the calculation
 after validation.
@@ -24,7 +24,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CASES = ROOT / "specs" / "inventory-allocation-cases.json"
-OUTPUT = ROOT / "src" / "prooftests" / "InventorySpecCorpus.lean"
+OUTPUT = ROOT / "src" / "proofs" / "Inventory" / "SpecCorpus.lean"
 REASONS = {"fulfilled": 0, "partial": 1, "out-of-stock": 2, "insufficient-stock": 3}
 
 
@@ -54,10 +54,10 @@ def render() -> str:
             "import proofs.Inventory.Spec\n\n"
             "/-! `allocateAll` reproduces every successful case of the frozen inventory\n"
             f"corpus ({len(lines)} cases): remaining stock, allocations and reasons. -/\n\n"
-            "namespace Firth.ProofTests.InventorySpecCorpus\n"
+            "namespace Firth.Proofs.Inventory.SpecCorpus\n"
             "open Firth.Proofs.Inventory.Spec\n\n"
             + "\n\n".join(lines)
-            + "\n\nend Firth.ProofTests.InventorySpecCorpus\n")
+            + "\n\nend Firth.Proofs.Inventory.SpecCorpus\n")
 
 
 def main() -> int:
