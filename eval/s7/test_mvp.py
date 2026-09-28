@@ -188,6 +188,23 @@ def hashes_recorded() -> None:
     h = harness.eval_hashes()
     check(set(h) == {"task.py", "tasks.py", "mvp_tasks.py", "harness.py", "isolate.py"}
           and all(len(v) == 64 for v in h.values()), "results can record the eval sources' SHA-256")
+    # Hashes are taken before scoring, and a change during scoring is refused.
+    # Planted: a scoring run during which the files' hashes change.
+    real = harness.eval_hashes
+    seen = iter([{"harness.py": "a"}, {"harness.py": "b"}])
+    try:
+        harness.eval_hashes = lambda: next(seen)
+        changed = False
+        try:
+            harness.scored_with_hashes(lambda: "result")
+        except SystemExit:
+            changed = True
+        check(changed, "scoring refuses to record hashes when the eval files change while it runs")
+        harness.eval_hashes = lambda: {"harness.py": "a"}
+        check(harness.scored_with_hashes(lambda: "result") == ("result", {"harness.py": "a"}),
+              "unchanged files give the result with the hashes taken before scoring")
+    finally:
+        harness.eval_hashes = real
 
 
 def main() -> int:

@@ -359,6 +359,18 @@ def eval_hashes() -> dict[str, str]:
             for n in ("task.py", "tasks.py", "mvp_tasks.py", "harness.py", "isolate.py")}
 
 
+def scored_with_hashes(run):
+    """RUN's result and the eval hashes taken before it started. Refuses when
+    the files change while it runs: scoring keeps the definitions it imported,
+    so hashes taken afterwards would name an evaluator that did not score it
+    (Codex's finding)."""
+    before = eval_hashes()
+    out = run()
+    if eval_hashes() != before:
+        raise SystemExit("the task sets or the scorer changed while scoring; nothing is recorded")
+    return out, before
+
+
 def firth_commit() -> str:
     """The commit being scored, with "-dirty" when files outside eval/ have uncommitted
     changes, or when that cannot be checked."""
@@ -530,8 +542,9 @@ def main() -> int:
         print(json.dumps(extract(read_regular(a.answer, a.workspace or plain_parent(a.answer))), indent=2))
     elif a.cmd == "score":
         require_sandbox(a.lang, select(a.tier))
-        res = score(load_solutions(a.solutions, a.workspace or plain_parent(a.solutions)), a.lang, select(a.tier), a.jobs)
-        res.update(label=a.label, firth_commit=firth_commit(), eval_sha256=eval_hashes(),
+        sols = load_solutions(a.solutions, a.workspace or plain_parent(a.solutions))
+        res, hashes = scored_with_hashes(lambda: score(sols, a.lang, select(a.tier), a.jobs))
+        res.update(label=a.label, firth_commit=firth_commit(), eval_sha256=hashes,
                    prompt_docs=[d for d in a.prompt_docs.split(",") if d])
         print(json.dumps(res, indent=2))
     elif a.cmd == "repair":
