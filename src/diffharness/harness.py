@@ -483,6 +483,33 @@ def both_faulted(reference: dict[str, Any], target: dict[str, Any], fuel: int) -
     return Result("runtime-trap", traps=traps, trace_comparison=trace_comparison)
 
 
+def overflows(event: dict[str, Any]) -> bool:
+    """Whether the reference's next step is a portable integer overflow.
+
+    The step must apply `+`, `-`, `*` or `div` to the two integers on top of
+    the stack, and its documented result must leave the signed 64-bit range.
+    A VM that faults anywhere else, even with the same operands on its stack,
+    has not overflowed.
+    """
+    program, stack = event.get("program"), event["stack"]
+    if not isinstance(program, list) or not program or len(stack) < 2:
+        return False
+    head = program[0]
+    if not isinstance(head, dict) or head.get("kind") != "prim" or head.get("name") not in ("+", "-", "*", "div"):
+        return False
+    operands = []
+    for value in stack[-2:]:
+        literal = value.get("literal") if isinstance(value, dict) and value.get("kind") == "literal" else None
+        if not isinstance(literal, dict) or literal.get("type") != "int" or type(literal.get("value")) is not int:
+            return False
+        operands.append(literal["value"])
+    try:
+        primitive(head["name"], operands[0], operands[1], portable=True)
+    except Fault:
+        return operands[1] != 0 or head["name"] != "div"
+    return False
+
+
 def overflow_prefix(reference: dict[str, Any], target: dict[str, Any], fuel: int) -> Result:
     """The VM overflowed where the unbounded reference ran on.
 
@@ -490,8 +517,9 @@ def overflow_prefix(reference: dict[str, Any], target: dict[str, Any], fuel: int
     kernel-charged trace, less its faulting instruction, must be a prefix of
     the reference's: the same charge at every step, the same stack wherever
     neither holds a quotation, and the VM's stack at the fault equal to the
-    reference's stack before the same step. Its kernel cost must be the sum
-    of the reference's charges over that prefix.
+    reference's stack before the same step, and that step must overflow
+    (`overflows`). Its kernel cost must be the sum of the reference's charges
+    over that prefix.
     """
     traps = (None, "primitive-fault")
     try:
@@ -499,6 +527,10 @@ def overflow_prefix(reference: dict[str, Any], target: dict[str, Any], fuel: int
         gate.validate_trace(reference["trace"], gate.REFERENCE_EVENT_FIELDS, ("cost",), "case: reference")
         gate.validate_portable_stack(target["stack"], "target")
         gate.validate_pure_world(reference["world_observation"], target["world_observation"], "case")
+        cost = reference["cost"]
+        if not isinstance(cost, dict) or any(type(cost.get(k)) is not int or cost[k] < 0
+                                             for k in ("total", "steps")):
+            raise gate.GateError("reference: invalid cost")
     except gate.GateError as error:
         return Result("invalid-observation", detail=str(error), traps=traps)
     projected_reference = [event for event in reference["trace"] if event["cost"] > 0]
@@ -518,10 +550,13 @@ def overflow_prefix(reference: dict[str, Any], target: dict[str, Any], fuel: int
         if not gate.holds_quotation(left["stack"]) and not gate.holds_quotation(right["stack"]) \
                 and left["stack"] != right["stack"]:
             return Result("trace-mismatch", traps=traps, detail=f"trace event {index} stack differs")
-    at_fault = projected_reference[len(projected_target)]["stack"]
-    if not gate.holds_quotation(at_fault) and at_fault != target["stack"]:
+    at_fault = projected_reference[len(projected_target)]
+    if not gate.holds_quotation(at_fault["stack"]) and at_fault["stack"] != target["stack"]:
         return Result("stack-mismatch", traps=traps,
                       detail="the VM's stack at the fault is not the reference's before that step")
+    if not overflows(at_fault):
+        return Result("trace-mismatch", traps=traps,
+                      detail="the VM faulted on a step that does not leave the signed 64-bit range")
     if sum(event["cost"] for event in projected_reference[:len(projected_target)]) \
             != lined_up["cost"]["kernel"]:
         return Result("kernel-cost-mismatch", traps=traps)

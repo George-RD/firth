@@ -58,8 +58,12 @@ Three outcomes pass, each only when both hosts match the oracle:
   The VM's run, less its faulting instruction, must be a prefix of the
   reference's: the same charge and stack at each kernel step, its stack at the
   fault equal to the reference's before that step, and its kernel cost the sum
-  of the reference's charges up to it. This is the documented difference
-  between the two hosts, not an agreement.
+  of the reference's charges up to it. The reference's step there must apply
+  `+`, `-`, `*` or `div` to two integers whose documented result leaves the
+  range, so a VM that faults earlier on the same operands (`MAX 1 div 1 +`
+  faulting at `div`) is a `trace-mismatch`. The reference's cost report is
+  validated as on success. This is the documented difference between the two
+  hosts, not an agreement.
 
 Raw VM cost may differ. Both hosts exhausting fuel is
 `bounded-fuel-inconclusive`, not agreement. One-sided exhaustion, a trap the
