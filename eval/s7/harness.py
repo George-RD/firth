@@ -295,6 +295,14 @@ print(json.dumps(out))
 PY_TIMEOUT = 30  # seconds per Python case
 
 
+def python_install() -> tuple[str, ...]:
+    """The interpreter's install, when the sandbox's system directories lack it."""
+    import isolate
+    prefix = os.path.realpath(sys.base_prefix)
+    return () if any(isolate.within(prefix, os.path.realpath(d)) for d in isolate.SYSTEM
+                     if os.path.isdir(d)) else (prefix,)
+
+
 def run_python(source: str, args: tuple, fuel: int | None = None,
                outputs: tuple[str, ...] = (), sandboxed: bool = False) -> dict:
     """Run `main`; `outputs` are the task's output types, which the result must match.
@@ -307,7 +315,8 @@ def run_python(source: str, args: tuple, fuel: int | None = None,
         import isolate  # imports this module, so only when needed
         empty = tempfile.mkdtemp(dir="/var/tmp", prefix="s7py-")
         os.chown(empty, isolate.NOBODY, isolate.NOBODY)
-        cmd = isolate.sandbox_command(Path(empty), cmd, network=False, uid=isolate.NOBODY)
+        cmd = isolate.sandbox_command(Path(empty), cmd, network=False, uid=isolate.NOBODY,
+                                      tools=python_install())
     try:
         p = (isolate.contained(cmd, input=source, capture_output=True, text=True, timeout=PY_TIMEOUT,
                                env=isolate.sandbox_env()) if empty else

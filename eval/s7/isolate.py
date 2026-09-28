@@ -6,14 +6,17 @@ the prompt, the files it writes, and a `try` client. The client talks over a
 Unix socket to a `try` server run by the harness outside the sandbox, so the
 harness, the hidden tests (`mvp_tasks.py`) and the references
 (`reference/mvp/`) stay out of the author's reach. The sandbox is a Linux mount
-and PID namespace (`unshare`, run as root) in which the repository, /home,
-/root, /tmp, /var/tmp, /mnt and /srv are replaced by empty directories; the
-workspace appears at /tmp/work, and all capabilities are dropped before the
-author's command starts, so it cannot unmount them or see outside processes.
+and PID namespace (`unshare`, run as root) whose root is built from an
+allowlist: the system directories, the author CLI's install (`--tool`), copies
+of its credentials (`--keep`), and a fresh /tmp, /dev and /proc, with the
+workspace at /tmp/work. The host's root is dropped with pivot_root, so the
+repository, its checkouts and everything else not listed do not exist inside.
+The sandbox refuses to start if anything on the list would expose the
+repository. All capabilities are dropped before the author's command starts.
 
     isolate.py workspace --lang firth --tier mvp DIR   # prompt.md + try client
     isolate.py serve DIR                               # the try server, foreground
-    isolate.py run DIR -- COMMAND...                   # COMMAND inside the sandbox
+    isolate.py run DIR [--tool D] [--keep F] -- COMMAND...  # COMMAND inside the sandbox
     isolate.py audit transcript.jsonl                  # tool calls beyond try, if any
 
 `run` starts the server itself. `test_isolation.py` checks that a command in
@@ -42,7 +45,13 @@ sys.path.insert(0, str(HERE))
 import harness  # noqa: E402
 from tasks import BY_ID  # noqa: E402
 
-HIDDEN = ("/home", "/root", "/tmp", "/var/tmp", "/mnt", "/srv")
+# The only host directories an author sees, each read-only at its own path,
+# plus what `--tool` and `--keep` add. Everything else (the repository, /home,
+# /root, /opt, /mnt, /srv, /var, the host's /tmp) is simply not in the new root.
+SYSTEM = ("/usr", "/bin", "/sbin", "/lib", "/lib32", "/lib64", "/libx32", "/etc")
+# Files under /etc that a container runtime mounts over: bound in as they are
+# seen, so the author resolves the same hosts as the harness.
+ETC_MOUNTS = ("/etc/resolv.conf", "/etc/hosts", "/etc/hostname")
 SOCKET = "try.sock"
 INSIDE = "/tmp/work"
 PROTECTED = ("try", "workspace.json")
@@ -155,30 +164,34 @@ def serve(dir: Path, stop: threading.Event | None = None) -> socket.socket:
     return srv
 
 
-def hidden_paths() -> list[str]:
-    """Everything to cover: the fixed list, the repository wherever it is, and
-    its git storage. A worktree's git directory, the shared common directory
-    and any object alternates can lie outside the repository, and `git show`
-    reads the hidden tests from any of them."""
-    paths = list(HIDDEN)
-    for extra in (str(harness.ROOT), *git_storage(harness.ROOT)):
-        if not any(extra == p or extra.startswith(p + "/") for p in paths):
-            paths.append(extra)
-    return paths
+def within(path: str, top: str) -> bool:
+    """PATH is TOP or lies below it (both absolute and resolved)."""
+    return os.path.commonpath([path, top]) == top
+
+
+def git_lines(root: Path, *args: str, none: int | None = None) -> list[str]:
+    """`git -C ROOT ARGS` output lines; exit status NONE means no lines. Fails
+    closed: a checkout whose layout cannot be read is not run, since we could
+    not tell what it would expose."""
+    try:
+        p = subprocess.run(["git", "-c", "safe.directory=*", "-C", str(root), *args],
+                           capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError) as e:
+        raise SystemExit(f"cannot read the repository's layout to keep it out of the sandbox: {e}")
+    if p.returncode == none:
+        return []
+    if p.returncode != 0:
+        raise SystemExit(f"cannot read the repository's layout to keep it out of the sandbox: "
+                         f"git {' '.join(args)}: {p.stderr.strip()}")
+    return p.stdout.splitlines()
 
 
 def git_storage(root: Path) -> list[str]:
-    """The git directory, common directory and object alternates behind ROOT.
-    Fails closed: a checkout whose storage cannot be resolved is not run."""
+    """The git directory, common directory and object alternates behind ROOT."""
     if not (root / ".git").exists():
         return []
-    try:
-        out = subprocess.run(["git", "-C", str(root), "rev-parse", "--path-format=absolute",
-                              "--git-dir", "--git-common-dir"],
-                             capture_output=True, text=True, check=True, timeout=30).stdout
-    except (OSError, subprocess.SubprocessError) as e:
-        raise SystemExit(f"cannot find the repository's git storage to hide it: {e}")
-    dirs = [os.path.realpath(d) for d in out.split()]
+    dirs = [os.path.realpath(d) for d in git_lines(
+        root, "rev-parse", "--path-format=absolute", "--git-dir", "--git-common-dir")]
     pending = [Path(dirs[-1]) / "objects"]
     while pending:  # alternates may chain
         alt = pending.pop() / "info" / "alternates"
@@ -192,65 +205,119 @@ def git_storage(root: Path) -> list[str]:
     return dirs
 
 
+def repository_paths(root: Path) -> list[str]:
+    """Every path that holds the hidden tests or leads to them: the repository,
+    its git storage, its main checkout and other worktrees, remotes that are
+    local paths, and any checkout enclosing one of these. Nothing allowed into
+    the sandbox may be one of them, lie inside one, or contain one."""
+    top = os.path.realpath(root)
+    paths = [top, *git_storage(root)]
+    if (root / ".git").exists():
+        paths += [os.path.realpath(l.split(" ", 1)[1])
+                  for l in git_lines(root, "worktree", "list", "--porcelain") if l.startswith("worktree ")]
+        # `git config --get-regexp` exits 1 when there is no remote at all.
+        for line in git_lines(root, "config", "--get-regexp", r"^remote\..*\.(push)?url$", none=1):
+            url = line.split(" ", 1)[1] if " " in line else ""
+            local = url[len("file://"):] if url.startswith("file://") else url
+            if local.startswith(("/", ".")) or (local and ":" not in local):
+                paths.append(os.path.realpath(os.path.join(top, local)))
+    for p in list(paths):
+        for up in Path(p).parents:
+            if (up / ".git").exists():
+                paths.append(str(up))
+    return sorted(set(paths))
+
+
+def check_exposure(dir: Path, sources: list[str]) -> None:
+    """Refuse to start when anything the sandbox would show (a system directory,
+    a tool, a credential, the workspace) is, holds, or lies inside a path of the
+    repository. The paths come from the repository the harness runs from."""
+    repo = repository_paths(harness.ROOT)
+    for s in [os.path.realpath(dir), *sources]:
+        for p in repo:
+            if within(p, s) or within(s, p):
+                raise SystemExit(f"the sandbox would expose {p} through {s}; move one of them")
+
+
+def allowed_sources(tools: tuple[str, ...]) -> list[tuple[str, str]]:
+    """(host path, path in the sandbox) for each system directory and tool, the
+    host path resolved so a link cannot redirect it. A system directory that is
+    a link on the host (/bin -> usr/bin) is recreated as the same link."""
+    out = []
+    for t in (*SYSTEM, *tools):
+        if t not in SYSTEM and os.path.realpath(t) != os.path.normpath(t):
+            raise SystemExit(f"--tool {t}: name the real, absolute path, with no link on it")
+        if os.path.lexists(t) and not (t in SYSTEM and os.path.islink(t)):
+            out.append((os.path.realpath(t), os.path.normpath(t)))
+    return out
+
+
 def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = (),
-                    network: bool = True, uid: int | None = None) -> list[str]:
+                    network: bool = True, uid: int | None = None,
+                    tools: tuple[str, ...] = ()) -> list[str]:
     """The command line that runs COMMAND in the sandbox, with the workspace at
-    /tmp/work. `keep` lists files or directories to bind back in read-only (for
-    example the author model's credentials), each at its own path. With
-    `network=False` the command also gets an empty network namespace: that is how
-    submitted programs run, while the author process keeps its network for the
+    /tmp/work. The sandbox's root is a fresh, read-only tmpfs built from an
+    allowlist: the system directories, each `tools` path (the author CLI's
+    install), copies of the `keep` files (the author model's credentials, each
+    at its own path), a fresh /tmp, /dev and /proc. The host's root is dropped
+    with pivot_root, so anything not on the list does not exist inside. It
+    refuses to build a root that would expose the repository (check_exposure).
+    With `network=False` the command also gets an empty network namespace: that
+    is how submitted programs run, while the author keeps its network for the
     model API. With `uid`, the command runs as that user and group instead of
-    root, so root-only files the mounts do not cover stay unreadable; the author
-    and submitted programs both run as `nobody`. Run it with `env=sandbox_env()`:
-    the command sees only that environment."""
+    root; the author and submitted programs both run as `nobody`. Run it with
+    `env=sandbox_env()`: the command sees only that environment."""
     if os.geteuid() != 0:
         raise SystemExit("the sandbox needs root (unshare and mount)")
-    stage = "/run/s7-stage"
-    lines = ["set -e", f"mkdir -p {stage}", f"mount -t tmpfs tmpfs {stage}",
-             f"mkdir {stage}/work", f"mount --bind {q(dir)} {stage}/work"]
+    sources = allowed_sources(tools)
+    check_exposure(dir, [s for s, _ in sources] + [os.path.realpath(k) for k in keep])
+    stage, new = "/run/s7-stage", "/run/s7-root"
+    lines = ["set -e", f"mkdir -p {stage} {new}", f"mount -t tmpfs tmpfs {stage}",
+             f"mount -t tmpfs -o mode=755 tmpfs {new}"]
     # Credentials the author needs come in as copies its uid can read, not as
-    # the host's files.
+    # the host's files. They are staged outside the new root.
     for i, k in enumerate(keep):
         lines.append(f"cp -rL {q(k)} {stage}/k{i}")
         if uid is not None:
             lines.append(f"chown -R {uid}:{uid} {stage}/k{i}")
+    for t in SYSTEM:
+        if os.path.islink(t):
+            lines.append(f"ln -s {q(os.readlink(t))} {new}{q(t)}")
+    # Non-recursive binds: a mount below an allowed directory is not carried in.
+    for src, at in sources:
+        make = "mkdir -p" if os.path.isdir(src) else "mkdir -p " + q(new + str(Path(at).parent)) + " && touch"
+        lines += [f"{make} {q(new + at)}", f"mount --bind -o ro {q(src)} {q(new + at)}"]
+    for f in ETC_MOUNTS:
+        if os.path.isfile(f) and not os.path.islink(f):
+            lines.append(f"[ -f {new}{f} ] && mount --bind -o ro {f} {new}{f}")
     # A fresh /dev with only the harmless character devices: no disk, loop or
-    # memory device to read the hidden files through, below every path mount.
-    lines.append(f"mkdir {stage}/dev")
+    # memory device to read the hidden files through.
+    lines.append(f"mkdir {new}/dev && mount -t tmpfs -o mode=755 tmpfs {new}/dev")
     for d in DEVICES:
-        lines += [f"touch {stage}/dev/{d}", f"mount --bind /dev/{d} {stage}/dev/{d}"]
-    lines.append("mount -t tmpfs -o mode=755 tmpfs /dev")
-    for d in DEVICES:
-        lines += [f"touch /dev/{d}", f"mount --bind {stage}/dev/{d} /dev/{d}"]
-    lines += ["mkdir -p /dev/shm", "mount -t tmpfs -o mode=1777 tmpfs /dev/shm",
-              "ln -sfn /proc/self/fd /dev/fd"]
-    lines += [f"ln -sfn /proc/self/fd/{i} /dev/{n}" for i, n in enumerate(("stdin", "stdout", "stderr"))]
-    for p in hidden_paths():
-        lines.append(f"[ -d {q(p)} ] && mount -t tmpfs -o mode=755 tmpfs {q(p)}")
-    lines += [f"mkdir -p {INSIDE}", f"mount --bind {stage}/work {INSIDE}"]
+        lines += [f"touch {new}/dev/{d}", f"mount --bind /dev/{d} {new}/dev/{d}"]
+    lines += [f"mkdir {new}/dev/shm", f"mount -t tmpfs -o mode=1777 tmpfs {new}/dev/shm",
+              f"ln -s /proc/self/fd {new}/dev/fd"]
+    lines += [f"ln -s /proc/self/fd/{i} {new}/dev/{n}" for i, n in enumerate(("stdin", "stdout", "stderr"))]
+    lines += [f"mkdir {new}/tmp && mount -t tmpfs -o mode=1777 tmpfs {new}/tmp",
+              f"mkdir {new}{INSIDE} && mount --bind {q(dir)} {new}{INSIDE}"]
     # The client and its socket stay as the harness wrote them: an author who
     # could replace `try` could run anything through the one allowed command.
     for name in PROTECTED:
-        lines.append(f"[ -e {INSIDE}/{name} ] && mount --bind -o ro {INSIDE}/{name} {INSIDE}/{name}")
+        lines.append(f"[ -e {new}{INSIDE}/{name} ] && mount --bind -o ro {new}{INSIDE}/{name} {new}{INSIDE}/{name}")
     for i, k in enumerate(keep):
-        make = (f"mkdir -p {q(k)}" if Path(k).is_dir() else
-                f"[ -e {q(k)} ] || {{ mkdir -p {q(str(Path(k).parent))} && touch {q(k)}; }}")
-        lines += [make, f"mount --bind -o ro {stage}/k{i} {q(k)}"]
-    # Everything else read-only: remount every mount point except the workspace,
-    # the fresh /tmp and /dev/shm, and /proc. Listing world-writable directories
-    # instead would miss some, and one attempt could leave notes for the next.
-    # A remount that fails stops the sandbox (set -e with pipefail).
-    # /run holds the host's sockets (a read-only mount still lets a socket be
-    # connected), so it is replaced by an empty directory, once staging is done.
-    lines += [f"umount -l {stage}", "mount -t tmpfs -o mode=755 tmpfs /run"]
-    lines += ["set -o pipefail",
-              "awk '{print $5}' /proc/self/mountinfo | sort -u | while read -r m; do",
-              '  m=$(printf "%b" "$m")',
-              f'  case "$m" in /tmp|{INSIDE}|{INSIDE}/*|/dev/shm|/proc|/proc/*) continue;; esac',
-              '  [ -e "$m" ] || continue  # covered by a mount above: unreachable',
-              '  mount -o remount,bind,ro "$m" "$m"  # both named: no fstab lookup',
-              "done"]
-    lines += [f"cd {INSIDE}",
+        at = new + os.path.normpath(os.path.abspath(k))
+        make = (f"mkdir -p {q(at)}" if Path(k).is_dir() else
+                f"[ -e {q(at)} ] || {{ mkdir -p {q(str(Path(at).parent))} && touch {q(at)}; }}")
+        lines += [make, f"mount --bind -o ro {stage}/k{i} {q(at)}"]
+    # /proc for the sandbox's own PID namespace, then the root read-only.
+    # Both mount points are named, so mount never looks the root up in fstab.
+    # Its kernel knobs are read-only, and /sys is not there at all.
+    lines += [f"mkdir {new}/proc {new}/.old", f"mount -t proc proc {new}/proc",
+              f"mount --bind -o ro {new}/proc/sys {new}/proc/sys",
+              f"[ ! -e {new}/proc/sysrq-trigger ] || mount --bind -o ro {new}/proc/sysrq-trigger {new}/proc/sysrq-trigger",
+              f"mount -o remount,bind,ro {new} {new}"]
+    # Swap roots and detach the host's. /.old exists only in this namespace.
+    lines += [f"cd {new}", "pivot_root . .old", "umount -l /.old", f"cd {INSIDE}",
               "exec setpriv --bounding-set=-all --inh-caps=-all --no-new-privs"
               + (f" --reuid={uid} --regid={uid} --clear-groups" if uid is not None else "")
               + ' -- "$@"']
@@ -258,11 +325,10 @@ def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = (),
     # the death signal it sets. `contained` kills the namespace itself.
     # --ipc: System V shared memory and POSIX message queues would otherwise
     # outlive the run on the host, a channel from one attempt to the next.
-    return ["unshare", "--mount", "--pid", "--ipc", "--fork", "--kill-child", "--mount-proc",
+    return ["unshare", "--mount", "--pid", "--ipc", "--fork", "--kill-child",
             "--propagation", "private",
             *([] if network else ["--net"]),
             "bash", "-c", "\n".join(lines), "sandbox", *command]
-
 
 def sandbox_env(passed: tuple[str, ...] = ()) -> dict[str, str]:
     """The whole environment a sandboxed command gets: PATH, a UTF-8 locale, HOME
@@ -338,7 +404,7 @@ def q(s: str | Path) -> str:
 
 
 def run(dir: Path, command: list[str], keep: tuple[str, ...] = (), passed: tuple[str, ...] = (),
-        uid: int | None = None, **kw) -> subprocess.CompletedProcess:
+        uid: int | None = None, tools: tuple[str, ...] = (), **kw) -> subprocess.CompletedProcess:
     """COMMAND as the author: in the sandbox, as `nobody`, with `sandbox_env(passed)`.
     `uid` exists only so the isolation test can plant a root author."""
     uid = NOBODY if uid is None else uid
@@ -355,7 +421,7 @@ def run(dir: Path, command: list[str], keep: tuple[str, ...] = (), passed: tuple
         serve(dir, stop)
         hand_over(dir, uid)
         try:
-            return contained(sandbox_command(dir, command, keep, uid=uid), env=sandbox_env(passed), **kw)
+            return contained(sandbox_command(dir, command, keep, uid=uid, tools=tools), env=sandbox_env(passed), **kw)
         finally:
             stop.set()
     finally:
@@ -421,7 +487,10 @@ def main() -> int:
     au = sub.add_parser("audit"); au.add_argument("transcript", type=Path)
     au.add_argument("--workspace", type=Path, help="the author's workspace, when the transcript is in it")
     r = sub.add_parser("run"); r.add_argument("dir", type=Path)
-    r.add_argument("--keep", action="append", default=[])
+    r.add_argument("--keep", action="append", default=[],
+                   help="a credential file or directory; the author gets a read-only copy at its path")
+    r.add_argument("--tool", action="append", default=[],
+                   help="a directory the author CLI needs (its install), shown read-only at its path")
     r.add_argument("--pass-env", action="append", default=[],
                    help="a host variable the author needs (its API key); nothing else is passed")
     r.add_argument("command", nargs=argparse.REMAINDER)
@@ -442,7 +511,7 @@ def main() -> int:
         return 1 if bad else 0
     elif a.cmd == "run":
         cmd = a.command[1:] if a.command[:1] == ["--"] else a.command
-        return run(a.dir.resolve(), cmd, tuple(a.keep), tuple(a.pass_env)).returncode
+        return run(a.dir.resolve(), cmd, tuple(a.keep), tuple(a.pass_env), tools=tuple(a.tool)).returncode
     return 0
 
 
