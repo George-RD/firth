@@ -1,7 +1,7 @@
 ---
 id: dec.kernel-indexed-shuffles
 nodes: [firth.language.kernel]
-status: proposed
+status: accepted
 supersedes: [dec.gap-firth-language-kernel-open-4-decide-whether-swap-generalises-to]
 related: [dec.kernel-spec-freeze]
 date: 2026-09-27
@@ -37,5 +37,7 @@ linearity backward-adequacy theorem cover both atoms.
 
 ## Status
 
-Proposed in #125. It becomes accepted, and #125 merges, only on the
-maintainer's word, because it amends the frozen specification.
+Accepted on 2026-09-28. Because it amends the frozen specification, it
+waited on the maintainer, who delegated the call under the rule "hard now,
+easy later": cheap local access in the kernel avoids hand-written stack
+juggling in every program and the fragile proofs over it.
