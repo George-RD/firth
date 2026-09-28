@@ -687,6 +687,29 @@ Failures by the checker's first diagnostic (`results-N.json`):
   Haiku now changes the branches more often but still does not make them
   agree. Two samples each, so this is no evidence that the new message is
   worse either.
+- **Why sample 1 collapsed: it bound its locals in reverse from the
+  first answer.** In sample 1's `answer-1.md`, 29 of the 34 `locals`
+  blocks that open a word body list the word's inputs in reverse (for
+  inputs `acc idx xs` it writes `locals { xs idx acc }`), and `locals`
+  binds its last name to the top of the stack, so every name holds
+  another input's value. That was before any feedback, so the new
+  messages did not cause it. None of the other first answers kept here
+  (run 5, run 6, sample 2, and the two extra) does it. The feedback on
+  the resulting type errors pointed at argument order ("`swap` exchanges
+  the top two values"), and by the last round Haiku had dropped `locals`
+  from `main` altogether (next point). Language core is adding a check
+  that refuses a `locals` block which does not bind each declared input
+  name to that input.
+- **What the unrepaired branch mismatches have in common.** In 9 of the
+  10 last-round branch mismatches in sample 2, the message says a branch
+  takes values from below the `if` that the code there does not have (3
+  "cannot run on the stack it is given", 6 "takes N values from the
+  stack below the `if`"); the tenth (`sort`) is a plain count mismatch.
+  Language core's reading of those programs is that in each one a single
+  operation inside the branch (a helper call missing arguments, a stray
+  `swap`) reaches below it, and the message never names that operation.
+  A message that does is Language core's next change, and run 8 follows
+  both changes.
 - **Sample 1 dropped `locals` from `main` in its last round.** Round 2
   had no unresolved names; in round 3 every `main` used its stack-effect
   names without binding them (for example `0 0 xs helper-sum` in
@@ -738,7 +761,9 @@ fixed (#145). Run 6 confirmed that fix: no failure is misreported that
 way any more, and branch mismatches are the largest group left, which
 Haiku rarely repairs from the current message. Run 7 made that message
 say how the branches differ and how to fix them, and Haiku still did not
-repair them (0 of 20 in every round of both samples). The checker found most
+repair them. It passed nothing in run 7, partly because one sample bound
+its locals in reverse from the start, and in most unrepaired mismatches
+one operation reaches below the branch without the message naming it. The checker found most
 stack-shape errors before execution.
 Wrong answers at runtime were logic slips that a signature cannot catch.
 

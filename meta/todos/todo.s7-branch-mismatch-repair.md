@@ -50,3 +50,7 @@ diagnostic, in `eval/s7/runs/2026-09-28-haiku-470c6d0/`:
   stack it is given", which names only the true branch.
 - Repair is not better, so the problem this todo is named for remains.
   Sample 2's `answer-3.md` in run 7 holds 10 more last-round fixtures.
+- In 9 of those 10 (README, "Run 7"), the message says a branch takes
+  values from below the `if` that are not there, without naming the
+  operation that takes them. Language core is adding a message that
+  names it.
