@@ -674,6 +674,20 @@ def runElaboratorDiagnosticTests : IO Unit := do
   branchReport "swap in a branch" ": g (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) true [ swap drop ] [ ] if ;"
     ["The true branch takes the input `b` and the input `a` from below the `if` and leaves the input `b`; the false branch leaves nothing.",
       "The true branch takes the input `a` from below the `if`, and the false branch leaves it in place"]
+  -- The same two cases with a word instead of `prim +`: `add` declares
+  -- `x:Int y:Int`. Where it gets a Bool from below the `if` it is to blame
+  -- and the report says what it gets; where it gets the Int it declares, a
+  -- later `prim not` is, and the checker's account is kept.
+  let addWord := ": add (forall ρ; ρ x:Int^many y:Int^many -- ρ r:Int^many) prim + ;\n\n"
+  branchReport "word given a Bool" (addWord ++ ": g (forall ρ; ρ a:Bool^many -- ρ r:Int^many) true [ 1 add ] [ drop 0 ] if ;")
+    ["In the true branch `[ 1 add ]` of the `if` in `g`, `add` takes 2 values (x:Int, y:Int, bottom to top). It gets, bottom to top, the input `a` from below the `if` and `1`."]
+  match elaboratePipeline pipelineContext (addWord ++ ": g (forall ρ; ρ a:Bool^many b:Int^many -- ρ r:Int^many) true [ 1 add drop 1 prim + ] [ drop drop 0 ] if ;") agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "word given its Int" "firth.type.branch-mismatch" emitted
+      if emitted.contains "`add` takes" then
+        fail s!"word given its Int: the report blames `add`: {emitted}"
+  | _ => fail "word given its Int: expected one diagnostic"
   -- Values from below the `if` are named bottom to top, as the word's
   -- inputs were given.
   branchReport "two inputs from below"

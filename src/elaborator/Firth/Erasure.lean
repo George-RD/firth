@@ -43,6 +43,10 @@ structure BranchReach where
   /-- What it takes, bottom to top: a word's declared inputs (`xs:Seq Int`),
   a primitive's input types, or nothing for a stack atom. -/
   inputs : List String := []
+  /-- The types it declares for what it takes, bottom to top, when it
+  declares them: a word's or a primitive's. Empty for a stack atom, which
+  takes values of any type. -/
+  types : List String := []
   count : Nat
   /-- The branch's own values it found, bottom to top. -/
   own : List String := []

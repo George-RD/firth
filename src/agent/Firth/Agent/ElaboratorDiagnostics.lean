@@ -209,7 +209,7 @@ not there is explained by the operation that takes it; branches that leave
 different numbers of values, by what each leaves. `none` when the account
 adds nothing, as when the branches differ only in types. -/
 private def accountExplanation (word : String) (account : Firth.Elaborator.IfAccount)
-    (cannotRun : Option (Bool × List String × List String) := none) : Option (String × String) :=
+    (cannotRun : Option (Bool × List String) := none) : Option (String × String) :=
   let inWord := if word.isEmpty then "" else s!" in `{word}`"
   let which := s!"the `if`{inWord} whose true branch is `{account.trueSource}`"
   let noEvening := "Adding a `drop` or pushing values to even out the branches would only move the mistake."
@@ -220,22 +220,22 @@ private def accountExplanation (word : String) (account : Firth.Elaborator.IfAcc
   -- A branch the checker says cannot run on the stack below the `if`, whose
   -- first operation that reaches below it finds every value it takes: the
   -- values are there but not the ones it takes, so say what it gets. Only
-  -- when that operation is the one whose types the branch cannot meet: the
-  -- types it declares for the values from below are the top of the input the
-  -- checker inferred for the branch (bottom to top), and not the top of the
-  -- stack below the `if`. A `dup` or `swap` takes values of any type, so a
-  -- later operation is the one to blame, and the checker's own account is
-  -- kept.
-  let wrongValues : Option (String × Firth.Elaborator.BranchReach) := cannotRun.bind fun (onTrueBranch, input, below) =>
+  -- when that operation declares the types it takes, and the ones it
+  -- declares for the values from below are not what the stack below the
+  -- `if` holds there. A `dup` or `swap` takes values of any type, and an
+  -- operation whose types are met is not the one the branch fails on, so a
+  -- later operation is to blame and the checker's own account is kept.
+  -- (The checker's inferred input for the branch adds nothing here: every
+  -- declared word and primitive type is monomorphic, so at those positions
+  -- it is exactly the types the operation declares.)
+  let wrongValues : Option (String × Firth.Elaborator.BranchReach) := cannotRun.bind fun (onTrueBranch, below) =>
     let name := if onTrueBranch then "true" else "false"
     let branch := if onTrueBranch then account.onTrue else account.onFalse
     let top (list : List String) (count : Nat) := list.drop (list.length - count)
     let blamed (reach : Firth.Elaborator.BranchReach) : Bool :=
       let count := reach.below.length
-      let types := reach.inputs.take count
-      reach.missing == 0 && reach.inputs.length == reach.count && count > 0 &&
-        count ≤ input.length && count ≤ below.length &&
-        types == top input count && types != top below count
+      reach.missing == 0 && reach.types.length == reach.count && count > 0 &&
+        count ≤ below.length && reach.types.take count != top below count
     (branch.reach.filter blamed).map (name, ·)
   match wrongValues with
   | some (name, reach) =>
@@ -637,8 +637,8 @@ private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Str
   | "firth.type.branch-mismatch", _, _ =>
       match diagnostic.ifAccount.bind fun account =>
           accountExplanation (diagnostic.word.getD "") account
-            (diagnostic.branchInput.map fun (onTrueBranch, input) =>
-              (onTrueBranch, (stackValues input).1.map renderType, (stackValues diagnostic.state).1.map renderType)) with
+            (diagnostic.branchInput.map fun (onTrueBranch, _) =>
+              (onTrueBranch, (stackValues diagnostic.state).1.map renderType)) with
       | some explanation => explanation
       | none =>
       match diagnostic.branchOutputs, diagnostic.branchInput with

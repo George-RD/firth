@@ -27,6 +27,12 @@ the checker wrote, not the author:
   branch ("inside a quotation in that branch") points `at:` the outer `if`
   and does not say which inner quotation holds the operation (keep-positive
   19:5 and longest-run 23:15 in the #164 review).
+- The branch account (`Account.lean`) compares values by label. In the
+  branch-mismatch hint, a value a branch takes and one it leaves with the
+  same label ("the result of `prim +`") count as one value put back, which
+  can blame the wrong branch (the cec3707 ledger answer 1 in the #164
+  review, where the hint still came out right). Giving each walk entry an
+  identity, such as a counter, instead of comparing labels would fix it.
 
 ## Goal
 

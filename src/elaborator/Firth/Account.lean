@@ -95,12 +95,12 @@ private def valueItems (items : List StackItem) : List (String × String) :=
 reach below its own values when it takes one it did not push, or as its
 first reach past the bottom when it takes a value that is not there. Returns
 the values taken, top first. -/
-private def take (walk : Walk) (operation : String) (inputs : List String) (count : Nat) :
-    List Entry × Walk :=
+private def take (walk : Walk) (operation : String) (inputs : List String) (count : Nat)
+    (types : List String := []) : List Entry × Walk :=
   let taken := walk.stack.take count
   let ownTop := (walk.stack.takeWhile (·.own)).length
   let this : BranchReach :=
-    { operation, inputs, count
+    { operation, inputs, count, types
       own := (taken.takeWhile (·.own)).reverse.map (·.label)
       below := (taken.dropWhile (·.own)).reverse.map (·.label)
       missing := count - taken.length
@@ -158,7 +158,7 @@ mutual
             if !keepsRow word.effect then .lost else
             let inputs := valueItems word.effect.input
             let outputs := valueItems word.effect.output
-            let (_, walk) := take walk s!"`{name}`" (inputs.map fun (n, t) => s!"{n}:{t}") inputs.length
+            let (_, walk) := take walk s!"`{name}`" (inputs.map fun (n, t) => s!"{n}:{t}") inputs.length (inputs.map (·.2))
             .next (push walk (resultLabels s!"`{name}`" (outputs.map (·.1))))
         | none => match context.external name with
           | some (inputs, outputs) =>
@@ -168,7 +168,7 @@ mutual
     | .primitive name _ => match context.primitive name with
         | some (inputs, outputs) =>
             let operation := s!"`prim {name}`"
-            let (_, walk) := take walk operation inputs inputs.length
+            let (_, walk) := take walk operation inputs inputs.length inputs
             .next (push walk (resultLabels operation (List.replicate outputs "")))
         | none => .lost
     | .locals names body _ =>
