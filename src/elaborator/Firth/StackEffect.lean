@@ -502,6 +502,8 @@ private partial def inferAtom (env : Env) (located : LocatedKernel)
                 code := "firth.type.branch-mismatch"
                 primary := span
                 state := resolveStack before rest
+                expected := some (resolveStack before input)
+                actual := some (resolveStack before rest)
                 branchInput := some (onTrueBranch, resolveStack before input) }
           | _ => throw error
       let onTrue ← freshRow
@@ -522,6 +524,8 @@ private partial def inferAtom (env : Env) (located : LocatedKernel)
             code := "firth.type.branch-mismatch"
             primary := span
             state := resolveStack before rest
+            expected := some (resolveStack before onTrue)
+            actual := some (resolveStack before onFalse)
             branchOutputs := some (resolveStack before onTrue, resolveStack before onFalse) }
   | .word name => match env.word name with
       | none => failAt "firth.name.unknown-word" span current

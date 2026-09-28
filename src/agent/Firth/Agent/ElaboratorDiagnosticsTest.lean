@@ -71,6 +71,10 @@ private def expectCauseState (name source : String)
           expectEqual name state.compress (expectedStackState expected).compress
       | .error jsonError => fail s!"{name}: missing cause.data.state {jsonError}"
 
+/-- The start of an envelope's structured stack field holding `stack`. -/
+private def structuredStack (field stack : String) : String :=
+  s!"\"{field}\":\{\"encoding\":\"opaque\",\"value\":\{\"firth\":\"{stack}\""
+
 private def warningByCode (code : String) : List Firth.Elaborator.LintWarning →
     Option Firth.Elaborator.LintWarning
   | [] => none
@@ -501,6 +505,23 @@ def runElaboratorDiagnosticTests : IO Unit := do
     checks s!"{label}, with the suggested edit" fixed true
     checks s!"{label}, with the earlier suggested edit" earlier false
   noEvening "longest-run" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ length:Int^many)\n  locals { xs } {\n    xs prim seq-int.len 0 prim =\n    [ 0 ]\n    [ xs 0 prim seq-int.at 1 1 xs longest-run-loop ] if\n  };\n\n: longest-run-loop\n  (forall ρ; ρ prev:Int^many curr-run:Int^many max-run:Int^many idx:Int^many xs:Seq Int^many -- ρ result:Int^many)\n  locals { prev curr-run max-run idx xs } {\n    idx xs prim seq-int.len prim =\n    [ max-run curr-run prim < [ curr-run ] [ max-run ] if ]\n    [\n      xs idx prim seq-int.at dup prev prim =\n      [ curr-run 1 prim + ] [ 1 swap ] if\n      idx 1 prim +\n      xs\n      longest-run-loop\n    ]\n    if\n  };"
+  -- A branch that cannot run on the stack it is given keeps the compared
+  -- stacks in the envelope and in the `expected` and `actual` params, which
+  -- the authoring harness prints as its expected: and actual: lines.
+  -- filter-helper, copied verbatim from the keep-positive answer in
+  -- eval/s7/runs/2026-09-28-haiku-470c6d0/haiku-firth-2/answer-2.md.
+  match elaboratePipeline pipelineContext ": filter-helper\n  (forall ρ; ρ i:Int^many result:Seq Int^many xs:Seq Int^many -- ρ filtered:Seq Int^many)\n  locals { i result xs } {\n    i xs prim seq-int.len prim <\n    [ \n      xs i prim seq-int.at\n      dup 0 prim <\n      [ drop result ]\n      [ result prim seq-int.push ]\n      if\n      i 1 prim + swap xs filter-helper\n    ]\n    [ result ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many -- ρ result:Seq Int^many)\n  locals { xs } { 0 prim seq-int.empty xs filter-helper };" agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "filter-helper" "firth.type.branch-mismatch" emitted
+      for needle in ["The false branch of `if` in `filter-helper` cannot run on the stack it is given",
+          "\"expected\":\".. Seq Int\"", "\"actual\":\".. Seq Int Int Int\""] do
+        unless emitted.contains needle do
+          fail s!"filter-helper: the report does not say {needle}: {emitted}"
+      unless emitted.contains (structuredStack "expected_stack" ".. Seq Int") &&
+          emitted.contains (structuredStack "actual_stack" ".. Seq Int Int Int") do
+        fail s!"filter-helper: the envelope's stacks are not the branch's input and the stack below the condition: {emitted}"
+  | _ => fail "filter-helper: expected one diagnostic"
   -- Counts and types both differ: the locals pass knows only the counts, so
   -- its drop-or-push edit is offered only on condition that the values below
   -- already agree (`[ 1 true ]` against `[ false ]` would still leave Int
@@ -539,6 +560,12 @@ def runElaboratorDiagnosticTests : IO Unit := do
           "Either add `drop` at the end of the true branch, or push a value of the same type at the end of the false branch (for example `0`)"] do
         unless emitted.contains needle do
           fail s!"branch depth: the report does not say {needle}: {emitted}"
+      -- The compared stacks stay in the structured fields: the true branch's
+      -- output as expected, the false branch's as actual.
+      unless emitted.contains "\"expected\":\".. Int Int\"" && emitted.contains "\"actual\":\".. Int\"" &&
+          emitted.contains (structuredStack "expected_stack" ".. Int Int") &&
+          emitted.contains (structuredStack "actual_stack" ".. Int") do
+        fail s!"branch depth: expected is not the true branch's output or actual is not the false branch's: {emitted}"
   -- The same in the type checker, which does know the types: when the values
   -- both branches leave differ, it offers no drop or push, and says where
   -- they differ.
