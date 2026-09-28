@@ -144,6 +144,11 @@ include negative numbers and empty sequences.
   else.
 - Scoring Python first checks that the sandbox starts, and refuses to score if
   it does not, so a broken sandbox cannot pass for a set of wrong answers.
+- The sandbox has its own IPC namespace, so shared memory and message queues
+  die with it. It shares the host's network (the author needs its API), so
+  two attempts running at once could talk over loopback or an abstract
+  socket. `isolate.py run` therefore holds an exclusive lock for the whole
+  run and refuses to start while another run holds it.
 - When a submitted program times out, the harness kills the sandbox's first
   process, which ends every process in its PID namespace, however it forked.
 - An author can delete `try.sock`. That only breaks its own `./try`, and the

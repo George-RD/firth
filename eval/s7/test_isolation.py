@@ -325,6 +325,27 @@ def main() -> int:
                   f"the author cannot write it: {wrote.stderr.strip()}")
         finally:
             shutil.rmtree(drop)
+        # One author at a time: a second run while one is going is refused.
+        first = threading.Thread(target=lambda: isolate.run(ws, ["sleep", "3"], timeout=60))
+        first.start()
+        time.sleep(1)
+        second = refused_exit(lambda: isolate.run(ws, ["true"], timeout=60))
+        first.join()
+        check(second, "a second author run is refused while one is running")
+        check(isolate.run(ws, ["true"], timeout=60).returncode == 0, "once it ends, the next run starts")
+
+        # The reviewer's IPC probe: a shared-memory segment made by the author
+        # must not outlive the run on the host.
+        def nobody_segments() -> list[str]:
+            out = subprocess.run(["ipcs", "-m"], capture_output=True, text=True).stdout
+            return [l.split()[1] for l in out.splitlines() if len(l.split()) > 2 and l.split()[2] == "nobody"]
+        before = nobody_segments()
+        made = isolate.run(ws, ["ipcmk", "-M", "4096"], capture_output=True, text=True, timeout=300)
+        after = nobody_segments()
+        check(made.returncode == 0 and after == before,
+              f"an author's shared memory does not outlive the run: {made.stdout.strip()} {after}")
+        for shmid in set(after) - set(before):
+            subprocess.run(["ipcrm", "-m", shmid])
         found = isolate.run(ws, ["bash", "-c", "find / -path /proc -prune -o -writable ! -type l -print 2>/dev/null"],
                             capture_output=True, text=True, timeout=600)
         allowed = ("/tmp", "/dev/shm", *(f"/dev/{d}" for d in isolate.DEVICES))

@@ -25,6 +25,7 @@ tool call other than `try` and workspace files, as a second line of defence.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import os
 import re
@@ -45,6 +46,7 @@ HIDDEN = ("/home", "/root", "/tmp", "/var/tmp", "/mnt", "/srv")
 SOCKET = "try.sock"
 INSIDE = "/tmp/work"
 PROTECTED = ("try", "workspace.json")
+LOCK = "/run/s7-author.lock"  # root-only directory, so no author can plant it
 DEVICES = ("null", "zero", "full", "random", "urandom", "tty")
 NOBODY = 65534
 
@@ -226,7 +228,10 @@ def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = (),
               + ' -- "$@"']
     # --kill-child alone does not stop a runaway: dropping to another uid clears
     # the death signal it sets. `contained` kills the namespace itself.
-    return ["unshare", "--mount", "--pid", "--fork", "--kill-child", "--mount-proc", "--propagation", "private",
+    # --ipc: System V shared memory and POSIX message queues would otherwise
+    # outlive the run on the host, a channel from one attempt to the next.
+    return ["unshare", "--mount", "--pid", "--ipc", "--fork", "--kill-child", "--mount-proc",
+            "--propagation", "private",
             *([] if network else ["--net"]),
             "bash", "-c", "\n".join(lines), "sandbox", *command]
 
@@ -310,13 +315,23 @@ def run(dir: Path, command: list[str], keep: tuple[str, ...] = (), passed: tuple
     `uid` exists only so the isolation test can plant a root author."""
     uid = NOBODY if uid is None else uid
     check_keep(keep, dir)
-    stop = threading.Event()
-    serve(dir, stop)
-    hand_over(dir, uid)
+    # One author at a time: the author shares the host's network (it needs its
+    # API), so two at once could talk over loopback or an abstract socket.
+    lock = os.open(LOCK, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
     try:
-        return contained(sandbox_command(dir, command, keep, uid=uid), env=sandbox_env(passed), **kw)
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise SystemExit("another author run holds the lock; attempts run one at a time") from None
+        stop = threading.Event()
+        serve(dir, stop)
+        hand_over(dir, uid)
+        try:
+            return contained(sandbox_command(dir, command, keep, uid=uid), env=sandbox_env(passed), **kw)
+        finally:
+            stop.set()
     finally:
-        stop.set()
+        os.close(lock)
 
 
 # One command on one line: spaces and tabs only, no newline, no shell operators.
