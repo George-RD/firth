@@ -74,11 +74,22 @@ private def parseCauseData (error : Firth.Elaborator.ParseError) : Json :=
 private def definitionShape : String :=
   "A definition looks like `: name (forall ρ; ρ n:Int^many -- ρ r:Int^many) body;`."
 
-/-- Every primitive the language has, as a program writes it, read from
-`surfacePrimitives`, the one table the elaborator, the reference and the
-compiler share, so a hint cannot fall behind the language. -/
+/-- The primitives the agent language accepts beyond the kernel's
+`surfacePrimitives`: `send`, which threads the linear `World` past a `Handle`
+and `Bytes`. `ElaborateAdapter.gammaErasure` and `gammaTyping` give each its
+signature. -/
+def worldPrimitives : List String := ["send"]
+
+/-- Every primitive a program can write: the kernel's `surfacePrimitives`,
+the one table the elaborator, the reference and the compiler share, then
+`worldPrimitives`. Hints list these, so they cannot fall behind the
+language. -/
+def languagePrimitives : List String :=
+  Firth.Interpreter.surfacePrimitives.map (·.1) ++ worldPrimitives
+
+/-- `languagePrimitives` as a program writes them. -/
 def primitiveList : String :=
-  ", ".intercalate (Firth.Interpreter.surfacePrimitives.map fun (surface, _) => s!"`prim {surface}`")
+  ", ".intercalate (languagePrimitives.map fun surface => s!"`prim {surface}`")
 
 private def availablePrimitives : String :=
   s!"The primitives are {primitiveList}."

@@ -1,4 +1,5 @@
 import agent.Firth.Agent.ElaboratorDiagnostics
+import agent.Firth.Agent.ElaborateAdapter
 import agent.Firth.Agent.Validation
 import agent.Firth.Agent.DiagnosticEnvelopeTest
 import elaborator.Firth.Refinement
@@ -328,11 +329,18 @@ def runElaboratorDiagnosticTests : IO Unit := do
   | _ => fail "misspelt-word result was not singular"
 
   -- Every hint that lists primitives lists all of them. The expected names
-  -- are written out here, not read from `surfacePrimitives`, so a hint
+  -- are written out here, not read from `languagePrimitives`, so a hint
   -- that falls behind the language fails.
   let everyPrimitive := ["+", "-", "*", "<", "=", "div", "mod", "and", "or", "not",
     "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push",
-    "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push"]
+    "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "send"]
+  -- The list is the checker's: each name has a signature in the agent Gamma,
+  -- which refuses a name that is not a primitive.
+  for name in everyPrimitive do
+    if (Elaborate.gammaTyping.primitive name).isNone || (Elaborate.gammaErasure.primitive name).isNone then
+      fail s!"`prim {name}` is listed but the agent Gamma has no signature for it"
+  if (Elaborate.gammaTyping.primitive "nope").isSome then
+    fail "the agent Gamma gave `prim nope` a signature"
   let listsEvery (label emitted : String) : IO Unit := do
     for name in everyPrimitive do
       unless emitted.contains s!"`prim {name}`" do
@@ -343,7 +351,18 @@ def runElaboratorDiagnosticTests : IO Unit := do
   match elaboratePipeline pipelineContext ": bad ( -- ) missing ;" with
   | .failure [envelope] => listsEvery "unresolved-name" (encode envelope)
   | _ => fail "unresolved-name result was not singular"
-  if Firth.Interpreter.surfacePrimitives.length != everyPrimitive.length then
-    fail s!"the language has {Firth.Interpreter.surfacePrimitives.length} primitives but this test lists {everyPrimitive.length}; add the new ones above"
+  -- The checker's own unknown-word and unknown-primitive hints, for a
+  -- diagnostic the type checker reports itself rather than the resolver.
+  let unknownWord : Firth.Elaborator.StackEffect.Diagnostic := {
+    code := "firth.name.unknown-word", primary := span 1 14 21, state := .empty
+    subject := some "missing", word := some "bad" }
+  listsEvery "unknown-word" (encodeStackEffectDiagnostic (context "unknown-word") unknownWord)
+  let unknownPrimitive : Firth.Elaborator.StackEffect.Diagnostic := {
+    code := "firth.name.unknown-primitive", primary := span 1 14 23, state := .empty
+    subject := some "prim nope", word := some "bad" }
+  listsEvery "unknown-primitive"
+    (encodeStackEffectDiagnostic (context "unknown-primitive") unknownPrimitive)
+  if languagePrimitives.length != everyPrimitive.length then
+    fail s!"the language has {languagePrimitives.length} primitives but this test lists {everyPrimitive.length}; add the new ones above"
 
 end Firth.Agent.Test
