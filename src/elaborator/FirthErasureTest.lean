@@ -79,7 +79,7 @@ private def expectErrorAt (word : WordDefinition) (expected : ErasureError → B
           | .missingStackValue actual | .linearCopy _ actual | .linearUnused _ actual
           | .unresolvedEffect _ actual | .effectUnderflow _ actual | .unsupportedLiteral actual
           | .unsupportedAtom _ actual | .usageMismatch _ actual
-          | .untrackedStack _ actual | .hiddenLocal _ actual => actual
+          | .untrackedStack _ actual _ | .hiddenLocal _ actual => actual
         if actual == span then pure () else fail s!"span mismatch for {repr error}: {repr actual} != {repr span}"
       else fail s!"wrong error: {repr error}"
   | .ok _ => fail "expected erasure failure"

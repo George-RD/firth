@@ -138,13 +138,13 @@ def mangle (name : String) : Except String String := Id.run do
 
 The arithmetic and comparison primitives come from the interpreter's
 `surfacePrimitives` table, the same table the reference-run adapter reads, so
-the two hosts accept exactly the same programs. `send` is declared by the
-language registry but has no target implementation, so it is refused here
-rather than lowered to something that would run. -/
+the two hosts accept exactly the same programs. The `worldPrimitives` (`send`)
+are declared by the language registry but have no target implementation, so
+they are refused here rather than lowered to something that would run. -/
 def targetPrimitive (name : String) : Option (Option String) :=
   match Firth.Interpreter.kernelPrimitive name with
   | some kernel => some (some kernel)
-  | none => if name == "send" then some none else none
+  | none => if Firth.Agent.worldPrimitives.contains name then some none else none
 
 /-- The lowering environment: the word being lowered, for error attribution,
 and the mangled name of every word the request defines. -/

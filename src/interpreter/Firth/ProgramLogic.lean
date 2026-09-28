@@ -778,26 +778,52 @@ rules leaves behind.
     defaultCosts.primitive primitive = 1 := rfl
 @[simp] theorem defaultCosts_unfold : defaultCosts.unfold = 1 := rfl
 
+open Lean Meta in
+/-- Whether `omega` reads an equation or disequation over `carrier`. This
+mirrors the `match_expr` on the carrier in `omega`'s own frontend
+(`Lean.Elab.Tactic.Omega.Frontend`, `omegaNat`/`asLinearCombo` facts for
+`Eq` and `Not (Eq ..)`), which accepts exactly `Int`, `Nat` and `Fin n` and
+matches them without unfolding definitions. `Firth.LogicTest` pins both
+directions: each accepted carrier's equation is used, and `omega` itself
+still cannot use an equation over the nearest carriers it refuses
+(`UInt8`, `BitVec`, `Int8`, an `abbrev` for `Int`), so a Lean upgrade that teaches `omega` a new
+carrier fails that test instead of silently losing facts here. -/
+def omegaEqCarrier (carrier : Expr) : Bool :=
+  match_expr carrier with
+  | Int => true
+  | Nat => true
+  | Fin _ => true
+  | _ => false
+
 open Lean Elab Tactic Meta in
-/-- Clears every hypothesis that is an equation between Booleans, such as the
-condition `decide (x < y) = true` of an `if`. `omega` cannot use one, and with
-one in context it can run out of heartbeats normalising a long step or cost
-sum; `Firth.LogicTest` has the case. -/
-elab "runs_clear_bool" : tactic => withMainContext do
+/-- Clears every hypothesis that is an equation (or disequation) between
+values of a type `omega` does not read (see `omegaEqCarrier`): the
+condition `decide (x < y) = true` of an `if`, or a list lookup
+`xs[i]? = some q` from `seq-int.at`. `omega` cannot use one, and with one in
+context it can run out of heartbeats normalising a long step or cost sum;
+`Firth.LogicTest` has both cases. Equations over `Int`, `Nat` or `Fin n`,
+and every other hypothesis, stay. -/
+elab "runs_clear_nonarith" : tactic => withMainContext do
   let mut goal ← getMainGoal
   for decl in ← getLCtx do
     if decl.isImplementationDetail then continue
     let type ← instantiateMVars decl.type
-    if type.isAppOfArity ``Eq 3 && (type.getArg! 0).isConstOf ``Bool then
-      goal ← goal.tryClear decl.fvarId
+    let carrier? :=
+      if type.isAppOfArity ``Eq 3 then some (type.getArg! 0)
+      else if type.isAppOfArity ``Ne 3 then some (type.getArg! 0)
+      else none
+    if let some carrier := carrier? then
+      unless omegaEqCarrier (← instantiateMVars carrier) do
+        goal ← goal.tryClear decl.fvarId
   replaceMainGoal [goal]
 
-/-- Closes a step or cost equation or inequality under `defaultCosts`. Boolean
-equations in context are cleared first (see `runs_clear_bool`), so a fact
-`omega` needs must be stated over `Int` or `Nat`, not as a `decide`. -/
+/-- Closes a step or cost equation or inequality under `defaultCosts`.
+Equations over types other than `Int`, `Nat` and `Fin n` are cleared first
+(see `runs_clear_nonarith`), so a fact `omega` needs must be stated over one
+of those, not as a `decide` or a lookup. -/
 macro "runs_arith" : tactic =>
   `(tactic| ((try simp only [defaultCosts_atom, defaultCosts_primitive, defaultCosts_unfold]) <;>
-    (runs_clear_bool; omega)))
+    (runs_clear_nonarith; omega)))
 
 section Bounds
 variable {gamma : Gamma} {dictionary : Dictionary} {costs : CostTable}
@@ -974,7 +1000,7 @@ out of heartbeats. -/
 macro "runs_side" : tactic => `(tactic| first
   | with_reducible assumption
   | runs_arith
-  | (runs_clear_bool; simp only [InInt64] at *; omega))
+  | (runs_clear_nonarith; simp only [InInt64] at *; omega))
 
 /-- Settles the condition of an `if` in a chain, or fails. -/
 macro "runs_condition" : tactic => `(tactic| first

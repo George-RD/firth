@@ -75,10 +75,20 @@ private def definitionShape : String :=
   "A definition looks like `: name (forall ρ; ρ n:Int^many -- ρ r:Int^many) body;`."
 
 /-- The primitives the agent language accepts beyond the kernel's
-`surfacePrimitives`: `send`, which threads the linear `World` past a `Handle`
-and `Bytes`. `ElaborateAdapter.gammaErasure` and `gammaTyping` give each its
-signature. -/
-def worldPrimitives : List String := ["send"]
+`surfacePrimitives`, each with its typing scheme: `send`, which threads the
+linear `World` past a `Handle` and `Bytes`. This is the one table for them:
+`ElaborateAdapter.gammaTyping` and `gammaErasure` read their signatures from
+it, and `Lowering.targetPrimitive` refuses exactly these names. -/
+def worldPrimitiveSchemes : List (String × Firth.Elaborator.StackEffect.Scheme) :=
+  let row : Firth.Elaborator.StackEffect.AStack := .row (.rigid "ρ")
+  [("send",
+    { rowVariables := ["ρ"]
+      input := .snoc (.snoc (.snoc row (.base "World" .linear))
+        (.base "Handle" .linear)) (.base "Bytes" .linear)
+      output := .snoc row (.base "World" .linear) })]
+
+/-- The names in `worldPrimitiveSchemes`. -/
+def worldPrimitives : List String := worldPrimitiveSchemes.map (·.1)
 
 /-- Every primitive a program can write: the kernel's `surfacePrimitives`,
 the one table the elaborator, the reference and the compiler share, then
@@ -97,10 +107,29 @@ private def availablePrimitives : String :=
 /-- The hint for a stack-effect name used as a variable. Stack-effect names
 document the stack; only `locals` binds names, taking one value from the
 stack for each, the last name from the top. -/
+private def freshBinder (name : String) (taken : List String) : Nat → Nat → String
+  | 0, _ => name
+  | fuel + 1, suffix =>
+      let candidate := s!"{name}{suffix}"
+      if taken.contains candidate then freshBinder name taken fuel (suffix + 1) else candidate
+
+/-- The names a `locals` block can bind for these inputs. A stack effect may
+repeat a label (`n:Int n:Int`), but `locals` refuses a repeated name, so each
+repeat gets the first numbered name (`n2`, `n3`, ...) that no input uses. -/
+def localBinders (inputs : List String) : List String :=
+  inputs.foldl (init := []) fun bound name =>
+    if bound.contains name then
+      let taken := inputs ++ bound
+      bound ++ [freshBinder name taken (taken.length + 1) 2]
+    else bound ++ [name]
+
 private def effectNameHint (name : String) (inputs : List String) : String :=
-  let binders := " ".intercalate inputs
+  let names := localBinders inputs
+  let binders := " ".intercalate names
+  let renamed := if names == inputs then "" else
+    " The stack effect repeats a name and `locals` needs distinct names, so the repeats are numbered here."
   let shape := if inputs.isEmpty then "" else
-    s!" To use the inputs by name, bind them first: `locals \{ {binders} } \{ ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces."
+    s!" To use the inputs by name, bind them first: `locals \{ {binders} } \{ ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces." ++ renamed
   if inputs.contains name then
     s!"`{name}` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body." ++ shape
   else
@@ -148,6 +177,24 @@ private structure ErasureDiagnostic where
   params : Json
   span : Firth.Elaborator.Span
 
+/-- How a branch changes the stack depth, in words. -/
+private def depthChange (effect : Nat × Nat) : String :=
+  let (consumed, produced) := effect
+  if produced > consumed then
+    let added := produced - consumed
+    s!"leaves {added} more {if added == 1 then "value" else "values"} than it takes"
+  else if consumed > produced then
+    let removed := consumed - produced
+    s!"leaves {removed} fewer {if removed == 1 then "value" else "values"} than it takes"
+  else "leaves as many values as it takes"
+
+/-- The message and hint for an `if` whose branches change the stack depth
+by different amounts, noticed when the local `name` was used after it. -/
+private def branchShapeExplanation (name : String) (onTrue onFalse : Nat × Nat) :
+    String × String :=
+  (s!"The two branches of `if` leave different numbers of values: the true branch {depthChange onTrue}, and the false branch {depthChange onFalse}.",
+    s!"Both branches run on the same stack and must leave the same number and types of values, so that `{name}` and the rest of the stack are where the code after the `if` expects them. Change one branch, for example by pushing or dropping a value, until both leave the same stack.")
+
 private def erasureDiagnostic : Firth.Elaborator.ErasureError → ErasureDiagnostic
   | .duplicateLocal name span =>
       { code := "firth.name.duplicate-local", cause := "name-resolution", params := namedParams name, span }
@@ -171,12 +218,25 @@ private def erasureDiagnostic : Firth.Elaborator.ErasureError → ErasureDiagnos
       { code := "firth.elaboration.unsupported-literal", cause := "elaboration", params := .mkObj [], span }
   | .unsupportedAtom name span =>
       { code := "firth.elaboration.unsupported-atom", cause := "elaboration", params := namedParams name, span }
-  | .untrackedStack name span =>
-      { code := "firth.elaboration.untracked-local", cause := "elaboration", params := namedParams name, span }
+  | .untrackedStack name _ (some { atom := "if", span := ifSpan, branches := some (onTrue, onFalse) }) =>
+      -- Both branches have known effects that change the depth differently:
+      -- the program is ill-typed, and that is the error to report, at the
+      -- `if`, rather than the later use of `name` where it was noticed.
+      let (message, hint) := branchShapeExplanation name onTrue onFalse
+      { code := "firth.type.branch-mismatch", cause := "type-checking"
+        params := .mkObj [("name", .str name), ("at", .str "if"),
+          ("message", .str message), ("hint", .str hint)]
+        span := ifSpan }
+  | .untrackedStack name span lost =>
+      let params := match lost with
+        | some lost => .mkObj [("name", .str name), ("at", .str lost.atom),
+            ("at_line", .num lost.span.start.line)]
+        | none => namedParams name
+      { code := "firth.elaboration.untracked-local", cause := "elaboration", params, span }
   | .hiddenLocal name span =>
       { code := "firth.elaboration.hidden-local", cause := "elaboration", params := namedParams name, span }
 
-private def erasureExplanation (code name : String) : String × String :=
+private def erasureExplanation (code name : String) (params : Json) : String × String :=
   match code with
   | "firth.name.duplicate-local" =>
       (s!"The local `{name}` is bound twice in one `locals` block.", "Give each local a different name.")
@@ -198,7 +258,11 @@ private def erasureExplanation (code name : String) : String × String :=
       (s!"The checker could not move the local `{name}` out of the way of the operation here.",
         "This is a checker limit, not an error in the program: name the values the operation takes in a `locals` block, or move the code into a named word.")
   | "firth.elaboration.untracked-local" =>
-      (s!"The local `{name}` is used after `call`, `dip` or `if` ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.",
+      let lostBy := match (params.getObjValAs? String "at").toOption,
+          (params.getObjValAs? Nat "at_line").toOption with
+        | some at_, some line => s!"`{at_}` on line {line}"
+        | _, _ => "`call`, `dip` or `if`"
+      (s!"The local `{name}` is used after {lostBy} ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.",
         "Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.")
   | "firth.name.unresolved-effect" =>
       (s!"`prim {name}` is not a primitive.", availablePrimitives)
@@ -217,7 +281,7 @@ def erasureEnvelope (context : EmissionContext)
     messageKey := messageKey diagnostic.code
     messageParams :=
       let name := (diagnostic.params.getObjValAs? String "name").toOption.getD ""
-      match erasureExplanation diagnostic.code name with
+      match erasureExplanation diagnostic.code name diagnostic.params with
       | ("", _) => diagnostic.params
       | (message, hint) => diagnostic.params.mergeObj
           (.mkObj [("message", .str message), ("hint", .str hint)])
