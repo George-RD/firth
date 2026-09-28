@@ -89,9 +89,10 @@ include negative numbers and empty sequences.
   example, or on inputs the author passes with `--stack`, and shows the
   result or the checker's diagnostics. It never runs hidden tests. The author
   may use it as often as it likes and nothing else.
-- Writing the references hit three gaps: no division or remainder, no way to
-  replace one element of a sequence, and no Boolean `not`, `and` or `or`. They
-  are recorded in `meta/todos/todo.language-14-authoring-gaps.md`.
+- Writing the references hit two gaps: no division or remainder, and no way
+  to replace one element of a sequence. They are recorded in
+  `meta/todos/todo.language-14-authoring-gaps.md`. Boolean `and`, `or` and
+  `not` landed in #131 and are in the author's docs.
 
 A run gives each task to a fresh author several times, in Firth and in Python,
 keeps every transcript, and reports the pass rate per task and overall.
