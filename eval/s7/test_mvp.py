@@ -172,6 +172,12 @@ def rounds_prompt() -> None:
     check(all(f'<document path="{d}">' in firth for d in harness.MVP_DOCS),
           "the --rounds prompt carries the MVP documents")
     check("try --lang" in harness.prompt(list(MVP), "firth", mvp=True), "the mvp prompt still offers try")
+    try:
+        harness.prompt([BY_ID["fib"]], "firth", rounds=2)
+        outside = False
+    except ValueError:
+        outside = True
+    check(outside, "feedback rounds are refused outside the MVP tier, whose step budget they promise")
 
 
 def feedback_keeps_hints() -> None:

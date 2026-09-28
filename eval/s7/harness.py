@@ -106,6 +106,10 @@ def prompt(tasks: list[Task], lang: str, extra_docs: tuple[str, ...] = (),
     does not hold) gets the MVP documents instead, answers without tools, and is
     shown up to `rounds` times how its answers did on the visible examples
     (`repair`), which is what `try` would have shown it."""
+    if rounds and any(t.id not in MVP_IDS for t in tasks):
+        # The rounds prompt carries the MVP documents and step budget, which
+        # scoring grants only to MVP tasks (Codex's finding).
+        raise ValueError("feedback rounds are for the MVP tier only")
     parts = []
     loop = (
         "Do not use any tool except reading this prompt file and writing your answer "
@@ -559,6 +563,8 @@ def main() -> int:
     rep = sub.add_parser("report"); rep.add_argument("results", type=Path, nargs="+")
     a = cli.parse_args()
     if a.cmd == "prompt":
+        if a.rounds and a.tier != "mvp":
+            raise SystemExit("--rounds is for --tier mvp only")
         print(prompt(select(a.tier), a.lang, tuple(a.extra_doc), mvp=a.tier == "mvp" and not a.rounds,
                      rounds=a.rounds).rstrip("\n"))
     elif a.cmd == "extract":
