@@ -27,4 +27,15 @@ theorem int64Diff (x y : Int) (tail : Stack) (h : InInt64 (x - y)) :
       (.literal (.int y) :: .literal (.int x) :: tail) (.literal (.int (x - y)) :: tail) 1 1 := by
   runs_chain
 
+/-- A cost table other than the default: every primitive costs 2. -/
+def doubledPrimitives : CostTable := { defaultCosts with primitive := fun _ => 2 }
+
+/-- The same body as `int64Diff` costed under `doubledPrimitives`. Its record
+binds that table's digest, not the default one's. -/
+theorem int64DiffDoubled (x y : Int) (tail : Stack) (h : InInt64 (x - y)) :
+    Runs int64Gamma Firth.Exports.Programs.Signed.dictionary doubledPrimitives
+      Firth.Exports.Programs.Signed.«diff».body
+      (.literal (.int y) :: .literal (.int x) :: tail) (.literal (.int (x - y)) :: tail) 1 2 :=
+  runs_cons (runs_sub_int64 (left := x) (right := y) tail h) (runs_empty _)
+
 end Firth.ProofTests.Accepted

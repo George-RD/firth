@@ -84,11 +84,24 @@ evidence id: the SHA-256 of the record's text, which includes a digest of the
 theorem's statement. `records.json` also reports every exported word as
 `contract_verified`, naming the theorems that cover it, or `type_checked`.
 
+A cost claim is only as good as the cost table it was proved against, so each
+record also lists the cost tables its statement names (its constants of type
+`CostTable`, such as `defaultCosts`) with a digest of each table's definition
+and of every definition under `Firth` that it uses. A change to the table
+changes that digest. `firthProofRecords --status records.json` reports the
+words' status from a written report, counting a record only while every word
+it covers keeps its recorded body digest and every cost table it names keeps
+its recorded digest. A record whose table changed stops making its words
+`contract_verified`, even though the report has not been regenerated.
+
 CI runs the script with `--check`. It fails if any contract is refused, if a
 covered word's body digest changed since the record was written, or if the
 audit's behaviour on the fixtures in `src/prooftests/` changes: every theorem in
 `Refused.lean` must be refused for its reason, and every theorem in
-`Accepted.lean` accepted with exactly its expected coverage.
+`Accepted.lean` accepted with exactly its expected coverage and cost tables.
+It also reads the new report back with `--status`, then plants a changed cost
+table digest and a changed body digest, and fails unless each one withdraws
+`contract_verified` from the words that record covers.
 
 Adding a contract: prove it here, add it to `contracts.json`, then run
 `lake build` and `python3 tools/loop/update_proof_records.py`.
