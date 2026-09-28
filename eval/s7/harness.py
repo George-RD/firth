@@ -4,7 +4,7 @@
 The author model sees only the language docs, each task's description, its
 input/output shape and one visible example. Hidden tests stay here.
 
-    harness.py prompt  --lang firth --tier today|all|hard|mvp [--extra-doc F] > prompt.md
+    harness.py prompt  --lang firth --tier today|all|hard|mvp [--extra-doc F] [--rounds N] > prompt.md
     harness.py extract --lang firth answer.md > solutions.json
     harness.py score   --lang firth solutions.json|DIR > results.json
     harness.py repair  --lang firth solutions.json results.json > repair.md
@@ -98,11 +98,20 @@ TRY = "python3 eval/s7/harness.py try --lang {lang} --task <task id> <file>"
 
 
 def prompt(tasks: list[Task], lang: str, extra_docs: tuple[str, ...] = (),
-           mvp: bool = False) -> str:
+           mvp: bool = False, rounds: int = 0) -> str:
     """The author's prompt. With `mvp`, the author may use the `try` loop and
-    nothing else; without it, the author answers from the prompt alone."""
+    nothing else; without it, the author answers from the prompt alone. With
+    `rounds`, an author that cannot run `try` (a sub-agent, which the sandbox
+    does not hold) gets the MVP documents instead, answers without tools, and is
+    shown up to `rounds` times how its answers did on the visible examples
+    (`repair`), which is what `try` would have shown it."""
     parts = []
     loop = (
+        "Do not use any tool except reading this prompt file and writing your answer "
+        "file, and do not use the internet. After you answer, you will be shown how each "
+        "answer did on its task's example: the result, or the diagnostics if it failed. "
+        f"You may then fix your answers; there are at most {rounds} such rounds.\n"
+        if rounds else
         "While you work you may check and run a program with\n\n"
         f"    {TRY.format(lang=lang)}\n\n"
         "which runs it on that task's example and shows the result, or the diagnostics "
@@ -112,6 +121,7 @@ def prompt(tasks: list[Task], lang: str, extra_docs: tuple[str, ...] = (),
         + "Use it as often as you "
         "like. Do not open, read or search any other file, and do not use the internet.\n"
         if mvp else "")
+    mvp = mvp or bool(rounds)
     if lang == "firth":
         parts.append(
             "You are writing programs in Firth, a new stack language. You have never seen "
@@ -488,6 +498,9 @@ def main() -> int:
     p.add_argument("--tier", default="all")
     p.add_argument("--extra-doc", action="append", default=[],
                    help="extra document appended after the repo docs, e.g. a primitives supplement")
+    p.add_argument("--rounds", type=int, default=0,
+                   help="for an author without `try`: answer without tools, then this many rounds "
+                        "of feedback on the visible examples")
     e = sub.add_parser("extract"); e.add_argument("--lang"); e.add_argument("answer", type=Path)
     e.add_argument("--workspace", type=Path, help="the author's workspace, when the answer is in it")
     s = sub.add_parser("score"); s.add_argument("--lang", required=True, choices=["firth", "python"])
@@ -507,7 +520,8 @@ def main() -> int:
     rep = sub.add_parser("report"); rep.add_argument("results", type=Path, nargs="+")
     a = cli.parse_args()
     if a.cmd == "prompt":
-        print(prompt(select(a.tier), a.lang, tuple(a.extra_doc), mvp=a.tier == "mvp").rstrip("\n"))
+        print(prompt(select(a.tier), a.lang, tuple(a.extra_doc), mvp=a.tier == "mvp" and not a.rounds,
+                     rounds=a.rounds).rstrip("\n"))
     elif a.cmd == "extract":
         print(json.dumps(extract(read_regular(a.answer, a.workspace or plain_parent(a.answer))), indent=2))
     elif a.cmd == "score":

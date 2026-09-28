@@ -348,6 +348,75 @@ See `runs/rescore-main-9ac3bc8.json`.
   `prim =`) are the ones that were added. The Haiku `count-true` answer the
   checker rejected in run 1 also passes now.
 
+## Run 4: 28 September 2026, the MVP task set
+
+Scored on `eb2208f` (the #134 branch: the frozen MVP set and the sandbox).
+Authors: `claude-sonnet-5` and `claude-haiku-4-5-20251001`, one sample each
+per language. Everything is in `runs/2026-09-28-mvp/`.
+
+**How the authors ran.** The maintainer ruled out an API key for these runs,
+so the authors are sub-agents of the session running the eval, as in runs 1
+to 3, not sandboxed `isolate.py run` processes. A sub-agent cannot use
+`./try` without a shell that could also read the hidden tests, so it got
+`prompt --tier mvp --rounds 2` instead: the MVP documents and tasks, no
+tools except reading the prompt and writing its answer, then up to two rounds
+of `repair` feedback. Each round shows only the visible example's result or
+diagnostics, which is what `./try` shows. Unlike `./try`, it cannot run the
+author's own inputs, and the rounds are limited to two.
+
+**What is and is not isolated.** Submitted Python ran in the sandbox at
+scoring (`python_sandboxed`). The authors themselves were *not*
+process-isolated: a sub-agent has the same shell and files as the session,
+so it could have read `mvp_tasks.py` or the references. What covers that gap
+is the transcript audit. Each `transcript.json` lists every tool call the
+author made. All 21 calls across the four authors were Reads of their own
+prompt or feedback file, Writes of their own answer file, or the hand-back,
+and nothing else. The audit script was checked against a planted transcript
+with a `cat mvp_tasks.py` and a Read of a reference, and it flagged both. A
+sub-agent also sees the repository's `AGENTS.md` in its context, which
+describes Firth but gives no syntax.
+
+| Passed (of 20) | First answer | After feedback |
+|---|---|---|
+| Sonnet 5, Firth | 19 | 20 (round 2) |
+| Haiku 4.5, Firth | 0 | 0 (round 3) |
+| Sonnet 5, Python | 20 | |
+| Haiku 4.5, Python | 20 | |
+
+- **Sonnet wrote all 20 in Firth**, including `allocate-batch`, `sort`,
+  `merge-sorted`, and `digits` and `primes-up-to` with division built from
+  subtraction. Its only first-answer miss was `ledger`, where the call
+  passed `start` into the loop's index slot (a stack-order slip; Jev said
+  `logic` at 0.56, and the hand label is `stack_order`). It fixed that from
+  the example's feedback. The Firth answer took about 6 minutes, and the
+  Python answer 21 seconds.
+- **Haiku failed every Firth task, in all three answers, for one reason.**
+  It used the names from a word's stack effect (`xs`, `n`, `k`, `start`) as
+  if they were bound, outside any `locals` block, so every program stopped
+  at `firth.name.unresolved`. The rule-based pass labelled nothing (no
+  resource limits, no missing capabilities); Jev put 39 of the 40 failures in
+  `invented_syntax` and one in `missing_primitive` (a guessed `prim %` in
+  round 3). A look at that slice found the cause is shared by the docs and
+  the diagnostic:
+  - `docs/getting-started.md` says once that "names such as `n` label the
+    type boundary; they are not ordinary mutable variables". That reads as
+    if they were variables of some other kind. No document says that they
+    are out of scope in the body and that `locals` is what binds them.
+  - The diagnostic says "`xs` is not a defined word, primitive or local" and
+    its hint is about spelling and `prim`. It never says that `xs` is the
+    word's own stack-effect name or that `locals { xs } { ... }` binds it.
+    Haiku read the feedback as a local-ordering problem, then as a problem
+    with quotations, and never found the fix.
+  - Both `firth.name.unresolved` and `firth.name.unresolved-effect` hints
+    list only `prim +`, `-`, `*`, `<` and `=`. That list is out of date: it
+    leaves out `and`, `or`, `not` and the `seq-int` and `seq-bool`
+    primitives. In round 3, Haiku guessed `prim %` and got that stale list back.
+  These are recorded in `meta/todos/todo.s7-name-diagnostics.md`.
+- One sample per cell. The roadmap row asks for several attempts per task,
+  so this run does not discharge it. With the results this one-sided (Sonnet
+  20, Haiku 0), more samples would narrow the Haiku figure but not change it
+  from "fails".
+
 ## What the three runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from

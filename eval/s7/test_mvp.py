@@ -160,6 +160,19 @@ def firth_references() -> None:
           "MVP tasks run past the default step budget")
 
 
+def rounds_prompt() -> None:
+    # A sub-agent author has no `try`: its prompt must not offer one, and it
+    # still gets the MVP documents and every MVP task.
+    for lang in ("firth", "python"):
+        text = harness.prompt(list(MVP), lang, rounds=2)
+        check("try --lang" not in text and "at most 2 such rounds" in text
+              and all(f"## {t.id}\n" in text for t in MVP), f"the {lang} --rounds prompt offers feedback, not try")
+    firth = harness.prompt(list(MVP), "firth", rounds=2)
+    check(all(f'<document path="{d}">' in firth for d in harness.MVP_DOCS),
+          "the --rounds prompt carries the MVP documents")
+    check("try --lang" in harness.prompt(list(MVP), "firth", mvp=True), "the mvp prompt still offers try")
+
+
 def unsandboxed_python_refused() -> None:
     real = harness.os.geteuid
     try:
@@ -187,6 +200,7 @@ def main() -> int:
     hand_values()
     scorer_rejects_wrong_python()
     hashes_recorded()
+    rounds_prompt()
     unsandboxed_python_refused()
     if "--no-firth" not in sys.argv:
         firth_references()

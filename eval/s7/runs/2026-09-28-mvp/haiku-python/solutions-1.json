@@ -1,0 +1,22 @@
+{
+  "seq-sum": "def main(xs):\n    return sum(xs)\n",
+  "seq-max": "def main(xs):\n    return max(xs)\n",
+  "count-below": "def main(xs, k):\n    return sum(1 for x in xs if x < k)\n",
+  "index-of": "def main(xs, x):\n    try:\n        return xs.index(x)\n    except ValueError:\n        return -1\n",
+  "reverse": "def main(xs):\n    return xs[::-1]\n",
+  "prefix-sums": "def main(xs):\n    result = []\n    total = 0\n    for x in xs:\n        total += x\n        result.append(total)\n    return result\n",
+  "keep-positive": "def main(xs):\n    return [x for x in xs if x > 0]\n",
+  "is-sorted": "def main(xs):\n    for i in range(len(xs) - 1):\n        if xs[i] > xs[i + 1]:\n            return False\n    return True\n",
+  "dot": "def main(xs, ys):\n    return sum(x * y for x, y in zip(xs, ys))\n",
+  "all-true": "def main(flags):\n    for flag in flags:\n        if not flag:\n            return False\n    return True\n",
+  "longest-run": "def main(xs):\n    if not xs:\n        return 0\n    max_run = 1\n    current_run = 1\n    for i in range(1, len(xs)):\n        if xs[i] == xs[i - 1]:\n            current_run += 1\n            max_run = max(max_run, current_run)\n        else:\n            current_run = 1\n    return max_run\n",
+  "has-pair-sum": "def main(xs, target):\n    seen = set()\n    for x in xs:\n        if target - x in seen:\n            return True\n        seen.add(x)\n    return False\n",
+  "count-distinct": "def main(xs):\n    return len(set(xs))\n",
+  "merge-sorted": "def main(xs, ys):\n    result = []\n    i = j = 0\n    while i < len(xs) and j < len(ys):\n        if xs[i] <= ys[j]:\n            result.append(xs[i])\n            i += 1\n        else:\n            result.append(ys[j])\n            j += 1\n    result.extend(xs[i:])\n    result.extend(ys[j:])\n    return result\n",
+  "digits": "def main(n):\n    if n == 0:\n        return [0]\n    digits = []\n    while n > 0:\n        digits.append(n % 10)\n        n //= 10\n    return digits[::-1]\n",
+  "primes-up-to": "def main(n):\n    if n < 2:\n        return []\n    is_prime = [True] * (n + 1)\n    is_prime[0] = is_prime[1] = False\n    for i in range(2, int(n**0.5) + 1):\n        if is_prime[i]:\n            for j in range(i * i, n + 1, i):\n                is_prime[j] = False\n    return [i for i in range(2, n + 1) if is_prime[i]]\n",
+  "histogram": "def main(xs, k):\n    counts = [0] * k\n    for x in xs:\n        counts[x] += 1\n    return counts\n",
+  "sort": "def main(xs):\n    return sorted(xs)\n",
+  "ledger": "def main(start, txs):\n    balance = start\n    rejected = 0\n    for tx in txs:\n        if balance + tx >= 0:\n            balance += tx\n        else:\n            rejected += 1\n    return (balance, rejected)\n",
+  "allocate-batch": "def main(stock, items, qtys, whole):\n    stock = list(stock)\n    allocated = []\n    reasons = []\n    \n    for i in range(len(items)):\n        item_idx = items[i]\n        qty = qtys[i]\n        is_whole = whole[i]\n        current_stock = stock[item_idx]\n        \n        if qty <= current_stock:\n            allocated.append(qty)\n            reasons.append(0)\n            stock[item_idx] -= qty\n        elif current_stock == 0:\n            allocated.append(0)\n            reasons.append(2)\n        elif is_whole:\n            allocated.append(0)\n            reasons.append(3)\n        else:\n            allocated.append(current_stock)\n            reasons.append(1)\n            stock[item_idx] = 0\n    \n    return (stock, allocated, reasons)\n"
+}
