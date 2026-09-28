@@ -1,0 +1,25 @@
+: max2
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b } { a b prim < [ b ] [ a ] if };
+
+\ The length of the run ending at index i, given the run ending at i - 1.
+: next-run
+  (forall ρ; ρ xs:Seq Int^many run:Int^many i:Int^many -- ρ r:Int^many)
+  locals { xs run i }
+  { xs i prim seq-int.at xs i 1 prim - prim seq-int.at prim =
+    [ run 1 prim + ] [ 1 ] if };
+
+: run-from
+  (forall ρ; ρ xs:Seq Int^many best:Int^many run:Int^many i:Int^many -- ρ r:Int^many)
+  locals { xs best run i }
+  { i xs prim seq-int.len prim <
+    [ xs
+      best xs run i next-run max2
+      xs run i next-run
+      i 1 prim + run-from ]
+    [ best ] if };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ length:Int^many)
+  locals { xs }
+  { 0 xs prim seq-int.len prim = [ 0 ] [ xs 1 1 1 run-from ] if };

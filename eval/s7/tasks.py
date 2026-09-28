@@ -13,29 +13,9 @@ not have yet. The prompt shows the description and one visible example; the
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 from math import gcd
-from typing import Callable
 
-
-@dataclass(frozen=True)
-class Task:
-    id: str
-    description: str
-    inputs: tuple[tuple[str, str], ...]   # (name, "Int" | "Bool"), bottom to top
-    outputs: tuple[tuple[str, str], ...]  # (name, "Int" | "Bool"), bottom to top
-    ref: Callable[..., tuple]
-    example: tuple
-    hidden: tuple[tuple, ...]
-    needs: frozenset[str]
-
-    def expected(self, args: tuple) -> list:
-        return list(self.ref(*args))
-
-
-def _t(id, description, inputs, outputs, ref, example, hidden, needs=("add",)):
-    return Task(id, description, tuple(inputs), tuple(outputs), ref, tuple(example),
-                tuple(tuple(h) for h in hidden), frozenset(needs))
+from task import Task, _t  # noqa: F401  (Task is re-exported)
 
 
 I, B = "Int", "Bool"
@@ -227,5 +207,6 @@ HARD: tuple[Task, ...] = (
        ["cmp", "sub"]),
 )
 
-BY_ID = {t.id: t for t in TASKS + HARD}
-assert len(BY_ID) == len(TASKS) + len(HARD)
+from mvp_tasks import MVP  # noqa: E402  (defined in its own file, frozen separately)
+BY_ID = {t.id: t for t in TASKS + HARD + MVP}
+assert len(BY_ID) == len(TASKS) + len(HARD) + len(MVP)

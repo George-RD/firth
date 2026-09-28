@@ -63,6 +63,181 @@ ending in `-dirty` if files outside `eval/` had uncommitted changes) and
 messages are kept in compact form: the VM trap class, and the checker's code,
 message, expected and actual stacks and hint.
 
+## The MVP task set
+
+`mvp_tasks.py` is the fixed task set for the roadmap's "MVP agent authoring"
+row, frozen in its own reviewed change before any model attempted it. It has
+20 tasks that need real loops over `Seq Int` and `Seq Bool`, locals and
+several cooperating words. Five are at allocator weight (`merge-sorted`,
+`histogram`, `sort`, `ledger` and `allocate-batch`, the last a whole batch of
+the inventory allocator's rules), and two (`digits`, `primes-up-to`) need
+division, which Firth lacks, so the author builds it from subtraction. Inputs
+include negative numbers and empty sequences.
+
+- Each task's Python `ref` defines the answer. `test_mvp.py` checks every ref
+  against values worked out by hand from the description.
+- `reference/mvp/` has a Firth solution for each task. All 20 pass their
+  example and hidden tests on both hosts. `test_mvp.py` checks that, and that
+  the scorer fails a planted mutant and Python answers of the wrong type (a
+  tuple where a list is due, Bools inside a `list[int]`). A Python answer must
+  return exactly its declared types, checked before JSON conversion. CI runs it.
+- MVP tasks run with a budget of 1,000,000 steps (`--fuel`), the runner's
+  largest. The references use far less.
+- `prompt --tier mvp` gives the author `docs/getting-started.md`,
+  `docs/firth-agent-guide.md` and `examples/programs/README.md` (the
+  getting-started guide points there for sequences), plus one diagnostics
+  loop, `./try` (`harness.py try` underneath). It checks and runs a program on the task's visible
+  example, or on inputs the author passes with `--stack`, and shows the
+  result or the checker's diagnostics. It never runs hidden tests. The author
+  may use it as often as it likes and nothing else.
+- **An author cannot read the hidden tests or the references.** This is
+  enforced, not just asked. `isolate.py workspace` makes a workspace holding
+  only the prompt and a `./try` client. `isolate.py run` runs the author
+  inside a sandbox (a mount and PID namespace with every capability dropped)
+  whose root is built from an allowlist: `/usr` (with `/usr/local` and
+  `/usr/src`, where local installs and source trees live, covered by empty
+  directories), `/etc` and the other system directories, the author CLI's install (`--tool DIR`), read-only copies of
+  its credentials (`--keep`), a fresh `/tmp`, `/dev` and `/proc`, and the
+  workspace at `/tmp/work`. The host's root is dropped with `pivot_root`, so
+  the repository, `/home`, `/root`, `/opt`, `/var`, `/mnt`, `/sys` and
+  anything else not on the list do not exist inside. An earlier version hid a
+  list of paths instead, and a plain `cat` read the main checkout of a
+  worktree it did not know about. `./try` talks to a server
+  the harness runs outside, over a socket in the workspace, so `mvp_tasks.py`,
+  `reference/mvp/` and the git history stay out of reach.
+  Python programs run the author's code, so `./try` runs them inside the
+  sandbox as well, and scoring runs Python answers there too; the result
+  records `python_sandboxed`. `harness.py score` refuses to score Python
+  answers to MVP tasks when it cannot sandbox them (not root). Firth programs cannot read files.
+  `test_isolation.py` (CI, as root) runs a probe that finds them without the
+  sandbox and finds nothing inside it, by direct path, `/proc/<pid>/root`,
+  `git show` or a filesystem search. That probe also runs once on the host as
+  root, so it never mounts or unmounts anything; unmounting is tried only
+  inside, on the workspace mount, and fails for lack of capabilities.
+- The sandbox refuses to start if anything it would show (a system
+  directory, a `--tool`, a `--keep` credential or the workspace) is, holds or
+  lies inside a path of the repository: the checkout, its git directory,
+  common directory and object alternates, its main checkout and other
+  worktrees, remotes that are local paths, and any enclosing checkout
+  (`repository_paths`). It also refuses when git cannot tell it that layout.
+  `test_isolation.py` plants a worktree of a `--shared` clone of a local
+  origin, inside an enclosing checkout, with a copy of the clone beside it,
+  all under `/opt`. Outside the sandbox `cat` reads the main checkout's,
+  parent's and sibling's secrets and git gives back the stored one; inside,
+  none of them exists, and a `--tool` naming any of those paths is refused.
+  A repository placed under `/usr/local` is refused too, since `/usr` is
+  shown. Copies that no git metadata leads to are refused too: the shown
+  directories are scanned once per process for git storage (a `.git`
+  entry, or HEAD, `objects` and `refs` as in a bare mirror) that holds the
+  hidden files: a blob of any revision this repository knows, or any tree
+  object, reachable or not, holding `mvp_tasks.py` or an `eval/s7/reference`
+  directory. The scan also looks for a file named
+  `mvp_tasks.py` or a directory ending in `eval/s7/reference` (older
+  revisions), and for a file with the content of a hidden file (hashing only
+  files of a hidden file's size). `test_isolation.py` plants each under
+  `/usr/share`, including repositories with a revision of the task file
+  that matches no known blob, in a reachable commit and in an unreachable
+  one. It plants an older revision and a bare mirror
+  under `/usr/local`, which are unreachable. An unrelated repository, such
+  as the CI runner's `/etc/skel/.nvm`, is shown.
+- **Threat model.** The sandbox guarantees that an author, and every
+  program it submits, cannot reach this repository's checkouts or git
+  storage, nor any shown file that is named like the hidden tests or the
+  references, holds their exact content, or is git storage holding them. It trusts the
+  operator's environment: what `--tool` and `--keep` name, the contents of
+  kept credentials, and the host itself. A copy of the hidden tests that
+  someone renamed and edited and placed on the host on purpose is outside
+  the model; so is anything reached through the author's network, which the
+  transcript audit covers instead. A finding outside this model goes to a
+  todo, not to this sandbox.
+- Submitted Python programs, run by `./try`, by `harness.py try` or at
+  scoring, also get an empty
+  network namespace, so an answer cannot fetch anything. `test_isolation.py`
+  plants one that reads from a local listener.
+- The author process's network stays open, because the author model needs its API. So every
+  run limits the author's tools to `./try` and workspace files, and
+  `isolate.py audit` checks each retained transcript for any other tool call.
+  A run with a flagged call is void. The audit is tested against planted
+  calls. The transcript is kept outside the workspace, the one host
+  directory the author can write, so the author cannot replace it with a
+  clean one after a forbidden call: `audit` takes `--workspace` and refuses
+  a transcript inside it. `test_isolation.py` plants a rewritten transcript
+  in the workspace, which audits clean without that check.
+- Since `./try` is the one command allowed, the author must not be able to
+  change what it runs. In the sandbox the client is mounted read-only, it
+  runs as `python3 -I` so a `json.py` the author writes is not imported, and
+  the audit flags any write to `try`, its socket or `workspace.json`.
+  The client reads only a plain file inside the workspace, reached without
+  links, so `./try` cannot be pointed at a host file (for example
+  `/etc/shadow`, which the author process could otherwise read) to echo it
+  back in a diagnostic. `test_isolation.py` plants each of these.
+- The host reads what an author wrote (answer files, transcripts) only as
+  plain files with one link. It opens each path one component at a time from
+  the workspace (`--workspace DIR` on `score` and `extract`) with
+  `O_NOFOLLOW`, so no link is followed, in a directory component or the file
+  itself. Without `--workspace`, a path with any link in its directories is
+  refused. Otherwise a link made in the sandbox to a reference path, dangling
+  there, would read the reference on the host. Such a workspace is refused.
+- The author and each program it submits run as a fresh uid, drawn at random
+  from 2^30 to 2^31 for each run, not as a shared `nobody`: the kernel keeps
+  a user keyring per uid outside every namespace here, so one uid shared
+  across runs could leave a note there for the next (`test_isolation.py`
+  plants it). They get a fresh `/dev`
+  holding only `null`, `zero`, `full`, `random`, `urandom` and `tty`, so no
+  disk device or root-only file is readable below the path mounts. The
+  workspace is handed to that uid, except `try` and `workspace.json`.
+- Nothing from the host environment reaches the sandbox except `PATH`, and
+  what `isolate.py run --pass-env NAME` names (the model API key). `HOME` is
+  the workspace. Credentials passed with `--keep` come in as read-only copies
+  the author's uid can read. A `--keep` path inside the workspace, through a
+  link, or under a directory an author uid or everyone can write is refused, and so is a
+  kept path holding anything but directories and plain files with one link
+  (a symbolic or hard link could lead to the repository), with a mount point
+  at or below it (read from `/proc/self/mountinfo`, since a same-filesystem
+  bind looks like a plain directory), or with a file whose SHA-256 equals a
+  hidden file's (a copy or reflink). The copy never follows links. A kept
+  file holding part of a hidden file, or an encoding of it, is not caught:
+  kept contents are trusted to be credentials.
+- Inside the sandbox the root and everything shown are read-only except the
+  workspace, a fresh `/tmp` and `/dev/shm`, and there is no `/run` (it holds
+  host sockets). So one attempt cannot leave notes for a later one.
+  `test_isolation.py` runs `find / -writable` as the author and allows nothing
+  else. There is no `/sys`, and `/proc/sys` is read-only, so even a root
+  author (a test-only case) cannot write a kernel knob; the test plants the
+  sandbox without its read-only `/proc/sys`, which does write one.
+- Scoring Python first checks that the sandbox starts, and refuses to score if
+  it does not, so a broken sandbox cannot pass for a set of wrong answers.
+- The sandbox has its own IPC namespace, so shared memory and message queues
+  die with it. It shares the host's network (the author needs its API), so
+  two attempts running at once could talk over loopback or an abstract
+  socket. `isolate.py run` therefore holds an exclusive lock for the whole
+  run and refuses to start while another run holds it.
+- When a submitted program times out, the harness kills the sandbox's first
+  process, which ends every process in its PID namespace, however it forked.
+- An author can delete `try.sock`. That only breaks its own `./try`, and the
+  audit flags the command.
+- Each results file records `eval_sha256`, a SHA-256 of `task.py`,
+  `tasks.py`, `mvp_tasks.py`, `harness.py` and `isolate.py` as scored. `firth_commit`
+  ignores `eval/`, so this is what shows an edit to the frozen set or the
+  scorer, committed or not.
+- Writing the references hit two gaps: no division or remainder, and no way
+  to replace one element of a sequence. They are recorded in
+  `meta/todos/todo.language-14-authoring-gaps.md`. Boolean `and`, `or` and
+  `not` landed in #131 and are in the author's docs.
+
+A run gives each task to a fresh author several times, in Firth and in Python,
+keeps every transcript, and reports the pass rate per task and overall.
+
+```sh
+python3 eval/s7/harness.py prompt --lang firth --tier mvp > prompt.md
+sudo python3 eval/s7/isolate.py workspace --lang firth /var/tmp/ws   # outside the repository
+sudo python3 eval/s7/isolate.py run /var/tmp/ws --tool <author CLI install> -- <author command> > /var/tmp/transcript.jsonl
+sudo python3 eval/s7/isolate.py audit /var/tmp/transcript.jsonl --workspace /var/tmp/ws
+python3 eval/s7/harness.py score --lang firth --tier mvp solutions.json > results.json
+python3 eval/s7/test_mvp.py
+sudo python3 eval/s7/test_isolation.py
+```
+
 ## Run 1: 27 September 2026, `prim +` only
 
 Main at `c6b1a19`. Authors: Claude Sonnet 5 and Claude Haiku 4.5, one answer

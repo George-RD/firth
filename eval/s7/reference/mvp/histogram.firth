@@ -1,0 +1,19 @@
+: count-eq
+  (forall ρ; ρ xs:Seq Int^many v:Int^many acc:Int^many i:Int^many -- ρ r:Int^many)
+  locals { xs v acc i }
+  { i xs prim seq-int.len prim <
+    [ xs v
+      xs i prim seq-int.at v prim = [ acc 1 prim + ] [ acc ] if
+      i 1 prim + count-eq ]
+    [ acc ] if };
+
+: counts-from
+  (forall ρ; ρ xs:Seq Int^many k:Int^many out:Seq Int^many v:Int^many -- ρ r:Seq Int^many)
+  locals { xs k out v }
+  { v k prim <
+    [ xs k out xs v 0 0 count-eq prim seq-int.push v 1 prim + counts-from ]
+    [ out ] if };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ counts:Seq Int^many)
+  prim seq-int.empty 0 counts-from;

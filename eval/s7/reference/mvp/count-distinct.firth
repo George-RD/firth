@@ -1,0 +1,21 @@
+\ Does x occur at an index from j up to (not including) n?
+: occurs-from
+  (forall ρ; ρ xs:Seq Int^many x:Int^many j:Int^many n:Int^many -- ρ r:Bool^many)
+  locals { xs x j n }
+  { j n prim <
+    [ xs j prim seq-int.at x prim = [ true ] [ xs x j 1 prim + n occurs-from ] if ]
+    [ false ] if };
+
+\ Counts the elements that do not occur earlier in the sequence.
+: distinct-from
+  (forall ρ; ρ xs:Seq Int^many acc:Int^many i:Int^many -- ρ r:Int^many)
+  locals { xs acc i }
+  { i xs prim seq-int.len prim <
+    [ xs
+      xs xs i prim seq-int.at 0 i occurs-from [ acc ] [ acc 1 prim + ] if
+      i 1 prim + distinct-from ]
+    [ acc ] if };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ count:Int^many)
+  0 0 distinct-from;

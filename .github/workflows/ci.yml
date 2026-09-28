@@ -121,6 +121,8 @@ jobs:
         run: python3 tools/loop/check_language_examples.py 2>&1 | tee /tmp/language-examples.log
       - name: Run example programs on both hosts against expected results
         run: python3 examples/programs/check_programs.py 2>&1 | tee /tmp/language-programs.log
+      - name: Check the frozen S7 MVP authoring tasks and their Firth references
+        run: python3 eval/s7/test_mvp.py 2>&1 | tee /tmp/language-s7-mvp.log
       - name: Run the inventory allocator against the fixed acceptance corpus
         run: python3 examples/inventory/run_cases.py 2>&1 | tee /tmp/language-inventory.log
       - name: Check the inventory allocator's worst-case cost bound
@@ -135,6 +137,9 @@ jobs:
         run: python3 src/diffharness/harness.py run --seed 0 --seed 1 --seed 20260909 --cases 24 --artifacts /tmp/firth-differential 2>&1 | tee /tmp/language-differential.log
       - name: Replay and shrink a real explicitly exhausted case
         run: python3 src/diffharness/check_failure_roundtrip.py --artifacts /tmp/firth-differential/roundtrip 2>&1 | tee /tmp/language-differential-roundtrip.log
+      - name: Check that an S7 author cannot read the hidden tests
+        # Last, because it runs as root; the environment keeps lake on PATH.
+        run: sudo env "PATH=$PATH" "HOME=$HOME" python3 eval/s7/test_isolation.py 2>&1 | tee /tmp/language-s7-isolation.log
       - name: Retain execution diagnostics
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

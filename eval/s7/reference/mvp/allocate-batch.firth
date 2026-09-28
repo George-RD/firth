@@ -1,0 +1,48 @@
+\ One order against r units in stock: what to give and the reason code.
+: decide
+  (forall ρ; ρ r:Int^many q:Int^many w:Bool^many -- ρ give:Int^many reason:Int^many)
+  locals { r q w }
+  { r q prim <
+    [ r 0 prim = [ 0 2 ] [ w [ 0 3 ] [ r 1 ] if ] if ]
+    [ q 0 ] if };
+
+\ s with element i replaced by v, rebuilt from index k.
+: set-from
+  (forall ρ; ρ s:Seq Int^many i:Int^many v:Int^many out:Seq Int^many k:Int^many -- ρ r:Seq Int^many)
+  locals { s i v out k }
+  { k s prim seq-int.len prim <
+    [ s i v
+      out k i prim = [ v ] [ s k prim seq-int.at ] if prim seq-int.push
+      k 1 prim + set-from ]
+    [ out ] if };
+
+: set
+  (forall ρ; ρ s:Seq Int^many i:Int^many v:Int^many -- ρ r:Seq Int^many)
+  prim seq-int.empty 0 set-from;
+
+\ Records order j's outcome, then moves to order j + 1.
+: apply
+  (forall ρ; ρ stock:Seq Int^many alloc:Seq Int^many reasons:Seq Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many j:Int^many give:Int^many reason:Int^many -- ρ s:Seq Int^many a:Seq Int^many rs:Seq Int^many)
+  locals { stock alloc reasons items qtys whole j give reason }
+  { stock items j prim seq-int.at
+    stock items j prim seq-int.at prim seq-int.at give prim -
+    set
+    alloc give prim seq-int.push
+    reasons reason prim seq-int.push
+    items qtys whole j 1 prim + batch-from };
+
+: batch-from
+  (forall ρ; ρ stock:Seq Int^many alloc:Seq Int^many reasons:Seq Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many j:Int^many -- ρ s:Seq Int^many a:Seq Int^many rs:Seq Int^many)
+  locals { stock alloc reasons items qtys whole j }
+  { j items prim seq-int.len prim <
+    [ stock alloc reasons items qtys whole j
+      stock items j prim seq-int.at prim seq-int.at
+      qtys j prim seq-int.at
+      whole j prim seq-bool.at
+      decide apply ]
+    [ stock alloc reasons ] if };
+
+: main
+  (forall ρ; ρ stock:Seq Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many -- ρ stock-left:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many)
+  locals { stock items qtys whole }
+  { stock prim seq-int.empty prim seq-int.empty items qtys whole 0 batch-from };

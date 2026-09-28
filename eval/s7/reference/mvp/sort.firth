@@ -1,0 +1,31 @@
+\ Insertion sort. Sequences are values, so inserting builds a new one.
+
+: copy-from
+  (forall ρ; ρ s:Seq Int^many out:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { s out i }
+  { i s prim seq-int.len prim <
+    [ s out s i prim seq-int.at prim seq-int.push i 1 prim + copy-from ]
+    [ out ] if };
+
+\ s[0..i) is already in out; x goes before the first element greater than it.
+: insert-from
+  (forall ρ; ρ s:Seq Int^many x:Int^many out:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { s x out i }
+  { i s prim seq-int.len prim <
+    [ x s i prim seq-int.at prim <
+      [ s out x prim seq-int.push i copy-from ]
+      [ s x out s i prim seq-int.at prim seq-int.push i 1 prim + insert-from ] if ]
+    [ out x prim seq-int.push ] if };
+
+: sort-from
+  (forall ρ; ρ xs:Seq Int^many out:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { xs out i }
+  { i xs prim seq-int.len prim <
+    [ xs
+      out xs i prim seq-int.at prim seq-int.empty 0 insert-from
+      i 1 prim + sort-from ]
+    [ out ] if };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Seq Int^many)
+  prim seq-int.empty 0 sort-from;

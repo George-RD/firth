@@ -61,6 +61,7 @@ System Firth "Concatenative language elaborated through Lean 4 and compiled to a
             path "examples/mvp"
             path "examples/programs"
             path "examples/inventory"
+            path "eval"
         }
     }
 

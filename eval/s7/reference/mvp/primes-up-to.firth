@@ -1,0 +1,24 @@
+\ a mod d for a >= 0 and d > 0, by repeated subtraction.
+: mod
+  (forall ρ; ρ a:Int^many d:Int^many -- ρ r:Int^many)
+  locals { a d } { a d prim < [ a ] [ a d prim - d mod ] if };
+
+\ True when no d' with d <= d' < k divides k.
+: no-divisor-from
+  (forall ρ; ρ k:Int^many d:Int^many -- ρ r:Bool^many)
+  locals { k d }
+  { d k prim <
+    [ k d mod 0 prim = [ false ] [ k d 1 prim + no-divisor-from ] if ]
+    [ true ] if };
+
+: primes-from
+  (forall ρ; ρ out:Seq Int^many k:Int^many n:Int^many -- ρ r:Seq Int^many)
+  locals { out k n }
+  { n k prim <
+    [ out ]
+    [ k 2 no-divisor-from [ out k prim seq-int.push ] [ out ] if
+      k 1 prim + n primes-from ] if };
+
+: main
+  (forall ρ; ρ n:Int^many -- ρ primes:Seq Int^many)
+  locals { n } { prim seq-int.empty 2 n primes-from };

@@ -1,0 +1,20 @@
+\ Is there a j >= start with xs[i] + xs[j] = target?
+: pair-from
+  (forall ρ; ρ xs:Seq Int^many target:Int^many i:Int^many j:Int^many -- ρ r:Bool^many)
+  locals { xs target i j }
+  { j xs prim seq-int.len prim <
+    [ xs i prim seq-int.at xs j prim seq-int.at prim + target prim =
+      [ true ] [ xs target i j 1 prim + pair-from ] if ]
+    [ false ] if };
+
+: first-from
+  (forall ρ; ρ xs:Seq Int^many target:Int^many i:Int^many -- ρ r:Bool^many)
+  locals { xs target i }
+  { i xs prim seq-int.len prim <
+    [ xs target i i 1 prim + pair-from
+      [ true ] [ xs target i 1 prim + first-from ] if ]
+    [ false ] if };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many target:Int^many -- ρ found:Bool^many)
+  0 first-from;
