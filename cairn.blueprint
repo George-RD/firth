@@ -38,10 +38,12 @@ System Firth "Concatenative language elaborated through Lean 4 and compiled to a
 
         Module Interpreter "Reference interpreter: deliberately simple executable semantics in Lean, the behavioural oracle for program meaning" id "firth.toolchain.interpreter" {
             path "src/interpreter"
+            path "src/proofs"
         }
 
         Module Compiler "Compiler: kernel calculus into the Forth-class target" id "firth.toolchain.compiler" {
             path "src/compiler"
+            path "src/exports"
         }
 
         Module DiffHarness "Differential test harness: fuzzed program generation checking compiler-versus-interpreter agreement" id "firth.toolchain.diffharness" {
