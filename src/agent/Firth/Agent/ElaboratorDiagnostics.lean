@@ -177,24 +177,55 @@ private structure ErasureDiagnostic where
   params : Json
   span : Firth.Elaborator.Span
 
-/-- How a branch changes the stack depth, in words. -/
+/-- What a branch does to the stack depth, in words: how many values it
+takes from the stack below the `if` and how many it leaves in their place. -/
 private def depthChange (effect : Nat × Nat) : String :=
   let (consumed, produced) := effect
-  if produced > consumed then
-    let added := produced - consumed
-    s!"leaves {added} more {if added == 1 then "value" else "values"} than it takes"
-  else if consumed > produced then
-    let removed := consumed - produced
-    s!"leaves {removed} fewer {if removed == 1 then "value" else "values"} than it takes"
-  else "leaves as many values as it takes"
+  let values (count : Nat) := if count == 1 then "1 value" else s!"{count} values"
+  if consumed == 0 then
+    if produced == 0 then "leaves the stack as it is" else s!"pushes {values produced}"
+  else s!"takes {values consumed} from the stack below the `if` and leaves {if produced == 0 then "nothing" else values produced}"
 
-/-- The message and hint for an `if` whose branches change the stack depth
-by different amounts. -/
-private def branchShapeExplanation (onTrue onFalse : Nat × Nat) : String × String :=
-  (s!"The two branches of `if` leave different numbers of values: the true branch {depthChange onTrue}, and the false branch {depthChange onFalse}.",
-    "Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds the stack it expects. Change one branch, for example by pushing or dropping a value, until both leave the same stack.")
+/-- The message and hint for an `if` in `word` whose branches change the
+stack depth by different amounts: what each branch does, how many more values
+one leaves than the other, and the edits that make them agree. Erasure knows
+only the depths here, not the types; the type checker's report of the same
+mistake, when it gets there, names the types too. -/
+private def branchShapeExplanation (word : String) (onTrue onFalse : Nat × Nat)
+    (locals : Firth.Elaborator.BranchLocals := {}) : String × String :=
+  let inWord := if word.isEmpty then "" else s!" in `{word}`"
+  let net (effect : Nat × Nat) : Int := (effect.2 : Int) - (effect.1 : Int)
+  let values (count : Nat) := if count == 1 then "1 value" else s!"{count} values"
+  let (longer, shorter, extra) :=
+    if net onTrue > net onFalse then ("true", "false", (net onTrue - net onFalse).toNat)
+    else ("false", "true", (net onFalse - net onTrue).toNat)
+  let drops := " ".intercalate (List.replicate extra "drop")
+  let reached := locals.reached.eraseDups
+  let summary := s!"The two branches of `if`{inWord} leave different numbers of values: the true branch {depthChange onTrue}, and the false branch {depthChange onFalse}."
+  -- A drop or a push would only move these mistakes, so neither is offered.
+  let noEvening := "Adding a `drop` or pushing values to even out the branches would only move the mistake."
+  if !reached.isEmpty then
+    -- The `if` or a branch reaches for a local as if it were a value on the
+    -- stack: the fix is to use the local by name and leave it in place.
+    let quoted := reached.map (s!"`{·}`")
+    let names := match quoted.reverse with
+      | [] => ""
+      | [one] => s!"the local {one}"
+      | last :: rest => s!"the locals {", ".intercalate rest.reverse} and {last}"
+    (s!"{summary} The condition and the values the branches take from below the `if` are looked for where {names} would be, but a local is not a value on the stack.",
+      s!"Inside `locals`, a local is used by writing its name, which pushes a copy and leaves the local in place. Write the condition just before the two quotations (for example a local's name or a comparison), and in each branch use locals by name instead of taking them from the stack with `drop`, `swap` or an operator that is short of an operand. {noEvening}")
+  else if locals.missing > 0 then
+    -- The `if` or a branch takes values below everything this code pushed or
+    -- was given: they belong to the caller.
+    let count := locals.missing
+    let taker := if onTrue.1 == onFalse.1 then "The `if`" else if onTrue.1 > onFalse.1 then "The true branch" else "The false branch"
+    (s!"{summary} {taker} takes {values count} from below the `if` that this code does not have: everything it was given is bound to locals or already used, so {if count == 1 then "that value belongs" else "those values belong"} to the caller.",
+      s!"Push what the branch needs inside the branch, by writing a local's name or computing the value there, or remove the operation that takes it if it should not be there. If the branch means to use a value computed before the `if`, keep a copy of it before the condition (for example with `dup`). {noEvening}")
+  else
+  (s!"The two branches of `if`{inWord} leave different numbers of values: the true branch {depthChange onTrue}, and the false branch {depthChange onFalse}. So the {longer} branch leaves {values extra} more than the {shorter} branch.",
+    s!"If the values below those already agree, either add `{drops}` at the end of the {longer} branch, or make the {shorter} branch push {values extra} more, of the same {if extra == 1 then "type" else "types"} the {longer} branch leaves on top. If they do not, the branches also leave different types, and each must be changed until both leave the same values. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.")
 
-private def erasureDiagnostic : Firth.Elaborator.ErasureError → ErasureDiagnostic
+private def erasureDiagnostic (word : String) : Firth.Elaborator.ErasureError → ErasureDiagnostic
   | .duplicateLocal name span =>
       { code := "firth.name.duplicate-local", cause := "name-resolution", params := namedParams name, span }
   | .unboundLocal name span =>
@@ -217,10 +248,11 @@ private def erasureDiagnostic : Firth.Elaborator.ErasureError → ErasureDiagnos
       { code := "firth.elaboration.unsupported-literal", cause := "elaboration", params := .mkObj [], span }
   | .unsupportedAtom name span =>
       { code := "firth.elaboration.unsupported-atom", cause := "elaboration", params := namedParams name, span }
-  | .branchShape span onTrue onFalse =>
-      let (message, hint) := branchShapeExplanation onTrue onFalse
+  | .branchShape span onTrue onFalse locals =>
+      let (message, hint) := branchShapeExplanation word onTrue onFalse locals
       { code := "firth.type.branch-mismatch", cause := "type-checking"
-        params := .mkObj [("at", .str "if"), ("message", .str message), ("hint", .str hint)]
+        params := .mkObj ([("at", .str "if")] ++ (if word.isEmpty then [] else [("word", .str word)]) ++
+          [("message", .str message), ("hint", .str hint)])
         span }
   | .untrackedStack name span lost =>
       let params := match lost with
@@ -268,8 +300,8 @@ private def erasureExplanation (code name : String) (params : Json) : String × 
   | _ => ("", "")
 
 def erasureEnvelope (context : EmissionContext)
-    (error : Firth.Elaborator.ErasureError) : Envelope :=
-  let diagnostic := erasureDiagnostic error
+    (error : Firth.Elaborator.ErasureError) (word : String := "") : Envelope :=
+  let diagnostic := erasureDiagnostic word error
   envelope context {
     code := diagnostic.code
     severity := "error"
@@ -357,6 +389,72 @@ private def operandsNeeded : String → Option Nat
   | _ => none
 
 open Firth.Elaborator.StackEffect in
+/-- A value an author can push to stand for one of type `type`, if there is
+an obvious one. -/
+private def exampleValue (type : AType) : Option String :=
+  match renderType type with
+  | "Int" => some "0"
+  | "Bool" => some "false"
+  | _ => none
+
+open Firth.Elaborator.StackEffect in
+/-- An `if` whose branches leave different stacks: what each branch leaves,
+by how much they differ, and an edit that makes them agree. -/
+private def branchExplanation (inWord : String) (below onTrue onFalse : AStack) :
+    String × String :=
+  let (trueValues, trueRow) := stackValues onTrue
+  let (falseValues, falseRow) := stackValues onFalse
+  let base := s!"The two branches of `if`{inWord} leave different stacks. Below the condition and the two quotations the stack is {renderStack below}; the true branch leaves {renderStack onTrue} and the false branch leaves {renderStack onFalse}."
+  let rule := "Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack."
+  let longer (name other : String) (extra : List AType) : String :=
+    let count := extra.length
+    let drops := if count == 1 then "`drop`" else s!"`drop` {count} times"
+    let pushes := match extra.mapM exampleValue with
+      | some values => s!"push {if count == 1 then "a value" else s!"{count} values"} of the same type at the end of the {other} branch (for example `{" ".intercalate values}`)"
+      | none => s!"push {renderValues extra} at the end of the {other} branch"
+    s!"The {name} branch leaves {plural count "more value"} than the {other} branch ({renderValues extra} on top). Either add {drops} at the end of the {name} branch, or {pushes}. {rule}"
+  -- The values both branches leave, from the bottom: a drop or a push fixes
+  -- the count only when these agree.
+  let sharedDifference (longerValues shorterValues : List AType) :=
+    firstDifference (longerValues.take shorterValues.length) shorterValues
+  let alsoDiffers (name other : String) (extra : List AType) (depth : Nat) (onName onOther : AType) :=
+    s!"The {name} branch leaves {plural extra.length "more value"} than the {other} branch ({renderValues extra} on top), and below those the two differ too: {ordinalFromTop depth} of the values both leave is {renderType onName} after the {name} branch and {renderType onOther} after the {other} branch. Change the branches until both leave the same values. {rule}"
+  if trueRow != falseRow then
+    (base, s!"The two branches leave different parts of the caller's stack (ρ): one of them consumes values it should keep, or keeps values it should consume. {rule}")
+  else if trueValues.length > falseValues.length then
+    let extra := trueValues.drop falseValues.length
+    match sharedDifference trueValues falseValues with
+    | some (depth, onTrueType, onFalseType) => (base, alsoDiffers "true" "false" extra depth onTrueType onFalseType)
+    | none => (base, longer "true" "false" extra)
+  else if falseValues.length > trueValues.length then
+    let extra := falseValues.drop trueValues.length
+    match sharedDifference falseValues trueValues with
+    | some (depth, onFalseType, onTrueType) => (base, alsoDiffers "false" "true" extra depth onFalseType onTrueType)
+    | none => (base, longer "false" "true" extra)
+  else match firstDifference trueValues falseValues with
+    | some (depth, onTrueType, onFalseType) =>
+        (base, s!"Both leave {plural trueValues.length "value"}, but {ordinalFromTop depth} is {renderType onTrueType} after the true branch and {renderType onFalseType} after the false branch. Make both branches leave the same type there. {rule}")
+    | none => (base, rule)
+
+open Firth.Elaborator.StackEffect in
+/-- An `if` with a branch that cannot run on the stack below the condition:
+what that stack is, what the branch takes, and where they first differ. -/
+private def branchInputExplanation (inWord : String) (below : AStack) (onTrueBranch : Bool)
+    (takes : AStack) : String × String :=
+  let name := if onTrueBranch then "true" else "false"
+  let (belowValues, _) := stackValues below
+  let (takesValues, _) := stackValues takes
+  let base := s!"The {name} branch of `if`{inWord} cannot run on the stack it is given. Below the condition and the two quotations the stack is {renderStack below}, but the {name} branch takes {renderStack takes}."
+  let rule := "Both branches run on the stack that is left once `if` has taken the condition and the two quotations, so each branch must start from that stack."
+  match firstDifference takesValues belowValues with
+  | some (depth, want, got) =>
+      (base, s!"{capitalize (ordinalFromTop depth)} there is {renderType got}, but the {name} branch expects {renderType want}. Check the order of the values the branch uses (`swap` exchanges the top two), or what was pushed before the condition. {rule}")
+  | none =>
+      if takesValues.length > belowValues.length then
+        (base, s!"The {name} branch takes more values than are there. Push them before the condition, or take them as parameters in the signature. {rule}")
+      else (base, rule)
+
+open Firth.Elaborator.StackEffect in
 /-- A plain-language sentence and a repair hint for a checker diagnostic,
 written for an author who sees only this message and the source. -/
 private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : String × String :=
@@ -404,6 +502,10 @@ private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Str
       (s!"`{at_}`{inWord} needs a quotation, but the stack before it is {before}.",
         "Put a `[ ... ]` quotation where the operation expects one.")
   | "firth.type.branch-mismatch", _, _ =>
+      match diagnostic.branchOutputs, diagnostic.branchInput with
+      | some (onTrue, onFalse), _ => branchExplanation inWord diagnostic.state onTrue onFalse
+      | none, some (onTrueBranch, takes) => branchInputExplanation inWord diagnostic.state onTrueBranch takes
+      | none, none =>
       (s!"The two branches of `if`{inWord} leave different stacks.",
         s!"Both branches must leave the same number and types of values. Expected {(diagnostic.expected.map renderStack).getD "?"}, found {(diagnostic.actual.map renderStack).getD "?"}.")
   | "firth.type.quotation-input-mismatch", _, _ =>
@@ -438,6 +540,14 @@ private def stackEffectParams (diagnostic : Firth.Elaborator.StackEffect.Diagnos
     | none => fields
   let fields := match diagnostic.actual with
     | some stack => fields ++ [("actual", .str (renderStack stack))]
+    | none => fields
+  let fields := match diagnostic.branchOutputs with
+    | some (onTrue, onFalse) =>
+        fields ++ [("true_branch", .str (renderStack onTrue)), ("false_branch", .str (renderStack onFalse))]
+    | none => fields
+  let fields := match diagnostic.branchInput with
+    | some (onTrueBranch, takes) =>
+        fields ++ [("branch", .str (if onTrueBranch then "true" else "false")), ("branch_takes", .str (renderStack takes))]
     | none => fields
   let fields := if hint.isEmpty then fields else fields ++ [("hint", .str hint)]
   .mkObj fields
@@ -610,7 +720,7 @@ private def withContextSource (context : EmissionContext) (envelope : Envelope) 
 private def pipelineDiagnosticEnvelope (context : EmissionContext) :
     Firth.Elaborator.PipelineDiagnostic → Envelope
   | .parse error => parserEnvelope context error
-  | .erasure _ error => erasureEnvelope context error
+  | .erasure word error => erasureEnvelope context error word
   | .stackEffect diagnostic => stackEffectEnvelope context diagnostic
   | .refinement _ diagnostic => withContextSource context (refinementEnvelope diagnostic)
   | .internal span => internalEnvelope context span

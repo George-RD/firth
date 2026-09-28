@@ -356,7 +356,9 @@ def runElaboratorDiagnosticTests : IO Unit := do
   | .failure [envelope] =>
       let emitted := encode envelope
       expectValidCode "branch shape" "firth.type.branch-mismatch" emitted
-      if emitted.contains "the true branch leaves 1 more value than it takes, and the false branch leaves as many values as it takes" &&
+      if emitted.contains "the true branch pushes 1 value, and the false branch leaves the stack as it is. So the true branch leaves 1 value more than the false branch." &&
+          emitted.contains "If the values below those already agree, either add `drop` at the end of the true branch, or make the false branch push 1 value more" &&
+          emitted.contains "in `keep-positive`" &&
           emitted.contains "\"start\":{\"line\":2,\"column\":39}" &&
           !emitted.contains "untracked" && !emitted.contains "are fine" then pure ()
       else fail s!"an if with branches of different depths was not reported at the if: {emitted}"
@@ -408,6 +410,151 @@ def runElaboratorDiagnosticTests : IO Unit := do
   expectInnerIf "three levels"
     ": g (forall ρ; ρ x:Int^many -- ρ r:Int^many)\n  locals { x } {\n    0 x prim <\n    [ 1 x prim < [ 2 x prim < [ x ] [ ] if ] [ 0 ] if ]\n    [ 0 ]\n    if\n    x prim + } ;"
     4 41
+
+  -- Branch mismatches as the authoring eval met them. Each report must say
+  -- what each branch does, which one leaves more and by how many, and an edit
+  -- that makes them agree. `branchReport` holds those checks, and the reports
+  -- the eval recorded before this change must fail them.
+  let branchReport (label source : String) (needles : List String) : IO Unit := do
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .failure [envelope] =>
+        let emitted := encode envelope
+        expectValidCode label "firth.type.branch-mismatch" emitted
+        for needle in needles do
+          unless emitted.contains needle do
+            fail s!"{label}: the report does not say {needle}: {emitted}"
+    | .failure envelopes => fail s!"{label}: expected one diagnostic, got {envelopes.length}"
+    | .success _ => fail s!"{label}: the program was accepted"
+  let needlesMissing (report : String) (needles : List String) : Bool :=
+    needles.any (!report.contains ·)
+  -- longest-run (eval/s7/runs/2026-09-28-haiku-cec3707/haiku-firth-2,
+  -- answer 1): the loop is called with one argument too few, so the false
+  -- branch takes a value from below the `if`.
+  let longestRun := [
+    "The two branches of `if` in `main` leave different numbers of values",
+    "the true branch pushes 1 value, and the false branch takes 1 value from the stack below the `if` and leaves 1 value",
+    "The false branch takes 1 value from below the `if` that this code does not have",
+    "Push what the branch needs inside the branch"]
+  branchReport "longest-run" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ length:Int^many)\n  locals { xs } {\n    xs prim seq-int.len 0 prim =\n    [ 0 ]\n    [ xs 0 prim seq-int.at 1 1 xs longest-run-loop ] if\n  };\n\n: longest-run-loop\n  (forall ρ; ρ prev:Int^many curr-run:Int^many max-run:Int^many idx:Int^many xs:Seq Int^many -- ρ result:Int^many)\n  locals { prev curr-run max-run idx xs } {\n    idx xs prim seq-int.len prim =\n    [ max-run curr-run prim < [ curr-run ] [ max-run ] if ]\n    [\n      xs idx prim seq-int.at dup prev prim =\n      [ curr-run 1 prim + ] [ 1 swap ] if\n      idx 1 prim +\n      xs\n      longest-run-loop\n    ]\n    if\n  };" longestRun
+  -- keep-positive (the same run, answer 1): the false branch pushes the
+  -- sequence on top of the element it means to append, so it takes a Seq Int
+  -- where there is an Int. Both answers are copied verbatim.
+  let keepPositive := [
+    "The false branch of `if` in `keep-positive-loop` cannot run on the stack it is given",
+    "The top value there is Int, but the false branch expects Seq Int",
+    "`swap` exchanges the top two"]
+  branchReport "keep-positive" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ positives:Seq Int^many)\n  locals { xs } { prim seq-int.empty 0 xs keep-positive-loop };\n\n: keep-positive-loop\n  (forall ρ; ρ result:Seq Int^many idx:Int^many xs:Seq Int^many -- ρ final:Seq Int^many)\n  locals { result idx xs } {\n    idx xs prim seq-int.len prim =\n    [ result ]\n    [\n      xs idx prim seq-int.at dup 0 prim <\n      [ drop result ]\n      [ result prim seq-int.push ] if\n      idx 1 prim +\n      xs\n      keep-positive-loop\n    ]\n    if\n  };" keepPositive
+  -- The same depth, different types.
+  let differentTypes := [
+    "the true branch leaves ρ Int and the false branch leaves ρ Bool",
+    "the top value is Int after the true branch and Bool after the false branch"]
+  branchReport "different types" ": g (forall ρ; ρ -- ρ r:Int^many)\n  0 1 prim < [ 1 ] [ true ] if ;" differentTypes
+  -- Two values too many: the hint gives both `drop`s.
+  let twoExtra := ["So the true branch leaves 2 values more than the false branch",
+    "either add `drop drop` at the end of the true branch"]
+  branchReport "two extra" ": g (forall ρ; ρ -- ρ r:Int^many)\n  0 1 prim < [ 1 2 3 ] [ 4 ] if ;" twoExtra
+  -- A branch, or the `if` itself, reaching for a local as if it were on the
+  -- stack, or below everything the word was given: the commonest mistake in
+  -- the authoring eval. Evening out the branches with a `drop` or a push only
+  -- moves it, so the report must not suggest either, and the edit it does
+  -- suggest must make the program check. Each case also carries the edit the
+  -- earlier report suggested, which must still be refused: that is the
+  -- planted wrong suggestion. The answers are copied verbatim from
+  -- eval/s7/runs (and `p q` from 2026-09-27-plus-only/haiku-firth,
+  -- solutions-1.json, task `and`).
+  let noEvening (label : String) (source : String) : IO Unit := do
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .failure [envelope] =>
+        let emitted := encode envelope
+        if emitted.contains "either add `drop" || emitted.contains "push 1 value more" then
+          fail s!"{label}: the report still suggests evening out the branches: {emitted}"
+        else pure ()
+    | _ => fail s!"{label}: expected one diagnostic"
+  let checks (label source : String) (expected : Bool) : IO Unit :=
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .success _ => unless expected do fail s!"{label}: the program was accepted"
+    | .failure _ => if expected then fail s!"{label}: the program was refused" else pure ()
+  let fixtures : List (String × String × List String × String × String) := [
+    ("p q", ": main\n  (forall ρ; ρ p:Bool^many q:Bool^many -- ρ r:Bool^many)\n  locals { p q } { [ q ] [ drop false ] if };",
+      ["looked for where the local `p` would be, but a local is not a value on the stack",
+        "Write the condition just before the two quotations"],
+      -- The suggested edit: the condition written before the quotations, and
+      -- the local used by name instead of taken with `drop`.
+      ": main\n  (forall ρ; ρ p:Bool^many q:Bool^many -- ρ r:Bool^many)\n  locals { p q } { p [ q ] [ false ] if };",
+      -- The earlier suggestion: a `drop` to even out the branches.
+      ": main\n  (forall ρ; ρ p:Bool^many q:Bool^many -- ρ r:Bool^many)\n  locals { p q } { [ q drop ] [ drop false ] if };"),
+    ("lcm (2026-09-27-hard/haiku-firth-2, answer 1)", ": lcm\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } {\n    a b gcd\n    a b prim *\n    swap\n    prim -\n    0 prim =\n    [\n      a b prim *\n    ]\n    [\n      a b prim * swap prim -\n    ]\n    if\n  };\n\n: gcd\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } {\n    b 0 prim =\n    [ a ]\n    [\n      a b prim =\n      [ b ]\n      [\n        b a b prim - gcd\n      ]\n      if\n    ]\n    if\n  };",
+      ["The false branch takes 1 value from below the `if` that this code does not have",
+        "computing the value there"],
+      -- The value the false branch reaches for, computed inside it.
+      ": lcm\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } {\n    a b gcd\n    a b prim *\n    swap\n    prim -\n    0 prim =\n    [\n      a b prim *\n    ]\n    [\n      a b prim * a b gcd prim -\n    ]\n    if\n  };\n\n: gcd\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } {\n    b 0 prim =\n    [ a ]\n    [\n      a b prim =\n      [ b ]\n      [\n        b a b prim - gcd\n      ]\n      if\n    ]\n    if\n  };",
+      ": lcm\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } {\n    a b gcd\n    a b prim *\n    swap\n    prim -\n    0 prim =\n    [\n      a b prim * drop\n    ]\n    [\n      a b prim * swap prim -\n    ]\n    if\n  };\n\n: gcd\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a b } {\n    b 0 prim =\n    [ a ]\n    [\n      a b prim =\n      [ b ]\n      [\n        b a b prim - gcd\n      ]\n      if\n    ]\n    if\n  };"),
+    ("digit-sum (2026-09-27-hard/haiku-firth-2, answer 2)", ": digit-sum-loop\n  (forall ρ; ρ s:Int^many n:Int^many -- ρ r:Int^many)\n  locals { s n } {\n    n 0 prim =\n    [\n      s\n    ]\n    [\n      n 10 prim -\n      0 prim =\n      [\n        s n prim +\n      ]\n      [\n        s n prim - prim +\n        n 10 prim -\n        digit-sum-loop\n      ]\n      if\n    ]\n    if\n  };\n\n: main\n  (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  locals { n } {\n    0 n digit-sum-loop\n  };",
+      ["The false branch takes 1 value from below the `if` that this code does not have",
+        "remove the operation that takes it if it should not be there"],
+      -- The operation that takes it, removed.
+      ": digit-sum-loop\n  (forall ρ; ρ s:Int^many n:Int^many -- ρ r:Int^many)\n  locals { s n } {\n    n 0 prim =\n    [\n      s\n    ]\n    [\n      n 10 prim -\n      0 prim =\n      [\n        s n prim +\n      ]\n      [\n        s n prim -\n        n 10 prim -\n        digit-sum-loop\n      ]\n      if\n    ]\n    if\n  };\n\n: main\n  (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  locals { n } {\n    0 n digit-sum-loop\n  };",
+      ": digit-sum-loop\n  (forall ρ; ρ s:Int^many n:Int^many -- ρ r:Int^many)\n  locals { s n } {\n    n 0 prim =\n    [\n      s\n    ]\n    [\n      n 10 prim -\n      0 prim =\n      [\n        s n prim + drop\n      ]\n      [\n        s n prim - prim +\n        n 10 prim -\n        digit-sum-loop\n      ]\n      if\n    ]\n    if\n  };\n\n: main\n  (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  locals { n } {\n    0 n digit-sum-loop\n  };")]
+  for (label, source, needles, fixed, earlier) in fixtures do
+    branchReport label source needles
+    noEvening label source
+    checks s!"{label}, with the suggested edit" fixed true
+    checks s!"{label}, with the earlier suggested edit" earlier false
+  noEvening "longest-run" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ length:Int^many)\n  locals { xs } {\n    xs prim seq-int.len 0 prim =\n    [ 0 ]\n    [ xs 0 prim seq-int.at 1 1 xs longest-run-loop ] if\n  };\n\n: longest-run-loop\n  (forall ρ; ρ prev:Int^many curr-run:Int^many max-run:Int^many idx:Int^many xs:Seq Int^many -- ρ result:Int^many)\n  locals { prev curr-run max-run idx xs } {\n    idx xs prim seq-int.len prim =\n    [ max-run curr-run prim < [ curr-run ] [ max-run ] if ]\n    [\n      xs idx prim seq-int.at dup prev prim =\n      [ curr-run 1 prim + ] [ 1 swap ] if\n      idx 1 prim +\n      xs\n      longest-run-loop\n    ]\n    if\n  };"
+  -- Counts and types both differ: the locals pass knows only the counts, so
+  -- its drop-or-push edit is offered only on condition that the values below
+  -- already agree (`[ 1 true ]` against `[ false ]` would still leave Int
+  -- against Bool after a `drop`).
+  branchReport "counts and types" ": g (forall ρ; ρ -- ρ r:Int^many)\n  0 1 prim < [ 1 true ] [ false ] if ;"
+    ["If the values below those already agree, either add `drop`",
+      "If they do not, the branches also leave different types"]
+  -- The reports these programs got before this change: the two the eval
+  -- recorded at cec3707, verbatim, and the locals-pass report that main gave
+  -- longest-run from #145 on. Each must fail the checks above, or the checks
+  -- prove nothing.
+  let recordedBefore := [
+    ("longest-run at cec3707", "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different stacks.\nexpected: ρ\nactual: .. Int\nhint: Both branches must leave the same number and types of values. Expected ρ, found .. Int.", longestRun),
+    ("keep-positive at cec3707", "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `keep-positive-loop` leave different stacks.\nexpected: Int\nactual: Seq Int\nhint: Both branches must leave the same number and types of values. Expected Int, found Seq Int.", keepPositive),
+    ("longest-run on main", "The two branches of `if` leave different numbers of values: the true branch leaves 1 more value than it takes, and the false branch leaves as many values as it takes. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds the stack it expects. Change one branch, for example by pushing or dropping a value, until both leave the same stack.", longestRun)]
+  for (label, report, needles) in recordedBefore do
+    unless needlesMissing report needles do
+      fail s!"{label}: the recorded report from before this change passes the branch checks"
+  -- The type checker's own report of a depth mismatch, which erasure does
+  -- not see when the program has no `locals` and no word: both branch stacks,
+  -- with their types, and the value to drop or push.
+  let lit (column : Nat) (literal : Firth.Interpreter.Literal) : Firth.Elaborator.LocatedKernel :=
+    { span := span 1 column (column + 1), atom := .lit literal }
+  let twoInts := Firth.Interpreter.Program.cons (.lit (.int 1)) (.cons (.lit (.int 2)) .empty)
+  let oneInt := Firth.Interpreter.Program.cons (.lit (.int 3)) .empty
+  match Firth.Elaborator.StackEffect.infer { literal := Firth.Elaborator.StackEffect.defaultLiteralType } [lit 1 (.bool true),
+      { span := span 1 3 4, atom := .quotation twoInts },
+      { span := span 1 5 6, atom := .quotation oneInt },
+      { span := span 1 7 9, atom := .ifThenElse }] with
+  | .ok _ => fail "an if whose branches leave 2 and 1 values was accepted"
+  | .error diagnostic =>
+      let emitted := encodeStackEffectDiagnostic (context "branch-depth") diagnostic
+      expectValidCode "branch depth" "firth.type.branch-mismatch" emitted
+      for needle in ["the true branch leaves .. Int Int and the false branch leaves .. Int",
+          "The true branch leaves 1 more value than the false branch (Int on top)",
+          "Either add `drop` at the end of the true branch, or push a value of the same type at the end of the false branch (for example `0`)"] do
+        unless emitted.contains needle do
+          fail s!"branch depth: the report does not say {needle}: {emitted}"
+  -- The same in the type checker, which does know the types: when the values
+  -- both branches leave differ, it offers no drop or push, and says where
+  -- they differ.
+  let intBool := Firth.Interpreter.Program.cons (.lit (.int 1)) (.cons (.lit (.bool true)) .empty)
+  let bool := Firth.Interpreter.Program.cons (.lit (.bool false)) .empty
+  match Firth.Elaborator.StackEffect.infer { literal := Firth.Elaborator.StackEffect.defaultLiteralType } [lit 1 (.bool true),
+      { span := span 1 3 4, atom := .quotation intBool },
+      { span := span 1 5 6, atom := .quotation bool },
+      { span := span 1 7 9, atom := .ifThenElse }] with
+  | .ok _ => fail "an if whose branches leave Int Bool and Bool was accepted"
+  | .error diagnostic =>
+      let emitted := encodeStackEffectDiagnostic (context "branch-depth-types") diagnostic
+      expectValidCode "branch depth and types" "firth.type.branch-mismatch" emitted
+      unless emitted.contains "the top value of the values both leave is Int after the true branch and Bool after the false branch" &&
+          !emitted.contains "add `drop`" do
+        fail s!"branch depth and types: the report offers a drop or does not say where the values differ: {emitted}"
 
   -- A quotation of unknown effect still gives untracked-local, now naming
   -- the atom that lost track and its line.

@@ -34,6 +34,16 @@ structure LostTrack where
   span : Span
   deriving Repr, BEq
 
+/-- For a depth-mismatched `if`: what the condition and the values its
+branches take below it are looked for in place of. `reached` names the unused
+locals among them: a block's unused locals are names, not values on the stack.
+`missing` counts those that lie below everything the word was given or pushed,
+in the caller's part of the stack or past the start of a quotation's inputs. -/
+structure BranchLocals where
+  reached : List String := []
+  missing : Nat := 0
+  deriving Repr, BEq
+
 inductive ErasureError where
   | duplicateLocal (name : String) (span : Span)
   | unboundLocal (name : String) (span : Span)
@@ -53,7 +63,7 @@ inductive ErasureError where
   produced) that change the stack depth by different amounts. Both branches
   run on the same stack and must leave the same one, so the program is
   ill-typed wherever the `if` sits. -/
-  | branchShape (span : Span) (onTrue onFalse : Nat × Nat)
+  | branchShape (span : Span) (onTrue onFalse : Nat × Nat) (locals : BranchLocals := {})
   /-- An operation would take a local that is not yet used, and it could not
   be moved out of the way. A block's locals are off the stack for its body. -/
   | hiddenLocal (name : String) (span : Span)
@@ -102,6 +112,10 @@ structure StackEntry where
   /-- For a quotation built in this body whose effect is unknown because
   erasing its body lost track of the stack: where that happened. -/
   lost : Option LostTrack := none
+  /-- Whether this entry stands for the row of a word's stack effect: the
+  caller's values below the word's declared inputs, which the body does not
+  know. Diagnostics only. -/
+  row : Bool := false
   deriving Repr, BEq
 
 structure State where
@@ -281,6 +295,23 @@ private def lostAfter (state : State) (exact : Bool) (atom : String) (span : Spa
   if state.untracked || exact then state.lostAt else
     (runLost atom state.stack).orElse fun _ => some { atom, span }
 
+/-- What an `if` with branch effects `onTrue` and `onFalse` reaches for on
+`stack`, as `BranchLocals` describes. -/
+private def branchLocals (stack : List StackEntry) (onTrue onFalse : Nat × Nat) : BranchLocals :=
+  let rec walk (needed : Nat) : List StackEntry → BranchLocals
+    | [] => { missing := needed }
+    | entry :: rest =>
+        if needed == 0 then {}
+        else if entry.row then { missing := needed }
+        else match entry.slot with
+          | some slot =>
+              if slot.available then
+                let below := walk needed rest
+                { below with reached := slot.name :: below.reached }
+              else walk (needed - 1) rest
+          | none => walk (needed - 1) rest
+  walk (1 + max onTrue.1 onFalse.1) (stack.drop 2)
+
 private def ifMove : List StackEntry → Option (List StackEntry × Bool)
   | falseBranch :: trueBranch :: condition :: rest =>
       runKnown (branchEffect trueBranch.effect falseBranch.effect) rest
@@ -382,10 +413,9 @@ private def applySignature (name : String) (span : Span) (signature : Signature)
           inexact := state.inexact || !signature.rowPreserving }
 
 private def initialState (effect : StackEffect) : State :=
-  let usages := effect.input.reverse.map (fun item => match item with
-    | .row _ _ => Usage.many
-    | .value _ type _ => type.usage)
-  { stack := usages.map (fun usage => { usage }) }
+  { stack := effect.input.reverse.map fun item => match item with
+    | .row _ _ => { usage := .many, row := true }
+    | .value _ type _ => { usage := type.usage } }
 
 /-- A local not yet used: a name, not a value the body can see on the stack. -/
 def hiddenEntry (entry : StackEntry) : Bool :=
@@ -1167,6 +1197,10 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
           | .error error => .error error
           | .ok (focusDepth, focused) =>
             match eraseSubjectWithProof depth env (.item item visible) { state with stack := focused } with
+            -- The local was moved out of the way before the `if` ran, so
+            -- name the locals it reaches for from the stack before the move.
+            | .error (.branchShape span onTrue onFalse _) =>
+                .error (.branchShape span onTrue onFalse (branchLocals state.stack onTrue onFalse))
             | .error error => .error error
             | .ok inner => .ok {
                 program := focusProgram (itemSpan item) focusDepth ++ inner.program
@@ -1259,7 +1293,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
               evidence := .atom clearEq (.compose movedEq) }
           | none => .error (.effectUnderflow name span)
         | "if" => match ifMismatch state.stack with
-          | some (onTrue, onFalse) => .error (.branchShape span onTrue onFalse)
+          | some (onTrue, onFalse) => .error (.branchShape span onTrue onFalse (branchLocals state.stack onTrue onFalse))
           | none => match movedEq : ifMove state.stack with
             | some (next, exact) => .ok {
                 program := atomList .ifThenElse span
