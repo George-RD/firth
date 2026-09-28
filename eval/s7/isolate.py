@@ -34,6 +34,7 @@ import hashlib
 import json
 import os
 import re
+import secrets
 import signal
 import socket
 import stat
@@ -51,6 +52,10 @@ from tasks import BY_ID  # noqa: E402
 # plus what `--tool` and `--keep` add. Everything else (the repository, /home,
 # /root, /opt, /mnt, /srv, /var, the host's /tmp) is simply not in the new root.
 SYSTEM = ("/usr", "/bin", "/sbin", "/lib", "/lib32", "/lib64", "/libx32", "/etc")
+# Parts of /usr where local installs and source trees live, a clone of the
+# repository among them: each is covered by an empty directory inside. A tool
+# installed there comes back in only through `--tool`.
+UNSHOWN = ("/usr/local", "/usr/src")
 # Files under /etc that a container runtime mounts over: bound in as they are
 # seen, so the author resolves the same hosts as the harness.
 ETC_MOUNTS = ("/etc/resolv.conf", "/etc/hosts", "/etc/hostname")
@@ -60,6 +65,16 @@ PROTECTED = ("try", "workspace.json")
 LOCK = "/run/s7-author.lock"  # root-only directory, so no author can plant it
 DEVICES = ("null", "zero", "full", "random", "urandom", "tty")
 NOBODY = 65534
+# Each author run and each submitted program runs as a fresh uid drawn from
+# this range, not as a shared `nobody`: the kernel keeps a user keyring per
+# uid, outside every namespace here, so a shared uid could leave notes there
+# for a later attempt (Codex's finding). No host account lives in the range.
+AUTHOR_UIDS = range(2**30, 2**31 - 2)
+
+
+def fresh_uid() -> int:
+    """An unused-looking uid for one sandboxed run (see AUTHOR_UIDS)."""
+    return AUTHOR_UIDS.start + secrets.randbelow(len(AUTHOR_UIDS))
 
 # `-I` keeps the workspace off the import path, so a file the author writes
 # (a `json.py`, say) cannot take over the client.
@@ -241,30 +256,41 @@ def check_exposure(dir: Path, sources: list[str]) -> None:
                 raise SystemExit(f"the sandbox would expose {p} through {s}; move one of them")
     found = hidden_copies(tuple(sources))
     if found:
-        raise SystemExit(f"the sandbox would show {found[0]}, which has the content of a hidden file")
+        raise SystemExit(f"the sandbox would show {found[0]}; move it or leave it out")
 
 
 @functools.lru_cache(maxsize=None)
 def hidden_copies(sources: tuple[str, ...]) -> list[str]:
-    """Files under SOURCES with the content of a hidden file: a copy of the
-    repository unrelated to this checkout (a clone under /usr/local/src, say)
-    that no git metadata leads to (Codex's finding). Only files of a hidden
-    file's size are hashed, and each source set is scanned once per process.
-    Like the check on kept credentials, a partial or encoded copy is not
-    caught."""
+    """What under SOURCES could hand an author the hidden tests without any link
+    to this checkout (Codex's and the reviewer's findings): a file with the
+    content of a hidden file (hashing only files of a hidden file's size), a
+    file named like the hidden tests or a directory named like the references
+    (catching older revisions), and git storage of any kind (a `.git` entry,
+    or a directory with HEAD, objects and refs, as a bare mirror has), since
+    `git show` reads any revision from it. The directories the sandbox never
+    shows (UNSHOWN) are skipped. Each source set is scanned once per process.
+    A renamed and edited copy is not caught (see the README's threat model)."""
     hidden = {}
     for f in [HERE / "mvp_tasks.py", *sorted((HERE / "reference").rglob("*.firth"))]:
         hidden.setdefault(f.stat().st_size, set()).add(hashlib.sha256(f.read_bytes()).hexdigest())
     found = []
     for src in sources:
-        for top, _, files in os.walk(src, followlinks=False):
+        for top, dirs, files in os.walk(src, followlinks=False):
+            dirs[:] = [d for d in dirs if os.path.join(top, d) not in UNSHOWN]
+            if ".git" in dirs + files or {"objects", "refs"} <= set(dirs) and "HEAD" in files:
+                found.append(f"{top} (git storage)")
+            if top.endswith("/eval/s7/reference") or top.endswith("/eval/s7/reference/mvp"):
+                found.append(f"{top} (named like the references)")
             for n in files:
                 path = os.path.join(top, n)
+                if n == "mvp_tasks.py":
+                    found.append(f"{path} (named like the hidden tests)")
+                    continue
                 try:
                     st = os.lstat(path)
                     if (stat.S_ISREG(st.st_mode) and st.st_size in hidden and
                             hashlib.sha256(Path(path).read_bytes()).hexdigest() in hidden[st.st_size]):
-                        found.append(path)
+                        found.append(f"{path} (the content of a hidden file)")
                 except OSError:
                     continue
     return found
@@ -296,7 +322,8 @@ def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = (),
     With `network=False` the command also gets an empty network namespace: that
     is how submitted programs run, while the author keeps its network for the
     model API. With `uid`, the command runs as that user and group instead of
-    root; the author and submitted programs both run as `nobody`. Run it with
+    root; the author and submitted programs each run as a fresh uid
+    (fresh_uid). Run it with
     `env=sandbox_env()`: the command sees only that environment."""
     if os.geteuid() != 0:
         raise SystemExit("the sandbox needs root (unshare and mount)")
@@ -317,9 +344,20 @@ def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = (),
         if os.path.islink(t):
             lines.append(f"ln -s {q(os.readlink(t))} {new}{q(t)}")
     # Non-recursive binds: a mount below an allowed directory is not carried in.
-    for src, at in sources:
+    def bind(src: str, at: str) -> None:
         make = "mkdir -p" if os.path.isdir(src) else "mkdir -p " + q(new + str(Path(at).parent)) + " && touch"
-        lines += [f"{make} {q(new + at)}", f"mount --bind -o ro {q(src)} {q(new + at)}"]
+        lines.extend([f"{make} {q(new + at)}", f"mount --bind -o ro {q(src)} {q(new + at)}"])
+    system = [(src, at) for src, at in sources if at in SYSTEM]
+    for src, at in system:
+        bind(src, at)
+    unshown = [u for u in UNSHOWN if os.path.isdir(u)]
+    for u in unshown:
+        lines.append(f"mount -t tmpfs -o mode=755 tmpfs {new}{u}")
+    for src, at in sources:
+        if (src, at) not in system:
+            bind(src, at)
+    for u in unshown:
+        lines.append(f"mount -o remount,bind,ro {new}{u} {new}{u}")
     for f in ETC_MOUNTS:
         if os.path.isfile(f) and not os.path.islink(f):
             lines.append(f"[ -f {new}{f} ] && mount --bind -o ro {f} {new}{f}")
@@ -435,7 +473,7 @@ def plain_tree(k: str) -> None:
 def check_keep(keep: tuple[str, ...], dir: Path) -> None:
     """Refuse a credential path an author could have planted or redirected: one
     inside the workspace, one through a link, or one under a directory that
-    `nobody` or anyone at all can write (something could be swapped in there)."""
+    an author uid, `nobody` or anyone at all can write (something could be swapped in there)."""
     work = os.path.realpath(dir)
     for k in keep:
         path = os.path.abspath(k)
@@ -446,7 +484,7 @@ def check_keep(keep: tuple[str, ...], dir: Path) -> None:
         p = Path(path)
         for d in [p, *p.parents]:
             st = os.lstat(d)
-            if st.st_uid == NOBODY or st.st_mode & 0o002:
+            if st.st_uid == NOBODY or st.st_uid in AUTHOR_UIDS or st.st_mode & 0o002:
                 raise SystemExit(f"--keep {k}: {d} is writable by the author")
 
 
@@ -486,9 +524,10 @@ def q(s: str | Path) -> str:
 
 def run(dir: Path, command: list[str], keep: tuple[str, ...] = (), passed: tuple[str, ...] = (),
         uid: int | None = None, tools: tuple[str, ...] = (), **kw) -> subprocess.CompletedProcess:
-    """COMMAND as the author: in the sandbox, as `nobody`, with `sandbox_env(passed)`.
-    `uid` exists only so the isolation test can plant a root author."""
-    uid = NOBODY if uid is None else uid
+    """COMMAND as the author: in the sandbox, as a fresh uid, with
+    `sandbox_env(passed)`. `uid` exists only so the isolation test can plant a
+    root author or a reused uid."""
+    uid = fresh_uid() if uid is None else uid
     check_keep(keep, dir)
     # One author at a time: the author shares the host's network (it needs its
     # API), so two at once could talk over loopback or an abstract socket.

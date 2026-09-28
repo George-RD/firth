@@ -44,6 +44,21 @@ find / \\( -path /proc -o -path /sys -o -path /mnt \\) -prune -o \\( -name mvp_t
 true
 """
 
+# Stores or reads back a key in the caller's user keyring (add_key, keyctl).
+KEYRING_FN = """
+def keyring(mode):
+    libc = ctypes.CDLL(None, use_errno=True)
+    if mode == "put":
+        return 1 if libc.syscall(248, b"user", b"s7note", b"S7-NOTE", 7, -4) > 0 else 0
+    kid = libc.syscall(250, 10, -4, b"user", b"s7note", 0)
+    buf = ctypes.create_string_buffer(16)
+    return 1 if kid > 0 and libc.syscall(250, 11, kid, buf, 16) > 0 and buf.value == b"S7-NOTE" else 0
+"""
+KEYRING = "import ctypes, sys\n" + KEYRING_FN + """
+r = keyring(sys.argv[1])
+print(("put " if sys.argv[1] == "put" else "get ") + str(r) + (" S7-NOTE" if sys.argv[1] == "get" and r else ""))
+"""
+
 failures: list[str] = []
 
 
@@ -105,6 +120,21 @@ def audit_checks() -> None:
     }
     for name, ev in planted.items():
         check(len(isolate.audit(clean + [ev])) == 1, f"the audit flags a planted {name} call")
+
+
+def mirror(under: Path) -> Path:
+    """A bare mirror under UNDER of a small repository whose one commit holds
+    a secret with the hidden tests' marker; `git show` reads it back."""
+    src = under / "mirror-src"
+    git = ["git", "-c", "user.email=s7@probe", "-c", "user.name=s7", "-c", "safe.directory=*"]
+    subprocess.run(git + ["init", "-q", str(src)], check=True)
+    (src / "secret.txt").write_text("S7-MIRROR-SECRET allocate-batch\n")
+    subprocess.run(git + ["-C", str(src), "add", "secret.txt"], check=True)
+    subprocess.run(git + ["-C", str(src), "commit", "-qm", "s"], check=True)
+    bare = under / "mirror.git"
+    subprocess.run(git + ["clone", "-q", "--bare", "--no-local", str(src), str(bare)], check=True)
+    shutil.rmtree(src)
+    return bare
 
 
 def layout_checks(ws: Path) -> None:
@@ -174,27 +204,74 @@ def layout_checks(ws: Path) -> None:
               "a --tool path that is not absolute and real is refused")
     finally:
         shutil.rmtree(base, ignore_errors=True)
-    # Codex's probe: an unrelated copy of the task file under a shown system
-    # directory, which no git metadata links to this checkout. Refused by its
-    # content; planted: with the scan bypassed it is readable inside.
-    stray = Path(f"/usr/local/s7-copy-{os.getpid()}")
-    try:
-        stray.mkdir()
-        shutil.copyfile(HERE / "mvp_tasks.py", stray / "notes.txt")
-        isolate.hidden_copies.cache_clear()
-        check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"])),
-              "the sandbox refuses a system directory holding a copy of the hidden tests")
-        real_scan, isolate.hidden_copies = isolate.hidden_copies, lambda sources: []
+    # Copies that no git metadata links to this checkout (Codex's and the
+    # reviewer's probes): an exact copy, an older revision of the task file, a
+    # directory named like the references, and a bare mirror read with
+    # `git show`. Under /usr/share, which is shown, each makes the sandbox
+    # refuse; planted: with the scan bypassed each is readable inside.
+    share = Path(f"/usr/share/s7-copies-{os.getpid()}")
+    old_rev = (HERE / "mvp_tasks.py").read_text() + "\n# an older revision\n"
+    marker = "S7-MIRROR-SECRET allocate-batch"
+
+    def plant(kind: str) -> tuple[Path, str]:
+        """Plant one copy under SHARE; return it and a command that reads it."""
+        if kind == "exact":
+            f = share / "notes.txt"
+            shutil.copyfile(HERE / "mvp_tasks.py", f)
+        elif kind == "old revision":
+            f = share / "eval/s7/mvp_tasks.py"
+            f.parent.mkdir(parents=True)
+            f.write_text(old_rev)
+        elif kind == "references":
+            f = share / "eval/s7/reference/notes.txt"
+            f.parent.mkdir(parents=True)
+            f.write_text(marker + "\n")
+        else:
+            f = mirror(share)
+            return f, f"git -c safe.directory='*' --git-dir={f} show HEAD:secret.txt | grep -c allocate-batch"
+        return f, f"grep -c allocate-batch {f}"
+    for kind in ("exact", "old revision", "references", "mirror"):
         try:
-            mutant = isolate.sandbox_command(ws, ["bash", "-c", f"grep -c allocate-batch {stray}/notes.txt"],
-                                             uid=isolate.NOBODY)
+            share.mkdir()
+            f, read = plant(kind)
+            isolate.hidden_copies.cache_clear()
+            check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"])),
+                  f"the sandbox refuses a shown directory holding {kind}")
+            real_scan, isolate.hidden_copies = isolate.hidden_copies, lambda sources: []
+            try:
+                mutant = isolate.sandbox_command(ws, ["bash", "-c", read], uid=isolate.NOBODY)
+            finally:
+                isolate.hidden_copies = real_scan
+            leaked = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+            check(leaked.stdout.strip() not in ("", "0"),
+                  f"without the scan, the {kind} copy is readable in the sandbox (the planted case): {leaked.stdout.strip()!r}")
         finally:
-            isolate.hidden_copies = real_scan
+            shutil.rmtree(share, ignore_errors=True)
+            isolate.hidden_copies.cache_clear()
+    # /usr/local and /usr/src are not shown at all: an older revision and a
+    # bare mirror there are unreachable. Planted: with the covering mounts
+    # removed from the sandbox, both are readable.
+    local = Path(f"/usr/local/s7-copies-{os.getpid()}")
+    try:
+        (local / "eval/s7").mkdir(parents=True)
+        (local / "eval/s7/mvp_tasks.py").write_text(old_rev)
+        git_dir = mirror(local)
+        read = ["bash", "-c", f"grep -c allocate-batch {local}/eval/s7/mvp_tasks.py; "
+                f"git -c safe.directory='*' --git-dir={git_dir} show HEAD:secret.txt | grep -c allocate-batch; true"]
+        isolate.hidden_copies.cache_clear()
+        inside = subprocess.run(isolate.sandbox_command(ws, read, uid=isolate.NOBODY), env=isolate.sandbox_env(),
+                                capture_output=True, text=True, timeout=300)
+        check(inside.returncode == 0 and inside.stdout.split() in ([], ["0"], ["0", "0"]),
+              f"an older revision and a bare mirror under /usr/local are not in the sandbox: {inside.stdout.strip()!r}")
+        mutant = isolate.sandbox_command(ws, read, uid=isolate.NOBODY)
+        i = mutant.index("-c") + 1
+        mutant[i] = "\n".join(l for l in mutant[i].splitlines() if not any(u in l for u in isolate.UNSHOWN))
         leaked = subprocess.run(mutant, env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
-        check(leaked.stdout.strip() not in ("", "0"),
-              f"without the scan, the copy is readable in the sandbox (the planted case): {leaked.stdout.strip()!r}")
+        counts = leaked.stdout.split()
+        check(len(counts) == 2 and all(c != "0" for c in counts),
+              f"with /usr/local shown, both are readable (the planted case): {leaked.stdout.strip()!r}")
     finally:
-        shutil.rmtree(stray, ignore_errors=True)
+        shutil.rmtree(local, ignore_errors=True)
         isolate.hidden_copies.cache_clear()
     # A repository under a system directory would be shown with it. Planted
     # under /usr/local: the sandbox refuses to start; the same layout under
@@ -392,8 +469,9 @@ def main() -> int:
                                capture_output=True, text=True, timeout=300)
         check("[hunter2]" in leaky.stdout, "with the host's environment the secret reaches the sandbox (the planted case)")
         clean = isolate.run(ws, echo, capture_output=True, text=True, timeout=300)
-        check(clean.stdout.strip() == f"[] {isolate.NOBODY}",
-              f"the author sees no host variable and runs as nobody: {clean.stdout.strip()}")
+        shown = clean.stdout.strip().split()
+        check(shown[:1] == ["[]"] and len(shown) == 2 and int(shown[1]) in isolate.AUTHOR_UIDS,
+              f"the author sees no host variable and runs as a fresh uid: {clean.stdout.strip()}")
         passed = isolate.run(ws, echo, passed=("S7_PLANTED_SECRET",), capture_output=True, text=True, timeout=300)
         check("[hunter2]" in passed.stdout, "a variable named with --pass-env does reach the author")
         # CI's runner lists / in /etc/fstab by UUID, and the sandbox's fresh /dev
@@ -594,11 +672,28 @@ print(json.dumps(out))
         check(second, "a second author run is refused while one is running")
         check(isolate.run(ws, ["true"], timeout=60).returncode == 0, "once it ends, the next run starts")
 
+        # Codex's keyring probe: a key stored in the user keyring by one run is
+        # read back by the next. Planted: two runs forced onto one uid share it;
+        # two ordinary runs, each with a fresh uid, do not.
+        (ws / "kr.py").write_text(KEYRING)
+        put = isolate.run(ws, ["python3", "kr.py", "put"], uid=isolate.NOBODY, capture_output=True, text=True, timeout=300)
+        got = isolate.run(ws, ["python3", "kr.py", "get"], uid=isolate.NOBODY, capture_output=True, text=True, timeout=300)
+        check("S7-NOTE" in got.stdout, f"two runs as one uid share its keyring (the planted case): {put.stdout.strip()} {got.stdout.strip()}")
+        put = isolate.run(ws, ["python3", "kr.py", "put"], capture_output=True, text=True, timeout=300)
+        got = isolate.run(ws, ["python3", "kr.py", "get"], capture_output=True, text=True, timeout=300)
+        check(put.stdout.startswith("put") and "S7-NOTE" not in got.stdout,
+              f"a key stored by one author run is gone for the next: {put.stdout.strip()} {got.stdout.strip()}")
+        (ws / "kr.py").unlink()
+        keyed = [harness.run_python(f"import ctypes\n{KEYRING_FN}\ndef main(xs):\n    return [keyring(m) for m in {mode!r}]\n",
+                                    ([1],), None, ("Seq Int",), sandboxed=True) for mode in (["put"], ["get"])]
+        check(keyed[0].get("stack") == [[1]] and keyed[1].get("stack") == [[0]],
+              f"a key stored by one submitted program is gone for the next: {keyed}")
         # The reviewer's IPC probe: a shared-memory segment made by the author
         # must not outlive the run on the host.
         def nobody_segments() -> list[str]:
+            """Every shared-memory segment on the host (authors no longer share a uid)."""
             out = subprocess.run(["ipcs", "-m"], capture_output=True, text=True).stdout
-            return [l.split()[1] for l in out.splitlines() if len(l.split()) > 2 and l.split()[2] == "nobody"]
+            return [l.split()[1] for l in out.splitlines() if l[:2] == "0x"]
         before = nobody_segments()
         made = isolate.run(ws, ["ipcmk", "-M", "4096"], capture_output=True, text=True, timeout=300)
         after = nobody_segments()
