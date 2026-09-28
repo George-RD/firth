@@ -273,12 +273,12 @@ ns = {}
 exec(compile(sys.stdin.read(), "solution.py", "exec"), ns)
 r = ns["main"](*json.loads(sys.argv[1]))
 types = json.loads(sys.argv[2])
-# One output is returned bare, even when it is a list; several as a tuple (or
-# list) of that length. Each value must have exactly its declared type, checked
+# One output is returned bare, even when it is a list; several as a tuple of
+# that length, as the prompt asks. Each value must have exactly its declared type, checked
 # before JSON erases the difference between a tuple and a list or True and 1.
 if len(types) == 1:
     out = [r]
-elif isinstance(r, (tuple, list)) and len(r) == len(types):
+elif type(r) is tuple and len(r) == len(types):
     out = list(r)
 else:
     sys.exit(f"main returned {r!r}, expected {len(types)} values")

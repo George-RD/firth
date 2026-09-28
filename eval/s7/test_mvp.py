@@ -110,6 +110,10 @@ def scorer_rejects_wrong_python() -> None:
     check(two == {"ok": True, "stack": [1, 0]}, "a tuple of two outputs gives two values")
     # A tuple where a list is due, or a Bool where an Int is due, fails even
     # though JSON would make it look right.
+    # Several outputs come as a tuple, as the prompt asks; a list of the same
+    # length is a different return type and fails (Codex's finding).
+    pair = harness.run_python("def main(s, t):\n    return [s, 0]\n", (1, []), None, ("Int", "Int"))
+    check(not pair["ok"], "a list returned for several outputs fails")
     tup = harness.run_python("def main(xs):\n    return tuple(xs[::-1])\n", ([1, 2],), None,
                              ("Seq Int",))
     check(not tup["ok"], "a tuple returned for a Seq Int output fails")
