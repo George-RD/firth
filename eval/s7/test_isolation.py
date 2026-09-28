@@ -491,7 +491,10 @@ def main() -> int:
         leak_any = Path("/tmp/s7-leak.py")
         leak_any.write_text(f"def main(*args):\n    raise Exception(open({str(HERE / 'mvp_tasks.py')!r}).read()[:60])\n")
         os.chmod(leak_any, 0o644)
-        nobody = ["runuser", "-u", "nobody", "--", sys.executable]
+        # A non-root uid that can still read the checkout (the CI runner's home
+        # is not readable by nobody): the refusal depends on the uid alone.
+        nobody = ["setpriv", "--reuid", "65534", "--regid", "65534", "--clear-groups",
+                  "--inh-caps", "+dac_read_search", "--ambient-caps", "+dac_read_search", "--", sys.executable]
         try:
             for tid in ("sum3", "seq-sum"):
                 user = subprocess.run([*nobody, str(HERE / "harness.py"), "try", "--lang", "python", "--task", tid,
