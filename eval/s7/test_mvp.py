@@ -269,6 +269,19 @@ def subagent_audit() -> None:
         check(any("past" in b or "beyond" in b for b in audit(ok, prompt, d, d, 2)[1]),
               "the audit flags a kept feedback file past the round limit")
         (d / "repair-3.md").unlink()
+        # Codex's case (#152): a numbering gap ended the walk, so round 2's
+        # files went unchecked when round 1's were not kept. Planted: answer-2
+        # with differing solutions-2, and a made-up repair-2, with no round 1.
+        from audit_subagent import repair_mismatch as repairs, solutions_mismatch as solutions
+        gap = d / "gap"
+        gap.mkdir()
+        (gap / "answer-2.md").write_text("### task: sort\n")
+        (gap / "solutions-2.json").write_text(json.dumps({"sort": "not what was written"}))
+        check(any("answer-1.md" in b for b in solutions(gap)),
+              "the audit flags answers kept after a missing round")
+        (gap / "repair-2.md").write_text("hidden case: [[3, 1, 2]] -> [[1, 2, 3]]\n")
+        check(any("repair-2.md" in b for b in repairs(gap, "firth")),
+              "the audit checks feedback kept after a missing round")
     from audit_subagent import solutions_mismatch
     kept = sorted(p for p in (HERE / "runs").glob("2026-09-28-*/*") if (p / "answer-1.md").is_file())
     check(kept and all(solutions_mismatch(p) == [] for p in kept),

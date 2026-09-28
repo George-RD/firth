@@ -99,11 +99,17 @@ def beyond(name: str, rounds: int) -> bool:
     return bool(m) and int(m[2]) > (rounds if m[1] == "repair" else rounds + 1)
 
 
+def numbered(kept: Path, kind: str, ext: str) -> list[int]:
+    """The round numbers of every kept `kind-N.ext`, gaps included (Codex, on #152)."""
+    return sorted(int(m[1]) for p in kept.iterdir()
+                  if (m := re.fullmatch(rf"{kind}-([0-9]+)\.{ext}", p.name)))
+
+
 def repair_mismatch(kept: Path, lang: str) -> list[str]:
     """Each kept repair-N.md that is not the feedback `harness.py repair` builds
     from that round's solutions and results."""
-    bad, n = [], 1
-    while (kept / f"repair-{n}.md").is_file():
+    bad = []
+    for n in numbered(kept, "repair", "md"):
         sol, res = kept / f"solutions-{n}.json", kept / f"results-{n}.json"
         if not (sol.is_file() and res.is_file()):
             bad.append(f"{kept / f'repair-{n}.md'}: its round's solutions or results are not kept")
@@ -111,15 +117,19 @@ def repair_mismatch(kept: Path, lang: str) -> list[str]:
             want = repair(json.loads(sol.read_text()), json.loads(res.read_text()), lang, select("mvp"))
             if (kept / f"repair-{n}.md").read_text().rstrip("\n") != want.rstrip("\n"):
                 bad.append(f"{kept / f'repair-{n}.md'}: not the feedback its round's results give")
-        n += 1
     return bad
 
 
 def solutions_mismatch(kept: Path) -> list[str]:
     """Each kept solutions-N.json that is not solutions-(N-1) updated with the
     tasks extracted from answer-N.md (Codex, on #147)."""
-    bad, prev, n = [], {}, 1
-    while (kept / f"answer-{n}.md").is_file():
+    bad, prev = [], {}
+    last = max(numbered(kept, "answer", "md") + numbered(kept, "solutions", "json"), default=0)
+    for n in range(1, last + 1):
+        if not (kept / f"answer-{n}.md").is_file():
+            # A gap would otherwise end the walk before later rounds were compared.
+            bad.append(f"{kept / f'answer-{n}.md'}: missing, so later rounds cannot be checked (Codex, on #152)")
+            break
         want = {**prev, **extract((kept / f"answer-{n}.md").read_text())}
         sol = kept / f"solutions-{n}.json"
         if sol.is_file():
@@ -131,7 +141,6 @@ def solutions_mismatch(kept: Path) -> list[str]:
         else:
             bad.append(f"{sol}: missing, so what was scored is not kept (Codex, on #147)")
             prev = want
-        n += 1
     return bad
 
 
