@@ -727,10 +727,20 @@ print(json.dumps(out))
 
         # Codex's keyring probe: a key stored in the user keyring by one run is
         # read back by the next. Planted: two runs forced onto one uid share it;
-        # two ordinary runs, each with a fresh uid, do not.
+        # two ordinary runs, each with a fresh uid, do not. Some kernels drop a
+        # uid's keyring once it has no process left (the CI runner's does), so
+        # a process of that uid is kept alive on the host between the two runs,
+        # as any long-lived process of a shared uid would.
         (ws / "kr.py").write_text(KEYRING)
-        put = isolate.run(ws, ["python3", "kr.py", "put"], uid=isolate.NOBODY, capture_output=True, text=True, timeout=300)
-        got = isolate.run(ws, ["python3", "kr.py", "get"], uid=isolate.NOBODY, capture_output=True, text=True, timeout=300)
+        shared = isolate.fresh_uid()
+        holder = subprocess.Popen(["setpriv", f"--reuid={shared}", f"--regid={shared}", "--clear-groups",
+                                   "sleep", "600"])
+        try:
+            put = isolate.run(ws, ["python3", "kr.py", "put"], uid=shared, capture_output=True, text=True, timeout=300)
+            got = isolate.run(ws, ["python3", "kr.py", "get"], uid=shared, capture_output=True, text=True, timeout=300)
+        finally:
+            holder.kill()
+            holder.wait()
         check("S7-NOTE" in got.stdout, f"two runs as one uid share its keyring (the planted case): {put.stdout.strip()} {got.stdout.strip()}")
         put = isolate.run(ws, ["python3", "kr.py", "put"], capture_output=True, text=True, timeout=300)
         got = isolate.run(ws, ["python3", "kr.py", "get"], capture_output=True, text=True, timeout=300)
