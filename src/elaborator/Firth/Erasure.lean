@@ -84,6 +84,9 @@ structure Slot where
   /-- Whether `effect` is the depth change the quotation really makes: see
   `StackEntry.exact`. -/
   exact : Bool := false
+  /-- Where erasing the quotation the local holds lost track of the stack: see
+  `StackEntry.lost`. Kept so that running the local blames that atom. -/
+  lost : Option LostTrack := none
   deriving Repr, BEq
 
 structure StackEntry where
@@ -114,6 +117,12 @@ structure State where
   exact effect. -/
   inexact : Bool := false
   deriving Repr, BEq
+
+/-- The stack entry of a local: it carries what is known about the quotation
+the local holds (effect, exactness and where it lost track). -/
+def slotEntry (slot : Slot) : StackEntry :=
+  { slot := some slot, usage := slot.usage, effect := slot.effect, exact := slot.exact,
+    lost := slot.lost }
 
 private def located (span : Span) (atom : Atom) : LocatedKernel := { span, atom }
 
@@ -403,15 +412,15 @@ private def boundSlots (names : List LocatedName) (state : State) : List Slot :=
   let slots : List Slot := (names.zip top.reverse).map (fun (name, entry) =>
     { id := 0, name := name.name, usage := entry.usage, origin := name.span,
       family := state.nextId,
-      restoredId := entry.slot.map (·.id), effect := entry.effect, exact := entry.exact })
+      restoredId := entry.slot.map (·.id), effect := entry.effect, exact := entry.exact,
+      lost := entry.lost })
   slots.zip (List.range slots.length) |>.map (fun (slot, index) =>
     { slot with id := state.nextId + index })
 
 /-- A block names values where they sit, so binding emits no code. -/
 private def enteredLocalState (names : List LocatedName) (state : State) : State :=
   let slots := boundSlots names state
-  let named := slots.reverse.map (fun slot =>
-      { slot := some slot, usage := slot.usage, effect := slot.effect, exact := slot.exact })
+  let named := slots.reverse.map slotEntry
   { state with stack := nameInPlace named state.stack, nextId := state.nextId + names.length }
 
 private def localStack (names : List LocatedName) (state : State) : Except ErasureError (State × List Slot) :=
@@ -689,7 +698,7 @@ code that reaches into it, grow with the number of uses. -/
 private def demandCopies (slot : Slot) (name : String) (count : Nat) (state : State) : List Slot :=
   List.range (if count > 1 then 1 else 0) |>.map (fun index =>
     Slot.mk (state.nextId + index) name slot.usage slot.origin none slot.family true true slot.effect
-      slot.exact)
+      slot.exact slot.lost)
 
 /-- `dup` applied to the value `depth` places below the top, leaving the
 values above it where they are: `[dup]`, `[[dup] dip]`, `[[[dup] dip] dip]`... -/
@@ -703,7 +712,7 @@ private def copyProgram (span : Span) (depth : Nat) (copies : List Slot) : Kerne
   (List.replicate copies.length (dupAtDepth span depth)).flatten
 
 private def copyEntries (copies : List Slot) : List StackEntry :=
-  copies.reverse.map (fun fresh => { slot := some fresh, usage := fresh.usage, effect := fresh.effect, exact := fresh.exact })
+  copies.reverse.map slotEntry
 
 /-- The stack after `copyProgram`: the copies sit at `depth`, above the local. -/
 private def spliceCopies (depth : Nat) (copies : List Slot) (stack : List StackEntry) :
@@ -735,7 +744,7 @@ inductive DemandCopiesRel (slot : Slot) (name : String) (count : Nat) (state : S
       DemandCopiesRel slot name count state
         (List.range (if count > 1 then 1 else 0) |>.map (fun index =>
           Slot.mk (state.nextId + index) name slot.usage slot.origin none slot.family true true slot.effect
-      slot.exact))
+      slot.exact slot.lost))
 
 inductive DemandStateRel (slot : Slot) (state : State) (focused : List StackEntry)
     (copies : List Slot) : State → Prop where
@@ -755,7 +764,7 @@ inductive ExpandsDemand (slot : Slot) (name : String) (span : Span) (count : Nat
       (located : state.stack.findIdx? (isFocusTarget slot.id) = some depth)
       (focusedBy : FocusRel ((copies.getLast?).map (·.id) |>.getD slot.id)
         (state.stack.take depth ++
-          copies.reverse.map (fun fresh => { slot := some fresh, usage := fresh.usage, effect := fresh.effect, exact := fresh.exact }) ++
+          copies.reverse.map slotEntry ++
           state.stack.drop depth) focusDepth focused)
       (stateRule : DemandStateRel slot state focused copies next) :
       ExpandsDemand slot name span count state

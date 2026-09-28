@@ -431,6 +431,20 @@ def runElaboratorDiagnosticTests : IO Unit := do
         fail s!"an untracked local did not name the inner call: {emitted}"
   | _ => fail "inner-unknown-effect result was not singular"
 
+  -- The same quotation bound to a local and run from it, once and through a
+  -- copy made for a second use: the local keeps where its body lost track,
+  -- so the message still names the inner `call` on line 3, not the `call`
+  -- that runs the local on line 5.
+  for (label, use) in [("bound", "q call"), ("copied", "q q drop call")] do
+    let source := s!": g (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals \{ a b } \{\n    a [ [ 1 prim + ] [ call ] call ]\n    locals \{ q } \{\n      {use} b prim - } } ;"
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .failure [envelope] =>
+        let emitted := encode envelope
+        expectValidCode s!"{label} unknown effect" "firth.elaboration.untracked-local" emitted
+        unless emitted.contains "used after `call` on line 3 ran a quotation" do
+          fail s!"{label}: an untracked local did not name the inner call: {emitted}"
+    | _ => fail s!"{label}: unknown-effect result was not singular"
+
   -- A word typed `ρ -- ρ2` may leave a stack of any depth, so a branch
   -- running it has no exact effect and erasure does not refuse the `if`;
   -- the type checker accepts this program, as it did before the refusal.
