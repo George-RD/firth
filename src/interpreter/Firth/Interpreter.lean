@@ -181,6 +181,20 @@ def eqIntDelta : Stack → Option Stack
       some (.literal (.bool (decide (left = right))) :: rest)
   | _ => none
 
+def andBoolDelta : Stack → Option Stack
+  | .literal (.bool right) :: .literal (.bool left) :: rest =>
+      some (.literal (.bool (left && right)) :: rest)
+  | _ => none
+
+def orBoolDelta : Stack → Option Stack
+  | .literal (.bool right) :: .literal (.bool left) :: rest =>
+      some (.literal (.bool (left || right)) :: rest)
+  | _ => none
+
+def notBoolDelta : Stack → Option Stack
+  | .literal (.bool value) :: rest => some (.literal (.bool (!value)) :: rest)
+  | _ => none
+
 def intSeqEmptyDelta : Stack → Option Stack
   | rest => some (.literal (.intSeq []) :: rest)
 
@@ -248,6 +262,12 @@ def defaultGamma : Gamma :=
                           output := .snoc (.row "ρ") (.base .bool .many), delta := ltIntDelta }
       | "eqInt" => some { input := .snoc (.snoc (.row "ρ") (.base .int .many)) (.base .int .many),
                           output := .snoc (.row "ρ") (.base .bool .many), delta := eqIntDelta }
+      | "andBool" => some { input := .snoc (.snoc (.row "ρ") (.base .bool .many)) (.base .bool .many),
+                            output := .snoc (.row "ρ") (.base .bool .many), delta := andBoolDelta }
+      | "orBool" => some { input := .snoc (.snoc (.row "ρ") (.base .bool .many)) (.base .bool .many),
+                           output := .snoc (.row "ρ") (.base .bool .many), delta := orBoolDelta }
+      | "notBool" => some { input := .snoc (.row "ρ") (.base .bool .many),
+                            output := .snoc (.row "ρ") (.base .bool .many), delta := notBoolDelta }
       | "intSeqEmpty" => some { input := .row "ρ",
                                 output := .snoc (.row "ρ") (.base .intSeq .many), delta := intSeqEmptyDelta }
       | "intSeqLen" => some { input := .snoc (.row "ρ") (.base .intSeq .many),
@@ -277,6 +297,7 @@ the reference-run adapter and the compiler all read this one table, so the
 three hosts accept exactly the same primitive names. -/
 def surfacePrimitives : List (String × Prim) :=
   [("+", "addInt"), ("-", "subInt"), ("*", "mulInt"), ("<", "ltInt"), ("=", "eqInt"),
+   ("and", "andBool"), ("or", "orBool"), ("not", "notBool"),
    ("seq-int.empty", "intSeqEmpty"), ("seq-int.len", "intSeqLen"),
    ("seq-int.at", "intSeqAt"), ("seq-int.push", "intSeqPush"),
    ("seq-bool.empty", "boolSeqEmpty"), ("seq-bool.len", "boolSeqLen"),

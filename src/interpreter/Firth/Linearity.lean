@@ -379,6 +379,18 @@ inductive PrimitiveStackContract : Prim → AStack → AStack → Prop where
       PrimitiveStackContract "eqInt"
         (.literal rightTag (.int right) :: .literal leftTag (.int left) :: rest)
         (.literal outputTag (.bool (decide (left = right))) :: rest)
+  | andBool {rightTag leftTag outputTag : Tag} {right left : Bool} {rest : AStack} :
+      PrimitiveStackContract "andBool"
+        (.literal rightTag (.bool right) :: .literal leftTag (.bool left) :: rest)
+        (.literal outputTag (.bool (left && right)) :: rest)
+  | orBool {rightTag leftTag outputTag : Tag} {right left : Bool} {rest : AStack} :
+      PrimitiveStackContract "orBool"
+        (.literal rightTag (.bool right) :: .literal leftTag (.bool left) :: rest)
+        (.literal outputTag (.bool (left || right)) :: rest)
+  | notBool {valueTag outputTag : Tag} {value : Bool} {rest : AStack} :
+      PrimitiveStackContract "notBool"
+        (.literal valueTag (.bool value) :: rest)
+        (.literal outputTag (.bool (!value)) :: rest)
   | intSeqEmpty {outputTag : Tag} {rest : AStack} :
       PrimitiveStackContract "intSeqEmpty" rest (.literal outputTag (.intSeq []) :: rest)
   | intSeqLen {seqTag outputTag : Tag} {values : List Int} {rest : AStack} :

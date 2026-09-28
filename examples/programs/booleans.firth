@@ -1,0 +1,27 @@
+\ Boolean `and`, `or` and `not`. Both operands are always evaluated: these are
+\ primitives on two values, not short-circuiting control flow.
+
+: in-range
+  (forall ρ; ρ lo:Int^many n:Int^many hi:Int^many -- ρ r:Bool^many)
+  locals { lo n hi } { n lo prim < prim not n hi prim < prim and };
+
+: outside
+  (forall ρ; ρ lo:Int^many n:Int^many hi:Int^many -- ρ r:Bool^many)
+  locals { lo n hi } { n lo prim < hi n prim < hi n prim = prim or prim or };
+
+\ True when exactly one of the two holds.
+: xor
+  (forall ρ; ρ p:Bool^many q:Bool^many -- ρ r:Bool^many)
+  locals { p q } { p q prim or p q prim and prim not prim and };
+
+\ Every element of a Seq Bool is true; true for the empty sequence.
+: all-from
+  (forall ρ; ρ xs:Seq Bool^many i:Int^many -- ρ r:Bool^many)
+  locals { xs i }
+  { i xs prim seq-bool.len prim <
+    [ xs i prim seq-bool.at [ xs i 1 prim + all-from ] [ false ] if ]
+    [ true ] if };
+
+: all
+  (forall ρ; ρ xs:Seq Bool^many -- ρ r:Bool^many)
+  0 all-from;

@@ -20,6 +20,9 @@ a b prim -    \ Int Int -- Int   (3 5 prim - gives -2)
 a b prim *    \ Int Int -- Int
 a b prim <    \ Int Int -- Bool
 a b prim =    \ Int Int -- Bool
+p q prim and  \ Bool Bool -- Bool
+p q prim or   \ Bool Bool -- Bool
+p prim not    \ Bool -- Bool
 flag [ then-branch ] [ else-branch ] if
 ```
 

@@ -247,8 +247,8 @@ fn literal_request(fuel: u64) -> String {
          \"code\":[{{\"op\":\"push-literal\",\"literal\":{{\"kind\":\"int\",\"value\":42}}}}],\
          \"body_digest\":\"{digest}\",\"kernel_evidence_digest\":\"{evidence}\",\
          \"refinement_evidence_digest\":\"{evidence}\",\"generation\":0}}]}},\
-         \"initial_stack\":[],\"image\":{{\"image_version\":1,\"gamma_version\":4}},\
-         \"gamma_version\":\"0.4\",\"fuel\":{fuel}}}"
+         \"initial_stack\":[],\"image\":{{\"image_version\":1,\"gamma_version\":5}},\
+         \"gamma_version\":\"0.5\",\"fuel\":{fuel}}}"
     )
 }
 
@@ -340,8 +340,8 @@ fn vm_run_reports_call_depth_exceeded_for_a_self_recursive_program() {
          {{\"op\":\"push-literal\",\"literal\":{{\"kind\":\"int\",\"value\":42}}}}],\
          \"body_digest\":\"{digest}\",\"kernel_evidence_digest\":\"{evidence}\",\
          \"refinement_evidence_digest\":\"{evidence}\",\"generation\":0}}]}},\
-         \"initial_stack\":[],\"image\":{{\"image_version\":1,\"gamma_version\":4}},\
-         \"gamma_version\":\"0.4\",\"fuel\":4096}}"
+         \"initial_stack\":[],\"image\":{{\"image_version\":1,\"gamma_version\":5}},\
+         \"gamma_version\":\"0.5\",\"fuel\":4096}}"
     );
     let mut child = spawn_vm_run();
     child
