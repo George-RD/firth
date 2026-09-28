@@ -50,8 +50,9 @@ pain later.
    process machinery that the freeze retired from the default path.
 4. Amended later on 28 September 2026 at the maintainer's request ("I would
    like to not be the constraint as much as possible"): agents may change a
-   goal's status without him. The change goes in a PR that touches only the
-   status and names the evidence. The independent reviewer approves it only
+   goal's status without the maintainer. The change goes in a PR that names
+   the evidence and touches only the goal's status cell, the gap text in its
+   row and the gap todos. The independent reviewer approves it only
    if the evidence meets the goal as written in the PRD and the roadmap row,
    with no narrowed reading, and every remaining gap is stated in the row and
    filed as a todo. The maintainer can reverse any status change. Earlier

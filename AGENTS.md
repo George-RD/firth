@@ -12,12 +12,13 @@ The reasons are in `dec.agent-development-rules`.
 
 1. `docs/roadmap.md` "Goal status" defines done, in the PRD's own wording.
    Todos, gates and green CI do not change a goal's status. An agent may move
-   a goal to "Met" (or back) in a PR that changes only that status and names
-   the evidence. The independent reviewer approves it only if the evidence
-   meets the goal as written in the PRD and the roadmap row, with no narrowed
-   reading, and every remaining gap is stated in the row and filed as a todo.
-   The maintainer can reverse any status change. *Check:* the PR touches only
-   the status, links its evidence, and lists each gap with its todo.
+   a goal to "Met" (or back) in a PR that names the evidence and changes only
+   that goal's status cell, the gap text in its row and the gap todos. The
+   independent reviewer approves it only if the evidence meets the goal as
+   written in the PRD and the roadmap row, with no narrowed reading, and every
+   remaining gap is stated in the row and filed as a todo. The maintainer can
+   reverse any status change. *Check:* the PR changes nothing beyond those
+   three, links its evidence, and lists each gap with its todo.
 2. Never narrow a goal, spec or expected result to fit what was built. If it
    cannot be met, leave it open and say what blocks it. Changing an acceptance
    criterion (`docs/roadmap.md`, `specs/`, expected outputs) needs a decision
