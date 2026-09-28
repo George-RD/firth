@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.interpreter
-status: open
+status: done
 created: 2026-09-27
 ---
 
@@ -102,6 +102,39 @@ calls, and all ten are reported `contract_verified`. A planted change to
 `allocate-one` (reason 3 to 4) breaks the proof, and
 `update_proof_records.py --check` refuses; the record mechanism's own
 staleness checks are in its fixtures (#138).
+
+## Completion, 28 September 2026
+
+Each acceptance criterion and its evidence on `main`:
+
+- Export bound to the body digest: `lake exe firthExportLean` writes
+  `src/exports/`, and `update_kernel_exports.py --check` in CI fails on drift
+  (#133).
+- Program logic: `src/interpreter/Firth/ProgramLogic.lean` has `Runs` and
+  `RunsWithin` with rules for atoms, composition, `if` (`runs_if`), `dip`
+  (`runs_dip`), quotation calls (`runs_call`), word unfolding (`runs_word`),
+  recursion by a measure (`induction_on_measure`) and the sequence
+  primitives (`runs_intSeq_*`), with no `sorry`, `admit` or `axiom`
+  (`check_zero_admit.py`; the record audit refuses non-standard axioms)
+  (#135, #136).
+- Evidence records: `firthProofRecords` admits a `WordContract` theorem as a
+  record bound to the covered words, their transitive callees, digests and
+  types, rechecked by `--status`, and reports `contract_verified` (#138).
+- The allocator's properties: `src/proofs/Inventory/Spec.lean` proves them of
+  `allocateAll` (lengths and order, no request over its quantity,
+  non-negative stock, conservation, the policy rule, the reason table,
+  priority), and `allocate_batch` in `src/proofs/Inventory/Allocate.lean`
+  proves the program returns that result, with termination and every value
+  in i64 (#137). Repeated IDs are rejected (code 2). It is recorded as
+  `allocate_batch_contract` (#141).
+- Rejections: the refused fixtures in `src/prooftests/` include false and
+  vacuous contracts (#138). `update_proof_records.py` plants a stale body
+  digest on each covered word of every record, callees included, and a stale
+  erased type, and each must withdraw the record (#141). Editing
+  `allocate-one` breaks the proof of `allocate-batch`.
+
+The two stated gaps are open as their own todos:
+`todo.compiler-vm-agreement-proof` and `todo.inventory-host-proof`.
 
 ## Traceability
 

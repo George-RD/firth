@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.interpreter
-status: open
+status: done
 created: 2026-09-27
 ---
 
@@ -47,6 +47,25 @@ proves that `allocate-batch`'s body terminates within
 `run_cases.cost_bound`. It is recorded with the property in
 `src/proofs/records.json` (`allocate_batch_contract`), bound to the cost table's
 digest.
+
+## Completion, 28 September 2026
+
+Each acceptance criterion and its evidence on `main`:
+
+- Cost in the program logic: `RunsWithin` carries steps and kernel cost
+  (#135).
+- The theorem: `allocate_batch` proves termination within
+  `181 + 224n + 172·n(n−1)/2` transitions at kernel cost at most
+  `165 + 202n + 163·n(n−1)/2` for every host input, recorded as
+  `allocate_batch_contract` (#137, #141).
+- The stated bound is the proved one: `batchCost_eq` equates it with
+  `run_cases.cost_bound`, and `measure_cost.py` still checks measured costs
+  against it.
+- Bound to κ: the record carries the cost table's digest, and
+  `update_proof_records.py` plants a stale one in every record and requires
+  the record to be withdrawn (#138, #141).
+- Gaps: stated in the S5 row and filed as `todo.compiler-vm-agreement-proof`
+  (which covers the VM's own cost accounting) and `todo.inventory-host-proof`.
 
 ## Traceability
 

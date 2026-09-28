@@ -4,8 +4,6 @@ status: open
 created: 2026-09-28
 ---
 
-Requires: compiler-vm-agreement-proof
-
 ## Goal
 
 Close the second gap stated with S5 (met 28 September 2026). The allocator's
