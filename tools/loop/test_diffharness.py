@@ -337,13 +337,13 @@ class ComparisonTests(unittest.TestCase):
                            reference_event(3, h.encode([h.MAX_INT + 1])),
                            reference_event(4, h.encode([h.MAX_INT + 1, 2]))]
 
-        def overflowed(target_trace, stack=both):
+        def overflowed(target_trace, stack=both, kernel=None):
             reference, target = observations()
             reference.update(stack=h.encode([h.MAX_INT - 1]), trace=copy.deepcopy(reference_trace),
                              cost={"total": 5, "steps": 5})
+            kernel = len(target_trace) if kernel is None else kernel
             target.update(status="trap", trap="primitive-fault", stack=stack, trace=target_trace,
-                          cost={"total": len(target_trace), "kernel": len(target_trace),
-                                "steps": len(target_trace)})
+                          cost={"total": kernel, "kernel": kernel, "steps": len(target_trace)})
             result = h.compare(reference, target, 8)
             return result.kind, h.judge(case, reference, target, result).kind
 
@@ -358,9 +358,18 @@ class ComparisonTests(unittest.TestCase):
         # true prefix of the reference's, so only the oracle can name it.
         early = [target_event(0, []), target_event(1, top)]
         self.assertEqual(overflowed(early, top), ("portable-integer-overflow", "oracle-mismatch"))
-        # Planted: the VM runs past the end of the reference's run.
-        longer = [target_event(i, []) for i in range(7)]
-        self.assertEqual(overflowed(longer, h.encode([]))[0], "trace-mismatch")
+        # Planted: one step charged differently, the reported total unchanged,
+        # so only the per-event charge check can name it.
+        charged = [target_event(0, []), target_event(1, top, kernel_cost=2), target_event(2, both)]
+        self.assertEqual(overflowed(charged, kernel=3)[0], "trace-mismatch")
+        # Planted: every event right, the reported kernel cost not the sum of
+        # the reference's charges up to the fault.
+        self.assertEqual(overflowed(right, kernel=4)[0], "kernel-cost-mismatch")
+        # Planted: the VM follows the reference step for step and faults
+        # after the reference's last step.
+        longer = [target_event(i, event["stack"]) for i, event in enumerate(reference_trace)]
+        longer.append(target_event(len(longer), h.encode([h.MAX_INT - 1])))
+        self.assertEqual(overflowed(longer, h.encode([h.MAX_INT - 1]))[0], "trace-mismatch")
 
     def test_per_event_trace_differences_have_their_own_failure_class(self):
         one, two = h.gate.initial_values([1, 2])
