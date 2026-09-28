@@ -457,7 +457,7 @@ envelope cut to 300 characters in place of the checker's message.
 
 - **The locals failure is gone from first answers.** In run 4, all 20 first
   answers stopped at `firth.name.unresolved`. Here it was 1 of 20 in sample 1
-  and 0 in sample 2. Sample 1 fell back to it in its last round, in 16
+  and 0 in sample 2. Sample 1 fell back to it in its last round, in 15
   tasks, after two rounds of feedback that had lost the hint. Sample 2, which
   saw the hint, never did. Its one later `unresolved` (round 1, `allocate-batch`) was a local used out of its block.
 - **The next cause is stack shape.** Jev puts sample 2's first-answer failures
@@ -475,26 +475,38 @@ envelope cut to 300 characters in place of the checker's message.
   mistake is a branch mismatch, which the same `if` outside `locals`
   reports as `firth.type.branch-mismatch`. With the one branch fixed
   (`[ drop result ]` to `[ result ]`), `keep-positive` passes its example.
-  Recorded in `meta/todos/todo.s7-untracked-local-misreport.md`.
+  Recorded in `meta/todos/todo.s7-untracked-local-misreport.md` and fixed
+  in #145; the re-run that measures it is `todo.s7-mvp-rerun`.
 - Two samples, three answers each. The transcripts are clean (`audit_subagent.py`): every call was
   a read of the prompt or feedback or a write of the answer, and each
   recorded write matches the answer that was scored. Sample 1 wrote to a
   directory named `haiku-firth/`, renamed `haiku-firth-1/` afterwards; the
   audit was given both (`--dir`, `--kept`).
 
-## What the three runs say about the bet
+## What the five runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from
 the docs alone. On main, Sonnet matches Python on every task set except
 for one run 2 `abs-diff` answer that the signed-Int change invalidated; its
 other failures when first scored were checker bugs and a step budget that
-have since been fixed. They did not carry a weaker
-model: Haiku wrote correct Python every time and mostly failed in Firth, in
-ways the checker caught but Haiku could not repair. The checker found most
-stack-shape errors before execution. Wrong answers at runtime were logic slips
-that a signature cannot catch. So the bet holds for strong models and not yet
-for weak ones, and the costs are real: Sonnet spent 20 to 100 times longer per
-Firth attempt than per Python attempt.
+have since been fixed. On the MVP set (run 4) it wrote all 20 tasks, 19 on
+the first answer and the last from the example's feedback.
+
+A weaker model is not there yet, but the gap moved with the diagnostics.
+Haiku wrote correct Python every time. In Firth it failed all 20 MVP tasks
+in run 4, all for one naming mistake that the checker caught and Haiku
+could not repair. Once the checker's hint named the fix (#142) and that
+hint reached it, Haiku passed 6 of 20 first answers and 8 after two rounds
+of feedback (run 5, sample 2). Its remaining failures are mostly stack
+shape, and the largest slice of those was a misleading diagnostic, since
+fixed (#145). The checker found most stack-shape errors before execution.
+Wrong answers at runtime were logic slips that a signature cannot catch.
+
+So the bet holds for strong models and not yet for weak ones, and the
+checker's diagnostics are the lever that has moved the weak model most.
+The costs are real: Sonnet spent 20 to 100 times longer per Firth attempt
+than per Python attempt in runs 1 to 3, and about 17 times longer in run 4
+(about 6 minutes against 21 seconds).
 
 ## Limits and next steps
 

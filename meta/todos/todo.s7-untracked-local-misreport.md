@@ -1,10 +1,17 @@
 ---
 node: firth.toolchain.agent
-status: open
+status: done
 created: 2026-09-28
 ---
 
 # A branch mismatch inside `locals` is reported as an untracked local
+
+Done in #145 (`42330f6`): an `if` whose branches leave different depths is
+reported at the `if`, with its expected and actual stacks, not as an
+untracked local. #148 (open) extends that to every depth-mismatched `if`,
+wherever it sits, including one whose quotation is bound to a local. The
+last criterion, a separate scored re-run of the MVP set, moves to
+`todo.s7-mvp-rerun`.
 
 Found in S7 run 5 (`eval/s7/runs/2026-09-28-haiku-cec3707/`, see
 `eval/s7/README.md`). `firth.elaboration.untracked-local` was the largest
