@@ -321,10 +321,12 @@ def hidden_blobs() -> tuple[str, ...]:
 
 def firth_storage(top: str, bare: bool) -> str | None:
     """Why the git storage at TOP could hand an author the hidden tests, or None
-    when it holds no revision of them: it has one of their blobs, or a commit
-    on any ref that touches their paths (a clone of a newer revision). Storage
-    git cannot read is refused, since we could not tell what it holds. Other
-    repositories (a tool's own checkout under /etc/skel, say) are shown."""
+    when it holds no revision of them: it has one of their blobs, or any tree
+    object, reachable or not, that holds `mvp_tasks.py` or an
+    `eval/s7/reference` directory (a newer revision, or one whose ref was
+    deleted). Storage git cannot read is refused, since we could not tell what
+    it holds. Other repositories (a tool's own checkout under /etc/skel, say)
+    are shown."""
     git = ["git", "-c", "safe.directory=*", *(["--git-dir", top] if bare else ["-C", top])]
     try:
         have = subprocess.run(git + ["cat-file", "--batch-check"], input="".join(b + "\n" for b in hidden_blobs()),
@@ -333,13 +335,55 @@ def firth_storage(top: str, bare: bool) -> str | None:
             return f"git cannot read ({have.stderr.strip()[:200]})"
         if any(not line.endswith(" missing") for line in have.stdout.splitlines()):
             return "holds a hidden file's content"
-        touched = subprocess.run(git + ["log", "--all", "--format=%H", "-1", "--", *HIDDEN_PATHS],
-                                 capture_output=True, text=True, timeout=60)
+        listed = subprocess.run(git + ["cat-file", "--batch-all-objects", "--unordered",
+                                       "--batch-check=%(objecttype) %(objectname)"],
+                                capture_output=True, text=True, timeout=300)
+        if listed.returncode:
+            return f"git cannot read ({listed.stderr.strip()[:200]})"
+        trees = [line.split()[1] for line in listed.stdout.splitlines() if line.startswith("tree ")]
+        read = subprocess.run(git + ["cat-file", "--batch"], input="".join(t + "\n" for t in trees).encode(),
+                              capture_output=True, timeout=300)
     except (OSError, subprocess.SubprocessError) as e:
         return f"git cannot read ({e})"
-    if touched.returncode:
-        return f"git cannot read ({touched.stderr.strip()[:200]})"
-    return "has a revision of the hidden files" if touched.stdout.strip() else None
+    if read.returncode:
+        return f"git cannot read ({read.stderr.decode(errors='replace').strip()[:200]})"
+    try:
+        entries = tree_entries(read.stdout)
+    except ValueError as e:
+        return f"git cannot read ({e})"
+    child = {}  # (tree, name) -> subtree id
+    for tree, items in entries.items():
+        for name, oid, is_tree in items:
+            if name == b"mvp_tasks.py" and not is_tree:
+                return "has a revision of the hidden tests"
+            if is_tree:
+                child[tree, name] = oid
+    for (tree, name), oid in child.items():
+        if name == b"eval" and (oid, b"s7") in child and (child[oid, b"s7"], b"reference") in child:
+            return "has a revision of the references"
+    return None
+
+
+def tree_entries(batch: bytes) -> dict[str, list[tuple[bytes, str, bool]]]:
+    """Parse `git cat-file --batch` output of tree objects into
+    {tree id: [(name, object id, is a tree)]}. Raises ValueError on anything
+    that is not a well-formed tree, so the caller fails closed."""
+    out, i = {}, 0
+    while i < len(batch):
+        nl = batch.index(b"\n", i)
+        head = batch[i:nl].split()
+        if len(head) != 3 or head[1] != b"tree":
+            raise ValueError(f"unexpected object header {batch[i:nl][:80]!r}")
+        oid, size = head[0].decode(), int(head[2])
+        body, i = batch[nl + 1:nl + 1 + size], nl + 1 + size + 1
+        width, items, j = len(oid) // 2, [], 0
+        while j < len(body):
+            sp, nul = body.index(b" ", j), body.index(b"\0", j)
+            mode, name = body[j:sp], body[sp + 1:nul]
+            items.append((name, body[nul + 1:nul + 1 + width].hex(), mode == b"40000"))
+            j = nul + 1 + width
+        out[oid] = items
+    return out
 
 
 def allowed_sources(tools: tuple[str, ...]) -> list[tuple[str, str]]:

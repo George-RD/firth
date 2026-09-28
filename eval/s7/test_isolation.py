@@ -278,6 +278,45 @@ def layout_checks(ws: Path) -> None:
         isolate.hidden_copies.cache_clear()
         check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"])),
               "the sandbox refuses a repository with a revision of the hidden tests it has never seen")
+        shutil.rmtree(share / "newer")
+        # Codex's case: the revision is in an unreachable commit (no ref, no
+        # reflog), which `git log --all` would miss; and the references
+        # directory on its own, in a commit whose ref was deleted.
+        lost = repo(share, "lost", "README", "a tool\n")
+        g = GIT + ["-C", str(lost)]
+        blob = subprocess.run(g + ["hash-object", "-w", "--stdin"], input=old_rev + "# unreachable\n",
+                              capture_output=True, text=True, check=True).stdout.strip()
+        tree = subprocess.run(g + ["mktree"], input=f"100644 blob {blob}\tmvp_tasks.py\n",
+                              capture_output=True, text=True, check=True).stdout.strip()
+        commit = subprocess.run(g + ["commit-tree", tree, "-m", "lost"], capture_output=True, text=True,
+                                check=True).stdout.strip()
+        isolate.hidden_copies.cache_clear()
+        check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"])),
+              "the sandbox refuses a repository whose revision of the hidden tests is unreachable")
+        real_storage, isolate.firth_storage = isolate.firth_storage, lambda top, bare: None
+        try:
+            isolate.hidden_copies.cache_clear()
+            seen = subprocess.run(isolate.sandbox_command(ws, ["git", "-c", "safe.directory=*", "-C", str(lost), "show",
+                                                           f"{commit}:mvp_tasks.py"], uid=isolate.NOBODY),
+                                  env=isolate.sandbox_env(), capture_output=True, text=True, timeout=300)
+            check("# unreachable" in seen.stdout,
+                  f"without the storage check, the unreachable revision is read by its id (the planted case): {seen.stderr[:200]}")
+        finally:
+            isolate.firth_storage = real_storage
+        shutil.rmtree(lost)
+        refs = repo(share, "refs", "eval/s7/reference/mvp/new.firth", ": new-task ;\n")
+        subprocess.run(GIT + ["-C", str(refs), "branch", "-q", "keep"], check=True)
+        subprocess.run(GIT + ["-C", str(refs), "checkout", "-q", "--orphan", "other"], check=True)
+        subprocess.run(GIT + ["-C", str(refs), "branch", "-q", "-D", "master", "main", "keep"], capture_output=True)
+        subprocess.run(GIT + ["-C", str(refs), "rm", "-rqf", "--cached", "."], check=True)
+        shutil.rmtree(refs / "eval")  # only a tree object names the directory now
+        check(isolate.firth_storage(str(refs), bare=False) == "has a revision of the references",
+              "the storage check finds the references directory in a tree no branch reaches")
+        isolate.hidden_copies.cache_clear()
+        check(refused_exit(lambda: isolate.sandbox_command(ws, ["true"])),
+              "the sandbox refuses a repository holding an eval/s7/reference directory it has never seen")
+        shutil.rmtree(refs)
+        repo(share, "newer", "eval/s7/mvp_tasks.py", old_rev + "# a newer revision\n")
         real_storage, isolate.firth_storage = isolate.firth_storage, lambda top, bare: None
         try:
             isolate.hidden_copies.cache_clear()
