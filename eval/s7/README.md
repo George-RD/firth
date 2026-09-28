@@ -150,7 +150,8 @@ include negative numbers and empty sequences.
   the model; so is anything reached through the author's network, which the
   transcript audit covers instead. A finding outside this model goes to a
   todo, not to this sandbox.
-- Submitted Python programs, run by `./try` or at scoring, also get an empty
+- Submitted Python programs, run by `./try`, by `harness.py try` or at
+  scoring, also get an empty
   network namespace, so an answer cannot fetch anything. `test_isolation.py`
   plants one that reads from a local listener.
 - The author process's network stays open, because the author model needs its API. So every

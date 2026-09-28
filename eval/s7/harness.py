@@ -556,7 +556,11 @@ def main() -> int:
         stack = None if a.stack is None else json.loads(a.stack)
         if stack is not None and not isinstance(stack, list):
             cli.error("--stack must be a JSON array")
-        print(try_run(a.program.read_text(), a.lang, BY_ID[a.task], stack))
+        # The MVP prompt names this command, so a Python answer run here is held
+        # to what `score` requires: the sandbox, or no run at all (Codex, on #134).
+        require_sandbox(a.lang, [BY_ID[a.task]])
+        print(try_run(a.program.read_text(), a.lang, BY_ID[a.task], stack,
+                      sandboxed=a.lang == "python" and os.geteuid() == 0))
     elif a.cmd == "report":
         print(report(a.results))
     return 0

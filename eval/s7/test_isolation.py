@@ -478,6 +478,14 @@ def main() -> int:
         bare_leak = harness.run_python((ws / "leak.py").read_text(), ([1],), None, ("Seq Int",))
         check("allocate-batch" in bare_leak.get("error", ""),
               "unsandboxed, the same program does read them (the planted case)")
+        # The MVP prompt outside a workspace names `harness.py try` directly;
+        # that path must sandbox Python too (Codex, on #134).
+        direct = subprocess.run([sys.executable, str(HERE / "harness.py"), "try", "--lang", "python",
+                                 "--task", "reverse", str(ws / "leak.py")], capture_output=True, text=True, timeout=300)
+        check("allocate-batch" not in direct.stdout and "FileNotFoundError" in direct.stdout,
+              "harness.py try runs a Python answer in the sandbox too")
+        check("allocate-batch" in harness.try_run((ws / "leak.py").read_text(), "python", harness.BY_ID["reverse"], None),
+              "unsandboxed, try_run returns the hidden tests (the planted case)")
         scored = harness.score({"reverse": (ws / "leak.py").read_text()}, "python",
                                [harness.BY_ID["reverse"]], 1)
         check(scored["python_sandboxed"]
