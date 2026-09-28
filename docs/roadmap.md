@@ -106,8 +106,10 @@ insufficient: allocating nothing can conserve stock but violate fulfilment.
 
 Do not start a language server, package registry, web framework, general I/O
 layer or new autonomous orchestration system before the consumer exposes a
-need. Do not market runtime hashes as authenticated proofs, finite tests as a
-compiler theorem, or kernel cost as a hardware timing guarantee.
+need. Do not extend the SMT path to sequences: Lean proofs cover them
+(`dec.s5-proof-standard`). Do not market runtime hashes as authenticated
+proofs, finite tests as a compiler theorem, or kernel cost as a hardware
+timing guarantee.
 
 The decision after the first pilot is evidence-driven: expand when Firth
 reduces failed changes or repair effort. Improve its interface when diagnostics
