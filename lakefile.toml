@@ -1,6 +1,6 @@
 name = "firth"
 version = "0.1.0"
-defaultTargets = ["firthTest", "firthParserTest", "firthCompilerTest", "firthElaborateTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthRecordIntegrityTest", "firthAdapterIntegrationTest", "firthAgentDiagnosticTest", "firthPipelineTest", "firthNamesTest", "smtBoundaryTest", "smtSolverTest", "firthReferenceRunTest", "firthExportsTest", "firthExportLean", "firthAllTest"]
+defaultTargets = ["FirthProofs", "firthTest", "firthParserTest", "firthCompilerTest", "firthElaborateTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthRecordIntegrityTest", "firthAdapterIntegrationTest", "firthAgentDiagnosticTest", "firthPipelineTest", "firthNamesTest", "smtBoundaryTest", "smtSolverTest", "firthReferenceRunTest", "firthExportsTest", "firthExportLean", "firthAllTest"]
 testDriver = "firthAllTest"
 
 [[lean_lib]]
@@ -22,6 +22,11 @@ roots = ["compiler.Firth.Digest", "compiler.Firth.Target", "compiler.Firth.WordT
 name = "FirthExports"
 srcDir = "src"
 globs = ["exports.+"]
+
+[[lean_lib]]
+name = "FirthProofs"
+srcDir = "src"
+globs = ["proofs.+"]
 
 [[lean_lib]]
 name = "FirthAgent"
