@@ -19,7 +19,7 @@ open Firth.Interpreter
 open Firth.ReferenceRun
 
 /-- SHA-256 of the source text these definitions were generated from. -/
-def sourceDigest : String := "9479ea4e718cb11470d51c445b419a745824c23b2e24bdc431fe8fcf90dc6513"
+def sourceDigest : String := "33adee2a28d0775a77f4bc03070b15fcce3ff65b14403a8a44890e023b55d2b0"
 
 namespace «quantities-in-range-from»
 
@@ -148,66 +148,6 @@ def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:SeqInt^many--ρ,v0:Bool^
 
 end «in-range»
 
-namespace «over-si»
-
-/-- The erased kernel program of `over-si`. -/
-def body : Program :=
-  .cons (.quotation (
-    .cons .dup <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .empty
-
-/-- The image's `body_digest` for `over-si`: SHA-256 of `body` lowered to
-target code, hex encoded. -/
-def bodyDigest : String := "9f92d86a26bd41663bf5bcfc8525411fc26210bcf9800860ab913c0799a8074b"
-
-/-- The erased word type the image records for `over-si`. -/
-def erasedType : String := "(forallρ;ρ,v0:SeqInt^many,v1:Int^many--ρ,v0:SeqInt^many,v1:Int^many,v2:SeqInt^many)"
-
-end «over-si»
-
-namespace «over-ii»
-
-/-- The erased kernel program of `over-ii`. -/
-def body : Program :=
-  .cons (.quotation (
-    .cons .dup <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .empty
-
-/-- The image's `body_digest` for `over-ii`: SHA-256 of `body` lowered to
-target code, hex encoded. -/
-def bodyDigest : String := "9f92d86a26bd41663bf5bcfc8525411fc26210bcf9800860ab913c0799a8074b"
-
-/-- The erased word type the image records for `over-ii`. -/
-def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many,v1:Int^many,v2:Int^many)"
-
-end «over-ii»
-
-namespace «third-ids»
-
-/-- The erased kernel program of `third-ids`. -/
-def body : Program :=
-  .cons (.quotation (
-    .cons (.word "over-si") <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .empty
-
-/-- The image's `body_digest` for `third-ids`: SHA-256 of `body` lowered to
-target code, hex encoded. -/
-def bodyDigest : String := "2e0b85dca3f7c2447526652f124b70c7046f21d1e508bc748e2e763feb7d2c62"
-
-/-- The erased word type the image records for `third-ids`. -/
-def erasedType : String := "(forallρ;ρ,v0:SeqInt^many,v1:Int^many,v2:Int^many--ρ,v0:SeqInt^many,v1:Int^many,v2:Int^many,v3:SeqInt^many)"
-
-end «third-ids»
-
 namespace «distance»
 
 /-- The erased kernel program of `distance`. -/
@@ -234,97 +174,73 @@ def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many
 
 end «distance»
 
-namespace «pair-distance»
+namespace «part-distance»
 
-/-- The erased kernel program of `pair-distance`. -/
+/-- The erased kernel program of `part-distance`. -/
 def body : Program :=
-  .cons (.word "third-ids") <|
-  .cons (.quotation (
-    .cons (.word "over-ii") <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.pick 3) <|
+  .cons (.roll 3) <|
+  .cons (.pick 2) <|
+  .cons (.prim "+") <|
   .cons (.prim "seq-int.at") <|
-  .cons (.quotation (
-    .cons (.word "third-ids") <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
-  .cons (.quotation (
-    .cons (.word "over-ii") <|
-    .empty)) <|
-  .cons .dip <|
-  .cons .swap <|
+  .cons (.roll 3) <|
+  .cons (.roll 3) <|
+  .cons (.roll 3) <|
+  .cons (.prim "+") <|
   .cons (.prim "seq-int.at") <|
   .cons (.word "distance") <|
   .empty
 
-/-- The image's `body_digest` for `pair-distance`: SHA-256 of `body` lowered to
+/-- The image's `body_digest` for `part-distance`: SHA-256 of `body` lowered to
 target code, hex encoded. -/
-def bodyDigest : String := "207b3d3a32fa73efab3f2c28f69043a4a6a84aa45f0351a1144d872dbe29f2de"
+def bodyDigest : String := "0c201fd6539dd10a587a712343a319724fdc75c5d0605bf908e57913fcb50923"
 
-/-- The erased word type the image records for `pair-distance`. -/
-def erasedType : String := "(forallρ;ρ,v0:SeqInt^many,v1:Int^many,v2:Int^many--ρ,v0:SeqInt^many,v1:Int^many,v2:Int^many,v3:Int^many)"
+/-- The erased word type the image records for `part-distance`. -/
+def erasedType : String := "(forallρ;ρ,v0:SeqInt^many,v1:Int^many,v2:Int^many,v3:Int^many--ρ,v0:Int^many)"
 
-end «pair-distance»
-
-namespace «bump»
-
-/-- The erased kernel program of `bump`. -/
-def body : Program :=
-  .cons (.quotation (
-    .cons (.lit (.int 1)) <|
-    .cons (.prim "+") <|
-    .empty)) <|
-  .cons .dip <|
-  .cons (.lit (.int 1)) <|
-  .cons (.prim "+") <|
-  .empty
-
-/-- The image's `body_digest` for `bump`: SHA-256 of `body` lowered to
-target code, hex encoded. -/
-def bodyDigest : String := "59c962e7e3c8f3033f3b2b0c13e09d3adc5f7c06b4caa8c4c3194be56eb8b633"
-
-/-- The erased word type the image records for `bump`. -/
-def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many,v1:Int^many)"
-
-end «bump»
+end «part-distance»
 
 namespace «same-id»
 
 /-- The erased kernel program of `same-id`. -/
 def body : Program :=
-  .cons (.word "pair-distance") <|
+  .cons (.pick 2) <|
+  .cons (.pick 2) <|
+  .cons (.pick 2) <|
+  .cons (.lit (.int 0)) <|
+  .cons (.word "part-distance") <|
   .cons (.lit (.int 0)) <|
   .cons (.prim "=") <|
+  .cons (.roll 3) <|
+  .cons .quote <|
+  .cons (.roll 3) <|
+  .cons .quote <|
+  .cons .compose <|
+  .cons (.roll 2) <|
+  .cons .quote <|
+  .cons .compose <|
   .cons (.quotation (
-    .cons (.word "bump") <|
-    .cons (.word "pair-distance") <|
-    .cons (.quotation (
-      .cons (.word "bump") <|
-      .cons (.word "pair-distance") <|
-      .empty)) <|
-    .cons .dip <|
+    .cons (.pick 2) <|
+    .cons (.pick 2) <|
+    .cons (.pick 2) <|
+    .cons (.lit (.int 1)) <|
+    .cons (.word "part-distance") <|
+    .cons (.pick 3) <|
+    .cons (.pick 3) <|
+    .cons (.pick 3) <|
+    .cons (.lit (.int 2)) <|
+    .cons (.word "part-distance") <|
     .cons (.prim "+") <|
-    .cons (.quotation (
-      .cons (.word "bump") <|
-      .cons (.word "pair-distance") <|
-      .empty)) <|
-    .cons .dip <|
+    .cons (.roll 3) <|
+    .cons (.roll 3) <|
+    .cons (.roll 3) <|
+    .cons (.lit (.int 3)) <|
+    .cons (.word "part-distance") <|
     .cons (.prim "+") <|
-    .cons (.quotation (
-      .cons (.quotation (
-        .cons (.lit (.int 3)) <|
-        .cons (.prim "-") <|
-        .empty)) <|
-      .cons .dip <|
-      .cons (.lit (.int 3)) <|
-      .cons (.prim "-") <|
-      .empty)) <|
-    .cons .dip <|
     .cons (.lit (.int 0)) <|
     .cons (.prim "=") <|
     .empty)) <|
+  .cons .compose <|
   .cons (.quotation (
     .cons (.lit (.bool false)) <|
     .empty)) <|
@@ -333,10 +249,10 @@ def body : Program :=
 
 /-- The image's `body_digest` for `same-id`: SHA-256 of `body` lowered to
 target code, hex encoded. -/
-def bodyDigest : String := "bd9ae331a0555c2e37b46064bfcf083bf2e667f429e1fd06e726e16f0b4b3cbf"
+def bodyDigest : String := "f435b7b52fa5beccc0a6610977a7d1d075234aeccfd1844d780551871bec02d1"
 
 /-- The erased word type the image records for `same-id`. -/
-def erasedType : String := "(forallρ;ρ,v0:SeqInt^many,v1:Int^many,v2:Int^many--ρ,v0:SeqInt^many,v1:Int^many,v2:Int^many,v3:Bool^many)"
+def erasedType : String := "(forallρ;ρ,v0:SeqInt^many,v1:Int^many,v2:Int^many--ρ,v0:Bool^many)"
 
 end «same-id»
 
@@ -344,58 +260,86 @@ namespace «repeat-from»
 
 /-- The erased kernel program of `repeat-from`. -/
 def body : Program :=
-  .cons (.word "third-ids") <|
+  .cons .dup <|
+  .cons (.pick 3) <|
   .cons (.prim "seq-int.len") <|
-  .cons (.word "over-ii") <|
-  .cons .swap <|
   .cons (.prim "<") <|
+  .cons (.pick 3) <|
+  .cons .quote <|
+  .cons (.pick 3) <|
+  .cons .quote <|
+  .cons .compose <|
+  .cons (.roll 2) <|
+  .cons .quote <|
+  .cons .compose <|
   .cons (.quotation (
+    .cons (.pick 2) <|
+    .cons (.pick 2) <|
+    .cons (.pick 2) <|
     .cons (.word "same-id") <|
     .cons (.quotation (
-      .cons .drop <|
-      .cons .drop <|
-      .cons .drop <|
       .cons (.lit (.bool true)) <|
       .empty)) <|
+    .cons (.roll 4) <|
+    .cons .quote <|
+    .cons (.roll 4) <|
+    .cons .quote <|
+    .cons .compose <|
+    .cons (.roll 3) <|
+    .cons .quote <|
+    .cons .compose <|
     .cons (.quotation (
+      .cons (.roll 2) <|
+      .cons (.roll 2) <|
+      .cons (.roll 2) <|
       .cons (.lit (.int 4)) <|
       .cons (.prim "+") <|
       .cons (.word "repeat-from") <|
       .empty)) <|
+    .cons .compose <|
     .cons .ifThenElse <|
     .empty)) <|
+  .cons .compose <|
+  .cons (.roll 2) <|
+  .cons .quote <|
+  .cons (.roll 3) <|
+  .cons .quote <|
+  .cons .compose <|
   .cons (.quotation (
-    .cons .drop <|
-    .cons (.word "over-si") <|
+    .cons (.pick 1) <|
+    .cons (.lit (.int 8)) <|
+    .cons (.prim "+") <|
+    .cons (.pick 1) <|
     .cons (.prim "seq-int.len") <|
-    .cons (.quotation (
-      .cons .dup <|
-      .cons (.lit (.int 8)) <|
-      .cons (.prim "+") <|
-      .empty)) <|
-    .cons .dip <|
     .cons (.prim "<") <|
+    .cons .swap <|
+    .cons .quote <|
+    .cons (.roll 2) <|
+    .cons .quote <|
+    .cons .compose <|
     .cons (.quotation (
+      .cons .swap <|
+      .cons (.pick 1) <|
       .cons (.lit (.int 4)) <|
       .cons (.prim "+") <|
-      .cons .dup <|
-      .cons (.lit (.int 4)) <|
+      .cons (.roll 2) <|
+      .cons (.lit (.int 8)) <|
       .cons (.prim "+") <|
       .cons (.word "repeat-from") <|
       .empty)) <|
+    .cons .compose <|
     .cons (.quotation (
-      .cons .drop <|
-      .cons .drop <|
       .cons (.lit (.bool false)) <|
       .empty)) <|
     .cons .ifThenElse <|
     .empty)) <|
+  .cons .compose <|
   .cons .ifThenElse <|
   .empty
 
 /-- The image's `body_digest` for `repeat-from`: SHA-256 of `body` lowered to
 target code, hex encoded. -/
-def bodyDigest : String := "4863eaf4a3ab2a16cf4c1a3ef26c57c36df117508167c6c2dac633318c87dfd6"
+def bodyDigest : String := "688e568967d9a69241259facb32d5fa6b38376ff7dbf75c4fd07936480c2f819"
 
 /-- The erased word type the image records for `repeat-from`. -/
 def erasedType : String := "(forallρ;ρ,v0:SeqInt^many,v1:Int^many,v2:Int^many--ρ,v0:Bool^many)"
@@ -653,12 +597,8 @@ end «allocate-batch»
 def words : List (String × Program × String) := [
   ("quantities-in-range-from", «quantities-in-range-from».body, «quantities-in-range-from».bodyDigest),
   ("in-range", «in-range».body, «in-range».bodyDigest),
-  ("over-si", «over-si».body, «over-si».bodyDigest),
-  ("over-ii", «over-ii».body, «over-ii».bodyDigest),
-  ("third-ids", «third-ids».body, «third-ids».bodyDigest),
   ("distance", «distance».body, «distance».bodyDigest),
-  ("pair-distance", «pair-distance».body, «pair-distance».bodyDigest),
-  ("bump", «bump».body, «bump».bodyDigest),
+  ("part-distance", «part-distance».body, «part-distance».bodyDigest),
   ("same-id", «same-id».body, «same-id».bodyDigest),
   ("repeat-from", «repeat-from».body, «repeat-from».bodyDigest),
   ("has-repeat", «has-repeat».body, «has-repeat».bodyDigest),
@@ -670,12 +610,8 @@ def words : List (String × Program × String) := [
 def dictionary : Dictionary
   | "quantities-in-range-from" => some { type := adapterWordType, body := «quantities-in-range-from».body }
   | "in-range" => some { type := adapterWordType, body := «in-range».body }
-  | "over-si" => some { type := adapterWordType, body := «over-si».body }
-  | "over-ii" => some { type := adapterWordType, body := «over-ii».body }
-  | "third-ids" => some { type := adapterWordType, body := «third-ids».body }
   | "distance" => some { type := adapterWordType, body := «distance».body }
-  | "pair-distance" => some { type := adapterWordType, body := «pair-distance».body }
-  | "bump" => some { type := adapterWordType, body := «bump».body }
+  | "part-distance" => some { type := adapterWordType, body := «part-distance».body }
   | "same-id" => some { type := adapterWordType, body := «same-id».body }
   | "repeat-from" => some { type := adapterWordType, body := «repeat-from».body }
   | "has-repeat" => some { type := adapterWordType, body := «has-repeat».body }
@@ -692,23 +628,11 @@ theorem «quantities-in-range-from».entry :
 theorem «in-range».entry :
     dictionary "in-range" = some { type := adapterWordType, body := «in-range».body } := rfl
 
-theorem «over-si».entry :
-    dictionary "over-si" = some { type := adapterWordType, body := «over-si».body } := rfl
-
-theorem «over-ii».entry :
-    dictionary "over-ii" = some { type := adapterWordType, body := «over-ii».body } := rfl
-
-theorem «third-ids».entry :
-    dictionary "third-ids" = some { type := adapterWordType, body := «third-ids».body } := rfl
-
 theorem «distance».entry :
     dictionary "distance" = some { type := adapterWordType, body := «distance».body } := rfl
 
-theorem «pair-distance».entry :
-    dictionary "pair-distance" = some { type := adapterWordType, body := «pair-distance».body } := rfl
-
-theorem «bump».entry :
-    dictionary "bump" = some { type := adapterWordType, body := «bump».body } := rfl
+theorem «part-distance».entry :
+    dictionary "part-distance" = some { type := adapterWordType, body := «part-distance».body } := rfl
 
 theorem «same-id».entry :
     dictionary "same-id" = some { type := adapterWordType, body := «same-id».body } := rfl
