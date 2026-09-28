@@ -27,8 +27,10 @@ the VM's does, so no value overflows on such input; `allocate_batch_reference`
 states the result under the reference registry. The stated gaps remain: VM
 agreement with the reference interpreter rests on differential testing, the
 Python host (JSON and the ID encoding, whose injectivity the repeated-ID result
-relies on) is tested, not proved, and these theorems are not yet admitted as
-evidence records bound to the word digests (`language-06b`).
+relies on) is tested, not proved. `allocate_batch_contract` is the recorded
+form: `src/proofs/records.json` binds it to the digests of `allocate-batch` and
+every word it calls, the registry and the cost table, and reports those words
+`contract_verified`.
 -/
 
 namespace Firth.Proofs.Inventory.Allocate
@@ -528,6 +530,34 @@ theorem batchCost_eq (n : Nat) : batchCost n = 165 + 202 * n + 163 * (n * (n - 1
 
 /-- At the spec's largest batch, 64 requests, the cost is at most 341,701. -/
 theorem batchCost_64 : batchCost 64 = 341701 := by decide
+
+/-- What the host hands `allocate-batch`: the stock, the policy (`true` for
+all-or-nothing), the IDs as one flat sequence and the quantities. -/
+structure BatchArgs where
+  available : Int
+  whole : Bool
+  ids : List Int
+  qs : List Int
+
+/-- `allocate-batch`'s contract. The precondition is the host's ID encoding:
+four parts per request, each in `[0, 65^8)`. Nothing else is assumed: stock and
+quantities outside the spec's bounds are answered with code 1 inside the
+contract. -/
+def allocateBatchContract : WordContract where
+  Args := BatchArgs
+  pre a := a.ids.length = 4 * a.qs.length ∧ IdParts a.ids
+  input a := batchIn a.available a.whole a.ids a.qs []
+  output a := batchOut (batchSpec a.available a.whole a.ids a.qs).1
+    (batchSpec a.available a.whole a.ids a.qs).2.1 (batchSpec a.available a.whole a.ids a.qs).2.2.1
+    (batchSpec a.available a.whole a.ids a.qs).2.2.2 []
+  steps a := batchSteps a.qs.length
+  cost a := batchCost a.qs.length
+  witness := ⟨⟨0, false, [], []⟩, rfl, fun _ h => nomatch h⟩
+
+/-- The recorded contract of `allocate-batch`, under the i64 registry. -/
+theorem allocate_batch_contract :
+    allocateBatchContract.Holds int64Gamma dictionary defaultCosts «allocate-batch».body :=
+  fun a tail hPre => allocate_batch a.available a.whole a.ids a.qs tail hPre.1 hPre.2
 
 end Batch
 

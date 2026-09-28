@@ -44,8 +44,9 @@ bound, currently fitted by `examples/inventory/measure_cost.py` and stated in
 proves that `allocate-batch`'s body terminates within
 `181 + 224n + 172·n(n−1)/2` transitions at kernel cost at most
 `165 + 202n + 163·n(n−1)/2`, which `batchCost_eq` shows is
-`run_cases.cost_bound`. Open: admission and rechecking as an evidence record,
-as for `language-06b`.
+`run_cases.cost_bound`. It is recorded with the property in
+`src/proofs/records.json` (`allocate_batch_contract`), bound to the cost table's
+digest.
 
 ## Traceability
 

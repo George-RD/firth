@@ -62,10 +62,12 @@ The bound is also proved. `src/proofs/Inventory/Allocate.lean` proves, from
 the exported kernel program run by the reference interpreter, that
 `allocate-batch` returns the spec's result on every valid input (so the
 properties proved in `src/proofs/Inventory/Spec.lean` hold of its output) at a
-kernel cost of at most this bound, with every value in i64. The proof is not yet
-admitted as a toolchain evidence record bound to the word digests
-(`language-06b`), agreement of the VM with the reference interpreter rests on
-differential testing, and the Python host is tested, not proved.
+kernel cost of at most this bound, with every value in i64. The proof is
+recorded as toolchain evidence (`src/proofs/records.json`) bound to the body
+digests of `allocate-batch` and every word it calls, so all ten words are
+reported `contract_verified`, and a change to any of them withdraws it.
+Agreement of the VM with the reference interpreter rests on differential
+testing, and the Python host is tested, not proved.
 
 ## Changing the policy
 
