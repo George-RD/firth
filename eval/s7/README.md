@@ -105,7 +105,10 @@ include negative numbers and empty sequences.
   `test_isolation.py` (CI, as root) runs a probe that finds them without the
   sandbox and finds nothing inside it, by direct path, `/proc/<pid>/root`,
   `git show`, `umount` or a filesystem search.
-- The network stays open, because the author model needs its API. So every
+- Submitted Python programs, run by `./try` or at scoring, also get an empty
+  network namespace, so an answer cannot fetch anything. `test_isolation.py`
+  plants one that reads from a local listener.
+- The author process's network stays open, because the author model needs its API. So every
   run limits the author's tools to `./try` and workspace files, and
   `isolate.py audit` checks each retained transcript for any other tool call.
   A run with a flagged call is void. The audit is tested against planted

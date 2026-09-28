@@ -226,14 +226,14 @@ print(json.dumps(out))
 def run_python(source: str, args: tuple, fuel: int | None = None,
                outputs: tuple[str, ...] = (), sandboxed: bool = False) -> dict:
     """Run `main`; `outputs` are the task's output types, which the result must match.
-    With `sandboxed`, the author's code runs where the hidden tests, the references
-    and the repository cannot be read (isolate.py; needs root)."""
+    With `sandboxed`, the author's code runs with no network and where the hidden
+    tests, the references and the repository cannot be read (isolate.py; needs root)."""
     cmd = [sys.executable, "-c", PY_DRIVER, json.dumps(list(args)), json.dumps(list(outputs))]
     empty = None
     if sandboxed:
         import isolate  # imports this module, so only when needed
         empty = tempfile.mkdtemp(dir="/var/tmp", prefix="s7py-")
-        cmd = isolate.sandbox_command(Path(empty), cmd)
+        cmd = isolate.sandbox_command(Path(empty), cmd, network=False)
     try:
         p = subprocess.run(cmd, input=source, capture_output=True, text=True, timeout=30)
     except subprocess.TimeoutExpired:

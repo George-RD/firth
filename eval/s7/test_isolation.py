@@ -9,9 +9,11 @@ probe that finds nothing anywhere cannot pass for isolation.
 """
 from __future__ import annotations
 
+import socket
 import subprocess
 import sys
 import tempfile
+import threading
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -153,8 +155,40 @@ def main() -> int:
         (fws / "borrow.firth").write_text((ws / "borrow.firth").read_text())
         borrow = isolate.run(fws, ["./try", "--task", "seq-sum", "borrow.firth"],
                              capture_output=True, text=True, timeout=600)
-        check("failed:" in borrow.stdout and "PASS" not in borrow.stdout,
-              "a Firth program cannot reach a reference's words")
+        check("firth.name.unresolved" in borrow.stdout and "sum-from" in borrow.stdout,
+              "a Firth program cannot reach a reference's words (refused by name resolution)")
+        # The control: a real Firth answer runs through the same sandboxed try, so
+        # the refusal above is the checker's, not a broken toolchain.
+        (fws / "sum.firth").write_text((HERE / "reference/mvp/seq-sum.firth").read_text())
+        ctrl = isolate.run(fws, ["./try", "--task", "seq-sum", "sum.firth"],
+                           capture_output=True, text=True, timeout=600)
+        check("PASS on the example" in ctrl.stdout,
+              f"a correct Firth answer passes through the sandboxed try: {ctrl.stdout.strip()[-300:]}")
+        # Submitted programs get no network: a listener on the host's loopback
+        # answers an unsandboxed program and is unreachable from a sandboxed one.
+        srv = socket.socket()
+        srv.bind(("127.0.0.1", 0))
+        srv.listen()
+        port = srv.getsockname()[1]
+        threading.Thread(target=lambda: [c.sendall(b"leak") or c.close()
+                                         for c in iter(lambda: srv.accept()[0], None)],
+                         daemon=True).start()
+        (ws / "net.py").write_text(
+            "import socket\ndef main(xs):\n"
+            f"    s = socket.create_connection(('127.0.0.1', {port}), timeout=5)\n"
+            "    return list(s.recv(16))\n")
+        net_src = (ws / "net.py").read_text()
+        bare_net = harness.run_python(net_src, ([1],), None, ("Seq Int",))
+        check(bare_net.get("stack") == [list(b"leak")],
+              "unsandboxed, a program can fetch over the network (the planted case)")
+        netted = isolate.run(ws, ["./try", "--task", "reverse", "net.py"],
+                             capture_output=True, text=True, timeout=300)
+        check("got:" not in netted.stdout and "failed:" in netted.stdout,
+              "through try, a submitted program has no network")
+        scored_net = harness.score({"reverse": net_src}, "python", [harness.BY_ID["reverse"]], 1)
+        check(all(not c["ok"] for c in scored_net["tasks"]["reverse"]["cases"]),
+              "scored in the sandbox, a submitted program has no network")
+        srv.close()
         other = isolate.run(ws, ["./try", "--task", "fib", "reverse.py"],
                             capture_output=True, text=True, timeout=300)
         check("unknown task" in other.stdout, "try refuses tasks outside the workspace's set")

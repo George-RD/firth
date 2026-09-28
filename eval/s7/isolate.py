@@ -130,10 +130,14 @@ def hidden_paths() -> list[str]:
     return paths
 
 
-def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = ()) -> list[str]:
+def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = (),
+                    network: bool = True) -> list[str]:
     """The command line that runs COMMAND in the sandbox, with the workspace at
     /tmp/work. `keep` lists files or directories to bind back in read-only (for
-    example the author model's credentials), each at its own path."""
+    example the author model's credentials), each at its own path. With
+    `network=False` the command also gets an empty network namespace: that is how
+    submitted programs run, while the author process keeps its network for the
+    model API."""
     if os.geteuid() != 0:
         raise SystemExit("the sandbox needs root (unshare and mount)")
     stage = "/run/s7-stage"
@@ -153,6 +157,7 @@ def sandbox_command(dir: Path, command: list[str], keep: tuple[str, ...] = ()) -
     lines += [f"umount -l {stage}", f"cd {INSIDE}",
               'exec setpriv --bounding-set=-all --inh-caps=-all --no-new-privs -- "$@"']
     return ["unshare", "--mount", "--pid", "--fork", "--mount-proc", "--propagation", "private",
+            *([] if network else ["--net"]),
             "bash", "-c", "\n".join(lines), "sandbox", *command]
 
 
