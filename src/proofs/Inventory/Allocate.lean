@@ -425,11 +425,10 @@ theorem batch_allocate {s₁ c₁ s₂ c₂ s₃ c₃ : Nat} {left : Int} {alloc
       (batchOut 0 left allocated reasons tail) (44 + s₁ + s₂ + s₃) (37 + c₁ + c₂ + c₃) := by
   body_chain
 
-open Classical in
 /-- What `allocate-batch` must return, from the spec alone: code 1 and nothing
 allocated when the input is out of bounds, code 2 when an ID repeats, and
 otherwise code 0 with `allocateAll`'s stock, allocations and reasons. -/
-noncomputable def batchSpec (available : Int) (whole : Bool) (ids qs : List Int) :
+def batchSpec (available : Int) (whole : Bool) (ids qs : List Int) :
     Int × Int × List Int × List Int :=
   if Spec.InRange available qs then
     if HasRepeat ids qs.length then (2, 0, [], [])

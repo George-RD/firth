@@ -67,7 +67,15 @@ class InventorySpecCorpusTests(unittest.TestCase):
     def test_every_successful_case_becomes_a_guard(self) -> None:
         data = json.loads(corpus.CASES.read_text(encoding="utf-8"))
         ok = [case for case in data["cases"] if case["expected"]["status"] == "ok"]
-        self.assertEqual(corpus.render().count("#guard"), len(ok))
+        self.assertEqual(corpus.render().count("#guard allocateAll"), len(ok))
+
+    def test_every_case_the_host_passes_on_becomes_a_batch_guard(self) -> None:
+        data = json.loads(corpus.CASES.read_text(encoding="utf-8"))
+        passed = [case for case in data["cases"]
+                  if not isinstance(corpus.host.host_decode(case["input"]), dict)]
+        errors = [case for case in passed if case["expected"]["status"] != "ok"]
+        self.assertTrue(errors)
+        self.assertEqual(corpus.render().count("#guard batchSpec"), len(passed))
 
 
 if __name__ == "__main__":

@@ -44,6 +44,9 @@ def InRange (available : Int) (quantities : List Int) : Prop :=
   0 ≤ available ∧ available ≤ 1000000 ∧ quantities.length ≤ 64 ∧
     ∀ q ∈ quantities, 1 ≤ q ∧ q ≤ 1000000
 
+instance (available : Int) (quantities : List Int) : Decidable (InRange available quantities) := by
+  unfold InRange; infer_instance
+
 /-! ## One request -/
 
 section One

@@ -467,6 +467,18 @@ theorem repeat_from {ids : List Int} (hIds : IdParts ids) (hLen : ids.length < i
 def HasRepeat (ids : List Int) (n : Nat) : Prop :=
   ∃ i j, i < j ∧ j < n ∧ blockMatch ids (4 * i) (4 * j)
 
+instance (ids : List Int) (p q : Nat) : Decidable (blockMatch ids p q) := by
+  unfold blockMatch; infer_instance
+
+/-- `HasRepeat` is decidable, so the specification can be evaluated on concrete
+inputs. -/
+instance (ids : List Int) (n : Nat) : Decidable (HasRepeat ids n) :=
+  decidable_of_iff (∃ j, j < n ∧ ∃ i, i < j ∧ blockMatch ids (4 * i) (4 * j)) (by
+    unfold HasRepeat
+    constructor
+    · rintro ⟨j, hj, i, hi, hm⟩; exact ⟨i, j, hi, hj, hm⟩
+    · rintro ⟨i, j, hi, hj, hm⟩; exact ⟨j, hj, i, hi, hm⟩)
+
 theorem scanBound_start (perPair perRow finish n : Nat) :
     scanBound perPair perRow finish (4 * n) 0 4 = perPair * tri n + perRow * n + finish := by
   cases n with
