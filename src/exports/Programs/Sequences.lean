@@ -289,18 +289,19 @@ def erasedType : String := "(forallρ;ρ,v0:SeqInt^many,v1:Int^many--ρ,v0:Int^m
 
 end «element»
 
-/-- Every word, in declaration order: its name, body and body digest. -/
-def words : List (String × Program × String) := [
-  ("sum-from", «sum-from».body, «sum-from».bodyDigest),
-  ("sum", «sum».body, «sum».bodyDigest),
-  ("range-from", «range-from».body, «range-from».bodyDigest),
-  ("range", «range».body, «range».bodyDigest),
-  ("count-from", «count-from».body, «count-from».bodyDigest),
-  ("count", «count».body, «count».bodyDigest),
-  ("literal-sum", «literal-sum».body, «literal-sum».bodyDigest),
-  ("literal-mask", «literal-mask».body, «literal-mask».bodyDigest),
-  ("third", «third».body, «third».bodyDigest),
-  ("element", «element».body, «element».bodyDigest)]
+/-- Every word, in declaration order: its name, body, body digest and erased
+type. -/
+def words : List (String × Program × String × String) := [
+  ("sum-from", «sum-from».body, «sum-from».bodyDigest, «sum-from».erasedType),
+  ("sum", «sum».body, «sum».bodyDigest, «sum».erasedType),
+  ("range-from", «range-from».body, «range-from».bodyDigest, «range-from».erasedType),
+  ("range", «range».body, «range».bodyDigest, «range».erasedType),
+  ("count-from", «count-from».body, «count-from».bodyDigest, «count-from».erasedType),
+  ("count", «count».body, «count».bodyDigest, «count».erasedType),
+  ("literal-sum", «literal-sum».body, «literal-sum».bodyDigest, «literal-sum».erasedType),
+  ("literal-mask", «literal-mask».body, «literal-mask».bodyDigest, «literal-mask».erasedType),
+  ("third", «third».body, «third».bodyDigest, «third».erasedType),
+  ("element", «element».body, «element».bodyDigest, «element».erasedType)]
 
 /-- The dictionary the reference runner builds for this source. -/
 def dictionary : Dictionary

@@ -58,52 +58,69 @@ declaration.
 
 ## Contracts and proof records
 
-`contracts.json` lists the theorems claimed as contracts, each with its module
-and a one-line claim. The claim is a label for readers; what is checked is the
-theorem's statement. `python3 tools/loop/update_proof_records.py` audits them
-with `firthProofRecords` and writes `records.json`. The audit refuses the whole
-run if any contract:
+A contract is a `WordContract` (in `ProgramLogic.lean`): a type of arguments,
+a precondition `pre`, the input and output stacks and the step and cost bounds
+as functions of the arguments, and a `witness` that some arguments satisfy
+`pre`. The witness is a field, so a contract whose precondition nothing
+satisfies cannot be declared at all. `contract.Holds gamma dictionary costs
+program` is the statement
 
-- is not a `theorem` in the named module under `proofs.`;
-- reaches, through its statement, its proof or any definition they use, an
-  axiom other than `propext`, `Classical.choice` and `Quot.sound`. This refuses
+```lean
+∀ args tail, contract.pre args →
+  RunsWithin gamma dictionary costs program
+    (contract.input args ++ tail) (contract.output args ++ tail)
+    (contract.steps args) (contract.cost args)
+```
+
+`contracts.json` lists each claimed contract: the theorem, its module, the
+export and word it is about, the `WordContract`, the registry and the cost
+table, and a one-line claim for readers. What is checked is the theorem.
+`python3 tools/loop/update_proof_records.py` audits each entry with
+`firthProofRecords` and writes `records.json`. The audit builds the expected
+statement itself,
+
+```lean
+contract.Holds gamma <export>.dictionary costs <export>.«word».body
+```
+
+and refuses the whole run if the theorem's type is not definitionally equal to
+it. So a theorem with an extra hypothesis, a weaker conclusion (`∨ True`), a
+different dictionary or a hand-written precondition is refused, however it
+names the word. It also refuses an entry when:
+
+- the theorem is not a `theorem` in the named module;
+- the theorem, its statement or any definition they use reaches an axiom
+  other than `propext`, `Classical.choice` and `Quot.sound`. This refuses
   `sorryAx` and the auxiliary axioms `native_decide` declares;
-- has a statement that does not run under `adapterGamma` or `int64Gamma`;
-- names an export's word body without naming that export's `dictionary`;
-- covers no exported word.
+- the registry is not `adapterGamma` or `int64Gamma` itself (a definition
+  equal to one of them is refused too);
+- the module's source file is gone, since its `.olean` may be stale.
 
-Coverage comes from the statement alone, never from the proof. A theorem
-covers the words whose bodies its statement names, and the words it calls by
-name (`.word "w"`) in a module whose `dictionary` it names, closed under the
-calls in those words' bodies. Definitions under `Firth.Proofs`, such as an
-abbreviation for `Runs adapterGamma dictionary defaultCosts`, are unfolded
-first. Naming a dictionary covers nothing by itself, so a theorem about
-`has-repeat` covers `has-repeat` and what it calls, not the rest of the
-allocator.
-
-Each record lists the covered words with their current body digests, and an
-evidence id: the SHA-256 of the record's text, which includes a digest of the
-theorem's statement. `records.json` also reports every exported word as
+Coverage comes from the declared word alone: the record covers that word and
+every word its body calls, closed under calls, never the rest of the export.
+Each record carries the contract's fields pretty-printed (`pre`, `input`,
+`output`, `steps`, `cost`) so a reader sees what was proved, a digest of the
+statement, the axioms used, a digest of the registry and of the cost table
+(each over its definition and every definition under `Firth` it uses), and
+each covered word's body digest and erased type. Its evidence id is the
+SHA-256 of the record's text. `records.json` reports every exported word as
 `contract_verified`, naming the theorems that cover it, or `type_checked`.
 
-A cost claim is only as good as the cost table it was proved against, so each
-record also lists the cost tables its statement names (its constants of type
-`CostTable`, such as `defaultCosts`) with a digest of each table's definition
-and of every definition under `Firth` that it uses. A change to the table
-changes that digest. `firthProofRecords --status records.json` reports the
-words' status from a written report, counting a record only while every word
-it covers keeps its recorded body digest and every cost table it names keeps
-its recorded digest. A record whose table changed stops making its words
-`contract_verified`, even though the report has not been regenerated.
+`firthProofRecords --status records.json` audits every record in a written
+report again and counts it only when the audit reproduces it exactly. A record
+whose registry, cost table, word body, erased type or statement changed, or
+whose covers list was edited, stops making its words `contract_verified`.
 
-CI runs the script with `--check`. It fails if any contract is refused, if a
-covered word's body digest changed since the record was written, or if the
-audit's behaviour on the fixtures in `src/prooftests/` changes: every theorem in
-`Refused.lean` must be refused for its reason, and every theorem in
-`Accepted.lean` accepted with exactly its expected coverage and cost tables.
-It also reads the new report back with `--status`, then plants a changed cost
-table digest and a changed body digest, and fails unless each one withdraws
-`contract_verified` from the words that record covers.
+CI runs the script with `--check`. It fails if any contract is refused, if
+the checked-in report differs, or if the audit's behaviour on the fixtures in
+`src/prooftests/` changes: every entry in `refused.json` must be refused for
+its expected reason, and every entry in `accepted.json` accepted with exactly
+its expected coverage and cost table. It also reads the new report back with
+`--status`, then plants a changed cost table digest, registry digest, body
+digest, erased type, precondition and a forged cover, one at a time, and fails
+unless each withdraws `contract_verified` from the words that record covers
+and verifies nothing new.
 
-Adding a contract: prove it here, add it to `contracts.json`, then run
-`lake build` and `python3 tools/loop/update_proof_records.py`.
+Adding a contract: define its `WordContract` and prove `Holds` here, add it to
+`contracts.json`, then run `lake build` and
+`python3 tools/loop/update_proof_records.py`.

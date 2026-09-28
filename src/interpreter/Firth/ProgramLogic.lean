@@ -869,6 +869,36 @@ theorem run_of_runsWithin {program : Program} {before after : Stack} {maxSteps m
 end Bounds
 
 /-!
+## Word contracts
+
+A proof record admits exactly one shape of statement: a `WordContract` holds
+of an exported word's body. The contract names its arguments, a precondition
+on them, the stack the word starts from and the stack it leaves (top first,
+above any `tail`), and bounds on steps and cost. `witness` is a proof that
+some arguments meet the precondition, so a contract cannot be vacuous: a
+precondition no input satisfies cannot be declared.
+-/
+
+/-- What a word does, for every argument that meets `pre`. -/
+structure WordContract where
+  Args : Type
+  pre : Args → Prop
+  input : Args → Stack
+  output : Args → Stack
+  steps : Args → Nat
+  cost : Args → Nat
+  witness : ∃ args, pre args
+
+/-- `contract` holds of `program`: from `input args` above any `tail`, for
+every `args` meeting `pre`, it leaves `output args` above the same `tail`
+within the contract's bounds. -/
+def WordContract.Holds (contract : WordContract) (gamma : Gamma) (dictionary : Dictionary)
+    (costs : CostTable) (program : Program) : Prop :=
+  ∀ (args : contract.Args) (tail : Stack), contract.pre args →
+    RunsWithin gamma dictionary costs program (contract.input args ++ tail)
+      (contract.output args ++ tail) (contract.steps args) (contract.cost args)
+
+/-!
 ## Straight-line chains
 
 `runs_chain` proves a `Runs` goal for a straight-line program by applying one

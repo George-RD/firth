@@ -126,12 +126,13 @@ def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many,v2:Int^many--ρ
 
 end «dup-dip-then-local»
 
-/-- Every word, in declaration order: its name, body and body digest. -/
-def words : List (String × Program × String) := [
-  ("call-then-local", «call-then-local».body, «call-then-local».bodyDigest),
-  ("compose-then-local", «compose-then-local».body, «compose-then-local».bodyDigest),
-  ("add-step-twice", «add-step-twice».body, «add-step-twice».bodyDigest),
-  ("dup-dip-then-local", «dup-dip-then-local».body, «dup-dip-then-local».bodyDigest)]
+/-- Every word, in declaration order: its name, body, body digest and erased
+type. -/
+def words : List (String × Program × String × String) := [
+  ("call-then-local", «call-then-local».body, «call-then-local».bodyDigest, «call-then-local».erasedType),
+  ("compose-then-local", «compose-then-local».body, «compose-then-local».bodyDigest, «compose-then-local».erasedType),
+  ("add-step-twice", «add-step-twice».body, «add-step-twice».bodyDigest, «add-step-twice».erasedType),
+  ("dup-dip-then-local", «dup-dip-then-local».body, «dup-dip-then-local».bodyDigest, «dup-dip-then-local».erasedType)]
 
 /-- The dictionary the reference runner builds for this source. -/
 def dictionary : Dictionary

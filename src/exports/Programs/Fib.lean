@@ -78,10 +78,11 @@ def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many,v2:Int^many--ρ
 
 end «fib-loop»
 
-/-- Every word, in declaration order: its name, body and body digest. -/
-def words : List (String × Program × String) := [
-  ("fib", «fib».body, «fib».bodyDigest),
-  ("fib-loop", «fib-loop».body, «fib-loop».bodyDigest)]
+/-- Every word, in declaration order: its name, body, body digest and erased
+type. -/
+def words : List (String × Program × String × String) := [
+  ("fib", «fib».body, «fib».bodyDigest, «fib».erasedType),
+  ("fib-loop", «fib-loop».body, «fib-loop».bodyDigest, «fib-loop».erasedType)]
 
 /-- The dictionary the reference runner builds for this source. -/
 def dictionary : Dictionary

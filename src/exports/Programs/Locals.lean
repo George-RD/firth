@@ -336,14 +336,15 @@ def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many,v2:Int^many--ρ
 
 end «swap-below»
 
-/-- Every word, in declaration order: its name, body and body digest. -/
-def words : List (String × Program × String) := [
-  ("fact", «fact».body, «fact».bodyDigest),
-  ("fib-loop", «fib-loop».body, «fib-loop».bodyDigest),
-  ("fib", «fib».body, «fib».bodyDigest),
-  ("allocate-partial", «allocate-partial».body, «allocate-partial».bodyDigest),
-  ("sort3", «sort3».body, «sort3».bodyDigest),
-  ("swap-below", «swap-below».body, «swap-below».bodyDigest)]
+/-- Every word, in declaration order: its name, body, body digest and erased
+type. -/
+def words : List (String × Program × String × String) := [
+  ("fact", «fact».body, «fact».bodyDigest, «fact».erasedType),
+  ("fib-loop", «fib-loop».body, «fib-loop».bodyDigest, «fib-loop».erasedType),
+  ("fib", «fib».body, «fib».bodyDigest, «fib».erasedType),
+  ("allocate-partial", «allocate-partial».body, «allocate-partial».bodyDigest, «allocate-partial».erasedType),
+  ("sort3", «sort3».body, «sort3».bodyDigest, «sort3».erasedType),
+  ("swap-below", «swap-below».body, «swap-below».bodyDigest, «swap-below».erasedType)]
 
 /-- The dictionary the reference runner builds for this source. -/
 def dictionary : Dictionary

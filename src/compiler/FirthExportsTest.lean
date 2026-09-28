@@ -26,11 +26,12 @@ private def digestOf (names : List String) (name : String) (program : Program) :
   | .ok digest => .ok (Digest.toHex digest)
   | .error error => .error error.message
 
-private def checkModule (module source : String) (words : List (String × Program × String)) :
+private def checkModule (module source : String)
+    (words : List (String × Program × String × String)) :
     IO Unit := do
   let names := words.map (·.1)
   if words.isEmpty then fail s!"{module}: exports no words"
-  for (name, program, digest) in words do
+  for (name, program, digest, _) in words do
     match digestOf names name program with
     | .error message => fail s!"{module}.{name}: does not lower: {message}"
     | .ok actual =>
@@ -42,11 +43,13 @@ private def checkModule (module source : String) (words : List (String × Progra
   | .ok fresh =>
       if fresh.map (·.name) != names then
         fail s!"{module}: {source} now defines {fresh.map (·.name)}, exported {names}"
-      for (word, (_, program, digest)) in fresh.zip words do
+      for (word, (_, program, digest, erasedType)) in fresh.zip words do
         if word.program != program then
           fail s!"{module}.{word.name}: the Lean body differs from the elaborator's program"
         if word.bodyDigest != digest then
           fail s!"{module}.{word.name}: the source now compiles to {word.bodyDigest}"
+        if word.erasedType != erasedType then
+          fail s!"{module}.{word.name}: the source now has erased type {word.erasedType}"
 
 /-- The check must be able to fail: one changed atom changes the digest. -/
 private def checkDigestSeesEdits : IO Unit := do

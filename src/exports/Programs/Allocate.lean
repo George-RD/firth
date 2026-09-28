@@ -207,14 +207,15 @@ def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many,v2:Bool^many--�
 
 end «allocate»
 
-/-- Every word, in declaration order: its name, body and body digest. -/
-def words : List (String × Program × String) := [
-  ("over", «over».body, «over».bodyDigest),
-  ("min", «min».body, «min».bodyDigest),
-  ("allocate-partial", «allocate-partial».body, «allocate-partial».bodyDigest),
-  ("allocate-whole", «allocate-whole».body, «allocate-whole».bodyDigest),
-  ("reason", «reason».body, «reason».bodyDigest),
-  ("allocate", «allocate».body, «allocate».bodyDigest)]
+/-- Every word, in declaration order: its name, body, body digest and erased
+type. -/
+def words : List (String × Program × String × String) := [
+  ("over", «over».body, «over».bodyDigest, «over».erasedType),
+  ("min", «min».body, «min».bodyDigest, «min».erasedType),
+  ("allocate-partial", «allocate-partial».body, «allocate-partial».bodyDigest, «allocate-partial».erasedType),
+  ("allocate-whole", «allocate-whole».body, «allocate-whole».bodyDigest, «allocate-whole».erasedType),
+  ("reason", «reason».body, «reason».bodyDigest, «reason».erasedType),
+  ("allocate", «allocate».body, «allocate».bodyDigest, «allocate».erasedType)]
 
 /-- The dictionary the reference runner builds for this source. -/
 def dictionary : Dictionary
