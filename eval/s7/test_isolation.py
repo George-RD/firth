@@ -881,14 +881,17 @@ print(json.dumps(out))
         (venv / "bin").mkdir(parents=True, exist_ok=True)
         (venv / "bin" / "python3").symlink_to(os.path.realpath(sys.executable))
         plain = "def main(xs):\n    return xs\n"
-        saved_exe, saved_resolve = sys.executable, harness.sandbox_python
+        saved_exe, saved_resolve, saved_install = sys.executable, harness.sandbox_python, harness.python_install
         try:
             sys.executable = str(venv / "bin" / "python3")
             via_venv = harness.run_python(plain, ([4],), None, ("Seq Int",), sandboxed=True)
+            # As before the fix: the link run as it is, with only the base install shown.
             harness.sandbox_python = lambda: sys.executable
+            harness.python_install = lambda exe: saved_install(os.path.realpath(saved_exe))
             unresolved = harness.run_python(plain, ([4],), None, ("Seq Int",), sandboxed=True)
         finally:
             sys.executable, harness.sandbox_python = saved_exe, saved_resolve
+            harness.python_install = saved_install
             shutil.rmtree(venv, ignore_errors=True)
         check(not unresolved["ok"],
               f"run through the venv's link, the sandbox cannot start Python (the planted case): {unresolved}")
