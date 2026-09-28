@@ -346,6 +346,62 @@ def runElaboratorDiagnosticTests : IO Unit := do
   expectEqual "binders skip a name an input uses" (localBinders ["n", "n", "n2"]) ["n", "n3", "n2"]
   expectEqual "binders number every repeat" (localBinders ["a", "a", "a"]) ["a", "a2", "a3"]
 
+  -- An `if` inside `locals` whose branches change the stack depth by
+  -- different amounts, with a local used after it. Erasure loses track of
+  -- the stack at the `if` and used to report the later use of `x` as an
+  -- untracked local, with a hint saying such quotations are fine. The real
+  -- error is the branch mismatch, reported at the `if` with both branches.
+  let branchSource := ": keep-positive (forall ρ; ρ x:Int^many -- ρ r:Int^many)\n  locals { x } { 0 x prim < [ x ] [ ] if x prim + } ;"
+  match elaboratePipeline pipelineContext branchSource agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "branch shape" "firth.type.branch-mismatch" emitted
+      if emitted.contains "the true branch leaves 1 more value than it takes, and the false branch leaves as many values as it takes" &&
+          emitted.contains "\"start\":{\"line\":2,\"column\":39}" &&
+          !emitted.contains "untracked" && !emitted.contains "are fine" then pure ()
+      else fail s!"an if with branches of different depths was not reported at the if: {emitted}"
+  | _ => fail "branch-shape result was not singular"
+  -- The same mistake inside a quotation that is then called: the quotation's
+  -- effect is unknown because of the inner `if`, and the report still points
+  -- at that `if`, not at the `call` that runs it.
+  let nestedSource := ": keep-positive (forall ρ; ρ x:Int^many -- ρ r:Int^many)\n  locals { x } { [ true [ 1 ] [ ] if ] call x prim + } ;"
+  match elaboratePipeline pipelineContext nestedSource agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "nested branch shape" "firth.type.branch-mismatch" emitted
+      if emitted.contains "\"start\":{\"line\":2,\"column\":35}" && !emitted.contains "untracked" then pure ()
+      else fail s!"an if with branches of different depths inside a called quotation was not reported at the if: {emitted}"
+  | _ => fail "nested branch-shape result was not singular"
+  -- The mismatched `if` two and three levels down, inside a branch of an
+  -- outer `if` whose own branches have unknown effects because of it. The
+  -- report is at the innermost mismatched `if`, whatever the nesting.
+  let expectInnerIf (label source : String) (line column : Nat) : IO Unit := do
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .failure [envelope] =>
+        let emitted := encode envelope
+        expectValidCode label "firth.type.branch-mismatch" emitted
+        unless emitted.contains s!"\"start\":\{\"line\":{line},\"column\":{column}}" &&
+            !emitted.contains "untracked" do
+          fail s!"{label}: not reported at the innermost if: {emitted}"
+    | _ => fail s!"{label}: result was not singular"
+  expectInnerIf "two levels"
+    ": g (forall ρ; ρ x:Int^many -- ρ r:Int^many)\n  locals { x } {\n    0 x prim <\n    [ 1 x prim < [ x ] [ ] if ]\n    [ 0 ]\n    if\n    x prim + } ;"
+    4 28
+  expectInnerIf "three levels"
+    ": g (forall ρ; ρ x:Int^many -- ρ r:Int^many)\n  locals { x } {\n    0 x prim <\n    [ 1 x prim < [ 2 x prim < [ x ] [ ] if ] [ 0 ] if ]\n    [ 0 ]\n    if\n    x prim + } ;"
+    4 41
+
+  -- A quotation of unknown effect still gives untracked-local, now naming
+  -- the atom that lost track and its line.
+  let unknownSource := ": call-unknown-effect\n  (forall ρ; ρ z:Int^many a:Int^many b:Int^many -- ρ z:Int^many r:Int^many)\n  locals { a b } { a [ 1 prim + ] [ call ] call b prim - };"
+  match elaboratePipeline pipelineContext unknownSource agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "unknown effect" "firth.elaboration.untracked-local" emitted
+      if emitted.contains "used after `call` on line 3 ran a quotation" then pure ()
+      else fail s!"an untracked local did not name the atom that lost track: {emitted}"
+  | _ => fail "unknown-effect result was not singular"
+
   -- A name that is not in the stack effect keeps the general hint, which
   -- now also mentions `locals`.
   match elaboratePipeline pipelineContext ": double (forall ρ; ρ n:Int^many -- ρ r:Int^many) 2 prim * dobule ;" with

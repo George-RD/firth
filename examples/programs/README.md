@@ -63,7 +63,10 @@ returned by another quotation, or `[ call ]` itself. The checker can't tell
 where the local sits afterwards, so it refuses the program with
 `firth.elaboration.untracked-local` rather than guess. Quotations written
 inline, like `[ 1 prim + ] call` or `[ 1 prim + ] [ ] compose call`, are fine
-(`quotations.firth`). The programs under `refused/` must be rejected.
+(`quotations.firth`). An `if` whose two branches leave different numbers of
+values is a type error, reported as `firth.type.branch-mismatch` at the `if`
+even when a local is used after it (`refused/if-branch-shape.firth`). The
+programs under `refused/` must be rejected.
 
 ## Sequences
 
