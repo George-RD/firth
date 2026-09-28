@@ -25,7 +25,7 @@ prompt --rounds`): `repair-1` to `repair-<rounds>` and `answer-1` to
 `answer-<rounds + 1>`. A read, write or kept file beyond that is flagged, so a
 run cannot score more feedback than it reports (Codex, on #147).
 
-    audit_subagent.py LOG.jsonl --prompt P --dir D --rounds R [--kept K] > transcript.json
+    audit_subagent.py LOG.jsonl --prompt P --dir D --rounds R --lang L [--kept K] > transcript.json
 
 `--dir` is where the author wrote (as its log records it); `--kept` is where
 the answers are kept now, when they were moved. Exits 1 if any call is flagged.
@@ -44,7 +44,7 @@ from harness import extract, repair, select  # noqa: E402
 
 
 def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: int,
-          lang: str = "firth") -> tuple[dict, list[str]]:
+          lang: str) -> tuple[dict, list[str]]:
     reads = {str(prompt)}
     answer = re.compile(re.escape(str(run_dir)) + r"/answer-([1-9][0-9]*)\.md")
     repair = re.compile(re.escape(str(run_dir)) + r"/repair-([1-9][0-9]*)\.md")
@@ -151,7 +151,8 @@ def main() -> int:
     cli.add_argument("--dir", type=Path, required=True)
     cli.add_argument("--kept", type=Path)
     cli.add_argument("--rounds", type=int, required=True, help="the feedback rounds the prompt allowed")
-    cli.add_argument("--lang", default="firth", choices=["firth", "python"])
+    cli.add_argument("--lang", required=True, choices=["firth", "python"],
+                     help="the language the author wrote, which decides how its feedback is rebuilt")
     a = cli.parse_args()
     events = [json.loads(l) for l in a.log.read_text().splitlines() if l.strip()]
     log, bad = audit(events, a.prompt, a.dir, a.kept or a.dir, a.rounds, a.lang)
