@@ -571,6 +571,8 @@ def runElaboratorDiagnosticTests : IO Unit := do
       ["The true branch leaves 2 values, bottom to top: the result of `insert-at` and the result of `insertion-sort`; the false branch leaves `xs`.",
         "the result of `insert-at` is left below the result of `insertion-sort`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it"],
       -- The result of `insert-at` passed to `insertion-sort` as its sequence.
+      -- The edit also puts `insert-at`'s arguments in its order (`xs idx`),
+      -- a second mistake the report does not name.
       ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Seq Int^many)\n  dup prim seq-int.len 0 insertion-sort;\n\n: insertion-sort\n  (forall ρ; ρ xs:Seq Int^many len:Int^many idx:Int^many -- ρ sorted:Seq Int^many)\n  locals { xs len idx } {\n    idx len prim < [\n      xs idx insert-at len idx 1 prim + insertion-sort\n    ] [ xs ] if\n  };\n\n: insert-at\n  (forall ρ; ρ xs:Seq Int^many idx:Int^many -- ρ sorted:Seq Int^many)\n  locals { xs idx } {\n    idx 0 prim = [\n      xs\n    ] [\n      idx 1 prim - xs prim seq-int.at idx xs prim seq-int.at prim < [\n        idx 1 prim - idx xs prim seq-int.at xs prim seq-int.set\n        idx 1 prim - xs prim seq-int.at xs idx 1 prim - prim seq-int.set\n        idx 1 prim - xs insert-at\n      ] [ xs ] if\n    ] if\n  };\n",
       "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `insertion-sort` leave different numbers of values: the true branch pushes 2 values, and the false branch pushes 1 value. So the true branch leaves 1 value more than the false branch.\nhint: If the values below those already agree, either add `drop` at the end of the true branch, or make the false branch push 1 value more, of the same type the true branch leaves on top. If they do not, the branches also leave different types, and each must be changed until both leave the same values. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack."),
     ("all-true (answer 2)",
@@ -640,6 +642,38 @@ def runElaboratorDiagnosticTests : IO Unit := do
       if emitted.contains "`h` takes" || emitted.contains "`h` needs" then
         fail s!"closed word: the report accounts for `h` as if it kept the stack below: {emitted}"
   | _ => fail "closed word: expected one diagnostic"
+  -- A branch that reaches below the `if` with `dup`, which takes a value of
+  -- any type, and then fails on the type `prim +` needs: `dup` is not to
+  -- blame, so the report keeps the checker's typed account.
+  match elaboratePipeline pipelineContext ": g (forall ρ; ρ b:Bool^many -- ρ r:Int^many) true [ dup prim + ] [ drop 0 ] if ;" agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "dup before prim +" "firth.type.branch-mismatch" emitted
+      if emitted.contains "`dup` takes" then
+        fail s!"dup before prim +: the report blames `dup`: {emitted}"
+      unless emitted.contains "cannot run on the stack it is given" do
+        fail s!"dup before prim +: the report does not keep the checker's account: {emitted}"
+  | _ => fail "dup before prim +: expected one diagnostic"
+  -- The first `prim +` takes `b`, an Int as it needs; the second takes `a`,
+  -- a Bool. The first is not to blame, so the report keeps the checker's
+  -- typed account rather than saying what the first `prim +` gets.
+  match elaboratePipeline pipelineContext ": g (forall ρ; ρ a:Bool^many b:Int^many -- ρ r:Int^many) true [ 1 prim + prim + ] [ drop drop 0 ] if ;" agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      expectValidCode "second prim +" "firth.type.branch-mismatch" emitted
+      if emitted.contains "`prim +` takes" then
+        fail s!"second prim +: the report blames the first `prim +`: {emitted}"
+  | _ => fail "second prim +: expected one diagnostic"
+  -- max, copied verbatim from eval/s7/runs/2026-09-27-plus-only/haiku-firth,
+  -- solutions-1.json: the `swap` before the `if` decides which input each
+  -- branch takes, so the report names them only if the walk exchanges them.
+  branchReport "max (swap before the if)" ": main\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  swap dup [ drop drop ] [ drop ] if;\n"
+    ["The true branch takes the input `a` and the input `b` from below the `if` and leaves nothing; the false branch takes the input `a` from below the `if` and leaves nothing."]
+  -- A `swap` inside the branch: after it `a` is on top, so the `drop`
+  -- uses up `a` and the branch leaves `b`, the value it took and put back.
+  branchReport "swap in a branch" ": g (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) true [ swap drop ] [ ] if ;"
+    ["The true branch takes the input `b` and the input `a` from below the `if` and leaves the input `b`; the false branch leaves nothing.",
+      "The true branch takes the input `a` from below the `if`, and the false branch leaves it in place"]
   -- Values from below the `if` are named bottom to top, as the word's
   -- inputs were given.
   branchReport "two inputs from below"

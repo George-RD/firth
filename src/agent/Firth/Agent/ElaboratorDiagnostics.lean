@@ -209,7 +209,7 @@ not there is explained by the operation that takes it; branches that leave
 different numbers of values, by what each leaves. `none` when the account
 adds nothing, as when the branches differ only in types. -/
 private def accountExplanation (word : String) (account : Firth.Elaborator.IfAccount)
-    (cannotRun : Option Bool := none) : Option (String × String) :=
+    (cannotRun : Option (Bool × List String × List String) := none) : Option (String × String) :=
   let inWord := if word.isEmpty then "" else s!" in `{word}`"
   let which := s!"the `if`{inWord} whose true branch is `{account.trueSource}`"
   let noEvening := "Adding a `drop` or pushing values to even out the branches would only move the mistake."
@@ -219,11 +219,24 @@ private def accountExplanation (word : String) (account : Firth.Elaborator.IfAcc
     else s!"In the false branch of {which}"
   -- A branch the checker says cannot run on the stack below the `if`, whose
   -- first operation that reaches below it finds every value it takes: the
-  -- values are there but not the ones it takes, so say what it gets.
-  let wrongValues : Option (String × Firth.Elaborator.BranchReach) := cannotRun.bind fun onTrueBranch =>
+  -- values are there but not the ones it takes, so say what it gets. Only
+  -- when that operation is the one whose types the branch cannot meet: the
+  -- types it declares for the values from below are the top of the input the
+  -- checker inferred for the branch (bottom to top), and not the top of the
+  -- stack below the `if`. A `dup` or `swap` takes values of any type, so a
+  -- later operation is the one to blame, and the checker's own account is
+  -- kept.
+  let wrongValues : Option (String × Firth.Elaborator.BranchReach) := cannotRun.bind fun (onTrueBranch, input, below) =>
     let name := if onTrueBranch then "true" else "false"
     let branch := if onTrueBranch then account.onTrue else account.onFalse
-    (branch.reach.filter (·.missing == 0)).map (name, ·)
+    let top (list : List String) (count : Nat) := list.drop (list.length - count)
+    let blamed (reach : Firth.Elaborator.BranchReach) : Bool :=
+      let count := reach.below.length
+      let types := reach.inputs.take count
+      reach.missing == 0 && reach.inputs.length == reach.count && count > 0 &&
+        count ≤ input.length && count ≤ below.length &&
+        types == top input count && types != top below count
+    (branch.reach.filter blamed).map (name, ·)
   match wrongValues with
   | some (name, reach) =>
       let takes := if reach.inputs.isEmpty then s!"takes {valueCount reach.count}"
@@ -276,7 +289,11 @@ private def accountExplanation (word : String) (account : Firth.Elaborator.IfAcc
       let (shorterBranch, longerBranch) := if longer == "true" then (account.onFalse, account.onTrue) else (account.onTrue, account.onFalse)
       -- The shorter branch may be shorter because it takes values from
       -- below the `if` that the longer branch leaves in place.
-      let kept := shorterBranch.took.drop longerBranch.took.length
+      -- A value the branch takes and puts back, as `swap` does, is not
+      -- one it uses up.
+      let usedUp (branch : Firth.Elaborator.BranchAccount) :=
+        branch.leaves.foldl List.erase branch.took
+      let kept := (usedUp shorterBranch).drop (usedUp longerBranch).length
       let hint :=
         if kept.length ≥ extra && extra > 0 then
           let strays := kept.take extra
@@ -619,7 +636,9 @@ private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Str
         "Put a `[ ... ]` quotation where the operation expects one.")
   | "firth.type.branch-mismatch", _, _ =>
       match diagnostic.ifAccount.bind fun account =>
-          accountExplanation (diagnostic.word.getD "") account (diagnostic.branchInput.map (·.1)) with
+          accountExplanation (diagnostic.word.getD "") account
+            (diagnostic.branchInput.map fun (onTrueBranch, input) =>
+              (onTrueBranch, (stackValues input).1.map renderType, (stackValues diagnostic.state).1.map renderType)) with
       | some explanation => explanation
       | none =>
       match diagnostic.branchOutputs, diagnostic.branchInput with

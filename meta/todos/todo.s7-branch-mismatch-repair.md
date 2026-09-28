@@ -60,7 +60,10 @@ diagnostic, in `eval/s7/runs/2026-09-28-haiku-470c6d0/`:
   names it.
 - The branch account (`src/elaborator/Firth/Account.lean`) now names the
   operation, the `if` by its true branch, and every value by its source.
-  All 99 branch-mismatch reports on the recorded Haiku answers use it.
+  All 99 branch-mismatch reports on the recorded Haiku answers use it; over
+  every recorded answer and repository program (the #164 review), 114 of 117
+  do, and the other 3 fall back by design (types only, or an `if` that is
+  itself missing its condition).
   Five run 7 answers are fixtures in `ElaboratorDiagnosticsTest.lean`: the
   edit each report suggests removes the mistake at that `if`. Whether
   Haiku repairs more from it needs the next rerun (second criterion).

@@ -23,6 +23,10 @@ the checker wrote, not the author:
   inserted to reach a local.
 - `firth.type.word-input-mismatch` in `main` shows types only, without the
   values' sources (4 of 20 last-round failures in run 7's sample 2).
+- A branch-mismatch report whose operation is inside a quotation in the
+  branch ("inside a quotation in that branch") points `at:` the outer `if`
+  and does not say which inner quotation holds the operation (keep-positive
+  19:5 and longest-run 23:15 in the #164 review).
 
 ## Goal
 
