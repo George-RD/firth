@@ -92,8 +92,9 @@ class GenerationTests(unittest.TestCase):
                 h.Case.from_payload({**recipe, **mutation})
 
 
-def reference_event(index, stack, cost=1):
-    return {"index": index, "stack": stack, "program": [], "cost": cost}
+def reference_event(index, stack, cost=1, next_primitive=None):
+    program = [] if next_primitive is None else [{"kind": "prim", "name": next_primitive}]
+    return {"index": index, "stack": stack, "program": program, "cost": cost}
 
 
 def target_event(index, stack, kernel_cost=1):
@@ -101,12 +102,12 @@ def target_event(index, stack, kernel_cost=1):
             "kernel_cost": kernel_cost, "image_version": 1, "frames": []}
 
 
-def judged(case, reference_side, target_side):
+def judged(case, reference_side, target_side, faulting="+"):
     """Observations built by hand, then compared and judged as the executor does.
 
     A faulting VM run ends with the charged event of its faulting instruction,
     whose stack is the stack at the fault; where the reference runs on, its
-    trace holds the same step with the same stack.
+    trace holds the same step, applying `faulting`, with the same stack.
     """
     reference, target = observations()
     for observation, (status, values) in ((reference, reference_side), (target, target_side)):
@@ -116,7 +117,7 @@ def judged(case, reference_side, target_side):
         target.update(trace=[target_event(0, h.encode(target_side[1]))],
                       cost={"total": 1, "kernel": 1, "steps": 1})
         if reference_side[0] == "success":
-            reference.update(trace=[reference_event(0, h.encode(target_side[1]))],
+            reference.update(trace=[reference_event(0, h.encode(target_side[1]), next_primitive=faulting)],
                              cost={"total": 1, "steps": 1})
     result = h.compare(reference, target, 4096)
     return result.kind, h.judge(case, reference, target, result).kind
@@ -210,7 +211,7 @@ class OracleTests(unittest.TestCase):
         edge = case_of(h.MIN_INT, h.Step("div", -1))
         self.assertEqual(judged(edge, ("trap", [h.MIN_INT, -1]), ("trap", [h.MIN_INT, -1])),  # reference bounded
                          ("runtime-trap", "oracle-mismatch"))
-        self.assertEqual(judged(edge, ("success", [2**63]), ("trap", [h.MIN_INT, -1])),
+        self.assertEqual(judged(edge, ("success", [2**63]), ("trap", [h.MIN_INT, -1]), "div"),
                          ("portable-integer-overflow", "expected-portable-overflow"))
         boolean = case_of(1, h.Step("mul", 1), prefix=(True,))
         reference, target = observations()
@@ -295,8 +296,9 @@ class ComparisonTests(unittest.TestCase):
     def test_target_integer_overflow_is_explicit(self):
         reference, target = observations()
         reference["stack"] = [{"kind": "literal", "literal": {"type": "int", "value": h.MAX_INT + 1}}]
-        reference.update(trace=[reference_event(0, [])], cost={"total": 1, "steps": 1})
-        target.update(status="trap", trap="primitive-fault", trace=[target_event(0, [])],
+        operands = h.encode([h.MAX_INT, 1])
+        reference.update(trace=[reference_event(0, operands, next_primitive="+")], cost={"total": 1, "steps": 1})
+        target.update(status="trap", trap="primitive-fault", stack=operands, trace=[target_event(0, operands)],
                       cost={"total": 1, "kernel": 1, "steps": 1})
         self.assertEqual(h.compare(reference, target, 8).kind, "portable-integer-overflow")
 
@@ -333,7 +335,7 @@ class ComparisonTests(unittest.TestCase):
         # the reference runs on and leaves MAX - 1.
         top, both = h.encode([h.MAX_INT]), h.encode([h.MAX_INT, 1])
         case = case_of(h.MAX_INT, h.Step("add", 1), h.Step("sub", 2))
-        reference_trace = [reference_event(0, []), reference_event(1, top), reference_event(2, both),
+        reference_trace = [reference_event(0, []), reference_event(1, top), reference_event(2, both, next_primitive="+"),
                            reference_event(3, h.encode([h.MAX_INT + 1])),
                            reference_event(4, h.encode([h.MAX_INT + 1, 2]))]
 
@@ -364,9 +366,9 @@ class ComparisonTests(unittest.TestCase):
         # Planted: the VM's stack at the fault is not the reference's there.
         self.assertEqual(overflowed(right, h.encode([h.MAX_INT, 2]))[0], "stack-mismatch")
         # Planted: the VM faults a step early, at the push of 1. Its run is a
-        # true prefix of the reference's, so only the oracle can name it.
+        # true prefix of the reference's, but that push cannot overflow.
         early = [target_event(0, []), target_event(1, top)]
-        self.assertEqual(overflowed(early, top), ("portable-integer-overflow", "oracle-mismatch"))
+        self.assertEqual(overflowed(early, top), ("trace-mismatch", "oracle-mismatch"))
         # Planted: one step charged differently, the reported total unchanged,
         # so only the per-event charge check can name it.
         charged = [target_event(0, []), target_event(1, top, kernel_cost=2), target_event(2, both)]
@@ -379,6 +381,54 @@ class ComparisonTests(unittest.TestCase):
         longer = [target_event(i, event["stack"]) for i, event in enumerate(reference_trace)]
         longer.append(target_event(len(longer), h.encode([h.MAX_INT - 1])))
         self.assertEqual(overflowed(longer, h.encode([h.MAX_INT - 1]))[0], "trace-mismatch")
+        # Planted: the reference's cost report is malformed or incomplete.
+        for cost in ("bad", {"total": 5}, {"total": -1, "steps": 5}):
+            reference, target = observations()
+            reference.update(stack=h.encode([h.MAX_INT - 1]), trace=copy.deepcopy(reference_trace), cost=cost)
+            target.update(status="trap", trap="primitive-fault", stack=both, trace=copy.deepcopy(right),
+                          cost={"total": 3, "kernel": 3, "steps": 3})
+            self.assertEqual(h.compare(reference, target, 8).kind, "invalid-observation")
+
+    def test_an_overflow_must_fault_on_the_step_that_overflows(self):
+        # `MAX 1 div 1 +`: `div` leaves MAX, and only the later `+` overflows.
+        # A VM that faults on `div` stops with MAX 1 on its stack, the very
+        # operands the oracle expects at the `+`, and its run is a true prefix
+        # of the reference's, so only the faulting step can name it.
+        top, both = h.encode([h.MAX_INT]), h.encode([h.MAX_INT, 1])
+        case = case_of(h.MAX_INT, h.Step("div", 1), h.Step("add", 1))
+        self.assertEqual(h.expected(case, True), ("trap", [h.MAX_INT, 1]))
+        reference_trace = [reference_event(0, []), reference_event(1, top),
+                           reference_event(2, both, next_primitive="div"), reference_event(3, top),
+                           reference_event(4, both, next_primitive="+")]
+
+        def overflowed(target_trace):
+            reference, target = observations()
+            reference.update(stack=h.encode([h.MAX_INT + 1]), trace=copy.deepcopy(reference_trace),
+                             cost={"total": 5, "steps": 5})
+            target.update(status="trap", trap="primitive-fault", stack=both, trace=target_trace,
+                          cost={"total": len(target_trace), "kernel": len(target_trace),
+                                "steps": len(target_trace)})
+            result = h.compare(reference, target, 8)
+            return result.kind, h.judge(case, reference, target, result).kind
+
+        events = [target_event(i, event["stack"]) for i, event in enumerate(reference_trace)]
+        self.assertEqual(overflowed(events), ("portable-integer-overflow", "expected-portable-overflow"))
+        # Planted: the VM faults on the `div`, which stays in range.
+        self.assertEqual(overflowed(events[:3]), ("trace-mismatch", "trace-mismatch"))
+        # The step at the fault must be a primitive that can overflow, applied
+        # to two integers whose documented result leaves the signed range.
+        for program, stack, verdict in (
+                ([{"kind": "prim", "name": "+"}], both, True),
+                ([{"kind": "prim", "name": "-"}], both, False),
+                ([{"kind": "prim", "name": "mod"}], h.encode([h.MIN_INT, -1]), False),
+                ([{"kind": "prim", "name": "div"}], h.encode([h.MIN_INT, -1]), True),
+                ([{"kind": "prim", "name": "div"}], h.encode([h.MAX_INT, 0]), False),
+                ([{"kind": "call"}], both, False),
+                ([], both, False),
+                ([{"kind": "prim", "name": "+"}], top, False),
+                ([{"kind": "prim", "name": "+"}], h.encode([True, h.MAX_INT]), False)):
+            with self.subTest(program=program, stack=stack):
+                self.assertEqual(h.overflows({"stack": stack, "program": program}), verdict)
 
     def test_per_event_trace_differences_have_their_own_failure_class(self):
         one, two = h.gate.initial_values([1, 2])
@@ -530,8 +580,9 @@ print(json.dumps(response))
             ({"elaborate_mode": "error"}, "elaboration-rejected", "elaborate", 1),
             ({"compiler_mode": "error"}, "compiler-rejected", "compile", 3),
             ({"target_mode": "mismatch"}, "kernel-cost-mismatch", "compare", 4),
-            # The oracle expects success, so a trapping VM is named against it.
-            ({"target_mode": "trap"}, "oracle-mismatch", "oracle", 4),
+            # The fake reference's step at the VM's fault is no overflow, so
+            # the trapping VM is named before the oracle is asked.
+            ({"target_mode": "trap"}, "trace-mismatch", "compare", 4),
             ({"target_mode": "malformed"}, "invalid-observation", "compare", 4)):
             with self.subTest(kwargs=kwargs), tempfile.TemporaryDirectory() as directory:
                 result = h.Executor(self.fixture(directory, **kwargs))(h.generate(0, 0))
