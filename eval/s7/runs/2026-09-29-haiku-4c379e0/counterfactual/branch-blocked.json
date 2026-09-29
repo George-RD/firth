@@ -41,7 +41,7 @@
    "next_first_error": "firth.syntax.expected-name",
    "hand_edits": [
     "main gets the task stack effect",
-    "literal after prim dropped",
+    "prim before a literal dropped",
     "locals in effect order"
    ],
    "edited_source": ": ledger-loop\n  (forall \u03c1; \u03c1 balance:Int^many txs:Seq Int^many i:Int^many rejected:Int^many -- \u03c1 balance:Int^many rejected:Int^many)\n  locals { balance txs i rejected } {\n    i txs prim seq-int.len prim < [\n      balance txs i prim seq-int.at prim + dup 0 prim < [\n        drop balance rejected 1 prim + i 1 prim + ledger-loop\n      ] [\n        balance rejected i 1 prim + ledger-loop\n      ] if\n    ] [\n      balance rejected\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 start:Int^many txs:Seq Int^many -- \u03c1 balance:Int^many rejected:Int^many)\n  locals { start txs } {\n    start txs 0 0 ledger-loop\n  };\n",
@@ -57,7 +57,7 @@
    "next_first_error": "firth.syntax.invalid-item",
    "hand_edits": [
     "main gets the task stack effect",
-    "literal after prim dropped",
+    "prim before a literal dropped",
     "locals in effect order"
    ],
    "edited_source": ": allocate-item\n  (forall \u03c1; \u03c1 stock:Seq Int^many item:Int^many qty:Int^many whole:Bool^many -- \u03c1 stock:Seq Int^many allocated:Int^many reason:Int^many)\n  locals { stock item qty whole } {\n    stock item prim seq-int.at qty prim <= [\n      stock item qty prim - prim seq-int.set qty 0\n    ] [\n      stock item prim seq-int.at 0 prim = [\n        stock 0 2\n      ] [\n        whole [\n          stock 0 3\n        ] [\n          stock item prim seq-int.at dup\n          stock item 0 prim seq-int.set\n          1\n        ] if\n      ] if\n    ] if\n  };\n\n: allocate-loop\n  (forall \u03c1; \u03c1 stock:Seq Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many i:Int^many allocated:Seq Int^many reasons:Seq Int^many -- \u03c1 stock:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many)\n  locals { stock items qtys whole i allocated reasons } {\n    i items prim seq-int.len prim < [\n      stock items i prim seq-int.at qtys i prim seq-int.at whole i prim seq-bool.at allocate-item\n      allocated prim seq-int.push\n      reasons prim seq-int.push\n      stock items qtys whole i 1 prim + allocated reasons allocate-loop\n    ] [\n      stock allocated reasons\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 stock:Seq Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many -- \u03c1 stock-left:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many)\n  locals { stock items qtys whole } {\n    stock items qtys whole 0 prim seq-int.empty prim seq-int.empty allocate-loop\n  };\n",
@@ -209,7 +209,8 @@
    "branch_word": "main",
    "next_first_error": "firth.syntax.invalid-item",
    "hand_edits": [
-    "`] if;` to `] if`"
+    "`] if;` to `] if`",
+    "bind main inputs with locals"
    ],
    "edited_source": ": digits-helper\n  (forall \u03c1; \u03c1 n:Int^many result:Seq Int^many -- \u03c1 digits:Seq Int^many)\n  locals { n result } {\n    n 0 prim = [ result ] [\n      n 10 prim mod prim seq-int.push\n      n 10 prim div result\n      digits-helper\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 n:Int^many -- \u03c1 digits:Seq Int^many)\n  locals { n } {\n  n 0 prim = [ { 0 } ] [\n    prim seq-int.empty n digits-helper\n    dup prim seq-int.len 1 prim - [ dup prim seq-int.len 1 prim - swap prim seq-int.at swap prim seq-int.len 1 prim - dup 1 prim - prim seq-int.at swap 0 swap prim seq-int.set dup 1 prim - prim seq-int.set ] dip\n  ] if };\n",
    "edited_first_error": "firth.type.branch-mismatch",

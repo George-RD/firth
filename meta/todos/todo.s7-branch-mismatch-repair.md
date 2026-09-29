@@ -75,5 +75,6 @@ diagnostic, in `eval/s7/runs/2026-09-28-haiku-470c6d0/`:
   mismatch again, and 15 failed first on another error (14 of them
   answers that no longer parsed). With that error removed by hand, 7
   more recur, 2 pass, 5 fail on another type error and 1 still does not
-  parse (`counterfactual/branch-blocked.json`). Sample 6 repeated all 10
+  parse (`counterfactual/branch-blocked.json`): 19 recurred, and between
+  2 and 8 were repaired. Sample 6 repeated all 10
   of its round-1 mismatches. Repair did not improve, and this todo stays open.
