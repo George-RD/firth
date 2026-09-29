@@ -71,6 +71,8 @@ text after the `;`:
   follows it, and otherwise to delete this `;` and end the word with `;`
   after its last item. No answer in the corpus has either shape; both are
   tested, and applying each hint as written clears the syntax error.
+  A vocabulary's closing `}` counts as the end of the declaration, so a
+  word at the end of a `vocab` gets the move reading.
 - Otherwise the hint says to close the open brackets first and names the
   next one to close. Only run 4's `is-sorted`
   (`2026-09-28-mvp/haiku-firth/answer-3.md`) gets this reading; closing the

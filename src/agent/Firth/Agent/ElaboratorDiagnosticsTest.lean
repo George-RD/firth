@@ -167,6 +167,10 @@ private def runSyntaxMessageTests : IO Unit := do
       "firth.syntax.definition-ended-early",
       "`;` ends the definition here, but a quotation opened with `[` is still open.",
       "no `;` ends the word after it, so move this `;` to just after that `]`"),
+    ("vocab V {\n: f ( n:Int -- r:Int ) locals { n } { n ; }\n}",
+      "firth.syntax.definition-ended-early",
+      "`;` ends the definition here, but a `locals` body opened with `{` is still open.",
+      "up to the `}` on line 2, but no `;` ends the word after it, so move this `;`"),
     -- The next `;` belongs to the next definition.
     (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  locals { n } { n ;\n  }\n: g ( -- ) ;",
       "firth.syntax.definition-ended-early",
