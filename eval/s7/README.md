@@ -1120,9 +1120,9 @@ run 8's author and feedback instructions word for word. Everything is in
 `runs/2026-09-29-haiku-8ea4a1d/`.
 
 **Sample 4 is void, and sample 5 replaces it.** After writing its last
-answer, sample 4 ran 13 `Bash` commands and read sample 3's sub-agent
-output file, and `audit_subagent.py --rounds 2 --lang firth` flags all 16
-of those calls. Its answers were all written before the first one, but
+answer, sample 4 ran 14 `Bash` commands and made 2 `Read` calls on
+sample 3's sub-agent output file, and `audit_subagent.py --rounds 2 --lang
+firth` flags all 16 of those calls. Its answers were all written before the first one, but
 the rule does not depend on that, so it is not counted. Its files stay in
 the directory (it passed 0, 0 and 1). The audit passes for samples 1, 2,
 3 and 5 (exit 0, nothing flagged). Each of them made exactly nine calls:

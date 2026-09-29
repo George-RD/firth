@@ -15,7 +15,7 @@ flagged sample is void, but it cannot keep the author from seeing
 something.
 
 Run 9 showed this is not hypothetical. Sample 4, after writing its last
-answer, ran 13 Bash commands and read sample 3's sub-agent output file
+answer, ran 14 Bash commands and read sample 3's sub-agent output file
 under `/tmp`. The audit flagged it and the sample is void, but an author
 doing the same before its answer would have seen another sample's work.
 
