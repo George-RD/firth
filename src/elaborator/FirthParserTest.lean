@@ -287,6 +287,10 @@ def runParserTests : IO Unit := do
   match (← success ": chars ( -- ) dup 'a' ;").declarations with
   | [.word { body := [_, .literal { value := .character 'a', .. } _], .. }] => pure ()
   | _ => fail "character literal after a name"
+  -- So is a whole literal written against the name, as in `dup'a'`.
+  match (← success ": chars ( -- ) dup'a' ;").declarations with
+  | [.word { body := [_, .literal { value := .character 'a', .. } _], .. }] => pure ()
+  | _ => fail "character literal against a name"
   expectSpanFailure ": x ( -- ) \"abc" "firth.syntax.unterminated-string" 11 15
   expectSpanFailure (": x ( -- ) \"abc" ++ "\\") "firth.syntax.unterminated-string" 11 16
   expectSpanFailure ": x ( -- ) (*" "firth.syntax.unterminated-comment" 11 13

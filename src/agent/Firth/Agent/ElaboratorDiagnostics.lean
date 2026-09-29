@@ -168,8 +168,10 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
           else "a `locals` body opened with `{`"
         let hint := match error.closedBy with
           -- The brackets after this `;` already close what it left open.
-          | some (closer, span) =>
+          | some (closer, span, true) =>
               s!"A `;` in a word's body always ends the word. The brackets after this `;` already close everything still open, up to the `{closer}` on line {span.start.line}, so delete this `;` and keep the `;` that ends the word after that `{closer}`."
+          | some (closer, span, false) =>
+              s!"A `;` in a word's body always ends the word. The brackets after this `;` close everything still open, up to the `{closer}` on line {span.start.line}, but no `;` ends the word after it, so move this `;` to just after that `{closer}`."
           | none =>
               s!"A `;` in a word's body always ends the word. Close each open bracket first, innermost first: `]` for a quotation and `}` for a `locals` body, as in `... ] if };`. Here the next one to close is `{(error.expected.getD "]")}`."
         (s!"`;` ends the definition here, but {opened} is still open.", hint)

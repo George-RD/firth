@@ -147,6 +147,16 @@ private def runSyntaxMessageTests : IO Unit := do
       "firth.syntax.definition-ended-early",
       "`;` ends the definition here, but a quotation opened with `[` is still open.",
       "Here the next one to close is `]`."),
+    -- No `;` follows the bracket, so deleting this one would leave the word open.
+    (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  n [ 0 ; ]",
+      "firth.syntax.definition-ended-early",
+      "`;` ends the definition here, but a quotation opened with `[` is still open.",
+      "no `;` ends the word after it, so move this `;` to just after that `]`"),
+    -- The next `;` belongs to the next definition.
+    (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  locals { n } { n ;\n  }\n: g ( -- ) ;",
+      "firth.syntax.definition-ended-early",
+      "`;` ends the definition here, but a `locals` body opened with `{` is still open.",
+      "up to the `}` on line 3, but no `;` ends the word after it, so move this `;`"),
     -- Another `;` comes before the brackets close.
     (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  locals { n } { n [ 0 ; ] ; } ;",
       "firth.syntax.definition-ended-early",
