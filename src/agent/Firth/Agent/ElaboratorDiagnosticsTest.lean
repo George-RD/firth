@@ -225,15 +225,33 @@ private def runAssumesTests : IO Unit := do
   let pipelineContext := contextWithSource "pipeline-assumes" "main.fth"
   let agentConfig : Firth.Elaborator.PipelineConfig :=
     { erasureEnv := Elaborate.gammaErasure, typingEnv := Elaborate.gammaTyping }
-  -- `f` adds a Bool. `g` and `two` hand `f` a Bool, found against `f`'s
-  -- declared effect. `h` binds its inputs out of order, which is found from
-  -- `h` alone, though it calls `f`. `r` calls only itself.
+  -- `f` adds a Bool. `g`, `two` and `three` hand `f` a Bool, found against
+  -- `f`'s declared effect. `two` calls `g` only after that, so its report
+  -- does not depend on `g`; `three` calls `g` first. `short` underflows at
+  -- `f`, an erasure error that depends on `f`. `h` binds its inputs out of
+  -- order and `opens` underflows at its own `locals`, both found from the
+  -- word alone, though they call `f`; `early` underflows before its call.
+  -- `r` calls only itself. The branches of `other` leave different numbers
+  -- of values, one of them through `f`. `hidden`'s true branch underflows
+  -- on its own: `k`'s effect changes nothing the report shows, only what
+  -- it does not. `m` hands `p` its values out of order, and the checked
+  -- edit in its hint depends on `q` too.
   let source := String.intercalate "\n" [
     ": f ( a:Int -- b:Int ) true prim + ;",
     ": g ( -- b:Int ) true f ;",
     ": h ( a:Int b:Int -- r:Int ) locals { b a } { a f b prim + } ;",
     ": r ( n:Int -- m:Int ) r true prim + ;",
-    ": two ( -- b:Int ) true f 1 g prim + ;"]
+    ": two ( -- b:Int ) true f 1 g prim + ;",
+    ": three ( -- b:Int ) g true f prim + ;",
+    ": short ( -- b:Int ) f ;",
+    ": opens ( -- r:Int ) locals { x } { x f } ;",
+    ": early ( a:Int -- b:Int ) swap f ;",
+    ": other ( a:Int -- b:Int ) true [ f ] [ drop drop 0 ] if ;",
+    ": k (forall ρ; ρ xs:Seq Bool^many i:Int^many b:Bool^many -- ρ r:Bool^many) 1 prim + ;",
+    ": hidden (forall ρ; ρ xs:Seq Bool^many -- ρ b:Bool^many) dup prim seq-bool.len 0 prim = [ drop drop true ] [ swap 0 true k ] if ;",
+    ": p (forall ρ; ρ a:Int^many b:Bool^many -- ρ r:Int^many) prim + ;",
+    ": q (forall ρ; ρ r:Int^many -- ρ s:Int^many) true prim + ;",
+    ": m (forall ρ; ρ -- ρ r:Int^many) true 1 p q ;"]
   let summary (envelope : Envelope) : String × List String × String :=
     match Lean.Json.parse (encode envelope) with
     | .ok json =>
@@ -250,7 +268,9 @@ private def runAssumesTests : IO Unit := do
       let reports := envelopes.map summary
       expectEqual "assumes: the words whose reports depend on another reported word"
         (reports.map fun (word, assumes, _) => (word, assumes))
-        [("f", []), ("g", ["f"]), ("h", []), ("r", []), ("two", ["f", "g"])]
+        [("f", []), ("g", ["f"]), ("h", []), ("r", []), ("two", ["f"]), ("three", ["g", "f"]),
+         ("short", ["f"]), ("opens", []), ("early", []), ("other", ["f"]),
+         ("k", []), ("hidden", []), ("p", []), ("q", []), ("m", ["p", "q"])]
       let endsWith (word clause : String) : IO Unit :=
         match reports.find? (·.1 == word) with
         | some (_, _, message) =>
@@ -258,9 +278,10 @@ private def runAssumesTests : IO Unit := do
               fail s!"assumes: `{word}`'s message does not end with the clause: {message}"
         | none => fail s!"assumes: no report for `{word}`"
       endsWith "g" "`g` calls `f`, which has an error of its own; this report assumes `f` keeps its stack effect."
-      endsWith "two" "`two` calls `f` and `g`, which have errors of their own; this report assumes they keep their stack effects."
+      endsWith "two" "`two` calls `f`, which has an error of its own; this report assumes `f` keeps its stack effect."
+      endsWith "three" "`three` calls `g` and `f`, which have errors of their own; this report assumes they keep their stack effects."
       for (word, _, message) in reports do
-        if (word == "f" || word == "h" || word == "r") && (message.splitOn "this report assumes").length > 1 then
+        if ["f", "h", "r", "opens", "early", "hidden"].contains word && (message.splitOn "this report assumes").length > 1 then
           fail s!"assumes: `{word}`'s report says it depends on another word: {message}"
       match validateBatch (envelopes.map encode) with
       | .ok _ => pure ()

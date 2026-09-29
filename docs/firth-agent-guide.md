@@ -282,11 +282,15 @@ words are reported together, and fixing one never hides or moves the other. Its
 effect is not a valid signature (`firth.type.invalid-signature`) is not
 type-checked, and is reported as `firth.type.unchecked-word` at that call, so
 it is never taken for a checked word; its own errors show once that signature
-is fixed. When a word's error was found against the declared effect of a word
-it calls that is itself reported, the message ends by saying so ("`g` calls
-`f`, which has an error of its own; this report assumes `f` keeps its stack
+is fixed. When a word's report depends on the declared effect of a word it
+calls that is itself reported, the message ends by saying so ("`g` calls `f`,
+which has an error of its own; this report assumes `f` keeps its stack
 effect."), and `message_params.assumes` lists those words: if the fix for `f`
 is to its stack effect rather than its body, `g`'s report can change or go.
+The checker tests this: it checks `g` again with other effects for `f`, and
+names `f` only when the report changes at or before where it is. A report
+without the sentence, such as an underflow at `g`'s own `locals`, is `g`'s
+alone.
 A syntax error, a duplicate name or a `use` that names no vocabulary in the
 file or reuses an alias ends the file there: the words before a bad `use` are still reported.
 Each diagnostic in one response has its own payload identifier.

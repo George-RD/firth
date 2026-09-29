@@ -37,13 +37,6 @@ private def emptyRefinementBuilder (_requestId sourcePath : String)
     declaredPostcondition := {}
     totality := none }
 
-structure PipelineConfig where
-  erasureEnv : EffectEnv := {}
-  typingEnv : Env := { literal := defaultLiteralType }
-  requestId : String := "firth.elaborator"
-  sourcePath : String := "<source>"
-  refinementBuilder : RefinementBuilder := emptyRefinementBuilder
-
 structure CheckedWord where
   name : String
   scheme : Scheme
@@ -66,10 +59,21 @@ inductive PipelineDiagnostic where
   call against. -/
   | unchecked (word callee : String) (span : Span)
   | internal (span : Span)
-  /-- `inner`, an error in `word` found against the declared effects of the
-  words it calls, some of which (`callees`) have errors of their own. -/
+  /-- `inner`, a report in `word` that depends on the declared effects of
+  `callees`, words it calls that have errors of their own. -/
   | assumes (word : String) (callees : List String) (inner : PipelineDiagnostic)
   deriving Repr, BEq
+
+structure PipelineConfig where
+  erasureEnv : EffectEnv := {}
+  typingEnv : Env := { literal := defaultLiteralType }
+  requestId : String := "firth.elaborator"
+  sourcePath : String := "<source>"
+  refinementBuilder : RefinementBuilder := emptyRefinementBuilder
+  /-- Whether two reports read the same. A caller that renders reports
+  compares what it renders, so that a difference no reader sees does not
+  count. -/
+  sameReport : PipelineDiagnostic → PipelineDiagnostic → Bool := (· == ·)
 
 inductive ElaborationResult where
   | success (program : CheckedProgram)
@@ -153,6 +157,15 @@ private def erasureSpan : ErasureError → Span
   | .unresolvedEffect _ span | .effectUnderflow _ span | .usageMismatch _ span
   | .unsupportedLiteral span | .unsupportedAtom _ span | .untrackedStack _ span _
   | .branchShape span .. | .hiddenLocal _ span => span
+
+/-- Where in the source a report is. -/
+private def PipelineDiagnostic.span? : PipelineDiagnostic → Option Span
+  | .parse error => some error.primary
+  | .erasure _ error => some (erasureSpan error)
+  | .stackEffect diagnostic => some diagnostic.primary
+  | .refinement _ diagnostic => some diagnostic.body.location.range
+  | .unchecked _ _ span | .internal span => some span
+  | .assumes _ _ inner => inner.span?
 
 /-- A plain type as the walk writes it (`Int`, `World^linear`) as the
 checker's type, when it is one. -/
@@ -338,12 +351,11 @@ private def withCallAccount (config : PipelineConfig) (source : String)
           | .success file => some file
           | .failure _ => none
         -- Other words keep whatever errors they have: only this one must
-        -- resolve.
+        -- resolve. They keep the effects they are checked against, `words`.
         let (resolved, _) ← (resolveEach file.declarations (fun name => (config.erasureEnv.word name).isSome)).toOption
-        let editedWords := resolved.map (·.1)
         let word ← (resolved.find? fun (word, error) => word.name == name && error.isNone).map (·.1)
         let operation := ((diagnostic.primary.start.offset : Int) + shift).toNat
-        let after ← match outcomeAlone config edited editedWords word with
+        let after ← match outcomeAlone config edited (word :: words.filter (·.name != name)) word with
           | none => some none
           | some offset =>
               if offset ≤ operation then none
@@ -396,10 +408,8 @@ private partial def calledWords (bound : List String) : List Item → List (Stri
 /-- What checking one word came to. -/
 private inductive WordOutcome where
   | checked (word : CheckedWord)
-  /-- The word's first error, or for refinements the obligations it failed.
-  `dependent` when it was found against the effects of the words it calls
-  (erasure, typing, refinements), not from the word alone. -/
-  | refused (diagnostics : List PipelineDiagnostic) (dependent : Bool := false)
+  /-- The word's first error, or for refinements the obligations it failed. -/
+  | refused (diagnostics : List PipelineDiagnostic)
   /-- Not type-checked: it calls a word whose declared effect is not a type
   scheme, so there is nothing to check its call against. -/
   | skipped (callee : String) (span : Span)
@@ -431,7 +441,7 @@ private def checkWord (config : PipelineConfig) (source : String)
   | some (callee, span), .ok _ => .skipped callee span
   | none, _ =>
   match erase env word.effect word.body with
-  | .error error => .refused [withAccount config source words (.erasure word.name error)] true
+  | .error error => .refused [withAccount config source words (.erasure word.name error)]
   | .ok erased =>
   match schemeOfEffect word.effect with
   | .error diagnostic => .refused [.stackEffect diagnostic]
@@ -439,13 +449,13 @@ private def checkWord (config : PipelineConfig) (source : String)
   match check typing declared erased.program word.effect.span with
   | .error diagnostic =>
       let diagnostic := withFirstMisfed config source words { diagnostic with word := some word.name }
-      .refused [withCallAccount config source words (withAccount config source words (.stackEffect diagnostic))] true
+      .refused [withCallAccount config source words (withAccount config source words (.stackEffect diagnostic))]
   | .ok _ =>
       let premises := config.refinementBuilder config.requestId config.sourcePath
         word erased.program declared
       let refinement := Refinement.checkBodyRefinements config.requestId premises
       let issues := refinementDiagnostics word.name refinement
-      if !issues.isEmpty then .refused issues true
+      if !issues.isEmpty then .refused issues
       else if !refinement.leanQueue.isEmpty || !refinement.smtQueue.isEmpty then
         .refused [.internal word.span]
       else .checked
@@ -454,6 +464,31 @@ private def checkWord (config : PipelineConfig) (source : String)
           program := erased.program
           warnings := erased.warnings
           refinement }
+
+/-- The environments the words are checked in: each word's declared effect,
+for erasure and for typing, and the words whose effect is no type scheme. -/
+private def environments (config : PipelineConfig) (declared : List WordDefinition) :
+    EffectEnv × Env × List String :=
+  let schemes := declared.map fun word => (word.name, (schemeOfEffect word.effect).toOption)
+  let typing : Env := { config.typingEnv with
+    word := fun name =>
+      match schemes.find? (·.1 == name) with
+      | some entry => entry.2
+      | none => config.typingEnv.word name }
+  (makeErasureEnv config declared, typing, (schemes.filter (·.2.isNone)).map (·.1))
+
+/-- Stack effects unlike each other and unlike most declared ones: none,
+one that takes an Int, one that leaves a Bool, and one that takes three Ints
+and leaves a Seq Int. A report that stays the same whichever of them a callee
+has does not depend on the callee's effect. -/
+private def probeEffects : List StackEffect :=
+  match parse (String.intercalate "\n" [
+      ": p ( forall ρ; ρ -- ρ ) ;",
+      ": p ( forall ρ; ρ x:Int -- ρ ) ;",
+      ": p ( forall ρ; ρ -- ρ y:Bool ) ;",
+      ": p ( forall ρ; ρ a:Int b:Int c:Int -- ρ r:Seq Int ) ;"]) with
+  | .success file => (collectWords file.declarations).map (·.effect)
+  | .failure _ => []
 
 /-- Elaborate a file. A parse error, a duplicate name or a bad `use` refuses
 the file there. Otherwise every word is checked on its own (`checkWord`), and
@@ -475,32 +510,50 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
           -- words before it are checked. The accounts of a report walk the
           -- called words too.
           let declared := words ++ written.filter fun word => !words.any (·.name == word.name)
-          let env := makeErasureEnv config declared
-          let schemes := declared.map fun word => (word.name, (schemeOfEffect word.effect).toOption)
-          let typing : Env := { config.typingEnv with
-            word := fun name =>
-              match schemes.find? (·.1 == name) with
-              | some entry => entry.2
-              | none => config.typingEnv.word name }
-          let unusable := (schemes.filter (·.2.isNone)).map (·.1)
+          let (env, typing, unusable) := environments config declared
           let outcomes := resolved.map fun (word, resolution) =>
             checkWord config source declared written env typing unusable word resolution
-          let reported := (resolved.zip outcomes).filterMap fun ((word, _), outcome) =>
+          let refused := (resolved.zip outcomes).filterMap fun ((word, _), outcome) =>
             match outcome with
-            | .checked _ => none
-            | _ => some word.name
+            | .refused _ => some word.name
+            | _ => none
+          -- A report that depends on the effect of a called word with an
+          -- error of its own: checked again with that callee given one of
+          -- the probe effects, the word is accepted, or it is refused with
+          -- other reports, one of them no later in the source than this one.
+          -- A report only after it says nothing about this one: erasure
+          -- walks the whole body before typing, so an arity error there
+          -- hides a type error before it.
+          let dependsOn (word : WordDefinition) (resolution : Option ParseError)
+              (callee : String) : PipelineDiagnostic → Bool :=
+            let probed := probeEffects.map fun effect =>
+              let declared := declared.map fun other =>
+                if other.name == callee then { other with effect } else other
+              let (env, typing, unusable) := environments config declared
+              checkWord config source declared written env typing unusable word resolution
+            fun diagnostic => probed.any fun
+              | .refused diagnostics =>
+                  !diagnostics.any (config.sameReport · diagnostic) && diagnostics.any fun other =>
+                    match other.span?, diagnostic.span? with
+                    | some found, some report =>
+                        found.start.offset ≤ report.start.offset || found.start.offset < report.stop.offset
+                    | _, _ => true
+              | _ => true
           -- A word left unchecked says so, so that no one reads its
-          -- silence as a pass. An error found against the effect of a word
-          -- that has an error of its own says so too: fixing that word's
-          -- effect can change it.
+          -- silence as a pass. A report that depends on the effect of a word
+          -- with an error of its own says so too: fixing that word's effect
+          -- can change it.
           let errors : List PipelineDiagnostic := (resolved.zip outcomes).flatMap
-            fun ((word, _), outcome) => match outcome with
-              | .refused diagnostics dependent =>
-                  let callees := ((calledWords [] word.body).map (·.1)).eraseDups.filter
-                    fun callee => callee != word.name && reported.contains callee
-                  if dependent && !callees.isEmpty then
-                    diagnostics.map (.assumes word.name callees)
-                  else diagnostics
+            fun ((word, resolution), outcome) => match outcome with
+              | .refused diagnostics =>
+                  let probes := (((calledWords [] word.body).map (·.1)).eraseDups.filter
+                    fun callee => callee != word.name && refused.contains callee).map
+                    fun callee => (callee, dependsOn word resolution callee)
+                  diagnostics.map fun diagnostic =>
+                    match probes.filterMap fun (callee, depends) =>
+                        if depends diagnostic then some callee else none with
+                    | [] => diagnostic
+                    | callees => .assumes word.name callees diagnostic
               | .skipped callee span => [.unchecked word.name callee span]
               | .checked _ => []
           let tail := (stop.map PipelineDiagnostic.parse).toList

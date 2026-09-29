@@ -1047,7 +1047,9 @@ def elaboratePipeline (context : EmissionContext) (source : String)
     (config : Firth.Elaborator.PipelineConfig := {}) : StructuredElaborationResult :=
   let config := { config with
     requestId := context.requestId
-    sourcePath := sourcePath context.source }
+    sourcePath := sourcePath context.source
+    sameReport := fun one other =>
+      encode (pipelineDiagnosticEnvelope context one) == encode (pipelineDiagnosticEnvelope context other) }
   match Firth.Elaborator.elaborateWith config source with
   | .success program => .success program
   | .failure diagnostics =>
