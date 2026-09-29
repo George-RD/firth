@@ -253,6 +253,15 @@ def subagent_audit() -> None:
         ok = [call("Read", file_path=str(prompt)), call("Write", file_path=str(ans), content=ans.read_text()),
               call("Read", file_path=str(d / "repair-1.md"))]
         check(audit(ok, prompt, d, d, 2, "firth")[1] == [], "the audit passes a prompt read, an answer write and feedback")
+        # A read in chunks is allowed, and the kept log must say which part
+        # of the file each read asked for (reviewer, on #169). Planted: a
+        # partial read of the prompt, whose offset and limit must survive.
+        part = audit(ok + [call("Read", file_path=str(prompt), offset=200, limit=100)], prompt, d, d, 2, "firth")
+        check(part[1] == [] and part[0]["tool_calls"][-1] == {"at": "t", "tool": "Read", "path": prompt.name,
+                                                              "offset": 200, "limit": 100},
+              f"the audit keeps a partial read's offset and limit: {part[0]['tool_calls'][-1]}")
+        check("offset" not in audit(ok, prompt, d, d, 2, "firth")[0]["tool_calls"][0],
+              "the audit adds no offset to a whole-file read")
         inherited = {"type": "user", "timestamp": "2026-01-01T00:00:00Z", "message": {"content": "context"}}
         timed = [dict(e, timestamp=f"2026-01-01T01:00:0{i}Z") for i, e in enumerate(ok)]
         log = audit([inherited, *timed], prompt, d, d, 2, "firth")[0]
