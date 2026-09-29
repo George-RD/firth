@@ -349,7 +349,7 @@ mutual
         match taken with
         | [value] =>
             -- Two copies: neither is the only one the local or operation pushed.
-            let copy := { value with own := true, origin := none, localName := none, made := none }
+            let copy := { value with own := true, origin := none, localName := none, made := none, stands := none }
             .next { walk with stack := copy :: copy :: walk.stack }
         | _ => .lost
     | .atom "drop" _ => .next (take walk "`drop`" [] 1).2

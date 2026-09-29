@@ -158,6 +158,10 @@ source, or `none` when the word then checks. Diagnostics only. -/
 structure CallEdit where
   start : Nat
   stop : Nat
+  /-- The line `start` is on, and its column when `written` is found more
+  than once on the lines the edit spans, as for `BranchEdit`. -/
+  line : Nat
+  column : Option Nat := none
   written : String
   replacement : String
   after : Option (Nat × Nat) := none

@@ -565,13 +565,21 @@ private def runCallAccountTests : IO Unit := do
     match applyCallHint source hint operation with
     | some edited => expectRuns label edited word inputs expected
     | none => fail s!"{label}: the hint's edit does not apply: {hint}"
+  -- The text replaced is found twice on its line, the first time handed
+  -- to `f` in the order `f` takes: the hint names the column of the second.
+  -- Planted: without the column the hint would name either. `f` gives `i`,
+  -- 1, and the value at 1 is 6.
+  callCase "the text replaced found twice on its line" "firth.type.primitive-input-mismatch"
+      ": f (forall ρ; ρ i:Int^many xs:Seq Int^many -- ρ r:Int^many) drop ;\n: w (forall ρ; ρ xs:Seq Int^many i:Int^many -- ρ r:Int^many) locals { xs i } { i xs f i xs prim seq-int.at prim + } ;"
+      ["write `xs i` in place of `i xs` on line 2, column 87. With that edit `w` checks."] []
+      "w" [.intSeq [5, 6, 7], .int 1] [.int 7]
   -- Haiku's seq-sum at 470c6d0 (haiku-firth-1, answer 2), verbatim: `main`
   -- pushes the sequence last. `xs` is named like the input it is for, so
   -- it goes first; the two `0`s are the same. 4 + 5 + 6.
   callCase "sequence pushed last" "firth.type.word-input-mismatch"
       ": sum-loop\n  (forall ρ; ρ xs:Seq Int^many acc:Int^many i:Int^many -- ρ result:Int^many)\n  locals { xs acc i } {\n    i xs prim seq-int.len prim <\n    [\n      xs i prim seq-int.at acc prim +\n      xs swap\n      i 1 prim +\n      sum-loop\n    ]\n    [ acc ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many -- ρ result:Int^many)\n  locals { xs } {\n    0 0 xs sum-loop\n  };"
       ["`sum-loop` in `main` takes xs:Seq Int, acc:Int, i:Int, bottom to top, but here it gets, bottom to top, `0` (Int), `0` (Int) and `xs` (Seq Int).",
-       "To push them in its order, write `xs 0 0` in place of `0 0 xs`. With that edit `main` checks."]
+       "To push them in its order, write `xs 0 0` in place of `0 0 xs` on line 18. With that edit `main` checks."]
       [] "main" [.intSeq [4, 5, 6]] [.int 15]
   -- keep-positive at 470c6d0 (haiku-firth-1, answer 2), verbatim: `result`
   -- and `xs` are both Seq Int, and the order they were pushed in would put
@@ -587,21 +595,21 @@ private def runCallAccountTests : IO Unit := do
   -- types; the report is at `prim seq-int.at`, where the mistake is.
   callCase "operands reversed in a branch" "firth.type.primitive-input-mismatch"
       ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ total:Int^many)\n  0 swap 0 sum-loop;\n\n: sum-loop\n  (forall ρ; ρ acc:Int^many xs:Seq Int^many idx:Int^many -- ρ total:Int^many)\n  locals { acc xs idx } {\n    idx xs prim seq-int.len prim < [\n      acc idx xs prim seq-int.at prim + xs idx 1 prim + sum-loop\n    ] [ acc ] if\n  };"
-      ["`prim seq-int.at` in `sum-loop` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, `idx` (Int) and `xs` (Seq Int).",
-       "write `xs idx` in place of `idx xs`. With that edit `sum-loop` checks."]
+      ["`prim seq-int.at` in `sum-loop` takes the sequence (Seq Int) and the index (Int), bottom to top, but here it gets, bottom to top, `idx` (Int) and `xs` (Seq Int).",
+       "write `xs idx` in place of `idx xs` on line 9. With that edit `sum-loop` checks."]
       ["`prim +` in `sum-loop`", "?t"] "main" [.intSeq [4, 5, 6]] [.int 15]
   -- count-distinct at cec3707 (haiku-firth-2, answer 1), the helper
   -- verbatim: the push in a branch was reported as a `compose` the author
   -- never wrote. Adding 3 to [1, 2]; 2 is there already.
   callCase "push reversed in a branch" "firth.type.primitive-input-mismatch"
       ": count-distinct-search\n  (forall ρ; ρ elem:Int^many j:Int^many seen:Seq Int^many -- ρ updated:Seq Int^many)\n  locals { elem j seen } {\n    j seen prim seq-int.len prim =\n    [ elem seen prim seq-int.push ]\n    [\n      seen j prim seq-int.at elem prim =\n      [ seen ]\n      [ elem j 1 prim + seen count-distinct-search ] if\n    ]\n    if\n  };"
-      ["`prim seq-int.push` in `count-distinct-search` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, `elem` (Int) and `seen` (Seq Int).",
-       "write `seen elem` in place of `elem seen`. With that edit `count-distinct-search` checks."]
+      ["`prim seq-int.push` in `count-distinct-search` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, `elem` (Int) and `seen` (Seq Int).",
+       "write `seen elem` in place of `elem seen` on line 5. With that edit `count-distinct-search` checks."]
       ["compose"] "count-distinct-search" [.int 3, .int 0, .intSeq [1, 2]] [.intSeq [1, 2, 3]]
   -- A `swap` between the values is part of what the edit replaces.
   callCase "values exchanged by swap" "firth.type.primitive-input-mismatch"
       ": at\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs n } { xs n swap prim seq-int.at };"
-      ["write `xs n` in place of `xs n swap`. With that edit `at` checks."]
+      ["write `xs n` in place of `xs n swap` on line 3. With that edit `at` checks."]
       [] "at" [.intSeq [5, 6, 7], .int 1] [.int 6]
   -- A refused `if` whose branch mends with an edit the pipeline checked
   -- (`staleEdit`, `missingEdit`): the test applies the edit as the hint
@@ -706,6 +714,35 @@ private def runCallAccountTests : IO Unit := do
   let _ ← callReport "an `if` whose paths stand for different locals" "firth.type.branch-mismatch"
     ": h (forall ρ; ρ a:Int^many s:Seq Int^many b:Int^many -- ρ r:Int^many) drop drop ;\n: g\n  (forall ρ; ρ a:Int^many b:Int^many s:Seq Int^many c:Int^many -- ρ r:Int^many)\n  locals { a b s c } {\n    c 0 prim = [ 0 ] [\n      s c 1 prim < [ c 2 prim < [ a 1 prim + ] [ a 1 prim - ] if ] [ c 3 prim < [ b 1 prim + ] [ b 1 prim - ] if ] if h\n    ] if\n  };\n"
     ["in the place of the last 2 (s:Seq Int, b:Int)"] ["(from `a`)", "by their names"]
+  -- count-below (8ea4a1d, haiku-firth-11, answer 1), verbatim: the inner
+  -- `if`'s condition is written after its two quotations. Moving it first
+  -- makes the word check; [1, 5, 2, 8] has two values below 4.
+  let (hint, _) ← callReport "a condition after its quotations" "firth.type.expected-bool" ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { xs k } {\n    xs k 0 0 count-loop\n  };\n\n: count-loop\n  (forall ρ; ρ xs:Seq Int^many k:Int^many i:Int^many count:Int^many -- ρ result:Int^many)\n  locals { xs k i count } {\n    i xs prim seq-int.len prim <\n    [\n      xs\n      k\n      i 1 prim +\n      [ count 1 prim + ]\n      [ count ]\n      xs i prim seq-int.at k prim <\n      if\n      count-loop\n    ]\n    [ count ]\n    if\n  };\n"
+    ["`if` finds the condition on top of its two quotations, not under them.",
+     "Write the condition before the first `[`: write `xs i prim seq-int.at k prim < [ count 1 prim + ] [ count ] if` in place of `[ count 1 prim + ] [ count ] xs i prim seq-int.at k prim < if` on line 15. With that edit `count-loop` checks."]
+  match applyBranchHint ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { xs k } {\n    xs k 0 0 count-loop\n  };\n\n: count-loop\n  (forall ρ; ρ xs:Seq Int^many k:Int^many i:Int^many count:Int^many -- ρ result:Int^many)\n  locals { xs k i count } {\n    i xs prim seq-int.len prim <\n    [\n      xs\n      k\n      i 1 prim +\n      [ count 1 prim + ]\n      [ count ]\n      xs i prim seq-int.at k prim <\n      if\n      count-loop\n    ]\n    [ count ]\n    if\n  };\n" hint with
+  | some edited => expectRuns "a condition after its quotations" edited "main" [.intSeq [1, 5, 2, 8], .int 4] [.int 2]
+  | none => fail s!"a condition after its quotations: the hint's edit does not apply: {hint}"
+  -- Planted: primes-up-to (8ea4a1d, haiku-firth-11, answer 1), verbatim.
+  -- Moving `is-prime` before the quotations leaves the `if` refused (its
+  -- branches leave different numbers of values): no edit.
+  let _ ← callReport "a condition moved that does not get past the `if`" "firth.type.word-input-mismatch" ": main\n  (forall ρ; ρ n:Int^many -- ρ primes:Seq Int^many)\n  locals { n } {\n    prim seq-int.empty 2 primes-loop\n  };\n\n: primes-loop\n  (forall ρ; ρ result:Seq Int^many candidate:Int^many -- ρ out:Seq Int^many)\n  locals { result candidate } {\n    [ candidate 10 prim < ]\n    [ [ result candidate prim seq-int.push candidate 1 prim + ] [ candidate 1 prim + ] is-prime if primes-loop ]\n    [ 0 prim not prim not ]\n    candidate 10 prim <\n    if\n  };\n\n: is-prime\n  (forall ρ; ρ candidate:Int^many -- ρ prime:Bool^many)\n  locals { candidate } {\n    [ prim not prim not ]\n    [ candidate 2 2 is-prime-check ]\n    candidate 2 prim <\n    if\n  };\n\n: is-prime-check\n  (forall ρ; ρ candidate:Int^many divisor:Int^many limit:Int^many -- ρ prime:Bool^many)\n  locals { candidate divisor limit } {\n    [ candidate divisor prim mod 0 prim = prim not ]\n    [ [ prim not prim not ] [ divisor 1 prim + limit is-prime-check ] divisor limit prim < if ]\n    [ 0 prim not prim not ]\n    divisor divisor prim * candidate prim <\n    if\n  };\n"
+    ["`is-prime` in `primes-loop`"] ["before the first `[`"]
+  -- Planted: a condition that, as written, acts on the quotations under it.
+  -- The checker accepts `swap` on top of them and refuses only the `if`;
+  -- moved first, `swap` would exchange `a` and `b` and the word would check
+  -- with another meaning, so no edit is offered (the reviewer on #187).
+  let _ ← callReport "a condition that acts on its quotations" "firth.type.expected-bool"
+    ": pick2\n  (forall ρ; ρ a:Int^many b:Int^many c:Int^many -- ρ r:Int^many)\n  locals { a b c } {\n    a b [ prim + ] [ prim - ] swap c 0 prim < if\n  };"
+    [] ["before the first `[`"]
+  -- Refused inside the condition, the condition was never accepted on the
+  -- quotations, so moving it has one reading: `dup` then copies `n`.
+  let dupFirst := ": g\n  (forall ρ; ρ n:Int^many -- ρ n2:Int^many r:Int^many)\n  [ 1 ] [ 2 ] dup 0 prim < if\n  ;"
+  let (hint, _) ← callReport "a condition refused on its quotations" "firth.type.primitive-input-mismatch" dupFirst
+    ["Write the condition before the first `[`: write `dup 0 prim < [ 1 ] [ 2 ] if` in place of `[ 1 ] [ 2 ] dup 0 prim < if` on line 3. With that edit `g` checks."]
+  match applyBranchHint dupFirst hint with
+  | some edited => expectRuns "a condition refused on its quotations" edited "g" [.int 5] [.int 5, .int 2]
+  | none => fail s!"a condition refused on its quotations: the hint's edit does not apply: {hint}"
   -- An edit is said to get past the refused `if` only when its next error
   -- shows the check went beyond it. Planted: an error at the `if`, or one
   -- before it found by erasure, or found by typing when typing refused the
@@ -733,20 +770,40 @@ private def runCallAccountTests : IO Unit := do
   let digitsTwoLines := digits.replace "n 10 prim mod result prim seq-int.push" "n 10 prim mod\n      result prim seq-int.push"
   let digitsJoined := digits.replace "n 10 prim mod result prim seq-int.push" "result n 10 prim mod prim seq-int.push"
   let _ ← callReport "digits, the values on two lines" "firth.type.primitive-input-mismatch" digitsTwoLines
-    ["write `result n 10 prim mod` in place of `n 10 prim mod result`. With that edit, the next error in `extract-digits` is at line 8, column 26."]
+    ["write `result n 10 prim mod` in place of `n 10 prim mod result` on line 7. With that edit, the next error in `extract-digits` is at line 8, column 26."]
   match elaboratePipeline pipelineContext digitsJoined agentConfig with
   | .failure [envelope] =>
       unless (encode envelope).contains "\"start\":{\"line\":8,\"column\":26}" do
         fail s!"digits, the values on two lines: the edited source is refused elsewhere: {encode envelope}"
   | _ => fail "digits, the values on two lines: expected one report for the edited source"
   let (hint, operation) ← callReport "digits" "firth.type.primitive-input-mismatch" digits
-    ["write `result n 10 prim mod` in place of `n 10 prim mod result`. With that edit, the next error in `extract-digits` is at line 8, column 26."]
+    ["write `result n 10 prim mod` in place of `n 10 prim mod result` on line 7. With that edit, the next error in `extract-digits` is at line 8, column 26."]
   match applyCallHint digits hint operation with
   | none => fail s!"digits: the hint's edit does not apply: {hint}"
   | some once =>
       callCase "digits, then the call" "firth.type.word-input-mismatch" once
-        ["write `result n 10 prim mod prim seq-int.push n 10 prim div` in place of `result n 10 prim mod prim seq-int.push n 10 prim div swap`. With that edit `extract-digits` checks."]
+        ["write `result n 10 prim mod prim seq-int.push n 10 prim div` in place of `result n 10 prim mod prim seq-int.push n 10 prim div swap` on line 1. With that edit `extract-digits` checks."]
         [] "extract-digits" [.intSeq [], .int 123] [.intSeq [3, 2, 1]]
+  -- The next error's place is where the author will see it once the edit
+  -- is made: the line break before the call stays as written. ledger at
+  -- 8ea4a1d (haiku-firth-2, answer 2), verbatim; the checker then reports the
+  -- call on line 10, not the start of its values on line 9 (the reviewer on
+  -- #187).
+  let ledger := ": ledger-loop\n  (forall ρ; ρ txs:Seq Int^many i:Int^many bal:Int^many rej:Int^many -- ρ result1:Int^many result2:Int^many)\n  locals { txs i bal rej } {\n    txs prim seq-int.len i prim < [\n      bal txs i prim seq-int.at prim + dup 0 prim < [\n        drop bal rej 1 prim + txs swap i swap\n        ledger-loop\n      ] [\n        i 1 prim + txs swap rej swap\n        ledger-loop\n      ] if\n    ] [\n      bal rej\n    ] if\n  };\n\n: main\n  (forall ρ; ρ start:Int^many txs:Seq Int^many -- ρ balance:Int^many rejected:Int^many)\n  locals { start txs } {\n    txs 0 start 0 ledger-loop\n  };\n"
+  let (hint, _) ← callReport "the next error after an edit before a line break" "firth.type.word-input-mismatch" ledger
+    ["write `txs i bal rej 1 prim +` in place of `bal rej 1 prim + txs swap i swap` on line 6. With that edit, the next error in `ledger-loop` is at line 10, column 9."]
+  -- Applied on line 6, where the text replaced is found once, with the
+  -- source's line breaks kept as the author's would be.
+  let written := "bal rej 1 prim + txs swap i swap"
+  unless hint.contains s!"in place of `{written}` on line 6." &&
+      (ledger.splitOn written).length == 2 && (((ledger.splitOn "\n")[5]?).getD "").contains written do
+    fail s!"ledger: the hint's edit is not the one on line 6: {hint}"
+  let edited := ledger.replace written "txs i bal rej 1 prim +"
+  match reportsWithCode (elaboratePipeline pipelineContext edited agentConfig) "firth.type.word-input-mismatch" with
+  | [envelope] =>
+      unless (encode envelope).contains "\"start\":{\"line\":10,\"column\":9}" do
+        fail s!"ledger: the edited source is not refused at line 10, column 9: {encode envelope}"
+  | _ => fail "ledger: expected one report for the edited source"
   -- Where values of one type could go either way, the report says which
   -- values are certain and leaves the rest to the author, with no edit:
   -- seq-sum at 470c6d0 (haiku-firth-1, answer 1), where pushing the Int
@@ -756,12 +813,21 @@ private def runCallAccountTests : IO Unit := do
     ": sum-loop\n  (forall ρ; ρ xs:Seq Int^many acc:Int^many i:Int^many -- ρ result:Int^many)\n  locals { xs acc i } {\n    i xs prim seq-int.len prim <\n    [\n      xs i prim seq-int.at acc prim +\n      xs\n      i 1 prim +\n      sum-loop\n    ]\n    [ acc ]\n    if\n  };"
     ["By their names and types, `xs` is for `xs`. Of the values of one type, `xs i prim seq-int.at acc prim +` and `i 1 prim +` are for `acc` and `i`, in the order you mean: only you can tell which is which."]
     ["in place of"]
+  -- A sequence primitive's inputs have no names, only types, so the report
+  -- tells them by what they are for rather than quoting a type as if it
+  -- named one (`counts` is for `Seq Int`, before): increment-count at
+  -- 4c379e0 (haiku-firth-3, answer 2), verbatim.
+  let _ ← callReport "roles of a sequence primitive" "firth.type.primitive-input-mismatch"
+    ": increment-count\n  (forall ρ; ρ counts:Seq Int^many idx:Int^many -- ρ result:Seq Int^many)\n  locals { counts idx }\n  { counts idx prim seq-int.at 1 prim + counts idx swap prim seq-int.set };\n"
+    ["`prim seq-int.set` in `increment-count` takes the sequence (Seq Int), the index (Int) and the new value (Int), bottom to top",
+     "By their names and types, `counts` is for the sequence. Of the values of one type, `counts idx prim seq-int.at 1 prim +` and `idx` are for the index and the new value, in the order you mean: only you can tell which is which."]
+    ["in place of", "`Seq Int`", "`Int`"]
   -- A value the source pushed with `dup` is not a piece of source of its
   -- own, so no edit is stated; the report still names it (prefix-sums at
   -- c6a964a, haiku-firth-2, answer 3, with its first mistake fixed).
   let _ ← callReport "no edit through dup" "firth.type.primitive-input-mismatch"
     ": prefix-loop\n  (forall ρ; ρ result:Seq Int^many sum:Int^many xs:Seq Int^many idx:Int^many -- ρ sums:Seq Int^many)\n  locals { result sum xs idx } {\n    idx xs prim seq-int.len prim < [\n      sum xs idx prim seq-int.at prim + \n      dup result prim seq-int.push\n      xs idx 1 prim + prefix-loop\n    ] [ result ] if\n  };"
-    ["`prim seq-int.push` in `prefix-loop` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int) and `result` (Seq Int).",
+    ["`prim seq-int.push` in `prefix-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim +` (Int) and `result` (Seq Int).",
      "The top value, `result` (Seq Int), is not what `prim seq-int.push` takes there (Int)."]
     ["in place of"]
   -- A word the environment defines outside the file (`nth`, Seq Int Int --
@@ -780,10 +846,36 @@ private def runCallAccountTests : IO Unit := do
   | .failure [envelope] =>
       let emitted := encode envelope
       for needle in ["`nth` in `first` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, `0` (Int) and `xs` (Seq Int).",
-                     "write `xs 0` in place of `0 xs`. With that edit `first` checks."] do
+                     "write `xs 0` in place of `0 xs` on line 3. With that edit `first` checks."] do
         unless emitted.contains needle do
           fail s!"external word: the report does not say {needle}: {emitted}"
   | _ => fail "external word: expected one diagnostic"
+
+private def stackTypes : Firth.Elaborator.StackEffect.AStack → List Firth.Elaborator.StackEffect.AType
+  | .snoc rest type => stackTypes rest ++ [type]
+  | _ => []
+
+/-- Every primitive whose inputs repeat a type beside another type, where a
+report can only tell the author which value goes where by what each input
+is for, has one role per input in `primitiveRoles`; and no listed primitive
+has a role count that differs from its inputs. A primitive added to the
+language without its roles fails here. -/
+private def runPrimitiveRolesTests : IO Unit := do
+  for surface in languagePrimitives do
+    let some scheme := Elaborate.gammaTyping.primitive surface
+      | fail s!"primitive roles: `{surface}` has no scheme"
+    let inputs := stackTypes scheme.input
+    let repeats := inputs.any fun type => (inputs.filter (· == type)).length > 1
+    let mixed := match inputs with
+      | first :: rest => rest.any (· != first)
+      | [] => false
+    match primitiveRoles surface with
+    | some roles =>
+        unless roles.length == inputs.length do
+          fail s!"primitive roles: `{surface}` takes {inputs.length} values but has {roles.length} roles"
+    | none =>
+        if repeats && mixed then
+          fail s!"primitive roles: `{surface}` repeats an input type beside another but has no roles"
 
 /-- `locals` blocks bound out of order: what the report says, and the edits
 its hint gives, applied and run. -/
@@ -2006,6 +2098,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
   if languagePrimitives.length != everyPrimitive.length then
     fail s!"the language has {languagePrimitives.length} primitives but this test lists {everyPrimitive.length}; add the new ones above"
   runCallAccountTests
+  runPrimitiveRolesTests
   runEveryErrorTests
   runSyntaxMessageTests
   runAssumesTests
