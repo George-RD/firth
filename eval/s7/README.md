@@ -832,14 +832,22 @@ By sample (first answer, round 1, round 2):
 - **No counted sample passed any task in any round**, as in run 7. Run 6,
   on the prompt before the `locals` paragraphs, reached 5 and 6 after
   feedback.
-- **Branch mismatches were not repaired.** Of the 27 answers that failed
-  on `firth.type.branch-mismatch` in round 1 or 2, all were resubmitted;
-  none then got past the checker, 12 failed on a branch mismatch again,
-  and 15 failed first on another error (12 of those are sample 5's
-  round-1 answers, which all failed to parse, below). Run 7's counts were
-  0, 10 and 6 of 16 resubmitted. Sample 6 repeated all 10 of its round-1
-  branch mismatches in round 2 with the new message, which names the
-  operation and says which values to push (`haiku-firth-6/repair-2.md`).
+- **At most 2 of 27 branch mismatches were repaired.** Of the 27
+  answers that failed on `firth.type.branch-mismatch` in the first answers
+  or round 1, all were resubmitted and none then got past the checker. 12
+  failed on a branch mismatch again. The other 15 failed first on an
+  earlier error: 14 no longer parsed (sample 5's 12 round-1 answers,
+  below, and 2 of sample 2's) and 1 was sample 2's empty `main` effect.
+  With that error removed by hand (`] if;` to `] if` and `main`'s inputs
+  bound for sample 5; `main`'s effect filled in and the literal after
+  `prim` dropped for sample 2), 6 fail on a branch mismatch again, 2 pass
+  every case (sample 5's `index-of` and `all-true`), 5 fail on another
+  type error and 2 still do not parse
+  (`counterfactual/branch-blocked.json`, hand-edited, not scored). Run
+  7's counts were 0, 10 and 6 of 16 resubmitted. Sample 6 repeated all 10
+  of its round-1 branch mismatches in round 2 with the new message, which
+  names the operation and says which values to push
+  (`haiku-firth-6/repair-2.md`).
 - **The `locals` order rule refused 32 answers, and each was fixed in the
   next round.** It refused 27 first answers (sample 2: 8; sample 6: 19)
   and 5 of sample 4's round-1 answers. Sample 2 wrote 28 of its 29
@@ -994,8 +1002,9 @@ after feedback where run 6's sample reached 6, and that is unexplained
 mismatches one operation reaches below the branch without the message
 naming it. Run 8 added a rule against reversed locals and a message
 that names that operation. The rule refused 32 answers and each was
-fixed in the next round, but no counted sample passed any task and no
-branch mismatch was repaired (12 of 27 recurred). Each sample repeated a
+fixed in the next round, but no counted sample passed any task and at
+most 2 of 27 branch mismatches were repaired (18 recurred, 6 of them
+behind an earlier error). Each sample repeated a
 few mistakes across nearly every task, and with one diagnostic per
 program two feedback rounds did not get past them. The checker found
 most stack-shape errors before execution.
