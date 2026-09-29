@@ -22,22 +22,86 @@ adapters, checks the source, compiles it, and requires matching VM and reference
 results. Select the entry by its source name; its position in the file does not
 choose which word runs.
 
-## Current scope
+## What Firth can do today
 
-The portable runner handles pure programs with signed 64-bit integer, Boolean
-and sequence inputs and results. Words, qualified vocabulary names, stack operations,
-quotations, conditionals and named locals can be composed within that profile.
-The executable portable primitives are `prim +`, `-`, `*`, `div`, `mod`, `<`,
-`=`, `and`, `or`, `not` and the `seq-int.*` / `seq-bool.*` sequence operations
-(`empty`, `len`, `at`, `push`, `set`).
+A Firth program is a set of words, each with a declared stack effect that the
+checker verifies. This one sums 1 to n with a tail-recursive loop
+(`examples/programs/sum-to.firth`):
 
-This is not yet a general-purpose application platform. Text, file/network
-I/O, `send`, a package manager, a general-purpose standard library and an
-editor language server are not provided by this runner. The broader
-language design and checker support more than the portable execution adapter.
-A small core vocabulary exists in `stdlib/core.firth`; it is not automatically
-loaded into programs. See the [support table](docs/getting-started.md#supported-execution-profile)
-before choosing a program to build.
+```firth
+: sum-to
+  (forall ρ; ρ n:Int^many -- ρ r:Int^many)
+  0 swap sum-acc;
+
+: sum-acc
+  (forall ρ; ρ acc:Int^many n:Int^many -- ρ r:Int^many)
+  dup 0 prim =
+  [ drop ]
+  [ dup 1 prim - [ prim + ] dip sum-acc ] if;
+```
+
+Run with `--entry sum-to --stack '[100]'`, it returns `[5050]` on both the VM
+and the reference interpreter. `sum-to` is also proved correct in Lean for
+every valid input (`src/proofs/records.json`).
+
+What works, with where to check it:
+
+- **Values.** Signed 64-bit `Int`, `Bool`, and sequences `Seq Int` and
+  `Seq Bool`. Arithmetic, comparison and Boolean primitives are `prim +`,
+  `-`, `*`, `div`, `mod` (Euclidean; a zero divisor traps), `<`, `=`,
+  `and`, `or` and `not`. The sequence operations are `empty`, `len`, `at`,
+  `push` and `set`. See the support table in
+  [Getting started](docs/getting-started.md#supported-execution-profile).
+- **Structure.** Words, qualified vocabulary names, quotations, `call`,
+  `dip`, `if`, and recursion, where tail calls run in constant frames. Named
+  `locals` compile to the kernel's `pick` and `roll`. A `locals` block that
+  opens a word must bind its inputs in the order of the stack effect.
+- **Diagnostics.** The checker reports the first error in every word, not
+  only the first in the program, and each diagnostic names its word
+  (`docs/firth-agent-guide.md`, the diagnostics section).
+- **Real programs.** 12 example programs (121 cases), including sort,
+  sieve, gcd, Fibonacci and factorial, run against expected results on both
+  hosts
+  (`python3 examples/programs/check_programs.py`). The inventory allocator
+  (`examples/inventory/`) passes all 53 cases of its fixed contract
+  (`python3 examples/inventory/run_cases.py`).
+- **Proofs about programs.** 15 exported words carry Lean proofs of their
+  contracts over the reference interpreter, including the whole allocator
+  (conservation, no over-allocation, the fulfilment policy, i64 range and a
+  cost bound). This is goal S5 in the [roadmap](docs/roadmap.md), met with
+  two stated gaps: the compiler and VM agree with the reference only by
+  differential testing, and the Python host that feeds the allocator is
+  tested, not proved.
+
+## How well models write it
+
+The S7 eval ([eval/s7/README.md](eval/s7/README.md)) gives a model only the
+docs and 20 fixed tasks, then scores its answers against hidden tests. The
+same tasks in Python are the baseline: both models scored 20 of 20 there in
+run 4.
+
+| Author | Firth, first answer | Firth, after feedback |
+| --- | --- | --- |
+| Claude Sonnet 5 (run 4) | 19 of 20 | 20 of 20 |
+| Claude Haiku 4.5 (runs 4 to 8) | 0 to 6 of 20 | 0 to 8 of 20 |
+
+A strong model writes Firth about as reliably as Python, but it takes much
+longer: about 6 minutes against 11 seconds for the first answer in run 4.
+A weaker model mostly fails. In run 8 each Haiku sample repeated a few
+basic mistakes on nearly every task, and two rounds of feedback did
+not get past them. The results for each run are in the eval README.
+
+## Known gaps
+
+- No cross-file imports: a program is one file, and `stdlib/core.firth` is
+  not loaded automatically (`todo.language-12-data-and-modules`).
+- No text, characters, file or network I/O, or `send` on the executable
+  path. Source refinement annotations are rejected rather than checked.
+- Non-tail recursion deeper than 256 frames traps on the VM.
+- No package manager, general standard library or language server.
+- Goals S2 (sustained differential fuzzing), S3 (live patching), S4 (a
+  self-hosted standard library), S6 (a third-party VM) and S7 (a weak
+  model's authoring rate) are open. See the [roadmap](docs/roadmap.md).
 
 ## Documentation
 
@@ -60,12 +124,9 @@ milestones and the tracked correctness/application work still open.
 ## Verification and its limits
 
 Lean mechanises the core kernel metatheory, including determinism,
-preservation and progress. Separately, Lean proofs in `src/proofs/` show that
-some exported Firth programs meet their specifications when run by the
-reference interpreter: the inventory allocator (conservation, no
-over-allocation, the fulfilment policy, i64 range and a cost bound) and smaller
-programs such as `gcd`. `src/proofs/records.json` binds each proof to the word
-body digests it covers. None of this proves the compiler or the VM: their
+preservation and progress. The program proofs above run over the reference
+interpreter, and `src/proofs/records.json` binds each one to the digests of
+the word bodies it covers. None of this proves the compiler or the VM: their
 agreement with the reference interpreter rests on differential testing.
 
 The portable runner compares successful terminal outcomes, final stacks and
