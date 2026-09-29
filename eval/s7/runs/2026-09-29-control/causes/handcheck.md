@@ -56,4 +56,8 @@ stale-local-state. Within branch mismatches the split between
 stack-juggling and stale-local-state is rough (of the three disagreements
 there, two are those two labels swapped and one is an argument-order
 mistake Jev called stack-juggling), so the write-up gives the
-branch-mismatch total first and the split as approximate.
+branch-mismatch total first and the split as approximate. Across the
+branch-mismatch and input-mismatch rows, on the three labels the splits use
+(stack-juggling, stale-local-state, argument-order), Jev matched 9 of 13 and
+every miss (rows 5, 11, 12 and 27) was a swap among those three, so every
+such sub-row is approximate.

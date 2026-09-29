@@ -507,6 +507,7 @@ def run10_causes() -> None:
     for script, arg in (("causes.py", "--self-test"), ("recheck.py", "--self-test"),
                         ("rank.py", "--self-test"), ("behaviour.py", "--self-test"),
                         ("handcheck_sample.py", "--self-test"),
+                        ("b4_parens.py", "--self-test"),
                         ("handcheck_sample.py", "--compare")):
         r = subprocess.run([sys.executable, str(causes / script), arg], cwd=HERE,
                            capture_output=True, text=True)

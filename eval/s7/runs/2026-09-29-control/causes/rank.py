@@ -14,7 +14,9 @@ in `handcheck.md`, and prints:
    would leave a program that checks.
 3. How often an answer that checks also passes (every written answer in
    every round), which turns "would check" into "would pass" (inferred).
-4. Reversed loop guards (`<seq> prim seq-int.len <name> prim <`, where
+4. The void samples' last kept answers, by the family first shown, to see
+   whether leaving them out changes the ranking.
+5. Reversed loop guards (`<seq> prim seq-int.len <name> prim <`, where
    `<name> <seq> prim seq-int.len prim <` was meant) among wrong results,
    found by pattern, not by reading.
 
@@ -31,6 +33,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import handcheck_sample  # noqa: E402
+from causes import ARMS, seen  # noqa: E402
+from causes import passed as task_passed  # noqa: E402
 import jev_causes  # noqa: E402
 
 RUNS_WRONG = ("wrong-result", "runtime-trap")
@@ -110,6 +114,18 @@ def report():
             print(f"  {f:16s} {n:4d}")
         else:
             print(f"  {f:16s} {n:4d}  single {fam_single[f]:4d}  recoverable {fam_single[f] * rate:5.1f}")
+
+    print("\n== Void samples' last kept answers: passed, and failures by the family first shown")
+    for arm, commit in ARMS.items():
+        for d in sorted((HERE.parent / commit).glob("haiku-firth-*"),
+                        key=lambda p: int(p.name.rsplit("-", 1)[1])):
+            kept = sorted(d.glob("results-*.json"))
+            if not (d / "void.md").exists() or not kept:
+                continue
+            tasks = json.loads(kept[-1].read_text())["tasks"].values()
+            fams = Counter(seen(t)[0] for t in tasks if not task_passed(t))
+            print(f"  {arm}{d.name.rsplit('-', 1)[1]:3s} {kept[-1].name}  passed "
+                  f"{sum(map(task_passed, tasks)):2d}  " + ", ".join(f"{k} {v}" for k, v in fams.most_common()))
 
     wrong = [r for r in rows if r["round"] == 3 and r["seen_family"] == "wrong-result"]
     hits = [r for r in wrong if reversed_guards(jev_causes.source(r))]

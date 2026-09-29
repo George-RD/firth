@@ -1,0 +1,29 @@
+  seq-sum         input-mismatch
+  seq-max         locals
+  count-below     locals
+  index-of        locals
+  reverse         input-mismatch
+  prefix-sums     input-mismatch
+  keep-positive   locals
+  is-sorted       locals
+  dot             input-mismatch
+  all-true        input-mismatch
+  longest-run     branch-mismatch + locals
+  has-pair-sum    input-mismatch + locals
+  count-distinct  locals
+  merge-sorted    locals
+  digits          branch-mismatch
+  primes-up-to    input-mismatch + unknown-name
+  histogram       input-mismatch
+  sort            locals + unknown-name
+  ledger          locals
+  allocate-batch  branch-mismatch
+
+B4's 20 final answers with the parentheses removed (counterfactual, hand-edited, not scored):
+    8  locals
+    6  input-mismatch
+    2  branch-mismatch
+    1  branch-mismatch + locals
+    1  input-mismatch + locals
+    1  input-mismatch + unknown-name
+    1  locals + unknown-name

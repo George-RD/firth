@@ -1410,8 +1410,12 @@ asked Jev (`jev-1.13.0`) for a finer cause of each failing first and final
 answer (`jev.json`). I labelled a fixed-seed sample of 30 of those by hand
 without seeing Jev's labels (`handcheck.md`): 22 of 30 agree: 15 of 17 on
 syntax, unknown-name and input-mismatch failures, 6 of 9 on branch
-mismatches and 1 of 4 on wrong results. So Jev's label only splits checker failures, and
-wrong results stay one group. `rank.py` ranks the causes (`rank.txt`) and
+mismatches and 1 of 4 on wrong results. So Jev's label only splits checker
+failures, and wrong results stay one group. Among the stack-juggling,
+stale-local-state and argument-order labels the splits below use, Jev
+matched the hand label on 9 of 13, and every miss was a swap among those
+three, so each of those sub-rows is approximate and could be off by a lot
+either way. Condition-after-the-quotations agreed 4 of 4. `rank.py` ranks the causes (`rank.txt`) and
 `behaviour.py` looks for author behaviour that predicts passing
 (`behaviour.txt`).
 
@@ -1447,10 +1451,10 @@ it is an estimate, not a measurement.
 | | of which stack-juggling (approx.) | 71 | 60 | 36 | |
 | | of which stale local state (approx.) | 35 | 33 | 20 | |
 | 2 | Input mismatch | 85 | 78 | 46 | |
-| | of which argument order | 39 | 36 | 21 | B2 9, A6 6 |
-| | of which condition after the quotations | 17 | 15 | 9 | B11 12, B14 5 |
-| | of which stale local state or stack-juggling | 29 | 27 | 16 | |
-| 3 | Syntax | 39 | 39 | 23 | B4 20 (parentheses) |
+| | of which argument order (approx.) | 39 | 36 | 21 | B2 9, A6 6 |
+| | of which condition after the quotations (approx.) | 17 | 15 | 9 | B11 12, B14 5 |
+| | of which stale local state or stack-juggling (approx.) | 29 | 27 | 16 | |
+| 3 | Syntax | 39 | 39 | 23, but see below | B4 20 (parentheses) |
 | 4 | Wrong result (checks, runs, wrong) | 40 | - | - | 4 are reversed loop guards, all B2 |
 | 5 | Unknown name | 16 | 7 | 4 | A11 8 (stack-effect names unbound) |
 
@@ -1459,6 +1463,16 @@ pushed sequence, an incremented index) and then gives the recursive call
 the old local's name, or gives it only the changed arguments, so a computed
 value is left over or the call is short. "Condition after the quotations"
 is Joy/Factor's `[ .. ] [ .. ] condition if`.
+
+Syntax's "single" is true by construction: a syntax error ends the parse,
+so the checker reports nothing else for that answer (all 211 answers with a
+syntax error have only syntax errors), and what lies behind it is unseen.
+For B4, `b4_parens.py` measured it: with every parenthesised condition
+unwrapped (a hand-made counterfactual, not scored), none of B4's 20 final
+answers checks. Eleven then fail on locals, eight on input mismatches, three
+on branch mismatches and two on unknown names (some on more than one;
+`b4_parens.txt`). So fixing B4's parentheses alone would recover none of
+its answers, and syntax's 23 overstates what a syntax fix recovers.
 
 **Behaviour** (`behaviour.txt`; exploratory, 20 samples, six measures, no
 correction for multiple tests). Re-reading the prompt, time to the first
@@ -1480,9 +1494,10 @@ the guide is an eval input.
 **Voids.** Six samples were void. Three were container restarts, unrelated
 to how the author wrote. The three audit voids, all in arm B, had passed
 0, 5 and 11 of 20 before voiding, across the range of the counted samples.
-Since causes cluster by sample, each would have added one more sample's
-habit, in no particular direction, so the voids do not distort the ranking
-(inferred).
+Their last kept answers (`rank.txt`) add 21 branch mismatches, 12 input
+mismatches, 5 syntax errors and 4 wrong results; restart A4, the one with
+kept answers, adds 7, 12, 1 and 0. Adding them leaves the ranking of the
+families unchanged, so the voids do not distort it.
 
 **What this suggests for the language and diagnostics** (inferred from the
 ranking; each needs its own measured check):
@@ -1496,7 +1511,8 @@ ranking; each needs its own measured check):
 3. Argument order on primitives: name the operand order of
    `seq-int.set` (sequence, index, value) and `seq-int.at` when their
    inputs arrive in another order.
-4. Parentheses in bodies: #180's diagnostic, which targets B4's 20 answers.
+4. Parentheses in bodies: #180's diagnostic, which targets B4's 20 answers;
+   those answers also have locals and stack errors behind the parse.
 5. The guide could steer authors to `locals` over shuffle words; test it
    with a pre-registered run.
 

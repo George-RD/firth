@@ -33,6 +33,12 @@
   unknown-name       16  single    7  recoverable   4.2
   runtime-trap        2
 
+== Void samples' last kept answers: passed, and failures by the family first shown
+  A4   results-2.json  passed  0  input-mismatch 12, branch-mismatch 7, syntax 1
+  B8   results-3.json  passed  0  branch-mismatch 14, input-mismatch 5, wrong-result 1
+  B9   results-2.json  passed 11  syntax 3, wrong-result 2, branch-mismatch 2, input-mismatch 1, unknown-name 1
+  B10  results-2.json  passed  5  input-mismatch 6, branch-mismatch 5, syntax 2, wrong-result 1, declared-effect 1
+
 == Final wrong results with a reversed loop guard: 4 of 40
   B2   index-of        i
   B2   is-sorted       i
