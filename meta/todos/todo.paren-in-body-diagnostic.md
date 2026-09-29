@@ -65,10 +65,12 @@ text after the `;`:
   with `};` on the next line. Deleting the `;` takes all 21 past it: 16
   reach a type or name error, 4 reach another early `;` further down, and
   1 reaches `prim <=` (`firth.syntax.invalid-item`).
-- When those brackets close everything but no `;` ends the word before
-  the next declaration or the end of the input, the hint says to move this
-  `;` to just after the closing bracket instead. No answer in the corpus
-  has this shape; it is tested.
+- When those brackets close everything but no `;` at the word's own level
+  ends it before the next declaration or the end of the input, the hint
+  says to move this `;` to just after the closing bracket if nothing else
+  follows it, and otherwise to delete this `;` and end the word with `;`
+  after its last item. No answer in the corpus has either shape; both are
+  tested, and applying each hint as written clears the syntax error.
 - Otherwise the hint says to close the open brackets first and names the
   next one to close. Only run 4's `is-sorted`
   (`2026-09-28-mvp/haiku-firth/answer-3.md`) gets this reading; closing the

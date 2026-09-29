@@ -11,6 +11,18 @@ structure Span where
   stop : Position
   deriving Repr, BEq, Nonempty
 
+/-- How to fix a `;` that ends a definition while a bracket is still open,
+when the brackets after it close everything. -/
+inductive EarlyEndFix where
+  /-- A later `;` ends the word, so this one is extra. -/
+  | delete
+  /-- Nothing follows the closing bracket before the next declaration or the
+  end of the input, so this `;` belongs just after it. -/
+  | move
+  /-- The body goes on after the closing bracket with no `;` to end it. -/
+  | endAfterBody
+  deriving Repr, BEq
+
 inductive ParseCause where
   | lexical | grammar | delimiter | validation
   deriving Repr, BEq
@@ -59,10 +71,9 @@ structure ParseError where
   localsBlocks : List LocalsBlock := []
   /-- For `firth.syntax.definition-ended-early`: when the text after the
   `;` closes every bracket still open before any other `;`, the text and
-  span of the bracket that closes the outermost one, and whether another
-  `;` then ends the word. With one, this `;` is the one to delete; without,
-  it belongs after that bracket. -/
-  closedBy : Option (String × Span × Bool) := none
+  span of the bracket that closes the outermost one, and how to fix the
+  `;`. -/
+  closedBy : Option (String × Span × EarlyEndFix) := none
   deriving Repr, BEq
 
 structure Located (α : Type) where
@@ -518,11 +529,15 @@ private def parseStackEffect (p : Parser) : Except ParseError (StackEffect × Pa
 
 /-- The bracket, after token `start`, that closes the last of `pending` (closers,
 innermost first), when the brackets that follow close all of them in order
-before any `;`. Brackets opened after `start` must close first. The flag says
+before any `;`. Brackets opened after `start` must close first. The fix says
 whether a `;` then ends the word before the next declaration or the end of
-the input. -/
+the input, whether nothing follows that bracket, or whether the body goes on. -/
 private def closesAll (tokens : Array Token) (start : Nat) (pending : List String) :
-    Option (String × Span × Bool) :=
+    Option (String × Span × EarlyEndFix) :=
+  let atDeclarationEnd (i : Nat) : Bool :=
+    match tokens[i]? with
+    | none => true
+    | some t => t.kind == .symbol ":" || t.kind == .identifier "use" || t.kind == .identifier "vocab"
   -- A `;` ends the word only outside every bracket opened after the closer.
   let ended (i : Nat) : Bool :=
     let rest := (tokens.toList.drop i).takeWhile fun t =>
@@ -536,7 +551,7 @@ private def closesAll (tokens : Array Token) (start : Nat) (pending : List Strin
         | .symbol ";" => (depth, depth == 0)
         | _ => state
     (rest.foldl step (0, false)).2
-  let rec go (fuel i : Nat) (nested pending : List String) : Option (String × Span × Bool) :=
+  let rec go (fuel i : Nat) (nested pending : List String) : Option (String × Span × EarlyEndFix) :=
     match fuel, tokens[i]? with
     | 0, _ | _, none => none
     | fuel + 1, some t =>
@@ -548,7 +563,11 @@ private def closesAll (tokens : Array Token) (start : Nat) (pending : List Strin
             if c != "]" && c != "}" then go fuel (i + 1) nested pending
             else match nested, pending with
               | n :: rest, _ => if n == c then go fuel (i + 1) rest pending else none
-              | [], [o] => if o == c then some (c, t.span, ended (i + 1)) else none
+              | [], [o] =>
+                  if o != c then none
+                  else if ended (i + 1) then some (c, t.span, .delete)
+                  else if atDeclarationEnd (i + 1) then some (c, t.span, .move)
+                  else some (c, t.span, .endAfterBody)
               | [], o :: rest => if o == c then go fuel (i + 1) [] rest else none
               | [], [] => none
         | _ => go fuel (i + 1) nested pending
