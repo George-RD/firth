@@ -1783,7 +1783,8 @@ the named script from the committed files.
 | | of which one branch leaves extra values | 38 | 25 | | No edit offered |
 | | of which a call in a branch gets the wrong values | 29 (A24 14) | 15 | | #185's target |
 | 2 | Input mismatch | 68 | 70 | 35 / 36 | Checker's edits: 8 / 7 pass |
-| | of which argument order (the hint spells out the reordering) | 37 (A23 15) | 24 | | |
+| | of which argument order, the hint gives the edit | 27 (A23 15) | 19 | | Following the edits: 15 pass |
+| | of which argument order, left to the author | 10 | 5 | | No edit offered |
 | | of which a value of the wrong type at a position | 13 | 23 (B22 13) | | |
 | | of which too few values or underflow | 16 (A3 15) | 17 | | |
 | 3 | Wrong result or trap (checks, runs, wrong) | 51 | 61 | not checker-visible | see below |
@@ -1802,8 +1803,8 @@ the named script from the committed files.
   somewhat more often on wrong results and traps (61 against 51).
 - In arm B the largest groups are:
   - wrong results (61);
-  - input mismatches, of which 24 are argument order the checker had
-    already spelled out and 23 are an extra value pushed before an
+  - input mismatches, of which 24 are argument order (19 with the edit
+    spelled out by the checker) and 23 are an extra value pushed before an
     operation (13 of those are B22 writing `xs i prim seq-int.len`);
   - one sample (B21) writing every `locals` body without braces.
 - So steering authors to `locals` moved failures out of branch mismatches
@@ -1822,8 +1823,9 @@ causes named here are inferred from the outcome.
 | Trap (index out of range, fuel, resource) | 6 | 11 |
 | Other wrong value | 12 | 28 |
 
-- The equality-boundary answers are strict `<` where `<=` was meant, in
-  both arms.
+- Inferred, not measured: the equality-boundary answers are strict `<`
+  where `<=` was meant, in both arms. The rule measures only the outcome.
+  By hand, 7 of the 8 `keep-positive` answers skip on `x 0 prim <`.
   - Firth has only `prim <` and `prim =` for comparing integers. So
     `a <= b` has to be written `b a prim < prim not`, and `a > b` has to
     be written `b a prim <`.
@@ -1831,8 +1833,9 @@ causes named here are inferred from the outcome.
     refuses (syntax, above).
   - Six of the 19 empty results, read by hand, are a backwards loop
     guarded by `i 0 prim <` where `i >= 0` was meant (A7, A16, B22).
-- Primes that keep 4 and 9 come from a `d d prim * n prim <` bound where
-  `<=` was meant.
+- Of the 12 primes answers that keep 4 and 9, 10 use a
+  `d d prim * n prim <` bound where `<=` was meant (read by hand; B4's
+  and B22's have no squared bound).
 - These 29 answers check and run, so no diagnostic can catch them.
   - The language gap is the missing non-strict comparison. It is
     recorded in `todo.comparison-primitives`.
@@ -1891,9 +1894,10 @@ inferred.
      guide. The guide is an eval input, so either needs its own run.
      Recorded as `todo.comparison-primitives`.
 2. **Argument order the checker already solves.**
-   - Measured: 61 final answers. Following the offered edit makes 15 of
-     them pass.
-   - The hint is correct, but the authors did not apply it. What to test
+   - Measured: 61 final answers, 46 of them with an edit. Following the
+     edits makes 15 of those 46 pass. The other 15 answers got the hint
+     that only the author can tell which value is which, with no edit.
+   - For the 46, the hint is correct, but the authors did not apply it. What to test
      is its presentation, for example leading with the rewritten line.
 3. **A branch leaving extra values** (63 final answers).
    - No edit is offered. #185 covers the other branch case (44 answers):

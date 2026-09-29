@@ -16,8 +16,12 @@ and `prim =` for comparing integers, so `a <= b` must be written
 Measured in run 11's counted final answers (`rank.txt`):
 
 - 29 answers check and run but give wrong results with the equality-boundary
-  outcome: a strict `<` where `<=` was meant (15 in arm A, 14 in arm B).
-  No diagnostic can catch these.
+  outcome (15 in arm A, 14 in arm B): `is-sorted` false on equal
+  neighbours, `primes-up-to` keeping squares, `keep-positive` keeping 0.
+  No diagnostic can catch these. That they are a strict `<` where `<=`
+  was meant is inferred: by hand, 10 of the 12 primes answers use a
+  `d d prim * n prim <` bound and 7 of the 8 `keep-positive` answers skip
+  on `x 0 prim <`.
 - 9 answers invented `<=` or `>` (2 in A, 7 in B), which the parser refuses.
 
 Inferred, not measured: that the cause is composing `<=` from `<`, `not` and

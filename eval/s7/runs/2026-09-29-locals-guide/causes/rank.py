@@ -54,7 +54,9 @@ def diagnosis(d):
     h, code = d.get("hint") or "", d["code"] or ""
     m = d.get("message") or ""
     if "in another order" in h:
-        return "argument order (the hint gives the reordering)"
+        if re.search(r"write `[^`]+` in place of `[^`]+`", h + m):
+            return "argument order, edit given"
+        return "argument order, left to the author"
     if "Make the branch push, just before" in h:
         return "call in a branch given the wrong values"
     if re.search(r"branch leaves \d+ values? more", h):
@@ -83,12 +85,12 @@ def outcome(case, task):
     got, exp, inp = case.get("stack"), case["expected"], case["input"]
     if task == "is-sorted" and exp == [True] and got == [False] and any(
             a == b for a, b in zip(inp[0], inp[0][1:])):
-        return "equality boundary (strict < where <= was meant)"
+        return "equality boundary"
     if task == "keep-positive" and got and 0 in got[0] and 0 not in exp[0]:
-        return "equality boundary (strict < where <= was meant)"
+        return "equality boundary"
     if task == "primes-up-to" and got and set(got[0]) - set(exp[0]) and all(
             round(x ** 0.5) ** 2 == x for x in set(got[0]) - set(exp[0])):
-        return "equality boundary (strict < where <= was meant)"
+        return "equality boundary"
     if task == "digits" and got and got[0] == list(reversed(exp[0])):
         return "digits in reverse order"
     def empty(v):  # [] or the integer 0; False == 0 in Python, so test the type
@@ -220,7 +222,11 @@ def report():
 def self_test():
     assert diagnosis({"code": "firth.type.primitive-input-mismatch",
                       "hint": "These are the values `prim +` takes, in another order."}
-                     ).startswith("argument order")
+                     ) == "argument order, left to the author"
+    assert diagnosis({"code": "firth.type.primitive-input-mismatch",
+                      "hint": "These are the values `prim +` takes, in another order. To push "
+                              "them in its order, write `a b` in place of `b a`."}
+                     ) == "argument order, edit given"
     assert diagnosis({"code": "firth.syntax.unexpected-token", "hint": "A definition looks like",
                       "message": "Unexpected `i`, expected `{`."}).startswith("`locals` block")
     assert diagnosis(None) == "-"
