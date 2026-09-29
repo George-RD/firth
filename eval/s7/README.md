@@ -1424,8 +1424,8 @@ So the bet holds for strong models and not yet for weak ones. The
 checker's diagnostics are still the lever most likely to move the weak
 model (the #142 hint removed a failure that every task shared), but the
 diagnostic changes from #168 to #176 taken together (among them #171's
-checked reorder edits and #174's one diagnostic per refused word) showed
-no gain in a controlled comparison of the two builds (run 10,
+checked reorder edits and #174's one diagnostic per refused word) did not
+show a gain in a controlled comparison of the two builds (run 10,
 inconclusive: 7 of 10 samples against the older build's 9 of 10). Run 10
 cannot say what any one of those changes did on its own.
 The costs are real. From reading the prompt to writing the first answer,
@@ -1441,9 +1441,11 @@ against 11 seconds).
 - Runs 1 and 2 used one sample per task, which is noisy: Haiku passed 7 of
   the easy tasks in run 1 and only 5 in run 2. Run 3 used three.
 - Haiku's results vary widely between samples of one build (arm A of run
-  10: 0 to 12 of 20). A single run of four samples cannot show that a
-  change helped; judge a change by a pre-registered control like run 10,
-  with about 10 samples an arm.
+  10: 0 to 12 of 20). Four samples an arm is usually underpowered: only a
+  large separation (4 of 4 against 0 of 4 gives one-sided Fisher p =
+  1/70) would show a change helped, and the pre-registration puts the
+  power of such a run at 0.17. Judge a change by a pre-registered control
+  like run 10, with about 10 samples an arm.
 - The step budget is now 100,000 steps (#119), so tasks with real loops
   (count-divisors, larger inputs) can come back.
 - The repo docs now cover the new primitives (PR #113 `54387bd`), so the
