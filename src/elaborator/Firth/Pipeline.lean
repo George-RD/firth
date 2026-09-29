@@ -470,13 +470,26 @@ private def withCallAccount (config : PipelineConfig) (source : String)
       .stackEffect { diagnostic with callAccount := account.map ({ · with edit, assignment }) }
   | other => other
 
+/-- Whether a refused `if` at byte `ifStart` is shown checked when, after an
+edit, the word's next error is at byte `offset`, found by typing when
+`typing` and by erasure otherwise. Erasure and typing each check the body
+from the start, so an error after the `if` means that stage got past it. A
+type error before it, as a misordered `prim seq-int.at` in source the edit
+left as it was, shows the `if` got past erasure, when erasure refused it
+(`byErasure`): typing runs only on a body erasure got through. Anything else
+at or before the `if` may have stopped the check short of it. -/
+def editGetsPast (byErasure typing : Bool) (ifStart offset : Nat) : Bool :=
+  offset > ifStart || (offset < ifStart && byErasure && typing)
+
 /-- The edit applied to `source` and `word` checked again: where the word's
 next error is, as a line and column of the edited source, or `none` inside
-when it then checks. `none` when the edit does not get past the refused `if`
-at `ifStart`: the word is refused there again, or the edited source does not
-parse or resolve. Also the words whose effects the
-check read. -/
-private def checkBranchEdit (config : PipelineConfig) (source wordName : String)
+when it then checks. `none` when the check does not show the edit gets past
+the refused `if` at `ifStart`: the next error is at the `if` or anywhere
+before it that checking reaches first, or the edited source does not parse
+or resolve. `byErasure` says the `if` was refused by erasure: then a type
+error anywhere comes after it, as typing runs only on a body erasure got
+through. Also the words whose effects the check read. -/
+private def checkBranchEdit (config : PipelineConfig) (source wordName : String) (byErasure : Bool)
     (ifStart start stop : Nat) (replacement : String) :
     Option (Option (Nat × Nat) × List String) := do
   let edited := bytesText source 0 start ++ replacement ++ bytesText source stop source.utf8ByteSize
@@ -488,14 +501,15 @@ private def checkBranchEdit (config : PipelineConfig) (source wordName : String)
   let editedWords := resolved.map (·.1)
   let word ← (resolved.find? fun (word, error) => word.name == wordName && error.isNone).map (·.1)
   let at_ := ((ifStart : Int) + shift).toNat
-  let after ← match outcomeAlone config edited editedWords word with
+  let after ← match firstErrorAlone config editedWords word with
     | none => some none
-    | some offset =>
-        -- An error before the edit is in source the edit left as it was,
-        -- found now that the branches agree, as a misordered
-        -- `prim seq-int.at` the checker reaches only then.
-        if offset == at_ then none
-        else some (some (lineColumn edited offset))
+    | some error =>
+        let offset := (outcomeAlone config edited editedWords word).getD 0
+        let typing := match error with
+          | .stackEffect _ => true
+          | _ => false
+        if editGetsPast byErasure typing at_ offset then some (some (lineColumn edited offset))
+        else none
   pure (after, consultedWords config editedWords word)
 
 private def collapseSpace (text : String) : String :=
@@ -512,7 +526,7 @@ The local must appear just once between the operation and the call, and the
 source between them must close every bracket it opens, so the new block
 holds the call and nothing else changes. -/
 private def staleEdit (config : PipelineConfig) (source : String)
-    (wordName : String) (ifSpan : Span) (account : IfAccount) : Option BranchEdit := do
+    (wordName : String) (byErasure : Bool) (ifSpan : Span) (account : IfAccount) : Option BranchEdit := do
   let net (branch : BranchAccount) : Int :=
     (branch.leaves.length : Int) - ((branch.took.length + branch.missing : Nat) : Int)
   let longer ← if net account.onTrue == net account.onFalse + 1 then some account.onTrue
@@ -543,7 +557,7 @@ private def staleEdit (config : PipelineConfig) (source : String)
       else some depth
   if balanced != some 0 then none else
   let replacement := s!"{collapseSpace (bytesText source start middle)} locals \{ {name} } \{ {between} {collapseSpace (bytesText source callStart stop)} }"
-  let (after, consulted) ← checkBranchEdit config source wordName ifSpan.start.offset start stop replacement
+  let (after, consulted) ← checkBranchEdit config source wordName byErasure ifSpan.start.offset start stop replacement
   pure { fix := .stale name computed.operation call.operation, start, stop
          line := (lineColumn source start).1
          written := collapseSpace (bytesText source start stop), replacement, after, consulted }
@@ -560,7 +574,7 @@ pushed value is for is told by the local it stands for (`candidate` for
 otherwise by types, when the pushed values are the last inputs or the first
 in one way alone and none stands for another input. -/
 private def missingEdit (config : PipelineConfig) (source : String)
-    (wordName : String) (ifSpan : Span) (account : IfAccount) : Option BranchEdit := do
+    (wordName : String) (byErasure : Bool) (ifSpan : Span) (account : IfAccount) : Option BranchEdit := do
   let reach ← (account.onTrue.reach.filter (·.missing > 0)) <|> (account.onFalse.reach.filter (·.missing > 0))
   let span ← reach.span
   let pushed := reach.own.length
@@ -576,7 +590,10 @@ private def missingEdit (config : PipelineConfig) (source : String)
   -- or the local to write.
   let byName : Option (List (Option Nat × String)) := do
     let sources ← reach.ownSources.mapM id
-    if sources.eraseDups.length != sources.length || !sources.all inputNames.contains then none else
+    -- Each input is filled once: an effect naming two inputs alike, as
+    -- `x:Int x:Int`, would have one pushed value fill both.
+    if sources.eraseDups.length != sources.length || !sources.all inputNames.contains
+        || inputNames.eraseDups.length != inputNames.length then none else
     inputs.mapM fun (name, type) =>
       match sources.idxOf? name with
       | some j => if reach.ownTypes[j]? == some (some type) then some (some j, name) else none
@@ -630,29 +647,29 @@ private def missingEdit (config : PipelineConfig) (source : String)
       pure (first.1, texts)
   let stop := span.stop.offset
   let replacement := " ".intercalate (texts ++ [collapseSpace (bytesText source span.start.offset stop)])
-  let (after, consulted) ← checkBranchEdit config source wordName ifSpan.start.offset start stop replacement
+  let (after, consulted) ← checkBranchEdit config source wordName byErasure ifSpan.start.offset start stop replacement
   pure { fix := .missing names reordered, start, stop
          line := (lineColumn source start).1
          written := collapseSpace (bytesText source start stop), replacement, after, consulted }
 
 /-- The edit for a refused `if`, when one is found and gets past it: a value
 left behind, then inputs lacking. -/
-private def branchEdit (config : PipelineConfig) (source wordName : String) (ifSpan : Span)
-    (account : IfAccount) : Option BranchEdit :=
+private def branchEdit (config : PipelineConfig) (source wordName : String) (byErasure : Bool)
+    (ifSpan : Span) (account : IfAccount) : Option BranchEdit :=
   if !config.checkEdits then none else
-  (staleEdit config source wordName ifSpan account).orElse fun _ =>
-    missingEdit config source wordName ifSpan account
+  (staleEdit config source wordName byErasure ifSpan account).orElse fun _ =>
+    missingEdit config source wordName byErasure ifSpan account
 
 /-- A refused `if` with its account, and the edit `branchEdit` finds for it. -/
 private def withBranchEdit (config : PipelineConfig) (source : String) :
     PipelineDiagnostic → PipelineDiagnostic
   | .erasure word (.branchShape span onTrue onFalse locals (some account)) =>
-      let account := { account with edit := branchEdit config source word span account }
+      let account := { account with edit := branchEdit config source word true span account }
       .erasure word (.branchShape span onTrue onFalse locals (some account))
   | .stackEffect diagnostic =>
       match diagnostic.ifAccount, diagnostic.word with
       | some account, some word =>
-          let account := { account with edit := branchEdit config source word diagnostic.primary account }
+          let account := { account with edit := branchEdit config source word false diagnostic.primary account }
           .stackEffect { diagnostic with ifAccount := some account }
       | _, _ => .stackEffect diagnostic
   | other => other

@@ -666,6 +666,26 @@ private def runCallAccountTests : IO Unit := do
   -- `result` would be written for the input left: no edit.
   let _ ← callReport "a new value for another input" "firth.type.branch-mismatch" ": g\n  (forall ρ; ρ xs:Seq Int^many k:Int^many result:Seq Int^many -- ρ r:Seq Int^many)\n  locals { xs k result } { k 0 prim < [ result ] [ result k prim seq-int.push 5 g ] if };"
     ["`g` needs 3 values (xs:Seq Int, k:Int, result:Seq Int)"] ["in place of"]
+  -- Planted: an effect naming two inputs alike. The one pushed value,
+  -- from `x`, would fill both by name, and the edit would compute it twice:
+  -- no edit.
+  let _ ← callReport "two inputs of one name" "firth.type.branch-mismatch"
+    ": h (forall ρ; ρ x:Int^many x:Int^many -- ρ r:Int^many) prim + ;\n: g\n  (forall ρ; ρ x:Int^many n:Int^many -- ρ r:Int^many)\n  locals { x n } { n 0 prim < [ x ] [ x 1 prim + h ] if };"
+    ["exactly the values it takes, in this order: x:Int, x:Int"] ["in place of"]
+  -- An edit is said to get past the refused `if` only when its next error
+  -- shows the check went beyond it. Planted: an error at the `if`, or one
+  -- before it found by erasure, or found by typing when typing refused the
+  -- `if`, may have stopped the check short of it.
+  let pastCases : List (String × Bool × Bool × Nat × Bool) :=
+    [ ("after, by erasure", true, false, 20, true)
+    , ("after, by typing", false, true, 20, true)
+    , ("a type error before an `if` erasure refused", true, true, 5, true)
+    , ("at the `if`", true, true, 10, false)
+    , ("before, by erasure", true, false, 5, false)
+    , ("before, by typing, when typing refused it", false, true, 5, false) ]
+  for (name, byErasure, typing, offset, expected) in pastCases do
+    if editGetsPast byErasure typing 10 offset != expected then
+      throw <| IO.userError s!"edit gets past its `if`: {name}: expected {expected}"
   -- An edit that gets past this operation but not the next mistake says
   -- where that is: digits at cec3707 (haiku-firth-1, answer 1), the helper
   -- verbatim, where a `swap` also puts the sequence on top for the call.
