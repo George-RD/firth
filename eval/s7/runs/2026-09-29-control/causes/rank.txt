@@ -1,0 +1,47 @@
+== Feedback: a failing task rewritten in the next round, by the family first shown
+  branch-mismatch   215  same family  108 ( 50%)  other family   79  passed   28 ( 13%)
+  input-mismatch    180  same family   97 ( 54%)  other family   60  passed   23 ( 13%)
+  syntax            172  same family   83 ( 48%)  other family   74  passed   15 (  9%)
+  unknown-name       90  same family   14 ( 16%)  other family   60  passed   16 ( 18%)
+  wrong-result       31  same family   14 ( 45%)  other family   10  passed    7 ( 23%)
+  locals             16  same family    2 ( 12%)  other family   10  passed    4 ( 25%)
+  declared-effect     5  same family    1 ( 20%)  other family    4  passed    0 (  0%)
+  runtime-trap        3  same family    0 (  0%)  other family    2  passed    1 ( 33%)
+
+== Written answers that checked: 187; passed 111 (59%)
+
+== Final failing answers (289) by cause; single-family ones; inferred recoverable = single-family x 0.59
+  branch-mismatch / stack-juggling           71  single   60  recoverable  35.6
+  wrong-result                               40  single   40  recoverable     -
+  input-mismatch / argument-order            39  single   36  recoverable  21.4
+  syntax / other-syntax                      38  single   38  recoverable  22.6
+  branch-mismatch / stale-local-state        35  single   33  recoverable  19.6
+  input-mismatch / quoted-condition          17  single   15  recoverable   8.9
+  input-mismatch / stale-local-state         15  single   14  recoverable   8.3
+  input-mismatch / stack-juggling            14  single   13  recoverable   7.7
+  unknown-name / locals-form                  9  single    1  recoverable   0.6
+  unknown-name / unknown-word                 7  single    6  recoverable   3.6
+  runtime-trap                                2  single    2  recoverable     -
+  branch-mismatch / argument-order            1  single    1  recoverable   0.6
+  syntax / unknown-word                       1  single    1  recoverable   0.6
+
+== Final failing answers by family (single-family; inferred recoverable)
+  branch-mismatch   107  single   94  recoverable  55.8
+  input-mismatch     85  single   78  recoverable  46.3
+  wrong-result       40
+  syntax             39  single   39  recoverable  23.1
+  unknown-name       16  single    7  recoverable   4.2
+  runtime-trap        2
+
+== Final wrong results with a reversed loop guard: 4 of 40
+  B2   index-of        i
+  B2   is-sorted       i
+  B2   all-true        i
+  B2   has-pair-sum    j, i
+
+== Hand check agreement by rule family (handcheck.md)
+  branch-mismatch  agree  6 of  9
+  input-mismatch   agree  7 of  8
+  syntax           agree  4 of  4
+  unknown-name     agree  4 of  5
+  wrong-result     agree  1 of  4
