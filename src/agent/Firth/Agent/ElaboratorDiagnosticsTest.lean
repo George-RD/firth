@@ -944,11 +944,34 @@ def runElaboratorDiagnosticTests : IO Unit := do
           | .failure _ => fail s!"branch pushed the first operands: the program following the hint (`{name}` after `1`) is refused"
       | [] => fail s!"branch pushed the first operands: the hint names no last input: {emitted}"
   | _ => fail "branch pushed the first operands: expected one diagnostic"
-  -- A primitive's inputs are compared without their usage, as a word's
-  -- inputs are recorded: `w` and `h` are the World and Handle `prim send`
-  -- takes first, so the missing Bytes goes after them (Codex on #166).
+  -- Types are compared with their usage, a word's as a primitive's: `w`
+  -- and `h` are the linear World and Handle `prim send` takes first, so
+  -- the missing Bytes goes after them (Codex on #166).
   branchReport "send short of its Bytes" ": g ( forall ρ; ρ w:World^linear h:Handle^linear b:Bool^many -- ρ w:World^linear ) locals { w h b } { b [ w h prim send ] [ 0 ] if } ;"
     ["The branch already pushes `w` and `h`, in the place of the first 2 (World^linear, Handle^linear): keep each where it has that type and replace it where it does not. Then push the last one (Bytes^linear) after them"]
+  -- Declared `^many`, they are not what `prim send` takes, so the hint names
+  -- no side: an edit that keeps them is refused for linearity (review of
+  -- #166).
+  branchReport "send given many-use values" ": g ( forall ρ; ρ w:World^many h:Handle^many b:Bool^many -- ρ w:World^linear ) locals { w h b } { b [ w h prim send ] [ 0 ] if } ;"
+    ["The branch already pushes `w` and `h`: keep each in its place where it is one of these and replace it where it is not, and push the other one in its place"]
+  -- The checker's types below the `if` keep their usage too: `prim send`,
+  -- or a word that takes the same values, gets the World, Handle and Bytes
+  -- it declares, so it is not blamed for the later `prim not` on the Int
+  -- (Codex on #166); given the Handle and World swapped, it is.
+  let putWord := ": put ( forall ρ; ρ w:World^linear h:Handle^linear x:Bytes^linear -- ρ w:World^linear ) prim send ;\n\n"
+  for (label, source, operation) in [
+      ("send then not", ": g ( forall ρ; ρ n:Int^many w:World^linear h:Handle^linear x:Bytes^linear b:Bool^many -- ρ n:Int^many w:World^linear ) [ prim send swap prim not swap ] [ prim send ] if ;", "`prim send` takes"),
+      ("word taking linear values, then not", putWord ++ ": g ( forall ρ; ρ n:Int^many w:World^linear h:Handle^linear x:Bytes^linear b:Bool^many -- ρ n:Int^many w:World^linear ) [ put swap prim not swap ] [ put ] if ;", "`put` takes")] do
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .failure [envelope] =>
+        let emitted := encode envelope
+        if (emitted.splitOn operation).length > 1 then
+          fail s!"{label}: the report blames an operation given the values it declares: {emitted}"
+        if (emitted.splitOn "cannot run on the stack it is given").length == 1 then
+          fail s!"{label}: expected the checker's account: {emitted}"
+    | _ => fail s!"{label}: expected one diagnostic"
+  branchReport "send given swapped operands" ": g ( forall ρ; ρ h:Handle^linear w:World^linear x:Bytes^linear b:Bool^many -- ρ w:World^linear ) [ prim send ] [ [ swap ] dip prim send ] if ;"
+    ["`prim send` takes 3 values (World^linear, Handle^linear, Bytes^linear, bottom to top). It gets, bottom to top, the input `h` from below the `if`, the input `w` from below the `if` and the input `x` from below the `if`."]
   -- Where the pushed values fit the inputs in more than one way, the hint
   -- names no side: Haiku's histogram answer at c6a964a (haiku-firth-2,
   -- solutions-1) pushes `0 xs idx` for `count-value (cnt xs idx v)`, which

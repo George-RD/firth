@@ -102,9 +102,12 @@ private def keepsRow (effect : StackEffect) : Bool :=
   | .row input _ :: _, .row output _ :: _ => input == output
   | _, _ => false
 
+/-- A stack effect's values with their types, written with their usage as
+the checker renders them (`World^linear`), so that they compare with a
+primitive's types and with the checker's stack. -/
 private def valueItems (items : List StackItem) : List (String × String) :=
   items.filterMap fun
-    | .value name type _ => some (name, type.name)
+    | .value name type _ => some (name, type.name ++ if type.usage == .linear then "^linear" else "")
     | .row _ _ => none
 
 /-- Takes `count` values for `operation`, recording it as the branch's first
@@ -160,12 +163,6 @@ private def noteMisread (after : Walk) (taken : List Entry) (types : List String
   if after.trusted.isNone && misreads taken types then
     { after with trusted := some after.reach }
   else after
-
-/-- A primitive's input or output type as the walk compares it: without its
-usage, as the types of a word's inputs and outputs are recorded
-(`World^linear` is `World`). The report still shows the usage. -/
-private def plainType (type : String) : String :=
-  (type.splitOn "^").headD type
 
 /-- Pushes values with their labels and types, bottom to top. -/
 private def pushTyped (walk : Walk) (values : List (String × Option String)) : Walk :=
@@ -225,10 +222,9 @@ mutual
     | .primitive name _ => match context.primitive name with
         | some (inputs, outputs) =>
             let operation := s!"`prim {name}`"
-            let types := inputs.map plainType
-            let (taken, after) := take walk operation inputs inputs.length types
-            let walk := noteMisread after taken types
-            .next (pushTyped walk ((resultLabels operation (List.replicate outputs.length "")).zip (outputs.map (some ∘ plainType))))
+            let (taken, after) := take walk operation inputs inputs.length inputs
+            let walk := noteMisread after taken inputs
+            .next (pushTyped walk ((resultLabels operation (List.replicate outputs.length "")).zip (outputs.map some)))
         | none => .lost
     | .locals names body _ =>
         let (taken, inner) := take walk "`locals`" [] names.length
