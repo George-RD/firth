@@ -69,6 +69,12 @@ the checker wrote, not the author:
   refused (review of #165). Stating only edits whose word is accepted moves
   23 of the 40 recorded refusals to the fallback. The reviewer's suggestion:
   keep the edit and add "after this edit, `w` is still refused at L:C".
+- `firth.type.invalid-signature` reads "`this operation` failed the check
+  firth.type.invalid-signature; the stack before it is (empty)." for a word
+  whose declared stack effect is not a valid signature (for example
+  `(forall r; x:Int r -- r)`, whose row variable is not `ρ`). The report
+  should name the word and say what in its signature is wrong. Its callers
+  are now reported as `firth.type.unchecked-word`, which names the word.
 
 ## Goal
 

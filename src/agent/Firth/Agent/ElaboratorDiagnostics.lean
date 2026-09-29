@@ -941,6 +941,23 @@ private def internalEnvelope (context : EmissionContext) (span : Firth.Elaborato
     expectedStack := none
     actualStack := none }
 
+/-- A word not type-checked because a word it calls has no valid signature:
+said as an error, so that its silence is never read as a pass. -/
+private def uncheckedEnvelope (context : EmissionContext) (word callee : String)
+    (span : Firth.Elaborator.Span) : Envelope :=
+  envelope context {
+    code := "firth.type.unchecked-word"
+    severity := "error"
+    messageKey := messageKey "firth.type.unchecked-word"
+    messageParams := .mkObj [
+      ("message", .str s!"`{word}` was not checked, because it calls `{callee}`, whose stack effect is not a valid signature."),
+      ("hint", .str s!"Fix the stack effect of `{callee}` first; `{word}` is then checked against it, and may have errors of its own."),
+      ("word", .str word)]
+    location := locationFromSpan context.source span
+    cause := { kind := "type-checking" }
+    expectedStack := none
+    actualStack := none }
+
 private def withContextSource (context : EmissionContext) (envelope : Envelope) :
     Envelope :=
   { envelope with
@@ -956,7 +973,39 @@ private def pipelineDiagnosticEnvelope (context : EmissionContext) :
   | .erasure word error => erasureEnvelope context error word
   | .stackEffect diagnostic => stackEffectEnvelope context diagnostic
   | .refinement _ diagnostic => withContextSource context (refinementEnvelope diagnostic)
+  | .unchecked word callee span => uncheckedEnvelope context word callee span
   | .internal span => internalEnvelope context span
+
+private def positionWithin (span : Firth.Elaborator.Span) (position : Position) : Bool :=
+  let start : Position := { line := span.start.line, column := span.start.column }
+  let stop : Position := { line := span.stop.line, column := span.stop.column }
+  !positionBefore position start && !positionBefore stop position
+
+/-- The word a diagnostic is in, as `message_params.word`, unless it names one
+already: with an error reported for each word, a reader needs to know which
+word each is in. -/
+private def withWord (words : List (String × Firth.Elaborator.Span)) (envelope : Envelope) :
+    Envelope :=
+  match envelope.body with
+  | .diagnostic diagnostic =>
+      match diagnostic.messageParams, words.find? (positionWithin ·.2 diagnostic.location.range.start) with
+      | .obj fields, some (word, _) =>
+          if fields.contains "word" then envelope else
+          { envelope with body := .diagnostic { diagnostic with
+              messageParams := .obj (fields.insert "word" (.str word)) } }
+      | _, _ => envelope
+  | _ => envelope
+
+/-- Payload ids made unique within one response, which the protocol requires
+(`validateBatch`): the first keeps its id, a later one with the same id gets
+`.2`, `.3`, ... by its place in the list. -/
+private def uniquePayloadIds (envelopes : List Envelope) : List Envelope :=
+  let (_, out) := envelopes.foldl (init := (([] : List String), ([] : List Envelope)))
+    fun (seen, out) envelope =>
+      let id := if seen.contains envelope.payloadId
+        then s!"{envelope.payloadId}.{out.length + 1}" else envelope.payloadId
+      (id :: envelope.payloadId :: seen, out ++ [{ envelope with payloadId := id }])
+  out
 
 def elaboratePipeline (context : EmissionContext) (source : String)
     (config : Firth.Elaborator.PipelineConfig := {}) : StructuredElaborationResult :=
@@ -966,7 +1015,10 @@ def elaboratePipeline (context : EmissionContext) (source : String)
   match Firth.Elaborator.elaborateWith config source with
   | .success program => .success program
   | .failure diagnostics =>
-      .failure (sortDiagnosticEnvelopes
-        (diagnostics.map (pipelineDiagnosticEnvelope context)))
+      let words := match Firth.Elaborator.parse source with
+        | .success file => (Firth.Elaborator.collectWords file.declarations).map fun word => (word.name, word.span)
+        | .failure _ => []
+      .failure (uniquePayloadIds (sortDiagnosticEnvelopes
+        (diagnostics.map (withWord words ∘ pipelineDiagnosticEnvelope context))))
 
 end Firth.Agent

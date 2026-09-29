@@ -81,6 +81,101 @@ private def warningByCode (code : String) : List Firth.Elaborator.LintWarning �
   | [] => none
   | warning :: rest => if warning.code == code then some warning else warningByCode code rest
 
+/-- The reports with this code, of a refused program. -/
+private def reportsWithCode (result : StructuredElaborationResult) (code : String) : List Envelope :=
+  match result with
+  | .failure envelopes => envelopes.filter fun envelope =>
+      match Lean.Json.parse (encode envelope) with
+      | .ok json => ((json.getObjValD "body").getObjValD "code").getStr?.toOption == some code
+      | .error _ => false
+  | .success _ => []
+
+/-- The reports in this word, of a refused program. -/
+private def reportsIn (result : StructuredElaborationResult) (word : String) : List Envelope :=
+  match result with
+  | .failure envelopes => envelopes.filter fun envelope =>
+      match Lean.Json.parse (encode envelope) with
+      | .ok json => (((json.getObjValD "body").getObjValD "message_params").getObjValD "word").getStr?.toOption == some word
+      | .error _ => false
+  | .success _ => []
+
+/-- A refused program gets the first error of each word it refuses, in
+source order, each naming its word. Other words are checked against a word's
+declared effect, whatever its body does, and a word whose declared effect is
+no type scheme leaves its callers unchecked, each reported as such. -/
+private def runEveryErrorTests : IO Unit := do
+  let pipelineContext := contextWithSource "pipeline-every" "main.fth"
+  let agentConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := Elaborate.gammaErasure, typingEnv := Elaborate.gammaTyping }
+  -- `f` adds a Bool. `sub` binds its inputs out of order and then adds a
+  -- Bool too: only the first is its error. `k` calls `f` as declared and
+  -- is fine; `k2` hands `f` a Bool. `u` puts its row in the middle, so
+  -- `c`, which calls it, cannot be checked, and is reported as unchecked
+  -- rather than left silent. `g` names a word that does not
+  -- exist. The checker that stopped at the first error reported only
+  -- `g`'s, the only name error.
+  let source := String.intercalate "\n" [
+    ": f ( a:Int -- b:Int ) true prim + ;",
+    ": sub ( a:Int b:Int -- r:Int ) locals { b a } { a b prim - true prim + } ;",
+    ": k ( -- b:Int ) 1 f ;",
+    ": k2 ( -- b:Int ) true f ;",
+    ": u (forall ρ; x:Int ρ -- ρ) drop ;",
+    ": c ( -- ) 1 u ;",
+    ": g ( -- b:Int ) 1 bar ;"]
+  let expected : List (String × String × Nat × Nat) := [
+    ("f", "firth.type.primitive-input-mismatch", 1, 29),
+    ("sub", "firth.name.locals-order", 2, 41),
+    ("k2", "firth.type.word-input-mismatch", 4, 24),
+    ("u", "firth.type.invalid-signature", 5, 22),
+    ("c", "firth.type.unchecked-word", 6, 14),
+    ("g", "firth.name.unresolved", 7, 20)]
+  let summary (envelope : Envelope) : String × String × Nat × Nat :=
+    match Lean.Json.parse (encode envelope) with
+    | .ok json =>
+        let body := json.getObjValD "body"
+        let start := ((body.getObjValD "location").getObjValD "range").getObjValD "start"
+        (((body.getObjValD "message_params").getObjValD "word").getStr?.toOption.getD "",
+          (body.getObjValD "code").getStr?.toOption.getD "",
+          (start.getObjValD "line").getNat?.toOption.getD 0,
+          (start.getObjValD "column").getNat?.toOption.getD 0)
+    | .error _ => ("", "", 0, 0)
+  match elaboratePipeline pipelineContext source agentConfig with
+  | .success _ => fail "every error: the program was accepted"
+  | .failure envelopes =>
+      expectEqual "every error: one report per refused word, in source order"
+        (envelopes.map summary) expected
+      -- One response, so the protocol needs distinct payload ids.
+      match validateBatch (envelopes.map encode) with
+      | .ok _ => pure ()
+      | .error error => fail s!"every error: the reports are not a valid batch: {error.code}"
+  -- Each word's report is the one the program with only that word as
+  -- written gets: the others reduced to a call to themselves, which checks
+  -- against the declared effect. `u`'s effect is refused whatever its body,
+  -- so `u` and `c` are left out, except for `u` and `c` themselves, which
+  -- are kept together.
+  for (word, code, line, column) in expected do
+    let alone := String.intercalate "\n" ((source.splitOn "\n").map fun text =>
+      match (text.splitOn " ").drop 1 with
+      | name :: _ =>
+          if name == word || ((word == "u" || word == "c") && (name == "u" || name == "c")) then text
+          else if name == "u" || name == "c" then ""
+          else (text.splitOn ")").headD "" ++ ") " ++ name ++ " ;"
+      | [] => text)
+    let reports := match elaboratePipeline pipelineContext alone agentConfig with
+      | .failure envelopes => envelopes.map summary
+      | .success _ => []
+    let wanted := if word == "u" || word == "c" then expected.filter (["u", "c"].contains ·.1)
+      else [(word, code, line, column)]
+    expectEqual s!"every error: `{word}` alone" reports wanted
+  -- A bad `use` ends the words that can be resolved: the ones before it
+  -- are reported, then the `use`.
+  match elaboratePipeline pipelineContext ": f ( -- b:Int ) foo ;\nuse nope;\n: g ( -- b:Int ) bar ;" agentConfig with
+  | .failure envelopes =>
+      expectEqual "every error: a bad use ends the file"
+        (envelopes.map fun envelope => let (_, code, line, column) := summary envelope; (code, line, column))
+        [("firth.name.unresolved", 1, 18), ("firth.name.unresolved", 2, 1)]
+  | .success _ => fail "every error: a bad use was accepted"
+
 /-- Reports of a word or primitive handed values it does not take. -/
 private def runCallAccountTests : IO Unit := do
   let pipelineContext := contextWithSource "pipeline-call" "main.fth"
@@ -137,8 +232,10 @@ private def runCallAccountTests : IO Unit := do
     | .error _ => ""
   let callReport (label code source : String) (needles : List String) (absent : List String := []) :
       IO (String × String) := do
-    match elaboratePipeline pipelineContext source agentConfig with
-    | .failure [envelope] =>
+    -- The answers copied here may have errors in other words too; the
+    -- report under test is the one with this code.
+    match reportsWithCode (elaboratePipeline pipelineContext source agentConfig) code with
+    | [envelope] =>
         let emitted := encode envelope
         expectValidCode label code emitted
         for needle in needles do
@@ -148,8 +245,7 @@ private def runCallAccountTests : IO Unit := do
           if emitted.contains needle then
             fail s!"{label}: the report says {needle}: {emitted}"
         pure (hintOf envelope, fieldOf envelope "at")
-    | .failure envelopes => fail s!"{label}: expected one diagnostic, got {envelopes.length}"
-    | .success _ => fail s!"{label}: the program was accepted"
+    | envelopes => fail s!"{label}: expected one {code} diagnostic, got {envelopes.length}"
   let expectRuns (label source word : String) (inputs expected : List Firth.Interpreter.Literal) : IO Unit := do
     match elaboratePipeline pipelineContext source agentConfig with
     | .success program =>
@@ -267,6 +363,219 @@ private def runCallAccountTests : IO Unit := do
         unless emitted.contains needle do
           fail s!"external word: the report does not say {needle}: {emitted}"
   | _ => fail "external word: expected one diagnostic"
+
+/-- `locals` blocks bound out of order: what the report says, and the edits
+its hint gives, applied and run. -/
+private def runLocalsOrderTests : IO Unit := do
+  let pipelineContext := contextWithSource "pipeline-1" "main.fth"
+  let agentConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := Elaborate.gammaErasure, typingEnv := Elaborate.gammaTyping }
+  -- `locals` blocks that bind the inputs top first, the mode that failed
+  -- every task of one authoring-eval sample. Copied verbatim from count-below
+  -- in eval/s7/runs/2026-09-28-haiku-c6a964a/haiku-firth-1/answer-2.md. The
+  -- report names what every misordered block binds, in every word at once,
+  -- and the blocks it says to write make the program check.
+  let reversedLocals := ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { k xs } {\n    0 0 xs k helper-count\n  };\n\n: helper-count\n  (forall ρ; ρ acc:Int^many idx:Int^many xs:Seq Int^many k:Int^many -- ρ result:Int^many)\n  locals { k xs idx acc } {\n    idx xs prim seq-int.len prim <\n    [\n      xs idx prim seq-int.at locals { v } {\n        v k prim <\n        [ acc 1 prim + idx 1 prim + xs k helper-count ]\n        [ acc idx 1 prim + xs k helper-count ]\n        if\n      }\n    ]\n    [ acc ]\n    if\n  };\n"
+  -- Each word's block is its own error, in source order.
+  let mainNeedles := [
+    "`locals { k xs }` in `main` gives `k` the value the stack effect calls `xs` (Seq Int), `xs` the value the stack effect calls `k` (Int)",
+    "Write `locals { xs k }` in `main`, and keep the body as it is",
+    "Swapping values with `swap` would not help"]
+  let helperNeedles := [
+    "`locals { k xs idx acc }` in `helper-count` gives `k` the value the stack effect calls `acc` (Int)",
+    "Write `locals { acc idx xs k }` in `helper-count`, and keep the body as it is",
+    "Swapping values with `swap` would not help"]
+  let localsNeedles := mainNeedles ++ helperNeedles
+  match elaboratePipeline pipelineContext reversedLocals agentConfig with
+  | .failure [first, second] =>
+      for (envelope, needles, word) in [(first, mainNeedles, "main"), (second, helperNeedles, "helper-count")] do
+        let emitted := encode envelope
+        expectValidCode "reversed locals" "firth.name.locals-order" emitted
+        unless emitted.contains s!"\"word\":\"{word}\"" do
+          fail s!"reversed locals: the report does not name `{word}`: {emitted}"
+        for needle in needles do
+          unless emitted.contains needle do
+            fail s!"reversed locals: the report does not say {needle}: {emitted}"
+  | _ => fail "reversed locals: expected one diagnostic for each word"
+  let suggested := (reversedLocals.replace "locals { k xs }" "locals { xs k }").replace
+    "locals { k xs idx acc }" "locals { acc idx xs k }"
+  match elaboratePipeline pipelineContext suggested agentConfig with
+  | .success _ => pure ()
+  | .failure _ => fail "reversed locals: the blocks the report suggests do not check"
+  -- What the author saw before: a type error at the call, pointing to `swap`.
+  let beforeLocals := "code: firth.type.word-input-mismatch\nmessage: `helper-count` in `main` needs Int Int Seq Int Int on top of the stack, but the stack before it is ρ Int Int Int Seq Int.\nhint: The top value is Seq Int but `helper-count` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation."
+  if localsNeedles.all (beforeLocals.contains ·) then
+    fail "reversed locals: the report from before this change passes the checks"
+  -- Same-typed inputs bound in reverse check and compute the wrong value,
+  -- so the refusal is the only report such a program gets.
+  match elaboratePipeline pipelineContext ": difference\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { b a } { a b prim - };" agentConfig with
+  | .failure [envelope] =>
+      unless (encode envelope).contains "Write `locals { a b }` in `difference`" do
+        fail s!"reversed same-typed locals: {encode envelope}"
+  | _ => fail "reversed same-typed locals were accepted"
+  -- The hint is applied as written: the test reads the block, the names to
+  -- write for others and the names to start the body with out of the hint
+  -- text, edits the source with them, and requires the result to check and
+  -- to compute, on sample inputs, the value worked out by hand from what
+  -- each declared name means. A plain reordering takes no body edits.
+  let hintOf (envelope : Envelope) : String :=
+    match Lean.Json.parse (encode envelope) with
+    | .ok json => (((json.getObjValD "body").getObjValD "message_params").getObjValD "hint").getStr?.toOption.getD ""
+    | .error _ => ""
+  let upTo (text marker : String) : String := (text.splitOn marker).headD ""
+  let applyLocalsHint (source hint : String) : Option String :=
+    match (hint.splitOn "Write `locals { ")[1]? with
+    | none => none
+    | some afterWrite =>
+      let block := upTo afterWrite " }`"
+      let renames := ((hint.splitOn "write `").drop 1).filterMap fun piece =>
+        match piece.splitOn "` for `" with
+        | input :: rest :: _ => some (upTo rest "`", input)
+        | _ => none
+      let prelude := match (hint.splitOn "start the body with `")[1]? with
+        | some rest => (upTo rest "`").splitOn " "
+        | none => []
+      match source.splitOn "locals { " with
+      | [head, tail] =>
+          match tail.splitOn " } { " with
+          | [_, rest] =>
+              match rest.splitOn " }" with
+              | body :: after =>
+                  let tokens := ((body.splitOn " ").filter (· != "")).map fun token =>
+                    (renames.lookup token).getD token
+                  some (head ++ "locals { " ++ block ++ " } { " ++ " ".intercalate (prelude ++ tokens) ++ " }" ++
+                    " }".intercalate after)
+              | [] => none
+          | _ => none
+      | _ => none
+  -- Runs `word` of a checked program on the reference interpreter, with
+  -- `inputs` given bottom to top, and returns the Int stack it leaves.
+  let runWord (program : CheckedProgram) (word : String) (inputs : List Int) : Option (List Int) :=
+    let toProgram (kernel : KernelProgram) : Firth.Interpreter.Program :=
+      kernel.foldr (fun located rest => .cons located.atom rest) .empty
+    let dictionary : Firth.Interpreter.Dictionary := fun name =>
+      (program.words.find? (·.name == name)).map fun checked =>
+        { type := Firth.ReferenceRun.adapterWordType, body := toProgram checked.program }
+    let rec go : Nat → Firth.Interpreter.Config → Option Firth.Interpreter.Stack
+      | 0, _ => none
+      | fuel + 1, config =>
+          match Firth.Interpreter.step Firth.ReferenceRun.adapterGamma dictionary Firth.Interpreter.defaultCosts config with
+          | .terminal final => some final.stack
+          | .stuck _ => none
+          | .stepped next _ => go fuel next
+    let start := (inputs.map fun value => Firth.Interpreter.Value.literal (.int value)).reverse
+    (go 10000 { stack := start, program := .cons (.word word) .empty }).bind fun stack =>
+      (stack.reverse.mapM fun
+        | .literal (.int value) => some value
+        | _ => none)
+  let localsCases : List (String × String × String × List String × List Int × List Int) := [
+    -- `b` then `a`: the reordered block alone, `a - b`.
+    ("reordered names", "sub",
+      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { b a } { a b prim - };",
+      ["Write `locals { a b }` in `sub`, and keep the body as it is"], [10, 3], [7]),
+    -- `a` claims the input `a`, so `x` stands for `b`: `b - a`.
+    ("fresh name beside a declared one", "sub",
+      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x a prim - };",
+      ["Write `locals { a b }` in `sub`", "In its body, write `b` for `x`"], [10, 3], [-7]),
+    -- `a` names the deeper input, and the body drops the value it expects
+    -- on the stack, `b`: the result is `a`.
+    ("declared name for a deeper input", "sub",
+      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a } { drop a };",
+      ["Write `locals { a b }` in `sub`", "Then start the body with `b`"], [10, 3], [10]),
+    -- Inputs `n n n2`: `n` claims the first, `n2` the last, and the body
+    -- adds the one left on the stack, the second `n`: 10 + (100 - 1).
+    ("repeated label", "rep",
+      ": rep\n  (forall ρ; ρ n:Int^many n:Int^many n2:Int^many -- ρ r:Int^many)\n  locals { n2 n } { n2 n prim - prim + };",
+      ["Write `locals { n n3 n2 }` in `rep`", "Then start the body with `n3`"], [1, 10, 100], [109]),
+    -- The body calls a word `b`, so the input `b` is bound as `b2`, and
+    -- `x` stands for it: (3 + 10) + 1.
+    ("input label that names a word the body calls", "sub",
+      ": b\n  (forall ρ; ρ v:Int^many -- ρ r:Int^many)\n  1 prim + ;\n\n: sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x a prim + b };",
+      ["Write `locals { a b2 }` in `sub`", "In its body, write `b2` for `x`"], [10, 3], [14]),
+    -- An input labelled like the word `inc` the body calls, below the one
+    -- the block names: the prelude pushes it as `inc2`, and `a` is 5 + 1.
+    ("input label that names a word, in the prelude", "sub",
+      ": inc\n  (forall ρ; ρ v:Int^many -- ρ r:Int^many)\n  1 prim + ;\n\n: sub\n  (forall ρ; ρ a:Int^many inc:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a } { drop drop a inc };",
+      ["Write `locals { a inc2 b }` in `sub`", "Then start the body with `inc2 b`"], [5, 7, 9], [6]),
+    -- Another word has a type error of its own; the edit for `sub` is
+    -- still checked and stated.
+    ("edit beside another word's error", "sub",
+      ": bad\n  (forall ρ; ρ v:Int^many -- ρ r:Bool^many)\n  1 prim + ;\n\n: sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x a prim - };",
+      ["Write `locals { a b }` in `sub`", "In its body, write `b` for `x`"], [10, 3], [-7]),
+    -- The same inside a vocabulary: the body calls `b` as written, which
+    -- resolves to `v.b`, and the input `b` is still bound as `b2`.
+    ("input label that names a word, in a vocabulary", "v.sub",
+      "vocab v {\n: b\n  (forall ρ; ρ x:Int^many -- ρ r:Int^many)\n  1 prim + ;\n\n: sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x a prim + b };\n}",
+      ["Write `locals { a b2 }` in `v.sub`", "In its body, write `b2` for `x`"], [10, 3], [14]),
+    -- A repeated input label is numbered, and the number avoids a name the
+    -- old block binds to another input (CodeRabbit on #167): `b2` holds
+    -- the second input there, so the third is bound as `b3`.
+    ("numbered binder beside an old name", "f",
+      ": f\n  (forall ρ; ρ a:Int^many b:Int^many b:Int^many -- ρ r:Int^many)\n  locals { b b2 a } { b2 };",
+      ["Write `locals { a b b3 }` in `f`", "In its body, write `b3` for `b2`"], [1, 2, 3], [3])]
+  let wordOf (envelope : Envelope) : String :=
+    match Lean.Json.parse (encode envelope) with
+    | .ok json => (((json.getObjValD "body").getObjValD "message_params").getObjValD "word").getStr?.toOption.getD ""
+    | .error _ => ""
+  for (label, word, source, needles, inputs, expected) in localsCases do
+    -- One report for the word, beside any other word's own.
+    let reports := match elaboratePipeline pipelineContext source agentConfig with
+      | .failure diagnostics => diagnostics.filter (wordOf · == word)
+      | .success _ => []
+    match reports with
+    | [envelope] =>
+        let emitted := encode envelope
+        expectValidCode label "firth.name.locals-order" emitted
+        for needle in needles do
+          unless emitted.contains needle do
+            fail s!"{label}: the report does not say {needle}: {emitted}"
+        match applyLocalsHint source (hintOf envelope) with
+        | none => fail s!"{label}: the hint could not be applied: {emitted}"
+        | some edited =>
+            match elaboratePipeline pipelineContext edited agentConfig with
+            | .success program =>
+                let result := runWord program word inputs
+                unless result == some expected do
+                  fail s!"{label}: the edited program computes {result} instead of {expected}: {edited}"
+            | .failure diagnostics =>
+                -- A refusal charged only to another word leaves this one's
+                -- edit standing; its value cannot then be run.
+                unless diagnostics.all (fun envelope => let owner := wordOf envelope; owner != "" && owner != word) do
+                  fail s!"{label}: the edit the hint gives does not check: {edited}: {diagnostics.map encode}"
+    | _ => fail s!"{label}: expected one diagnostic for `{word}`"
+  -- Blocks whose edit, applied to the word, is refused: the old body only
+  -- fits the values the names hold now. The report states no edit, and no
+  -- hint edit can be read out of it.
+  let uncheckedCases : List (String × String × String) := [
+    -- The name `xs` holds `n`, and the body relies on it.
+    ("body fits the old binding (types)", "get",
+      ": get\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs } { xs prim seq-int.at };"),
+    -- The prelude would push linear `b` where the body drops a `^many` value.
+    ("body fits the old binding (linearity)", "sum",
+      ": sum\n  (forall ρ; ρ a:Int^many b:Int^linear c:Int^linear -- ρ r:Int^many)\n  locals { c a } { drop a c prim + };"),
+    -- The same as the first, with a later mistake of its own (`true prim +`):
+    -- the edit brings the refusal earlier, to `prim seq-int.at`.
+    ("body fits the old binding, before a later mistake", "get",
+      ": get\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs } { xs prim seq-int.at true prim + };"),
+    -- An inner block binds `x` again, so "write `b` for `x`" would be read
+    -- for both.
+    ("name to rename bound again inside", "sub",
+      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x 1 prim + locals { x } { x } a prim - };")]
+  -- A block that repeats a name is refused for that, not for its order.
+  match elaboratePipeline pipelineContext ": sum\n  (forall ρ; ρ a:Int^many b:Int^many c:Int^many -- ρ r:Int^many)\n  locals { x a x } { x a x prim + prim + };" agentConfig with
+  | .failure (envelope :: _) =>
+      expectValidCode "repeated name in a misordered block" "firth.name.duplicate-local" (encode envelope)
+  | _ => fail "repeated name in a misordered block: expected a refusal"
+  for (label, word, source) in uncheckedCases do
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .failure [envelope] =>
+        let emitted := encode envelope
+        expectValidCode label "firth.name.locals-order" emitted
+        unless emitted.contains s!"In `{word}` the body was written for the values the names hold now, so changing the block alone does not fix it" do
+          fail s!"{label}: the report does not fall back: {emitted}"
+        if (applyLocalsHint source (hintOf envelope)).isSome then
+          fail s!"{label}: the report still states an edit: {emitted}"
+    | _ => fail s!"{label}: expected one diagnostic"
 
 def runElaboratorDiagnosticTests : IO Unit := do
   let parseError : ParseError := {
@@ -526,200 +835,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
       else fail s!"a repeated effect name got a duplicate-binder hint: {emitted}"
   | _ => fail "repeated-effect-name result was not singular"
 
-  -- `locals` blocks that bind the inputs top first, the mode that failed
-  -- every task of one authoring-eval sample. Copied verbatim from count-below
-  -- in eval/s7/runs/2026-09-28-haiku-c6a964a/haiku-firth-1/answer-2.md. The
-  -- report names what every misordered block binds, in every word at once,
-  -- and the blocks it says to write make the program check.
-  let reversedLocals := ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { k xs } {\n    0 0 xs k helper-count\n  };\n\n: helper-count\n  (forall ρ; ρ acc:Int^many idx:Int^many xs:Seq Int^many k:Int^many -- ρ result:Int^many)\n  locals { k xs idx acc } {\n    idx xs prim seq-int.len prim <\n    [\n      xs idx prim seq-int.at locals { v } {\n        v k prim <\n        [ acc 1 prim + idx 1 prim + xs k helper-count ]\n        [ acc idx 1 prim + xs k helper-count ]\n        if\n      }\n    ]\n    [ acc ]\n    if\n  };\n"
-  let localsNeedles := [
-    "`locals { k xs }` in `main` gives `k` the value the stack effect calls `xs` (Seq Int), `xs` the value the stack effect calls `k` (Int)",
-    "`locals { k xs idx acc }` in `helper-count` gives `k` the value the stack effect calls `acc` (Int)",
-    "Write `locals { xs k }` in `main`, and `locals { acc idx xs k }` in `helper-count`",
-    "Swapping values with `swap` would not help"]
-  match elaboratePipeline pipelineContext reversedLocals agentConfig with
-  | .failure [envelope] =>
-      let emitted := encode envelope
-      expectValidCode "reversed locals" "firth.name.locals-order" emitted
-      for needle in localsNeedles do
-        unless emitted.contains needle do
-          fail s!"reversed locals: the report does not say {needle}: {emitted}"
-  | _ => fail "reversed locals: expected one diagnostic"
-  let suggested := (reversedLocals.replace "locals { k xs }" "locals { xs k }").replace
-    "locals { k xs idx acc }" "locals { acc idx xs k }"
-  match elaboratePipeline pipelineContext suggested agentConfig with
-  | .success _ => pure ()
-  | .failure _ => fail "reversed locals: the blocks the report suggests do not check"
-  -- What the author saw before: a type error at the call, pointing to `swap`.
-  let beforeLocals := "code: firth.type.word-input-mismatch\nmessage: `helper-count` in `main` needs Int Int Seq Int Int on top of the stack, but the stack before it is ρ Int Int Int Seq Int.\nhint: The top value is Seq Int but `helper-count` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation."
-  if localsNeedles.all (beforeLocals.contains ·) then
-    fail "reversed locals: the report from before this change passes the checks"
-  -- Same-typed inputs bound in reverse check and compute the wrong value,
-  -- so the refusal is the only report such a program gets.
-  match elaboratePipeline pipelineContext ": difference\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { b a } { a b prim - };" agentConfig with
-  | .failure [envelope] =>
-      unless (encode envelope).contains "Write `locals { a b }` in `difference`" do
-        fail s!"reversed same-typed locals: {encode envelope}"
-  | _ => fail "reversed same-typed locals were accepted"
-  -- The hint is applied as written: the test reads the block, the names to
-  -- write for others and the names to start the body with out of the hint
-  -- text, edits the source with them, and requires the result to check and
-  -- to compute, on sample inputs, the value worked out by hand from what
-  -- each declared name means. A plain reordering takes no body edits.
-  let hintOf (envelope : Envelope) : String :=
-    match Lean.Json.parse (encode envelope) with
-    | .ok json => (((json.getObjValD "body").getObjValD "message_params").getObjValD "hint").getStr?.toOption.getD ""
-    | .error _ => ""
-  let upTo (text marker : String) : String := (text.splitOn marker).headD ""
-  let applyLocalsHint (source hint : String) : Option String :=
-    match (hint.splitOn "Write `locals { ")[1]? with
-    | none => none
-    | some afterWrite =>
-      let block := upTo afterWrite " }`"
-      let renames := ((hint.splitOn "write `").drop 1).filterMap fun piece =>
-        match piece.splitOn "` for `" with
-        | input :: rest :: _ => some (upTo rest "`", input)
-        | _ => none
-      let prelude := match (hint.splitOn "start the body with `")[1]? with
-        | some rest => (upTo rest "`").splitOn " "
-        | none => []
-      match source.splitOn "locals { " with
-      | [head, tail] =>
-          match tail.splitOn " } { " with
-          | [_, rest] =>
-              match rest.splitOn " }" with
-              | body :: after =>
-                  let tokens := ((body.splitOn " ").filter (· != "")).map fun token =>
-                    (renames.lookup token).getD token
-                  some (head ++ "locals { " ++ block ++ " } { " ++ " ".intercalate (prelude ++ tokens) ++ " }" ++
-                    " }".intercalate after)
-              | [] => none
-          | _ => none
-      | _ => none
-  -- Runs `word` of a checked program on the reference interpreter, with
-  -- `inputs` given bottom to top, and returns the Int stack it leaves.
-  let runWord (program : CheckedProgram) (word : String) (inputs : List Int) : Option (List Int) :=
-    let toProgram (kernel : KernelProgram) : Firth.Interpreter.Program :=
-      kernel.foldr (fun located rest => .cons located.atom rest) .empty
-    let dictionary : Firth.Interpreter.Dictionary := fun name =>
-      (program.words.find? (·.name == name)).map fun checked =>
-        { type := Firth.ReferenceRun.adapterWordType, body := toProgram checked.program }
-    let rec go : Nat → Firth.Interpreter.Config → Option Firth.Interpreter.Stack
-      | 0, _ => none
-      | fuel + 1, config =>
-          match Firth.Interpreter.step Firth.ReferenceRun.adapterGamma dictionary Firth.Interpreter.defaultCosts config with
-          | .terminal final => some final.stack
-          | .stuck _ => none
-          | .stepped next _ => go fuel next
-    let start := (inputs.map fun value => Firth.Interpreter.Value.literal (.int value)).reverse
-    (go 10000 { stack := start, program := .cons (.word word) .empty }).bind fun stack =>
-      (stack.reverse.mapM fun
-        | .literal (.int value) => some value
-        | _ => none)
-  let localsCases : List (String × String × String × List String × List Int × List Int) := [
-    -- `b` then `a`: the reordered block alone, `a - b`.
-    ("reordered names", "sub",
-      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { b a } { a b prim - };",
-      ["Write `locals { a b }` in `sub`, and keep the body as it is"], [10, 3], [7]),
-    -- `a` claims the input `a`, so `x` stands for `b`: `b - a`.
-    ("fresh name beside a declared one", "sub",
-      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x a prim - };",
-      ["Write `locals { a b }` in `sub`", "In its body, write `b` for `x`"], [10, 3], [-7]),
-    -- `a` names the deeper input, and the body drops the value it expects
-    -- on the stack, `b`: the result is `a`.
-    ("declared name for a deeper input", "sub",
-      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a } { drop a };",
-      ["Write `locals { a b }` in `sub`", "Then start the body with `b`"], [10, 3], [10]),
-    -- Inputs `n n n2`: `n` claims the first, `n2` the last, and the body
-    -- adds the one left on the stack, the second `n`: 10 + (100 - 1).
-    ("repeated label", "rep",
-      ": rep\n  (forall ρ; ρ n:Int^many n:Int^many n2:Int^many -- ρ r:Int^many)\n  locals { n2 n } { n2 n prim - prim + };",
-      ["Write `locals { n n3 n2 }` in `rep`", "Then start the body with `n3`"], [1, 10, 100], [109]),
-    -- The body calls a word `b`, so the input `b` is bound as `b2`, and
-    -- `x` stands for it: (3 + 10) + 1.
-    ("input label that names a word the body calls", "sub",
-      ": b\n  (forall ρ; ρ v:Int^many -- ρ r:Int^many)\n  1 prim + ;\n\n: sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x a prim + b };",
-      ["Write `locals { a b2 }` in `sub`", "In its body, write `b2` for `x`"], [10, 3], [14]),
-    -- An input labelled like the word `inc` the body calls, below the one
-    -- the block names: the prelude pushes it as `inc2`, and `a` is 5 + 1.
-    ("input label that names a word, in the prelude", "sub",
-      ": inc\n  (forall ρ; ρ v:Int^many -- ρ r:Int^many)\n  1 prim + ;\n\n: sub\n  (forall ρ; ρ a:Int^many inc:Int^many b:Int^many -- ρ r:Int^many)\n  locals { a } { drop drop a inc };",
-      ["Write `locals { a inc2 b }` in `sub`", "Then start the body with `inc2 b`"], [5, 7, 9], [6]),
-    -- Another word has a type error of its own; the edit for `sub` is
-    -- still checked and stated.
-    ("edit beside another word's error", "sub",
-      ": bad\n  (forall ρ; ρ v:Int^many -- ρ r:Bool^many)\n  1 prim + ;\n\n: sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x a prim - };",
-      ["Write `locals { a b }` in `sub`", "In its body, write `b` for `x`"], [10, 3], [-7]),
-    -- The same inside a vocabulary: the body calls `b` as written, which
-    -- resolves to `v.b`, and the input `b` is still bound as `b2`.
-    ("input label that names a word, in a vocabulary", "v.sub",
-      "vocab v {\n: b\n  (forall ρ; ρ x:Int^many -- ρ r:Int^many)\n  1 prim + ;\n\n: sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x a prim + b };\n}",
-      ["Write `locals { a b2 }` in `v.sub`", "In its body, write `b2` for `x`"], [10, 3], [14]),
-    -- A repeated input label is numbered, and the number avoids a name the
-    -- old block binds to another input (CodeRabbit on #167): `b2` holds
-    -- the second input there, so the third is bound as `b3`.
-    ("numbered binder beside an old name", "f",
-      ": f\n  (forall ρ; ρ a:Int^many b:Int^many b:Int^many -- ρ r:Int^many)\n  locals { b b2 a } { b2 };",
-      ["Write `locals { a b b3 }` in `f`", "In its body, write `b3` for `b2`"], [1, 2, 3], [3])]
-  for (label, word, source, needles, inputs, expected) in localsCases do
-    match elaboratePipeline pipelineContext source agentConfig with
-    | .failure [envelope] =>
-        let emitted := encode envelope
-        expectValidCode label "firth.name.locals-order" emitted
-        for needle in needles do
-          unless emitted.contains needle do
-            fail s!"{label}: the report does not say {needle}: {emitted}"
-        match applyLocalsHint source (hintOf envelope) with
-        | none => fail s!"{label}: the hint could not be applied: {emitted}"
-        | some edited =>
-            match elaboratePipeline pipelineContext edited agentConfig with
-            | .success program =>
-                let result := runWord program word inputs
-                unless result == some expected do
-                  fail s!"{label}: the edited program computes {result} instead of {expected}: {edited}"
-            | .failure diagnostics =>
-                -- A refusal charged only to another word leaves this one's
-                -- edit standing; its value cannot then be run.
-                let wordOf (envelope : Envelope) : String :=
-                  match Lean.Json.parse (encode envelope) with
-                  | .ok json => (((json.getObjValD "body").getObjValD "message_params").getObjValD "word").getStr?.toOption.getD ""
-                  | .error _ => ""
-                unless diagnostics.all (fun envelope => let owner := wordOf envelope; owner != "" && owner != word) do
-                  fail s!"{label}: the edit the hint gives does not check: {edited}: {diagnostics.map encode}"
-    | _ => fail s!"{label}: expected one diagnostic"
-  -- Blocks whose edit, applied to the word, is refused: the old body only
-  -- fits the values the names hold now. The report states no edit, and no
-  -- hint edit can be read out of it.
-  let uncheckedCases : List (String × String × String) := [
-    -- The name `xs` holds `n`, and the body relies on it.
-    ("body fits the old binding (types)", "get",
-      ": get\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs } { xs prim seq-int.at };"),
-    -- The prelude would push linear `b` where the body drops a `^many` value.
-    ("body fits the old binding (linearity)", "sum",
-      ": sum\n  (forall ρ; ρ a:Int^many b:Int^linear c:Int^linear -- ρ r:Int^many)\n  locals { c a } { drop a c prim + };"),
-    -- The same as the first, with a later mistake of its own (`true prim +`):
-    -- the edit brings the refusal earlier, to `prim seq-int.at`.
-    ("body fits the old binding, before a later mistake", "get",
-      ": get\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs } { xs prim seq-int.at true prim + };"),
-    -- An inner block binds `x` again, so "write `b` for `x`" would be read
-    -- for both.
-    ("name to rename bound again inside", "sub",
-      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x 1 prim + locals { x } { x } a prim - };")]
-  -- A block that repeats a name is refused for that, not for its order.
-  match elaboratePipeline pipelineContext ": sum\n  (forall ρ; ρ a:Int^many b:Int^many c:Int^many -- ρ r:Int^many)\n  locals { x a x } { x a x prim + prim + };" agentConfig with
-  | .failure (envelope :: _) =>
-      expectValidCode "repeated name in a misordered block" "firth.name.duplicate-local" (encode envelope)
-  | _ => fail "repeated name in a misordered block: expected a refusal"
-  for (label, word, source) in uncheckedCases do
-    match elaboratePipeline pipelineContext source agentConfig with
-    | .failure [envelope] =>
-        let emitted := encode envelope
-        expectValidCode label "firth.name.locals-order" emitted
-        unless emitted.contains s!"In `{word}` the body was written for the values the names hold now, so changing the block alone does not fix it" do
-          fail s!"{label}: the report does not fall back: {emitted}"
-        if (applyLocalsHint source (hintOf envelope)).isSome then
-          fail s!"{label}: the report still states an edit: {emitted}"
-    | _ => fail s!"{label}: expected one diagnostic"
+  runLocalsOrderTests
   match elaboratePipeline pipelineContext
       s!": pair {repeated} locals \{ n n2 } \{ n n2 prim + } ;" agentConfig with
   | .success _ => pure ()
@@ -802,15 +918,16 @@ def runElaboratorDiagnosticTests : IO Unit := do
   -- and say which `if` it means. `branchReport` holds those checks, and the
   -- reports the eval recorded before this change must fail them.
   let branchReport (label source : String) (needles : List String) : IO Unit := do
-    match elaboratePipeline pipelineContext source agentConfig with
-    | .failure [envelope] =>
+    -- The answers copied here may have errors in other words too; the
+    -- first in the source is the one under test.
+    match reportsWithCode (elaboratePipeline pipelineContext source agentConfig) "firth.type.branch-mismatch" with
+    | envelope :: _ =>
         let emitted := encode envelope
         expectValidCode label "firth.type.branch-mismatch" emitted
         for needle in needles do
           unless emitted.contains needle do
             fail s!"{label}: the report does not say {needle}: {emitted}"
-    | .failure envelopes => fail s!"{label}: expected one diagnostic, got {envelopes.length}"
-    | .success _ => fail s!"{label}: the program was accepted"
+    | [] => fail s!"{label}: expected a branch-mismatch diagnostic"
   let needlesMissing (report : String) (needles : List String) : Bool :=
     needles.any (!report.contains ·)
   -- longest-run (eval/s7/runs/2026-09-28-haiku-cec3707/haiku-firth-2,
@@ -849,13 +966,14 @@ def runElaboratorDiagnosticTests : IO Unit := do
   -- eval/s7/runs (and `p q` from 2026-09-27-plus-only/haiku-firth,
   -- solutions-1.json, task `and`).
   let noEvening (label : String) (source : String) : IO Unit := do
+    -- No report, in any word, suggests it.
     match elaboratePipeline pipelineContext source agentConfig with
-    | .failure [envelope] =>
-        let emitted := encode envelope
-        if emitted.contains "either add `drop" || emitted.contains "push 1 value more" then
-          fail s!"{label}: the report still suggests evening out the branches: {emitted}"
-        else pure ()
-    | _ => fail s!"{label}: expected one diagnostic"
+    | .failure envelopes =>
+        for envelope in envelopes do
+          let emitted := encode envelope
+          if emitted.contains "either add `drop" || emitted.contains "push 1 value more" then
+            fail s!"{label}: the report still suggests evening out the branches: {emitted}"
+    | .success _ => fail s!"{label}: the program was accepted"
   let checks (label source : String) (expected : Bool) : IO Unit :=
     match elaboratePipeline pipelineContext source agentConfig with
     | .success _ => unless expected do fail s!"{label}: the program was accepted"
@@ -894,17 +1012,20 @@ def runElaboratorDiagnosticTests : IO Unit := do
   -- refused for something else, elsewhere. Most of these answers have more
   -- than one mistake, so the next report is expected. The recorded report
   -- must fail the needles, which is the planted old message.
-  let firstReport (source : String) : Option (String × String) :=
+  -- Every report, as its code and range; `none` when the program checks.
+  let reportsOf (source : String) : Option (List (String × String)) :=
     match elaboratePipeline pipelineContext source agentConfig with
     | .success _ => none
-    | .failure [] => none
-    | .failure (envelope :: _) =>
+    | .failure envelopes => some <| envelopes.map fun envelope =>
         match Lean.Json.parse (encode envelope) with
         | .ok json =>
             let body := json.getObjValD "body"
-            some ((body.getObjValD "code").compress,
+            ((body.getObjValD "code").compress,
               ((body.getObjValD "location").getObjValD "range").compress)
-        | .error _ => some ("unparsed", "")
+        | .error _ => ("unparsed", "")
+  -- Where the first branch mismatch is reported: the one under test.
+  let branchAt (source : String) : Option String :=
+    ((reportsOf source).getD []).find? (·.1 == "\"firth.type.branch-mismatch\"") |>.map (·.2)
   let runSeven : List (String × String × List String × String × String) := [
     ("has-pair-sum (answer 1)",
       ": main\n  (forall ρ; ρ xs:Seq Int^many target:Int^many -- ρ found:Bool^many)\n  swap 0 false swap find-pair;\n\n: find-pair\n  (forall ρ; ρ xs:Seq Int^many idx:Int^many found:Bool^many target:Int^many -- ρ found:Bool^many)\n  locals { xs idx found target } {\n    found [\n      true\n    ] [\n      idx xs prim seq-int.len prim < [\n        idx 1 prim + check-pair\n      ] [ false ] if\n    ] if\n  };\n\n: check-pair\n  (forall ρ; ρ xs:Seq Int^many i:Int^many j:Int^many target:Int^many -- ρ found:Bool^many)\n  locals { xs i j target } {\n    j xs prim seq-int.len prim < [\n      i xs prim seq-int.at j xs prim seq-int.at prim + target prim = [\n        true\n      ] [\n        xs i j 1 prim + target check-pair\n      ] if\n    ] [\n      xs i 1 prim + find-pair\n    ] if\n  };\n",
@@ -946,11 +1067,11 @@ def runElaboratorDiagnosticTests : IO Unit := do
   for (label, source, needles, fixed, recorded) in runSeven do
     branchReport label source needles
     noEvening label source
-    match firstReport source, firstReport fixed with
-    | some (_, at_), some (code, again) =>
-        if at_ == again then
+    match branchAt source, reportsOf fixed with
+    | some at_, some reports =>
+        if let some (code, _) := reports.find? (·.2 == at_) then
           fail s!"{label}: the suggested edit leaves a report ({code}) at the same `if`"
-    | none, _ => fail s!"{label}: the answer was accepted"
+    | none, _ => fail s!"{label}: the answer has no branch mismatch"
     | some _, none => pure ()
     unless needlesMissing recorded needles do
       fail s!"{label}: the report the eval recorded already says what the new one does"
@@ -960,9 +1081,9 @@ def runElaboratorDiagnosticTests : IO Unit := do
   | some (_, source, _, _, _) =>
       let short := source.replace "idx 1 prim + check-pair" "idx 1 prim + target check-pair"
       if short == source then fail "has-pair-sum: the planted edit did not apply"
-      match firstReport source, firstReport short with
-      | some (_, at_), some (_, again) =>
-          unless at_ == again do fail "has-pair-sum: the planted edit moved the report"
+      match branchAt source, reportsOf short with
+      | some at_, some reports =>
+          unless reports.any (·.2 == at_) do fail "has-pair-sum: the planted edit moved the report"
       | _, _ => fail "has-pair-sum: the planted edit was accepted"
   | none => fail "run 7: no fixtures"
   -- all-true, answer 1: the true branch drops twice, and only the second
@@ -1180,18 +1301,24 @@ def runElaboratorDiagnosticTests : IO Unit := do
   -- (review of #166); the checker's account is kept, and the right edit,
   -- the missing `v`, makes `build-histogram` check.
   let histogramMissingV := ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ counts:Seq Int^many)\n  swap prim seq-int.empty swap 0 0 build-histogram;\n\n: build-histogram\n  (forall ρ; ρ xs:Seq Int^many result:Seq Int^many k:Int^many v:Int^many -- ρ counts:Seq Int^many)\n  locals { xs result k v } {\n    v k prim < [\n      result 0 xs 0 count-value prim seq-int.push xs k v 1 prim + build-histogram\n    ] [ result ] if\n  };\n\n: count-value\n  (forall ρ; ρ cnt:Int^many xs:Seq Int^many idx:Int^many v:Int^many -- ρ count:Int^many)\n  locals { cnt xs idx v } {\n    idx xs prim seq-int.len prim < [\n      idx xs prim seq-int.at v prim = [\n        cnt 1 prim +\n      ] [ cnt ] if\n      xs idx 1 prim + v count-value\n    ] [ cnt ] if\n  };"
-  match elaboratePipeline pipelineContext histogramMissingV agentConfig with
-  | .failure [envelope] =>
+  -- `main` has an error of its own.
+  match reportsIn (elaboratePipeline pipelineContext histogramMissingV agentConfig) "build-histogram" with
+  | [envelope] =>
       let emitted := encode envelope
       if (emitted.splitOn "seq-int.push").length > 1 || (emitted.splitOn "push `result`").length > 1 then
         fail s!"histogram missing `v`: the account blames the push: {emitted}"
       if (emitted.splitOn "belongs to the caller").length == 1 then
         fail s!"histogram missing `v`: expected the checker's account: {emitted}"
   | _ => fail "histogram missing `v`: expected one diagnostic"
-  -- With `v`, `build-histogram` checks; what is left is a separate
-  -- mistake in `main`, which leaves an extra value.
-  match elaboratePipeline pipelineContext (histogramMissingV.replace "result 0 xs 0 count-value" "result 0 xs 0 v count-value") agentConfig with
-  | .failure [envelope] =>
+  -- With `v`, `build-histogram` checks; what is left are separate
+  -- mistakes in `main`, which leaves an extra value, and in `count-value`,
+  -- which the first-error checker hid: it passes `idx xs` to
+  -- `prim seq-int.at` in the wrong order.
+  let withV := elaboratePipeline pipelineContext (histogramMissingV.replace "result 0 xs 0 count-value" "result 0 xs 0 v count-value") agentConfig
+  unless (reportsIn withV "build-histogram").isEmpty && (reportsIn withV "count-value").length == 1 do
+    fail "histogram missing `v`: with `v`, expected no report in `build-histogram` and one in `count-value`"
+  match reportsIn withV "main" with
+  | [envelope] =>
       let emitted := encode envelope
       if (emitted.splitOn "declared-effect-mismatch").length == 1 || (emitted.splitOn "`main` declares").length == 1 then
         fail s!"histogram missing `v`: with `v`, expected only `main`'s extra value: {emitted}"
@@ -1442,5 +1569,6 @@ def runElaboratorDiagnosticTests : IO Unit := do
   if languagePrimitives.length != everyPrimitive.length then
     fail s!"the language has {languagePrimitives.length} primitives but this test lists {everyPrimitive.length}; add the new ones above"
   runCallAccountTests
+  runEveryErrorTests
 
 end Firth.Agent.Test
