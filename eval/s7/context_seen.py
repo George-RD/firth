@@ -21,7 +21,7 @@ kept with its kind, its time and, when it names one, the other sample or task
 it mentions. An item that names another sample or points at another author's
 files is reported as `cross_sample`, and the exit status is 1.
 
-    context_seen.py LOG.jsonl --sample haiku-firth-8 > context-seen.json
+    context_seen.py LOG.jsonl --sample haiku-firth-8 --label B8 > context-seen.json
     context_seen.py --self-test
 
 The run's own instructions are recognised by their opening words, so a message
@@ -41,6 +41,9 @@ OURS = ("You are the author in a programming evaluation.",
         "The coordinator sent a message while you were working:\nFeedback round ")
 SAMPLE = re.compile(r"haiku-(?:firth|python)-([0-9]+)")
 TASKS = re.compile(r"/tasks/([0-9a-f]{8,})")
+# How the eval session labels its authors when it starts them ("Control author
+# B10"); the harness can repeat another task's label with no path (Codex, on #181).
+LABEL = re.compile(r"\bauthor ([AB][0-9]+)\b")
 
 
 def texts(msg: dict) -> list[str]:
@@ -72,7 +75,7 @@ def kind(ev: dict, text: str) -> str:
     return "other"
 
 
-def scan(events: list[dict], sample: str | None) -> dict:
+def scan(events: list[dict], sample: str | None, label: str | None = None) -> dict:
     mine: set[str] = set()
     items, cross = [], []
     for line_no, ev in enumerate(events, 1):
@@ -96,9 +99,11 @@ def scan(events: list[dict], sample: str | None) -> dict:
                   if sample is None or s != SAMPLE.search(sample)[1]}
         item = {"line": line_no, "at": ev.get("timestamp"), "kind": kind(ev, body),
                 "chars": len(body)}
-        if others or TASKS.search(body):
+        labels = {l for l in LABEL.findall(body) if l != label}
+        if others or labels or TASKS.search(body):
             item["cross_sample"] = True
             item["names"] = sorted(others)
+            item["labels"] = sorted(labels)
             item["task_paths"] = sorted(set(TASKS.findall(body)))
             item["excerpt"] = body[:600]
             cross.append(item)
@@ -138,6 +143,15 @@ def self_test() -> None:
         "role": "user", "content": "[Your previous response] see haiku-firth-9/answer-1.md"}})
     got = scan(planted, "haiku-firth-3")
     assert [i["names"] for i in got["cross_sample"]] == [["9"]], got
+    # Planted: another author's label alone, with no path or directory.
+    planted = base + log({"type": "attachment", "timestamp": "t3", "attachment": {
+        "type": "task_status", "description": "Control author B10", "status": "running"}})
+    got = scan(planted, "haiku-firth-3", "A3")
+    assert [i["labels"] for i in got["cross_sample"]] == [["B10"]], got
+    # This author's own label is not another sample.
+    planted = base + log({"type": "attachment", "timestamp": "t3", "attachment": {
+        "type": "task_status", "description": "Control author A3", "status": "running"}})
+    assert scan(planted, "haiku-firth-3", "A3")["cross_sample"] == []
     # A tool result for a call this author never made is not its own.
     planted = base + log({"type": "user", "timestamp": "t3", "message": {
         "role": "user", "content": [{"type": "tool_result", "tool_use_id": "other"}]}})
@@ -152,13 +166,14 @@ def main() -> int:
                                   formatter_class=argparse.RawDescriptionHelpFormatter)
     cli.add_argument("log", type=Path, nargs="?")
     cli.add_argument("--sample", help="this author's sample directory name, e.g. haiku-firth-8")
+    cli.add_argument("--label", help="this author's own label, e.g. B8 (from 'Control author B8')")
     cli.add_argument("--self-test", action="store_true")
     a = cli.parse_args()
     if a.self_test:
         self_test()
         return 0
     events = [json.loads(l) for l in a.log.read_text().splitlines() if l.strip()]
-    out = scan(events, a.sample)
+    out = scan(events, a.sample, a.label)
     print(json.dumps(out, indent=1, ensure_ascii=False))
     for item in out["cross_sample"]:
         print(f"CROSS-SAMPLE line {item['line']} {item['kind']} {item['at']}", file=sys.stderr)

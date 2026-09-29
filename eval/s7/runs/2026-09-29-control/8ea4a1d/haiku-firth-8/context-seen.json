@@ -261,6 +261,9 @@
    "chars": 275,
    "cross_sample": true,
    "names": [],
+   "labels": [
+    "B10"
+   ],
    "task_paths": [
     "a06fe49c204b15e18"
    ],
@@ -395,6 +398,9 @@
    "chars": 275,
    "cross_sample": true,
    "names": [],
+   "labels": [
+    "B10"
+   ],
    "task_paths": [
     "a06fe49c204b15e18"
    ],
