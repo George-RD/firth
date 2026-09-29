@@ -22,7 +22,11 @@ docs solves small tasks in Firth and in Python, and hidden tests score both.
   hidden tests. Firth goes through `tools/loop/firth_run.py run`, so a pass
   also means the VM and the Lean reference interpreter agreed. A task passes
   only when every hidden test returns exactly the expected stack, with no
-  Boolean/integer coercion.
+  Boolean/integer coercion. The toolchain is built once, serially, with the
+  runner's own build time limit, before any answer runs. If it cannot build,
+  or the build times out, scoring stops with `ToolchainError` rather than
+  failing the answer and showing the build error to the author as feedback
+  (`test_mvp.py`).
 - `harness.py repair` builds a second-round prompt showing each failing
   answer's result on the visible example only. Hidden tests are never shown.
 - `classify.py` labels why each failed task failed. Tasks that need a
