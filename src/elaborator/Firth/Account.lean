@@ -62,10 +62,12 @@ structure Walk where
   missing : Nat := 0
   /-- How many quotations deep the walk is inside the branch it accounts for. -/
   nesting : Nat := 0
-  /-- Whether an operation was handed values of the wrong known type (see
-  `misreads`). The counts still follow the program, but which value an
-  operation takes may not, so no operation is blamed after it. -/
-  misread : Bool := false
+  /-- After an operation was handed values of the wrong known type (see
+  `misreads`), the reach the walk had then, that operation's own if it
+  became the reach. The counts still follow the program, but which value
+  an operation takes may not, so a reach recorded after it, replacing this
+  one, is not reported. -/
+  trusted : Option (Option BranchReach) := none
   /-- Whether the walk is inside a branch of the refused `if`, where it
   records reaches. Before it, reaches are discarded when the branches start. -/
   inBranch : Bool := false
@@ -139,21 +141,31 @@ private def push (walk : Walk) (labels : List String) : Walk :=
   { walk with stack := labels.reverse.map ({ label := · }) ++ walk.stack }
 
 /-- Whether an operation declaring input `types` (bottom to top) was handed
-values, `taken` (top first), each pushed by the branch itself, whose known
-types no order of its inputs fits: more values of some type than it takes.
-Values in the wrong order (`idx xs prim seq-int.at`) are a mistake the
-report can still count past, but values of the wrong kind mean the walk,
-which hands values out by count, may have given this operation values meant
-for another, as when an argument is missing before it. An operation that
-takes a value from below the `if` is the branch's first reach and is
-reported with the values it gets, so it does not count, and so does an
-operation that takes a value that is not there: it is itself the mistake
-(`true prim +`). Only concrete types are compared. -/
+values, `taken` (top first), whose known types no order of its inputs fits:
+more values of some type than it takes. Values in the wrong order
+(`idx xs prim seq-int.at`) are a mistake the report can still count past,
+but values of the wrong kind mean the walk, which hands values out by
+count, may have given this operation values meant for another, as when an
+argument is missing before it. Only concrete types are compared. -/
 private def misreads (taken : List Entry) (types : List String) : Bool :=
   let concrete (type : String) := type.front.isUpper
   let known := taken.filterMap fun entry => entry.type.filter concrete
-  taken.all (·.own) && types.all concrete &&
-    known.any fun type => known.count type > types.count type
+  types.all concrete && known.any fun type => known.count type > types.count type
+
+/-- Marks the first operation handed values of the wrong kind: the reach the
+walk has after it can still be reported (it was recorded before, or it is
+that operation, which is then reported with the values it gets, as
+`true prim +` is), but a later one replacing it cannot. -/
+private def noteMisread (after : Walk) (taken : List Entry) (types : List String) : Walk :=
+  if after.trusted.isNone && misreads taken types then
+    { after with trusted := some after.reach }
+  else after
+
+/-- A primitive's input or output type as the walk compares it: without its
+usage, as the types of a word's inputs and outputs are recorded
+(`World^linear` is `World`). The report still shows the usage. -/
+private def plainType (type : String) : String :=
+  (type.splitOn "^").headD type
 
 /-- Pushes values with their labels and types, bottom to top. -/
 private def pushTyped (walk : Walk) (values : List (String × Option String)) : Walk :=
@@ -203,7 +215,7 @@ mutual
             let inputs := valueItems word.effect.input
             let outputs := valueItems word.effect.output
             let (taken, after) := take walk s!"`{name}`" (inputs.map fun (n, t) => s!"{n}:{t}") inputs.length (inputs.map (·.2))
-            let walk := if after.missing == walk.missing && misreads taken (inputs.map (·.2)) then { after with misread := true } else after
+            let walk := noteMisread after taken (inputs.map (·.2))
             .next (pushTyped walk ((resultLabels s!"`{name}`" (outputs.map (·.1))).zip (outputs.map (some ·.2))))
         | none => match context.external name with
           | some (inputs, outputs) =>
@@ -213,9 +225,10 @@ mutual
     | .primitive name _ => match context.primitive name with
         | some (inputs, outputs) =>
             let operation := s!"`prim {name}`"
-            let (taken, after) := take walk operation inputs inputs.length inputs
-            let walk := if after.missing == walk.missing && misreads taken inputs then { after with misread := true } else after
-            .next (pushTyped walk ((resultLabels operation (List.replicate outputs.length "")).zip (outputs.map some)))
+            let types := inputs.map plainType
+            let (taken, after) := take walk operation inputs inputs.length types
+            let walk := noteMisread after taken types
+            .next (pushTyped walk ((resultLabels operation (List.replicate outputs.length "")).zip (outputs.map (some ∘ plainType))))
         | none => .lost
     | .locals names body _ =>
         let (taken, inner) := take walk "`locals`" [] names.length
@@ -267,14 +280,17 @@ mutual
               let base : Walk :=
                 { below with stack := below.stack.map ({ · with own := false }),
                              reach := none, took := [], missing := 0, nesting := 0,
-                             inBranch := true }
+                             inBranch := true
+                             -- After a misread before the `if`, no reach in
+                             -- its branches is reported.
+                             trusted := below.trusted.map fun _ => none }
               let branch (body : List Item) (scope : List (String × String)) : Option BranchAccount :=
                 match walkItems context { base with localTypes := scope } body with
-                -- After a misread, the operation the branch first reaches
-                -- below with may not be the mistake: its count is right, but
-                -- the values it would take may be meant for an earlier one.
+                -- After a misread, a later operation the branch reaches below
+                -- with may not be the mistake: its count is right, but the
+                -- values it would take may be meant for an earlier one.
                 | .next after =>
-                    if after.misread && after.reach.isSome then none else
+                    if after.trusted.any (· != after.reach) then none else
                     some { reach := after.reach, took := after.took,
                            missing := after.missing, leaves := ownValues after }
                 | _ => none
@@ -339,7 +355,13 @@ mutual
                         onTrue.quotation == onFalse.quotation then onTrue
                     else { label := "the result of an `if`", own := onTrue.own,
                            type := if onTrue.type == onFalse.type then onTrue.type else none }
-                  .next { afterTrue with stack := merged, reach, misread := afterTrue.misread || afterFalse.misread }
+                  -- A reach both paths still trust is trusted merged.
+                  let trusted : Option (Option BranchReach) :=
+                    if afterTrue.trusted.isNone && afterFalse.trusted.isNone then none
+                    else if afterTrue.trusted.all (· == afterTrue.reach) &&
+                        afterFalse.trusted.all (· == afterFalse.reach) then some reach
+                    else some none
+                  .next { afterTrue with stack := merged, reach, trusted }
               | _, _ => .lost
         | _ => .lost
     | .atom _ _ => .lost

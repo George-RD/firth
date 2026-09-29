@@ -924,6 +924,11 @@ def runElaboratorDiagnosticTests : IO Unit := do
           | .failure _ => fail s!"branch pushed the first operands: the program following the hint (`{name}` after `1`) is refused"
       | [] => fail s!"branch pushed the first operands: the hint names no last input: {emitted}"
   | _ => fail "branch pushed the first operands: expected one diagnostic"
+  -- A primitive's inputs are compared without their usage, as a word's
+  -- inputs are recorded: `w` and `h` are the World and Handle `prim send`
+  -- takes first, so the missing Bytes goes after them (Codex on #166).
+  branchReport "send short of its Bytes" ": g ( forall ρ; ρ w:World^linear h:Handle^linear b:Bool^many -- ρ w:World^linear ) locals { w h b } { b [ w h prim send ] [ 0 ] if } ;"
+    ["The branch already pushes `w` and `h`, in the place of the first 2 (World^linear, Handle^linear): keep each where it has that type and replace it where it does not. Then push the last one (Bytes^linear) after them"]
   -- Where the pushed values fit the inputs in more than one way, the hint
   -- names no side: Haiku's histogram answer at c6a964a (haiku-firth-2,
   -- solutions-1) pushes `0 xs idx` for `count-value (cnt xs idx v)`, which
@@ -961,6 +966,26 @@ def runElaboratorDiagnosticTests : IO Unit := do
       if (emitted.splitOn "declared-effect-mismatch").length == 1 || (emitted.splitOn "`main` declares").length == 1 then
         fail s!"histogram missing `v`: with `v`, expected only `main`'s extra value: {emitted}"
   | _ => fail "histogram missing `v`: with `v`, expected one diagnostic about `main`"
+  -- The same mistake where `count-value` also takes a value from below the
+  -- `if`, `result`: it is misfed too, and the later `prim seq-int.push`,
+  -- which reaches past the bottom, replaces it as the reach. The report must
+  -- not tell the author to push a Seq Int before `count-value`'s result
+  -- (`xs 0 xs 0 count-value` is refused); the fix is the missing `v`
+  -- (review of #166).
+  let misfedFromBelow := ": w\n  (forall ρ; ρ result:Seq Int^many xs:Seq Int^many v:Int^many c:Bool^many -- ρ r:Seq Int^many)\n  locals { xs v c } { c [ 0 xs 0 count-value prim seq-int.push ] [ ] if };\n\n: count-value\n  (forall ρ; ρ cnt:Int^many xs:Seq Int^many idx:Int^many v:Int^many -- ρ count:Int^many)\n  locals { cnt xs idx v } {\n    idx xs prim seq-int.len prim < [\n      xs idx prim seq-int.at v prim = [\n        cnt 1 prim +\n      ] [ cnt ] if\n      xs idx 1 prim + v count-value\n    ] [ cnt ] if\n  };"
+  match elaboratePipeline pipelineContext misfedFromBelow agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      if (emitted.splitOn "prim seq-int.push` needs").length > 1 || (emitted.splitOn "Then push the first").length > 1 then
+        fail s!"misfed from below: the report blames the push: {emitted}"
+  | _ => fail "misfed from below: expected one diagnostic"
+  match elaboratePipeline pipelineContext (misfedFromBelow.replace "0 xs 0 count-value" "0 xs 0 v count-value") agentConfig with
+  | .success _ => pure ()
+  | .failure _ => fail "misfed from below: the program with `v` is refused"
+  -- A reach recorded before the misfed operation is still reported: up to
+  -- it, the walk hands out the values the program does.
+  branchReport "reach before a misfed operation" ": w\n  (forall ρ; ρ result:Seq Int^many a:Int^many xs:Seq Int^many c:Bool^many -- ρ r:Int^many)\n  locals { xs c } { c [ 1 prim + drop 0 xs 0 count-value drop ] [ drop ] if };\n\n: count-value\n  (forall ρ; ρ cnt:Int^many xs:Seq Int^many idx:Int^many v:Int^many -- ρ count:Int^many)\n  locals { cnt xs idx v } {\n    idx xs prim seq-int.len prim < [\n      xs idx prim seq-int.at v prim = [\n        cnt 1 prim +\n      ] [ cnt ] if\n      xs idx 1 prim + v count-value\n    ] [ cnt ] if\n  };"
+    ["The true branch takes the input `a` and the input `result` from below the `if` and leaves nothing; the false branch takes the input `a` from below the `if` and leaves nothing."]
   -- A quotation's locals are those where it was written: `[ a ]` pushes the
   -- outer `a:Int`, though it runs where `a` is the Seq Int. So `a` stands
   -- for the last input of `prim seq-int.push`, and the Seq Int goes before
