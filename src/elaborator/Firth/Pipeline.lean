@@ -473,8 +473,8 @@ private def withCallAccount (config : PipelineConfig) (source : String)
 /-- The edit applied to `source` and `word` checked again: where the word's
 next error is, as a line and column of the edited source, or `none` inside
 when it then checks. `none` when the edit does not get past the refused `if`
-at `ifStart`: the word is refused there again, or before the edit, or the
-edited source does not parse or resolve. Also the words whose effects the
+at `ifStart`: the word is refused there again, or the edited source does not
+parse or resolve. Also the words whose effects the
 check read. -/
 private def checkBranchEdit (config : PipelineConfig) (source wordName : String)
     (ifStart start stop : Nat) (replacement : String) :
@@ -491,7 +491,10 @@ private def checkBranchEdit (config : PipelineConfig) (source wordName : String)
   let after ← match outcomeAlone config edited editedWords word with
     | none => some none
     | some offset =>
-        if offset == at_ || offset < start then none
+        -- An error before the edit is in source the edit left as it was,
+        -- found now that the branches agree, as a misordered
+        -- `prim seq-int.at` the checker reaches only then.
+        if offset == at_ then none
         else some (some (lineColumn edited offset))
   pure (after, consultedWords config editedWords word)
 
@@ -599,8 +602,6 @@ private def missingEdit (config : PipelineConfig) (source : String)
       | none => named name type
   let plan ← byName <|> byType
   let names := plan.filterMap fun (value, name) => if value.isNone then some name else none
-  -- A local the branch already passes is not written again.
-  if reach.ownSources.any (fun source => source.any names.contains) then none else
   let pieces := plan.filterMap (·.1)
   let reordered := pieces != List.range pushed
   -- Without reordering, the locals go before the pushed values or just
@@ -612,7 +613,11 @@ private def missingEdit (config : PipelineConfig) (source : String)
       let first ← (reach.ownOrigins[0]?).join
       pure (first.1, names ++ [collapseSpace (bytesText source first.1 span.start.offset)])
     else if !reordered && namesLast then
-      pure (span.start.offset, names)
+      -- From the first pushed value where the walk knows it, so the text
+      -- replaced is more than the word's name.
+      match (reach.ownOrigins[0]?).join with
+      | some first => pure (first.1, [collapseSpace (bytesText source first.1 span.start.offset)] ++ names)
+      | none => pure (span.start.offset, names)
     else do
       let ranges ← reach.ownOrigins.mapM id
       let ends := ranges.map (·.2)
