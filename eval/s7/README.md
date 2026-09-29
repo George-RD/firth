@@ -904,6 +904,105 @@ By sample (first answer, round 1, round 2):
 - Scoring at `4c379e0` still passes run 6's passing answers (sample 2
   round 2 rescored: 6 of 20, the same tasks).
 
+### Why one sample passed 8 and three passed nothing
+
+**It was not the harness or the prompt.** All four authors read the same
+`prompt-firth.md` (the first `Read` of each returned the whole file),
+got feedback from the same `repair` step and were scored by the same
+`score` call at `4c379e0`. No task failed on a harness error: every
+failure is a checker diagnostic, and the wrong answers and runtime traps
+are all sample 1's. The only differences in set-up are the two wording
+slips above (each author was restarted before writing), and that sample 1
+read two parts of the prompt a second time and sample 2 one.
+
+**Each zero sample repeated two or three basic mistakes in nearly every
+task, and the feedback showed only the first.** The checker reports one
+diagnostic per task, so each round of feedback uncovered the next mistake
+in the same answers, and two feedback rounds were not enough to get
+through them. Sample 1 made none of these mistakes.
+
+| | Sample 1 | Sample 2 | Sample 3 | Sample 4 |
+|---|---|---|---|---|
+| `main` declares the task's inputs | 20 | 0 (`( -- result)`) | 20 | 20 |
+| `main` binds them with `locals` | 20 | 20 | 13 | 0 |
+| word-opening `locals` in effect order | yes | no (28 of 29 reversed) | no (13 refused) | no (5 refused in round 1) |
+| `xs i prim seq-int.at`, as documented | yes | yes | no: `i xs`, in 28 places every round | yes |
+| parse errors | 0 | 12 (`prim 0`) | 0 | 19 (parentheses) |
+
+(First answers. Sample 3's reversed `seq-int.at` is in all three rounds.)
+
+1. **Round-2 failures of the three zero samples.** Jev and the checker
+   agree on the class of every task (`modes-3.json`, `results-3.json`):
+   - Sample 2: 9 `firth.type.stack-underflow` (`stack_effect`), all the
+     empty `main` effect; 6 syntax (`invented_syntax`), 4 of them
+     literals after `prim` again and 2 reported as `Unexpected the end of
+     the input.`; 5 branch mismatches. Checked by hand:
+     `seq-sum`'s helper is correct and only `main ( -- result:Int^many)`
+     is wrong.
+   - Sample 3: 9 `firth.type.quotation-compose-mismatch`, each reported
+     on a `compose` the author never wrote, in answers that now use `dip`
+     14 times (none before); 5 `firth.type.primitive-input-mismatch`, 1
+     on the reversed `seq-int.at` and 4 on a `prim +` whose inputs are not
+     both Int; 4 branch mismatches; 2 word-input mismatches. Checked
+     by hand: `seq-sum` now pushes all three arguments of its loop (the
+     round-1 branch mismatch is repaired) and fails on `i xs prim
+     seq-int.at`, which no earlier feedback had reached.
+   - Sample 4: 15 `firth.name.unresolved` (`main` never binds its inputs),
+     3 word-input mismatches, 1 `firth.name.unresolved-effect`, 1 branch
+     mismatch.
+
+   No one blocker dominates across the three: sample 2's largest is the
+   no-input `main`, sample 3's the `dip` rewrite, sample 4's the unbound
+   `main`. Within each sample one mistake is shared by most tasks.
+
+   Fixing only the largest blocker does not rescue them. With `main`'s
+   stack effect filled in from the task and nothing else changed
+   (`counterfactual/sample-2-main-effect*.json`), 2 of sample 2's 9
+   underflow tasks pass; 5 are then refused by the `locals` order rule in
+   `main`, 1 traps and 1 fails on a word-input mismatch. With `main`'s
+   body wrapped in `locals { <the task's inputs> } { ... }`
+   (`counterfactual/sample-4-main-locals*.json`), none of sample 4's 15
+   passes; they fail on word-input (5), branch (4), unresolved-effect
+   (3) and 3 other type errors. These are hand edits, not Haiku's
+   answers, and are not counted in any score.
+2. **What sample 1 did differently.** It wrote the basics right from the
+   first answer (table above): the stack effects, `locals` in `main` and
+   in effect order, and the documented `seq-int.at` order. Its first
+   answers failed on type errors inside otherwise well-formed words: 7
+   word-input mismatches, each a call given its arguments in the wrong
+   order (`seq-sum` pushes `acc i xs` where the loop takes `xs i acc`),
+   and 11 branch mismatches such as `seq-max`'s, whose true branch leaves
+   two values and its false branch one. One round fixed most of them:
+   2 passes and 4 wrong answers came from its branch mismatches, and 7
+   tasks passed. It was also the only author that read its own answer
+   back and edited it, and that re-read parts of the prompt, but the
+   code shapes, not the process, are what separate it: its round-1
+   answers are already free of every mistake in the table.
+3. **The 26 `locals` order refusals.** Each resubmitted answer bound its
+   locals in order and then failed on the next mistake down:
+   - Sample 2 (8): all 8 then failed on the no-input `main` underflow
+     (it was there in all 20 first answers, behind the refusal). In round
+     2: 5 underflows again, 1 branch mismatch, 2 syntax.
+   - Sample 3 (13): all 13 then failed on a branch mismatch, a recursive
+     call missing a loop argument. In round 2: 6 quotation-compose (the
+     `dip` rewrite), 4 primitive-input (1 the reversed `seq-int.at`, 3 a
+     `prim +`), 1 word-input, 2 branch mismatches.
+   - Sample 4 (5, refused in round 1): 3 word-input mismatches (call
+     arguments in the wrong order), 1 unresolved-effect, 1 branch
+     mismatch.
+4. **The first-answer 0 of 20 is not one error class.** Sample 1: branch
+   mismatch 11, word-input 7. Sample 2: syntax 12, `locals` order 8.
+   Sample 3: `locals` order 13, unresolved name 7. Sample 4: syntax 19,
+   unresolved name 1. What they share is the shape above: one or two
+   mistakes, each made in almost every task.
+
+So the comparison between samples stands, and the split is in what each
+author wrote in its first answer. For the language this points at the
+same few basics (stack effects on `main`, binding and ordering inputs,
+argument order) and at feedback that reports one mistake per task when
+most answers carry several. Whether showing more than one diagnostic per
+task would help is not tested here.
+
 ## What the eight runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from
