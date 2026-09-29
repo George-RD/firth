@@ -282,6 +282,11 @@ def runParserTests : IO Unit := do
   expectSpanFailure ": x ( -- ) 'a" "firth.syntax.unterminated-character" 11 13
   expectSpanFailure ": x ( -- ) '" "firth.syntax.unterminated-character" 11 12
   expectSpanFailure ": x ( -- ) 'abc" "firth.syntax.overlong-character" 11 15
+  expectSpanFailure ": x ( a:Int -- q':Int ) a ;" "firth.syntax.quote-in-name" 15 17
+  -- A literal separated from the name before it is still a character.
+  match (← success ": chars ( -- ) dup 'a' ;").declarations with
+  | [.word { body := [_, .literal { value := .character 'a', .. } _], .. }] => pure ()
+  | _ => fail "character literal after a name"
   expectSpanFailure ": x ( -- ) \"abc" "firth.syntax.unterminated-string" 11 15
   expectSpanFailure (": x ( -- ) \"abc" ++ "\\") "firth.syntax.unterminated-string" 11 16
   expectSpanFailure ": x ( -- ) (*" "firth.syntax.unterminated-comment" 11 13

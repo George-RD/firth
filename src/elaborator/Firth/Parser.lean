@@ -57,6 +57,10 @@ structure ParseError where
   /-- For `firth.name.locals-order`: every word whose opening `locals` block
   binds its inputs out of order. Empty otherwise. -/
   localsBlocks : List LocalsBlock := []
+  /-- For `firth.syntax.definition-ended-early`: when the text after the
+  `;` closes every bracket still open before any other `;`, the bracket
+  and its text, that closes the outermost one, so the `;` itself is the one to delete. -/
+  closedBy : Option (String × Span) := none
   deriving Repr, BEq
 
 structure Located (α : Type) where
@@ -262,6 +266,11 @@ private def readChar (opening : Position) (st : LexState) : Except ParseError (C
       let stop := if st.chars.isEmpty then advance opening '\'' else literalStop st.position st.chars
       .error (err "firth.syntax.unterminated-character" (mkSpan opening stop) .delimiter)
 
+private def lexCharacter (st : LexState) (rest : List Char) : Except ParseError (Token × LexState) :=
+  match readChar st.position { chars := rest, position := advance st.position '\'' } with
+  | .error e => .error e
+  | .ok (v, next) => .ok ({ kind := .character v, span := mkSpan st.position next.position }, next)
+
 private partial def lex (st : LexState) (acc : List Token) : Except ParseError LexResult :=
   match st.chars with
   | [] => .ok { tokens := acc.reverse, endPosition := st.position }
@@ -285,9 +294,14 @@ private partial def lex (st : LexState) (acc : List Token) : Except ParseError L
         | .error e => .error e
         | .ok (v, next) => lex next ({ kind := .string v, span := mkSpan st.position next.position } :: acc)
       else if c = '\'' then
-        match readChar st.position { chars := rest, position := advance st.position c } with
-        | .error e => .error e
-        | .ok (v, next) => lex next ({ kind := .character v, span := mkSpan st.position next.position } :: acc)
+        match acc with
+        -- A `'` touching the name before it, as in `q'`, was meant as part of that name.
+        | { kind := .identifier name, span } :: _ =>
+            if span.stop == st.position then
+              .error (err "firth.syntax.quote-in-name" (mkSpan span.start (advance st.position c))
+                .lexical none (some (name ++ "'")))
+            else lexCharacter st rest >>= fun (token, next) => lex next (token :: acc)
+        | _ => lexCharacter st rest >>= fun (token, next) => lex next (token :: acc)
       else if isDigit c || (c = '-' && rest.head?.any isDigit) then
         let (cs, next) := readWhile isDigit { chars := if c = '-' then rest else c :: rest, position := if c = '-' then advance st.position c else st.position } []
         let text := (if c = '-' then "-" else "") ++ charsToString cs
@@ -497,24 +511,53 @@ private def parseStackEffect (p : Parser) : Except ParseError (StackEffect × Pa
                       | .ok (output, q3) => if (current q3).isSome then .error (err "firth.syntax.invalid-stack-effect" (current q3 |>.get!).span .validation)
                         else .ok ({ rowBinders := binders, rows := (input ++ output).filterMap (fun x => match x with | StackItem.row n _ => some n | _ => none), input, output, span := mkSpan opening.span.start closing.span.stop }, after)
 
+/-- The bracket, after token `start`, that closes the last of `pending` (closers,
+innermost first), when the brackets that follow close all of them in order
+before any `;`. Brackets opened after `start` must close first. -/
+private def closesAll (tokens : Array Token) (start : Nat) (pending : List String) : Option (String × Span) :=
+  let rec go (fuel i : Nat) (nested pending : List String) : Option (String × Span) :=
+    match fuel, tokens[i]? with
+    | 0, _ | _, none => none
+    | fuel + 1, some t =>
+        match t.kind with
+        | .symbol ";" => none
+        | .symbol "[" => go fuel (i + 1) ("]" :: nested) pending
+        | .symbol "{" => go fuel (i + 1) ("}" :: nested) pending
+        | .symbol c =>
+            if c != "]" && c != "}" then go fuel (i + 1) nested pending
+            else match nested, pending with
+              | n :: rest, _ => if n == c then go fuel (i + 1) rest pending else none
+              | [], [o] => if o == c then some (c, t.span) else none
+              | [], o :: rest => if o == c then go fuel (i + 1) [] rest else none
+              | [], [] => none
+        | _ => go fuel (i + 1) nested pending
+  go (tokens.size - start) start [] pending
+
 mutual
-private partial def parseItems (p : Parser) (closing : String) : Except ParseError (List Item × Parser × Span) :=
+/-- `outer` lists the closers of the brackets around this one, innermost
+first, ending with the definition's `;`. -/
+private partial def parseItems (p : Parser) (closing : String) (outer : List String := []) :
+    Except ParseError (List Item × Parser × Span) :=
   match current p with
   | none => expected p closing
   | some t => if isSymbol closing t then .ok ([], bump p, t.span)
     -- A `;` ends the definition wherever it is, so one inside a quotation or
     -- a `locals` body leaves that bracket open.
-    else if isSymbol ";" t then .error (err "firth.syntax.definition-ended-early" t.span .delimiter (some closing) (some ";"))
-    else parseItem p >>= fun (item, next) => parseItems next closing |>.map (fun (items, after, close) => (item :: items, after, close))
-private partial def parseItem (p : Parser) : Except ParseError (Item × Parser) :=
+    else if isSymbol ";" t then
+      let pending := (closing :: outer).filter (· != ";")
+      .error { err "firth.syntax.definition-ended-early" t.span .delimiter (some closing) (some ";") with
+        closedBy := closesAll p.tokens (p.index + 1) pending }
+    else parseItem p (closing :: outer) >>= fun (item, next) =>
+      parseItems next closing outer |>.map (fun (items, after, close) => (item :: items, after, close))
+private partial def parseItem (p : Parser) (outer : List String := []) : Except ParseError (Item × Parser) :=
   match current p with
   | none => expected p "item"
   | some t => match literalOf t.kind with
     | some lit => .ok ((.literal { span := t.span, value := lit } t.span), bump p)
     | none => match t.kind with
-      | .symbol "[" => parseItems (bump p) "]" |>.map (fun (xs, after, close) => (.quotation xs (mkSpan t.span.start close.stop), after))
+      | .symbol "[" => parseItems (bump p) "]" outer |>.map (fun (xs, after, close) => (.quotation xs (mkSpan t.span.start close.stop), after))
       | .identifier "prim" => parsePrimitiveName (bump p) |>.map (fun (n, s, after) => (.primitive n (mkSpan t.span.start s.stop), after))
-      | .identifier "locals" => parseLocals p t
+      | .identifier "locals" => parseLocals p t outer
       | .symbol "{" => parseSequence p t
       | .identifier name => if name ∈ ["dup", "drop", "swap", "dip", "call", "compose", "quote", "if"] then .ok ((.atom name t.span), bump p) else
           parseName p true |>.map (fun (n, s, after) => (.word n s, after))
@@ -550,7 +593,8 @@ private partial def parseSequence (p : Parser) (start : Token) : Except ParseErr
     else
       .error (err "firth.syntax.mixed-sequence" span .validation (some "elements of one type") none)
 
-private partial def parseLocals (p : Parser) (start : Token) : Except ParseError (Item × Parser) :=
+private partial def parseLocals (p : Parser) (start : Token) (outer : List String := []) :
+    Except ParseError (Item × Parser) :=
   takeSymbol (bump p) "{" >>= fun q =>
     let rec names (fuel : Nat) (r : Parser) (acc : List LocatedName) : Except ParseError (List LocatedName × Parser × Span) :=
       if fuel = 0 then expected r "}" else
@@ -560,7 +604,7 @@ private partial def parseLocals (p : Parser) (start : Token) : Except ParseError
         else parseName r false >>= fun (n, s, after) => names (fuel - 1) after ({ name := n, span := s } :: acc)
     names (remaining q + 1) q [] >>= fun (ns, afterNames, _) =>
       takeSymbol afterNames "{" >>= fun bodyOpen =>
-        parseItems bodyOpen "}" |>.map (fun (xs, after, close) => (.locals ns xs (mkSpan start.span.start close.stop), after))
+        parseItems bodyOpen "}" outer |>.map (fun (xs, after, close) => (.locals ns xs (mkSpan start.span.start close.stop), after))
 end
 
 private partial def parseDeclarations (p : Parser) (closing : Option String) : Except ParseError (List Declaration × Parser × Option Span) :=

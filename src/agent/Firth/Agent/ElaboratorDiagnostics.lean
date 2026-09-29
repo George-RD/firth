@@ -162,17 +162,25 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
           s!"A `locals` block takes one value off the stack for each name, the last name from the top, so the names must follow the stack effect's inputs from left to right.{plainFix}{String.join reachingFix}{String.join uncheckedFix} Swapping values with `swap` would not help, because the names are what is wrong.")
     | "firth.syntax.parenthesis-in-body" =>
         (s!"{actual} is not allowed in a word's body: parentheses only enclose the stack effect after the word's name.",
-          "Pass values to an operation by pushing them in the order it takes them, with no grouping: write `n 1 prim +`, not `(n 1 prim +)`, and `xs i 1 prim + f`, not `xs (i 1 prim +) f`. To keep code to run later, quote it with `[ ... ]`.")
+          "Pass values to an operation by pushing them in the order it takes them, with no grouping: write `n 1 prim +`, not `(n 1 prim +)`, and `xs i 1 prim + f`, not `xs (i 1 prim +) f`. To keep code to run later, quote it with `[ ... ]`. A comment is written `(* ... *)`, or `\\` to the end of the line.")
     | "firth.syntax.definition-ended-early" =>
         let opened := if error.expected == some "]" then "a quotation opened with `[`"
           else "a `locals` body opened with `{`"
-        (s!"`;` ends the definition here, but {opened} is still open.",
-          s!"A `;` in a word's body always ends the word. Close each open bracket first, innermost first: `]` for a quotation and `}` for a `locals` body, as in `... ] if };`. Here the next one to close is `{(error.expected.getD "]")}`.")
+        let hint := match error.closedBy with
+          -- The brackets after this `;` already close what it left open.
+          | some (closer, span) =>
+              s!"A `;` in a word's body always ends the word. The brackets after this `;` already close everything still open, up to the `{closer}` on line {span.start.line}, so delete this `;` and keep the `;` that ends the word after that `{closer}`."
+          | none =>
+              s!"A `;` in a word's body always ends the word. Close each open bracket first, innermost first: `]` for a quotation and `}` for a `locals` body, as in `... ] if };`. Here the next one to close is `{(error.expected.getD "]")}`."
+        (s!"`;` ends the definition here, but {opened} is still open.", hint)
     | "firth.syntax.invalid-item" =>
         (s!"{error.actual.map (s!"`{·}`") |>.getD "This"} cannot start an item in a word's body.", definitionShape)
     | "firth.syntax.overlong-character" =>
-        ("A `'` starts a character literal, which holds one character, as in `'a'`, and a name cannot contain `'`.",
-          "Rename a name written with `'` (for example `q'` as `q2`). " ++ definitionShape)
+        ("A character literal holds exactly one character between its quotes, as in `'a'`.",
+          "Write exactly one character between the quotes, and close the literal with `'`.")
+    | "firth.syntax.quote-in-name" =>
+        (s!"{error.actual.map (s!"`{·}`") |>.getD "This name"} is not a name: a name cannot contain `'`.",
+          "Rename it without the `'`, for example `q'` as `q2`, and use the new name everywhere the old one appears.")
     | _ =>
         let expected := match error.expected with
           | some expected => s!", expected `{expected}`"
