@@ -1,0 +1,637 @@
+### task: seq-sum
+```firth
+: sum-loop
+  (forall ρ; ρ xs:Seq Int^many i:Int^many sum:Int^many -- ρ result:Int^many)
+  locals { xs i sum } {
+    i xs prim seq-int.len prim = [
+      sum
+    ] [
+      xs i prim seq-int.at sum prim +
+      [ i 1 prim + ] call
+      xs
+      sum-loop
+    ] if
+  };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ total:Int^many)
+  locals { xs } {
+    0 0 xs sum-loop
+  };
+```
+
+### task: seq-max
+```firth
+: max-loop
+  (forall ρ; ρ xs:Seq Int^many i:Int^many max-val:Int^many -- ρ result:Int^many)
+  locals { xs i max-val } {
+    i xs prim seq-int.len prim = [
+      max-val
+    ] [
+      xs i prim seq-int.at max-val prim < [
+        xs i prim seq-int.at
+      ] [
+        max-val
+      ] if
+      [ i 1 prim + ] call
+      xs
+      max-loop
+    ] if
+  };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ largest:Int^many)
+  locals { xs } {
+    xs 0 prim seq-int.at 1 xs max-loop
+  };
+```
+
+### task: count-below
+```firth
+: count-loop
+  (forall ρ; ρ xs:Seq Int^many k:Int^many i:Int^many count:Int^many -- ρ result:Int^many)
+  locals { xs k i count } {
+    i xs prim seq-int.len prim = [
+      count
+    ] [
+      xs i prim seq-int.at k prim < [
+        count 1 prim +
+      ] [
+        count
+      ] if
+      [ i 1 prim + ] call
+      xs k
+      count-loop
+    ] if
+  };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)
+  locals { xs k } {
+    0 0 xs k count-loop
+  };
+```
+
+### task: index-of
+```firth
+: index-loop
+  (forall ρ; ρ xs:Seq Int^many x:Int^many i:Int^many -- ρ result:Int^many)
+  locals { xs x i } {
+    i xs prim seq-int.len prim = [
+      -1
+    ] [
+      xs i prim seq-int.at x prim = [
+        i
+      ] [
+        [ i 1 prim + ] call
+        xs x
+        index-loop
+      ] if
+    ] if
+  };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many x:Int^many -- ρ index:Int^many)
+  locals { xs x } {
+    0 xs x index-loop
+  };
+```
+
+### task: reverse
+```firth
+: reverse-build
+  (forall ρ; ρ xs:Seq Int^many i:Int^many result:Seq Int^many -- ρ final:Seq Int^many)
+  locals { xs i result } {
+    i 0 prim = [
+      result
+    ] [
+      xs [ i 1 prim - ] call prim seq-int.at result prim seq-int.push
+      [ i 1 prim - ] call
+      xs
+      reverse-build
+    ] if
+  };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ reversed:Seq Int^many)
+  locals { xs } {
+    xs prim seq-int.len xs prim seq-int.empty reverse-build
+  };
+```
+
+### task: prefix-sums
+```firth
+: prefix-build
+  (forall ρ; ρ xs:Seq Int^many i:Int^many sum:Int^many result:Seq Int^many -- ρ final:Seq Int^many)
+  locals { xs i sum result } {
+    i xs prim seq-int.len prim = [
+      result
+    ] [
+      xs i prim seq-int.at sum prim +
+      result swap prim seq-int.push
+      [ i 1 prim + ] call
+      xs
+      prefix-build
+    ] if
+  };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ sums:Seq Int^many)
+  locals { xs } {
+    0 0 xs prim seq-int.empty prefix-build
+  };
+```
+
+### task: keep-positive
+```firth
+: filter-loop
+  (forall ρ; ρ xs:Seq Int^many i:Int^many result:Seq Int^many -- ρ final:Seq Int^many)
+  locals { xs i result } {
+    i xs prim seq-int.len prim = [
+      result
+    ] [
+      xs i prim seq-int.at 0 prim < [
+        result
+      ] [
+        result xs i prim seq-int.at prim seq-int.push
+      ] if
+      [ i 1 prim + ] call
+      xs
+      filter-loop
+    ] if
+  };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ positives:Seq Int^many)
+  locals { xs } {
+    0 xs prim seq-int.empty filter-loop
+  };
+```
+
+### task: is-sorted
+```firth
+: check-sorted
+  (forall ρ; ρ xs:Seq Int^many i:Int^many -- ρ result:Bool^many)
+  locals { xs i } {
+    i xs prim seq-int.len prim = [
+      true
+    ] [
+      i [ i 1 prim + ] call prim seq-int.len prim < [
+        xs i prim seq-int.at xs [ i 1 prim + ] call prim seq-int.at prim < [
+          false
+        ] [
+          [ i 1 prim + ] call
+          xs
+          check-sorted
+        ] if
+      ] [
+        [ i 1 prim + ] call
+        xs
+        check-sorted
+      ] if
+    ] if
+  };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Bool^many)
+  locals { xs } {
+    0 xs check-sorted
+  };
+```
+
+### task: dot
+```firth
+: dot-loop
+  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many i:Int^many sum:Int^many -- ρ result:Int^many)
+  locals { xs ys i sum } {
+    i xs prim seq-int.len prim = [
+      sum
+    ] [
+      xs i prim seq-int.at ys i prim seq-int.at prim * sum prim +
+      [ i 1 prim + ] call
+      xs ys
+      dot-loop
+    ] if
+  };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many -- ρ product:Int^many)
+  locals { xs ys } {
+    0 0 xs ys dot-loop
+  };
+```
+
+### task: all-true
+```firth
+: check-all
+  (forall ρ; ρ flags:Seq Bool^many i:Int^many -- ρ result:Bool^many)
+  locals { flags i } {
+    i flags prim seq-bool.len prim = [
+      true
+    ] [
+      flags i prim seq-bool.at [
+        [ i 1 prim + ] call
+        flags
+        check-all
+      ] [
+        false
+      ] if
+    ] if
+  };
+
+: main
+  (forall ρ; ρ flags:Seq Bool^many -- ρ all:Bool^many)
+  locals { flags } {
+    0 flags check-all
+  };
+```
+
+### task: longest-run
+```firth
+: count-run
+  (forall ρ; ρ xs:Seq Int^many i:Int^many current-val:Int^many current-count:Int^many max-count:Int^many -- ρ result:Int^many)
+  locals { xs i current-val current-count max-count } {
+    i xs prim seq-int.len prim = [
+      current-count max-count prim < [
+        max-count
+      ] [
+        current-count
+      ] if
+    ] [
+      xs i prim seq-int.at current-val prim = [
+        current-count 1 prim + max-count prim < [
+          max-count
+        ] [
+          current-count 1 prim +
+        ] if
+        [ i 1 prim + ] call
+        xs current-val
+        [ current-count 1 prim + ] call
+        count-run
+      ] [
+        current-count max-count prim < [
+          max-count
+        ] [
+          current-count
+        ] if
+        [ i 1 prim + ] call
+        xs xs i prim seq-int.at 1 
+        count-run
+      ] if
+    ] if
+  };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ length:Int^many)
+  locals { xs } {
+    xs prim seq-int.len 0 [
+      xs 0 prim seq-int.len prim = [
+        0
+      ] [
+        0 xs 0 prim seq-int.at 1 0 count-run
+      ] if
+    ] call
+  };
+```
+
+### task: has-pair-sum
+```firth
+: find-pair
+  (forall ρ; ρ xs:Seq Int^many target:Int^many i:Int^many -- ρ result:Bool^many)
+  locals { xs target i } {
+    i xs prim seq-int.len prim = [
+      false
+    ] [
+      [ i 1 prim + ] call
+      xs target
+      find-pair-inner
+    ] if
+  };
+
+: find-pair-inner
+  (forall ρ; ρ xs:Seq Int^many target:Int^many j:Int^many i:Int^many -- ρ result:Bool^many)
+  locals { xs target j i } {
+    j xs prim seq-int.len prim = [
+      [ i 1 prim + ] call
+      xs target
+      find-pair
+    ] [
+      xs i prim seq-int.at xs j prim seq-int.at prim + target prim = [
+        true
+      ] [
+        [ j 1 prim + ] call
+        xs target
+        find-pair-inner
+      ] if
+    ] if
+  };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many target:Int^many -- ρ found:Bool^many)
+  locals { xs target } {
+    0 xs target find-pair
+  };
+```
+
+### task: count-distinct
+```firth
+: count-distinct-loop
+  (forall ρ; ρ xs:Seq Int^many i:Int^many count:Int^many -- ρ result:Int^many)
+  locals { xs i count } {
+    i xs prim seq-int.len prim = [
+      count
+    ] [
+      xs i prim seq-int.at 0 [ 
+        [ i 1 prim + ] call
+      ] dip
+      xs
+      count-distinct-check
+    ] if
+  };
+
+: count-distinct-check
+  (forall ρ; ρ xs:Seq Int^many j:Int^many val:Int^many i:Int^many count:Int^many -- ρ result:Int^many)
+  locals { xs j val i count } {
+    j i prim = [
+      count 1 prim +
+      [ i 1 prim + ] call
+      xs
+      count-distinct-loop
+    ] [
+      xs j prim seq-int.at val prim = [
+        [ i 1 prim + ] call
+        xs
+        count-distinct-loop
+      ] [
+        [ j 1 prim + ] call
+        xs val
+        count-distinct-check
+      ] if
+    ] if
+  };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ count:Int^many)
+  locals { xs } {
+    0 0 xs count-distinct-loop
+  };
+```
+
+### task: merge-sorted
+```firth
+: merge-loop
+  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many i:Int^many j:Int^many result:Seq Int^many -- ρ final:Seq Int^many)
+  locals { xs ys i j result } {
+    i xs prim seq-int.len prim = [
+      j ys prim seq-int.len prim = [
+        result
+      ] [
+        result ys j prim seq-int.at prim seq-int.push
+        [ j 1 prim + ] call
+        xs ys
+        merge-loop
+      ] if
+    ] [
+      j ys prim seq-int.len prim = [
+        result xs i prim seq-int.at prim seq-int.push
+        [ i 1 prim + ] call
+        xs ys
+        merge-loop
+      ] [
+        xs i prim seq-int.at ys j prim seq-int.at prim < [
+          result xs i prim seq-int.at prim seq-int.push
+          [ i 1 prim + ] call
+          xs ys
+          merge-loop
+        ] [
+          result ys j prim seq-int.at prim seq-int.push
+          [ j 1 prim + ] call
+          xs ys
+          merge-loop
+        ] if
+      ] if
+    ] if
+  };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many -- ρ merged:Seq Int^many)
+  locals { xs ys } {
+    0 0 xs ys prim seq-int.empty merge-loop
+  };
+```
+
+### task: digits
+```firth
+: collect-digits
+  (forall ρ; ρ n:Int^many result:Seq Int^many -- ρ final:Seq Int^many)
+  locals { n result } {
+    n 0 prim = [
+      result 0 prim seq-int.push
+    ] [
+      n 10 prim mod result prim seq-int.push
+      [ n 10 prim div ] call
+      result
+      collect-digits
+    ] if
+  };
+
+: reverse-seq
+  (forall ρ; ρ xs:Seq Int^many i:Int^many result:Seq Int^many -- ρ final:Seq Int^many)
+  locals { xs i result } {
+    i 0 prim = [
+      result
+    ] [
+      xs [ i 1 prim - ] call prim seq-int.at result prim seq-int.push
+      [ i 1 prim - ] call
+      xs
+      reverse-seq
+    ] if
+  };
+
+: main
+  (forall ρ; ρ n:Int^many -- ρ digits:Seq Int^many)
+  locals { n } {
+    n 0 prim < [
+      0 [ n 0 prim - ] call prim seq-int.empty collect-digits
+      dup prim seq-int.len swap reverse-seq
+    ] [
+      n prim seq-int.empty collect-digits
+      dup prim seq-int.len swap reverse-seq
+    ] if
+  };
+```
+
+### task: primes-up-to
+```firth
+: is-prime
+  (forall ρ; ρ n:Int^many divisor:Int^many -- ρ result:Bool^many)
+  locals { n divisor } {
+    divisor divisor prim * n prim < [
+      n divisor prim mod 0 prim = [
+        false
+      ] [
+        [ divisor 1 prim + ] call
+        n
+        is-prime
+      ] if
+    ] [
+      true
+    ] if
+  };
+
+: collect-primes
+  (forall ρ; ρ limit:Int^many current:Int^many result:Seq Int^many -- ρ final:Seq Int^many)
+  locals { limit current result } {
+    current limit prim < [
+      current 2 is-prime [
+        result current prim seq-int.push
+      ] [
+        result
+      ] if
+      [ current 1 prim + ] call
+      limit
+      collect-primes
+    ] [
+      result
+    ] if
+  };
+
+: main
+  (forall ρ; ρ n:Int^many -- ρ primes:Seq Int^many)
+  locals { n } {
+    2 n prim seq-int.empty collect-primes
+  };
+```
+
+### task: histogram
+```firth
+: histogram-loop
+  (forall ρ; ρ xs:Seq Int^many k:Int^many i:Int^many result:Seq Int^many -- ρ final:Seq Int^many)
+  locals { xs k i result } {
+    i xs prim seq-int.len prim = [
+      result
+    ] [
+      xs i prim seq-int.at result swap prim seq-int.at 1 prim + prim seq-int.set
+      [ i 1 prim + ] call
+      xs k
+      histogram-loop
+    ] if
+  };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ counts:Seq Int^many)
+  locals { xs k } {
+    prim seq-int.empty
+    [ 0 [ k 1 prim - ] call 0
+      [ dup 0 prim seq-int.push [ 1 prim + ] call ] call
+    ] dip
+    0 xs k histogram-loop
+  };
+```
+
+### task: sort
+```firth
+: insert-sorted
+  (forall ρ; ρ val:Int^many sorted:Seq Int^many i:Int^many -- ρ result:Seq Int^many)
+  locals { val sorted i } {
+    i sorted prim seq-int.len prim = [
+      sorted val prim seq-int.push
+    ] [
+      sorted i prim seq-int.at val prim < [
+        sorted i val prim seq-int.set
+        [ i 1 prim + ] call
+        insert-sorted
+      ] [
+        [ i 1 prim + ] call
+        insert-sorted
+      ] if
+    ] if
+  };
+
+: sort-loop
+  (forall ρ; ρ xs:Seq Int^many i:Int^many sorted:Seq Int^many -- ρ result:Seq Int^many)
+  locals { xs i sorted } {
+    i xs prim seq-int.len prim = [
+      sorted
+    ] [
+      xs i prim seq-int.at sorted 0 insert-sorted
+      [ i 1 prim + ] call
+      xs
+      sort-loop
+    ] if
+  };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Seq Int^many)
+  locals { xs } {
+    0 xs prim seq-int.empty sort-loop
+  };
+```
+
+### task: ledger
+```firth
+: ledger-loop
+  (forall ρ; ρ start:Int^many txs:Seq Int^many i:Int^many balance:Int^many rejected:Int^many -- ρ balance:Int^many rejected:Int^many)
+  locals { start txs i balance rejected } {
+    i txs prim seq-int.len prim = [
+      balance rejected
+    ] [
+      txs i prim seq-int.at balance prim + 0 prim < [
+        balance rejected 1 prim +
+      ] [
+        balance txs i prim seq-int.at prim + rejected
+      ] if
+      [ i 1 prim + ] call
+      start txs
+      ledger-loop
+    ] if
+  };
+
+: main
+  (forall ρ; ρ start:Int^many txs:Seq Int^many -- ρ balance:Int^many rejected:Int^many)
+  locals { start txs } {
+    start 0 start txs ledger-loop
+  };
+```
+
+### task: allocate-batch
+```firth
+: allocate-loop
+  (forall ρ; ρ stock:Seq Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many order:Int^many allocated:Seq Int^many reasons:Seq Int^many -- ρ stock:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many)
+  locals { stock items qtys whole order allocated reasons } {
+    order items prim seq-int.len prim = [
+      stock allocated reasons
+    ] [
+      items order prim seq-int.at stock swap prim seq-int.at 
+      qtys order prim seq-int.at 
+      whole order prim seq-bool.at
+      [ order 1 prim + ] call
+      items qtys whole
+      allocate-decision
+    ] if
+  };
+
+: allocate-decision
+  (forall ρ; ρ item-stock:Int^many qty:Int^many whole:Bool^many order:Int^many items:Seq Int^many qtys:Seq Int^many whole-all:Seq Bool^many stock:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many -- ρ stock:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many)
+  locals { item-stock qty whole order items qtys whole-all stock allocated reasons } {
+    qty item-stock prim < [
+      item-stock 0 prim = [
+        stock allocated [ order 1 prim + ] call reasons 2 prim seq-int.push allocate-loop
+      ] [
+        whole [
+          stock allocated [ order 1 prim + ] call reasons 3 prim seq-int.push allocate-loop
+        ] [
+          stock [ items order prim seq-int.at ] call [ item-stock prim seq-int.set ] call allocated [ order 1 prim + ] call qty prim seq-int.push reasons 1 prim seq-int.push allocate-loop
+        ] if
+      ] if
+    ] [
+      stock [ items order prim seq-int.at ] call [ [ qty item-stock prim - ] call prim seq-int.set ] call allocated [ order 1 prim + ] call qty prim seq-int.push reasons 0 prim seq-int.push allocate-loop
+    ] if
+  };
+
+: main
+  (forall ρ; ρ stock:Seq Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many -- ρ stock-left:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many)
+  locals { stock items qtys whole } {
+    0 stock items qtys whole prim seq-int.empty prim seq-int.empty allocate-loop
+  };
+```

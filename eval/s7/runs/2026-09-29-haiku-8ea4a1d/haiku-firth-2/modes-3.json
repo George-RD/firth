@@ -1,0 +1,59 @@
+{
+  "model": "jev-1.13.0",
+  "counts": {
+    "logic": 5,
+    "invented_syntax": 1,
+    "stack_order": 1,
+    "stack_effect": 1
+  },
+  "tasks": {
+    "keep-positive": {
+      "mode": "logic",
+      "by": "jev",
+      "confidence": 0.98,
+      "review": false
+    },
+    "longest-run": {
+      "mode": "logic",
+      "by": "jev",
+      "confidence": 0.83,
+      "review": false
+    },
+    "has-pair-sum": {
+      "mode": "logic",
+      "by": "jev",
+      "confidence": 0.71,
+      "review": false
+    },
+    "count-distinct": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.12,
+      "review": true
+    },
+    "digits": {
+      "mode": "stack_order",
+      "by": "jev",
+      "confidence": 0.63,
+      "review": true
+    },
+    "primes-up-to": {
+      "mode": "logic",
+      "by": "jev",
+      "confidence": 0.65,
+      "review": true
+    },
+    "sort": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.9,
+      "review": false
+    },
+    "allocate-batch": {
+      "mode": "logic",
+      "by": "jev",
+      "confidence": 0.73,
+      "review": false
+    }
+  }
+}
