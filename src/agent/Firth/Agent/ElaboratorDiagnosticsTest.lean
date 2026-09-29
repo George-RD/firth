@@ -714,6 +714,20 @@ private def runCallAccountTests : IO Unit := do
   let _ ← callReport "an `if` whose paths stand for different locals" "firth.type.branch-mismatch"
     ": h (forall ρ; ρ a:Int^many s:Seq Int^many b:Int^many -- ρ r:Int^many) drop drop ;\n: g\n  (forall ρ; ρ a:Int^many b:Int^many s:Seq Int^many c:Int^many -- ρ r:Int^many)\n  locals { a b s c } {\n    c 0 prim = [ 0 ] [\n      s c 1 prim < [ c 2 prim < [ a 1 prim + ] [ a 1 prim - ] if ] [ c 3 prim < [ b 1 prim + ] [ b 1 prim - ] if ] if h\n    ] if\n  };\n"
     ["in the place of the last 2 (s:Seq Int, b:Int)"] ["(from `a`)", "by their names"]
+  -- count-below (8ea4a1d, haiku-firth-11, answer 1), verbatim: the inner
+  -- `if`'s condition is written after its two quotations. Moving it first
+  -- makes the word check; [1, 5, 2, 8] has two values below 4.
+  let (hint, _) ← callReport "a condition after its quotations" "firth.type.expected-bool" ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { xs k } {\n    xs k 0 0 count-loop\n  };\n\n: count-loop\n  (forall ρ; ρ xs:Seq Int^many k:Int^many i:Int^many count:Int^many -- ρ result:Int^many)\n  locals { xs k i count } {\n    i xs prim seq-int.len prim <\n    [\n      xs\n      k\n      i 1 prim +\n      [ count 1 prim + ]\n      [ count ]\n      xs i prim seq-int.at k prim <\n      if\n      count-loop\n    ]\n    [ count ]\n    if\n  };\n"
+    ["`if` finds the condition on top of its two quotations, not under them.",
+     "Write the condition before the first `[`: write `xs i prim seq-int.at k prim < [ count 1 prim + ] [ count ] if` in place of `[ count 1 prim + ] [ count ] xs i prim seq-int.at k prim < if` on line 15. With that edit `count-loop` checks."]
+  match applyBranchHint ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { xs k } {\n    xs k 0 0 count-loop\n  };\n\n: count-loop\n  (forall ρ; ρ xs:Seq Int^many k:Int^many i:Int^many count:Int^many -- ρ result:Int^many)\n  locals { xs k i count } {\n    i xs prim seq-int.len prim <\n    [\n      xs\n      k\n      i 1 prim +\n      [ count 1 prim + ]\n      [ count ]\n      xs i prim seq-int.at k prim <\n      if\n      count-loop\n    ]\n    [ count ]\n    if\n  };\n" hint with
+  | some edited => expectRuns "a condition after its quotations" edited "main" [.intSeq [1, 5, 2, 8], .int 4] [.int 2]
+  | none => fail s!"a condition after its quotations: the hint's edit does not apply: {hint}"
+  -- Planted: primes-up-to (8ea4a1d, haiku-firth-11, answer 1), verbatim.
+  -- Moving `is-prime` before the quotations leaves the `if` refused (its
+  -- branches leave different numbers of values): no edit.
+  let _ ← callReport "a condition moved that does not get past the `if`" "firth.type.word-input-mismatch" ": main\n  (forall ρ; ρ n:Int^many -- ρ primes:Seq Int^many)\n  locals { n } {\n    prim seq-int.empty 2 primes-loop\n  };\n\n: primes-loop\n  (forall ρ; ρ result:Seq Int^many candidate:Int^many -- ρ out:Seq Int^many)\n  locals { result candidate } {\n    [ candidate 10 prim < ]\n    [ [ result candidate prim seq-int.push candidate 1 prim + ] [ candidate 1 prim + ] is-prime if primes-loop ]\n    [ 0 prim not prim not ]\n    candidate 10 prim <\n    if\n  };\n\n: is-prime\n  (forall ρ; ρ candidate:Int^many -- ρ prime:Bool^many)\n  locals { candidate } {\n    [ prim not prim not ]\n    [ candidate 2 2 is-prime-check ]\n    candidate 2 prim <\n    if\n  };\n\n: is-prime-check\n  (forall ρ; ρ candidate:Int^many divisor:Int^many limit:Int^many -- ρ prime:Bool^many)\n  locals { candidate divisor limit } {\n    [ candidate divisor prim mod 0 prim = prim not ]\n    [ [ prim not prim not ] [ divisor 1 prim + limit is-prime-check ] divisor limit prim < if ]\n    [ 0 prim not prim not ]\n    divisor divisor prim * candidate prim <\n    if\n  };\n"
+    ["`is-prime` in `primes-loop`"] ["before the first `[`"]
   -- An edit is said to get past the refused `if` only when its next error
   -- shows the check went beyond it. Planted: an error at the `if`, or one
   -- before it found by erasure, or found by typing when typing refused the

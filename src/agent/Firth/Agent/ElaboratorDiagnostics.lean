@@ -835,6 +835,15 @@ private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Str
 open Firth.Elaborator.StackEffect in
 private def stackEffectParams (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Json :=
   let (message, hint) := explain diagnostic
+  -- Checked by the pipeline (`conditionEdit`): the error is in the
+  -- condition of an `if` written after its quotations, or at that `if`.
+  let hint := match diagnostic.conditionEdit with
+    | some edit =>
+        let atIf := if diagnostic.code == "firth.type.expected-bool" then
+            "`if` finds the condition on top of its two quotations, not under them"
+          else "this is in the condition of an `if`, written after its two quotations, so they are on the stack under it"
+        s!"{capitalize atIf}. `if` takes the condition first, then the two quotations, and runs the first quotation when the condition is true. Write the condition before the first `[`: write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}.{editOutcome (diagnostic.word.getD "") edit.after}"
+    | none => hint
   let fields := [("message", Json.str message), ("state", .str (renderStack diagnostic.state))]
   let fields := match diagnostic.word with
     | some word => ("word", .str word) :: fields

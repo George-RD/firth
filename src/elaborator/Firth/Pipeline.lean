@@ -210,12 +210,14 @@ private def PipelineDiagnostic.reached (word : WordDefinition) : PipelineDiagnos
 hint offers: a misordered `locals` block (`checkLocalsEdits`), whose hint
 says either that the edit fixes the word or that the body was written for the
 names as they are, a call handed its values out of order
-(`withCallAccount`), or a refused `if` (`branchEdit`). -/
+(`withCallAccount`), a refused `if` (`branchEdit`), or a condition written
+after its quotations (`conditionEdit`). -/
 private def PipelineDiagnostic.editConsulted : PipelineDiagnostic → List String
   | .parse error => (error.localsBlocks.flatMap (·.consulted)).eraseDups
   | .stackEffect diagnostic =>
       ((diagnostic.callAccount.bind (·.edit)).map (·.consulted)).getD [] ++
-        ((diagnostic.ifAccount.bind (·.edit)).map (·.consulted)).getD []
+        ((diagnostic.ifAccount.bind (·.edit)).map (·.consulted)).getD [] ++
+        ((diagnostic.conditionEdit.map (·.consulted)).getD [])
   | .erasure _ (.branchShape _ _ _ _ (some account)) => ((account.edit.map (·.consulted)).getD [])
   | .assumes _ _ _ inner => inner.editConsulted
   | _ => []
@@ -695,6 +697,100 @@ private def withBranchEdit (config : PipelineConfig) (source : String) :
       | _, _ => .stackEffect diagnostic
   | other => other
 
+/-- The whitespace-separated items of `source` from byte `start` to byte
+`stop`, each with the bytes it spans. -/
+private def itemsIn (source : String) (start stop : Nat) : List (String × Nat × Nat) :=
+  let text := bytesText source start stop
+  let (items, current, _) := text.foldl (init := (([] : List (String × Nat × Nat)), (none : Option (String × Nat)), start))
+    fun (items, current, offset) c =>
+      let next := offset + c.utf8Size
+      if c.isWhitespace then
+        match current with
+        | some (item, from_) => (items ++ [(item, from_, offset)], none, next)
+        | none => (items, none, next)
+      else
+        match current with
+        | some (item, from_) => (items, some (item.push c, from_), next)
+        | none => (items, some (String.singleton c, offset), next)
+  match current with
+  | some (item, from_) => items ++ [(item, from_, stop)]
+  | none => items
+
+/-- For an error at `offset` in `word` that lies in the condition of an `if`
+written after its two quotations, `[ a ] [ b ] x 0 prim < if`, or at that
+`if`: the edit that writes the condition first,
+`x 0 prim < [ a ] [ b ] if`. The condition is the items between the second
+quotation and the `if`, with no bracket, comment or `;` among them. The
+edit is kept only when the edited word then checks, or its next error is
+after the `if`. -/
+private def conditionEdit (config : PipelineConfig) (source : String) (word : WordDefinition)
+    (offset : Nat) : Option CallEdit := do
+  if !config.checkEdits then none else
+  let items := (itemsIn source word.span.start.offset word.span.stop.offset).toArray
+  let opener (close : Nat) : Option Nat :=
+    let rec go (i depth : Nat) (fuel : Nat) : Option Nat :=
+      match fuel with
+      | 0 => none
+      | fuel + 1 =>
+        let text := (items[i]?.map (·.1)).getD ""
+        let depth := if text == "]" then depth + 1 else if text == "[" then depth - 1 else depth
+        if text == "[" && depth == 0 then some i
+        else if i == 0 then none else go (i - 1) depth fuel
+    go close 0 (close + 1)
+  let found := (List.range items.size).findSome? fun k => do
+    let (text, _, ifStop) ← items[k]?
+    if text != "if" then none else
+    -- The condition: items back from the `if` to the second quotation.
+    let condition := ((List.range k).reverse.takeWhile fun i =>
+      let t := (items[i]?.map (·.1)).getD ""
+      !(t.any fun c => c == '[' || c == ']' || c == '{' || c == '}' || c == '\\' || c == '(' || c == ';'))
+    let first ← condition.getLast?
+    if condition.isEmpty then none else
+    let close2 := first - 1
+    if first == 0 || (items[close2]?.map (·.1)) != some "]" then none else
+    let open2 ← opener close2
+    if open2 == 0 || (items[open2 - 1]?.map (·.1)) != some "]" then none else
+    let open1 ← opener (open2 - 1)
+    let (_, conditionStart, _) ← items[first]?
+    if offset < conditionStart || offset ≥ ifStop then none else
+    let (_, start, _) ← items[open1]?
+    let (_, _, quotationsStop) ← items[close2]?
+    let (_, _, conditionStop) ← items[k - 1]?
+    some (start, ifStop, collapseSpace (bytesText source conditionStart conditionStop),
+      collapseSpace (bytesText source start quotationsStop))
+  let (start, stop, conditionText, quotations) ← found
+  let replacement := s!"{conditionText} {quotations} if"
+  let edited := bytesText source 0 start ++ replacement ++ bytesText source stop source.utf8ByteSize
+  let file ← match parse edited with
+    | .success file => some file
+    | .failure _ => none
+  let (resolved, _) ← (resolveEach file.declarations (fun name => (config.erasureEnv.word name).isSome)).toOption
+  let editedWords := resolved.map (·.1)
+  let edited_ ← (resolved.find? fun (w, error) => w.name == word.name && error.isNone).map (·.1)
+  let ifStart := start + replacement.utf8ByteSize - 2
+  let after ← match firstErrorAlone config editedWords edited_ with
+    | none => some none
+    | some error =>
+        let at_ := (outcomeAlone config edited editedWords edited_).getD 0
+        let typing := match error with
+          | .stackEffect _ => true
+          | _ => false
+        if editGetsPast false typing ifStart at_ then some (some (lineColumn edited at_)) else none
+  let written := collapseSpace (bytesText source start stop)
+  let (line, column) := editPlace source start stop written
+  pure { start, stop, line, column, written, replacement, after
+         consulted := consultedWords config editedWords edited_ }
+
+/-- A type error with the condition-first edit `conditionEdit` finds, when no
+reordering edit was found for it. -/
+private def withConditionEdit (config : PipelineConfig) (source : String) (word : WordDefinition) :
+    PipelineDiagnostic → PipelineDiagnostic
+  | .stackEffect diagnostic =>
+      if (diagnostic.callAccount.bind (·.edit)).isSome then .stackEffect diagnostic else
+      .stackEffect { diagnostic with
+        conditionEdit := conditionEdit config source word diagnostic.primary.start.offset }
+  | other => other
+
 /-- A misordered `locals` refusal whose suggested edits have been applied and
 checked. A block is marked `checked` when its word, edited as the diagnostic
 would say, is accepted, or is refused no earlier in the source than the word
@@ -763,8 +859,8 @@ private def checkWord (config : PipelineConfig) (source : String)
   match check typing declared erased.program word.effect.span with
   | .error diagnostic =>
       let diagnostic := withFirstMisfed config source words { diagnostic with word := some word.name }
-      .refused [withCallAccount config source words
-        (withBranchEdit config source (withAccount config source words (.stackEffect diagnostic)))]
+      .refused [withConditionEdit config source word (withCallAccount config source words
+        (withBranchEdit config source (withAccount config source words (.stackEffect diagnostic))))]
   | .ok _ =>
       let premises := config.refinementBuilder config.requestId config.sourcePath
         word erased.program declared

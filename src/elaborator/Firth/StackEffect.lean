@@ -71,6 +71,11 @@ structure Diagnostic where
   /-- For a word or primitive handed values it does not take: the values it
   gets, by the source that pushed them. Diagnostics only. -/
   callAccount : Option CallAccount := none
+  /-- For an error in the condition of an `if` written after its two
+  quotations, as in `[ a ] [ b ] x 0 prim < if`, or at that `if`: the edit
+  that moves the condition before the first quotation, checked by the
+  pipeline. Diagnostics only. -/
+  conditionEdit : Option CallEdit := none
   deriving Repr, BEq, Nonempty
 
 structure TypedHole where
