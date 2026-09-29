@@ -251,7 +251,14 @@ private def runAssumesTests : IO Unit := do
   -- `pos` drops what `f` leaves, but its report shows the whole stack, and
   -- an `f` that takes nothing leaves the `5` there. `lu` leaves its linear input unused, found at the end of its
   -- `locals` block though placed where it is bound, so an underflow at `f`
-  -- comes before it.
+  -- comes before it. `m2` misfeeds `p` too, but with the hint's edit it
+  -- fails at `prim +` before it calls `q`, so that check never read `q`'s
+  -- effect. `fp` leaves the wrong first type; with only that type fixed,
+  -- `gp` gets past its first `prim +` and fails at the second, with
+  -- another stack. `rg` (the reviewer's case) has a branch that shows what
+  -- `rf` leaves, so a fix to `rf`'s output type alone changes the report.
+  -- In `g3`, the branches swap `f3`'s two outputs, so only a fix that
+  -- changes both output types and keeps the input gets past the `if`.
   let source := String.intercalate "\n" [
     ": f ( a:Int -- b:Int ) true prim + ;",
     ": g ( -- b:Int ) true f ;",
@@ -279,7 +286,14 @@ private def runAssumesTests : IO Unit := do
     ": quiet ( -- r:Int ) [ 5 f ] drop true 1 prim + ;",
     ": pos ( -- r:Int ) 5 f drop true 1 prim + ;",
     ": late ( -- r:Bool ) [ 5 f ] drop 7 ;",
-    ": lu ( a:Int^linear -- r:Int ) locals { a } { 5 f } ;"]
+    ": lu ( a:Int^linear -- r:Int ) locals { a } { 5 f } ;",
+    ": m2 (forall ρ; ρ -- ρ r:Int^many) true 1 p true prim + q ;",
+    ": fp ( -- a:Int b:Int ) true 1 ;",
+    ": gp ( -- r:Int ) fp 1 prim + true 1 prim + ;",
+    ": rf ( forall ρ; ρ s:Seq Int n:Int -- ρ r:Seq Int ) true prim + ;",
+    ": rg ( -- r:Int ) true [ [ 0 ] ] [ prim seq-int.empty 5 rf ] if ;",
+    ": f3 ( n:Int -- a:Bool b:Bool ) 1 ;",
+    ": g3 ( -- r:Int ) 5 f3 true [ ] [ swap ] if true 1 prim + ;"]
   let summary (envelope : Envelope) : String × (List String × List String) × String × String :=
     match Lean.Json.parse (encode envelope) with
     | .ok json =>
@@ -301,7 +315,9 @@ private def runAssumesTests : IO Unit := do
          ("short", ["f"]), ("opens", []), ("early", []), ("other", ["f"]),
          ("k", []), ("hidden", []), ("p", []), ("q", []), ("m", ["p"]),
          ("same", []), ("typed", ["same"]), ("cb", []), ("br", ["cb"]), ("hc", []), ("h2", []), ("run", []), ("longest", ["run"]),
-         ("quiet", []), ("pos", ["f"]), ("late", []), ("lu", [])]
+         ("quiet", []), ("pos", ["f"]), ("late", []), ("lu", []),
+         ("m2", ["p"]), ("fp", []), ("gp", ["fp"]),
+         ("rf", []), ("rg", ["rf"]), ("f3", []), ("g3", ["f3"])]
       expectEqual "assumes: the words whose hint's checked edit depends on another reported word"
         ((reports.filter fun (_, assumes, _) => !assumes.2.isEmpty).map fun (word, assumes, _) => (word, assumes.2))
         [("h", ["f"]), ("m", ["q"]), ("h2", ["hc"])]
