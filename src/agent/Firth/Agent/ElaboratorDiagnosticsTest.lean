@@ -182,13 +182,29 @@ private def runEveryErrorTests : IO Unit := do
   | .success _ => fail "every error: a bad use was accepted"
   -- The words before a bad `use` are checked against every word's declared
   -- effect, those after it included: `a` calls `b`, declared after the
-  -- `use`, as `b` declares, and `a2` hands `b` a Bool.
-  match elaboratePipeline pipelineContext
-      ": a ( -- r:Int ) 1 b ;\n: a2 ( -- r:Int ) true b ;\nuse nope;\n: b ( x:Int -- r:Int ) 1 prim + ;" agentConfig with
+  -- `use`, as `b` declares, and `a2` hands `b` its values in the wrong
+  -- order. The report names them by their sources, walking `b` too.
+  let beforeUse := String.intercalate "\n" [
+    ": a",
+    "  (forall ρ; ρ xs:Seq Int^many -- ρ r:Int^many)",
+    "  locals { xs } { xs 0 b };",
+    ": a2",
+    "  (forall ρ; ρ xs:Seq Int^many -- ρ r:Int^many)",
+    "  locals { xs } { 0 xs b };",
+    "use nope;",
+    ": b",
+    "  (forall ρ; ρ xs:Seq Int^many i:Int^many -- ρ r:Int^many)",
+    "  prim seq-int.at;"]
+  match elaboratePipeline pipelineContext beforeUse agentConfig with
   | .failure envelopes =>
       expectEqual "every error: a word before a bad use calls one declared after it"
         (envelopes.map fun envelope => let (word, code, line, column) := summary envelope; (word, code, line, column))
-        [("a2", "firth.type.word-input-mismatch", 2, 24), ("", "firth.name.unresolved", 3, 1)]
+        [("a2", "firth.type.word-input-mismatch", 6, 24), ("", "firth.name.unresolved", 7, 1)]
+      let message := match envelopes.head? >>= fun envelope => (Lean.Json.parse (encode envelope)).toOption with
+        | some json => ((((json.getObjValD "body").getObjValD "message_params").getObjValD "message").getStr?).toOption.getD ""
+        | none => ""
+      expectEqual "every error: a call to a word after a bad use names its values"
+        message "`b` in `a2` takes xs:Seq Int, i:Int, bottom to top, but here it gets, bottom to top, `0` (Int) and `xs` (Seq Int)."
   | .success _ => fail "every error: a bad use was accepted"
   -- A word whose own effect is refused reports that, even when it also
   -- calls a word whose effect is refused.
@@ -199,6 +215,158 @@ private def runEveryErrorTests : IO Unit := do
         (envelopes.map fun envelope => let (word, code, _, _) := summary envelope; (word, code))
         [("u", "firth.type.invalid-signature"), ("w", "firth.type.invalid-signature")]
   | .success _ => fail "every error: two refused effects were accepted"
+
+/-- A report found against the declared effect of a word that has an error
+of its own says so, and names that word: fixing its effect instead of its
+body can change the report. Only a report found against the effects of
+called words (erasure, typing, refinements) says it, and a word's call to
+itself does not count. -/
+private def runAssumesTests : IO Unit := do
+  let pipelineContext := contextWithSource "pipeline-assumes" "main.fth"
+  let agentConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := Elaborate.gammaErasure, typingEnv := Elaborate.gammaTyping }
+  -- `f` adds a Bool. `g`, `two` and `three` hand `f` a Bool, found against
+  -- `f`'s declared effect. `two` calls `g` only after that, so its report
+  -- does not depend on `g`; `three` calls `g` first. `short` underflows at
+  -- `f`, an erasure error that depends on `f`. `h` binds its inputs out of
+  -- order and `opens` underflows at its own `locals`, both found from the
+  -- word alone, though they call `f`; `early` underflows before its call.
+  -- `r` calls only itself. The branches of `other` leave different numbers
+  -- of values, one of them through `f`. `hidden`'s true branch underflows
+  -- on its own: `k`'s effect changes nothing the report shows, only what
+  -- it does not. `m` hands `p` its values out of order, and the checked
+  -- edit in its hint depends on `q` too. `typed` fails after its call to
+  -- `same`, at two values it pushed itself: the message names only those,
+  -- but the report's stack does change with `same`'s effect. `br` hands
+  -- `cb`, in one branch of an `if`, its values out of order; a probe that
+  -- changes `cb`'s shape gives a typing error after the report, which
+  -- shows the report depends on `cb`. `longest` (from a recorded answer)
+  -- does the same with `run`, where only `run`'s own effect with other
+  -- types shows it. The checked edits in the
+  -- hints of `h` and `m` depend on `f` and `q`, which the reports do not:
+  -- the hint says so instead. So does `h2`'s, where the check found that
+  -- the edit alone does not fix the word. `quiet` and `late` call `f` in a
+  -- quotation they drop: a probe that makes `f` refuse its input stops the
+  -- check there, before the report, which says nothing about the report.
+  -- `pos` drops what `f` leaves, but its report shows the whole stack, and
+  -- an `f` that takes nothing leaves the `5` there. `lu` leaves its linear input unused, found at the end of its
+  -- `locals` block though placed where it is bound, so an underflow at `f`
+  -- comes before it. `fp` leaves the wrong first type; with only that type fixed,
+  -- `gp` gets past its first `prim +` and fails at the second, with
+  -- another stack. `rg` (the reviewer's case) has a branch that shows what
+  -- `rf` leaves, so a fix to `rf`'s output type alone changes the report.
+  -- In `g3`, the branches swap `f3`'s two outputs, so only a fix that
+  -- changes both output types and keeps the input gets past the `if`.
+  -- In `hs`, the edited word's erasure stops at the second `drop`, after
+  -- the call to `q` and before the one to `f`, so its hint names `q` only.
+  -- `m2` misfeeds `p` too; with the hint's edit it fails at `prim +` in
+  -- typing, before it calls `q`, but erasure has read `q`'s effect by then:
+  -- with three inputs for `q`, the edited word underflows at `q` instead.
+  let source := String.intercalate "\n" [
+    ": f ( a:Int -- b:Int ) true prim + ;",
+    ": g ( -- b:Int ) true f ;",
+    ": h ( a:Int b:Int -- r:Int ) locals { b a } { a f b prim + } ;",
+    ": hs ( a:Int b:Int -- r:Int ) locals { b a } { a q b prim + drop drop f } ;",
+    ": r ( n:Int -- m:Int ) r true prim + ;",
+    ": two ( -- b:Int ) true f 1 g prim + ;",
+    ": three ( -- b:Int ) g true f prim + ;",
+    ": short ( -- b:Int ) f ;",
+    ": opens ( -- r:Int ) locals { x } { x f } ;",
+    ": early ( a:Int -- b:Int ) swap f ;",
+    ": other ( a:Int -- b:Int ) true [ f ] [ drop drop 0 ] if ;",
+    ": k (forall ρ; ρ xs:Seq Bool^many i:Int^many b:Bool^many -- ρ r:Bool^many) 1 prim + ;",
+    ": hidden (forall ρ; ρ xs:Seq Bool^many -- ρ b:Bool^many) dup prim seq-bool.len 0 prim = [ drop drop true ] [ swap 0 true k ] if ;",
+    ": p (forall ρ; ρ a:Int^many b:Bool^many -- ρ r:Int^many) prim + ;",
+    ": q (forall ρ; ρ r:Int^many -- ρ s:Int^many) true prim + ;",
+    ": m (forall ρ; ρ -- ρ r:Int^many) true 1 p q ;",
+    ": same (forall ρ; ρ -- ρ) drop ;",
+    ": typed (forall ρ; ρ a:Int^many b:Int^many c:Int^many -- ρ r:Int^many) same true 1 prim + ;",
+    ": cb (forall ρ; ρ a:Int^many b:Bool^many -- ρ r:Int^many) prim + ;",
+    ": br (forall ρ; ρ x:Int^many -- ρ r:Int^many) dup 0 prim = [ true 1 cb prim + ] [ ] if ;",
+    ": hc (forall ρ; ρ acc:Int^many k:Int^many xs:Seq Int^many -- ρ r:Int^many) true prim + ;",
+    ": h2 (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ n:Int^many) locals { k xs } { 0 xs k hc } ;",
+    ": run (forall ρ; ρ xs:Seq Int^many prev:Int^many n:Int^many most:Int^many i:Int^many -- ρ r:Int^many) true prim + ;",
+    ": longest (forall ρ; ρ xs:Seq Int^many -- ρ r:Int^many) locals { xs } { xs prim seq-int.len 0 prim = [ 0 ] [ xs 0 prim seq-int.at 1 0 1 xs run ] if } ;",
+    ": quiet ( -- r:Int ) [ 5 f ] drop true 1 prim + ;",
+    ": pos ( -- r:Int ) 5 f drop true 1 prim + ;",
+    ": late ( -- r:Bool ) [ 5 f ] drop 7 ;",
+    ": lu ( a:Int^linear -- r:Int ) locals { a } { 5 f } ;",
+    ": m2 (forall ρ; ρ -- ρ r:Int^many) true 1 p true prim + q ;",
+    ": fp ( -- a:Int b:Int ) true 1 ;",
+    ": gp ( -- r:Int ) fp 1 prim + true 1 prim + ;",
+    ": rf ( forall ρ; ρ s:Seq Int n:Int -- ρ r:Seq Int ) true prim + ;",
+    ": rg ( -- r:Int ) true [ [ 0 ] ] [ prim seq-int.empty 5 rf ] if ;",
+    ": f3 ( n:Int -- a:Bool b:Bool ) 1 ;",
+    ": g3 ( -- r:Int ) 5 f3 true [ ] [ swap ] if true 1 prim + ;"]
+  let summary (envelope : Envelope) : String × (List String × List String) × String × String :=
+    match Lean.Json.parse (encode envelope) with
+    | .ok json =>
+        let params := (json.getObjValD "body").getObjValD "message_params"
+        let names (key : String) := match params.getObjValD key with
+          | .arr callees => callees.toList.filterMap (·.getStr?.toOption)
+          | _ => []
+        ((params.getObjValD "word").getStr?.toOption.getD "", (names "assumes", names "edit_assumes"),
+          (params.getObjValD "message").getStr?.toOption.getD "",
+          (params.getObjValD "hint").getStr?.toOption.getD "")
+    | .error _ => ("", ([], []), "", "")
+  match elaboratePipeline pipelineContext source agentConfig with
+  | .success _ => fail "assumes: the program was accepted"
+  | .failure envelopes =>
+      let reports := envelopes.map summary
+      expectEqual "assumes: the words whose reports depend on another reported word"
+        (reports.map fun (word, assumes, _) => (word, assumes.1))
+        [("f", []), ("g", ["f"]), ("h", []), ("hs", []), ("r", []), ("two", ["f"]), ("three", ["g", "f"]),
+         ("short", ["f"]), ("opens", []), ("early", []), ("other", ["f"]),
+         ("k", []), ("hidden", []), ("p", []), ("q", []), ("m", ["p"]),
+         ("same", []), ("typed", ["same"]), ("cb", []), ("br", ["cb"]), ("hc", []), ("h2", []), ("run", []), ("longest", ["run"]),
+         ("quiet", []), ("pos", ["f"]), ("late", []), ("lu", []),
+         ("m2", ["p"]), ("fp", []), ("gp", ["fp"]),
+         ("rf", []), ("rg", ["rf"]), ("f3", []), ("g3", ["f3"])]
+      expectEqual "assumes: the words whose hint's checked edit depends on another reported word"
+        ((reports.filter fun (_, assumes, _) => !assumes.2.isEmpty).map fun (word, assumes, _) => (word, assumes.2))
+        [("h", ["f"]), ("hs", ["q"]), ("m", ["q"]), ("h2", ["hc"]), ("m2", ["q"])]
+      let endsWith (word clause : String) (hint : Bool := false) : IO Unit :=
+        match reports.find? (·.1 == word) with
+        | some (_, _, message, hintText) =>
+            let text := if hint then hintText else message
+            unless text.endsWith clause do
+              fail s!"assumes: `{word}`'s {if hint then "hint" else "message"} does not end with the clause: {text}"
+        | none => fail s!"assumes: no report for `{word}`"
+      endsWith "g" "`g` calls `f`, which has an error of its own; this report assumes `f` keeps its stack effect."
+      endsWith "two" "`two` calls `f`, which has an error of its own; this report assumes `f` keeps its stack effect."
+      endsWith "three" "`three` calls `g` and `f`, which have errors of their own; this report assumes they keep their stack effects."
+      endsWith "m" "That edit was checked assuming `q`, which has an error of its own, keeps its stack effect." (hint := true)
+      endsWith "h" "That edit was checked assuming `f`, which has an error of its own, keeps its stack effect." (hint := true)
+      for (word, _, message, _) in reports do
+        if ["f", "h", "r", "opens", "early", "hidden", "quiet", "late", "lu"].contains word && (message.splitOn "this report assumes").length > 1 then
+          fail s!"assumes: `{word}`'s report says it depends on another word: {message}"
+      match validateBatch (envelopes.map encode) with
+      | .ok _ => pure ()
+      | .error error => fail s!"assumes: the reports are not a valid batch: {error.code}"
+  -- merge-sorted at cec3707 (haiku-firth-2, answer 1), verbatim. `merge-loop`
+  -- calls `merge-loop-y` only in the true branch of its outer `if`, and the
+  -- report is about the false branch. A probe that changes
+  -- `merge-loop-y`'s shape stops the check at the inner `if` of the true
+  -- branch, before the report.
+  let mergeSorted := ": main\n  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many -- ρ merged:Seq Int^many)\n  locals { xs ys } { 0 0 prim seq-int.empty xs ys merge-loop };\n\n: merge-loop\n  (forall ρ; ρ i:Int^many j:Int^many result:Seq Int^many xs:Seq Int^many ys:Seq Int^many -- ρ final:Seq Int^many)\n  locals { i j result xs ys } {\n    i xs prim seq-int.len prim =\n    [\n      j ys prim seq-int.len prim =\n      [ result ]\n      [ ys j prim seq-int.at result prim seq-int.push j 1 prim + ys xs merge-loop-y ]\n      if\n    ]\n    [\n      j ys prim seq-int.len prim =\n      [ xs i prim seq-int.at result prim seq-int.push i 1 prim + xs ys merge-loop ]\n      [\n        xs i prim seq-int.at ys j prim seq-int.at prim <\n        [ xs i prim seq-int.at result prim seq-int.push i 1 prim + xs ys merge-loop ]\n        [ ys j prim seq-int.at result prim seq-int.push j 1 prim + xs ys merge-loop ]\n        if\n      ]\n      if\n    ]\n    if\n  };\n\n: merge-loop-y\n  (forall ρ; ρ j:Int^many result:Seq Int^many ys:Seq Int^many xs:Seq Int^many -- ρ final:Seq Int^many)\n  locals { j result ys xs } {\n    j ys prim seq-int.len prim =\n    [ result ]\n    [ ys j prim seq-int.at result prim seq-int.push j 1 prim + ys xs merge-loop-y ]\n    if\n  };\n"
+  match elaboratePipeline pipelineContext mergeSorted agentConfig with
+  | .success _ => fail "assumes: merge-sorted was accepted"
+  | .failure envelopes =>
+      expectEqual "assumes: merge-sorted's reports depend on no other word"
+        (envelopes.map fun envelope => let (word, assumes, _) := summary envelope; (word, assumes.1))
+        [("merge-loop", []), ("merge-loop-y", [])]
+  -- merge-sorted at c6a964a (haiku-firth-2, answer 1), verbatim. The hint
+  -- for `merge-loop`'s misordered `locals` checks an edit whose first error is
+  -- a typing one before the calls to `append-rest`, but erasure has read
+  -- every call's arity by then: give `append-rest` no outputs and the edited
+  -- word's first error moves.
+  let appendRest := ": main\n  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many -- ρ merged:Seq Int^many)\n  prim seq-int.empty swap swap 0 0 merge-loop;\n\n: merge-loop\n  (forall ρ; ρ result:Seq Int^many xs:Seq Int^many ys:Seq Int^many i:Int^many j:Int^many -- ρ merged:Seq Int^many)\n  locals { result xs ys i j } {\n    i xs prim seq-int.len prim < [\n      j ys prim seq-int.len prim < [\n        i xs prim seq-int.at j ys prim seq-int.at prim < [\n          i xs prim seq-int.at result prim seq-int.push\n          xs ys i 1 prim + j merge-loop\n        ] [\n          j ys prim seq-int.at result prim seq-int.push\n          xs ys i j 1 prim + merge-loop\n        ] if\n      ] [\n        result xs i append-rest\n      ] if\n    ] [\n      result ys j append-rest\n    ] if\n  };\n\n: append-rest\n  (forall ρ; ρ result:Seq Int^many xs:Seq Int^many idx:Int^many -- ρ merged:Seq Int^many)\n  locals { result xs idx } {\n    idx xs prim seq-int.len prim < [\n      idx xs prim seq-int.at result prim seq-int.push xs idx 1 prim + append-rest\n    ] [ result ] if\n  };\n"
+  match elaboratePipeline pipelineContext appendRest agentConfig with
+  | .success _ => fail "assumes: merge-sorted (c6a964a) was accepted"
+  | .failure envelopes =>
+      expectEqual "assumes: merge-sorted (c6a964a)'s checked edits and the words they read"
+        (envelopes.map fun envelope => let (word, assumes, _) := summary envelope; (word, assumes))
+        [("merge-loop", ([], ["append-rest"])), ("append-rest", ([], []))]
 
 /-- Reports of a word or primitive handed values it does not take. -/
 private def runCallAccountTests : IO Unit := do
@@ -600,6 +768,20 @@ private def runLocalsOrderTests : IO Unit := do
         if (applyLocalsHint source (hintOf envelope)).isSome then
           fail s!"{label}: the report still states an edit: {emitted}"
     | _ => fail s!"{label}: expected one diagnostic"
+  -- A later word whose declared effect is no type scheme, after a bad `use`
+  -- or not, says nothing about whether the edit fits `get` (Codex on #176):
+  -- the hint still falls back.
+  let get := ": get\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs } { xs prim seq-int.at };\n"
+  let bad := ": bad (forall ρ; a:Int ρ -- ρ r:Int ) 1 ;\n"
+  for (label, source) in [("before a word with no scheme", get ++ bad),
+      ("before a bad `use` and a word with no scheme", get ++ "use nope;\n" ++ bad)] do
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .failure (envelope :: _) =>
+        let emitted := encode envelope
+        expectValidCode label "firth.name.locals-order" emitted
+        unless emitted.contains "In `get` the body was written for the values the names hold now, so changing the block alone does not fix it" do
+          fail s!"{label}: the report does not fall back: {emitted}"
+    | _ => fail s!"{label}: expected a refusal"
 
 def runElaboratorDiagnosticTests : IO Unit := do
   let parseError : ParseError := {
@@ -1594,5 +1776,6 @@ def runElaboratorDiagnosticTests : IO Unit := do
     fail s!"the language has {languagePrimitives.length} primitives but this test lists {everyPrimitive.length}; add the new ones above"
   runCallAccountTests
   runEveryErrorTests
+  runAssumesTests
 
 end Firth.Agent.Test

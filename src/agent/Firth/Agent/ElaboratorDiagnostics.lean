@@ -967,6 +967,54 @@ private def withContextSource (context : EmissionContext) (envelope : Envelope) 
           location := { diagnostic.location with source := context.source } }
     | body => body }
 
+/-- `callees` as prose: "`f`", "`f` and `g`", "`f`, `g` and `h`". -/
+private def wordList (callees : List String) : String :=
+  match callees.map (s!"`{·}`") |>.reverse with
+  | [] => ""
+  | [one] => one
+  | last :: rest => s!"{", ".intercalate rest.reverse} and {last}"
+
+/-- The sentence saying that `word`'s error was found against the declared
+effects of `callees`, which have errors of their own: fixing one of their
+effects rather than its body can change this report, or remove it. -/
+def assumesClause (word : String) (callees : List String) : String :=
+  match callees with
+  | [callee] =>
+      s!"`{word}` calls `{callee}`, which has an error of its own; this report assumes `{callee}` keeps its stack effect."
+  | _ =>
+      s!"`{word}` calls {wordList callees}, which have errors of their own; this report assumes they keep their stack effects."
+
+/-- The sentence saying that the edit a hint offers was checked against the
+declared effects of `callees`, which have errors of their own, though the
+report itself does not depend on them. -/
+def editAssumesClause (callees : List String) : String :=
+  match callees with
+  | [callee] => s!"That edit was checked assuming `{callee}`, which has an error of its own, keeps its stack effect."
+  | _ => s!"That edit was checked assuming {wordList callees}, which have errors of their own, keep their stack effects."
+
+/-- The clause joins the message, where a reader of the report sees it, and
+the callees are also given as `message_params.assumes`. Callees only the
+hint's checked edit depends on join the hint instead, as
+`message_params.edit_assumes`. -/
+private def withAssumes (word : String) (callees edits : List String) (envelope : Envelope) :
+    Envelope :=
+  match envelope.body with
+  | .diagnostic diagnostic =>
+      match diagnostic.messageParams with
+      | .obj fields =>
+          let append (fields : Std.TreeMap.Raw String Lean.Json compare) (key clause : String) :=
+            match fields.get? key with
+            | some (.str text) => fields.insert key (.str s!"{text} {clause}")
+            | _ => fields.insert key (.str clause)
+          let names (list : List String) : Lean.Json := .arr (list.map Lean.Json.str).toArray
+          let fields := if callees.isEmpty then fields else
+            (append fields "message" (assumesClause word callees)).insert "assumes" (names callees)
+          let fields := if edits.isEmpty then fields else
+            (append fields "hint" (editAssumesClause edits)).insert "edit_assumes" (names edits)
+          { envelope with body := .diagnostic { diagnostic with messageParams := .obj fields } }
+      | _ => envelope
+  | _ => envelope
+
 private def pipelineDiagnosticEnvelope (context : EmissionContext) :
     Firth.Elaborator.PipelineDiagnostic → Envelope
   | .parse error => parserEnvelope context error
@@ -975,6 +1023,7 @@ private def pipelineDiagnosticEnvelope (context : EmissionContext) :
   | .refinement _ diagnostic => withContextSource context (refinementEnvelope diagnostic)
   | .unchecked word callee span => uncheckedEnvelope context word callee span
   | .internal span => internalEnvelope context span
+  | .assumes word callees edits inner => withAssumes word callees edits (pipelineDiagnosticEnvelope context inner)
 
 private def positionWithin (span : Firth.Elaborator.Span) (position : Position) : Bool :=
   let start : Position := { line := span.start.line, column := span.start.column }
@@ -1007,11 +1056,32 @@ private def uniquePayloadIds (envelopes : List Envelope) : List Envelope :=
       (id :: envelope.payloadId :: seen, out ++ [{ envelope with payloadId := id }])
   out
 
+/-- `text` with the checker's inferred variables numbered in the order they
+first appear, one numbering for each kind: rows, types (in the source
+notation too, as `?t`) and usages. Two reports that differ only in how many
+variables the checker made before them then read the same. -/
+private def renumberVariables (text : String) : String :=
+  let kinds := [["Row.mvar "], ["AType.mvar ", "?t"], ["AUsage.mvar "]]
+  kinds.foldl (init := text) fun text prefixes =>
+    (prefixes.foldl (init := (text, ([] : List String))) fun (text, seen) pre =>
+      match text.splitOn pre with
+      | [] => (text, seen)
+      | first :: parts =>
+          let (pieces, seen) := parts.foldl (init := ([first], seen)) fun (pieces, seen) part =>
+            let digits := String.ofList (part.toList.takeWhile Char.isDigit)
+            if digits.isEmpty then (pieces ++ [part], seen) else
+            let seen := if seen.contains digits then seen else seen ++ [digits]
+            (pieces ++ [s!"{seen.idxOf digits}" ++ String.ofList (part.toList.drop digits.length)], seen)
+          (pre.intercalate pieces, seen)).1
+
 def elaboratePipeline (context : EmissionContext) (source : String)
     (config : Firth.Elaborator.PipelineConfig := {}) : StructuredElaborationResult :=
   let config := { config with
     requestId := context.requestId
-    sourcePath := sourcePath context.source }
+    sourcePath := sourcePath context.source
+    sameReport := fun one other =>
+      renumberVariables (encode (pipelineDiagnosticEnvelope context one)) ==
+        renumberVariables (encode (pipelineDiagnosticEnvelope context other)) }
   match Firth.Elaborator.elaborateWith config source with
   | .success program => .success program
   | .failure diagnostics =>

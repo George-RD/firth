@@ -97,6 +97,8 @@ structure CallEdit where
   written : String
   replacement : String
   after : Option (Nat × Nat) := none
+  /-- The words whose declared effects checking the edit read. -/
+  consulted : List String := []
   deriving Repr, BEq
 
 /-- The values an operation the checker refused was handed, named by the
