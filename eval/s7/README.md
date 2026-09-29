@@ -1090,7 +1090,115 @@ errors (sample 6: 36 of 40; sample 4: 20 of 40), mostly branch mismatches
 mismatches, shown one at a time, recurred at least 19 times in 27, and
 only run 9 can show whether seeing every error helps Haiku repair them.
 
-## What the eight runs say about the bet
+## Run 9: 29 September 2026, Haiku with one diagnostic per refused word
+
+Main at `8ea4a1d`. Since run 8 (`4c379e0`) it has:
+
+- #174: a refused program gets one diagnostic for each word the checker
+  refuses, that word's first error, found against the declared effects of
+  the words it calls. A caller of a word whose declared effect is not a
+  valid signature is reported as `firth.type.unchecked-word`. The harness
+  feedback shows every diagnostic ("The checker found N errors, one for
+  each word it did not accept. Fix them all before you run it again."),
+  each as an `error i of N` block with its code, word, position, message
+  and hint.
+- #175: the words before a bad `use` are still reported.
+- #176: a report that depends on the declared effect of a called word that
+  is itself reported says so, and so does a hint whose edit was checked
+  assuming that effect.
+
+The prompt, `prompt --lang firth --tier mvp --rounds 2` at `8ea4a1d`, is
+run 8's plus one paragraph on how refused words are reported, and step 5
+of the agent loop now reads "Fix every reported word" (`diff` of the two
+`prompt-firth.md` files: 31 lines in, 2 out). Answers were scored at
+`8ea4a1d` (`firth_commit` in every `results-N.json`). The authors ran
+against a detached worktree at that commit, so merges to main during the
+run could not reach the checker, the prompt or the `AGENTS.md` they saw
+(blob `7c89481`, the same as in run 8). Author:
+`claude-haiku-4-5-20251001`, Firth only, three answers per sample, with
+run 8's author and feedback instructions word for word. Everything is in
+`runs/2026-09-29-haiku-8ea4a1d/`.
+
+**Sample 4 is void, and sample 5 replaces it.** After writing its last
+answer, sample 4 ran 13 `Bash` commands and read sample 3's sub-agent
+output file, and `audit_subagent.py --rounds 2 --lang firth` flags all 16
+of those calls. Its answers were all written before the first one, but
+the rule does not depend on that, so it is not counted. Its files stay in
+the directory (it passed 0, 0 and 1). The audit passes for samples 1, 2,
+3 and 5 (exit 0, nothing flagged). Each of them made exactly nine calls:
+a `Read` of `prompt-firth.md`, its own `repair-1.md` and `repair-2.md`, a
+`Write` of each of its own three answers (each matching the kept file by
+SHA-256) and three hand-backs. So no counted author read another sample's
+files, the tasks, the references or anything else. That this was only
+detected, not prevented, is `todo.s7-author-enforced-allowlist`.
+
+| Haiku 4.5, Firth, passed (of 20) | First answer | Round 1 | Round 2 |
+|---|---|---|---|
+| Sample 1 | 0 | 1 | 3 |
+| Sample 2 | 3 | 8 | 12 |
+| Sample 3 | 9 | 13 | 17 |
+| Sample 5 | 0 | 0 | 0 |
+| Run 8 (samples 2, 4, 5, 6) | 0 each | 0 each | 0 each |
+| Run 6 (two samples) | 3 and 0 | 3 and 2 | 5 and 6 |
+
+Failures by the first diagnostic of the visible example, summed over the
+counted samples (80 answers a round; `fixes/tabulate.py`):
+
+| | First | r1 | r2 |
+|---|---|---|---|
+| `firth.type.branch-mismatch` | 23 | 26 | 10 |
+| `firth.name.unresolved` | 10 | 1 | 18 |
+| `firth.syntax.*` | 5 | 6 | 3 |
+| `firth.type.word-input-mismatch` | 2 | 4 | 5 |
+| `firth.type.primitive-input-mismatch` | 6 | 2 | 1 |
+| `firth.type.stack-underflow` | 4 | 4 | 1 |
+| other checker errors | 13 | 8 | 0 |
+| wrong answer or runtime fault | 5 | 7 | 10 |
+| **failing** | 68 | 58 | 48 |
+
+- **Three of four counted samples passed tasks, and 12 first answers
+  passed.** In run 8 no counted sample passed anything. Sample 3 reached
+  17 of 20, Haiku's best Firth result so far (run 5's best was 8). Sample
+  5 passed nothing in any round, and no task that passed in one round
+  failed in the next.
+- **The new feedback does not explain the gain.** Seeing every error
+  mattered little here, because these answers seldom had more than one:
+  of the 126 failing answers whose feedback the counted authors read
+  (`repair-1.md`, `repair-2.md`), 10 showed two or more errors. Run 8's
+  counted answers, rechecked at `8ea4a1d`, show two or more for 109 of
+  240 (`fixes/feedback_check.py`, output
+  `fixes/run8-feedback-at-8ea4a1d.json`). Of the 20 tasks repaired
+  between rounds, 3 followed feedback with two or more errors. And the 12
+  first answers that passed saw no feedback at all; the only prompt
+  change they read is the paragraph on how errors are reported. So the
+  difference from run 8 is mostly in what Haiku wrote, not in what it was
+  told, and with four samples a run it is not yet separable from
+  sample-to-sample variance (run 6's two samples, on one build and
+  prompt, passed 3 and 0 first answers). A control, run 8's build with run 9's
+  protocol, would separate them.
+- **More branch mismatches got past the checker.** Of the 49 answers that
+  failed on `firth.type.branch-mismatch` in the first answers or round 1,
+  6 passed in the next round, 8 got past the checker to a wrong answer,
+  14 stopped at another checker error and 21 failed on a branch mismatch
+  again (run 8: 2 to 8 of 27 repaired, at least 19 recurred). Sample 1
+  accounts for 14 of the 21.
+- **Sample 5's round-2 answers used an undefined `i` in 17 tasks.** Its
+  loop words name `i` in the stack effect and use it in the body without
+  a `locals` block. The hint names the fix
+  (`locals { xs k i len count } { ... }`), but the feedback it read before
+  that round showed this error once, and there was no round after it. Its round-1 answers had failed on
+  branch mismatches (7) and `firth.type.quotation-compose-mismatch` (4).
+- **Jev** (`modes-1.json`, `modes-3.json`), counted samples: first
+  answers 40 `stack_effect`, 16 `invented_syntax`, 7 `stack_order`, 4
+  `logic` and 1 `toolchain` (sample 5's `seq-sum`, a duplicate `main`,
+  mislabelled); last answers 20 `invented_syntax`, 13 `stack_effect`, 9
+  `logic` and 6 `stack_order`.
+- **Set-up.** Samples 1 to 4 ran at the same time in one container, as
+  sub-agents of the session running the eval, so each could have reached
+  the others' files; the audit above is what shows the counted ones did
+  not. Sample 5 started after sample 4 was voided.
+
+## What the nine runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from
 the docs alone. On main, Sonnet matches Python on every task set except
@@ -1121,7 +1229,11 @@ fixed in the next round, but no counted sample passed any task and at
 least 19 of 27 branch mismatches recurred (7 of them behind an earlier
 error) and between 2 and 8 were repaired. Each sample repeated a
 few mistakes across nearly every task, and with one diagnostic per
-program two feedback rounds did not get past them. The checker found
+program two feedback rounds did not get past them. Run 9, with one
+diagnostic for each refused word, passed 3, 12, 17 and 0 of 20 after two
+rounds, but its answers seldom had more than one error, so the new
+feedback explains little of that, and four samples cannot yet separate it
+from variance. The checker found
 most stack-shape errors before execution.
 Wrong answers at runtime were logic slips that a signature cannot catch.
 
