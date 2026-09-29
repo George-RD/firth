@@ -1519,7 +1519,225 @@ ranking; each needs its own measured check):
 Wrong results (40) are outside what the checker can see; the four read by
 hand were two reversed comparisons, an off-by-one start and `<` for `<=`.
 
-## What the ten runs say about the bet
+## Run 11: 29 September 2026, steering authors to `locals`
+
+In run 10's counted samples, final answers without shuffle words passed
+41% of the time and answers with them 10%. That is an association, not a
+cause. Run 11 asked whether telling Haiku to bind values with `locals` and
+not to shuffle the stack raises how many MVP tasks it passes. The design,
+validity rules and tests were committed and reviewed before the first
+author started (`runs/2026-09-29-locals-guide/preregistration.md`, #184,
+merged as `5d09e25`).
+
+- **Arm A** gets the harness's prompt unchanged. **Arm B** gets the same
+  prompt with one paragraph ("Prefer names to stack shuffling",
+  `arm-b-paragraph.md`) inserted in `docs/getting-started.md` after the
+  paragraph that introduces `locals`. `make_prompts.py --check` passes at
+  the pinned commit, and its self-test catches a planted extra word, a
+  stale arm A and three misplaced anchors.
+- **Build.** Both arms were built and scored in one detached worktree at
+  `5d09e25`. It was never fetched or checked out during the run
+  (`pinned.txt`: its HEAD, the prompts' SHA-256 and the `AGENTS.md` and
+  `CLAUDE.md` blobs, written before the first author started).
+- **Authors.** `claude-haiku-4-5-20251001`, run as Agent-tool sub-agents
+  and given run 10's instructions word for word, with only the paths
+  changed. Each sample has three answers.
+  - `instructions.py --check` reduces the eval session's three messages
+    to templates and finds one sequence, shared by both arms, across all
+    49 authors (`instructions.json`). Its self-test plants an
+    arm-specific word and a missing round, and both fail.
+  - The other 131 messages came from the harness: hand-back and system
+    reminders, and three context compactions.
+- **Concurrency.** At most three authors per arm ran at once, and six in
+  all (first and last log times of each author). Every round's results
+  were searched for toolchain text before feedback was sent, and none had
+  any.
+- **Validity checks.** Every sample was checked on its complete log with
+  the pre-registered checks: `audit_subagent.py`, `seen_agents.py` and
+  `context_seen.py --arm-set run11`. The two arms saw the same
+  `AGENTS.md` and `CLAUDE.md` blobs.
+- **Where everything is.** The run is in `runs/2026-09-29-locals-guide/`.
+  It holds one directory per arm and `driver/`, which has the scripts
+  that drove the rounds, the sample-to-author map (`ids.txt`) and the
+  running log (`state.md`).
+  - `python3 runs/2026-09-29-locals-guide/analyse.py` prints the tables
+    and tests below (`analysis.txt`).
+  - Its `--self-test` checks the exact Mann-Whitney p against brute force,
+    plants swapped arms and a 21st sample, and reproduces run 10's
+    p = 0.8196.
+
+| Passed (of 20): first answer, round 1, round 2 | Arm A (guide as is) | Arm B (plus the paragraph) |
+|---|---|---|
+| Counted samples | 2: 0, 5, 12 | 1: 0, 7, 9 |
+|  | 3: 0, 0, 0 | 2: 0, 9, 10 |
+|  | 4: 0, 0, 8 | 3: 5, 10, 13 |
+|  | 5: 0, 5, 7 | 4: 0, 0, 7 |
+|  | 6: 6, 13, 15 | 5: 4, 14, 17 |
+|  | 7: 0, 0, 7 | 6: 0, 8, 11 |
+|  | 8: 6, 9, 9 | 7: 7, 10, 13 |
+|  | 9: 0, 6, 9 | 9: 0, 7, 9 |
+|  | 10: 5, 6, 11 | 10: 6, 11, 14 |
+|  | 11: 0, 6, 12 | 13: 0, 0, 10 |
+|  | 12: 0, 5, 9 | 14: 11, 12, 14 |
+|  | 13: 0, 0, 1 | 15: 0, 0, 4 |
+|  | 16: 3, 9, 13 | 16: 4, 12, 15 |
+|  | 17: 7, 9, 11 | 17: 0, 0, 6 |
+|  | 18: 7, 12, 15 | 18: 0, 0, 7 |
+|  | 19: 0, 0, 4 | 19: 0, 0, 0 |
+|  | 20: 5, 8, 10 | 21: 0, 0, 0 |
+|  | 21: 0, 0, 0 | 22: 0, 0, 1 |
+|  | 23: 0, 0, 1 | 24: 11, 14, 17 |
+|  | 24: 0, 0, 0 | 25: 0, 0, 0 |
+| Passing at least one task after round 2 | 17 of 20 | 17 of 20 |
+| Tasks passed after round 2 | 154 | 177 |
+| First answers passed | 39 | 48 |
+| Share of first answers using a shuffle word (mean) | 0.37 | 0.06 |
+
+**The result is inconclusive, as pre-registered.** Arm B's paragraph
+changed how authors wrote, but no gain in passes large enough to detect
+with 20 samples an arm.
+
+- **Primary:** tasks passed after round 2. A 154, B 177, a one-sided exact
+  Mann-Whitney U test (B greater) gives U = 224 and p = 0.26.
+- **Secondary 1:** samples passing at least one task after round 2. A 17
+  of 20, B 17 of 20, one-sided Fisher p = 0.67.
+- **Secondary 2:** tasks passed in the first answer. A 39, B 48, U = 203.5,
+  p = 0.46.
+- **Manipulation check:** the share of first answers using a shuffle word
+  (`dup drop swap dip over rot nip tuck pick roll`, with comments and
+  stack effects removed). Mean A 0.37, B 0.06, U_A = 338, one-sided exact
+  p < 0.0001. Final answers, reported only: A 0.26, B 0.01.
+  - Arm B's authors did what the paragraph asked. 17 of its 20 counted
+    samples used no shuffle word in any first answer, and B17 and B25 used
+    one in 10% of them.
+  - B19 is the exception: 0.90 in its first answers, 0.10 in its final
+    ones.
+- **Reading.** Following the pre-registration: the primary is not
+  significant and the manipulation check is. So fewer shuffle words
+  produced no gain in passes large enough to detect at 20 an arm. The
+  pre-registered power for a gain of 2 tasks a sample was 0.47, and the
+  observed difference is 1.15 tasks a sample.
+  - This does not show that the paragraph has no effect.
+  - It also does not support run 10's association as a cause. Authors who
+    avoided shuffles when told to did not pass clearly more.
+  - The paragraph is not proposed for `docs/getting-started.md` on this
+    evidence.
+- **Two sensitivity checks** (counterfactual, computed from the committed
+  results, not scored and not pre-registered). Neither makes the primary
+  significant.
+  - Counting every void sample at its last scored round gives A 170 over
+    24 samples and B 229 over 25, p = 0.088.
+  - Dropping the four samples started last in each arm (A21, A23, A24 and
+    B25; see departures) gives p = 0.40.
+
+**Closed-effect refusals** (`todo.closed-effect-under-locals`,
+`closed_effect.py`, `closed-effect.txt`). A word whose effect has no row
+variable is refused when called inside `locals` while a later-used local is
+live, even when the author pushed exactly its inputs.
+
+- **Method.** `closed_effect.py` finds each answer refused with
+  `firth.type.word-input-mismatch` at a call of a closed-effect word from
+  a word that uses `locals`. It then opens the callee's effect
+  (`(a -- b)` becomes `(forall ρ; ρ a -- ρ b)`) and checks the program
+  again.
+  - Its self-test counts the todo's two refused programs.
+  - It does not count a planted program with a genuine extra value, a
+    call outside `locals`, or an open-effect callee.
+- **Result.** Across all three answers of the 20 counted samples in each
+  arm, the refusal occurs only in arm B, in one sample (B1), in two tasks.
+  - B1's `primes-up-to` (`is-prime` called inside `locals`) type-checks
+    once the callee is opened, so this refusal was its only type error.
+    That holds for both its round 1 and round 2 answers. Whether it would
+    then pass the tests was not run.
+  - B1's `count-distinct` (`contains`) also had an unrelated error.
+  - So the refusal cost arm B one final task at most, and arm A none.
+  - The harness shows the first error in each refused word, so a closed
+    call behind an earlier error in the same word would not be seen.
+    These counts are a lower bound.
+
+**`pick` and `roll`.** No counted answer in either arm used `pick` or
+`roll`, in any round. Arm B's answers used no `over` or `rot` either (the
+paragraph says those are not Firth words). In arm A, 18 answers used
+`over`, all of them first answers and 16 of them A24's. 16 answers used
+`rot`: 11 from A24, 4 from A3 and 1 from A13. Both names are unresolved in
+Firth.
+
+**Void samples.** Nine samples are void under the pre-registered rules and
+are not counted: four in arm A and five in arm B. Each directory has a
+`void.md` quoting the flagged audit lines with their log times.
+
+| Sample | Passed so far | Why void |
+|---|---|---|
+| A1 | 4 | Wrote `answer-1.md` twice |
+| A14 | 0, 4, 4 | After its last answer, read another author's raw log and ran `tail` on it (`Read` and `Bash`, flagged) |
+| A15 | 1, 8 | Wrote `answer-2.md` twice |
+| A22 | 0 | Wrote `answer-1.md` three times, then read it back |
+| B8 | 2, 13 | Used `Edit` four times on its own `answer-2.md` |
+| B11 | 0, 12, 15 | Read `answer-3.md` back twice, then wrote it again |
+| B12 | 0 | Wrote `answer-1.md` twice |
+| B20 | 0, 11, 16 | Wrote `answer-3.md` twice |
+| B23 | 8 | Wrote `answer-1.md` three times |
+
+- **Void rates are about equal:** 4 of 24 started samples in arm A and 5
+  of 25 in arm B.
+- **Arm B lost higher-scoring samples.**
+  - Its voids that reached round 2 ended at 13, 15 and 16. Arm A's ended
+    at 4 and 8.
+  - Validity was judged on the rules alone, never on scores.
+  - This asymmetry is why the first sensitivity check above comes closer
+    to significance.
+- **Most voids were rewrites.** Eight of the nine were an author
+  rewriting, editing or re-reading its own answer file with the allowed
+  tools. The audit flags this, which is stricter than the allowlist the
+  pre-registration states. That gap is recorded in
+  `todo.s7-author-enforced-allowlist`, as it was after run 10.
+
+**What authors were shown.** `context_seen.py` flagged items naming
+another sample in three logs, all `task_status` attachments that the
+harness injected during a context compaction. Each named five other
+running or finished authors and the paths of their output logs.
+
+- In A13 and B4 the items arrived after the author's last answer (36
+  seconds and 41 seconds after its last `Write`). Under the
+  pre-registration they are reported (`late-context.md`), not voiding.
+  Neither author made a call after them except its hand-back.
+- **A14 is the first author seen to act on one.**
+  - Forty seconds after writing `answer-3.md`, it was shown `task_status`
+    items naming A15, A16, B16, B17 and B18.
+  - It then read A15's raw output log and ran `tail` on it (log lines 95
+    and 101).
+  - Its answers were all written before that, but the audit rule has no
+    timing exception, so A14 is void.
+  - Run 10's B8 was shown the same kind of attachment and made no call.
+    A14 shows the channel can be used, and an author compacted before its
+    last answer could read another sample's work.
+  - This is added to `todo.s7-author-enforced-allowlist`.
+- Everything else injected was the harness's own housekeeping: token and
+  hook notices, the skill and tool listings, the environment, and the
+  nested `CLAUDE.md`. None of it named another sample.
+
+**Departures from the pre-registration.**
+
+- **Samples did not start in strict alternation.** Each new author
+  started when a slot in its own arm came free. The start order is in
+  `driver/ids.txt` and each `transcript.json`.
+- **Arm A's last three regular starts came late.** At 22:23, after A20
+  started, the eval session counted 20 non-void starts in arm A. In fact
+  there were 17, because A1, A14 and A15 were void.
+  - The miscount was found at 22:31. A21, A22 and A23 then started, after
+    arm B's last regular starts (B23 and B24 at 22:28). A22 was void and
+    was replaced by A24 at 22:34.
+  - So arm A's last three counted samples (A21, A23 and A24) and arm B's
+    last (B25) ran in the final ten minutes, not interleaved as designed.
+    They passed 0, 1, 0 and 0 of 20.
+  - The whole run took one hour (21:38 to 22:38 UTC) on one model
+    version. The second sensitivity check above drops those four samples,
+    and the result is the same.
+  - No sample was started, stopped or counted on the basis of a score,
+    and the counted set is the first 20 non-void samples by start order
+    in each arm, as `analyse.py` computes it.
+
+## What the eleven runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from
 the docs alone. On main, Sonnet matches Python on every task set except
@@ -1569,6 +1787,12 @@ checked reorder edits and #174's one diagnostic per refused word) did not
 show a gain in a controlled comparison of the two builds (run 10,
 inconclusive: 7 of 10 samples against the older build's 9 of 10). Run 10
 cannot say what any one of those changes did on its own.
+Run 11 tried a guide change instead: one paragraph telling authors to bind
+values with `locals` and not to shuffle the stack. Authors followed it
+(first answers using a shuffle word fell from 37% to 6% of answers), but
+tasks passed did not rise detectably (154 against 177 over 20 samples an
+arm, p = 0.26), so run 10's link between avoiding shuffles and passing is
+not shown to be causal.
 The costs are real. From reading the prompt to writing the first answer,
 Sonnet took about 50 to 250 times longer in Firth than in Python in runs 1
 and 3 (6 to 28 minutes against 7 to 8 seconds; run 2 kept no Sonnet Python

@@ -1,0 +1,2550 @@
+{
+  "lang": "firth",
+  "tasks": {
+    "seq-sum": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            15
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: sum-helper\nat: line 15, column 5\nmessage: `if` in `sum-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: sum-helper\nat: line 15, column 5\nmessage: `if` in `sum-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: sum-helper\nat: line 15, column 5\nmessage: `if` in `sum-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -3,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: sum-helper\nat: line 15, column 5\nmessage: `if` in `sum-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10
+            ]
+          ],
+          "expected": [
+            55
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: sum-helper\nat: line 15, column 5\nmessage: `if` in `sum-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -5,
+              -6
+            ]
+          ],
+          "expected": [
+            -11
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: sum-helper\nat: line 15, column 5\nmessage: `if` in `sum-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "seq-max": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              9,
+              2
+            ]
+          ],
+          "expected": [
+            9
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: max-helper\nat: line 15, column 5\nmessage: `if` in `max-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: max-helper\nat: line 15, column 5\nmessage: `if` in `max-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -4,
+              -2,
+              -9
+            ]
+          ],
+          "expected": [
+            -2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: max-helper\nat: line 15, column 5\nmessage: `if` in `max-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: max-helper\nat: line 15, column 5\nmessage: `if` in `max-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              8,
+              8,
+              3
+            ]
+          ],
+          "expected": [
+            8
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: max-helper\nat: line 15, column 5\nmessage: `if` in `max-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: max-helper\nat: line 15, column 5\nmessage: `if` in `max-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "count-below": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              5,
+              2,
+              8
+            ],
+            4
+          ],
+          "expected": [
+            2
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: count-helper\nat: line 15, column 5\nmessage: `if` in `count-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            3
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: count-helper\nat: line 15, column 5\nmessage: `if` in `count-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            4
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: count-helper\nat: line 15, column 5\nmessage: `if` in `count-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              0,
+              1
+            ],
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: count-helper\nat: line 15, column 5\nmessage: `if` in `count-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              1,
+              9,
+              1,
+              9
+            ],
+            10
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: count-helper\nat: line 15, column 5\nmessage: `if` in `count-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              3
+            ],
+            -5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: count-helper\nat: line 15, column 5\nmessage: `if` in `count-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "index-of": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              7,
+              3,
+              9,
+              3
+            ],
+            3
+          ],
+          "expected": [
+            1
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: index-helper\nat: line 15, column 5\nmessage: `if` in `index-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            1
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: index-helper\nat: line 15, column 5\nmessage: `if` in `index-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: index-helper\nat: line 15, column 5\nmessage: `if` in `index-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: index-helper\nat: line 15, column 5\nmessage: `if` in `index-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            2
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: index-helper\nat: line 15, column 5\nmessage: `if` in `index-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              -2,
+              -3
+            ],
+            -3
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: index-helper\nat: line 15, column 5\nmessage: `if` in `index-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "reverse": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              2,
+              1
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: reverse-helper\nat: line 10, column 35\nmessage: `prim seq-int.push` in `reverse-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int Int ?t14.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t14\nhint: The top value is ?t14 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: reverse-helper\nat: line 10, column 35\nmessage: `prim seq-int.push` in `reverse-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int Int ?t14.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t14\nhint: The top value is ?t14 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: reverse-helper\nat: line 10, column 35\nmessage: `prim seq-int.push` in `reverse-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int Int ?t14.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t14\nhint: The top value is ?t14 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              -4,
+              4,
+              -4,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              -4,
+              4,
+              -4,
+              4
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: reverse-helper\nat: line 10, column 35\nmessage: `prim seq-int.push` in `reverse-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int Int ?t14.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t14\nhint: The top value is ?t14 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: reverse-helper\nat: line 10, column 35\nmessage: `prim seq-int.push` in `reverse-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int Int ?t14.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t14\nhint: The top value is ?t14 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "prefix-sums": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              3,
+              6
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: prefix-helper\nat: line 17, column 5\nmessage: `if` in `prefix-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: prefix-helper\nat: line 17, column 5\nmessage: `if` in `prefix-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: prefix-helper\nat: line 17, column 5\nmessage: `if` in `prefix-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              -3,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              3,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: prefix-helper\nat: line 17, column 5\nmessage: `if` in `prefix-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              20,
+              30,
+              40,
+              50,
+              60
+            ]
+          ],
+          "expected": [
+            [
+              10,
+              30,
+              60,
+              100,
+              150,
+              210
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: prefix-helper\nat: line 17, column 5\nmessage: `if` in `prefix-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "keep-positive": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              -1,
+              0,
+              4
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              4
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: keep-pos-helper\nat: line 17, column 5\nmessage: `if` in `keep-pos-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: keep-pos-helper\nat: line 17, column 5\nmessage: `if` in `keep-pos-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              -2
+            ]
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: keep-pos-helper\nat: line 17, column 5\nmessage: `if` in `keep-pos-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: keep-pos-helper\nat: line 17, column 5\nmessage: `if` in `keep-pos-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              0,
+              5,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: keep-pos-helper\nat: line 17, column 5\nmessage: `if` in `keep-pos-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -7,
+              7,
+              -7,
+              7,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              7,
+              7,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: keep-pos-helper\nat: line 17, column 5\nmessage: `if` in `keep-pos-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "is-sorted": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              5
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: sort-check\nat: line 15, column 5\nmessage: `if` in `sort-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: sort-check\nat: line 15, column 5\nmessage: `if` in `sort-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: sort-check\nat: line 15, column 5\nmessage: `if` in `sort-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: sort-check\nat: line 15, column 5\nmessage: `if` in `sort-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: sort-check\nat: line 15, column 5\nmessage: `if` in `sort-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -5,
+              -5,
+              0,
+              7
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: sort-check\nat: line 15, column 5\nmessage: `if` in `sort-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: sort-check\nat: line 15, column 5\nmessage: `if` in `sort-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "dot": {
+      "needs": [
+        "loop",
+        "mul",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            32
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: dot-helper\nat: line 15, column 5\nmessage: `if` in `dot-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: dot-helper\nat: line 15, column 5\nmessage: `if` in `dot-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2
+            ],
+            [
+              -3
+            ]
+          ],
+          "expected": [
+            -6
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: dot-helper\nat: line 15, column 5\nmessage: `if` in `dot-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              -1
+            ],
+            [
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: dot-helper\nat: line 15, column 5\nmessage: `if` in `dot-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              3,
+              3,
+              3
+            ],
+            [
+              1,
+              2,
+              3,
+              4
+            ]
+          ],
+          "expected": [
+            30
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: dot-helper\nat: line 15, column 5\nmessage: `if` in `dot-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "all-true": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              true,
+              true,
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: all-true-helper\nat: line 15, column 5\nmessage: `if` in `all-true-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: all-true-helper\nat: line 15, column 5\nmessage: `if` in `all-true-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: all-true-helper\nat: line 15, column 5\nmessage: `if` in `all-true-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: all-true-helper\nat: line 15, column 5\nmessage: `if` in `all-true-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: all-true-helper\nat: line 15, column 5\nmessage: `if` in `all-true-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              false,
+              true
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: all-true-helper\nat: line 15, column 5\nmessage: `if` in `all-true-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "longest-run": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              1,
+              2,
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: longest-run-helper\nat: line 26, column 5\nmessage: `if` in `longest-run-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: longest-run-helper\nat: line 26, column 5\nmessage: `if` in `longest-run-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: longest-run-helper\nat: line 26, column 5\nmessage: `if` in `longest-run-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: longest-run-helper\nat: line 26, column 5\nmessage: `if` in `longest-run-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: longest-run-helper\nat: line 26, column 5\nmessage: `if` in `longest-run-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              1,
+              1,
+              1,
+              1,
+              3
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: longest-run-helper\nat: line 26, column 5\nmessage: `if` in `longest-run-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int ] [ .. -- .. Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "has-pair-sum": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              6,
+              2
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: pair-check\nat: line 15, column 5\nmessage: `if` in `pair-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: inner-check\nat: line 30, column 5\nmessage: `if` in `inner-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            0
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: pair-check\nat: line 15, column 5\nmessage: `if` in `pair-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: inner-check\nat: line 30, column 5\nmessage: `if` in `inner-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ],
+            8
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: pair-check\nat: line 15, column 5\nmessage: `if` in `pair-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: inner-check\nat: line 30, column 5\nmessage: `if` in `inner-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: pair-check\nat: line 15, column 5\nmessage: `if` in `pair-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: inner-check\nat: line 30, column 5\nmessage: `if` in `inner-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            7
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: pair-check\nat: line 15, column 5\nmessage: `if` in `pair-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: inner-check\nat: line 30, column 5\nmessage: `if` in `inner-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              -2,
+              9,
+              0
+            ],
+            -2
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: pair-check\nat: line 15, column 5\nmessage: `if` in `pair-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: inner-check\nat: line 30, column 5\nmessage: `if` in `inner-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              1,
+              3
+            ],
+            2
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: pair-check\nat: line 15, column 5\nmessage: `if` in `pair-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: inner-check\nat: line 30, column 5\nmessage: `if` in `inner-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "count-distinct": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: distinct-helper\nat: line 10, column 38\nmessage: `seen-before` in `distinct-helper` needs Seq Int Int Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t15 Int Seq Int Int Seq Int Int. `distinct-helper` calls `seen-before`, which has an error of its own; this report assumes `seen-before` keeps its stack effect.\nexpected: .. Seq Int Int Int Int\nactual: .. Seq Int Int ?t15 Int Seq Int Int Seq Int Int\nhint: The second value from the top is Seq Int but `seen-before` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: seen-before\nat: line 31, column 5\nmessage: `if` in `seen-before` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: distinct-helper\nat: line 10, column 38\nmessage: `seen-before` in `distinct-helper` needs Seq Int Int Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t15 Int Seq Int Int Seq Int Int. `distinct-helper` calls `seen-before`, which has an error of its own; this report assumes `seen-before` keeps its stack effect.\nexpected: .. Seq Int Int Int Int\nactual: .. Seq Int Int ?t15 Int Seq Int Int Seq Int Int\nhint: The second value from the top is Seq Int but `seen-before` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: seen-before\nat: line 31, column 5\nmessage: `if` in `seen-before` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: distinct-helper\nat: line 10, column 38\nmessage: `seen-before` in `distinct-helper` needs Seq Int Int Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t15 Int Seq Int Int Seq Int Int. `distinct-helper` calls `seen-before`, which has an error of its own; this report assumes `seen-before` keeps its stack effect.\nexpected: .. Seq Int Int Int Int\nactual: .. Seq Int Int ?t15 Int Seq Int Int Seq Int Int\nhint: The second value from the top is Seq Int but `seen-before` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: seen-before\nat: line 31, column 5\nmessage: `if` in `seen-before` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: distinct-helper\nat: line 10, column 38\nmessage: `seen-before` in `distinct-helper` needs Seq Int Int Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t15 Int Seq Int Int Seq Int Int. `distinct-helper` calls `seen-before`, which has an error of its own; this report assumes `seen-before` keeps its stack effect.\nexpected: .. Seq Int Int Int Int\nactual: .. Seq Int Int ?t15 Int Seq Int Int Seq Int Int\nhint: The second value from the top is Seq Int but `seen-before` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: seen-before\nat: line 31, column 5\nmessage: `if` in `seen-before` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: distinct-helper\nat: line 10, column 38\nmessage: `seen-before` in `distinct-helper` needs Seq Int Int Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t15 Int Seq Int Int Seq Int Int. `distinct-helper` calls `seen-before`, which has an error of its own; this report assumes `seen-before` keeps its stack effect.\nexpected: .. Seq Int Int Int Int\nactual: .. Seq Int Int ?t15 Int Seq Int Int Seq Int Int\nhint: The second value from the top is Seq Int but `seen-before` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: seen-before\nat: line 31, column 5\nmessage: `if` in `seen-before` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              1,
+              -1,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: distinct-helper\nat: line 10, column 38\nmessage: `seen-before` in `distinct-helper` needs Seq Int Int Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t15 Int Seq Int Int Seq Int Int. `distinct-helper` calls `seen-before`, which has an error of its own; this report assumes `seen-before` keeps its stack effect.\nexpected: .. Seq Int Int Int Int\nactual: .. Seq Int Int ?t15 Int Seq Int Int Seq Int Int\nhint: The second value from the top is Seq Int but `seen-before` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: seen-before\nat: line 31, column 5\nmessage: `if` in `seen-before` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "merge-sorted": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              9
+            ],
+            [
+              2,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              9,
+              10
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: merge-helper\nat: line 12, column 77\nmessage: `prim seq-int.push` in `merge-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t127 ?t126 Int ?t128.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int ?t127 ?t126 Int ?t128\nhint: The top value is ?t128 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: merge-helper\nat: line 12, column 77\nmessage: `prim seq-int.push` in `merge-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t127 ?t126 Int ?t128.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int ?t127 ?t126 Int ?t128\nhint: The top value is ?t128 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            [
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: merge-helper\nat: line 12, column 77\nmessage: `prim seq-int.push` in `merge-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t127 ?t126 Int ?t128.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int ?t127 ?t126 Int ?t128\nhint: The top value is ?t128 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: merge-helper\nat: line 12, column 77\nmessage: `prim seq-int.push` in `merge-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t127 ?t126 Int ?t128.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int ?t127 ?t126 Int ?t128\nhint: The top value is ?t128 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: merge-helper\nat: line 12, column 77\nmessage: `prim seq-int.push` in `merge-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t127 ?t126 Int ?t128.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int ?t127 ?t126 Int ?t128\nhint: The top value is ?t128 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -3,
+              0,
+              8
+            ],
+            [
+              -4,
+              8,
+              9,
+              9
+            ]
+          ],
+          "expected": [
+            [
+              -4,
+              -3,
+              0,
+              8,
+              8,
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: merge-helper\nat: line 12, column 77\nmessage: `prim seq-int.push` in `merge-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t127 ?t126 Int ?t128.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int ?t127 ?t126 Int ?t128\nhint: The top value is ?t128 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "digits": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            305
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              5
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: digits-helper\nat: line 15, column 28\nmessage: `prim seq-int.push` in `digits-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Int Int ?t8.\nexpected: .. Seq Int Int\nactual: .. Int Int ?t8\nhint: The top value is ?t8 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            [
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: digits-helper\nat: line 15, column 28\nmessage: `prim seq-int.push` in `digits-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Int Int ?t8.\nexpected: .. Seq Int Int\nactual: .. Int Int ?t8\nhint: The top value is ?t8 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            [
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: digits-helper\nat: line 15, column 28\nmessage: `prim seq-int.push` in `digits-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Int Int ?t8.\nexpected: .. Seq Int Int\nactual: .. Int Int ?t8\nhint: The top value is ?t8 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              1,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: digits-helper\nat: line 15, column 28\nmessage: `prim seq-int.push` in `digits-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Int Int ?t8.\nexpected: .. Seq Int Int\nactual: .. Int Int ?t8\nhint: The top value is ?t8 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            99
+          ],
+          "expected": [
+            [
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: digits-helper\nat: line 15, column 28\nmessage: `prim seq-int.push` in `digits-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Int Int ?t8.\nexpected: .. Seq Int Int\nactual: .. Int Int ?t8\nhint: The top value is ?t8 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            420
+          ],
+          "expected": [
+            [
+              4,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: digits-helper\nat: line 15, column 28\nmessage: `prim seq-int.push` in `digits-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Int Int ?t8.\nexpected: .. Seq Int Int\nactual: .. Int Int ?t8\nhint: The top value is ?t8 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            987
+          ],
+          "expected": [
+            [
+              9,
+              8,
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: digits-helper\nat: line 15, column 28\nmessage: `prim seq-int.push` in `digits-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Int Int ?t8.\nexpected: .. Seq Int Int\nactual: .. Int Int ?t8\nhint: The top value is ?t8 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            1005
+          ],
+          "expected": [
+            [
+              1,
+              0,
+              0,
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: digits-helper\nat: line 15, column 28\nmessage: `prim seq-int.push` in `digits-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Int Int ?t8.\nexpected: .. Seq Int Int\nactual: .. Int Int ?t8\nhint: The top value is ?t8 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            40213
+          ],
+          "expected": [
+            [
+              4,
+              0,
+              2,
+              1,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: digits-helper\nat: line 15, column 28\nmessage: `prim seq-int.push` in `digits-helper` needs Seq Int Int on top of the stack, but the stack before it is .. Int Int ?t8.\nexpected: .. Seq Int Int\nactual: .. Int Int ?t8\nhint: The top value is ?t8 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 8
+    },
+    "primes-up-to": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: is-prime-build\nat: line 14, column 5\nmessage: `if` in `is-prime-build` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: is-prime-check\nat: line 26, column 5\nmessage: `if` in `is-prime-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: is-prime-build\nat: line 14, column 5\nmessage: `if` in `is-prime-build` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: is-prime-check\nat: line 26, column 5\nmessage: `if` in `is-prime-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: is-prime-build\nat: line 14, column 5\nmessage: `if` in `is-prime-build` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: is-prime-check\nat: line 26, column 5\nmessage: `if` in `is-prime-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            2
+          ],
+          "expected": [
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: is-prime-build\nat: line 14, column 5\nmessage: `if` in `is-prime-build` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: is-prime-check\nat: line 26, column 5\nmessage: `if` in `is-prime-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            13
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: is-prime-build\nat: line 14, column 5\nmessage: `if` in `is-prime-build` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: is-prime-check\nat: line 26, column 5\nmessage: `if` in `is-prime-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            30
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13,
+              17,
+              19,
+              23,
+              29
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: is-prime-build\nat: line 14, column 5\nmessage: `if` in `is-prime-build` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: is-prime-check\nat: line 26, column 5\nmessage: `if` in `is-prime-check` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Bool ] [ .. -- .. Bool ] Bool.\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "histogram": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              0,
+              2,
+              2,
+              1,
+              2
+            ],
+            3
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: histogram-init\nat: line 14, column 5\nmessage: `if` in `histogram-init` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: histogram\nat: line 31, column 5\nmessage: `if` in `histogram` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: histogram-init\nat: line 14, column 5\nmessage: `if` in `histogram-init` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: histogram\nat: line 31, column 5\nmessage: `if` in `histogram` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            1
+          ],
+          "expected": [
+            [
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: histogram-init\nat: line 14, column 5\nmessage: `if` in `histogram-init` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: histogram\nat: line 31, column 5\nmessage: `if` in `histogram` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: histogram-init\nat: line 14, column 5\nmessage: `if` in `histogram-init` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: histogram\nat: line 31, column 5\nmessage: `if` in `histogram` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              0,
+              3,
+              1,
+              0,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            [
+              2,
+              1,
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: histogram-init\nat: line 14, column 5\nmessage: `if` in `histogram-init` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: histogram\nat: line 31, column 5\nmessage: `if` in `histogram` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              1
+            ],
+            4
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: histogram-init\nat: line 14, column 5\nmessage: `if` in `histogram-init` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: histogram\nat: line 31, column 5\nmessage: `if` in `histogram` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "sort": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: sort-pass\nat: line 17, column 5\nmessage: `if` in `sort-pass` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: sort-compare\nat: line 29, column 7\nmessage: The two branches of `if` in `sort-compare` leave different numbers of values: the true branch takes 1 value from the stack below the `if` and leaves 1 value, and the false branch pushes 1 value. The condition and the values the branches take from below the `if` are looked for where the local `i` would be, but a local is not a value on the stack.\nhint: Inside `locals`, a local is used by writing its name, which pushes a copy and leaves the local in place. Write the condition just before the two quotations (for example a local's name or a comparison), and in each branch use locals by name instead of taking them from the stack with `drop`, `swap` or an operator that is short of an operand. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: sort-pass\nat: line 17, column 5\nmessage: `if` in `sort-pass` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: sort-compare\nat: line 29, column 7\nmessage: The two branches of `if` in `sort-compare` leave different numbers of values: the true branch takes 1 value from the stack below the `if` and leaves 1 value, and the false branch pushes 1 value. The condition and the values the branches take from below the `if` are looked for where the local `i` would be, but a local is not a value on the stack.\nhint: Inside `locals`, a local is used by writing its name, which pushes a copy and leaves the local in place. Write the condition just before the two quotations (for example a local's name or a comparison), and in each branch use locals by name instead of taking them from the stack with `drop`, `swap` or an operator that is short of an operand. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: sort-pass\nat: line 17, column 5\nmessage: `if` in `sort-pass` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: sort-compare\nat: line 29, column 7\nmessage: The two branches of `if` in `sort-compare` leave different numbers of values: the true branch takes 1 value from the stack below the `if` and leaves 1 value, and the false branch pushes 1 value. The condition and the values the branches take from below the `if` are looked for where the local `i` would be, but a local is not a value on the stack.\nhint: Inside `locals`, a local is used by writing its name, which pushes a copy and leaves the local in place. Write the condition just before the two quotations (for example a local's name or a comparison), and in each branch use locals by name instead of taking them from the stack with `drop`, `swap` or an operator that is short of an operand. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: sort-pass\nat: line 17, column 5\nmessage: `if` in `sort-pass` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: sort-compare\nat: line 29, column 7\nmessage: The two branches of `if` in `sort-compare` leave different numbers of values: the true branch takes 1 value from the stack below the `if` and leaves 1 value, and the false branch pushes 1 value. The condition and the values the branches take from below the `if` are looked for where the local `i` would be, but a local is not a value on the stack.\nhint: Inside `locals`, a local is used by writing its name, which pushes a copy and leaves the local in place. Write the condition just before the two quotations (for example a local's name or a comparison), and in each branch use locals by name instead of taking them from the stack with `drop`, `swap` or an operator that is short of an operand. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              -1,
+              4,
+              -1,
+              0,
+              7,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              -1,
+              -1,
+              0,
+              3,
+              4,
+              7,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: sort-pass\nat: line 17, column 5\nmessage: `if` in `sort-pass` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: sort-compare\nat: line 29, column 7\nmessage: The two branches of `if` in `sort-compare` leave different numbers of values: the true branch takes 1 value from the stack below the `if` and leaves 1 value, and the false branch pushes 1 value. The condition and the values the branches take from below the `if` are looked for where the local `i` would be, but a local is not a value on the stack.\nhint: Inside `locals`, a local is used by writing its name, which pushes a copy and leaves the local in place. Write the condition just before the two quotations (for example a local's name or a comparison), and in each branch use locals by name instead of taking them from the stack with `drop`, `swap` or an operator that is short of an operand. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: sort-pass\nat: line 17, column 5\nmessage: `if` in `sort-pass` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int ] [ .. -- .. Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: sort-compare\nat: line 29, column 7\nmessage: The two branches of `if` in `sort-compare` leave different numbers of values: the true branch takes 1 value from the stack below the `if` and leaves 1 value, and the false branch pushes 1 value. The condition and the values the branches take from below the `if` are looked for where the local `i` would be, but a local is not a value on the stack.\nhint: Inside `locals`, a local is used by writing its name, which pushes a copy and leaves the local in place. Write the condition just before the two quotations (for example a local's name or a comparison), and in each branch use locals by name instead of taking them from the stack with `drop`, `swap` or an operator that is short of an operand. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "ledger": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10,
+            [
+              5,
+              -20,
+              -15,
+              4
+            ]
+          ],
+          "expected": [
+            4,
+            1
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: ledger-helper\nat: line 19, column 5\nmessage: `if` in `ledger-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int Int ] [ .. -- .. Int Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            []
+          ],
+          "expected": [
+            0,
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: ledger-helper\nat: line 19, column 5\nmessage: `if` in `ledger-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int Int ] [ .. -- .. Int Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            [
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: ledger-helper\nat: line 19, column 5\nmessage: `if` in `ledger-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int Int ] [ .. -- .. Int Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            5,
+            [
+              -5,
+              -1,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: ledger-helper\nat: line 19, column 5\nmessage: `if` in `ledger-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int Int ] [ .. -- .. Int Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            100,
+            [
+              -50,
+              -60,
+              20,
+              -70
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: ledger-helper\nat: line 19, column 5\nmessage: `if` in `ledger-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int Int ] [ .. -- .. Int Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            3,
+            [
+              -1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: ledger-helper\nat: line 19, column 5\nmessage: `if` in `ledger-helper` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Int Int ] [ .. -- .. Int Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Int Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "allocate-batch": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              10,
+              3
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              4,
+              5,
+              7,
+              1
+            ],
+            [
+              false,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              2
+            ],
+            [
+              4,
+              0,
+              6,
+              1
+            ],
+            [
+              0,
+              3,
+              1,
+              0
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 85\nmessage: `allocate-loop` needs more values than the stack holds here. `main` calls `allocate-loop`, which has an error of its own; this report assumes `allocate-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `allocate-loop` and in what order.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: allocate-loop\nat: line 29, column 5\nmessage: `if` in `allocate-loop` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int Seq Int Seq Int ] [ .. -- .. Seq Int Seq Int Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int Seq Int Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            [],
+            [],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ],
+            [],
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 85\nmessage: `allocate-loop` needs more values than the stack holds here. `main` calls `allocate-loop`, which has an error of its own; this report assumes `allocate-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `allocate-loop` and in what order.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: allocate-loop\nat: line 29, column 5\nmessage: `if` in `allocate-loop` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int Seq Int Seq Int ] [ .. -- .. Seq Int Seq Int Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int Seq Int Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              3
+            ],
+            [
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 85\nmessage: `allocate-loop` needs more values than the stack holds here. `main` calls `allocate-loop`, which has an error of its own; this report assumes `allocate-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `allocate-loop` and in what order.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: allocate-loop\nat: line 29, column 5\nmessage: `if` in `allocate-loop` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int Seq Int Seq Int ] [ .. -- .. Seq Int Seq Int Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int Seq Int Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              1,
+              1,
+              1
+            ],
+            [
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              2,
+              2,
+              0
+            ],
+            [
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 85\nmessage: `allocate-loop` needs more values than the stack holds here. `main` calls `allocate-loop`, which has an error of its own; this report assumes `allocate-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `allocate-loop` and in what order.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: allocate-loop\nat: line 29, column 5\nmessage: `if` in `allocate-loop` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int Seq Int Seq Int ] [ .. -- .. Seq Int Seq Int Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int Seq Int Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              9
+            ],
+            [
+              1,
+              0,
+              1,
+              0
+            ],
+            [
+              9,
+              5,
+              1,
+              0
+            ],
+            [
+              true,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              4,
+              0
+            ],
+            [
+              9,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              3,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 85\nmessage: `allocate-loop` needs more values than the stack holds here. `main` calls `allocate-loop`, which has an error of its own; this report assumes `allocate-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `allocate-loop` and in what order.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: allocate-loop\nat: line 29, column 5\nmessage: `if` in `allocate-loop` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int Seq Int Seq Int ] [ .. -- .. Seq Int Seq Int Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int Seq Int Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              2,
+              2,
+              1,
+              1
+            ],
+            [
+              false,
+              false,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 85\nmessage: `allocate-loop` needs more values than the stack holds here. `main` calls `allocate-loop`, which has an error of its own; this report assumes `allocate-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `allocate-loop` and in what order.\n\nerror 2 of 2\ncode: firth.type.expected-bool\nword: allocate-loop\nat: line 29, column 5\nmessage: `if` in `allocate-loop` needs a Bool condition under its two quotations, but the stack before it is \u03c1 [ .. -- .. Seq Int Seq Int Seq Int ] [ .. -- .. Seq Int Seq Int Seq Int ] Bool.\nexpected: Bool\nactual: [ .. -- .. Seq Int Seq Int Seq Int ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    }
+  },
+  "label": "run 11 arm-b firth 18 round 2",
+  "firth_commit": "5d09e25d8115952ca56f3bb837253d29967b06c8",
+  "eval_sha256": {
+    "task.py": "f982b19a56550012ba4614e5355fbee2b5cf3e961ed0f28c5f99fdc536c7308a",
+    "tasks.py": "fff2402680c865b52ca2b661d4636430d1d62c507972d5913a1c79f99c654e17",
+    "mvp_tasks.py": "9905f4a5cdc3b64fa4cc1f4180e80106cdfbcd0b00c8105b91bf12c629c391e1",
+    "harness.py": "4eb01a6b037dee68b4159945ab684c6c61b544df17dcb6ff1611fbe3076eb7a3",
+    "isolate.py": "8aba58cd416521b896756432546129cb43f1d53761f7373ccf6c5de43b5aa9dc"
+  },
+  "prompt_docs": [
+    "prompt --tier mvp --rounds 2 at 5d09e25",
+    " arm-b"
+  ]
+}

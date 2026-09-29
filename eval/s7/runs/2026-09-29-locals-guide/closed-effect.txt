@@ -1,0 +1,13 @@
+Closed-effect-under-locals refusals in counted samples (closed_effect.py)
+
+B1 answer-2 count-distinct: other errors too
+B1 answer-2 primes-up-to: counted
+B1 answer-3 count-distinct: other errors too
+B1 answer-3 primes-up-to: counted
+
+arm A answer-1: counted 0, other errors too 0
+arm A answer-2: counted 0, other errors too 0
+arm A answer-3: counted 0, other errors too 0
+arm B answer-1: counted 0, other errors too 0
+arm B answer-2: counted 1, other errors too 1
+arm B answer-3: counted 1, other errors too 1

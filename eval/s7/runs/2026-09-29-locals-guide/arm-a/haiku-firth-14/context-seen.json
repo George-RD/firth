@@ -1,0 +1,520 @@
+{
+ "note": "Everything put into this author's context that it did not fetch itself: the eval session's own instructions and the author's own tool results are left out, except for reminders the harness added inside a result, and every result is also scanned. cross_sample marks an item naming another sample (by number, or by arm and number), the other arm's commit or worktree, another author's label, or another task's files.",
+ "sample": "haiku-firth-14",
+ "arm": "arm-a",
+ "injected": [
+  {
+   "line": 2,
+   "at": "2026-09-29T22:09:07.833Z",
+   "kind": "attachment:deferred_tools_delta",
+   "chars": 17011
+  },
+  {
+   "line": 3,
+   "at": "2026-09-29T22:09:07.834Z",
+   "kind": "system-reminder",
+   "chars": 341
+  },
+  {
+   "line": 4,
+   "at": "2026-09-29T22:09:07.836Z",
+   "kind": "attachment:environment",
+   "chars": 342
+  },
+  {
+   "line": 5,
+   "at": "2026-09-29T22:09:07.836Z",
+   "kind": "attachment:model",
+   "chars": 288
+  },
+  {
+   "line": 6,
+   "at": "2026-09-29T22:09:07.836Z",
+   "kind": "attachment:skill_listing",
+   "chars": 9694
+  },
+  {
+   "line": 7,
+   "at": "2026-09-29T22:09:07.840Z",
+   "kind": "attachment:instructions",
+   "chars": 11012
+  },
+  {
+   "line": 8,
+   "at": "2026-09-29T22:09:07.840Z",
+   "kind": "attachment:session_context",
+   "chars": 321
+  },
+  {
+   "line": 9,
+   "at": "2026-09-29T22:09:07.840Z",
+   "kind": "attachment:date",
+   "chars": 38
+  },
+  {
+   "line": 10,
+   "at": "2026-09-29T22:09:07.841Z",
+   "kind": "attachment:credential_org",
+   "chars": 86
+  },
+  {
+   "line": 11,
+   "at": "2026-09-29T22:09:07.841Z",
+   "kind": "attachment:remote_session_change",
+   "chars": 455
+  },
+  {
+   "line": 12,
+   "at": "2026-09-29T22:09:07.842Z",
+   "kind": "attachment:prompt_snapshot",
+   "chars": 2917
+  },
+  {
+   "line": 17,
+   "at": "2026-09-29T22:09:10.445Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 18,
+   "at": "2026-09-29T22:09:10.492Z",
+   "kind": "attachment:prompt_snapshot",
+   "chars": 175206
+  },
+  {
+   "line": 19,
+   "at": "2026-09-29T22:09:10.505Z",
+   "kind": "attachment:mcp_instructions_delta",
+   "chars": 6014
+  },
+  {
+   "line": 20,
+   "at": "2026-09-29T22:09:10.506Z",
+   "kind": "attachment:nested_memory",
+   "chars": 235
+  },
+  {
+   "line": 21,
+   "at": "2026-09-29T22:09:10.506Z",
+   "kind": "attachment:nested_memory",
+   "chars": 21992
+  },
+  {
+   "line": 22,
+   "at": "2026-09-29T22:09:10.506Z",
+   "kind": "attachment:auto_mode",
+   "chars": 136
+  },
+  {
+   "line": 23,
+   "at": "2026-09-29T22:09:10.506Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 28,
+   "at": "2026-09-29T22:12:42.631Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 29,
+   "at": "2026-09-29T22:12:42.691Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 32,
+   "at": "2026-09-29T22:12:46.119Z",
+   "kind": "handback-enforce",
+   "chars": 141
+  },
+  {
+   "line": 41,
+   "at": "2026-09-29T22:13:28.020Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 42,
+   "at": "2026-09-29T22:13:28.082Z",
+   "kind": "attachment:nested_memory",
+   "chars": 235
+  },
+  {
+   "line": 43,
+   "at": "2026-09-29T22:13:28.082Z",
+   "kind": "attachment:nested_memory",
+   "chars": 21992
+  },
+  {
+   "line": 44,
+   "at": "2026-09-29T22:13:28.082Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 49,
+   "at": "2026-09-29T22:14:52.816Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 50,
+   "at": "2026-09-29T22:14:52.850Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 53,
+   "at": "2026-09-29T22:14:56.122Z",
+   "kind": "handback-enforce",
+   "chars": 141
+  },
+  {
+   "line": 61,
+   "at": "2026-09-29T22:15:58.779Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 62,
+   "at": "2026-09-29T22:15:58.830Z",
+   "kind": "attachment:nested_memory",
+   "chars": 235
+  },
+  {
+   "line": 63,
+   "at": "2026-09-29T22:15:58.831Z",
+   "kind": "attachment:nested_memory",
+   "chars": 21992
+  },
+  {
+   "line": 64,
+   "at": "2026-09-29T22:15:58.831Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 69,
+   "at": "2026-09-29T22:17:02.711Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 469
+  },
+  {
+   "line": 70,
+   "at": "2026-09-29T22:17:02.753Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 71,
+   "at": "2026-09-29T22:17:42.037Z",
+   "kind": "other",
+   "chars": 24
+  },
+  {
+   "line": 72,
+   "at": "2026-09-29T22:17:42.037Z",
+   "kind": "compaction",
+   "chars": 8450
+  },
+  {
+   "line": 73,
+   "at": "2026-09-29T22:17:42.014Z",
+   "kind": "attachment:compact_file_reference",
+   "chars": 220
+  },
+  {
+   "line": 74,
+   "at": "2026-09-29T22:17:42.014Z",
+   "kind": "attachment:compact_file_reference",
+   "chars": 220
+  },
+  {
+   "line": 75,
+   "at": "2026-09-29T22:17:42.014Z",
+   "kind": "attachment:file",
+   "chars": 256
+  },
+  {
+   "line": 76,
+   "at": "2026-09-29T22:17:42.014Z",
+   "kind": "attachment:file",
+   "chars": 11135
+  },
+  {
+   "line": 77,
+   "at": "2026-09-29T22:17:42.014Z",
+   "kind": "attachment:task_status",
+   "chars": 276,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"a239488f895ed4037\", \"taskType\": \"local_agent\", \"description\": \"Run 11 author A15\", \"status\": \"completed\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/a239488f895ed4037.output\"}",
+   "labels": [
+    "A15"
+   ],
+   "task_paths": [
+    "a239488f895ed4037"
+   ]
+  },
+  {
+   "line": 78,
+   "at": "2026-09-29T22:17:42.014Z",
+   "kind": "attachment:task_status",
+   "chars": 274,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"ae914cc21eee8f46f\", \"taskType\": \"local_agent\", \"description\": \"Run 11 author B16\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/ae914cc21eee8f46f.output\"}",
+   "labels": [
+    "B16"
+   ],
+   "task_paths": [
+    "ae914cc21eee8f46f"
+   ]
+  },
+  {
+   "line": 79,
+   "at": "2026-09-29T22:17:42.014Z",
+   "kind": "attachment:task_status",
+   "chars": 274,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"ad70ac4cbed006c06\", \"taskType\": \"local_agent\", \"description\": \"Run 11 author A16\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/ad70ac4cbed006c06.output\"}",
+   "labels": [
+    "A16"
+   ],
+   "task_paths": [
+    "ad70ac4cbed006c06"
+   ]
+  },
+  {
+   "line": 80,
+   "at": "2026-09-29T22:17:42.014Z",
+   "kind": "attachment:task_status",
+   "chars": 274,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"a9d2ff5406d7ab137\", \"taskType\": \"local_agent\", \"description\": \"Run 11 author B17\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/a9d2ff5406d7ab137.output\"}",
+   "labels": [
+    "B17"
+   ],
+   "task_paths": [
+    "a9d2ff5406d7ab137"
+   ]
+  },
+  {
+   "line": 81,
+   "at": "2026-09-29T22:17:42.014Z",
+   "kind": "attachment:task_status",
+   "chars": 274,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"a7ecd15f69f0580fe\", \"taskType\": \"local_agent\", \"description\": \"Run 11 author B18\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/a7ecd15f69f0580fe.output\"}",
+   "labels": [
+    "B18"
+   ],
+   "task_paths": [
+    "a7ecd15f69f0580fe"
+   ]
+  },
+  {
+   "line": 82,
+   "at": "2026-09-29T22:17:42.020Z",
+   "kind": "attachment:deferred_tools_delta",
+   "chars": 17011
+  },
+  {
+   "line": 83,
+   "at": "2026-09-29T22:17:42.020Z",
+   "kind": "attachment:mcp_instructions_delta",
+   "chars": 6014
+  },
+  {
+   "line": 84,
+   "at": "2026-09-29T22:17:42.020Z",
+   "kind": "attachment:environment",
+   "chars": 342
+  },
+  {
+   "line": 85,
+   "at": "2026-09-29T22:17:42.020Z",
+   "kind": "attachment:model",
+   "chars": 288
+  },
+  {
+   "line": 86,
+   "at": "2026-09-29T22:17:42.035Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 476
+  },
+  {
+   "line": 87,
+   "at": "2026-09-29T22:17:42.102Z",
+   "kind": "attachment:instructions",
+   "chars": 11012
+  },
+  {
+   "line": 88,
+   "at": "2026-09-29T22:17:42.102Z",
+   "kind": "attachment:session_context",
+   "chars": 321
+  },
+  {
+   "line": 89,
+   "at": "2026-09-29T22:17:42.102Z",
+   "kind": "attachment:date",
+   "chars": 38
+  },
+  {
+   "line": 90,
+   "at": "2026-09-29T22:17:42.103Z",
+   "kind": "attachment:credential_org",
+   "chars": 86
+  },
+  {
+   "line": 91,
+   "at": "2026-09-29T22:17:42.104Z",
+   "kind": "attachment:remote_session_change",
+   "chars": 455
+  },
+  {
+   "line": 92,
+   "at": "2026-09-29T22:17:42.104Z",
+   "kind": "attachment:prompt_snapshot",
+   "chars": 2917
+  },
+  {
+   "line": 97,
+   "at": "2026-09-29T22:17:55.683Z",
+   "kind": "attachment:prompt_snapshot",
+   "chars": 175206
+  },
+  {
+   "line": 98,
+   "at": "2026-09-29T22:17:55.712Z",
+   "kind": "attachment:auto_mode",
+   "chars": 136
+  },
+  {
+   "line": 99,
+   "at": "2026-09-29T22:17:55.713Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 102,
+   "at": "2026-09-29T22:17:58.018Z",
+   "kind": "tool_result",
+   "chars": 1253,
+   "cross_sample": true,
+   "excerpt": "<persisted-output>\nOutput too large (615.3KB). Full output saved to: /root/.claude/projects/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tool-results/by5xftvk8.txt\n\nPreview (first 2KB):\n{\"parentUuid\":null,\"isSidechain\":true,\"promptId\":\"99fb131a-bee7-42f2-bae1-2e34eaa77948\",\"agentId\":\"a239488f895ed4037\",\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"You are the author in a programming evaluation. Use only two tools: Read, to read the file /home/user/firth-r11/eval/s7/runs/2026-09-29-locals-guide/arm-a/prompt-firth.md, and Write, to write your answer to /home/user/firth-r11/eval/s7/runs/20",
+   "names": [
+    "15"
+   ],
+   "arm_samples": [
+    "arm-a/15"
+   ]
+  },
+  {
+   "line": 103,
+   "at": "2026-09-29T22:17:57.992Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 104,
+   "at": "2026-09-29T22:17:58.025Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 107,
+   "at": "2026-09-29T22:18:07.999Z",
+   "kind": "handback-enforce",
+   "chars": 141
+  }
+ ],
+ "cross_sample": [
+  {
+   "line": 77,
+   "at": "2026-09-29T22:17:42.014Z",
+   "kind": "attachment:task_status",
+   "chars": 276,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"a239488f895ed4037\", \"taskType\": \"local_agent\", \"description\": \"Run 11 author A15\", \"status\": \"completed\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/a239488f895ed4037.output\"}",
+   "labels": [
+    "A15"
+   ],
+   "task_paths": [
+    "a239488f895ed4037"
+   ]
+  },
+  {
+   "line": 78,
+   "at": "2026-09-29T22:17:42.014Z",
+   "kind": "attachment:task_status",
+   "chars": 274,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"ae914cc21eee8f46f\", \"taskType\": \"local_agent\", \"description\": \"Run 11 author B16\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/ae914cc21eee8f46f.output\"}",
+   "labels": [
+    "B16"
+   ],
+   "task_paths": [
+    "ae914cc21eee8f46f"
+   ]
+  },
+  {
+   "line": 79,
+   "at": "2026-09-29T22:17:42.014Z",
+   "kind": "attachment:task_status",
+   "chars": 274,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"ad70ac4cbed006c06\", \"taskType\": \"local_agent\", \"description\": \"Run 11 author A16\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/ad70ac4cbed006c06.output\"}",
+   "labels": [
+    "A16"
+   ],
+   "task_paths": [
+    "ad70ac4cbed006c06"
+   ]
+  },
+  {
+   "line": 80,
+   "at": "2026-09-29T22:17:42.014Z",
+   "kind": "attachment:task_status",
+   "chars": 274,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"a9d2ff5406d7ab137\", \"taskType\": \"local_agent\", \"description\": \"Run 11 author B17\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/a9d2ff5406d7ab137.output\"}",
+   "labels": [
+    "B17"
+   ],
+   "task_paths": [
+    "a9d2ff5406d7ab137"
+   ]
+  },
+  {
+   "line": 81,
+   "at": "2026-09-29T22:17:42.014Z",
+   "kind": "attachment:task_status",
+   "chars": 274,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"a7ecd15f69f0580fe\", \"taskType\": \"local_agent\", \"description\": \"Run 11 author B18\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/a7ecd15f69f0580fe.output\"}",
+   "labels": [
+    "B18"
+   ],
+   "task_paths": [
+    "a7ecd15f69f0580fe"
+   ]
+  },
+  {
+   "line": 102,
+   "at": "2026-09-29T22:17:58.018Z",
+   "kind": "tool_result",
+   "chars": 1253,
+   "cross_sample": true,
+   "excerpt": "<persisted-output>\nOutput too large (615.3KB). Full output saved to: /root/.claude/projects/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tool-results/by5xftvk8.txt\n\nPreview (first 2KB):\n{\"parentUuid\":null,\"isSidechain\":true,\"promptId\":\"99fb131a-bee7-42f2-bae1-2e34eaa77948\",\"agentId\":\"a239488f895ed4037\",\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"You are the author in a programming evaluation. Use only two tools: Read, to read the file /home/user/firth-r11/eval/s7/runs/2026-09-29-locals-guide/arm-a/prompt-firth.md, and Write, to write your answer to /home/user/firth-r11/eval/s7/runs/20",
+   "names": [
+    "15"
+   ],
+   "arm_samples": [
+    "arm-a/15"
+   ]
+  }
+ ],
+ "other_arm_worktree_named": []
+}

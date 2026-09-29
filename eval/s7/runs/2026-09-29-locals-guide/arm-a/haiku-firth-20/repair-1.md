@@ -1,0 +1,795 @@
+Some of your firth answers did not work on the visible example. Fix them. Answer only the tasks listed, in the same format as before.
+
+## seq-max
+Return the largest number in the sequence. The sequence is never empty.
+Inputs on the stack, bottom to top: xs: Seq Int.
+Outputs left on the stack, bottom to top: largest: Int.
+Example: stack [{ 3 9 2 }] becomes [9].
+
+Your answer:
+```
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ result:Int^many)
+  locals { xs } { xs 0 prim seq-int.at 1 xs max-loop };
+
+: max-loop
+  (forall ρ; ρ max:Int^many i:Int^many xs:Seq Int^many -- ρ result:Int^many)
+  locals { max i xs } {
+    i xs prim seq-int.len prim <
+    [
+      xs i prim seq-int.at max prim <
+      [ xs i prim seq-int.at ]
+      [ max ]
+      if
+      i 1 prim +
+      xs
+      max-loop
+    ]
+    [ max ]
+    if
+  };
+
+```
+On the example, it returned [2] instead of [9]
+
+## reverse
+Return the sequence in reverse order.
+Inputs on the stack, bottom to top: xs: Seq Int.
+Outputs left on the stack, bottom to top: reversed: Seq Int.
+Example: stack [{ 1 2 3 }] becomes [{ 3 2 1 }].
+
+Your answer:
+```
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ result:Seq Int^many)
+  locals { xs } { prim seq-int.empty xs prim seq-int.len xs reverse-loop };
+
+: reverse-loop
+  (forall ρ; ρ result:Seq Int^many len:Int^many xs:Seq Int^many -- ρ result:Seq Int^many)
+  locals { result len xs } {
+    len 0 prim <
+    [
+      result xs len 1 prim - prim seq-int.at prim seq-int.push
+      len 1 prim -
+      xs
+      reverse-loop
+    ]
+    [ result ]
+    if
+  };
+
+```
+On the example, it returned [[]] instead of [[3, 2, 1]]
+
+## prefix-sums
+Return the running totals: element i of the result is the sum of elements 0 to i of the input.
+Inputs on the stack, bottom to top: xs: Seq Int.
+Outputs left on the stack, bottom to top: sums: Seq Int.
+Example: stack [{ 1 2 3 }] becomes [{ 1 3 6 }].
+
+Your answer:
+```
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ result:Seq Int^many)
+  locals { xs } { prim seq-int.empty 0 0 xs prefix-loop };
+
+: prefix-loop
+  (forall ρ; ρ result:Seq Int^many sum:Int^many i:Int^many xs:Seq Int^many -- ρ result:Seq Int^many)
+  locals { result sum i xs } {
+    i xs prim seq-int.len prim <
+    [
+      sum xs i prim seq-int.at prim +
+      result swap prim seq-int.push
+      i 1 prim +
+      xs
+      prefix-loop
+    ]
+    [ result ]
+    if
+  };
+
+```
+On the example, the run failed:
+code: firth.type.branch-mismatch
+word: prefix-loop
+at: line 17, column 5
+message: In the true branch `[ sum xs i prim seq-int.at prim + ...` of the `if` in `prefix-loop`, `prefix-loop` needs 4 values (result:Seq Int, sum:Int, i:Int, xs:Seq Int), but the branch has pushed only 3 values before it (the result of `prim seq-int.push`, the result of `prim +` and `xs`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.
+hint: Make the branch push, just before `prefix-loop`, exactly the values it takes, in this order: result:Seq Int, sum:Int, i:Int, xs:Seq Int. The branch already pushes the result of `prim seq-int.push`, the result of `prim +` and `xs`: keep each in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `prefix-loop` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.
+
+## keep-positive
+Return the elements that are greater than 0, in their original order.
+Inputs on the stack, bottom to top: xs: Seq Int.
+Outputs left on the stack, bottom to top: positives: Seq Int.
+Example: stack [{ 3 -1 0 4 }] becomes [{ 3 4 }].
+
+Your answer:
+```
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ result:Seq Int^many)
+  locals { xs } { prim seq-int.empty 0 xs filter-loop };
+
+: filter-loop
+  (forall ρ; ρ result:Seq Int^many i:Int^many xs:Seq Int^many -- ρ result:Seq Int^many)
+  locals { result i xs } {
+    i xs prim seq-int.len prim <
+    [
+      xs i prim seq-int.at 0 prim <
+      [ result ]
+      [ result xs i prim seq-int.at prim seq-int.push ]
+      if
+      i 1 prim +
+      xs
+      filter-loop
+    ]
+    [ result ]
+    if
+  };
+
+```
+On the example, it returned [[3, 0, 4]] instead of [[3, 4]]
+
+## is-sorted
+Return true if every element is less than or equal to the next one (an empty or one-element sequence is sorted).
+Inputs on the stack, bottom to top: xs: Seq Int.
+Outputs left on the stack, bottom to top: sorted: Bool.
+Example: stack [{ 1 2 2 5 }] becomes [true].
+
+Your answer:
+```
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ result:Bool^many)
+  locals { xs } { 1 0 xs check-sorted };
+
+: check-sorted
+  (forall ρ; ρ is-sorted:Bool^many i:Int^many xs:Seq Int^many -- ρ result:Bool^many)
+  locals { is-sorted i xs } {
+    is-sorted
+    [
+      i 1 prim - xs prim seq-int.len prim <
+      [
+        xs i prim seq-int.at xs i 1 prim - prim seq-int.at prim <
+        [ 0 ]
+        [ 1 ]
+        if
+        i 1 prim +
+        xs
+        check-sorted
+      ]
+      [ 1 ]
+      if
+    ]
+    [ 0 ]
+    if
+  };
+
+```
+On the example, the run failed:
+The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.
+
+error 1 of 2
+code: firth.type.word-input-mismatch
+word: main
+at: line 3, column 26
+message: `check-sorted` in `main` takes is-sorted:Bool, i:Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, `1` (Int), `0` (Int) and `xs` (Seq Int). `main` calls `check-sorted`, which has an error of its own; this report assumes `check-sorted` keeps its stack effect.
+expected: .. Bool Int Seq Int
+actual: ρ Int Int Seq Int
+hint: The third value from the top, `1` (Int), is not what `check-sorted` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.
+
+error 2 of 2
+code: firth.type.word-input-mismatch
+word: check-sorted
+at: line 18, column 9
+message: `check-sorted` in `check-sorted` takes is-sorted:Bool, i:Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int) and `xs` (Seq Int).
+expected: .. Bool Int Seq Int
+actual: .. Int Int Seq Int
+hint: The third value from the top, the result of an `if` (Int), is not what `check-sorted` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.
+
+## all-true
+Return true if every Boolean in the sequence is true (true for an empty sequence).
+Inputs on the stack, bottom to top: flags: Seq Bool.
+Outputs left on the stack, bottom to top: all: Bool.
+Example: stack [{ true true false }] becomes [false].
+
+Your answer:
+```
+: main
+  (forall ρ; ρ flags:Seq Bool^many -- ρ result:Bool^many)
+  locals { flags } { 1 0 flags check-all-true };
+
+: check-all-true
+  (forall ρ; ρ is-all:Bool^many i:Int^many flags:Seq Bool^many -- ρ result:Bool^many)
+  locals { is-all i flags } {
+    is-all
+    [
+      i flags prim seq-bool.len prim <
+      [
+        flags i prim seq-bool.at
+        [
+          i 1 prim +
+          flags
+          check-all-true
+        ]
+        [ 0 ]
+        if
+      ]
+      [ 1 ]
+      if
+    ]
+    [ 0 ]
+    if
+  };
+
+```
+On the example, the run failed:
+The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.
+
+error 1 of 2
+code: firth.type.word-input-mismatch
+word: main
+at: line 3, column 32
+message: `check-all-true` in `main` takes is-all:Bool, i:Int, flags:Seq Bool, bottom to top, but here it gets, bottom to top, `1` (Int), `0` (Int) and `flags` (Seq Bool). `main` calls `check-all-true`, which has an error of its own; this report assumes `check-all-true` keeps its stack effect.
+expected: .. Bool Int Seq Bool
+actual: ρ Int Int Seq Bool
+hint: The third value from the top, `1` (Int), is not what `check-all-true` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.
+
+error 2 of 2
+code: firth.type.branch-mismatch
+word: check-all-true
+at: line 19, column 9
+message: In the true branch `[ i 1 prim + flags check-all-true ]` of the `if` in `check-all-true`, `check-all-true` needs 3 values (is-all:Bool, i:Int, flags:Seq Bool), but the branch has pushed only 2 values before it (the result of `prim +` and `flags`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.
+hint: Make the branch push, just before `check-all-true`, exactly the values it takes, in this order: is-all:Bool, i:Int, flags:Seq Bool. The branch already pushes the result of `prim +` and `flags`, in the place of the last 2 (i:Int, flags:Seq Bool): keep each where it has that type and replace it where it does not. Then push the first one (is-all:Bool) before them, for example by writing the locals that hold it. If `check-all-true` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.
+
+## longest-run
+Return the length of the longest run of equal adjacent elements (0 for an empty sequence).
+Inputs on the stack, bottom to top: xs: Seq Int.
+Outputs left on the stack, bottom to top: length: Int.
+Example: stack [{ 1 1 2 2 2 1 }] becomes [3].
+
+Your answer:
+```
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ result:Int^many)
+  locals { xs } { 0 1 0 xs longest-run-loop };
+
+: longest-run-loop
+  (forall ρ; ρ max-len:Int^many curr-len:Int^many i:Int^many xs:Seq Int^many -- ρ result:Int^many)
+  locals { max-len curr-len i xs } {
+    i xs prim seq-int.len prim <
+    [
+      xs i prim seq-int.at xs i 1 prim - prim seq-int.at prim =
+      [
+        curr-len 1 prim +
+        max-len curr-len max-len prim <
+        [ curr-len ]
+        [ max-len ]
+        if
+      ]
+      [
+        1
+        max-len curr-len max-len prim <
+        [ curr-len ]
+        [ max-len ]
+        if
+      ]
+      if
+      i 1 prim +
+      xs
+      longest-run-loop
+    ]
+    [ max-len curr-len max-len prim < [ curr-len ] [ max-len ] if ]
+    if
+  };
+
+```
+On the example, the run failed:
+code: firth.type.declared-effect-mismatch
+word: longest-run-loop
+at: line 6, column 3
+message: `longest-run-loop` declares that it leaves ρ Int but its body leaves ρ Int Int.
+expected: ρ Int
+actual: ρ Int Int
+hint: The body leaves 1 extra value on top (Int). Consume or `drop` it before the end of the word, or declare it in the signature's output. Here ρ stands for the caller's values that this word must leave untouched.
+
+## has-pair-sum
+Return true if two elements at different positions add up to target.
+Inputs on the stack, bottom to top: xs: Seq Int, target: Int.
+Outputs left on the stack, bottom to top: found: Bool.
+Example: stack [{ 1 4 6 2 }, 8] becomes [true].
+
+Your answer:
+```
+: main
+  (forall ρ; ρ xs:Seq Int^many target:Int^many -- ρ result:Bool^many)
+  locals { xs target } { 0 xs target find-pair };
+
+: find-pair
+  (forall ρ; ρ i:Int^many xs:Seq Int^many target:Int^many -- ρ result:Bool^many)
+  locals { i xs target } {
+    i xs prim seq-int.len prim <
+    [
+      i 1 prim + xs target find-pair-inner
+    ]
+    [ 0 ]
+    if
+  };
+
+: find-pair-inner
+  (forall ρ; ρ j:Int^many xs:Seq Int^many target:Int^many -- ρ result:Bool^many)
+  locals { j xs target } {
+    j xs prim seq-int.len prim <
+    [
+      xs j 1 prim - prim seq-int.at xs j prim seq-int.at prim + target prim =
+      [
+        1
+      ]
+      [
+        j 1 prim +
+        xs
+        target
+        find-pair-inner
+      ]
+      if
+    ]
+    [ 0 ]
+    if
+  };
+
+```
+On the example, the run failed:
+The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.
+
+error 1 of 2
+code: firth.type.branch-mismatch
+word: find-pair
+at: line 13, column 5
+message: The two branches of `if` in `find-pair` leave different stacks. Below the condition and the two quotations the stack is ρ; the true branch leaves ρ Bool and the false branch leaves ρ Int. `find-pair` calls `find-pair-inner`, which has an error of its own; this report assumes `find-pair-inner` keeps its stack effect.
+expected: ρ Bool
+actual: ρ Int
+hint: Both leave 1 value, but the top value is Bool after the true branch and Int after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.
+
+error 2 of 2
+code: firth.type.branch-mismatch
+word: find-pair-inner
+at: line 31, column 7
+message: The two branches of `if` in `find-pair-inner` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.
+expected: .. Int
+actual: .. Bool
+hint: Both leave 1 value, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.
+
+## count-distinct
+Return how many different values the sequence contains.
+Inputs on the stack, bottom to top: xs: Seq Int.
+Outputs left on the stack, bottom to top: count: Int.
+Example: stack [{ 3 1 3 2 1 }] becomes [3].
+
+Your answer:
+```
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ result:Int^many)
+  locals { xs } { prim seq-int.empty 0 xs count-distinct-loop };
+
+: count-distinct-loop
+  (forall ρ; ρ seen:Seq Int^many i:Int^many xs:Seq Int^many -- ρ result:Int^many)
+  locals { seen i xs } {
+    i xs prim seq-int.len prim <
+    [
+      xs i prim seq-int.at seen is-in-seq
+      [ seen ]
+      [ seen xs i prim seq-int.at prim seq-int.push ]
+      if
+      i 1 prim +
+      xs
+      count-distinct-loop
+    ]
+    [ seen prim seq-int.len ]
+    if
+  };
+
+: is-in-seq
+  (forall ρ; ρ val:Int^many seq:Seq Int^many -- ρ result:Bool^many)
+  locals { val seq } { 0 seq val check-in };
+
+: check-in
+  (forall ρ; ρ i:Int^many seq:Seq Int^many val:Int^many -- ρ result:Bool^many)
+  locals { i seq val } {
+    i seq prim seq-int.len prim <
+    [
+      seq i prim seq-int.at val prim =
+      [ 1 ]
+      [ i 1 prim + seq val check-in ]
+      if
+    ]
+    [ 0 ]
+    if
+  };
+
+```
+On the example, the run failed:
+code: firth.type.branch-mismatch
+word: check-in
+at: line 34, column 7
+message: The two branches of `if` in `check-in` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.
+expected: .. Int
+actual: .. Bool
+hint: Both leave 1 value, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.
+
+## digits
+n is 0 or more. Return its decimal digits, most significant first ({ 0 } for 0).
+Inputs on the stack, bottom to top: n: Int.
+Outputs left on the stack, bottom to top: digits: Seq Int.
+Example: stack [305] becomes [{ 3 0 5 }].
+
+Your answer:
+```
+: main
+  (forall ρ; ρ n:Int^many -- ρ result:Seq Int^many)
+  locals { n } { n 0 prim = [ { 0 } ] [ n prim seq-int.empty n digits-loop ] if };
+
+: digits-loop
+  (forall ρ; ρ n:Int^many result:Seq Int^many -- ρ result:Seq Int^many)
+  locals { n result } {
+    n 0 prim <
+    [ result prim seq-int.empty swap [ swap prim seq-int.push swap ] [ 0 ] if ]
+    [
+      n 0 prim =
+      [ result ]
+      [
+        n 10 prim mod result prim seq-int.push
+        n 10 prim div
+        digits-loop
+      ]
+      if
+    ]
+    if
+  };
+
+```
+On the example, the run failed:
+The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.
+
+error 1 of 2
+code: firth.type.branch-mismatch
+word: main
+at: line 3, column 78
+message: The two branches of the `if` in `main` whose true branch is `[ { 0 } ]` leave different numbers of values. The true branch leaves `a literal`; the false branch leaves 2 values, bottom to top: `n` and the result of `digits-loop`. `main` calls `digits-loop`, which has an error of its own; this report assumes `digits-loop` keeps its stack effect.
+hint: The false branch leaves 1 value more than the true branch: `n` is left below the result of `digits-loop`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.
+
+error 2 of 2
+code: firth.type.branch-mismatch
+word: digits-loop
+at: line 9, column 76
+message: In the true branch `[ swap prim seq-int.push swap ]` of the `if` in `digits-loop`, `swap` needs 2 values, but the branch has pushed nothing before it. It would take the result of `prim seq-int.empty` from below the `if`, and 1 value more that is not there: everything the word was given is bound to locals or already used.
+hint: Check whether `swap` belongs in this branch: the values it would work on are not there. Remove it, or push the values it should work on first. Adding a `drop` or pushing values to even out the branches would only move the mistake.
+
+## primes-up-to
+Return the prime numbers less than or equal to n, in increasing order.
+Inputs on the stack, bottom to top: n: Int.
+Outputs left on the stack, bottom to top: primes: Seq Int.
+Example: stack [10] becomes [{ 2 3 5 7 }].
+
+Your answer:
+```
+: main
+  (forall ρ; ρ n:Int^many -- ρ result:Seq Int^many)
+  locals { n } { prim seq-int.empty 2 n find-primes };
+
+: find-primes
+  (forall ρ; ρ result:Seq Int^many num:Int^many limit:Int^many -- ρ result:Seq Int^many)
+  locals { result num limit } {
+    num limit prim < prim not
+    [ result ]
+    [
+      num is-prime
+      [ result num prim seq-int.push ]
+      [ result ]
+      if
+      num 1 prim +
+      limit
+      find-primes
+    ]
+    if
+  };
+
+: is-prime
+  (forall ρ; ρ num:Int^many -- ρ result:Bool^many)
+  locals { num } {
+    num 2 prim <
+    [ 0 ]
+    [
+      num 2 prim =
+      [ 1 ]
+      [
+        num 2 prim mod 0 prim =
+        [ 0 ]
+        [ num 3 check-prime-divisors ]
+        if
+      ]
+      if
+    ]
+    if
+  };
+
+: check-prime-divisors
+  (forall ρ; ρ num:Int^many div:Int^many -- ρ result:Bool^many)
+  locals { num div } {
+    div div prim * num prim < prim not
+    [ 1 ]
+    [
+      num div prim mod 0 prim =
+      [ 0 ]
+      [ num div 2 prim + check-prime-divisors ]
+      if
+    ]
+    if
+  };
+
+```
+On the example, the run failed:
+The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.
+
+error 1 of 2
+code: firth.type.branch-mismatch
+word: is-prime
+at: line 34, column 9
+message: The two branches of `if` in `is-prime` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool. `is-prime` calls `check-prime-divisors`, which has an error of its own; this report assumes `check-prime-divisors` keeps its stack effect.
+expected: .. Int
+actual: .. Bool
+hint: Both leave 1 value, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.
+
+error 2 of 2
+code: firth.type.branch-mismatch
+word: check-prime-divisors
+at: line 50, column 7
+message: The two branches of `if` in `check-prime-divisors` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.
+expected: .. Int
+actual: .. Bool
+hint: Both leave 1 value, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.
+
+## histogram
+Every element of xs is between 0 and k - 1. Return a sequence of length k whose element v is the number of times v occurs in xs.
+Inputs on the stack, bottom to top: xs: Seq Int, k: Int.
+Outputs left on the stack, bottom to top: counts: Seq Int.
+Example: stack [{ 0 2 2 1 2 }, 3] becomes [{ 1 1 3 }].
+
+Your answer:
+```
+: main
+  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ result:Seq Int^many)
+  locals { xs k } { k make-histogram 0 xs make-histogram histogram-loop };
+
+: make-histogram
+  (forall ρ; ρ k:Int^many -- ρ result:Seq Int^many)
+  locals { k } {
+    prim seq-int.empty 0 k histogram-init
+  };
+
+: histogram-init
+  (forall ρ; ρ result:Seq Int^many i:Int^many k:Int^many -- ρ result:Seq Int^many)
+  locals { result i k } {
+    i k prim <
+    [ result 0 prim seq-int.push i 1 prim + k histogram-init ]
+    [ result ]
+    if
+  };
+
+: histogram-loop
+  (forall ρ; ρ result:Seq Int^many i:Int^many xs:Seq Int^many -- ρ result:Seq Int^many)
+  locals { result i xs } {
+    i xs prim seq-int.len prim <
+    [
+      xs i prim seq-int.at
+      result
+      xs i prim seq-int.at
+      result xs i prim seq-int.at prim seq-int.at 1 prim + prim seq-int.set
+      i 1 prim +
+      xs
+      histogram-loop
+    ]
+    [ result ]
+    if
+  };
+
+```
+On the example, the run failed:
+The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.
+
+error 1 of 2
+code: firth.type.word-input-mismatch
+word: main
+at: line 3, column 43
+message: `make-histogram` in `main` takes k:Int, bottom to top, but here it gets, bottom to top, `xs` (Seq Int).
+expected: .. Int
+actual: ρ Seq Int Int Seq Int
+hint: The top value, `xs` (Seq Int), is not what `make-histogram` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.
+
+error 2 of 2
+code: firth.type.branch-mismatch
+word: histogram-loop
+at: line 34, column 5
+message: The two branches of the `if` in `histogram-loop` whose true branch is `[ xs i prim seq-int.at result xs i ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: the result of `prim seq-int.at` and the result of `histogram-loop`; the false branch leaves `result`.
+hint: The true branch leaves 1 value more than the false branch: the result of `prim seq-int.at` is left below the result of `histogram-loop`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the false branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.
+
+## sort
+Return the elements sorted in non-decreasing order.
+Inputs on the stack, bottom to top: xs: Seq Int.
+Outputs left on the stack, bottom to top: sorted: Seq Int.
+Example: stack [{ 3 1 2 }] becomes [{ 1 2 3 }].
+
+Your answer:
+```
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ result:Seq Int^many)
+  locals { xs } { xs insertion-sort };
+
+: insertion-sort
+  (forall ρ; ρ xs:Seq Int^many -- ρ result:Seq Int^many)
+  locals { xs } {
+    xs prim seq-int.len 1 prim <
+    [ xs ]
+    [
+      xs 1 insertion-sort-step
+    ]
+    if
+  };
+
+: insertion-sort-step
+  (forall ρ; ρ xs:Seq Int^many i:Int^many -- ρ result:Seq Int^many)
+  locals { xs i } {
+    i xs prim seq-int.len prim <
+    [
+      xs xs i prim seq-int.at i find-position prim seq-int.set
+      i 1 prim +
+      insertion-sort-step
+    ]
+    [ xs ]
+    if
+  };
+
+: find-position
+  (forall ρ; ρ xs:Seq Int^many val:Int^many pos:Int^many -- ρ result:Seq Int^many)
+  locals { xs val pos } {
+    pos 0 prim =
+    [ xs val 0 prim seq-int.set ]
+    [
+      xs pos 1 prim - prim seq-int.at val prim <
+      [ xs val pos 1 prim - find-position ]
+      [ xs val pos prim seq-int.set ]
+      if
+    ]
+    if
+  };
+
+```
+On the example, the run failed:
+code: firth.type.branch-mismatch
+word: insertion-sort-step
+at: line 26, column 5
+message: In the true branch `[ xs xs i prim seq-int.at i find-position ...` of the `if` in `insertion-sort-step`, `prim seq-int.set` needs 3 values (Seq Int, Int, Int), but the branch has pushed only 1 value before it (the result of `find-position`). The remaining 2 values would come from below the `if`, where there are none: everything the word was given is bound to locals or already used.
+hint: Make the branch push, just before `prim seq-int.set`, exactly the values it takes, in this order: Seq Int, Int, Int. The branch already pushes the result of `find-position`, in the place of the first one (Seq Int): keep it where it has that type and replace it where it does not. Then push the last 2 (Int, Int) after it, for example by writing the locals that hold them. If `prim seq-int.set` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.
+
+## ledger
+Start with balance start. Apply each transaction in txs in order by adding it to the balance, except that a transaction that would make the balance negative is rejected and skipped. Return the final balance and the number of rejected transactions.
+Inputs on the stack, bottom to top: start: Int, txs: Seq Int.
+Outputs left on the stack, bottom to top: balance: Int, rejected: Int.
+Example: stack [10, { 5 -20 -15 4 }] becomes [4, 1].
+
+Your answer:
+```
+: main
+  (forall ρ; ρ start:Int^many txs:Seq Int^many -- ρ balance:Int^many rejected:Int^many)
+  locals { start txs } { start 0 0 txs process-transactions };
+
+: process-transactions
+  (forall ρ; ρ balance:Int^many rejected:Int^many i:Int^many txs:Seq Int^many -- ρ balance:Int^many rejected:Int^many)
+  locals { balance rejected i txs } {
+    i txs prim seq-int.len prim <
+    [
+      balance txs i prim seq-int.at prim +
+      balance txs i prim seq-int.at prim + 0 prim <
+      [
+        balance
+        rejected 1 prim +
+        i 1 prim +
+        txs
+        process-transactions
+      ]
+      [
+        balance txs i prim seq-int.at prim +
+        rejected
+        i 1 prim +
+        txs
+        process-transactions
+      ]
+      if
+    ]
+    [ balance rejected ]
+    if
+  };
+
+```
+On the example, the run failed:
+code: firth.type.branch-mismatch
+word: process-transactions
+at: line 29, column 5
+message: The two branches of the `if` in `process-transactions` whose true branch is `[ balance txs i prim seq-int.at prim + ...` leave different numbers of values. The true branch leaves 3 values, bottom to top: the result of `prim +`, the output `balance` of `process-transactions` and the output `rejected` of `process-transactions`; the false branch leaves 2 values, bottom to top: `balance` and `rejected`.
+hint: The true branch leaves 1 value more than the false branch: the result of `prim +` is left below the output `balance` of `process-transactions` and the output `rejected` of `process-transactions`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the false branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.
+
+## allocate-batch
+Allocate stock to a batch of orders, one order at a time in order. stock[i] is the stock of item i. Order j asks for qtys[j] units of item items[j], and whole[j] says whether it must be filled completely. For each order, with r the item's current stock: if qtys[j] <= r, allocate qtys[j] (reason 0). Otherwise, if r is 0, allocate nothing (reason 2). Otherwise, if whole[j] is true, allocate nothing (reason 3); if it is false, allocate all r (reason 1). Take what is allocated off that item's stock before the next order. Return the final stock, the quantity allocated to each order and each order's reason code.
+Inputs on the stack, bottom to top: stock: Seq Int, items: Seq Int, qtys: Seq Int, whole: Seq Bool.
+Outputs left on the stack, bottom to top: stock-left: Seq Int, allocated: Seq Int, reasons: Seq Int.
+Example: stack [{ 10 3 }, { 0 1 0 1 }, { 4 5 7 1 }, { false true false false }] becomes [{ 0 2 }, { 4 0 6 1 }, { 0 3 1 0 }].
+
+Your answer:
+```
+: main
+  (forall ρ; ρ stock:Seq Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many -- ρ stock-left:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many)
+  locals { stock items qtys whole } {
+    stock prim seq-int.empty prim seq-int.empty 0 stock items qtys whole allocate-orders
+  };
+
+: allocate-orders
+  (forall ρ; ρ stock-result:Seq Int^many allocated:Seq Int^many j:Int^many stock:Seq Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many -- ρ stock-left:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many)
+  locals { stock-result allocated j stock items qtys whole } {
+    j qtys prim seq-int.len prim <
+    [
+      items j prim seq-int.at
+      stock items j prim seq-int.at prim seq-int.at
+      qtys j prim seq-int.at
+      whole j prim seq-bool.at
+      allocate-single-order
+      j 1 prim +
+      stock items qtys whole
+      allocate-orders
+    ]
+    [ stock-result allocated prim seq-int.empty ]
+    if
+  };
+
+: allocate-single-order
+  (forall ρ; ρ item:Int^many curr-stock:Int^many qty:Int^many whole-flag:Bool^many -- ρ stock-result:Seq Int^many allocated:Seq Int^many reason:Int^many)
+  locals { item curr-stock qty whole-flag } {
+    qty curr-stock prim <
+    [ prim seq-int.empty qty 0 ]
+    [
+      curr-stock 0 prim =
+      [ prim seq-int.empty 0 2 ]
+      [
+        whole-flag
+        [ prim seq-int.empty 0 3 ]
+        [ prim seq-int.empty curr-stock 1 ]
+        if
+      ]
+      if
+    ]
+    if
+  };
+
+```
+On the example, the run failed:
+The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.
+
+error 1 of 3
+code: firth.type.declared-effect-mismatch
+word: main
+at: line 2, column 3
+message: `main` declares that it leaves ρ Seq Int Seq Int Seq Int but its body leaves ρ Seq Int Seq Int Seq Int Seq Int. `main` calls `allocate-orders`, which has an error of its own; this report assumes `allocate-orders` keeps its stack effect.
+expected: ρ Seq Int Seq Int Seq Int
+actual: ρ Seq Int Seq Int Seq Int Seq Int
+hint: The body leaves 1 extra value on top (Seq Int). Consume or `drop` it before the end of the word, or declare it in the signature's output. Here ρ stands for the caller's values that this word must leave untouched.
+
+error 2 of 3
+code: firth.type.branch-mismatch
+word: allocate-orders
+at: line 22, column 5
+message: The two branches of the `if` in `allocate-orders` whose true branch is `[ items j prim seq-int.at stock items j ...` leave different numbers of values. The true branch leaves 4 values, bottom to top: the output `stock-result` of `allocate-single-order`, the output `stock-left` of `allocate-orders`, the output `allocated` of `allocate-orders` and the output `reasons` of `allocate-orders`; the false branch leaves 3 values, bottom to top: `stock-result`, `allocated` and the result of `prim seq-int.empty`. `allocate-orders` calls `allocate-single-order`, which has an error of its own; this report assumes `allocate-single-order` keeps its stack effect.
+hint: The true branch leaves 1 value more than the false branch: the output `stock-result` of `allocate-single-order` is left below the output `stock-left` of `allocate-orders`, the output `allocated` of `allocate-orders` and the output `reasons` of `allocate-orders`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the false branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.
+
+error 3 of 3
+code: firth.type.declared-effect-mismatch
+word: allocate-single-order
+at: line 26, column 3
+message: `allocate-single-order` declares that it leaves ρ Seq Int Seq Int Int but its body leaves ρ Seq Int Int Int.
+expected: ρ Seq Int Seq Int Int
+actual: ρ Seq Int Int Int
+hint: The second value from the top is Int but the signature says Seq Int. Convert it or change the declared output type.
