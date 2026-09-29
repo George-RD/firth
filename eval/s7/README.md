@@ -755,7 +755,156 @@ mismatch, and the check fails with the location removed from the checker's
 output. Kept runs are unchanged, since their results hold the feedback as it
 was shown. Run 8 is the first with it.
 
-## What the seven runs say about the bet
+## Run 8: 29 September 2026, Haiku after the locals-order rule and the branch account
+
+Main at `4c379e0`. Since run 7 (`c6a964a`) it has:
+
+- #161: a `locals` block that opens a word body must bind the stack
+  effect's input names in their order, or it is refused with
+  `firth.name.locals-order`.
+- #162: each error in the feedback carries an `at: line L, column C` line.
+  The error text kept in `results-N.json` includes it, so this run's
+  results strings differ from earlier runs' by that line as well as by
+  the messages below.
+- #164 and #166: a branch mismatch names the operation in the branch that
+  takes values the branch did not push, and each value by its source. For
+  a short branch the hint names a side only when exactly one typed
+  placement fits.
+- #165 and #167: the `locals` hints are checked before they are stated,
+  and suggested renames avoid clashes.
+
+The prompt, `prompt --lang firth --tier mvp --rounds 2` at `4c379e0`, is
+not run 7's: it gains two paragraphs on the `locals` order rule and one on
+what a branch-mismatch report says (`diff` of the two `prompt-firth.md`
+files: 13 lines in, 1 out). So the prompt and the diagnostics both
+changed. Answers were scored at `4c379e0`. Author:
+`claude-haiku-4-5-20251001`, Firth only, four samples of three answers,
+set up as in run 7 with the same author and feedback instructions.
+Everything is in `runs/2026-09-29-haiku-4c379e0/`.
+
+| Haiku 4.5, Firth, passed (of 20) | First answer | Round 1 | Round 2 |
+|---|---|---|---|
+| Sample 1 | 0 | 7 | 8 |
+| Sample 2 | 0 | 0 | 0 |
+| Sample 3 | 0 | 0 | 0 |
+| Sample 4 | 0 | 0 | 0 |
+| Run 7 | 0 and 0 | 0 and 0 | 0 and 0 |
+| Run 6 | 3 and 0 | 3 and 2 | 5 and 6 |
+
+Failures by the checker's first diagnostic, summed over the samples
+(`results-N.json`; run 7 has two samples, 40 answers a round, run 8 four,
+80):
+
+| | Run 7 first | r1 | r2 | Run 8 first | r1 | r2 |
+|---|---|---|---|---|---|---|
+| passed | 0 | 0 | 0 | 0 | 7 | 8 |
+| `firth.type.branch-mismatch` | 9 | 9 | 10 | 11 | 28 | 19 |
+| `firth.name.locals-order` | (no rule) | | | 21 | 5 | 0 |
+| `firth.name.unresolved` | 2 | 2 | 20 | 8 | 16 | 15 |
+| `firth.type.stack-underflow` | 12 | 1 | 0 | 0 | 15 | 9 |
+| `firth.type.word-input-mismatch` | 5 | 11 | 0 | 7 | 1 | 6 |
+| `firth.type.primitive-input-mismatch` | 5 | 12 | 6 | 1 | 1 | 5 |
+| `firth.syntax.*` | 4 | 0 | 0 | 31 | 1 | 6 |
+| other checker errors | 2 | 2 | 2 | 0 | 0 | 10 |
+| wrong answer or runtime fault | 1 | 3 | 2 | 1 | 6 | 2 |
+
+By sample (first answer, round 1, round 2):
+
+| | S1 | S2 | S3 | S4 |
+|---|---|---|---|---|
+| passed | 0, 7, 8 | 0, 0, 0 | 0, 0, 0 | 0, 0, 0 |
+| `firth.type.branch-mismatch` | 11, 3, 9 | 0, 5, 5 | 0, 20, 4 | 0, 0, 1 |
+| `firth.name.locals-order` | 0, 0, 0 | 8, 0, 0 | 13, 0, 0 | 0, 5, 0 |
+| `firth.name.unresolved` | 0, 1, 0 | 0, 0, 0 | 7, 0, 0 | 1, 15, 15 |
+| `firth.type.stack-underflow` | 0, 0, 0 | 0, 15, 9 | 0, 0, 0 | 0, 0, 0 |
+| `firth.syntax.*` | 0, 1, 0 | 12, 0, 6 | 0, 0, 0 | 19, 0, 0 |
+| other checker errors | 8, 2, 1 | 0, 0, 0 | 0, 0, 16 | 0, 0, 4 |
+| wrong answer or runtime fault | 1, 6, 2 | 0, 0, 0 | 0, 0, 0 | 0, 0, 0 |
+
+- **One sample of four passed anything.** Sample 1 went from 0 to 7 and
+  8, close to run 6's sample 2 (0, 2, 6); the other three passed nothing
+  in any round, like both of run 7's. With one sample at 8 and three at
+  0, four samples cannot say whether the changes helped.
+- **Branch mismatches were repaired more often, but still rarely.** Of the
+  39 answers that failed on `firth.type.branch-mismatch` in round 1 or 2,
+  37 were resubmitted. Of those 37, 6 then passed the checker (2 passed
+  every case, 4 ran and gave a wrong answer), 9 failed on a branch
+  mismatch again and 22 failed first on a different error, which may be
+  reported before the same unrepaired branch. In run 7 the same counts
+  were 0, 10 and 6 of 16 resubmitted. Counting the 2 unchanged answers as
+  repeats, as run 7's README did, the repeat rate fell from 12 of 18 to
+  11 of 39. All 6 answers that got past the checker are sample 1's,
+  from round 1 to round 2.
+- **The `locals` order rule refused 26 answers, and each was fixed at
+  once.** It refused 21 first answers (sample 2: 8; sample 3: 13) and 5
+  of sample 4's round-1 answers. Sample 2 wrote 28 of its 29
+  word-opening `locals` blocks in reverse, and its other 12 answers failed
+  on syntax first; sample 4's first answers also bound locals in reverse
+  (`seq-sum`: `locals { xs idx acc }` for inputs `acc idx xs`) behind a
+  syntax error. All 26 were resubmitted, and in every case the next
+  answer passed the rule (next first error: 8
+  `firth.type.stack-underflow`, 13 `firth.type.branch-mismatch`, and 3
+  `firth.type.word-input-mismatch`, 1 `firth.name.unresolved-effect` and
+  1 branch mismatch). None of the 26 went on to pass. With the names now
+  right, the argument order at the call sites was still wrong in several
+  (sample 4's `seq-sum`: `sum-loop` needs `Int Int Seq Int`, the stack has
+  `Int Seq Int Int`). So the rule removed the silent wrong binding that
+  sank run 7's sample 1, and it did not by itself make these answers
+  correct.
+- **Syntax errors came back in the first answers.** 31 of 80 first
+  answers failed to parse, against 4 of 40 in run 7. Sample 4 grouped
+  arguments in parentheses, as in `xs (idx 1 prim +) sum-loop`, 19 times;
+  the parser reports `Unexpected the end of the input.` at the `(`, which
+  says nothing about parentheses (`todo.paren-in-body-diagnostic`). Sample
+  2 wrote literals after `prim` (`i prim 0 prim <`), 12 times. Neither
+  sample had a syntax error in round 1; sample 2 had 6 again in round 2.
+- **Sample 2 declared `main` with no inputs, and the feedback did not say
+  so.** In rounds 1 and 2 every stack underflow (15, then 9) is a `main`
+  whose stack effect is `( -- result:Int^many)` followed by
+  `locals { xs } { ... }`. The error points at `xs` and says "A `locals`
+  block or an operation here needs more values than the stack holds",
+  with no mention of the empty stack effect; 8 of the 15 failed the same
+  way again, and sample 2's own summary blames the elaborator ("cannot
+  reliably handle multiple locals value references"). Filed as
+  `todo.underflow-names-declared-inputs`.
+- **Sample 4 never bound `main`'s inputs.** In both its round-1 and
+  round-2 answers, 15 tasks used `xs` in `main` without a `locals` block
+  and failed on `firth.name.unresolved`. The hint says to bind it first;
+  between the two rounds Haiku changed all 15 answers, but not that.
+- **Type variables still reach the author.** 18 errors show checker type
+  variables such as `?t67 ?t66` in `actual:`, all on the
+  primitive-input, word-input and quotation-compose paths
+  (`todo.internal-operation-diagnostics`). The 9 round-2
+  `firth.type.quotation-compose-mismatch` failures are all sample 3's,
+  whose round-2 answers use `dip` 14 times against none in round 1.
+- **Jev** (`modes-1.json`, `modes-3.json`, every capability available):
+  first answers 38 `invented_syntax`, 28 `stack_order`, 13
+  `stack_effect` and 1 `logic`; last answers 42 `stack_effect`, 17
+  `invented_syntax`, 10 `stack_order`, 2 `logic` and 1
+  `missing_primitive`.
+- **Fixtures.** The last-round branch mismatches are sample 1's (9),
+  sample 2's (5), sample 3's (4) and sample 4's (1) `answer-3.md`, or the
+  latest answer for tasks not resubmitted.
+- **Transcripts.** `audit_subagent.py --rounds 2 --lang firth` exits 0 for
+  samples 2 and 4 and flags samples 1 and 3; the kept transcripts record
+  every call. Sample 3 wrote `answer-1.md` twice in round 1, and the audit
+  flags the first write because the kept file is the second. Sample 1, in
+  round 1, read its own `answer-2.md` back and changed it with `Edit`, a
+  tool it had been told not to use; the kept file is the edited one.
+  Neither author read any file other than the prompt, its own feedback
+  and its own answers, so no outside information reached them, and both
+  samples are scored as kept.
+- **Set-up slips, both caught before any answer was scored.** The four
+  authors were first started with an instruction worded differently from
+  run 7's; they were stopped before writing and restarted with run 7's
+  wording, and only the restarted authors' answers are kept. Sample 4's
+  first feedback message was also worded differently; it was stopped
+  before writing `answer-2.md` and sent run 7's wording, so its transcript
+  holds both messages.
+- Scoring at `4c379e0` still passes run 6's passing answers (sample 2
+  round 2 rescored: 6 of 20, the same tasks).
+
+## What the eight runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from
 the docs alone. On main, Sonnet matches Python on every task set except
@@ -780,8 +929,12 @@ reverse from the start; the other, which did not, also passed nothing
 after feedback where run 6's sample reached 6, and that is unexplained
 (variance or a regression from the new messages). In most unrepaired
 mismatches one operation reaches below the branch without the message
-naming it. The checker found most
-stack-shape errors before execution.
+naming it. Run 8 added a rule against reversed locals and a message
+that names that operation. The rule refused 26 answers and each was
+fixed in the next round, and more branch mismatches were repaired (6 of
+37 got past the checker, against none of 16 in run 7), but only one of
+four samples passed any task (8 of 20 after two rounds). The checker
+found most stack-shape errors before execution.
 Wrong answers at runtime were logic slips that a signature cannot catch.
 
 So the bet holds for strong models and not yet for weak ones, and the
