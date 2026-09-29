@@ -167,7 +167,8 @@ architecture; its CI job runs only on manual dispatch.
 - **Regenerated pins conflict between parallel PRs.** The SMT source envelope
   hashes every `src/**.lean`, so even a test edit moves it. The second PR to
   merge merges `main`, then regenerates in order: `lake build` (the
-  exporter needs a current binary), kernel exports, SMT bindings,
+  exporter needs a current binary), kernel exports, inventory spec
+  corpus, SMT bindings,
   `lake build`, proof manifest, `lake build`, proof records. Then
   it checks for conflict markers and gets re-approval (rule 14).
 - **The MVP gate** (`mvp_agent_gate.py`) is a regression check that the
