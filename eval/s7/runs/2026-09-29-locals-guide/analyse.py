@@ -92,27 +92,37 @@ def mann_whitney_brute(b, a):
     return sum(sum(r[i] for i in idx) >= obs - 1e-9 for idx in splits) / len(splits)
 
 
-def counted(arm_dir):
-    for d in sorted(arm_dir.glob("haiku-firth-*"), key=lambda p: int(p.name.rsplit("-", 1)[1])):
-        if (d / "results-1.json").is_file() and (d / "results-3.json").is_file() \
-                and not (d / "void.md").is_file():
-            yield d
+def samples(arm_dir):
+    """An arm's sample directories in start order (the number is the start order)."""
+    return sorted(arm_dir.glob("haiku-firth-*"), key=lambda p: int(p.name.rsplit("-", 1)[1]))
+
+
+def counted(arm_dir, n=N_PER_ARM):
+    """The first n non-void samples by start order (preregistration.md). A sample
+    started later is reported, not counted, whatever it scored."""
+    return [d for d in samples(arm_dir) if not (d / "void.md").is_file()][:n]
+
+
+def extra(arm_dir, n=N_PER_ARM):
+    return [d for d in samples(arm_dir) if not (d / "void.md").is_file()][n:]
 
 
 def voided(arm_dir):
     """Void samples, with whichever rounds were scored, for the report only."""
-    for d in sorted(arm_dir.glob("haiku-firth-*"), key=lambda p: int(p.name.rsplit("-", 1)[1])):
+    for d in samples(arm_dir):
         if (d / "void.md").is_file():
             yield d.name, [passed(d / f"results-{n}.json") if (d / f"results-{n}.json").is_file()
                            else None for n in (1, 2, 3)]
 
 
-def ready(rows):
-    """None when both arms have exactly N_PER_ARM counted samples, else why not."""
-    bad = {arm: len(rs) for arm, rs in rows.items() if len(rs) != N_PER_ARM}
-    return None if not bad else (
-        f"not analysed: want exactly {N_PER_ARM} counted samples per arm, have "
-        + ", ".join(f"arm {k} {v}" for k, v in sorted(bad.items())))
+def ready(dirs, n=N_PER_ARM):
+    """None when every arm has n counted samples, each scored in rounds 1 and 3,
+    else why not. `dirs` maps arm to its counted() directories."""
+    why = [f"arm {arm} has {len(ds)}" for arm, ds in sorted(dirs.items()) if len(ds) != n]
+    why += [f"arm {arm} {d.name} is not scored" for arm, ds in sorted(dirs.items()) for d in ds
+            if not ((d / "results-1.json").is_file() and (d / "results-3.json").is_file())]
+    return None if not why else (
+        f"not analysed: want {n} counted, scored samples per arm; " + "; ".join(why))
 
 
 def self_test():
@@ -130,12 +140,30 @@ def self_test():
     # Run 10's committed results give run 10's enumerated p values (analysis.txt).
     run10 = HERE.parent / "2026-09-29-control"
     if run10.is_dir():
-        res = {arm: [passed(d / "results-3.json") for d in counted(run10 / c)]
+        res = {arm: [passed(d / "results-3.json") for d in counted(run10 / c, 10)]
                for arm, c in (("A", "4c379e0"), ("B", "8ea4a1d"))}
         assert f"{mann_whitney_greater(res['B'], res['A'])[1]:.4f}" == "0.8196", res
-    # Planted: a partial or an oversized arm is refused before any statistic.
-    assert ready({"A": [0] * 20, "B": [0] * 20}) is None
-    assert ready({"A": [0] * 19, "B": [0] * 20}) and ready({"A": [0] * 20, "B": [0] * 21})
+    # Planted: 21 non-void samples and a void one in a scratch arm. The first 20
+    # non-void by start order count; the 21st (started last, scored highest) and
+    # the void one do not. A short or unscored arm is refused before any statistic.
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        arm = Path(tmp)
+        for i in range(1, 23):
+            d = arm / f"haiku-firth-{i}"
+            d.mkdir()
+            ok = {"tasks": {"t": {"cases": [{"pass": i == 22}]}}}
+            for r in (1, 3):
+                (d / f"results-{r}.json").write_text(json.dumps(ok))
+        (arm / "haiku-firth-5" / "void.md").write_text("planted")
+        got = [d.name for d in counted(arm)]
+        assert len(got) == 20 and "haiku-firth-5" not in got and "haiku-firth-22" not in got
+        assert got[-1] == "haiku-firth-21" and [d.name for d in extra(arm)] == ["haiku-firth-22"]
+        assert sum(passed(d / "results-3.json") for d in counted(arm)) == 0
+        assert ready({"A": counted(arm), "B": counted(arm)}) is None
+        assert ready({"A": counted(arm)[:19], "B": counted(arm)})
+        (arm / "haiku-firth-9" / "results-3.json").unlink()
+        assert "haiku-firth-9 is not scored" in ready({"A": counted(arm), "B": counted(arm)})
     assert shuffle_count(": f (forall ρ; ρ dup:Int^many -- ρ) \\ swap\n dup drop-all swap") == 2
     print("self-test ok")
 
@@ -143,12 +171,13 @@ def self_test():
 def main():
     if sys.argv[1:] == ["--self-test"]:
         return self_test()
-    rows = {arm: [(d.name, passed(d / "results-1.json"), passed(d / "results-3.json"),
-                   shuffle_share(d / "solutions-1.json"), shuffle_share(d / "solutions-3.json"))
-                  for d in counted(path)] for arm, path in ARMS.items()}
-    why = ready(rows)
+    dirs = {arm: counted(path) for arm, path in ARMS.items()}
+    why = ready(dirs)
     if why:
         sys.exit(why)
+    rows = {arm: [(d.name, passed(d / "results-1.json"), passed(d / "results-3.json"),
+                   shuffle_share(d / "solutions-1.json"), shuffle_share(d / "solutions-3.json"))
+                  for d in ds] for arm, ds in dirs.items()}
     for arm, rs in rows.items():
         print(f"arm {arm}: {len(rs)} counted samples")
         for name, first, final, s1, s3 in rs:
@@ -157,6 +186,8 @@ def main():
         for name, scores in voided(ARMS[arm]):
             shown = " / ".join("-" if x is None else str(x) for x in scores)
             print(f"  {name:15} VOID, not counted; passes by round {shown}")
+        for d in extra(ARMS[arm]):
+            print(f"  {d.name:15} started after the 20th counted sample, not counted")
     a, b = rows["A"], rows["B"]
     col = lambda rs, i: [r[i] for r in rs]  # noqa: E731
     u, p = mann_whitney_greater(col(b, 2), col(a, 2))

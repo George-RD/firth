@@ -40,15 +40,25 @@ stack raises how many MVP tasks Haiku passes.
   byte-identical to run 10 arm B's `prompt-firth.md` (checked with `cmp`).
   At the pinned commit, `make_prompts.py` is run again; if either prompt
   differs from the committed one, authoring does not start and this file is
-  amended and reviewed again.
+  amended and reviewed again. Before the first author starts, `pinned.txt`
+  in the run directory records the worktree's `git rev-parse HEAD`, the
+  output of `make_prompts.py --check`, the SHA-256 of both prompts, and the
+  `AGENTS.md` and `CLAUDE.md` blobs of the pinned commit and of the main
+  checkout; it is committed with the write-up.
 - Author: `claude-haiku-4-5-20251001`, as an Agent-tool sub-agent (model
   `haiku`) with no API key, given run 10's author, round 1 and round 2
   instructions word for word with only the paths changed, and started
   with the description `Run 11 author <arm><n>` (such as `Run 11 author
   B7`). Three answers per sample: the first answer and two feedback rounds.
 - Sample size: 20 counted samples per arm, not run 10's 10, because the
-  power below is too low at 10. Authoring stops when both arms have 20
-  counted samples; no test is run before then.
+  power below is too low at 10. The counted samples in an arm are its
+  first 20 non-void samples by start order; a sample started after them is
+  reported and not counted, whatever it scored (`analyse.py` `counted()`,
+  planted 21st sample in its self-test). No new sample starts in an arm
+  once 20 of its non-void samples have started; after that, one starts
+  only to replace a sample found void. Authoring stops when both arms
+  have 20 counted, fully scored samples; no test is run before then, and
+  `analyse.py` refuses to print any statistic until then.
 - Interleaving: samples start in the order A1, B1, A2, B2, ..., with at
   most six authors running at a time, three per arm. A void sample's
   replacement starts in the next slot of its own arm. Samples are numbered
@@ -78,11 +88,19 @@ A sample is void, and replaced, if any of these holds:
   haiku-firth-<n> --label <A or B><n>` reports a `cross_sample` item (another
   sample's number or files, the other arm's run directory, another
   author's label, or another task's output) put into the author's context
-  before its last answer was written. One that arrives after the last
-  answer cannot change a scored answer; it is reported, not voiding.
+  before its last answer was written: the item's `at` time is earlier
+  than the time of the author's last `Write` of `answer-3.md` in the raw
+  log, and an item with no time counts as earlier. One that arrives after
+  the last answer cannot change a scored answer; it is reported, not
+  voiding.
 - The author did not write all three answers.
 
-Void samples are reported with their scores and not counted.
+Void samples are reported with their scores and not counted. Validity
+is judged on these rules alone, never on scores: after each round the
+audit and scans run on the log so far, and a sample's validity is final
+when they have run on its complete log after its third answer is scored.
+A sample found void at any point is void; one that passes the final
+checks is counted if it is among its arm's first 20 non-void samples.
 
 ## Outcomes
 
