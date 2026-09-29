@@ -158,8 +158,13 @@ def check(src):
         return None
     s = p.stderr + p.stdout
     code = re.search(r"'code': '([^']+)'", s)
+    if not code:
+        # A failure with no checker diagnostic is the runner's own, such as a
+        # build that failed under concurrent runs in a cold checkout. Counted as
+        # an answer's error it would silently lower the counts (reviewer, on #172).
+        raise RuntimeError(f'firth_run.py check failed without a diagnostic: {s.strip()[-300:]}')
     line = re.search(r"'start': \{'line': (\d+), 'column': (\d+)", s)
-    return (code[1] if code else 'unknown', int(line[1]) if line else 0, int(line[2]) if line else 0)
+    return (code[1], int(line[1]) if line else 0, int(line[2]) if line else 0)
 
 
 def word_at(src, line):
@@ -204,6 +209,7 @@ def main():
     def base(j):
         s, n, task, src = j
         return j, check(src), independent_errors(src)
+    check(jobs[0][3])  # build the toolchain once, serially, before the parallel runs
     with ThreadPoolExecutor(8) as ex:
         basel = list(ex.map(base, jobs))
     edited = {}

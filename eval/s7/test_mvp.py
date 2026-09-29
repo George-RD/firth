@@ -221,6 +221,9 @@ def feedback_shows_location() -> None:
     harness.compact = lambda text: text  # keep the runner's raw output
     try:
         raw = harness.run_firth(source, ([1, 2],), harness.MVP_FUEL).get("error", "")
+    except harness.ToolchainError as e:
+        check(False, f"feedback_shows_location needs a built toolchain: {e}")
+        return
     finally:
         harness.compact = real
     got = harness.compact(raw)
@@ -490,6 +493,58 @@ def classify_default() -> None:
           "with the old add default it is missing_primitive (the planted case)")
 
 
+def build_failure_stops_scoring() -> None:
+    """A runner that cannot build its toolchain never ran the answer. The scorer
+    stops rather than fail the case and pass the build error on as feedback, and
+    the run 8 measurement scripts stop rather than read it as no error."""
+    import importlib.util
+    import tempfile
+    lake = {"error": "lake: exit 1: error: build failed", "status": "error"}
+    answer = {"error": "entry: unknown checked word 'main'", "status": "error"}
+    diag = "[{'body': {'code': 'firth.type.stack-underflow', 'location': {'start': {'line': 2, 'column': 3}}}}]"
+    with tempfile.TemporaryDirectory() as d:
+        stub = Path(d) / "tools/loop/firth_run.py"
+        stub.parent.mkdir(parents=True)
+
+        def runner_says(text: str) -> None:
+            stub.write_text(f"import sys\nprint({text!r}, file=sys.stderr)\nsys.exit(1)\n")
+
+        old_runner = harness.RUNNER
+        harness.RUNNER = stub
+        try:
+            runner_says(json.dumps(lake))
+            try:
+                got = harness.run_firth(": main ( -- ) ;", ())
+            except harness.ToolchainError as e:
+                got = str(e)
+            check(got == lake["error"], "a failed build stops scoring instead of failing the answer")
+            runner_says(json.dumps(answer))
+            got = harness.run_firth(": main ( -- ) ;", ())
+            check(got["ok"] is False and "unknown checked word 'main'" in got["error"],
+                  "an answer's own runner error is still scored as a failed case")
+        finally:
+            harness.RUNNER = old_runner
+
+        fixes = HERE / "runs/2026-09-29-haiku-4c379e0/fixes/measure.py"
+        spec = importlib.util.spec_from_file_location("run8_measure", fixes)
+        measure = importlib.util.module_from_spec(spec)
+        argv, sys.argv = sys.argv, sys.argv[:1]
+        try:
+            spec.loader.exec_module(measure)
+        finally:
+            sys.argv = argv
+        measure.ROOT = Path(d)
+        runner_says(json.dumps(lake))
+        try:
+            got = measure.check(": main ( -- ) ;")
+        except RuntimeError as e:
+            got = "raised" if "lake: exit 1" in str(e) else str(e)
+        check(got == "raised", "the run 8 measurement stops on a failed build instead of counting no error")
+        runner_says(diag)
+        check(measure.check(": main ( -- ) ;") == ("firth.type.stack-underflow", 2, 3),
+              "the run 8 measurement still reads a checker diagnostic")
+
+
 def main() -> int:
     hand_values()
     scorer_rejects_wrong_python()
@@ -501,6 +556,7 @@ def main() -> int:
     run_options_parsed()
     unsandboxed_python_refused()
     classify_default()
+    build_failure_stops_scoring()
     if "--no-firth" not in sys.argv:
         firth_references()
     print(f"\n{len(failures)} failure(s)")

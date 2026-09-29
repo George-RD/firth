@@ -28,6 +28,7 @@ def count(r):
     return f"{r['sample']}/{r['round']}/{r['task']}", m.independent_errors(src)
 
 
+m.check('')  # build the toolchain once, serially, before the parallel runs
 with ThreadPoolExecutor(8) as ex:
     words = dict(ex.map(count, rows))
 multi = {k: w for k, w in words.items() if w and len(w) >= 2}

@@ -269,7 +269,30 @@ def run_firth(source: str, args: tuple, fuel: int | None = None,
         Path(path).unlink()
     if p.returncode == 0:
         return {"ok": True, "stack": json.loads(p.stdout)["stack"]}
+    toolchain_failure(p.stderr)
     return {"ok": False, "error": compact(p.stderr.strip() or p.stdout.strip())}
+
+
+class ToolchainError(RuntimeError):
+    """The runner could not build its toolchain, so the answer was never run."""
+
+
+# The runner builds lake and cargo before it reads the answer, so these failures
+# say nothing about the answer (tools/loop/mvp_agent_gate.py, build_toolchain).
+TOOLCHAIN_PREFIXES = ("toolchain: ", "lake: exit ", "cargo: exit ")
+
+
+def toolchain_failure(stderr: str) -> None:
+    """Stop scoring on a build failure. Scored as a failed case, it would count
+    against the answer and be shown to the author as if it were a diagnostic."""
+    lines = stderr.strip().splitlines()
+    try:
+        payload = json.loads(lines[-1]) if lines else None
+    except ValueError:
+        return
+    if (isinstance(payload, dict) and payload.get("status") == "error"
+            and str(payload.get("error", "")).startswith(TOOLCHAIN_PREFIXES)):
+        raise ToolchainError(payload["error"])
 
 
 def compact(text: str) -> str:
