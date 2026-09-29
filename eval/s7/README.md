@@ -1055,8 +1055,8 @@ message itself changes no code.
   answers were edited. The reversed calls were in void sample 3, where the
   same edit changes 34 calls in each round.
 - **Forth `( a b -- c )` comments in bodies (count only): none.** Of the
-  1,241 kept Firth answers in every run (all 70 `solutions-*.json` files
-  under `runs/`), none writes one in a word body
+  1,103 kept Firth answers in every run (all 60 Firth `solutions-*.json`
+  files under `runs/`), none writes one in a word body
   (`fixes/count_comments.py`, output `fixes/comments.json`). The
   Forth-style `( -- result)` headers are signatures, which Firth already
   parses: run 8's sample 2 has 60 (20 in each round), run 7's sample 1

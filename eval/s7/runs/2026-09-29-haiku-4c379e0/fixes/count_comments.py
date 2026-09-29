@@ -1,7 +1,7 @@
 """Count Forth-style stack comments in every kept Firth answer.
 
-Scans every `solutions-*.json` under eval/s7/runs/ (every run, sample and
-round) for `( ... -- ... )` inside a word body, which a rule accepting
+Scans every Firth `solutions-*.json` under eval/s7/runs/ (every run, sample
+and round; the Python samples are skipped) for `( ... -- ... )` inside a word body, which a rule accepting
 Forth stack comments would change, and for word headers written Forth
 style, without `forall`, which Firth already parses as signatures. Also
 counts bodies that contain parentheses of any kind. Writes comments.json
@@ -20,6 +20,8 @@ COMMENT = re.compile(r'\([^()]*--[^()]*\)')
 out = {'files': 0, 'answers': 0, 'body_stack_comments': [], 'forth_style_headers': {}, 'bodies_with_parens': {}}
 for f in sorted(RUNS.rglob('solutions-*.json')):
     rel = str(f.relative_to(RUNS))
+    if 'python' in rel:  # Python samples' answers are not Firth (Codex, on #172)
+        continue
     try:
         sols = json.loads(f.read_text())
     except ValueError:
