@@ -59,13 +59,13 @@ What works, with where to check it:
 - **Diagnostics.** The checker reports the first error in every word, not
   only the first in the program, and each diagnostic names its word
   (`docs/firth-agent-guide.md`, the diagnostics section).
-- **Real programs.** 12 example programs (121 cases), including sort,
-  sieve, gcd, Fibonacci and factorial, run against expected results on both
-  hosts
+- **Real programs.** 12 example programs, including sort, sieve, gcd,
+  Fibonacci and factorial, run 116 cases against expected results on both
+  hosts, and 5 more programs must be refused by the checker
   (`python3 examples/programs/check_programs.py`). The inventory allocator
   (`examples/inventory/`) passes all 53 cases of its fixed contract
   (`python3 examples/inventory/run_cases.py`).
-- **Proofs about programs.** 15 exported words carry Lean proofs of their
+- **Proofs about programs.** 16 exported words carry Lean proofs of their
   contracts over the reference interpreter, including the whole allocator
   (conservation, no over-allocation, the fulfilment policy, i64 range and a
   cost bound). This is goal S5 in the [roadmap](docs/roadmap.md), met with
