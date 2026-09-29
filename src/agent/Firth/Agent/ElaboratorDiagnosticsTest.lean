@@ -565,13 +565,21 @@ private def runCallAccountTests : IO Unit := do
     match applyCallHint source hint operation with
     | some edited => expectRuns label edited word inputs expected
     | none => fail s!"{label}: the hint's edit does not apply: {hint}"
+  -- The text replaced is found twice on its line, the first time handed
+  -- to `f` in the order `f` takes: the hint names the column of the second.
+  -- Planted: without the column the hint would name either. `f` gives `i`,
+  -- 1, and the value at 1 is 6.
+  callCase "the text replaced found twice on its line" "firth.type.primitive-input-mismatch"
+      ": f (forall ρ; ρ i:Int^many xs:Seq Int^many -- ρ r:Int^many) drop ;\n: w (forall ρ; ρ xs:Seq Int^many i:Int^many -- ρ r:Int^many) locals { xs i } { i xs f i xs prim seq-int.at prim + } ;"
+      ["write `xs i` in place of `i xs` on line 2, column 87. With that edit `w` checks."] []
+      "w" [.intSeq [5, 6, 7], .int 1] [.int 7]
   -- Haiku's seq-sum at 470c6d0 (haiku-firth-1, answer 2), verbatim: `main`
   -- pushes the sequence last. `xs` is named like the input it is for, so
   -- it goes first; the two `0`s are the same. 4 + 5 + 6.
   callCase "sequence pushed last" "firth.type.word-input-mismatch"
       ": sum-loop\n  (forall ρ; ρ xs:Seq Int^many acc:Int^many i:Int^many -- ρ result:Int^many)\n  locals { xs acc i } {\n    i xs prim seq-int.len prim <\n    [\n      xs i prim seq-int.at acc prim +\n      xs swap\n      i 1 prim +\n      sum-loop\n    ]\n    [ acc ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many -- ρ result:Int^many)\n  locals { xs } {\n    0 0 xs sum-loop\n  };"
       ["`sum-loop` in `main` takes xs:Seq Int, acc:Int, i:Int, bottom to top, but here it gets, bottom to top, `0` (Int), `0` (Int) and `xs` (Seq Int).",
-       "To push them in its order, write `xs 0 0` in place of `0 0 xs`. With that edit `main` checks."]
+       "To push them in its order, write `xs 0 0` in place of `0 0 xs` on line 18. With that edit `main` checks."]
       [] "main" [.intSeq [4, 5, 6]] [.int 15]
   -- keep-positive at 470c6d0 (haiku-firth-1, answer 2), verbatim: `result`
   -- and `xs` are both Seq Int, and the order they were pushed in would put
@@ -588,7 +596,7 @@ private def runCallAccountTests : IO Unit := do
   callCase "operands reversed in a branch" "firth.type.primitive-input-mismatch"
       ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ total:Int^many)\n  0 swap 0 sum-loop;\n\n: sum-loop\n  (forall ρ; ρ acc:Int^many xs:Seq Int^many idx:Int^many -- ρ total:Int^many)\n  locals { acc xs idx } {\n    idx xs prim seq-int.len prim < [\n      acc idx xs prim seq-int.at prim + xs idx 1 prim + sum-loop\n    ] [ acc ] if\n  };"
       ["`prim seq-int.at` in `sum-loop` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, `idx` (Int) and `xs` (Seq Int).",
-       "write `xs idx` in place of `idx xs`. With that edit `sum-loop` checks."]
+       "write `xs idx` in place of `idx xs` on line 9. With that edit `sum-loop` checks."]
       ["`prim +` in `sum-loop`", "?t"] "main" [.intSeq [4, 5, 6]] [.int 15]
   -- count-distinct at cec3707 (haiku-firth-2, answer 1), the helper
   -- verbatim: the push in a branch was reported as a `compose` the author
@@ -596,12 +604,12 @@ private def runCallAccountTests : IO Unit := do
   callCase "push reversed in a branch" "firth.type.primitive-input-mismatch"
       ": count-distinct-search\n  (forall ρ; ρ elem:Int^many j:Int^many seen:Seq Int^many -- ρ updated:Seq Int^many)\n  locals { elem j seen } {\n    j seen prim seq-int.len prim =\n    [ elem seen prim seq-int.push ]\n    [\n      seen j prim seq-int.at elem prim =\n      [ seen ]\n      [ elem j 1 prim + seen count-distinct-search ] if\n    ]\n    if\n  };"
       ["`prim seq-int.push` in `count-distinct-search` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, `elem` (Int) and `seen` (Seq Int).",
-       "write `seen elem` in place of `elem seen`. With that edit `count-distinct-search` checks."]
+       "write `seen elem` in place of `elem seen` on line 5. With that edit `count-distinct-search` checks."]
       ["compose"] "count-distinct-search" [.int 3, .int 0, .intSeq [1, 2]] [.intSeq [1, 2, 3]]
   -- A `swap` between the values is part of what the edit replaces.
   callCase "values exchanged by swap" "firth.type.primitive-input-mismatch"
       ": at\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs n } { xs n swap prim seq-int.at };"
-      ["write `xs n` in place of `xs n swap`. With that edit `at` checks."]
+      ["write `xs n` in place of `xs n swap` on line 3. With that edit `at` checks."]
       [] "at" [.intSeq [5, 6, 7], .int 1] [.int 6]
   -- A refused `if` whose branch mends with an edit the pipeline checked
   -- (`staleEdit`, `missingEdit`): the test applies the edit as the hint
@@ -733,19 +741,19 @@ private def runCallAccountTests : IO Unit := do
   let digitsTwoLines := digits.replace "n 10 prim mod result prim seq-int.push" "n 10 prim mod\n      result prim seq-int.push"
   let digitsJoined := digits.replace "n 10 prim mod result prim seq-int.push" "result n 10 prim mod prim seq-int.push"
   let _ ← callReport "digits, the values on two lines" "firth.type.primitive-input-mismatch" digitsTwoLines
-    ["write `result n 10 prim mod` in place of `n 10 prim mod result`. With that edit, the next error in `extract-digits` is at line 8, column 26."]
+    ["write `result n 10 prim mod` in place of `n 10 prim mod result` on line 7. With that edit, the next error in `extract-digits` is at line 8, column 26."]
   match elaboratePipeline pipelineContext digitsJoined agentConfig with
   | .failure [envelope] =>
       unless (encode envelope).contains "\"start\":{\"line\":8,\"column\":26}" do
         fail s!"digits, the values on two lines: the edited source is refused elsewhere: {encode envelope}"
   | _ => fail "digits, the values on two lines: expected one report for the edited source"
   let (hint, operation) ← callReport "digits" "firth.type.primitive-input-mismatch" digits
-    ["write `result n 10 prim mod` in place of `n 10 prim mod result`. With that edit, the next error in `extract-digits` is at line 8, column 26."]
+    ["write `result n 10 prim mod` in place of `n 10 prim mod result` on line 7. With that edit, the next error in `extract-digits` is at line 8, column 26."]
   match applyCallHint digits hint operation with
   | none => fail s!"digits: the hint's edit does not apply: {hint}"
   | some once =>
       callCase "digits, then the call" "firth.type.word-input-mismatch" once
-        ["write `result n 10 prim mod prim seq-int.push n 10 prim div` in place of `result n 10 prim mod prim seq-int.push n 10 prim div swap`. With that edit `extract-digits` checks."]
+        ["write `result n 10 prim mod prim seq-int.push n 10 prim div` in place of `result n 10 prim mod prim seq-int.push n 10 prim div swap` on line 1. With that edit `extract-digits` checks."]
         [] "extract-digits" [.intSeq [], .int 123] [.intSeq [3, 2, 1]]
   -- Where values of one type could go either way, the report says which
   -- values are certain and leaves the rest to the author, with no edit:
@@ -780,7 +788,7 @@ private def runCallAccountTests : IO Unit := do
   | .failure [envelope] =>
       let emitted := encode envelope
       for needle in ["`nth` in `first` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, `0` (Int) and `xs` (Seq Int).",
-                     "write `xs 0` in place of `0 xs`. With that edit `first` checks."] do
+                     "write `xs 0` in place of `0 xs` on line 3. With that edit `first` checks."] do
         unless emitted.contains needle do
           fail s!"external word: the report does not say {needle}: {emitted}"
   | _ => fail "external word: expected one diagnostic"

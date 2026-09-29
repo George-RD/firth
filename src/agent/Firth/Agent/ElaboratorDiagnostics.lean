@@ -723,7 +723,7 @@ private def callExplanation (inWord : String) (word : Option String) (wanted pre
         | none, some word => s!" With that edit `{word}` checks."
         | some (line, column), some word => s!" With that edit, the next error in `{word}` is at line {line}, column {column}."
         | _, none => ""
-      pure (message, s!"These are the values {account.operation} takes, in another order. To push them in its order, write `{edit.replacement}` in place of `{edit.written}`.{outcome}")
+      pure (message, s!"These are the values {account.operation} takes, in another order. To push them in its order, write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}.{outcome}")
   | none =>
       if !account.assignment.isEmpty then
         let name (input : String) := ((input.splitOn ":").head?).getD input

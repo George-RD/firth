@@ -345,6 +345,26 @@ private def lineColumn (source : String) (offset : Nat) : Nat × Nat :=
   (bytesText source 0 offset).foldl (fun (line, column) c =>
     if c == '\n' then (line + 1, 1) else (line, column + 1)) (1, 1)
 
+private def collapseSpace (text : String) : String :=
+  " ".intercalate (((text.map fun c => if c.isWhitespace then ' ' else c).splitOn " ").filter (!·.isEmpty))
+
+/-- Where an edit from byte `start` to byte `stop` of `source` is, for a hint
+that says "in place of `written` on line L": the line, and the column too
+when `written`, as whole items, is found more than once on the lines the
+edit spans, as `candidate 1 prim + n collect-primes` is in both branches of
+`[ result candidate prim seq-int.push candidate 1 prim + n collect-primes ]
+[ candidate 1 prim + n collect-primes ] if`. -/
+private def editPlace (source : String) (start stop : Nat) (written : String) : Nat × Option Nat :=
+  let (line, column) := lineColumn source start
+  let lastLine := (lineColumn source stop).1
+  let lines := ((source.splitOn "\n").drop (line - 1)).take (lastLine + 1 - line)
+  let items (text : String) := ((collapseSpace text).splitOn " ").filter (!·.isEmpty)
+  let text := items ("\n".intercalate lines)
+  let wanted := items written
+  let found := (List.range (text.length + 1)).countP fun i =>
+    !wanted.isEmpty && (text.drop i).take wanted.length == wanted
+  (line, if found > 1 then some column else none)
+
 /-- Where the values `got` (bottom to top) go so that their types are
 `wanted`: for each input, a value of its type, first one the source names
 by the input's own name (the local `xs` or the input `xs` for an input
@@ -457,8 +477,10 @@ private def withCallAccount (config : PipelineConfig) (source : String)
               -- In the source as edited: the author applies the edit, and
               -- a replaced text that spans lines leaves fewer of them.
               else some (some (lineColumn edited offset))
-        pure { start, stop, written := collapse (bytesText source start stop),
-               replacement, after, consulted := consultedWords config editedWords word }
+        let written := collapse (bytesText source start stop)
+        let (line, column) := editPlace source start stop written
+        pure { start, stop, line, column, written, replacement, after
+               consulted := consultedWords config editedWords word }
       -- Where the types and names leave the order open, the message says
       -- what is certain instead of choosing.
       let assignment := match edit, plan with
@@ -511,26 +533,6 @@ private def checkBranchEdit (config : PipelineConfig) (source wordName : String)
         if editGetsPast byErasure typing at_ offset then some (some (lineColumn edited offset))
         else none
   pure (after, consultedWords config editedWords word)
-
-private def collapseSpace (text : String) : String :=
-  " ".intercalate (((text.map fun c => if c.isWhitespace then ' ' else c).splitOn " ").filter (!·.isEmpty))
-
-/-- Where an edit from byte `start` to byte `stop` of `source` is, for a hint
-that says "in place of `written` on line L": the line, and the column too
-when `written`, as whole items, is found more than once on the lines the
-edit spans, as `candidate 1 prim + n collect-primes` is in both branches of
-`[ result candidate prim seq-int.push candidate 1 prim + n collect-primes ]
-[ candidate 1 prim + n collect-primes ] if`. -/
-private def editPlace (source : String) (start stop : Nat) (written : String) : Nat × Option Nat :=
-  let (line, column) := lineColumn source start
-  let lastLine := (lineColumn source stop).1
-  let lines := ((source.splitOn "\n").drop (line - 1)).take (lastLine + 1 - line)
-  let items (text : String) := ((collapseSpace text).splitOn " ").filter (!·.isEmpty)
-  let text := items ("\n".intercalate lines)
-  let wanted := items written
-  let found := (List.range (text.length + 1)).countP fun i =>
-    !wanted.isEmpty && (text.drop i).take wanted.length == wanted
-  (line, if found > 1 then some column else none)
 
 /-- For a refused `if` whose longer branch leaves one value more than the
 other, below the result of a call: when that value was computed by an
