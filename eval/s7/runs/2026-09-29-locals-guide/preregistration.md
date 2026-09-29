@@ -74,7 +74,8 @@ A sample is void, and replaced, if any of these holds:
   `/home/user/firth`, which stays on this PR's branch; that branch does not
   touch either file, and before authoring both blobs are checked equal to
   the pinned commit's.
-- `context_seen.py --arm-set run11` reports a `cross_sample` item (another
+- `context_seen.py --arm-set run11 --arm <arm-a or arm-b> --sample
+  haiku-firth-<n> --label <A or B><n>` reports a `cross_sample` item (another
   sample's number or files, the other arm's run directory, another
   author's label, or another task's output) put into the author's context
   before its last answer was written. One that arrives after the last

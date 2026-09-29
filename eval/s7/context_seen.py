@@ -296,6 +296,10 @@ def main() -> int:
     use_arms(a.arm_set)
     if a.arm and a.arm not in ARMS:
         cli.error(f"--arm {a.arm} is not an arm of {a.arm_set}")
+    # Without --arm nothing counts as the other arm, so a run 11 scan that
+    # omitted it would pass a sample shown the other arm's prompt (Codex, on #184).
+    if a.arm_set != "run10" and not a.self_test and not a.arm:
+        cli.error(f"--arm-set {a.arm_set} needs --arm ({' or '.join(sorted(ARMS))})")
     if a.self_test:
         self_test()
         return 0
