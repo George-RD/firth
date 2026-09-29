@@ -691,6 +691,24 @@ private def branchInputExplanation (inWord : String) (below : AStack) (onTrueBra
         (base, s!"The {name} branch takes more values than are there. Push them before the condition, or take them as parameters in the signature. {rule}")
       else (base, rule)
 
+/-- What each input of a primitive is for, bottom to top, by its surface
+name, for the primitives whose inputs repeat a type beside another type:
+there the types alone cannot tell an author which value goes where, and a
+primitive's inputs have no names. `xs i v seq-int.set` is `xs` with element
+`i` replaced by `v`. Only for telling the author; it never decides the
+order. The diagnostic tests check that every such primitive is listed. -/
+def primitiveRoles : String → Option (List String)
+  | "seq-int.set" | "seq-bool.set" => some ["the sequence", "the index", "the new value"]
+  | "seq-int.at" | "seq-bool.at" => some ["the sequence", "the index"]
+  | "seq-int.push" | "seq-bool.push" => some ["the sequence", "the value pushed"]
+  | _ => none
+
+/-- `primitiveRoles` for an operation as a report writes it, `` `prim seq-int.set` ``. -/
+private def operationRoles (operation : String) : Option (List String) :=
+  if operation.startsWith "`prim " && operation.endsWith "`" then
+    primitiveRoles ((operation.drop 6).dropRight 1).toString
+  else none
+
 open Firth.Elaborator.StackEffect in
 /-- The message and hint for a word or primitive handed values it does not
 take, from the account of where each value came from (`Account.ofCall`):
@@ -713,7 +731,13 @@ private def callExplanation (inWord : String) (word : Option String) (wanted pre
     | none => label
   -- A word the environment defines outside the file has no names for its
   -- inputs in the account; its types are the checker's.
-  let takes ← if !account.inputs.isEmpty then some s!"takes {", ".intercalate account.inputs}"
+  let takes ← if !account.inputs.isEmpty then
+      match operationRoles account.operation with
+      | some roles =>
+          if roles.length == account.inputs.length then
+            some s!"takes {listing ((roles.zip account.inputs).map fun (role, type) => s!"{role} ({type})")}"
+          else some s!"takes {", ".intercalate account.inputs}"
+      | none => some s!"takes {", ".intercalate account.inputs}"
     else if (wanted.map renderType).all plain then some s!"takes {", ".intercalate (wanted.map renderType)}"
     else none
   let message := s!"{account.operation}{inWord} {takes}, bottom to top, but here it gets, bottom to top, {listing typed}."
@@ -727,6 +751,13 @@ private def callExplanation (inWord : String) (word : Option String) (wanted pre
   | none =>
       if !account.assignment.isEmpty then
         let name (input : String) := ((input.splitOn ":").head?).getD input
+        -- A primitive's inputs are told by what they are for, where the
+        -- types alone repeat.
+        let roles := operationRoles account.operation
+        let roleOf (i : Nat) (input : String) : String :=
+          match roles.bind (·[i]?) with
+          | some role => role
+          | none => s!"`{name input}`"
         let quoted (texts : List String) := listing (texts.map (s!"`{·}`"))
         -- Inputs that could take the same values are one group, told where
         -- the first of them is.
@@ -736,11 +767,11 @@ private def callExplanation (inWord : String) (word : Option String) (wanted pre
               (parts, seen)
             else if seen.contains choices then (parts, seen)
             else
-              let inputs := (account.assignment.filter fun (_, other) => other == choices).map fun (input, _) => name input
-              (parts ++ [s!"{quoted choices} are for {listing (inputs.map (s!"`{·}`"))}, in the order you mean"], seen ++ [choices])
-        let certain := account.assignment.filterMap fun (input, choices) =>
+              let inputs := ((account.assignment.zipIdx.filter fun ((_, other), _) => other == choices)).map fun ((input, _), i) => roleOf i input
+              (parts ++ [s!"{quoted choices} are for {listing inputs}, in the order you mean"], seen ++ [choices])
+        let certain := account.assignment.zipIdx.filterMap fun ((input, choices), i) =>
           match choices with
-          | [text] => some s!"`{text}` is for `{name input}`"
+          | [text] => some s!"`{text}` is for {roleOf i input}"
           | _ => none
         let certainText := if certain.isEmpty then "" else s!"By their names and types, {listing certain}. "
         pure (message, s!"These are the values {account.operation} takes, in another order. {certainText}Of the values of one type, {"; ".intercalate parts.1}: only you can tell which is which. Push them in the order of its inputs.")

@@ -595,7 +595,7 @@ private def runCallAccountTests : IO Unit := do
   -- types; the report is at `prim seq-int.at`, where the mistake is.
   callCase "operands reversed in a branch" "firth.type.primitive-input-mismatch"
       ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ total:Int^many)\n  0 swap 0 sum-loop;\n\n: sum-loop\n  (forall ρ; ρ acc:Int^many xs:Seq Int^many idx:Int^many -- ρ total:Int^many)\n  locals { acc xs idx } {\n    idx xs prim seq-int.len prim < [\n      acc idx xs prim seq-int.at prim + xs idx 1 prim + sum-loop\n    ] [ acc ] if\n  };"
-      ["`prim seq-int.at` in `sum-loop` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, `idx` (Int) and `xs` (Seq Int).",
+      ["`prim seq-int.at` in `sum-loop` takes the sequence (Seq Int) and the index (Int), bottom to top, but here it gets, bottom to top, `idx` (Int) and `xs` (Seq Int).",
        "write `xs idx` in place of `idx xs` on line 9. With that edit `sum-loop` checks."]
       ["`prim +` in `sum-loop`", "?t"] "main" [.intSeq [4, 5, 6]] [.int 15]
   -- count-distinct at cec3707 (haiku-firth-2, answer 1), the helper
@@ -603,7 +603,7 @@ private def runCallAccountTests : IO Unit := do
   -- never wrote. Adding 3 to [1, 2]; 2 is there already.
   callCase "push reversed in a branch" "firth.type.primitive-input-mismatch"
       ": count-distinct-search\n  (forall ρ; ρ elem:Int^many j:Int^many seen:Seq Int^many -- ρ updated:Seq Int^many)\n  locals { elem j seen } {\n    j seen prim seq-int.len prim =\n    [ elem seen prim seq-int.push ]\n    [\n      seen j prim seq-int.at elem prim =\n      [ seen ]\n      [ elem j 1 prim + seen count-distinct-search ] if\n    ]\n    if\n  };"
-      ["`prim seq-int.push` in `count-distinct-search` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, `elem` (Int) and `seen` (Seq Int).",
+      ["`prim seq-int.push` in `count-distinct-search` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, `elem` (Int) and `seen` (Seq Int).",
        "write `seen elem` in place of `elem seen` on line 5. With that edit `count-distinct-search` checks."]
       ["compose"] "count-distinct-search" [.int 3, .int 0, .intSeq [1, 2]] [.intSeq [1, 2, 3]]
   -- A `swap` between the values is part of what the edit replaces.
@@ -778,12 +778,21 @@ private def runCallAccountTests : IO Unit := do
     ": sum-loop\n  (forall ρ; ρ xs:Seq Int^many acc:Int^many i:Int^many -- ρ result:Int^many)\n  locals { xs acc i } {\n    i xs prim seq-int.len prim <\n    [\n      xs i prim seq-int.at acc prim +\n      xs\n      i 1 prim +\n      sum-loop\n    ]\n    [ acc ]\n    if\n  };"
     ["By their names and types, `xs` is for `xs`. Of the values of one type, `xs i prim seq-int.at acc prim +` and `i 1 prim +` are for `acc` and `i`, in the order you mean: only you can tell which is which."]
     ["in place of"]
+  -- A sequence primitive's inputs have no names, only types, so the report
+  -- tells them by what they are for rather than quoting a type as if it
+  -- named one (`counts` is for `Seq Int`, before): increment-count at
+  -- 4c379e0 (haiku-firth-3, answer 2), verbatim.
+  let _ ← callReport "roles of a sequence primitive" "firth.type.primitive-input-mismatch"
+    ": increment-count\n  (forall ρ; ρ counts:Seq Int^many idx:Int^many -- ρ result:Seq Int^many)\n  locals { counts idx }\n  { counts idx prim seq-int.at 1 prim + counts idx swap prim seq-int.set };\n"
+    ["`prim seq-int.set` in `increment-count` takes the sequence (Seq Int), the index (Int) and the new value (Int), bottom to top",
+     "By their names and types, `counts` is for the sequence. Of the values of one type, `counts idx prim seq-int.at 1 prim +` and `idx` are for the index and the new value, in the order you mean: only you can tell which is which."]
+    ["in place of", "`Seq Int`", "`Int`"]
   -- A value the source pushed with `dup` is not a piece of source of its
   -- own, so no edit is stated; the report still names it (prefix-sums at
   -- c6a964a, haiku-firth-2, answer 3, with its first mistake fixed).
   let _ ← callReport "no edit through dup" "firth.type.primitive-input-mismatch"
     ": prefix-loop\n  (forall ρ; ρ result:Seq Int^many sum:Int^many xs:Seq Int^many idx:Int^many -- ρ sums:Seq Int^many)\n  locals { result sum xs idx } {\n    idx xs prim seq-int.len prim < [\n      sum xs idx prim seq-int.at prim + \n      dup result prim seq-int.push\n      xs idx 1 prim + prefix-loop\n    ] [ result ] if\n  };"
-    ["`prim seq-int.push` in `prefix-loop` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int) and `result` (Seq Int).",
+    ["`prim seq-int.push` in `prefix-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim +` (Int) and `result` (Seq Int).",
      "The top value, `result` (Seq Int), is not what `prim seq-int.push` takes there (Int)."]
     ["in place of"]
   -- A word the environment defines outside the file (`nth`, Seq Int Int --
@@ -806,6 +815,32 @@ private def runCallAccountTests : IO Unit := do
         unless emitted.contains needle do
           fail s!"external word: the report does not say {needle}: {emitted}"
   | _ => fail "external word: expected one diagnostic"
+
+private def stackTypes : Firth.Elaborator.StackEffect.AStack → List Firth.Elaborator.StackEffect.AType
+  | .snoc rest type => stackTypes rest ++ [type]
+  | _ => []
+
+/-- Every primitive whose inputs repeat a type beside another type, where a
+report can only tell the author which value goes where by what each input
+is for, has one role per input in `primitiveRoles`; and no listed primitive
+has a role count that differs from its inputs. A primitive added to the
+language without its roles fails here. -/
+private def runPrimitiveRolesTests : IO Unit := do
+  for surface in languagePrimitives do
+    let some scheme := Elaborate.gammaTyping.primitive surface
+      | fail s!"primitive roles: `{surface}` has no scheme"
+    let inputs := stackTypes scheme.input
+    let repeats := inputs.any fun type => (inputs.filter (· == type)).length > 1
+    let mixed := match inputs with
+      | first :: rest => rest.any (· != first)
+      | [] => false
+    match primitiveRoles surface with
+    | some roles =>
+        unless roles.length == inputs.length do
+          fail s!"primitive roles: `{surface}` takes {inputs.length} values but has {roles.length} roles"
+    | none =>
+        if repeats && mixed then
+          fail s!"primitive roles: `{surface}` repeats an input type beside another but has no roles"
 
 /-- `locals` blocks bound out of order: what the report says, and the edits
 its hint gives, applied and run. -/
@@ -2028,6 +2063,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
   if languagePrimitives.length != everyPrimitive.length then
     fail s!"the language has {languagePrimitives.length} primitives but this test lists {everyPrimitive.length}; add the new ones above"
   runCallAccountTests
+  runPrimitiveRolesTests
   runEveryErrorTests
   runSyntaxMessageTests
   runAssumesTests
