@@ -1,0 +1,2666 @@
+{
+  "lang": "firth",
+  "tasks": {
+    "seq-sum": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            15
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 23\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Int Seq Int [ .. Int Int Seq Int -- .. Int ]). `main` calls `sum-helper`, which has an error of its own; this report assumes `sum-helper` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: sum-helper\nat: line 7, column 135\nmessage: In the true branch `[ xs i prim seq-int.at prim + locals ...` of the `if` in `sum-helper`, `prim +` needs 2 values (Int, Int), but the branch has pushed only 1 value before it (the result of `prim seq-int.at`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `prim +`, exactly the values it takes, in this order: Int, Int. The branch already pushes the result of `prim seq-int.at`: keep it in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `prim +` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 23\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Int Seq Int [ .. Int Int Seq Int -- .. Int ]). `main` calls `sum-helper`, which has an error of its own; this report assumes `sum-helper` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: sum-helper\nat: line 7, column 135\nmessage: In the true branch `[ xs i prim seq-int.at prim + locals ...` of the `if` in `sum-helper`, `prim +` needs 2 values (Int, Int), but the branch has pushed only 1 value before it (the result of `prim seq-int.at`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `prim +`, exactly the values it takes, in this order: Int, Int. The branch already pushes the result of `prim seq-int.at`: keep it in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `prim +` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 23\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Int Seq Int [ .. Int Int Seq Int -- .. Int ]). `main` calls `sum-helper`, which has an error of its own; this report assumes `sum-helper` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: sum-helper\nat: line 7, column 135\nmessage: In the true branch `[ xs i prim seq-int.at prim + locals ...` of the `if` in `sum-helper`, `prim +` needs 2 values (Int, Int), but the branch has pushed only 1 value before it (the result of `prim seq-int.at`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `prim +`, exactly the values it takes, in this order: Int, Int. The branch already pushes the result of `prim seq-int.at`: keep it in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `prim +` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -3,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 23\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Int Seq Int [ .. Int Int Seq Int -- .. Int ]). `main` calls `sum-helper`, which has an error of its own; this report assumes `sum-helper` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: sum-helper\nat: line 7, column 135\nmessage: In the true branch `[ xs i prim seq-int.at prim + locals ...` of the `if` in `sum-helper`, `prim +` needs 2 values (Int, Int), but the branch has pushed only 1 value before it (the result of `prim seq-int.at`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `prim +`, exactly the values it takes, in this order: Int, Int. The branch already pushes the result of `prim seq-int.at`: keep it in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `prim +` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10
+            ]
+          ],
+          "expected": [
+            55
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 23\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Int Seq Int [ .. Int Int Seq Int -- .. Int ]). `main` calls `sum-helper`, which has an error of its own; this report assumes `sum-helper` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: sum-helper\nat: line 7, column 135\nmessage: In the true branch `[ xs i prim seq-int.at prim + locals ...` of the `if` in `sum-helper`, `prim +` needs 2 values (Int, Int), but the branch has pushed only 1 value before it (the result of `prim seq-int.at`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `prim +`, exactly the values it takes, in this order: Int, Int. The branch already pushes the result of `prim seq-int.at`: keep it in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `prim +` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -5,
+              -6
+            ]
+          ],
+          "expected": [
+            -11
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 23\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Int Seq Int [ .. Int Int Seq Int -- .. Int ]). `main` calls `sum-helper`, which has an error of its own; this report assumes `sum-helper` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: sum-helper\nat: line 7, column 135\nmessage: In the true branch `[ xs i prim seq-int.at prim + locals ...` of the `if` in `sum-helper`, `prim +` needs 2 values (Int, Int), but the branch has pushed only 1 value before it (the result of `prim seq-int.at`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `prim +`, exactly the values it takes, in this order: Int, Int. The branch already pushes the result of `prim seq-int.at`: keep it in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `prim +` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "seq-max": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              9,
+              2
+            ]
+          ],
+          "expected": [
+            9
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 42\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Int Seq Int [ .. Int Int Seq Int -- .. Int ]). `main` calls `max-helper`, which has an error of its own; this report assumes `max-helper` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: max-helper\nat: line 7, column 156\nmessage: In the true branch `[ xs i prim seq-int.at locals { v ...` of the `if` in `max-helper`, `max-helper` needs 3 values (max:Int, i:Int, xs:Seq Int), but the branch has pushed only 2 values before it (the result of an `if` and the result of `prim +`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `max-helper`, exactly the values it takes, in this order: max:Int, i:Int, xs:Seq Int. The branch already pushes the result of an `if` and the result of `prim +`, in the place of the first 2 (max:Int, i:Int): keep each where it has that type and replace it where it does not. Then push the last one (xs:Seq Int) after them, for example by writing the locals that hold it. If `max-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 42\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Int Seq Int [ .. Int Int Seq Int -- .. Int ]). `main` calls `max-helper`, which has an error of its own; this report assumes `max-helper` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: max-helper\nat: line 7, column 156\nmessage: In the true branch `[ xs i prim seq-int.at locals { v ...` of the `if` in `max-helper`, `max-helper` needs 3 values (max:Int, i:Int, xs:Seq Int), but the branch has pushed only 2 values before it (the result of an `if` and the result of `prim +`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `max-helper`, exactly the values it takes, in this order: max:Int, i:Int, xs:Seq Int. The branch already pushes the result of an `if` and the result of `prim +`, in the place of the first 2 (max:Int, i:Int): keep each where it has that type and replace it where it does not. Then push the last one (xs:Seq Int) after them, for example by writing the locals that hold it. If `max-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -4,
+              -2,
+              -9
+            ]
+          ],
+          "expected": [
+            -2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 42\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Int Seq Int [ .. Int Int Seq Int -- .. Int ]). `main` calls `max-helper`, which has an error of its own; this report assumes `max-helper` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: max-helper\nat: line 7, column 156\nmessage: In the true branch `[ xs i prim seq-int.at locals { v ...` of the `if` in `max-helper`, `max-helper` needs 3 values (max:Int, i:Int, xs:Seq Int), but the branch has pushed only 2 values before it (the result of an `if` and the result of `prim +`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `max-helper`, exactly the values it takes, in this order: max:Int, i:Int, xs:Seq Int. The branch already pushes the result of an `if` and the result of `prim +`, in the place of the first 2 (max:Int, i:Int): keep each where it has that type and replace it where it does not. Then push the last one (xs:Seq Int) after them, for example by writing the locals that hold it. If `max-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 42\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Int Seq Int [ .. Int Int Seq Int -- .. Int ]). `main` calls `max-helper`, which has an error of its own; this report assumes `max-helper` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: max-helper\nat: line 7, column 156\nmessage: In the true branch `[ xs i prim seq-int.at locals { v ...` of the `if` in `max-helper`, `max-helper` needs 3 values (max:Int, i:Int, xs:Seq Int), but the branch has pushed only 2 values before it (the result of an `if` and the result of `prim +`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `max-helper`, exactly the values it takes, in this order: max:Int, i:Int, xs:Seq Int. The branch already pushes the result of an `if` and the result of `prim +`, in the place of the first 2 (max:Int, i:Int): keep each where it has that type and replace it where it does not. Then push the last one (xs:Seq Int) after them, for example by writing the locals that hold it. If `max-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              8,
+              8,
+              3
+            ]
+          ],
+          "expected": [
+            8
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 42\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Int Seq Int [ .. Int Int Seq Int -- .. Int ]). `main` calls `max-helper`, which has an error of its own; this report assumes `max-helper` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: max-helper\nat: line 7, column 156\nmessage: In the true branch `[ xs i prim seq-int.at locals { v ...` of the `if` in `max-helper`, `max-helper` needs 3 values (max:Int, i:Int, xs:Seq Int), but the branch has pushed only 2 values before it (the result of an `if` and the result of `prim +`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `max-helper`, exactly the values it takes, in this order: max:Int, i:Int, xs:Seq Int. The branch already pushes the result of an `if` and the result of `prim +`, in the place of the first 2 (max:Int, i:Int): keep each where it has that type and replace it where it does not. Then push the last one (xs:Seq Int) after them, for example by writing the locals that hold it. If `max-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 42\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Int Seq Int [ .. Int Int Seq Int -- .. Int ]). `main` calls `max-helper`, which has an error of its own; this report assumes `max-helper` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: max-helper\nat: line 7, column 156\nmessage: In the true branch `[ xs i prim seq-int.at locals { v ...` of the `if` in `max-helper`, `max-helper` needs 3 values (max:Int, i:Int, xs:Seq Int), but the branch has pushed only 2 values before it (the result of an `if` and the result of `prim +`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `max-helper`, exactly the values it takes, in this order: max:Int, i:Int, xs:Seq Int. The branch already pushes the result of an `if` and the result of `prim +`, in the place of the first 2 (max:Int, i:Int): keep each where it has that type and replace it where it does not. Then push the last one (xs:Seq Int) after them, for example by writing the locals that hold it. If `max-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "count-below": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              5,
+              2,
+              8
+            ],
+            4
+          ],
+          "expected": [
+            2
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            2
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [],
+            3
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            4
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              -1,
+              0,
+              1
+            ],
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              9,
+              1,
+              9,
+              1,
+              9
+            ],
+            10
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            5
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              2,
+              3
+            ],
+            -5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 5,
+      "hidden_total": 5
+    },
+    "index-of": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              7,
+              3,
+              9,
+              3
+            ],
+            3
+          ],
+          "expected": [
+            1
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [],
+            1
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            -1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            -1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            2
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              -2,
+              -3
+            ],
+            -3
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            3
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 5,
+      "hidden_total": 5
+    },
+    "reverse": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              2,
+              1
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 58\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Seq Int [ .. Seq Int Int Seq Int -- .. Seq Int ]). `main` calls `reverse-helper`, which has an error of its own; this report assumes `reverse-helper` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: reverse-helper\nat: line 7, column 142\nmessage: In the false branch of the `if` in `reverse-helper` whose true branch is `[ acc ]`, `prim seq-int.push` needs 2 values (Seq Int, Int), but the branch has pushed only 1 value before it (the result of `prim seq-int.at`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `prim seq-int.push`, exactly the values it takes, in this order: Seq Int, Int. The branch already pushes the result of `prim seq-int.at`, in the place of the last one (Int): keep it where it has that type and replace it where it does not. Then push the first one (Seq Int) before it, for example by writing the locals that hold it. If `prim seq-int.push` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 58\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Seq Int [ .. Seq Int Int Seq Int -- .. Seq Int ]). `main` calls `reverse-helper`, which has an error of its own; this report assumes `reverse-helper` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: reverse-helper\nat: line 7, column 142\nmessage: In the false branch of the `if` in `reverse-helper` whose true branch is `[ acc ]`, `prim seq-int.push` needs 2 values (Seq Int, Int), but the branch has pushed only 1 value before it (the result of `prim seq-int.at`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `prim seq-int.push`, exactly the values it takes, in this order: Seq Int, Int. The branch already pushes the result of `prim seq-int.at`, in the place of the last one (Int): keep it where it has that type and replace it where it does not. Then push the first one (Seq Int) before it, for example by writing the locals that hold it. If `prim seq-int.push` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 58\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Seq Int [ .. Seq Int Int Seq Int -- .. Seq Int ]). `main` calls `reverse-helper`, which has an error of its own; this report assumes `reverse-helper` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: reverse-helper\nat: line 7, column 142\nmessage: In the false branch of the `if` in `reverse-helper` whose true branch is `[ acc ]`, `prim seq-int.push` needs 2 values (Seq Int, Int), but the branch has pushed only 1 value before it (the result of `prim seq-int.at`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `prim seq-int.push`, exactly the values it takes, in this order: Seq Int, Int. The branch already pushes the result of `prim seq-int.at`, in the place of the last one (Int): keep it where it has that type and replace it where it does not. Then push the first one (Seq Int) before it, for example by writing the locals that hold it. If `prim seq-int.push` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              -4,
+              4,
+              -4,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              -4,
+              4,
+              -4,
+              4
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 58\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Seq Int [ .. Seq Int Int Seq Int -- .. Seq Int ]). `main` calls `reverse-helper`, which has an error of its own; this report assumes `reverse-helper` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: reverse-helper\nat: line 7, column 142\nmessage: In the false branch of the `if` in `reverse-helper` whose true branch is `[ acc ]`, `prim seq-int.push` needs 2 values (Seq Int, Int), but the branch has pushed only 1 value before it (the result of `prim seq-int.at`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `prim seq-int.push`, exactly the values it takes, in this order: Seq Int, Int. The branch already pushes the result of `prim seq-int.at`, in the place of the last one (Int): keep it where it has that type and replace it where it does not. Then push the first one (Seq Int) before it, for example by writing the locals that hold it. If `prim seq-int.push` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 58\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Seq Int [ .. Seq Int Int Seq Int -- .. Seq Int ]). `main` calls `reverse-helper`, which has an error of its own; this report assumes `reverse-helper` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: reverse-helper\nat: line 7, column 142\nmessage: In the false branch of the `if` in `reverse-helper` whose true branch is `[ acc ]`, `prim seq-int.push` needs 2 values (Seq Int, Int), but the branch has pushed only 1 value before it (the result of `prim seq-int.at`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `prim seq-int.push`, exactly the values it takes, in this order: Seq Int, Int. The branch already pushes the result of `prim seq-int.at`, in the place of the last one (Int): keep it where it has that type and replace it where it does not. Then push the first one (Seq Int) before it, for example by writing the locals that hold it. If `prim seq-int.push` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "prefix-sums": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              3,
+              6
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: prefix-helper\nat: line 7, column 113\nmessage: `prim seq-int.push` in `prefix-helper` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int) and `acc` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t25 Int Int ?t25\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `acc sum v prim +` in place of `sum v prim + acc`. With that edit `prefix-helper` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: prefix-helper\nat: line 7, column 113\nmessage: `prim seq-int.push` in `prefix-helper` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int) and `acc` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t25 Int Int ?t25\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `acc sum v prim +` in place of `sum v prim + acc`. With that edit `prefix-helper` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: prefix-helper\nat: line 7, column 113\nmessage: `prim seq-int.push` in `prefix-helper` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int) and `acc` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t25 Int Int ?t25\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `acc sum v prim +` in place of `sum v prim + acc`. With that edit `prefix-helper` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              -3,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              3,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: prefix-helper\nat: line 7, column 113\nmessage: `prim seq-int.push` in `prefix-helper` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int) and `acc` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t25 Int Int ?t25\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `acc sum v prim +` in place of `sum v prim + acc`. With that edit `prefix-helper` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              20,
+              30,
+              40,
+              50,
+              60
+            ]
+          ],
+          "expected": [
+            [
+              10,
+              30,
+              60,
+              100,
+              150,
+              210
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nword: prefix-helper\nat: line 7, column 113\nmessage: `prim seq-int.push` in `prefix-helper` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int) and `acc` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t25 Int Int ?t25\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `acc sum v prim +` in place of `sum v prim + acc`. With that edit `prefix-helper` checks.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "keep-positive": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              -1,
+              0,
+              4
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              4
+            ]
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            [
+              3,
+              0,
+              4
+            ]
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            []
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              -1,
+              -2
+            ]
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            []
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              0,
+              0,
+              5,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            [
+              0,
+              0,
+              5,
+              0
+            ]
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -7,
+              7,
+              -7,
+              7,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              7,
+              7,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            [
+              7,
+              7,
+              1
+            ]
+          ],
+          "pass": true
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 4,
+      "hidden_total": 5
+    },
+    "is-sorted": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              5
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 3, column 88\nmessage: `is-sorted-helper` in `main` takes ok:Bool, i:Int, xs:Seq Int, len:Int, bottom to top, but here it gets, bottom to top, `1` (Int), `1` (Int), `xs` (Seq Int) and `len` (Int). `main` calls `is-sorted-helper`, which has an error of its own; this report assumes `is-sorted-helper` keeps its stack effect.\nexpected: .. Bool Int Seq Int Int\nactual: .. Int Int ?t17 ?t16\nhint: The top value, `len` (Int), is not what `is-sorted-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: is-sorted-helper\nat: line 7, column 175\nmessage: In the true branch `[ i 1 prim + xs len is-sorted-helper ]` of the `if` in `is-sorted-helper`, `is-sorted-helper` needs 4 values (ok:Bool, i:Int, xs:Seq Int, len:Int), but the branch has pushed only 3 values before it (the result of `prim +`, `xs` and `len`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `is-sorted-helper`, exactly the values it takes, in this order: ok:Bool, i:Int, xs:Seq Int, len:Int. The branch already pushes the result of `prim +`, `xs` and `len`, in the place of the last 3 (i:Int, xs:Seq Int, len:Int): keep each where it has that type and replace it where it does not. Then push the first one (ok:Bool) before them, for example by writing the locals that hold it. If `is-sorted-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 3, column 88\nmessage: `is-sorted-helper` in `main` takes ok:Bool, i:Int, xs:Seq Int, len:Int, bottom to top, but here it gets, bottom to top, `1` (Int), `1` (Int), `xs` (Seq Int) and `len` (Int). `main` calls `is-sorted-helper`, which has an error of its own; this report assumes `is-sorted-helper` keeps its stack effect.\nexpected: .. Bool Int Seq Int Int\nactual: .. Int Int ?t17 ?t16\nhint: The top value, `len` (Int), is not what `is-sorted-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: is-sorted-helper\nat: line 7, column 175\nmessage: In the true branch `[ i 1 prim + xs len is-sorted-helper ]` of the `if` in `is-sorted-helper`, `is-sorted-helper` needs 4 values (ok:Bool, i:Int, xs:Seq Int, len:Int), but the branch has pushed only 3 values before it (the result of `prim +`, `xs` and `len`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `is-sorted-helper`, exactly the values it takes, in this order: ok:Bool, i:Int, xs:Seq Int, len:Int. The branch already pushes the result of `prim +`, `xs` and `len`, in the place of the last 3 (i:Int, xs:Seq Int, len:Int): keep each where it has that type and replace it where it does not. Then push the first one (ok:Bool) before them, for example by writing the locals that hold it. If `is-sorted-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 3, column 88\nmessage: `is-sorted-helper` in `main` takes ok:Bool, i:Int, xs:Seq Int, len:Int, bottom to top, but here it gets, bottom to top, `1` (Int), `1` (Int), `xs` (Seq Int) and `len` (Int). `main` calls `is-sorted-helper`, which has an error of its own; this report assumes `is-sorted-helper` keeps its stack effect.\nexpected: .. Bool Int Seq Int Int\nactual: .. Int Int ?t17 ?t16\nhint: The top value, `len` (Int), is not what `is-sorted-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: is-sorted-helper\nat: line 7, column 175\nmessage: In the true branch `[ i 1 prim + xs len is-sorted-helper ]` of the `if` in `is-sorted-helper`, `is-sorted-helper` needs 4 values (ok:Bool, i:Int, xs:Seq Int, len:Int), but the branch has pushed only 3 values before it (the result of `prim +`, `xs` and `len`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `is-sorted-helper`, exactly the values it takes, in this order: ok:Bool, i:Int, xs:Seq Int, len:Int. The branch already pushes the result of `prim +`, `xs` and `len`, in the place of the last 3 (i:Int, xs:Seq Int, len:Int): keep each where it has that type and replace it where it does not. Then push the first one (ok:Bool) before them, for example by writing the locals that hold it. If `is-sorted-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 3, column 88\nmessage: `is-sorted-helper` in `main` takes ok:Bool, i:Int, xs:Seq Int, len:Int, bottom to top, but here it gets, bottom to top, `1` (Int), `1` (Int), `xs` (Seq Int) and `len` (Int). `main` calls `is-sorted-helper`, which has an error of its own; this report assumes `is-sorted-helper` keeps its stack effect.\nexpected: .. Bool Int Seq Int Int\nactual: .. Int Int ?t17 ?t16\nhint: The top value, `len` (Int), is not what `is-sorted-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: is-sorted-helper\nat: line 7, column 175\nmessage: In the true branch `[ i 1 prim + xs len is-sorted-helper ]` of the `if` in `is-sorted-helper`, `is-sorted-helper` needs 4 values (ok:Bool, i:Int, xs:Seq Int, len:Int), but the branch has pushed only 3 values before it (the result of `prim +`, `xs` and `len`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `is-sorted-helper`, exactly the values it takes, in this order: ok:Bool, i:Int, xs:Seq Int, len:Int. The branch already pushes the result of `prim +`, `xs` and `len`, in the place of the last 3 (i:Int, xs:Seq Int, len:Int): keep each where it has that type and replace it where it does not. Then push the first one (ok:Bool) before them, for example by writing the locals that hold it. If `is-sorted-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 3, column 88\nmessage: `is-sorted-helper` in `main` takes ok:Bool, i:Int, xs:Seq Int, len:Int, bottom to top, but here it gets, bottom to top, `1` (Int), `1` (Int), `xs` (Seq Int) and `len` (Int). `main` calls `is-sorted-helper`, which has an error of its own; this report assumes `is-sorted-helper` keeps its stack effect.\nexpected: .. Bool Int Seq Int Int\nactual: .. Int Int ?t17 ?t16\nhint: The top value, `len` (Int), is not what `is-sorted-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: is-sorted-helper\nat: line 7, column 175\nmessage: In the true branch `[ i 1 prim + xs len is-sorted-helper ]` of the `if` in `is-sorted-helper`, `is-sorted-helper` needs 4 values (ok:Bool, i:Int, xs:Seq Int, len:Int), but the branch has pushed only 3 values before it (the result of `prim +`, `xs` and `len`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `is-sorted-helper`, exactly the values it takes, in this order: ok:Bool, i:Int, xs:Seq Int, len:Int. The branch already pushes the result of `prim +`, `xs` and `len`, in the place of the last 3 (i:Int, xs:Seq Int, len:Int): keep each where it has that type and replace it where it does not. Then push the first one (ok:Bool) before them, for example by writing the locals that hold it. If `is-sorted-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -5,
+              -5,
+              0,
+              7
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 3, column 88\nmessage: `is-sorted-helper` in `main` takes ok:Bool, i:Int, xs:Seq Int, len:Int, bottom to top, but here it gets, bottom to top, `1` (Int), `1` (Int), `xs` (Seq Int) and `len` (Int). `main` calls `is-sorted-helper`, which has an error of its own; this report assumes `is-sorted-helper` keeps its stack effect.\nexpected: .. Bool Int Seq Int Int\nactual: .. Int Int ?t17 ?t16\nhint: The top value, `len` (Int), is not what `is-sorted-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: is-sorted-helper\nat: line 7, column 175\nmessage: In the true branch `[ i 1 prim + xs len is-sorted-helper ]` of the `if` in `is-sorted-helper`, `is-sorted-helper` needs 4 values (ok:Bool, i:Int, xs:Seq Int, len:Int), but the branch has pushed only 3 values before it (the result of `prim +`, `xs` and `len`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `is-sorted-helper`, exactly the values it takes, in this order: ok:Bool, i:Int, xs:Seq Int, len:Int. The branch already pushes the result of `prim +`, `xs` and `len`, in the place of the last 3 (i:Int, xs:Seq Int, len:Int): keep each where it has that type and replace it where it does not. Then push the first one (ok:Bool) before them, for example by writing the locals that hold it. If `is-sorted-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 3, column 88\nmessage: `is-sorted-helper` in `main` takes ok:Bool, i:Int, xs:Seq Int, len:Int, bottom to top, but here it gets, bottom to top, `1` (Int), `1` (Int), `xs` (Seq Int) and `len` (Int). `main` calls `is-sorted-helper`, which has an error of its own; this report assumes `is-sorted-helper` keeps its stack effect.\nexpected: .. Bool Int Seq Int Int\nactual: .. Int Int ?t17 ?t16\nhint: The top value, `len` (Int), is not what `is-sorted-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: is-sorted-helper\nat: line 7, column 175\nmessage: In the true branch `[ i 1 prim + xs len is-sorted-helper ]` of the `if` in `is-sorted-helper`, `is-sorted-helper` needs 4 values (ok:Bool, i:Int, xs:Seq Int, len:Int), but the branch has pushed only 3 values before it (the result of `prim +`, `xs` and `len`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `is-sorted-helper`, exactly the values it takes, in this order: ok:Bool, i:Int, xs:Seq Int, len:Int. The branch already pushes the result of `prim +`, `xs` and `len`, in the place of the last 3 (i:Int, xs:Seq Int, len:Int): keep each where it has that type and replace it where it does not. Then push the first one (ok:Bool) before them, for example by writing the locals that hold it. If `is-sorted-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "dot": {
+      "needs": [
+        "loop",
+        "mul",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            32
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            32
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              2
+            ],
+            [
+              -3
+            ]
+          ],
+          "expected": [
+            -6
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            -6
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              -1
+            ],
+            [
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              3,
+              3,
+              3,
+              3
+            ],
+            [
+              1,
+              2,
+              3,
+              4
+            ]
+          ],
+          "expected": [
+            30
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            30
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "all-true": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              true,
+              true,
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 3, column 32\nmessage: `all-helper` in `main` takes result:Bool, i:Int, flags:Seq Bool, bottom to top, but here it gets, bottom to top, `1` (Int), `0` (Int) and `flags` (Seq Bool). `main` calls `all-helper`, which has an error of its own; this report assumes `all-helper` keeps its stack effect.\nexpected: .. Bool Int Seq Bool\nactual: \u03c1 Int Int Seq Bool\nhint: The third value from the top, `1` (Int), is not what `all-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: all-helper\nat: line 7, column 63\nmessage: `prim seq-int.len` in `all-helper` takes Seq Int, bottom to top, but here it gets, bottom to top, `flags` (Seq Bool).\nexpected: .. Seq Int\nactual: .. Seq Bool\nhint: The top value, `flags` (Seq Bool), is not what `prim seq-int.len` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 3, column 32\nmessage: `all-helper` in `main` takes result:Bool, i:Int, flags:Seq Bool, bottom to top, but here it gets, bottom to top, `1` (Int), `0` (Int) and `flags` (Seq Bool). `main` calls `all-helper`, which has an error of its own; this report assumes `all-helper` keeps its stack effect.\nexpected: .. Bool Int Seq Bool\nactual: \u03c1 Int Int Seq Bool\nhint: The third value from the top, `1` (Int), is not what `all-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: all-helper\nat: line 7, column 63\nmessage: `prim seq-int.len` in `all-helper` takes Seq Int, bottom to top, but here it gets, bottom to top, `flags` (Seq Bool).\nexpected: .. Seq Int\nactual: .. Seq Bool\nhint: The top value, `flags` (Seq Bool), is not what `prim seq-int.len` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 3, column 32\nmessage: `all-helper` in `main` takes result:Bool, i:Int, flags:Seq Bool, bottom to top, but here it gets, bottom to top, `1` (Int), `0` (Int) and `flags` (Seq Bool). `main` calls `all-helper`, which has an error of its own; this report assumes `all-helper` keeps its stack effect.\nexpected: .. Bool Int Seq Bool\nactual: \u03c1 Int Int Seq Bool\nhint: The third value from the top, `1` (Int), is not what `all-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: all-helper\nat: line 7, column 63\nmessage: `prim seq-int.len` in `all-helper` takes Seq Int, bottom to top, but here it gets, bottom to top, `flags` (Seq Bool).\nexpected: .. Seq Int\nactual: .. Seq Bool\nhint: The top value, `flags` (Seq Bool), is not what `prim seq-int.len` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 3, column 32\nmessage: `all-helper` in `main` takes result:Bool, i:Int, flags:Seq Bool, bottom to top, but here it gets, bottom to top, `1` (Int), `0` (Int) and `flags` (Seq Bool). `main` calls `all-helper`, which has an error of its own; this report assumes `all-helper` keeps its stack effect.\nexpected: .. Bool Int Seq Bool\nactual: \u03c1 Int Int Seq Bool\nhint: The third value from the top, `1` (Int), is not what `all-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: all-helper\nat: line 7, column 63\nmessage: `prim seq-int.len` in `all-helper` takes Seq Int, bottom to top, but here it gets, bottom to top, `flags` (Seq Bool).\nexpected: .. Seq Int\nactual: .. Seq Bool\nhint: The top value, `flags` (Seq Bool), is not what `prim seq-int.len` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 3, column 32\nmessage: `all-helper` in `main` takes result:Bool, i:Int, flags:Seq Bool, bottom to top, but here it gets, bottom to top, `1` (Int), `0` (Int) and `flags` (Seq Bool). `main` calls `all-helper`, which has an error of its own; this report assumes `all-helper` keeps its stack effect.\nexpected: .. Bool Int Seq Bool\nactual: \u03c1 Int Int Seq Bool\nhint: The third value from the top, `1` (Int), is not what `all-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: all-helper\nat: line 7, column 63\nmessage: `prim seq-int.len` in `all-helper` takes Seq Int, bottom to top, but here it gets, bottom to top, `flags` (Seq Bool).\nexpected: .. Seq Int\nactual: .. Seq Bool\nhint: The top value, `flags` (Seq Bool), is not what `prim seq-int.len` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              false,
+              true
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 3, column 32\nmessage: `all-helper` in `main` takes result:Bool, i:Int, flags:Seq Bool, bottom to top, but here it gets, bottom to top, `1` (Int), `0` (Int) and `flags` (Seq Bool). `main` calls `all-helper`, which has an error of its own; this report assumes `all-helper` keeps its stack effect.\nexpected: .. Bool Int Seq Bool\nactual: \u03c1 Int Int Seq Bool\nhint: The third value from the top, `1` (Int), is not what `all-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: all-helper\nat: line 7, column 63\nmessage: `prim seq-int.len` in `all-helper` takes Seq Int, bottom to top, but here it gets, bottom to top, `flags` (Seq Bool).\nexpected: .. Seq Int\nactual: .. Seq Bool\nhint: The top value, `flags` (Seq Bool), is not what `prim seq-int.len` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "longest-run": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              1,
+              2,
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: longest-helper\nat: line 7, column 239\nmessage: In the true branch `[ v i 1 prim + xs len longest-helper ]` of the `if` in `longest-helper`, `longest-helper` needs 6 values (maxrun:Int, currun:Int, i:Int, lastval:Int, xs:Seq Int, len:Int), but the branch has pushed only 4 values before it (`v`, the result of `prim +`, `xs` and `len`). The remaining 2 values would come from below the `if`, where there are none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `longest-helper`, exactly the values it takes, in this order: maxrun:Int, currun:Int, i:Int, lastval:Int, xs:Seq Int, len:Int. The branch already pushes `v`, the result of `prim +`, `xs` and `len`: keep each in its place where it is one of these and replace it where it is not, and push the other 2 in their places, for example by writing the locals that hold them. If `longest-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: longest-helper\nat: line 7, column 239\nmessage: In the true branch `[ v i 1 prim + xs len longest-helper ]` of the `if` in `longest-helper`, `longest-helper` needs 6 values (maxrun:Int, currun:Int, i:Int, lastval:Int, xs:Seq Int, len:Int), but the branch has pushed only 4 values before it (`v`, the result of `prim +`, `xs` and `len`). The remaining 2 values would come from below the `if`, where there are none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `longest-helper`, exactly the values it takes, in this order: maxrun:Int, currun:Int, i:Int, lastval:Int, xs:Seq Int, len:Int. The branch already pushes `v`, the result of `prim +`, `xs` and `len`: keep each in its place where it is one of these and replace it where it is not, and push the other 2 in their places, for example by writing the locals that hold them. If `longest-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: longest-helper\nat: line 7, column 239\nmessage: In the true branch `[ v i 1 prim + xs len longest-helper ]` of the `if` in `longest-helper`, `longest-helper` needs 6 values (maxrun:Int, currun:Int, i:Int, lastval:Int, xs:Seq Int, len:Int), but the branch has pushed only 4 values before it (`v`, the result of `prim +`, `xs` and `len`). The remaining 2 values would come from below the `if`, where there are none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `longest-helper`, exactly the values it takes, in this order: maxrun:Int, currun:Int, i:Int, lastval:Int, xs:Seq Int, len:Int. The branch already pushes `v`, the result of `prim +`, `xs` and `len`: keep each in its place where it is one of these and replace it where it is not, and push the other 2 in their places, for example by writing the locals that hold them. If `longest-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: longest-helper\nat: line 7, column 239\nmessage: In the true branch `[ v i 1 prim + xs len longest-helper ]` of the `if` in `longest-helper`, `longest-helper` needs 6 values (maxrun:Int, currun:Int, i:Int, lastval:Int, xs:Seq Int, len:Int), but the branch has pushed only 4 values before it (`v`, the result of `prim +`, `xs` and `len`). The remaining 2 values would come from below the `if`, where there are none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `longest-helper`, exactly the values it takes, in this order: maxrun:Int, currun:Int, i:Int, lastval:Int, xs:Seq Int, len:Int. The branch already pushes `v`, the result of `prim +`, `xs` and `len`: keep each in its place where it is one of these and replace it where it is not, and push the other 2 in their places, for example by writing the locals that hold them. If `longest-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: longest-helper\nat: line 7, column 239\nmessage: In the true branch `[ v i 1 prim + xs len longest-helper ]` of the `if` in `longest-helper`, `longest-helper` needs 6 values (maxrun:Int, currun:Int, i:Int, lastval:Int, xs:Seq Int, len:Int), but the branch has pushed only 4 values before it (`v`, the result of `prim +`, `xs` and `len`). The remaining 2 values would come from below the `if`, where there are none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `longest-helper`, exactly the values it takes, in this order: maxrun:Int, currun:Int, i:Int, lastval:Int, xs:Seq Int, len:Int. The branch already pushes `v`, the result of `prim +`, `xs` and `len`: keep each in its place where it is one of these and replace it where it is not, and push the other 2 in their places, for example by writing the locals that hold them. If `longest-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              1,
+              1,
+              1,
+              1,
+              3
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: longest-helper\nat: line 7, column 239\nmessage: In the true branch `[ v i 1 prim + xs len longest-helper ]` of the `if` in `longest-helper`, `longest-helper` needs 6 values (maxrun:Int, currun:Int, i:Int, lastval:Int, xs:Seq Int, len:Int), but the branch has pushed only 4 values before it (`v`, the result of `prim +`, `xs` and `len`). The remaining 2 values would come from below the `if`, where there are none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `longest-helper`, exactly the values it takes, in this order: maxrun:Int, currun:Int, i:Int, lastval:Int, xs:Seq Int, len:Int. The branch already pushes `v`, the result of `prim +`, `xs` and `len`: keep each in its place where it is one of these and replace it where it is not, and push the other 2 in their places, for example by writing the locals that hold them. If `longest-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "has-pair-sum": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              6,
+              2
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: has-pair-helper\nat: line 7, column 160\nmessage: The two branches of `if` in `has-pair-helper` leave different stacks. Below the condition and the two quotations the stack is \u03c1; the true branch leaves \u03c1 Bool and the false branch leaves \u03c1 Int. `has-pair-helper` calls `has-pair-inner`, which has an error of its own; this report assumes `has-pair-inner` keeps its stack effect.\nexpected: \u03c1 Bool\nactual: \u03c1 Int\nhint: Both leave 1 value, but the top value is Bool after the true branch and Int after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: has-pair-inner\nat: line 11, column 157\nmessage: The two branches of `if` in `has-pair-inner` leave different stacks. Below the condition and the two quotations the stack is .. Seq Int Int Int; the true branch leaves .. Seq Int Int Int Int and the false branch leaves .. Seq Int Int Int Bool.\nexpected: .. Seq Int Int Int Int\nactual: .. Seq Int Int Int Bool\nhint: Both leave 4 values, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            0
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: has-pair-helper\nat: line 7, column 160\nmessage: The two branches of `if` in `has-pair-helper` leave different stacks. Below the condition and the two quotations the stack is \u03c1; the true branch leaves \u03c1 Bool and the false branch leaves \u03c1 Int. `has-pair-helper` calls `has-pair-inner`, which has an error of its own; this report assumes `has-pair-inner` keeps its stack effect.\nexpected: \u03c1 Bool\nactual: \u03c1 Int\nhint: Both leave 1 value, but the top value is Bool after the true branch and Int after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: has-pair-inner\nat: line 11, column 157\nmessage: The two branches of `if` in `has-pair-inner` leave different stacks. Below the condition and the two quotations the stack is .. Seq Int Int Int; the true branch leaves .. Seq Int Int Int Int and the false branch leaves .. Seq Int Int Int Bool.\nexpected: .. Seq Int Int Int Int\nactual: .. Seq Int Int Int Bool\nhint: Both leave 4 values, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ],
+            8
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: has-pair-helper\nat: line 7, column 160\nmessage: The two branches of `if` in `has-pair-helper` leave different stacks. Below the condition and the two quotations the stack is \u03c1; the true branch leaves \u03c1 Bool and the false branch leaves \u03c1 Int. `has-pair-helper` calls `has-pair-inner`, which has an error of its own; this report assumes `has-pair-inner` keeps its stack effect.\nexpected: \u03c1 Bool\nactual: \u03c1 Int\nhint: Both leave 1 value, but the top value is Bool after the true branch and Int after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: has-pair-inner\nat: line 11, column 157\nmessage: The two branches of `if` in `has-pair-inner` leave different stacks. Below the condition and the two quotations the stack is .. Seq Int Int Int; the true branch leaves .. Seq Int Int Int Int and the false branch leaves .. Seq Int Int Int Bool.\nexpected: .. Seq Int Int Int Int\nactual: .. Seq Int Int Int Bool\nhint: Both leave 4 values, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: has-pair-helper\nat: line 7, column 160\nmessage: The two branches of `if` in `has-pair-helper` leave different stacks. Below the condition and the two quotations the stack is \u03c1; the true branch leaves \u03c1 Bool and the false branch leaves \u03c1 Int. `has-pair-helper` calls `has-pair-inner`, which has an error of its own; this report assumes `has-pair-inner` keeps its stack effect.\nexpected: \u03c1 Bool\nactual: \u03c1 Int\nhint: Both leave 1 value, but the top value is Bool after the true branch and Int after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: has-pair-inner\nat: line 11, column 157\nmessage: The two branches of `if` in `has-pair-inner` leave different stacks. Below the condition and the two quotations the stack is .. Seq Int Int Int; the true branch leaves .. Seq Int Int Int Int and the false branch leaves .. Seq Int Int Int Bool.\nexpected: .. Seq Int Int Int Int\nactual: .. Seq Int Int Int Bool\nhint: Both leave 4 values, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            7
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: has-pair-helper\nat: line 7, column 160\nmessage: The two branches of `if` in `has-pair-helper` leave different stacks. Below the condition and the two quotations the stack is \u03c1; the true branch leaves \u03c1 Bool and the false branch leaves \u03c1 Int. `has-pair-helper` calls `has-pair-inner`, which has an error of its own; this report assumes `has-pair-inner` keeps its stack effect.\nexpected: \u03c1 Bool\nactual: \u03c1 Int\nhint: Both leave 1 value, but the top value is Bool after the true branch and Int after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: has-pair-inner\nat: line 11, column 157\nmessage: The two branches of `if` in `has-pair-inner` leave different stacks. Below the condition and the two quotations the stack is .. Seq Int Int Int; the true branch leaves .. Seq Int Int Int Int and the false branch leaves .. Seq Int Int Int Bool.\nexpected: .. Seq Int Int Int Int\nactual: .. Seq Int Int Int Bool\nhint: Both leave 4 values, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              -2,
+              9,
+              0
+            ],
+            -2
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: has-pair-helper\nat: line 7, column 160\nmessage: The two branches of `if` in `has-pair-helper` leave different stacks. Below the condition and the two quotations the stack is \u03c1; the true branch leaves \u03c1 Bool and the false branch leaves \u03c1 Int. `has-pair-helper` calls `has-pair-inner`, which has an error of its own; this report assumes `has-pair-inner` keeps its stack effect.\nexpected: \u03c1 Bool\nactual: \u03c1 Int\nhint: Both leave 1 value, but the top value is Bool after the true branch and Int after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: has-pair-inner\nat: line 11, column 157\nmessage: The two branches of `if` in `has-pair-inner` leave different stacks. Below the condition and the two quotations the stack is .. Seq Int Int Int; the true branch leaves .. Seq Int Int Int Int and the false branch leaves .. Seq Int Int Int Bool.\nexpected: .. Seq Int Int Int Int\nactual: .. Seq Int Int Int Bool\nhint: Both leave 4 values, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              1,
+              3
+            ],
+            2
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: has-pair-helper\nat: line 7, column 160\nmessage: The two branches of `if` in `has-pair-helper` leave different stacks. Below the condition and the two quotations the stack is \u03c1; the true branch leaves \u03c1 Bool and the false branch leaves \u03c1 Int. `has-pair-helper` calls `has-pair-inner`, which has an error of its own; this report assumes `has-pair-inner` keeps its stack effect.\nexpected: \u03c1 Bool\nactual: \u03c1 Int\nhint: Both leave 1 value, but the top value is Bool after the true branch and Int after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: has-pair-inner\nat: line 11, column 157\nmessage: The two branches of `if` in `has-pair-inner` leave different stacks. Below the condition and the two quotations the stack is .. Seq Int Int Int; the true branch leaves .. Seq Int Int Int Int and the false branch leaves .. Seq Int Int Int Bool.\nexpected: .. Seq Int Int Int Int\nactual: .. Seq Int Int Int Bool\nhint: Both leave 4 values, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "count-distinct": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: is-in\nat: line 11, column 134\nmessage: The two branches of `if` in `is-in` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: Both leave 1 value, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: is-in\nat: line 11, column 134\nmessage: The two branches of `if` in `is-in` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: Both leave 1 value, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: is-in\nat: line 11, column 134\nmessage: The two branches of `if` in `is-in` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: Both leave 1 value, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: is-in\nat: line 11, column 134\nmessage: The two branches of `if` in `is-in` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: Both leave 1 value, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: is-in\nat: line 11, column 134\nmessage: The two branches of `if` in `is-in` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: Both leave 1 value, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              1,
+              -1,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: is-in\nat: line 11, column 134\nmessage: The two branches of `if` in `is-in` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: Both leave 1 value, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "merge-sorted": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              9
+            ],
+            [
+              2,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              9,
+              10
+            ]
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            [
+              1,
+              2,
+              3,
+              4,
+              9,
+              10
+            ]
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            []
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [],
+            [
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            [
+              1,
+              2
+            ]
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            [
+              5
+            ]
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              -3,
+              0,
+              8
+            ],
+            [
+              -4,
+              8,
+              9,
+              9
+            ]
+          ],
+          "expected": [
+            [
+              -4,
+              -3,
+              0,
+              8,
+              8,
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            [
+              -4,
+              -3,
+              0,
+              8,
+              8,
+              9,
+              9
+            ]
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 5,
+      "hidden_total": 5
+    },
+    "digits": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            305
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              5
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.empty-sequence\nat: line 3, column 41\nmessage: Unexpected the end of the input, expected `at least one element`.\nexpected: at least one element\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            [
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.empty-sequence\nat: line 3, column 41\nmessage: Unexpected the end of the input, expected `at least one element`.\nexpected: at least one element\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            [
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.empty-sequence\nat: line 3, column 41\nmessage: Unexpected the end of the input, expected `at least one element`.\nexpected: at least one element\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              1,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.empty-sequence\nat: line 3, column 41\nmessage: Unexpected the end of the input, expected `at least one element`.\nexpected: at least one element\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            99
+          ],
+          "expected": [
+            [
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.empty-sequence\nat: line 3, column 41\nmessage: Unexpected the end of the input, expected `at least one element`.\nexpected: at least one element\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            420
+          ],
+          "expected": [
+            [
+              4,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.empty-sequence\nat: line 3, column 41\nmessage: Unexpected the end of the input, expected `at least one element`.\nexpected: at least one element\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            987
+          ],
+          "expected": [
+            [
+              9,
+              8,
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.empty-sequence\nat: line 3, column 41\nmessage: Unexpected the end of the input, expected `at least one element`.\nexpected: at least one element\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            1005
+          ],
+          "expected": [
+            [
+              1,
+              0,
+              0,
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.empty-sequence\nat: line 3, column 41\nmessage: Unexpected the end of the input, expected `at least one element`.\nexpected: at least one element\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            40213
+          ],
+          "expected": [
+            [
+              4,
+              0,
+              2,
+              1,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.empty-sequence\nat: line 3, column 41\nmessage: Unexpected the end of the input, expected `at least one element`.\nexpected: at least one element\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 8
+    },
+    "primes-up-to": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: primes-helper\nat: line 7, column 126\nmessage: The two branches of the `if` in `primes-helper` whose true branch is `[ i 2 is-prime [ acc i prim ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: `i` and the result of `primes-helper`; the false branch leaves `acc`.\nhint: The true branch leaves 1 value more than the false branch: `i` is left below the result of `primes-helper`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the false branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: is-prime-test\nat: line 15, column 125\nmessage: The two branches of `if` in `is-prime-test` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: Both leave 1 value, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: primes-helper\nat: line 7, column 126\nmessage: The two branches of the `if` in `primes-helper` whose true branch is `[ i 2 is-prime [ acc i prim ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: `i` and the result of `primes-helper`; the false branch leaves `acc`.\nhint: The true branch leaves 1 value more than the false branch: `i` is left below the result of `primes-helper`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the false branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: is-prime-test\nat: line 15, column 125\nmessage: The two branches of `if` in `is-prime-test` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: Both leave 1 value, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: primes-helper\nat: line 7, column 126\nmessage: The two branches of the `if` in `primes-helper` whose true branch is `[ i 2 is-prime [ acc i prim ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: `i` and the result of `primes-helper`; the false branch leaves `acc`.\nhint: The true branch leaves 1 value more than the false branch: `i` is left below the result of `primes-helper`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the false branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: is-prime-test\nat: line 15, column 125\nmessage: The two branches of `if` in `is-prime-test` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: Both leave 1 value, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            2
+          ],
+          "expected": [
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: primes-helper\nat: line 7, column 126\nmessage: The two branches of the `if` in `primes-helper` whose true branch is `[ i 2 is-prime [ acc i prim ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: `i` and the result of `primes-helper`; the false branch leaves `acc`.\nhint: The true branch leaves 1 value more than the false branch: `i` is left below the result of `primes-helper`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the false branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: is-prime-test\nat: line 15, column 125\nmessage: The two branches of `if` in `is-prime-test` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: Both leave 1 value, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            13
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: primes-helper\nat: line 7, column 126\nmessage: The two branches of the `if` in `primes-helper` whose true branch is `[ i 2 is-prime [ acc i prim ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: `i` and the result of `primes-helper`; the false branch leaves `acc`.\nhint: The true branch leaves 1 value more than the false branch: `i` is left below the result of `primes-helper`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the false branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: is-prime-test\nat: line 15, column 125\nmessage: The two branches of `if` in `is-prime-test` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: Both leave 1 value, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            30
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13,
+              17,
+              19,
+              23,
+              29
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: primes-helper\nat: line 7, column 126\nmessage: The two branches of the `if` in `primes-helper` whose true branch is `[ i 2 is-prime [ acc i prim ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: `i` and the result of `primes-helper`; the false branch leaves `acc`.\nhint: The true branch leaves 1 value more than the false branch: `i` is left below the result of `primes-helper`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the false branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: is-prime-test\nat: line 15, column 125\nmessage: The two branches of `if` in `is-prime-test` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: Both leave 1 value, but the top value is Int after the true branch and Bool after the false branch. Make both branches leave the same type there. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "histogram": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              0,
+              2,
+              2,
+              1,
+              2
+            ],
+            3
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.declared-effect-mismatch\nword: main\nat: line 2, column 3\nmessage: `main` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Seq Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Seq Int\nhint: The body leaves 1 extra value on top (Seq Int). Consume or `drop` it before the end of the word, or declare it in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: hist-loop\nat: line 11, column 138\nmessage: `prim seq-int.set` in `hist-loop` takes Seq Int, Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), `counts` (Seq Int) and `v` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Seq Int Int Seq Int Int Seq Int Int\nhint: These are the values `prim seq-int.set` takes, in another order. By their names and types, `counts` is for `Seq Int`. Of the values of one type, `counts v prim seq-int.at 1 prim +` and `v` are for `Int` and `Int`, in the order you mean: only you can tell which is which. Push them in the order of its inputs.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.declared-effect-mismatch\nword: main\nat: line 2, column 3\nmessage: `main` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Seq Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Seq Int\nhint: The body leaves 1 extra value on top (Seq Int). Consume or `drop` it before the end of the word, or declare it in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: hist-loop\nat: line 11, column 138\nmessage: `prim seq-int.set` in `hist-loop` takes Seq Int, Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), `counts` (Seq Int) and `v` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Seq Int Int Seq Int Int Seq Int Int\nhint: These are the values `prim seq-int.set` takes, in another order. By their names and types, `counts` is for `Seq Int`. Of the values of one type, `counts v prim seq-int.at 1 prim +` and `v` are for `Int` and `Int`, in the order you mean: only you can tell which is which. Push them in the order of its inputs.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            1
+          ],
+          "expected": [
+            [
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.declared-effect-mismatch\nword: main\nat: line 2, column 3\nmessage: `main` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Seq Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Seq Int\nhint: The body leaves 1 extra value on top (Seq Int). Consume or `drop` it before the end of the word, or declare it in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: hist-loop\nat: line 11, column 138\nmessage: `prim seq-int.set` in `hist-loop` takes Seq Int, Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), `counts` (Seq Int) and `v` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Seq Int Int Seq Int Int Seq Int Int\nhint: These are the values `prim seq-int.set` takes, in another order. By their names and types, `counts` is for `Seq Int`. Of the values of one type, `counts v prim seq-int.at 1 prim +` and `v` are for `Int` and `Int`, in the order you mean: only you can tell which is which. Push them in the order of its inputs.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.declared-effect-mismatch\nword: main\nat: line 2, column 3\nmessage: `main` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Seq Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Seq Int\nhint: The body leaves 1 extra value on top (Seq Int). Consume or `drop` it before the end of the word, or declare it in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: hist-loop\nat: line 11, column 138\nmessage: `prim seq-int.set` in `hist-loop` takes Seq Int, Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), `counts` (Seq Int) and `v` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Seq Int Int Seq Int Int Seq Int Int\nhint: These are the values `prim seq-int.set` takes, in another order. By their names and types, `counts` is for `Seq Int`. Of the values of one type, `counts v prim seq-int.at 1 prim +` and `v` are for `Int` and `Int`, in the order you mean: only you can tell which is which. Push them in the order of its inputs.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              0,
+              3,
+              1,
+              0,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            [
+              2,
+              1,
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.declared-effect-mismatch\nword: main\nat: line 2, column 3\nmessage: `main` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Seq Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Seq Int\nhint: The body leaves 1 extra value on top (Seq Int). Consume or `drop` it before the end of the word, or declare it in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: hist-loop\nat: line 11, column 138\nmessage: `prim seq-int.set` in `hist-loop` takes Seq Int, Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), `counts` (Seq Int) and `v` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Seq Int Int Seq Int Int Seq Int Int\nhint: These are the values `prim seq-int.set` takes, in another order. By their names and types, `counts` is for `Seq Int`. Of the values of one type, `counts v prim seq-int.at 1 prim +` and `v` are for `Int` and `Int`, in the order you mean: only you can tell which is which. Push them in the order of its inputs.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              1
+            ],
+            4
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.declared-effect-mismatch\nword: main\nat: line 2, column 3\nmessage: `main` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Seq Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Seq Int\nhint: The body leaves 1 extra value on top (Seq Int). Consume or `drop` it before the end of the word, or declare it in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: hist-loop\nat: line 11, column 138\nmessage: `prim seq-int.set` in `hist-loop` takes Seq Int, Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), `counts` (Seq Int) and `v` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Seq Int Int Seq Int Int Seq Int Int\nhint: These are the values `prim seq-int.set` takes, in another order. By their names and types, `counts` is for `Seq Int`. Of the values of one type, `counts v prim seq-int.at 1 prim +` and `v` are for `Int` and `Int`, in the order you mean: only you can tell which is which. Push them in the order of its inputs.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "sort": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: sort-inner\nat: line 11, column 221\nmessage: The two branches of the `if` in `sort-inner` whose true branch is `[ arr j arr j 1 prim - ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: the result of `prim seq-int.set` and the result of `prim seq-int.set`; the false branch leaves `arr`.\nhint: The true branch leaves 1 value more than the false branch: the result of `prim seq-int.set` is left below the result of `prim seq-int.set`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the false branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: sort-inner\nat: line 11, column 221\nmessage: The two branches of the `if` in `sort-inner` whose true branch is `[ arr j arr j 1 prim - ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: the result of `prim seq-int.set` and the result of `prim seq-int.set`; the false branch leaves `arr`.\nhint: The true branch leaves 1 value more than the false branch: the result of `prim seq-int.set` is left below the result of `prim seq-int.set`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the false branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: sort-inner\nat: line 11, column 221\nmessage: The two branches of the `if` in `sort-inner` whose true branch is `[ arr j arr j 1 prim - ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: the result of `prim seq-int.set` and the result of `prim seq-int.set`; the false branch leaves `arr`.\nhint: The true branch leaves 1 value more than the false branch: the result of `prim seq-int.set` is left below the result of `prim seq-int.set`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the false branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: sort-inner\nat: line 11, column 221\nmessage: The two branches of the `if` in `sort-inner` whose true branch is `[ arr j arr j 1 prim - ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: the result of `prim seq-int.set` and the result of `prim seq-int.set`; the false branch leaves `arr`.\nhint: The true branch leaves 1 value more than the false branch: the result of `prim seq-int.set` is left below the result of `prim seq-int.set`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the false branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              -1,
+              4,
+              -1,
+              0,
+              7,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              -1,
+              -1,
+              0,
+              3,
+              4,
+              7,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: sort-inner\nat: line 11, column 221\nmessage: The two branches of the `if` in `sort-inner` whose true branch is `[ arr j arr j 1 prim - ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: the result of `prim seq-int.set` and the result of `prim seq-int.set`; the false branch leaves `arr`.\nhint: The true branch leaves 1 value more than the false branch: the result of `prim seq-int.set` is left below the result of `prim seq-int.set`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the false branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: sort-inner\nat: line 11, column 221\nmessage: The two branches of the `if` in `sort-inner` whose true branch is `[ arr j arr j 1 prim - ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: the result of `prim seq-int.set` and the result of `prim seq-int.set`; the false branch leaves `arr`.\nhint: The true branch leaves 1 value more than the false branch: the result of `prim seq-int.set` is left below the result of `prim seq-int.set`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the false branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "ledger": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10,
+            [
+              5,
+              -20,
+              -15,
+              4
+            ]
+          ],
+          "expected": [
+            4,
+            1
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            4,
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            []
+          ],
+          "expected": [
+            0,
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0,
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            0,
+            [
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0,
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            5,
+            [
+              -5,
+              -1,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0,
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            100,
+            [
+              -50,
+              -60,
+              20,
+              -70
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0,
+            1
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            3,
+            [
+              -1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            2
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0,
+            2
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 5,
+      "hidden_total": 5
+    },
+    "allocate-batch": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              10,
+              3
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              4,
+              5,
+              7,
+              1
+            ],
+            [
+              false,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              2
+            ],
+            [
+              4,
+              0,
+              6,
+              1
+            ],
+            [
+              0,
+              3,
+              1,
+              0
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.empty-sequence\nat: line 3, column 45\nmessage: Unexpected the end of the input, expected `at least one element`.\nexpected: at least one element\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            [],
+            [],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ],
+            [],
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.empty-sequence\nat: line 3, column 45\nmessage: Unexpected the end of the input, expected `at least one element`.\nexpected: at least one element\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              3
+            ],
+            [
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.empty-sequence\nat: line 3, column 45\nmessage: Unexpected the end of the input, expected `at least one element`.\nexpected: at least one element\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              1,
+              1,
+              1
+            ],
+            [
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              2,
+              2,
+              0
+            ],
+            [
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.empty-sequence\nat: line 3, column 45\nmessage: Unexpected the end of the input, expected `at least one element`.\nexpected: at least one element\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              9
+            ],
+            [
+              1,
+              0,
+              1,
+              0
+            ],
+            [
+              9,
+              5,
+              1,
+              0
+            ],
+            [
+              true,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              4,
+              0
+            ],
+            [
+              9,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              3,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.empty-sequence\nat: line 3, column 45\nmessage: Unexpected the end of the input, expected `at least one element`.\nexpected: at least one element\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              2,
+              2,
+              1,
+              1
+            ],
+            [
+              false,
+              false,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.empty-sequence\nat: line 3, column 45\nmessage: Unexpected the end of the input, expected `at least one element`.\nexpected: at least one element\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    }
+  },
+  "label": "control 8ea4a1d firth haiku-firth-10 round 2",
+  "firth_commit": "8ea4a1de3ea705b55be1c0a51b887a90d5393aeb",
+  "eval_sha256": {
+    "task.py": "f982b19a56550012ba4614e5355fbee2b5cf3e961ed0f28c5f99fdc536c7308a",
+    "tasks.py": "fff2402680c865b52ca2b661d4636430d1d62c507972d5913a1c79f99c654e17",
+    "mvp_tasks.py": "9905f4a5cdc3b64fa4cc1f4180e80106cdfbcd0b00c8105b91bf12c629c391e1",
+    "harness.py": "4eb01a6b037dee68b4159945ab684c6c61b544df17dcb6ff1611fbe3076eb7a3",
+    "isolate.py": "8aba58cd416521b896756432546129cb43f1d53761f7373ccf6c5de43b5aa9dc"
+  },
+  "prompt_docs": [
+    "prompt --tier mvp --rounds 2 at 8ea4a1d"
+  ]
+}

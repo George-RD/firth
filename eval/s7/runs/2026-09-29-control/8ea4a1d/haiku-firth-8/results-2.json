@@ -1,0 +1,2590 @@
+{
+  "lang": "firth",
+  "tasks": {
+    "seq-sum": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            15
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: sum-helper\nat: line 8, column 7\nmessage: `sum-helper` in `sum-helper` takes xs:Seq Int, total:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `sum-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: sum-helper\nat: line 8, column 7\nmessage: `sum-helper` in `sum-helper` takes xs:Seq Int, total:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `sum-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: sum-helper\nat: line 8, column 7\nmessage: `sum-helper` in `sum-helper` takes xs:Seq Int, total:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `sum-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -3,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: sum-helper\nat: line 8, column 7\nmessage: `sum-helper` in `sum-helper` takes xs:Seq Int, total:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `sum-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10
+            ]
+          ],
+          "expected": [
+            55
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: sum-helper\nat: line 8, column 7\nmessage: `sum-helper` in `sum-helper` takes xs:Seq Int, total:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `sum-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -5,
+              -6
+            ]
+          ],
+          "expected": [
+            -11
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: sum-helper\nat: line 8, column 7\nmessage: `sum-helper` in `sum-helper` takes xs:Seq Int, total:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `sum-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "seq-max": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              9,
+              2
+            ]
+          ],
+          "expected": [
+            9
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: max-helper\nat: line 6, column 60\nmessage: The two branches of the `if` in `max-helper` whose true branch is `[ drop ]` leave different numbers of values. The true branch takes the result of `prim seq-int.at` from below the `if` and leaves nothing; the false branch leaves nothing.\nhint: The true branch takes the result of `prim seq-int.at` from below the `if`, and the false branch leaves it in place, so after the false branch it is still on the stack. If the false branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the true branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: max-helper\nat: line 6, column 60\nmessage: The two branches of the `if` in `max-helper` whose true branch is `[ drop ]` leave different numbers of values. The true branch takes the result of `prim seq-int.at` from below the `if` and leaves nothing; the false branch leaves nothing.\nhint: The true branch takes the result of `prim seq-int.at` from below the `if`, and the false branch leaves it in place, so after the false branch it is still on the stack. If the false branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the true branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -4,
+              -2,
+              -9
+            ]
+          ],
+          "expected": [
+            -2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: max-helper\nat: line 6, column 60\nmessage: The two branches of the `if` in `max-helper` whose true branch is `[ drop ]` leave different numbers of values. The true branch takes the result of `prim seq-int.at` from below the `if` and leaves nothing; the false branch leaves nothing.\nhint: The true branch takes the result of `prim seq-int.at` from below the `if`, and the false branch leaves it in place, so after the false branch it is still on the stack. If the false branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the true branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: max-helper\nat: line 6, column 60\nmessage: The two branches of the `if` in `max-helper` whose true branch is `[ drop ]` leave different numbers of values. The true branch takes the result of `prim seq-int.at` from below the `if` and leaves nothing; the false branch leaves nothing.\nhint: The true branch takes the result of `prim seq-int.at` from below the `if`, and the false branch leaves it in place, so after the false branch it is still on the stack. If the false branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the true branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              8,
+              8,
+              3
+            ]
+          ],
+          "expected": [
+            8
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: max-helper\nat: line 6, column 60\nmessage: The two branches of the `if` in `max-helper` whose true branch is `[ drop ]` leave different numbers of values. The true branch takes the result of `prim seq-int.at` from below the `if` and leaves nothing; the false branch leaves nothing.\nhint: The true branch takes the result of `prim seq-int.at` from below the `if`, and the false branch leaves it in place, so after the false branch it is still on the stack. If the false branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the true branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: max-helper\nat: line 6, column 60\nmessage: The two branches of the `if` in `max-helper` whose true branch is `[ drop ]` leave different numbers of values. The true branch takes the result of `prim seq-int.at` from below the `if` and leaves nothing; the false branch leaves nothing.\nhint: The true branch takes the result of `prim seq-int.at` from below the `if`, and the false branch leaves it in place, so after the false branch it is still on the stack. If the false branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the true branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "count-below": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              5,
+              2,
+              8
+            ],
+            4
+          ],
+          "expected": [
+            2
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: count-helper\nat: line 8, column 7\nmessage: `count-helper` in `count-helper` takes xs:Seq Int, k:Int, count:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int), `k` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            3
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: count-helper\nat: line 8, column 7\nmessage: `count-helper` in `count-helper` takes xs:Seq Int, k:Int, count:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int), `k` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            4
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: count-helper\nat: line 8, column 7\nmessage: `count-helper` in `count-helper` takes xs:Seq Int, k:Int, count:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int), `k` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              0,
+              1
+            ],
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: count-helper\nat: line 8, column 7\nmessage: `count-helper` in `count-helper` takes xs:Seq Int, k:Int, count:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int), `k` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              1,
+              9,
+              1,
+              9
+            ],
+            10
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: count-helper\nat: line 8, column 7\nmessage: `count-helper` in `count-helper` takes xs:Seq Int, k:Int, count:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int), `k` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              3
+            ],
+            -5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: count-helper\nat: line 8, column 7\nmessage: `count-helper` in `count-helper` takes xs:Seq Int, k:Int, count:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int), `k` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "index-of": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              7,
+              3,
+              9,
+              3
+            ],
+            3
+          ],
+          "expected": [
+            1
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: index-helper\nat: line 8, column 7\nmessage: `index-helper` in `index-helper` takes xs:Seq Int, x:Int, idx:Int, found:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int), `x` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `index-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            1
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: index-helper\nat: line 8, column 7\nmessage: `index-helper` in `index-helper` takes xs:Seq Int, x:Int, idx:Int, found:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int), `x` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `index-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: index-helper\nat: line 8, column 7\nmessage: `index-helper` in `index-helper` takes xs:Seq Int, x:Int, idx:Int, found:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int), `x` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `index-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: index-helper\nat: line 8, column 7\nmessage: `index-helper` in `index-helper` takes xs:Seq Int, x:Int, idx:Int, found:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int), `x` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `index-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            2
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: index-helper\nat: line 8, column 7\nmessage: `index-helper` in `index-helper` takes xs:Seq Int, x:Int, idx:Int, found:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int), `x` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `index-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              -2,
+              -3
+            ],
+            -3
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: index-helper\nat: line 8, column 7\nmessage: `index-helper` in `index-helper` takes xs:Seq Int, x:Int, idx:Int, found:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int), `x` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `index-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "reverse": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              2,
+              1
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: reverse-helper\nat: line 6, column 71\nmessage: `reverse-helper` in `reverse-helper` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), the result of `prim -` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: These are the values `reverse-helper` takes, in another order. To push them in its order, write `xs result xs idx prim seq-int.at prim seq-int.push idx 1 prim -` in place of `result xs idx prim seq-int.at prim seq-int.push idx 1 prim - xs`. With that edit `reverse-helper` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: reverse-helper\nat: line 6, column 71\nmessage: `reverse-helper` in `reverse-helper` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), the result of `prim -` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: These are the values `reverse-helper` takes, in another order. To push them in its order, write `xs result xs idx prim seq-int.at prim seq-int.push idx 1 prim -` in place of `result xs idx prim seq-int.at prim seq-int.push idx 1 prim - xs`. With that edit `reverse-helper` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: reverse-helper\nat: line 6, column 71\nmessage: `reverse-helper` in `reverse-helper` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), the result of `prim -` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: These are the values `reverse-helper` takes, in another order. To push them in its order, write `xs result xs idx prim seq-int.at prim seq-int.push idx 1 prim -` in place of `result xs idx prim seq-int.at prim seq-int.push idx 1 prim - xs`. With that edit `reverse-helper` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              -4,
+              4,
+              -4,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              -4,
+              4,
+              -4,
+              4
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: reverse-helper\nat: line 6, column 71\nmessage: `reverse-helper` in `reverse-helper` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), the result of `prim -` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: These are the values `reverse-helper` takes, in another order. To push them in its order, write `xs result xs idx prim seq-int.at prim seq-int.push idx 1 prim -` in place of `result xs idx prim seq-int.at prim seq-int.push idx 1 prim - xs`. With that edit `reverse-helper` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: reverse-helper\nat: line 6, column 71\nmessage: `reverse-helper` in `reverse-helper` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), the result of `prim -` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: These are the values `reverse-helper` takes, in another order. To push them in its order, write `xs result xs idx prim seq-int.at prim seq-int.push idx 1 prim -` in place of `result xs idx prim seq-int.at prim seq-int.push idx 1 prim - xs`. With that edit `reverse-helper` checks.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "prefix-sums": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              3,
+              6
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: prefix-helper\nat: line 8, column 7\nmessage: `prefix-helper` in `prefix-helper` takes xs:Seq Int, result:Seq Int, total:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), the result of `prim seq-int.push` (Seq Int), `xs` (Seq Int) and the result of `prim +` (Int).\nexpected: .. Seq Int Seq Int Int Int\nactual: .. Int Seq Int Seq Int Int\nhint: The second value from the top, `xs` (Seq Int), is not what `prefix-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: prefix-helper\nat: line 8, column 7\nmessage: `prefix-helper` in `prefix-helper` takes xs:Seq Int, result:Seq Int, total:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), the result of `prim seq-int.push` (Seq Int), `xs` (Seq Int) and the result of `prim +` (Int).\nexpected: .. Seq Int Seq Int Int Int\nactual: .. Int Seq Int Seq Int Int\nhint: The second value from the top, `xs` (Seq Int), is not what `prefix-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: prefix-helper\nat: line 8, column 7\nmessage: `prefix-helper` in `prefix-helper` takes xs:Seq Int, result:Seq Int, total:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), the result of `prim seq-int.push` (Seq Int), `xs` (Seq Int) and the result of `prim +` (Int).\nexpected: .. Seq Int Seq Int Int Int\nactual: .. Int Seq Int Seq Int Int\nhint: The second value from the top, `xs` (Seq Int), is not what `prefix-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              -3,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              3,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: prefix-helper\nat: line 8, column 7\nmessage: `prefix-helper` in `prefix-helper` takes xs:Seq Int, result:Seq Int, total:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), the result of `prim seq-int.push` (Seq Int), `xs` (Seq Int) and the result of `prim +` (Int).\nexpected: .. Seq Int Seq Int Int Int\nactual: .. Int Seq Int Seq Int Int\nhint: The second value from the top, `xs` (Seq Int), is not what `prefix-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              20,
+              30,
+              40,
+              50,
+              60
+            ]
+          ],
+          "expected": [
+            [
+              10,
+              30,
+              60,
+              100,
+              150,
+              210
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: prefix-helper\nat: line 8, column 7\nmessage: `prefix-helper` in `prefix-helper` takes xs:Seq Int, result:Seq Int, total:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), the result of `prim seq-int.push` (Seq Int), `xs` (Seq Int) and the result of `prim +` (Int).\nexpected: .. Seq Int Seq Int Int Int\nactual: .. Int Seq Int Seq Int Int\nhint: The second value from the top, `xs` (Seq Int), is not what `prefix-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "keep-positive": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              -1,
+              0,
+              4
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              4
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: keep-helper\nat: line 8, column 7\nmessage: `keep-helper` in `keep-helper` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Seq Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `keep-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: keep-helper\nat: line 8, column 7\nmessage: `keep-helper` in `keep-helper` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Seq Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `keep-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              -2
+            ]
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: keep-helper\nat: line 8, column 7\nmessage: `keep-helper` in `keep-helper` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Seq Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `keep-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: keep-helper\nat: line 8, column 7\nmessage: `keep-helper` in `keep-helper` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Seq Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `keep-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              0,
+              5,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: keep-helper\nat: line 8, column 7\nmessage: `keep-helper` in `keep-helper` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Seq Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `keep-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -7,
+              7,
+              -7,
+              7,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              7,
+              7,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: keep-helper\nat: line 8, column 7\nmessage: `keep-helper` in `keep-helper` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Seq Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `keep-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "is-sorted": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              5
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: sorted-helper\nat: line 10, column 9\nmessage: `sorted-helper` in `sorted-helper` takes xs:Seq Int, idx:Int, sorted:Bool, bottom to top, but here it gets, bottom to top, the result of `prim not` (Bool), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Bool\nactual: .. Bool Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `sorted-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: sorted-helper\nat: line 10, column 9\nmessage: `sorted-helper` in `sorted-helper` takes xs:Seq Int, idx:Int, sorted:Bool, bottom to top, but here it gets, bottom to top, the result of `prim not` (Bool), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Bool\nactual: .. Bool Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `sorted-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: sorted-helper\nat: line 10, column 9\nmessage: `sorted-helper` in `sorted-helper` takes xs:Seq Int, idx:Int, sorted:Bool, bottom to top, but here it gets, bottom to top, the result of `prim not` (Bool), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Bool\nactual: .. Bool Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `sorted-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: sorted-helper\nat: line 10, column 9\nmessage: `sorted-helper` in `sorted-helper` takes xs:Seq Int, idx:Int, sorted:Bool, bottom to top, but here it gets, bottom to top, the result of `prim not` (Bool), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Bool\nactual: .. Bool Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `sorted-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: sorted-helper\nat: line 10, column 9\nmessage: `sorted-helper` in `sorted-helper` takes xs:Seq Int, idx:Int, sorted:Bool, bottom to top, but here it gets, bottom to top, the result of `prim not` (Bool), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Bool\nactual: .. Bool Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `sorted-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -5,
+              -5,
+              0,
+              7
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: sorted-helper\nat: line 10, column 9\nmessage: `sorted-helper` in `sorted-helper` takes xs:Seq Int, idx:Int, sorted:Bool, bottom to top, but here it gets, bottom to top, the result of `prim not` (Bool), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Bool\nactual: .. Bool Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `sorted-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: sorted-helper\nat: line 10, column 9\nmessage: `sorted-helper` in `sorted-helper` takes xs:Seq Int, idx:Int, sorted:Bool, bottom to top, but here it gets, bottom to top, the result of `prim not` (Bool), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Bool\nactual: .. Bool Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `sorted-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "dot": {
+      "needs": [
+        "loop",
+        "mul",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            32
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: dot-helper\nat: line 8, column 7\nmessage: `dot-helper` in `dot-helper` takes xs:Seq Int, ys:Seq Int, total:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), the result of `prim +` (Int), `ys` (Seq Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int Int\nactual: .. Int Int Seq Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `dot-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: dot-helper\nat: line 8, column 7\nmessage: `dot-helper` in `dot-helper` takes xs:Seq Int, ys:Seq Int, total:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), the result of `prim +` (Int), `ys` (Seq Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int Int\nactual: .. Int Int Seq Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `dot-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2
+            ],
+            [
+              -3
+            ]
+          ],
+          "expected": [
+            -6
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: dot-helper\nat: line 8, column 7\nmessage: `dot-helper` in `dot-helper` takes xs:Seq Int, ys:Seq Int, total:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), the result of `prim +` (Int), `ys` (Seq Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int Int\nactual: .. Int Int Seq Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `dot-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              -1
+            ],
+            [
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: dot-helper\nat: line 8, column 7\nmessage: `dot-helper` in `dot-helper` takes xs:Seq Int, ys:Seq Int, total:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), the result of `prim +` (Int), `ys` (Seq Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int Int\nactual: .. Int Int Seq Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `dot-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              3,
+              3,
+              3
+            ],
+            [
+              1,
+              2,
+              3,
+              4
+            ]
+          ],
+          "expected": [
+            30
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: dot-helper\nat: line 8, column 7\nmessage: `dot-helper` in `dot-helper` takes xs:Seq Int, ys:Seq Int, total:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), the result of `prim +` (Int), `ys` (Seq Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int Int\nactual: .. Int Int Seq Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `dot-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "all-true": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              true,
+              true,
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: all-helper\nat: line 10, column 9\nmessage: `all-helper` in `all-helper` takes flags:Seq Bool, idx:Int, all:Bool, bottom to top, but here it gets, bottom to top, the result of `prim and` (Bool), the result of `prim +` (Int) and `flags` (Seq Bool).\nexpected: .. Seq Bool Int Bool\nactual: .. Bool Int Seq Bool\nhint: The top value, `flags` (Seq Bool), is not what `all-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: all-helper\nat: line 10, column 9\nmessage: `all-helper` in `all-helper` takes flags:Seq Bool, idx:Int, all:Bool, bottom to top, but here it gets, bottom to top, the result of `prim and` (Bool), the result of `prim +` (Int) and `flags` (Seq Bool).\nexpected: .. Seq Bool Int Bool\nactual: .. Bool Int Seq Bool\nhint: The top value, `flags` (Seq Bool), is not what `all-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: all-helper\nat: line 10, column 9\nmessage: `all-helper` in `all-helper` takes flags:Seq Bool, idx:Int, all:Bool, bottom to top, but here it gets, bottom to top, the result of `prim and` (Bool), the result of `prim +` (Int) and `flags` (Seq Bool).\nexpected: .. Seq Bool Int Bool\nactual: .. Bool Int Seq Bool\nhint: The top value, `flags` (Seq Bool), is not what `all-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: all-helper\nat: line 10, column 9\nmessage: `all-helper` in `all-helper` takes flags:Seq Bool, idx:Int, all:Bool, bottom to top, but here it gets, bottom to top, the result of `prim and` (Bool), the result of `prim +` (Int) and `flags` (Seq Bool).\nexpected: .. Seq Bool Int Bool\nactual: .. Bool Int Seq Bool\nhint: The top value, `flags` (Seq Bool), is not what `all-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: all-helper\nat: line 10, column 9\nmessage: `all-helper` in `all-helper` takes flags:Seq Bool, idx:Int, all:Bool, bottom to top, but here it gets, bottom to top, the result of `prim and` (Bool), the result of `prim +` (Int) and `flags` (Seq Bool).\nexpected: .. Seq Bool Int Bool\nactual: .. Bool Int Seq Bool\nhint: The top value, `flags` (Seq Bool), is not what `all-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              false,
+              true
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: all-helper\nat: line 10, column 9\nmessage: `all-helper` in `all-helper` takes flags:Seq Bool, idx:Int, all:Bool, bottom to top, but here it gets, bottom to top, the result of `prim and` (Bool), the result of `prim +` (Int) and `flags` (Seq Bool).\nexpected: .. Seq Bool Int Bool\nactual: .. Bool Int Seq Bool\nhint: The top value, `flags` (Seq Bool), is not what `all-helper` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "longest-run": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              1,
+              2,
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: run-helper\nat: line 11, column 5\nmessage: In the true branch `[ [ xs idx prim seq-int.at xs idx ...` of the `if` in `run-helper`, `run-helper` needs 4 values (xs:Seq Int, idx:Int, current-run:Int, max-run:Int), but the branch has pushed only 3 values before it (the result of an `if`, `xs` and the result of `prim +`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `run-helper`, exactly the values it takes, in this order: xs:Seq Int, idx:Int, current-run:Int, max-run:Int. The branch already pushes the result of an `if`, `xs` and the result of `prim +`: keep each in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `run-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: run-helper\nat: line 11, column 5\nmessage: In the true branch `[ [ xs idx prim seq-int.at xs idx ...` of the `if` in `run-helper`, `run-helper` needs 4 values (xs:Seq Int, idx:Int, current-run:Int, max-run:Int), but the branch has pushed only 3 values before it (the result of an `if`, `xs` and the result of `prim +`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `run-helper`, exactly the values it takes, in this order: xs:Seq Int, idx:Int, current-run:Int, max-run:Int. The branch already pushes the result of an `if`, `xs` and the result of `prim +`: keep each in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `run-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: run-helper\nat: line 11, column 5\nmessage: In the true branch `[ [ xs idx prim seq-int.at xs idx ...` of the `if` in `run-helper`, `run-helper` needs 4 values (xs:Seq Int, idx:Int, current-run:Int, max-run:Int), but the branch has pushed only 3 values before it (the result of an `if`, `xs` and the result of `prim +`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `run-helper`, exactly the values it takes, in this order: xs:Seq Int, idx:Int, current-run:Int, max-run:Int. The branch already pushes the result of an `if`, `xs` and the result of `prim +`: keep each in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `run-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: run-helper\nat: line 11, column 5\nmessage: In the true branch `[ [ xs idx prim seq-int.at xs idx ...` of the `if` in `run-helper`, `run-helper` needs 4 values (xs:Seq Int, idx:Int, current-run:Int, max-run:Int), but the branch has pushed only 3 values before it (the result of an `if`, `xs` and the result of `prim +`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `run-helper`, exactly the values it takes, in this order: xs:Seq Int, idx:Int, current-run:Int, max-run:Int. The branch already pushes the result of an `if`, `xs` and the result of `prim +`: keep each in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `run-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: run-helper\nat: line 11, column 5\nmessage: In the true branch `[ [ xs idx prim seq-int.at xs idx ...` of the `if` in `run-helper`, `run-helper` needs 4 values (xs:Seq Int, idx:Int, current-run:Int, max-run:Int), but the branch has pushed only 3 values before it (the result of an `if`, `xs` and the result of `prim +`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `run-helper`, exactly the values it takes, in this order: xs:Seq Int, idx:Int, current-run:Int, max-run:Int. The branch already pushes the result of an `if`, `xs` and the result of `prim +`: keep each in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `run-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              1,
+              1,
+              1,
+              1,
+              3
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: run-helper\nat: line 11, column 5\nmessage: In the true branch `[ [ xs idx prim seq-int.at xs idx ...` of the `if` in `run-helper`, `run-helper` needs 4 values (xs:Seq Int, idx:Int, current-run:Int, max-run:Int), but the branch has pushed only 3 values before it (the result of an `if`, `xs` and the result of `prim +`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used.\nhint: Make the branch push, just before `run-helper`, exactly the values it takes, in this order: xs:Seq Int, idx:Int, current-run:Int, max-run:Int. The branch already pushes the result of an `if`, `xs` and the result of `prim +`: keep each in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `run-helper` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "has-pair-sum": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              6,
+              2
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: pair-helper-inner\nat: line 10, column 9\nmessage: `pair-helper-inner` in `pair-helper-inner` takes xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool, bottom to top, but here it gets, bottom to top, the result of an `if` (Bool), the result of `prim +` (Int), `xs` (Seq Int), `target` (Int), `x` (Int) and `i` (Int).\nexpected: .. Seq Int Int Int Int Int Bool\nactual: .. Bool Int Seq Int Int Int ?t143\nhint: The top value, `i` (Int), is not what `pair-helper-inner` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: pair-helper\nat: line 31, column 7\nmessage: In the true branch `[ [ xs target xs i prim seq-int.at ...` of the `if` in `pair-helper`, `pair-helper-inner` (inside a quotation in that branch) needs 6 values (xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool), but the branch has pushed only 5 values before it (`xs`, `target`, the result of `prim seq-int.at`, the result of `prim +` and `false`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used. `pair-helper` calls `pair-helper-inner`, which has an error of its own; this report assumes `pair-helper-inner` keeps its stack effect.\nhint: Make the branch push, just before `pair-helper-inner`, exactly the values it takes, in this order: xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool. The branch already pushes `xs`, `target`, the result of `prim seq-int.at`, the result of `prim +` and `false`: keep each in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `pair-helper-inner` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            0
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: pair-helper-inner\nat: line 10, column 9\nmessage: `pair-helper-inner` in `pair-helper-inner` takes xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool, bottom to top, but here it gets, bottom to top, the result of an `if` (Bool), the result of `prim +` (Int), `xs` (Seq Int), `target` (Int), `x` (Int) and `i` (Int).\nexpected: .. Seq Int Int Int Int Int Bool\nactual: .. Bool Int Seq Int Int Int ?t143\nhint: The top value, `i` (Int), is not what `pair-helper-inner` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: pair-helper\nat: line 31, column 7\nmessage: In the true branch `[ [ xs target xs i prim seq-int.at ...` of the `if` in `pair-helper`, `pair-helper-inner` (inside a quotation in that branch) needs 6 values (xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool), but the branch has pushed only 5 values before it (`xs`, `target`, the result of `prim seq-int.at`, the result of `prim +` and `false`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used. `pair-helper` calls `pair-helper-inner`, which has an error of its own; this report assumes `pair-helper-inner` keeps its stack effect.\nhint: Make the branch push, just before `pair-helper-inner`, exactly the values it takes, in this order: xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool. The branch already pushes `xs`, `target`, the result of `prim seq-int.at`, the result of `prim +` and `false`: keep each in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `pair-helper-inner` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ],
+            8
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: pair-helper-inner\nat: line 10, column 9\nmessage: `pair-helper-inner` in `pair-helper-inner` takes xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool, bottom to top, but here it gets, bottom to top, the result of an `if` (Bool), the result of `prim +` (Int), `xs` (Seq Int), `target` (Int), `x` (Int) and `i` (Int).\nexpected: .. Seq Int Int Int Int Int Bool\nactual: .. Bool Int Seq Int Int Int ?t143\nhint: The top value, `i` (Int), is not what `pair-helper-inner` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: pair-helper\nat: line 31, column 7\nmessage: In the true branch `[ [ xs target xs i prim seq-int.at ...` of the `if` in `pair-helper`, `pair-helper-inner` (inside a quotation in that branch) needs 6 values (xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool), but the branch has pushed only 5 values before it (`xs`, `target`, the result of `prim seq-int.at`, the result of `prim +` and `false`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used. `pair-helper` calls `pair-helper-inner`, which has an error of its own; this report assumes `pair-helper-inner` keeps its stack effect.\nhint: Make the branch push, just before `pair-helper-inner`, exactly the values it takes, in this order: xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool. The branch already pushes `xs`, `target`, the result of `prim seq-int.at`, the result of `prim +` and `false`: keep each in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `pair-helper-inner` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: pair-helper-inner\nat: line 10, column 9\nmessage: `pair-helper-inner` in `pair-helper-inner` takes xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool, bottom to top, but here it gets, bottom to top, the result of an `if` (Bool), the result of `prim +` (Int), `xs` (Seq Int), `target` (Int), `x` (Int) and `i` (Int).\nexpected: .. Seq Int Int Int Int Int Bool\nactual: .. Bool Int Seq Int Int Int ?t143\nhint: The top value, `i` (Int), is not what `pair-helper-inner` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: pair-helper\nat: line 31, column 7\nmessage: In the true branch `[ [ xs target xs i prim seq-int.at ...` of the `if` in `pair-helper`, `pair-helper-inner` (inside a quotation in that branch) needs 6 values (xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool), but the branch has pushed only 5 values before it (`xs`, `target`, the result of `prim seq-int.at`, the result of `prim +` and `false`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used. `pair-helper` calls `pair-helper-inner`, which has an error of its own; this report assumes `pair-helper-inner` keeps its stack effect.\nhint: Make the branch push, just before `pair-helper-inner`, exactly the values it takes, in this order: xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool. The branch already pushes `xs`, `target`, the result of `prim seq-int.at`, the result of `prim +` and `false`: keep each in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `pair-helper-inner` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            7
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: pair-helper-inner\nat: line 10, column 9\nmessage: `pair-helper-inner` in `pair-helper-inner` takes xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool, bottom to top, but here it gets, bottom to top, the result of an `if` (Bool), the result of `prim +` (Int), `xs` (Seq Int), `target` (Int), `x` (Int) and `i` (Int).\nexpected: .. Seq Int Int Int Int Int Bool\nactual: .. Bool Int Seq Int Int Int ?t143\nhint: The top value, `i` (Int), is not what `pair-helper-inner` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: pair-helper\nat: line 31, column 7\nmessage: In the true branch `[ [ xs target xs i prim seq-int.at ...` of the `if` in `pair-helper`, `pair-helper-inner` (inside a quotation in that branch) needs 6 values (xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool), but the branch has pushed only 5 values before it (`xs`, `target`, the result of `prim seq-int.at`, the result of `prim +` and `false`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used. `pair-helper` calls `pair-helper-inner`, which has an error of its own; this report assumes `pair-helper-inner` keeps its stack effect.\nhint: Make the branch push, just before `pair-helper-inner`, exactly the values it takes, in this order: xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool. The branch already pushes `xs`, `target`, the result of `prim seq-int.at`, the result of `prim +` and `false`: keep each in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `pair-helper-inner` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              -2,
+              9,
+              0
+            ],
+            -2
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: pair-helper-inner\nat: line 10, column 9\nmessage: `pair-helper-inner` in `pair-helper-inner` takes xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool, bottom to top, but here it gets, bottom to top, the result of an `if` (Bool), the result of `prim +` (Int), `xs` (Seq Int), `target` (Int), `x` (Int) and `i` (Int).\nexpected: .. Seq Int Int Int Int Int Bool\nactual: .. Bool Int Seq Int Int Int ?t143\nhint: The top value, `i` (Int), is not what `pair-helper-inner` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: pair-helper\nat: line 31, column 7\nmessage: In the true branch `[ [ xs target xs i prim seq-int.at ...` of the `if` in `pair-helper`, `pair-helper-inner` (inside a quotation in that branch) needs 6 values (xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool), but the branch has pushed only 5 values before it (`xs`, `target`, the result of `prim seq-int.at`, the result of `prim +` and `false`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used. `pair-helper` calls `pair-helper-inner`, which has an error of its own; this report assumes `pair-helper-inner` keeps its stack effect.\nhint: Make the branch push, just before `pair-helper-inner`, exactly the values it takes, in this order: xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool. The branch already pushes `xs`, `target`, the result of `prim seq-int.at`, the result of `prim +` and `false`: keep each in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `pair-helper-inner` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              1,
+              3
+            ],
+            2
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: pair-helper-inner\nat: line 10, column 9\nmessage: `pair-helper-inner` in `pair-helper-inner` takes xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool, bottom to top, but here it gets, bottom to top, the result of an `if` (Bool), the result of `prim +` (Int), `xs` (Seq Int), `target` (Int), `x` (Int) and `i` (Int).\nexpected: .. Seq Int Int Int Int Int Bool\nactual: .. Bool Int Seq Int Int Int ?t143\nhint: The top value, `i` (Int), is not what `pair-helper-inner` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.branch-mismatch\nword: pair-helper\nat: line 31, column 7\nmessage: In the true branch `[ [ xs target xs i prim seq-int.at ...` of the `if` in `pair-helper`, `pair-helper-inner` (inside a quotation in that branch) needs 6 values (xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool), but the branch has pushed only 5 values before it (`xs`, `target`, the result of `prim seq-int.at`, the result of `prim +` and `false`). The remaining 1 value would come from below the `if`, where there is none: everything the word was given is bound to locals or already used. `pair-helper` calls `pair-helper-inner`, which has an error of its own; this report assumes `pair-helper-inner` keeps its stack effect.\nhint: Make the branch push, just before `pair-helper-inner`, exactly the values it takes, in this order: xs:Seq Int, target:Int, x:Int, i:Int, j:Int, found:Bool. The branch already pushes `xs`, `target`, the result of `prim seq-int.at`, the result of `prim +` and `false`: keep each in its place where it is one of these and replace it where it is not, and push the other one in its place, for example by writing the locals that hold it. If `pair-helper-inner` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "count-distinct": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: count-inner\nat: line 10, column 9\nmessage: `count-inner` in `count-inner` takes xs:Seq Int, val:Int, i:Int, found:Bool, bottom to top, but here it gets, bottom to top, the result of an `if` (Bool), the result of `prim +` (Int), `val` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Bool\nactual: .. Bool Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-inner` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: count-distinct-helper\nat: line 26, column 7\nmessage: `count-distinct-helper` in `count-distinct-helper` takes xs:Seq Int, idx:Int, count:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-distinct-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: count-inner\nat: line 10, column 9\nmessage: `count-inner` in `count-inner` takes xs:Seq Int, val:Int, i:Int, found:Bool, bottom to top, but here it gets, bottom to top, the result of an `if` (Bool), the result of `prim +` (Int), `val` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Bool\nactual: .. Bool Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-inner` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: count-distinct-helper\nat: line 26, column 7\nmessage: `count-distinct-helper` in `count-distinct-helper` takes xs:Seq Int, idx:Int, count:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-distinct-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: count-inner\nat: line 10, column 9\nmessage: `count-inner` in `count-inner` takes xs:Seq Int, val:Int, i:Int, found:Bool, bottom to top, but here it gets, bottom to top, the result of an `if` (Bool), the result of `prim +` (Int), `val` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Bool\nactual: .. Bool Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-inner` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: count-distinct-helper\nat: line 26, column 7\nmessage: `count-distinct-helper` in `count-distinct-helper` takes xs:Seq Int, idx:Int, count:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-distinct-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: count-inner\nat: line 10, column 9\nmessage: `count-inner` in `count-inner` takes xs:Seq Int, val:Int, i:Int, found:Bool, bottom to top, but here it gets, bottom to top, the result of an `if` (Bool), the result of `prim +` (Int), `val` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Bool\nactual: .. Bool Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-inner` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: count-distinct-helper\nat: line 26, column 7\nmessage: `count-distinct-helper` in `count-distinct-helper` takes xs:Seq Int, idx:Int, count:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-distinct-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: count-inner\nat: line 10, column 9\nmessage: `count-inner` in `count-inner` takes xs:Seq Int, val:Int, i:Int, found:Bool, bottom to top, but here it gets, bottom to top, the result of an `if` (Bool), the result of `prim +` (Int), `val` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Bool\nactual: .. Bool Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-inner` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: count-distinct-helper\nat: line 26, column 7\nmessage: `count-distinct-helper` in `count-distinct-helper` takes xs:Seq Int, idx:Int, count:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-distinct-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              1,
+              -1,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: count-inner\nat: line 10, column 9\nmessage: `count-inner` in `count-inner` takes xs:Seq Int, val:Int, i:Int, found:Bool, bottom to top, but here it gets, bottom to top, the result of an `if` (Bool), the result of `prim +` (Int), `val` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int Bool\nactual: .. Bool Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-inner` takes there (Bool). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: count-distinct-helper\nat: line 26, column 7\nmessage: `count-distinct-helper` in `count-distinct-helper` takes xs:Seq Int, idx:Int, count:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `count-distinct-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "merge-sorted": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              9
+            ],
+            [
+              2,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              9,
+              10
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.quotation-input-mismatch\nword: merge-helper\nat: line 28, column 49\nmessage: The quotation run by `dip` in `merge-helper` does not accept the stack below it (.. Seq Int Seq Int Int Seq Int Int Seq Int [ .. Seq Int Seq Int Seq Int Int Int -- .. Seq Int ]).\nexpected: Seq Int\nactual: Int\nhint: Check what the quotation body consumes against the values available under it.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.quotation-input-mismatch\nword: merge-helper\nat: line 28, column 49\nmessage: The quotation run by `dip` in `merge-helper` does not accept the stack below it (.. Seq Int Seq Int Int Seq Int Int Seq Int [ .. Seq Int Seq Int Seq Int Int Int -- .. Seq Int ]).\nexpected: Seq Int\nactual: Int\nhint: Check what the quotation body consumes against the values available under it.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            [
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.quotation-input-mismatch\nword: merge-helper\nat: line 28, column 49\nmessage: The quotation run by `dip` in `merge-helper` does not accept the stack below it (.. Seq Int Seq Int Int Seq Int Int Seq Int [ .. Seq Int Seq Int Seq Int Int Int -- .. Seq Int ]).\nexpected: Seq Int\nactual: Int\nhint: Check what the quotation body consumes against the values available under it.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.quotation-input-mismatch\nword: merge-helper\nat: line 28, column 49\nmessage: The quotation run by `dip` in `merge-helper` does not accept the stack below it (.. Seq Int Seq Int Int Seq Int Int Seq Int [ .. Seq Int Seq Int Seq Int Int Int -- .. Seq Int ]).\nexpected: Seq Int\nactual: Int\nhint: Check what the quotation body consumes against the values available under it.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.quotation-input-mismatch\nword: merge-helper\nat: line 28, column 49\nmessage: The quotation run by `dip` in `merge-helper` does not accept the stack below it (.. Seq Int Seq Int Int Seq Int Int Seq Int [ .. Seq Int Seq Int Seq Int Int Int -- .. Seq Int ]).\nexpected: Seq Int\nactual: Int\nhint: Check what the quotation body consumes against the values available under it.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -3,
+              0,
+              8
+            ],
+            [
+              -4,
+              8,
+              9,
+              9
+            ]
+          ],
+          "expected": [
+            [
+              -4,
+              -3,
+              0,
+              8,
+              8,
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.quotation-input-mismatch\nword: merge-helper\nat: line 28, column 49\nmessage: The quotation run by `dip` in `merge-helper` does not accept the stack below it (.. Seq Int Seq Int Int Seq Int Int Seq Int [ .. Seq Int Seq Int Seq Int Int Int -- .. Seq Int ]).\nexpected: Seq Int\nactual: Int\nhint: Check what the quotation body consumes against the values available under it.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "digits": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            305
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              5
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.word-input-mismatch\nword: digits-helper\nat: line 9, column 60\nmessage: `digits-helper` in `digits-helper` takes n:Int, result:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digits-helper` takes, in another order. To push them in its order, write `n 10 prim div result n 10 prim mod prim seq-int.push` in place of `result n 10 prim mod prim seq-int.push n 10 prim div`. With that edit `digits-helper` checks.\n\nerror 2 of 3\ncode: firth.type.word-input-mismatch\nword: reverse-seq\nat: line 19, column 71\nmessage: `reverse-seq` in `reverse-seq` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), the result of `prim -` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: These are the values `reverse-seq` takes, in another order. To push them in its order, write `xs result xs idx prim seq-int.at prim seq-int.push idx 1 prim -` in place of `result xs idx prim seq-int.at prim seq-int.push idx 1 prim - xs`. With that edit `reverse-seq` checks.\n\nerror 3 of 3\ncode: firth.type.branch-mismatch\nword: main\nat: line 31, column 5\nmessage: In the false branch of the `if` in `main` whose true branch is `[ { 0 } ]`, `reverse-seq` needs 3 values (xs:Seq Int, result:Seq Int, idx:Int), but the branch has pushed only 1 value before it (the result of `prim -`). The remaining 2 values would come from below the `if`, where there are none: everything the word was given is bound to locals or already used. `main` calls `digits-helper` and `reverse-seq`, which have errors of their own; this report assumes they keep their stack effects.\nhint: Make the branch push, just before `reverse-seq`, exactly the values it takes, in this order: xs:Seq Int, result:Seq Int, idx:Int. The branch already pushes the result of `prim -`, in the place of the last one (idx:Int): keep it where it has that type and replace it where it does not. Then push the first 2 (xs:Seq Int, result:Seq Int) before it, for example by writing the locals that hold them. If `reverse-seq` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            [
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.word-input-mismatch\nword: digits-helper\nat: line 9, column 60\nmessage: `digits-helper` in `digits-helper` takes n:Int, result:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digits-helper` takes, in another order. To push them in its order, write `n 10 prim div result n 10 prim mod prim seq-int.push` in place of `result n 10 prim mod prim seq-int.push n 10 prim div`. With that edit `digits-helper` checks.\n\nerror 2 of 3\ncode: firth.type.word-input-mismatch\nword: reverse-seq\nat: line 19, column 71\nmessage: `reverse-seq` in `reverse-seq` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), the result of `prim -` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: These are the values `reverse-seq` takes, in another order. To push them in its order, write `xs result xs idx prim seq-int.at prim seq-int.push idx 1 prim -` in place of `result xs idx prim seq-int.at prim seq-int.push idx 1 prim - xs`. With that edit `reverse-seq` checks.\n\nerror 3 of 3\ncode: firth.type.branch-mismatch\nword: main\nat: line 31, column 5\nmessage: In the false branch of the `if` in `main` whose true branch is `[ { 0 } ]`, `reverse-seq` needs 3 values (xs:Seq Int, result:Seq Int, idx:Int), but the branch has pushed only 1 value before it (the result of `prim -`). The remaining 2 values would come from below the `if`, where there are none: everything the word was given is bound to locals or already used. `main` calls `digits-helper` and `reverse-seq`, which have errors of their own; this report assumes they keep their stack effects.\nhint: Make the branch push, just before `reverse-seq`, exactly the values it takes, in this order: xs:Seq Int, result:Seq Int, idx:Int. The branch already pushes the result of `prim -`, in the place of the last one (idx:Int): keep it where it has that type and replace it where it does not. Then push the first 2 (xs:Seq Int, result:Seq Int) before it, for example by writing the locals that hold them. If `reverse-seq` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            [
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.word-input-mismatch\nword: digits-helper\nat: line 9, column 60\nmessage: `digits-helper` in `digits-helper` takes n:Int, result:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digits-helper` takes, in another order. To push them in its order, write `n 10 prim div result n 10 prim mod prim seq-int.push` in place of `result n 10 prim mod prim seq-int.push n 10 prim div`. With that edit `digits-helper` checks.\n\nerror 2 of 3\ncode: firth.type.word-input-mismatch\nword: reverse-seq\nat: line 19, column 71\nmessage: `reverse-seq` in `reverse-seq` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), the result of `prim -` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: These are the values `reverse-seq` takes, in another order. To push them in its order, write `xs result xs idx prim seq-int.at prim seq-int.push idx 1 prim -` in place of `result xs idx prim seq-int.at prim seq-int.push idx 1 prim - xs`. With that edit `reverse-seq` checks.\n\nerror 3 of 3\ncode: firth.type.branch-mismatch\nword: main\nat: line 31, column 5\nmessage: In the false branch of the `if` in `main` whose true branch is `[ { 0 } ]`, `reverse-seq` needs 3 values (xs:Seq Int, result:Seq Int, idx:Int), but the branch has pushed only 1 value before it (the result of `prim -`). The remaining 2 values would come from below the `if`, where there are none: everything the word was given is bound to locals or already used. `main` calls `digits-helper` and `reverse-seq`, which have errors of their own; this report assumes they keep their stack effects.\nhint: Make the branch push, just before `reverse-seq`, exactly the values it takes, in this order: xs:Seq Int, result:Seq Int, idx:Int. The branch already pushes the result of `prim -`, in the place of the last one (idx:Int): keep it where it has that type and replace it where it does not. Then push the first 2 (xs:Seq Int, result:Seq Int) before it, for example by writing the locals that hold them. If `reverse-seq` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              1,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.word-input-mismatch\nword: digits-helper\nat: line 9, column 60\nmessage: `digits-helper` in `digits-helper` takes n:Int, result:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digits-helper` takes, in another order. To push them in its order, write `n 10 prim div result n 10 prim mod prim seq-int.push` in place of `result n 10 prim mod prim seq-int.push n 10 prim div`. With that edit `digits-helper` checks.\n\nerror 2 of 3\ncode: firth.type.word-input-mismatch\nword: reverse-seq\nat: line 19, column 71\nmessage: `reverse-seq` in `reverse-seq` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), the result of `prim -` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: These are the values `reverse-seq` takes, in another order. To push them in its order, write `xs result xs idx prim seq-int.at prim seq-int.push idx 1 prim -` in place of `result xs idx prim seq-int.at prim seq-int.push idx 1 prim - xs`. With that edit `reverse-seq` checks.\n\nerror 3 of 3\ncode: firth.type.branch-mismatch\nword: main\nat: line 31, column 5\nmessage: In the false branch of the `if` in `main` whose true branch is `[ { 0 } ]`, `reverse-seq` needs 3 values (xs:Seq Int, result:Seq Int, idx:Int), but the branch has pushed only 1 value before it (the result of `prim -`). The remaining 2 values would come from below the `if`, where there are none: everything the word was given is bound to locals or already used. `main` calls `digits-helper` and `reverse-seq`, which have errors of their own; this report assumes they keep their stack effects.\nhint: Make the branch push, just before `reverse-seq`, exactly the values it takes, in this order: xs:Seq Int, result:Seq Int, idx:Int. The branch already pushes the result of `prim -`, in the place of the last one (idx:Int): keep it where it has that type and replace it where it does not. Then push the first 2 (xs:Seq Int, result:Seq Int) before it, for example by writing the locals that hold them. If `reverse-seq` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            99
+          ],
+          "expected": [
+            [
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.word-input-mismatch\nword: digits-helper\nat: line 9, column 60\nmessage: `digits-helper` in `digits-helper` takes n:Int, result:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digits-helper` takes, in another order. To push them in its order, write `n 10 prim div result n 10 prim mod prim seq-int.push` in place of `result n 10 prim mod prim seq-int.push n 10 prim div`. With that edit `digits-helper` checks.\n\nerror 2 of 3\ncode: firth.type.word-input-mismatch\nword: reverse-seq\nat: line 19, column 71\nmessage: `reverse-seq` in `reverse-seq` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), the result of `prim -` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: These are the values `reverse-seq` takes, in another order. To push them in its order, write `xs result xs idx prim seq-int.at prim seq-int.push idx 1 prim -` in place of `result xs idx prim seq-int.at prim seq-int.push idx 1 prim - xs`. With that edit `reverse-seq` checks.\n\nerror 3 of 3\ncode: firth.type.branch-mismatch\nword: main\nat: line 31, column 5\nmessage: In the false branch of the `if` in `main` whose true branch is `[ { 0 } ]`, `reverse-seq` needs 3 values (xs:Seq Int, result:Seq Int, idx:Int), but the branch has pushed only 1 value before it (the result of `prim -`). The remaining 2 values would come from below the `if`, where there are none: everything the word was given is bound to locals or already used. `main` calls `digits-helper` and `reverse-seq`, which have errors of their own; this report assumes they keep their stack effects.\nhint: Make the branch push, just before `reverse-seq`, exactly the values it takes, in this order: xs:Seq Int, result:Seq Int, idx:Int. The branch already pushes the result of `prim -`, in the place of the last one (idx:Int): keep it where it has that type and replace it where it does not. Then push the first 2 (xs:Seq Int, result:Seq Int) before it, for example by writing the locals that hold them. If `reverse-seq` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            420
+          ],
+          "expected": [
+            [
+              4,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.word-input-mismatch\nword: digits-helper\nat: line 9, column 60\nmessage: `digits-helper` in `digits-helper` takes n:Int, result:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digits-helper` takes, in another order. To push them in its order, write `n 10 prim div result n 10 prim mod prim seq-int.push` in place of `result n 10 prim mod prim seq-int.push n 10 prim div`. With that edit `digits-helper` checks.\n\nerror 2 of 3\ncode: firth.type.word-input-mismatch\nword: reverse-seq\nat: line 19, column 71\nmessage: `reverse-seq` in `reverse-seq` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), the result of `prim -` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: These are the values `reverse-seq` takes, in another order. To push them in its order, write `xs result xs idx prim seq-int.at prim seq-int.push idx 1 prim -` in place of `result xs idx prim seq-int.at prim seq-int.push idx 1 prim - xs`. With that edit `reverse-seq` checks.\n\nerror 3 of 3\ncode: firth.type.branch-mismatch\nword: main\nat: line 31, column 5\nmessage: In the false branch of the `if` in `main` whose true branch is `[ { 0 } ]`, `reverse-seq` needs 3 values (xs:Seq Int, result:Seq Int, idx:Int), but the branch has pushed only 1 value before it (the result of `prim -`). The remaining 2 values would come from below the `if`, where there are none: everything the word was given is bound to locals or already used. `main` calls `digits-helper` and `reverse-seq`, which have errors of their own; this report assumes they keep their stack effects.\nhint: Make the branch push, just before `reverse-seq`, exactly the values it takes, in this order: xs:Seq Int, result:Seq Int, idx:Int. The branch already pushes the result of `prim -`, in the place of the last one (idx:Int): keep it where it has that type and replace it where it does not. Then push the first 2 (xs:Seq Int, result:Seq Int) before it, for example by writing the locals that hold them. If `reverse-seq` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            987
+          ],
+          "expected": [
+            [
+              9,
+              8,
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.word-input-mismatch\nword: digits-helper\nat: line 9, column 60\nmessage: `digits-helper` in `digits-helper` takes n:Int, result:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digits-helper` takes, in another order. To push them in its order, write `n 10 prim div result n 10 prim mod prim seq-int.push` in place of `result n 10 prim mod prim seq-int.push n 10 prim div`. With that edit `digits-helper` checks.\n\nerror 2 of 3\ncode: firth.type.word-input-mismatch\nword: reverse-seq\nat: line 19, column 71\nmessage: `reverse-seq` in `reverse-seq` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), the result of `prim -` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: These are the values `reverse-seq` takes, in another order. To push them in its order, write `xs result xs idx prim seq-int.at prim seq-int.push idx 1 prim -` in place of `result xs idx prim seq-int.at prim seq-int.push idx 1 prim - xs`. With that edit `reverse-seq` checks.\n\nerror 3 of 3\ncode: firth.type.branch-mismatch\nword: main\nat: line 31, column 5\nmessage: In the false branch of the `if` in `main` whose true branch is `[ { 0 } ]`, `reverse-seq` needs 3 values (xs:Seq Int, result:Seq Int, idx:Int), but the branch has pushed only 1 value before it (the result of `prim -`). The remaining 2 values would come from below the `if`, where there are none: everything the word was given is bound to locals or already used. `main` calls `digits-helper` and `reverse-seq`, which have errors of their own; this report assumes they keep their stack effects.\nhint: Make the branch push, just before `reverse-seq`, exactly the values it takes, in this order: xs:Seq Int, result:Seq Int, idx:Int. The branch already pushes the result of `prim -`, in the place of the last one (idx:Int): keep it where it has that type and replace it where it does not. Then push the first 2 (xs:Seq Int, result:Seq Int) before it, for example by writing the locals that hold them. If `reverse-seq` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            1005
+          ],
+          "expected": [
+            [
+              1,
+              0,
+              0,
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.word-input-mismatch\nword: digits-helper\nat: line 9, column 60\nmessage: `digits-helper` in `digits-helper` takes n:Int, result:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digits-helper` takes, in another order. To push them in its order, write `n 10 prim div result n 10 prim mod prim seq-int.push` in place of `result n 10 prim mod prim seq-int.push n 10 prim div`. With that edit `digits-helper` checks.\n\nerror 2 of 3\ncode: firth.type.word-input-mismatch\nword: reverse-seq\nat: line 19, column 71\nmessage: `reverse-seq` in `reverse-seq` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), the result of `prim -` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: These are the values `reverse-seq` takes, in another order. To push them in its order, write `xs result xs idx prim seq-int.at prim seq-int.push idx 1 prim -` in place of `result xs idx prim seq-int.at prim seq-int.push idx 1 prim - xs`. With that edit `reverse-seq` checks.\n\nerror 3 of 3\ncode: firth.type.branch-mismatch\nword: main\nat: line 31, column 5\nmessage: In the false branch of the `if` in `main` whose true branch is `[ { 0 } ]`, `reverse-seq` needs 3 values (xs:Seq Int, result:Seq Int, idx:Int), but the branch has pushed only 1 value before it (the result of `prim -`). The remaining 2 values would come from below the `if`, where there are none: everything the word was given is bound to locals or already used. `main` calls `digits-helper` and `reverse-seq`, which have errors of their own; this report assumes they keep their stack effects.\nhint: Make the branch push, just before `reverse-seq`, exactly the values it takes, in this order: xs:Seq Int, result:Seq Int, idx:Int. The branch already pushes the result of `prim -`, in the place of the last one (idx:Int): keep it where it has that type and replace it where it does not. Then push the first 2 (xs:Seq Int, result:Seq Int) before it, for example by writing the locals that hold them. If `reverse-seq` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            40213
+          ],
+          "expected": [
+            [
+              4,
+              0,
+              2,
+              1,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.word-input-mismatch\nword: digits-helper\nat: line 9, column 60\nmessage: `digits-helper` in `digits-helper` takes n:Int, result:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digits-helper` takes, in another order. To push them in its order, write `n 10 prim div result n 10 prim mod prim seq-int.push` in place of `result n 10 prim mod prim seq-int.push n 10 prim div`. With that edit `digits-helper` checks.\n\nerror 2 of 3\ncode: firth.type.word-input-mismatch\nword: reverse-seq\nat: line 19, column 71\nmessage: `reverse-seq` in `reverse-seq` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), the result of `prim -` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: These are the values `reverse-seq` takes, in another order. To push them in its order, write `xs result xs idx prim seq-int.at prim seq-int.push idx 1 prim -` in place of `result xs idx prim seq-int.at prim seq-int.push idx 1 prim - xs`. With that edit `reverse-seq` checks.\n\nerror 3 of 3\ncode: firth.type.branch-mismatch\nword: main\nat: line 31, column 5\nmessage: In the false branch of the `if` in `main` whose true branch is `[ { 0 } ]`, `reverse-seq` needs 3 values (xs:Seq Int, result:Seq Int, idx:Int), but the branch has pushed only 1 value before it (the result of `prim -`). The remaining 2 values would come from below the `if`, where there are none: everything the word was given is bound to locals or already used. `main` calls `digits-helper` and `reverse-seq`, which have errors of their own; this report assumes they keep their stack effects.\nhint: Make the branch push, just before `reverse-seq`, exactly the values it takes, in this order: xs:Seq Int, result:Seq Int, idx:Int. The branch already pushes the result of `prim -`, in the place of the last one (idx:Int): keep it where it has that type and replace it where it does not. Then push the first 2 (xs:Seq Int, result:Seq Int) before it, for example by writing the locals that hold them. If `reverse-seq` should not be in this branch, remove it. Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 8
+    },
+    "primes-up-to": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: is-prime-helper\nat: line 16, column 7\nmessage: The two branches of the `if` in `is-prime-helper` whose true branch is `[ false ]` leave different numbers of values. The true branch leaves `false`; the false branch leaves 2 values, bottom to top: the result of `prim +` and the result of `is-prime-helper`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim +` is left below the result of `is-prime-helper`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: primes-helper\nat: line 28, column 37\nmessage: `primes-helper` in `primes-helper` takes max:Int, result:Seq Int, current:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), `max` (Int) and `result` (Seq Int).\nexpected: .. Int Seq Int Int\nactual: .. Int Int Seq Int\nhint: These are the values `primes-helper` takes, in another order. To push them in its order, write `max result current 1 prim +` in place of `current 1 prim + max result`. With that edit, the next error in `primes-helper` is at line 33, column 30. That edit was checked assuming `is-prime-helper`, which has an error of its own, keeps its stack effect.",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: is-prime-helper\nat: line 16, column 7\nmessage: The two branches of the `if` in `is-prime-helper` whose true branch is `[ false ]` leave different numbers of values. The true branch leaves `false`; the false branch leaves 2 values, bottom to top: the result of `prim +` and the result of `is-prime-helper`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim +` is left below the result of `is-prime-helper`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: primes-helper\nat: line 28, column 37\nmessage: `primes-helper` in `primes-helper` takes max:Int, result:Seq Int, current:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), `max` (Int) and `result` (Seq Int).\nexpected: .. Int Seq Int Int\nactual: .. Int Int Seq Int\nhint: These are the values `primes-helper` takes, in another order. To push them in its order, write `max result current 1 prim +` in place of `current 1 prim + max result`. With that edit, the next error in `primes-helper` is at line 33, column 30. That edit was checked assuming `is-prime-helper`, which has an error of its own, keeps its stack effect.",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: is-prime-helper\nat: line 16, column 7\nmessage: The two branches of the `if` in `is-prime-helper` whose true branch is `[ false ]` leave different numbers of values. The true branch leaves `false`; the false branch leaves 2 values, bottom to top: the result of `prim +` and the result of `is-prime-helper`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim +` is left below the result of `is-prime-helper`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: primes-helper\nat: line 28, column 37\nmessage: `primes-helper` in `primes-helper` takes max:Int, result:Seq Int, current:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), `max` (Int) and `result` (Seq Int).\nexpected: .. Int Seq Int Int\nactual: .. Int Int Seq Int\nhint: These are the values `primes-helper` takes, in another order. To push them in its order, write `max result current 1 prim +` in place of `current 1 prim + max result`. With that edit, the next error in `primes-helper` is at line 33, column 30. That edit was checked assuming `is-prime-helper`, which has an error of its own, keeps its stack effect.",
+          "pass": false
+        },
+        {
+          "input": [
+            2
+          ],
+          "expected": [
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: is-prime-helper\nat: line 16, column 7\nmessage: The two branches of the `if` in `is-prime-helper` whose true branch is `[ false ]` leave different numbers of values. The true branch leaves `false`; the false branch leaves 2 values, bottom to top: the result of `prim +` and the result of `is-prime-helper`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim +` is left below the result of `is-prime-helper`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: primes-helper\nat: line 28, column 37\nmessage: `primes-helper` in `primes-helper` takes max:Int, result:Seq Int, current:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), `max` (Int) and `result` (Seq Int).\nexpected: .. Int Seq Int Int\nactual: .. Int Int Seq Int\nhint: These are the values `primes-helper` takes, in another order. To push them in its order, write `max result current 1 prim +` in place of `current 1 prim + max result`. With that edit, the next error in `primes-helper` is at line 33, column 30. That edit was checked assuming `is-prime-helper`, which has an error of its own, keeps its stack effect.",
+          "pass": false
+        },
+        {
+          "input": [
+            13
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: is-prime-helper\nat: line 16, column 7\nmessage: The two branches of the `if` in `is-prime-helper` whose true branch is `[ false ]` leave different numbers of values. The true branch leaves `false`; the false branch leaves 2 values, bottom to top: the result of `prim +` and the result of `is-prime-helper`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim +` is left below the result of `is-prime-helper`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: primes-helper\nat: line 28, column 37\nmessage: `primes-helper` in `primes-helper` takes max:Int, result:Seq Int, current:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), `max` (Int) and `result` (Seq Int).\nexpected: .. Int Seq Int Int\nactual: .. Int Int Seq Int\nhint: These are the values `primes-helper` takes, in another order. To push them in its order, write `max result current 1 prim +` in place of `current 1 prim + max result`. With that edit, the next error in `primes-helper` is at line 33, column 30. That edit was checked assuming `is-prime-helper`, which has an error of its own, keeps its stack effect.",
+          "pass": false
+        },
+        {
+          "input": [
+            30
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13,
+              17,
+              19,
+              23,
+              29
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.branch-mismatch\nword: is-prime-helper\nat: line 16, column 7\nmessage: The two branches of the `if` in `is-prime-helper` whose true branch is `[ false ]` leave different numbers of values. The true branch leaves `false`; the false branch leaves 2 values, bottom to top: the result of `prim +` and the result of `is-prime-helper`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim +` is left below the result of `is-prime-helper`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: primes-helper\nat: line 28, column 37\nmessage: `primes-helper` in `primes-helper` takes max:Int, result:Seq Int, current:Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int), `max` (Int) and `result` (Seq Int).\nexpected: .. Int Seq Int Int\nactual: .. Int Int Seq Int\nhint: These are the values `primes-helper` takes, in another order. To push them in its order, write `max result current 1 prim +` in place of `current 1 prim + max result`. With that edit, the next error in `primes-helper` is at line 33, column 30. That edit was checked assuming `is-prime-helper`, which has an error of its own, keeps its stack effect.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "histogram": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              0,
+              2,
+              2,
+              1,
+              2
+            ],
+            3
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.primitive-input-mismatch\nword: histogram-helper\nat: line 6, column 85\nmessage: `prim seq-int.set` in `histogram-helper` takes Seq Int, Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int), `counts` (Seq Int) and the result of `prim +` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Seq Int Int Int Seq Int Int\nhint: The second value from the top, `counts` (Seq Int), is not what `prim seq-int.set` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 17, column 31\nmessage: `histogram-helper` in `main` takes xs:Seq Int, counts:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, `k` (Int), the result of `prim seq-int.empty` (Seq Int) and `0` (Int). `main` calls `histogram-helper`, which has an error of its own; this report assumes `histogram-helper` keeps its stack effect.\nexpected: .. Seq Int Seq Int Int\nactual: \u03c1 Seq Int Int Seq Int Int\nhint: The third value from the top, `k` (Int), is not what `histogram-helper` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.primitive-input-mismatch\nword: histogram-helper\nat: line 6, column 85\nmessage: `prim seq-int.set` in `histogram-helper` takes Seq Int, Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int), `counts` (Seq Int) and the result of `prim +` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Seq Int Int Int Seq Int Int\nhint: The second value from the top, `counts` (Seq Int), is not what `prim seq-int.set` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 17, column 31\nmessage: `histogram-helper` in `main` takes xs:Seq Int, counts:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, `k` (Int), the result of `prim seq-int.empty` (Seq Int) and `0` (Int). `main` calls `histogram-helper`, which has an error of its own; this report assumes `histogram-helper` keeps its stack effect.\nexpected: .. Seq Int Seq Int Int\nactual: \u03c1 Seq Int Int Seq Int Int\nhint: The third value from the top, `k` (Int), is not what `histogram-helper` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            1
+          ],
+          "expected": [
+            [
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.primitive-input-mismatch\nword: histogram-helper\nat: line 6, column 85\nmessage: `prim seq-int.set` in `histogram-helper` takes Seq Int, Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int), `counts` (Seq Int) and the result of `prim +` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Seq Int Int Int Seq Int Int\nhint: The second value from the top, `counts` (Seq Int), is not what `prim seq-int.set` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 17, column 31\nmessage: `histogram-helper` in `main` takes xs:Seq Int, counts:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, `k` (Int), the result of `prim seq-int.empty` (Seq Int) and `0` (Int). `main` calls `histogram-helper`, which has an error of its own; this report assumes `histogram-helper` keeps its stack effect.\nexpected: .. Seq Int Seq Int Int\nactual: \u03c1 Seq Int Int Seq Int Int\nhint: The third value from the top, `k` (Int), is not what `histogram-helper` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.primitive-input-mismatch\nword: histogram-helper\nat: line 6, column 85\nmessage: `prim seq-int.set` in `histogram-helper` takes Seq Int, Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int), `counts` (Seq Int) and the result of `prim +` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Seq Int Int Int Seq Int Int\nhint: The second value from the top, `counts` (Seq Int), is not what `prim seq-int.set` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 17, column 31\nmessage: `histogram-helper` in `main` takes xs:Seq Int, counts:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, `k` (Int), the result of `prim seq-int.empty` (Seq Int) and `0` (Int). `main` calls `histogram-helper`, which has an error of its own; this report assumes `histogram-helper` keeps its stack effect.\nexpected: .. Seq Int Seq Int Int\nactual: \u03c1 Seq Int Int Seq Int Int\nhint: The third value from the top, `k` (Int), is not what `histogram-helper` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              0,
+              3,
+              1,
+              0,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            [
+              2,
+              1,
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.primitive-input-mismatch\nword: histogram-helper\nat: line 6, column 85\nmessage: `prim seq-int.set` in `histogram-helper` takes Seq Int, Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int), `counts` (Seq Int) and the result of `prim +` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Seq Int Int Int Seq Int Int\nhint: The second value from the top, `counts` (Seq Int), is not what `prim seq-int.set` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 17, column 31\nmessage: `histogram-helper` in `main` takes xs:Seq Int, counts:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, `k` (Int), the result of `prim seq-int.empty` (Seq Int) and `0` (Int). `main` calls `histogram-helper`, which has an error of its own; this report assumes `histogram-helper` keeps its stack effect.\nexpected: .. Seq Int Seq Int Int\nactual: \u03c1 Seq Int Int Seq Int Int\nhint: The third value from the top, `k` (Int), is not what `histogram-helper` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              1
+            ],
+            4
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.primitive-input-mismatch\nword: histogram-helper\nat: line 6, column 85\nmessage: `prim seq-int.set` in `histogram-helper` takes Seq Int, Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int), `counts` (Seq Int) and the result of `prim +` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Seq Int Int Int Seq Int Int\nhint: The second value from the top, `counts` (Seq Int), is not what `prim seq-int.set` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 17, column 31\nmessage: `histogram-helper` in `main` takes xs:Seq Int, counts:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, `k` (Int), the result of `prim seq-int.empty` (Seq Int) and `0` (Int). `main` calls `histogram-helper`, which has an error of its own; this report assumes `histogram-helper` keeps its stack effect.\nexpected: .. Seq Int Seq Int Int\nactual: \u03c1 Seq Int Int Seq Int Int\nhint: The third value from the top, `k` (Int), is not what `histogram-helper` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "sort": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: insertion-sort-helper\nat: line 24, column 7\nmessage: `insertion-sort-helper` in `insertion-sort-helper` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `insertion-sort-inner` (Seq Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `insertion-sort-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: insertion-sort-helper\nat: line 24, column 7\nmessage: `insertion-sort-helper` in `insertion-sort-helper` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `insertion-sort-inner` (Seq Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `insertion-sort-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: insertion-sort-helper\nat: line 24, column 7\nmessage: `insertion-sort-helper` in `insertion-sort-helper` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `insertion-sort-inner` (Seq Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `insertion-sort-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: insertion-sort-helper\nat: line 24, column 7\nmessage: `insertion-sort-helper` in `insertion-sort-helper` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `insertion-sort-inner` (Seq Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `insertion-sort-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              -1,
+              4,
+              -1,
+              0,
+              7,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              -1,
+              -1,
+              0,
+              3,
+              4,
+              7,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: insertion-sort-helper\nat: line 24, column 7\nmessage: `insertion-sort-helper` in `insertion-sort-helper` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `insertion-sort-inner` (Seq Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `insertion-sort-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: insertion-sort-helper\nat: line 24, column 7\nmessage: `insertion-sort-helper` in `insertion-sort-helper` takes xs:Seq Int, result:Seq Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of `insertion-sort-inner` (Seq Int), the result of `prim +` (Int) and `xs` (Seq Int).\nexpected: .. Seq Int Seq Int Int\nactual: .. Seq Int Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `insertion-sort-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "ledger": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10,
+            [
+              5,
+              -20,
+              -15,
+              4
+            ]
+          ],
+          "expected": [
+            4,
+            1
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: ledger-helper\nat: line 8, column 7\nmessage: `ledger-helper` in `ledger-helper` takes txs:Seq Int, balance:Int, rejected:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of an `if` (Int), `txs` (Seq Int) and the result of `prim +` (Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Seq Int Int\nhint: The second value from the top, `txs` (Seq Int), is not what `ledger-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            []
+          ],
+          "expected": [
+            0,
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: ledger-helper\nat: line 8, column 7\nmessage: `ledger-helper` in `ledger-helper` takes txs:Seq Int, balance:Int, rejected:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of an `if` (Int), `txs` (Seq Int) and the result of `prim +` (Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Seq Int Int\nhint: The second value from the top, `txs` (Seq Int), is not what `ledger-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            [
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: ledger-helper\nat: line 8, column 7\nmessage: `ledger-helper` in `ledger-helper` takes txs:Seq Int, balance:Int, rejected:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of an `if` (Int), `txs` (Seq Int) and the result of `prim +` (Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Seq Int Int\nhint: The second value from the top, `txs` (Seq Int), is not what `ledger-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            5,
+            [
+              -5,
+              -1,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: ledger-helper\nat: line 8, column 7\nmessage: `ledger-helper` in `ledger-helper` takes txs:Seq Int, balance:Int, rejected:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of an `if` (Int), `txs` (Seq Int) and the result of `prim +` (Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Seq Int Int\nhint: The second value from the top, `txs` (Seq Int), is not what `ledger-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            100,
+            [
+              -50,
+              -60,
+              20,
+              -70
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: ledger-helper\nat: line 8, column 7\nmessage: `ledger-helper` in `ledger-helper` takes txs:Seq Int, balance:Int, rejected:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of an `if` (Int), `txs` (Seq Int) and the result of `prim +` (Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Seq Int Int\nhint: The second value from the top, `txs` (Seq Int), is not what `ledger-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            3,
+            [
+              -1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: ledger-helper\nat: line 8, column 7\nmessage: `ledger-helper` in `ledger-helper` takes txs:Seq Int, balance:Int, rejected:Int, idx:Int, bottom to top, but here it gets, bottom to top, the result of an `if` (Int), the result of an `if` (Int), `txs` (Seq Int) and the result of `prim +` (Int).\nexpected: .. Seq Int Int Int Int\nactual: .. Int Int Seq Int Int\nhint: The second value from the top, `txs` (Seq Int), is not what `ledger-helper` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "allocate-batch": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              10,
+              3
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              4,
+              5,
+              7,
+              1
+            ],
+            [
+              false,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              2
+            ],
+            [
+              4,
+              0,
+              6,
+              1
+            ],
+            [
+              0,
+              3,
+              1,
+              0
+            ]
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            [
+              10,
+              3
+            ],
+            [],
+            []
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            [],
+            [],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ],
+            [],
+            []
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            [
+              5
+            ],
+            [],
+            []
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              3
+            ],
+            [
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            [
+              0
+            ],
+            [],
+            []
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              1,
+              1,
+              1
+            ],
+            [
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              2,
+              2,
+              0
+            ],
+            [
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            [
+              2,
+              2,
+              2
+            ],
+            [],
+            []
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              9
+            ],
+            [
+              1,
+              0,
+              1,
+              0
+            ],
+            [
+              9,
+              5,
+              1,
+              0
+            ],
+            [
+              true,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              4,
+              0
+            ],
+            [
+              9,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              3,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            [
+              4,
+              9
+            ],
+            [],
+            []
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              2,
+              2,
+              1,
+              1
+            ],
+            [
+              false,
+              false,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            [
+              1,
+              1
+            ],
+            [],
+            []
+          ],
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 1,
+      "hidden_total": 5
+    }
+  },
+  "label": "control 8ea4a1d firth haiku-firth-8 round 2",
+  "firth_commit": "8ea4a1de3ea705b55be1c0a51b887a90d5393aeb",
+  "eval_sha256": {
+    "task.py": "f982b19a56550012ba4614e5355fbee2b5cf3e961ed0f28c5f99fdc536c7308a",
+    "tasks.py": "fff2402680c865b52ca2b661d4636430d1d62c507972d5913a1c79f99c654e17",
+    "mvp_tasks.py": "9905f4a5cdc3b64fa4cc1f4180e80106cdfbcd0b00c8105b91bf12c629c391e1",
+    "harness.py": "4eb01a6b037dee68b4159945ab684c6c61b544df17dcb6ff1611fbe3076eb7a3",
+    "isolate.py": "8aba58cd416521b896756432546129cb43f1d53761f7373ccf6c5de43b5aa9dc"
+  },
+  "prompt_docs": [
+    "prompt --tier mvp --rounds 2 at 8ea4a1d"
+  ]
+}
