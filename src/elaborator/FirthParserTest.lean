@@ -213,6 +213,13 @@ def runParserTests : IO Unit := do
   expectFailure ": xs ( -- ) { 1 dup } ;" "firth.syntax.invalid-sequence-element"
   expectFailure ": xs ( -- ) { { 1 } } ;" "firth.syntax.invalid-sequence-element"
   expectFailure ": xs ( -- ) { 1 2 " "firth.syntax.unexpected-eof"
+  -- Parentheses only enclose a stack effect; `;` ends a definition even
+  -- inside an open bracket (S7 run 8, samples 4 and 5).
+  expectFailure ": f ( n:Int -- r:Int ) locals { n } { (n 1 prim +) } ;" "firth.syntax.parenthesis-in-body"
+  expectFailure ": f ( n:Int -- r:Int ) n 1 prim + ) ;" "firth.syntax.parenthesis-in-body"
+  expectFailure ": f ( n:Int -- r:Int ) locals { n } { n true [ 1 ] [ 2 ] if ;" "firth.syntax.definition-ended-early"
+  expectFailure ": f ( n:Int -- r:Int ) n true [ 1 ; ] [ 2 ] if ;" "firth.syntax.definition-ended-early"
+  expectFailure ": f ( n:Int -- r:Int ) n 1 = ;" "firth.syntax.invalid-item"
   match parse workedLocals with
   | .success { declarations := [.word { body := [.locals [{ name := "a", span := _ }, { name := "b", span := _ }] [.word "a" _, .word "b" _, .primitive "+" _] _], .. }], .. } => pure ()
   | _ => fail "add-top-two worked example AST shape"
@@ -275,6 +282,19 @@ def runParserTests : IO Unit := do
   expectSpanFailure ": x ( -- ) 'a" "firth.syntax.unterminated-character" 11 13
   expectSpanFailure ": x ( -- ) '" "firth.syntax.unterminated-character" 11 12
   expectSpanFailure ": x ( -- ) 'abc" "firth.syntax.overlong-character" 11 15
+  expectSpanFailure ": x ( a:Int -- q':Int ) a ;" "firth.syntax.quote-in-name" 15 17
+  expectSpanFailure ": x ( a':Int b':Int -- r:Int ) a ;" "firth.syntax.quote-in-name" 6 8
+  -- A closed literal against a name keeps the literal's own error.
+  expectSpanFailure ": x ( -- ) dup'ab' ;" "firth.syntax.overlong-character" 14 18
+  expectFailure ": x ( -- ) dup'\\q' ;" "firth.syntax.invalid-escape"
+  -- A literal separated from the name before it is still a character.
+  match (← success ": chars ( -- ) dup 'a' ;").declarations with
+  | [.word { body := [_, .literal { value := .character 'a', .. } _], .. }] => pure ()
+  | _ => fail "character literal after a name"
+  -- So is a whole literal written against the name, as in `dup'a'`.
+  match (← success ": chars ( -- ) dup'a' ;").declarations with
+  | [.word { body := [_, .literal { value := .character 'a', .. } _], .. }] => pure ()
+  | _ => fail "character literal against a name"
   expectSpanFailure ": x ( -- ) \"abc" "firth.syntax.unterminated-string" 11 15
   expectSpanFailure (": x ( -- ) \"abc" ++ "\\") "firth.syntax.unterminated-string" 11 16
   expectSpanFailure ": x ( -- ) (*" "firth.syntax.unterminated-comment" 11 13

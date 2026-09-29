@@ -160,11 +160,42 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
         (s!"A `locals` block binds the word's inputs in a different order from its stack effect: " ++
             "; ".intercalate described ++ ".",
           s!"A `locals` block takes one value off the stack for each name, the last name from the top, so the names must follow the stack effect's inputs from left to right.{plainFix}{String.join reachingFix}{String.join uncheckedFix} Swapping values with `swap` would not help, because the names are what is wrong.")
+    | "firth.syntax.parenthesis-in-body" =>
+        (s!"{actual} is not allowed in a word's body: parentheses only enclose the stack effect after the word's name.",
+          "Pass values to an operation by pushing them in the order it takes them, with no grouping: write `n 1 prim +`, not `(n 1 prim +)`, and `xs i 1 prim + f`, not `xs (i 1 prim +) f`. To keep code to run later, quote it with `[ ... ]`. A comment is written `(* ... *)`, or `\\` to the end of the line.")
+    | "firth.syntax.definition-ended-early" =>
+        let opened := if error.expected == some "]" then "a quotation opened with `[`"
+          else "a `locals` body opened with `{`"
+        let hint := match error.closedBy with
+          -- The brackets after this `;` already close what it left open.
+          | some (closer, span, .delete) =>
+              s!"A `;` in a word's body always ends the word. The brackets after this `;` already close everything still open, up to the `{closer}` on line {span.start.line}, so delete this `;` and keep the `;` that ends the word after that `{closer}`."
+          | some (closer, span, .move) =>
+              s!"A `;` in a word's body always ends the word. The brackets after this `;` close everything still open, up to the `{closer}` on line {span.start.line}, but no `;` ends the word after it, so move this `;` to just after that `{closer}`."
+          | some (closer, span, .endAfterBody) =>
+              s!"A `;` in a word's body always ends the word. The brackets after this `;` close everything still open, up to the `{closer}` on line {span.start.line}, and the body goes on after it with no `;` to end the word, so delete this `;` and end the word with `;` after its last item."
+          | none =>
+              s!"A `;` in a word's body always ends the word. Close each open bracket first, innermost first: `]` for a quotation and `}` for a `locals` body, as in `... ] if };`. Here the next one to close is `{(error.expected.getD "]")}`."
+        (s!"`;` ends the definition here, but {opened} is still open.", hint)
+    | "firth.syntax.invalid-item" =>
+        (s!"{error.actual.map (s!"`{·}`") |>.getD "This"} cannot start an item in a word's body.", definitionShape)
+    | "firth.syntax.overlong-character" =>
+        ("A character literal holds exactly one character between its quotes, as in `'a'`.",
+          "Write exactly one character between the quotes, and close the literal with `'`.")
+    | "firth.syntax.quote-in-name" =>
+        (s!"{error.actual.map (s!"`{·}`") |>.getD "This name"} is not a name: a name cannot contain `'`.",
+          "Rename it without the `'`, for example `q'` as `q2`, and use the new name everywhere the old one appears.")
     | _ =>
         let expected := match error.expected with
           | some expected => s!", expected `{expected}`"
           | none => ""
-        (s!"Unexpected {actual}{expected}.", definitionShape)
+        -- Only a report at the end of the input has no text of its own.
+        let message := match error.actual with
+          | some _ => s!"Unexpected {actual}{expected}."
+          | none =>
+              if error.code == "firth.syntax.unexpected-eof" then s!"The input ends here{expected}."
+              else s!"This is not valid here ({(lastSegment error.code).replace "-" " "}){expected}."
+        (message, definitionShape)
   .mkObj [("message", .str message), ("hint", .str hint)]
 
 def parserEnvelope (context : EmissionContext)

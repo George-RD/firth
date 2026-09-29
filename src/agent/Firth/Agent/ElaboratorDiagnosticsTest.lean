@@ -99,6 +99,105 @@ private def reportsIn (result : StructuredElaborationResult) (word : String) : L
       | .error _ => false
   | .success _ => []
 
+/-- Syntax errors say what the text is, not that the input ended (S7 run 8:
+answers grouped arguments in parentheses, or closed a branch with `] if;`
+inside a `locals` body, and were told "Unexpected the end of the input"). -/
+private def runSyntaxMessageTests : IO Unit := do
+  let pipelineContext := contextWithSource "pipeline-syntax" "main.fth"
+  let agentConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := Elaborate.gammaErasure, typingEnv := Elaborate.gammaTyping }
+  let paramsOf (envelope : Envelope) : String × String × String :=
+    match Lean.Json.parse (encode envelope) with
+    | .ok json =>
+        let body := json.getObjValD "body"
+        let params := body.getObjValD "message_params"
+        ((body.getObjValD "code").getStr?.toOption.getD "",
+          (params.getObjValD "message").getStr?.toOption.getD "",
+          (params.getObjValD "hint").getStr?.toOption.getD "")
+    | .error _ => ("", "", "")
+  let cases : List (String × String × String × String) := [
+    (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  locals { n } { (n 1 prim +) };",
+      "firth.syntax.parenthesis-in-body",
+      "`(` is not allowed in a word's body: parentheses only enclose the stack effect after the word's name.",
+      "write `n 1 prim +`, not `(n 1 prim +)`"),
+    -- Run 8 sample 2 used parentheses as a comment.
+    (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  n (copy of n) ;",
+      "firth.syntax.parenthesis-in-body",
+      "`(` is not allowed in a word's body: parentheses only enclose the stack effect after the word's name.",
+      "A comment is written `(* ... *)`"),
+    (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  locals { n } { n 0 prim = [ 0 ] [ n ] if;",
+      "firth.syntax.definition-ended-early",
+      "`;` ends the definition here, but a `locals` body opened with `{` is still open.",
+      "Here the next one to close is `}`."),
+    (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  n 0 prim = [ 0 ; ] [ n ] if ;",
+      "firth.syntax.definition-ended-early",
+      "`;` ends the definition here, but a quotation opened with `[` is still open.",
+      "up to the `]` on line 2, so delete this `;`"),
+    -- Run 8's shape: `] if;` closing a branch, and `};` on the next line.
+    (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  locals { n } { n 0 prim = [ 0 ] [ n [ 1 ] [ 2 ] if; ] if\n  };",
+      "firth.syntax.definition-ended-early",
+      "`;` ends the definition here, but a quotation opened with `[` is still open.",
+      "up to the `}` on line 3, so delete this `;`"),
+    (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  n 0 prim = [ 0 ;",
+      "firth.syntax.definition-ended-early",
+      "`;` ends the definition here, but a quotation opened with `[` is still open.",
+      "Here the next one to close is `]`."),
+    -- The brackets after the `;` close in the wrong order, so it is not the one to delete.
+    (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  locals { n } { n [ 0 ; } } ;",
+      "firth.syntax.definition-ended-early",
+      "`;` ends the definition here, but a quotation opened with `[` is still open.",
+      "Here the next one to close is `]`."),
+    -- No `;` follows the bracket, so deleting this one would leave the word open.
+    (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  n [ 0 ; ]",
+      "firth.syntax.definition-ended-early",
+      "`;` ends the definition here, but a quotation opened with `[` is still open.",
+      "no `;` ends the word after it, so move this `;` to just after that `]`"),
+    -- The later `;` is inside another quotation, so it does not end the word either,
+    -- and the body goes on after the `]`.
+    (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  n [ 1 ; ] [ 2 ; ]",
+      "firth.syntax.definition-ended-early",
+      "`;` ends the definition here, but a quotation opened with `[` is still open.",
+      "delete this `;` and end the word with `;` after its last item"),
+    (": f ( n:Int -- r:Int ) locals { n } { n ; } 1 prim +",
+      "firth.syntax.definition-ended-early",
+      "`;` ends the definition here, but a `locals` body opened with `{` is still open.",
+      "up to the `}` on line 1, and the body goes on after it"),
+    -- The next `;` belongs to the next definition.
+    (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  locals { n } { n ;\n  }\n: g ( -- ) ;",
+      "firth.syntax.definition-ended-early",
+      "`;` ends the definition here, but a `locals` body opened with `{` is still open.",
+      "up to the `}` on line 3, but no `;` ends the word after it, so move this `;`"),
+    -- Another `;` comes before the brackets close.
+    (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many)\n  locals { n } { n [ 0 ; ] ; } ;",
+      "firth.syntax.definition-ended-early",
+      "`;` ends the definition here, but a quotation opened with `[` is still open.",
+      "Here the next one to close is `]`."),
+    (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many) n 1 = ;",
+      "firth.syntax.invalid-item", "`=` cannot start an item in a word's body.", ""),
+    (": divmod (forall ρ; ρ a:Int^many -- ρ q':Int^many) a ;",
+      "firth.syntax.quote-in-name",
+      "`q'` is not a name: a name cannot contain `'`.",
+      "Rename it without the `'`"),
+    (": main (forall ρ; ρ -- ρ c:Int^many) 'ab' ;",
+      "firth.syntax.overlong-character",
+      "A character literal holds exactly one character between its quotes, as in `'a'`.",
+      "Write exactly one character between the quotes"),
+    (": x (forall ; ρ -- ρ) ;",
+      "firth.syntax.missing-row-binder", "This is not valid here (missing row binder).", ""),
+    (": main (forall ρ; ρ -- ρ r:Int^many) locals n ;",
+      "firth.syntax.unexpected-token", "Unexpected `n`, expected `{`.", ""),
+    (": main (forall ρ; ρ n:Int^many -- ρ r:Int^many) n",
+      "firth.syntax.unexpected-eof", "The input ends here, expected `;`.", "")]
+  for (source, code, message, hint) in cases do
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .failure (envelope :: _) =>
+        let (gotCode, gotMessage, gotHint) := paramsOf envelope
+        expectEqual s!"syntax message: code for {source}" gotCode code
+        expectEqual s!"syntax message: message for {source}" gotMessage message
+        unless hint.isEmpty || (gotHint.splitOn hint).length > 1 do
+          fail s!"syntax message: the hint for {source} does not contain {hint}: {gotHint}"
+    | _ => fail s!"syntax message: expected a refusal for {source}"
+
 /-- A refused program gets the first error of each word it refuses, in
 source order, each naming its word. Other words are checked against a word's
 declared effect, whatever its body does, and a word whose declared effect is
@@ -1780,6 +1879,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
     fail s!"the language has {languagePrimitives.length} primitives but this test lists {everyPrimitive.length}; add the new ones above"
   runCallAccountTests
   runEveryErrorTests
+  runSyntaxMessageTests
   runAssumesTests
 
 end Firth.Agent.Test

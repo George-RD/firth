@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.agent
-status: open
+status: done
 created: 2026-09-29
 ---
 
@@ -45,3 +45,39 @@ word, which left them no way to loop.
   diagnostic that says the definition ended there, checked on sample 5's
   round-1 answers.
 - The message no longer says the input ended where it did not.
+
+## Resolution
+
+The parser reports `firth.syntax.parenthesis-in-body` at a `(` or `)` in a
+body, with a hint that says to push arguments in order, to quote code with
+`[ ... ]`, and that a comment is `(* ... *)` or `\` (run 8 sample 2 used
+`(copy of sum at top)` as a comment). Of sample 4's 20 first answers, 19
+now get it first.
+
+A `;` inside an open `[` or `locals` body reports
+`firth.syntax.definition-ended-early`. Which hint it gets depends on the
+text after the `;`:
+
+- When the brackets after it close everything still open, in order,
+  before any other `;`, the hint says to delete this `;` and names the
+  line of the bracket that closes the outermost one. This is how 21 of the
+  22 answers across `eval/s7/runs/` that get this error wrote it: `] if;`
+  with `};` on the next line. Deleting the `;` takes all 21 past it: 16
+  reach a type or name error, 4 reach another early `;` further down, and
+  1 reaches `prim <=` (`firth.syntax.invalid-item`).
+- When those brackets close everything but no `;` at the word's own level
+  ends it before the next declaration or the end of the input, the hint
+  says to move this `;` to just after the closing bracket if nothing else
+  follows it, and otherwise to delete this `;` and end the word with `;`
+  after its last item. No answer in the corpus has either shape; both are
+  tested, and applying each hint as written clears the syntax error.
+- Otherwise the hint says to close the open brackets first and names the
+  next one to close. Only run 4's `is-sorted`
+  (`2026-09-28-mvp/haiku-firth/answer-3.md`) gets this reading; closing the
+  `]` there reaches a name error.
+
+No syntax message says the input ended unless it did: over every answer in
+`eval/s7/runs/`, messages saying so drop from 54 to 0. A `'` that touches
+the name before it, as in `q'`, reports `firth.syntax.quote-in-name`
+instead of the character-literal error, so a real overlong literal such as
+`'ab'` keeps a hint about literals.
