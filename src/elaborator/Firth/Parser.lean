@@ -31,6 +31,9 @@ structure LocalsBlock where
   /-- The names the body should push first, bottom to top, in place of the
   values the old block left on the stack. -/
   prelude : List String := []
+  /-- Whether an inner `locals` block binds a name to rename again, so that
+  the name means two things in the body and no edit can be stated by name. -/
+  rebound : Bool := false
   /-- Whether the word, edited as above, was checked and is accepted. When
   it is not, the diagnostic states no edit. -/
   checked : Bool := false

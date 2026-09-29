@@ -42,7 +42,10 @@ plain reordering keeps the body.
 The pipeline applies each edit to the word and checks it before stating it.
 An edit that makes an accepted word refused, or brings a refusal earlier in
 the source, is not stated, and the report says only that the body must be
-rewritten for the names it binds. Of the 40 recorded refusals, 39 state their
+rewritten for the names it binds. It says the same when an inner `locals`
+block binds a name to rename again, and a block that repeats a name is left
+to `firth.name.duplicate-local`. Binders avoid the body's names as written,
+before vocabulary names are resolved. Of the 40 recorded refusals, 39 state their
 edit. The other (`count-below`, whose `main` body was written for the names
 as bound) falls back.
 

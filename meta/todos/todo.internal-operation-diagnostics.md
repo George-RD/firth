@@ -64,12 +64,20 @@ the checker wrote, not the author:
   refused (review of #165). Stating only edits whose word is accepted moves
   23 of the 40 recorded refusals to the fallback. The reviewer's suggestion:
   keep the edit and add "after this edit, `w` is still refused at L:C".
-- `firth.name.locals-order` (#165, found by Codex after approval; fixed in
-  the next PR from `main`): a bare call inside a vocabulary is resolved
-  before binders are chosen, so a new binder can shadow it in the source; an
-  opening block that repeats a name gets contradictory renames and hides
-  `firth.name.duplicate-local`; and the edit check renames an inner block's
-  own binder of a renamed name.
+- The branch account records a word's input and output types without their
+  usage (`type.name`), and since #166 compares a primitive's without it too
+  (`Account.plainType`). Two consequences (review and Codex on #166):
+  - a word declaring `w:World^many h:Handle^many` gets a sided hint for
+    `[ w h prim send ]` ("push the last one (Bytes^linear) after them"),
+    whose edit is refused for linearity;
+  - the diagnostic compares those types with the checker's rendered types
+    below the `if`, which keep the usage, so a `prim send` that takes the
+    World, Handle and Bytes it declares from below is blamed for a later
+    mistake (`[ prim send swap prim not swap ] [ prim send ]` below
+    `n:Int w h x`). A word taking linear values from below had the same
+    fault before #166.
+  The fix is to record every type with its usage, words' included, and
+  compare with usage on both sides.
 
 ## Goal
 
