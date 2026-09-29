@@ -209,12 +209,14 @@ private def PipelineDiagnostic.reached (word : WordDefinition) : PipelineDiagnos
 /-- The words whose declared effects were read to check the edit a report's
 hint offers: a misordered `locals` block (`checkLocalsEdits`), whose hint
 says either that the edit fixes the word or that the body was written for the
-names as they are, or a call handed its values out of order
-(`withCallAccount`). -/
+names as they are, a call handed its values out of order
+(`withCallAccount`), or a refused `if` (`branchEdit`). -/
 private def PipelineDiagnostic.editConsulted : PipelineDiagnostic → List String
   | .parse error => (error.localsBlocks.flatMap (·.consulted)).eraseDups
   | .stackEffect diagnostic =>
-      ((diagnostic.callAccount.bind (·.edit)).map (·.consulted)).getD []
+      ((diagnostic.callAccount.bind (·.edit)).map (·.consulted)).getD [] ++
+        ((diagnostic.ifAccount.bind (·.edit)).map (·.consulted)).getD []
+  | .erasure _ (.branchShape _ _ _ _ (some account)) => ((account.edit.map (·.consulted)).getD [])
   | .assumes _ _ _ inner => inner.editConsulted
   | _ => []
 
@@ -468,6 +470,188 @@ private def withCallAccount (config : PipelineConfig) (source : String)
       .stackEffect { diagnostic with callAccount := account.map ({ · with edit, assignment }) }
   | other => other
 
+/-- The edit applied to `source` and `word` checked again: where the word's
+next error is, as a line and column of the edited source, or `none` inside
+when it then checks. `none` when the edit does not get past the refused `if`
+at `ifStart`: the word is refused there again, or before the edit, or the
+edited source does not parse or resolve. Also the words whose effects the
+check read. -/
+private def checkBranchEdit (config : PipelineConfig) (source wordName : String)
+    (ifStart start stop : Nat) (replacement : String) :
+    Option (Option (Nat × Nat) × List String) := do
+  let edited := bytesText source 0 start ++ replacement ++ bytesText source stop source.utf8ByteSize
+  let shift : Int := (replacement.utf8ByteSize : Int) - ((stop - start : Nat) : Int)
+  let file ← match parse edited with
+    | .success file => some file
+    | .failure _ => none
+  let (resolved, _) ← (resolveEach file.declarations (fun name => (config.erasureEnv.word name).isSome)).toOption
+  let editedWords := resolved.map (·.1)
+  let word ← (resolved.find? fun (word, error) => word.name == wordName && error.isNone).map (·.1)
+  let at_ := ((ifStart : Int) + shift).toNat
+  let after ← match outcomeAlone config edited editedWords word with
+    | none => some none
+    | some offset =>
+        if offset == at_ || offset < start then none
+        else some (some (lineColumn edited offset))
+  pure (after, consultedWords config editedWords word)
+
+private def collapseSpace (text : String) : String :=
+  " ".intercalate (((text.map fun c => if c.isWhitespace then ' ' else c).splitOn " ").filter (!·.isEmpty))
+
+/-- For a refused `if` whose longer branch leaves one value more than the
+other, below the result of a call: when that value was computed by an
+operation handed exactly one local of the value's type, and the call was
+then handed that same local once more, as in
+`result prim seq-int.push xs idx 1 prim - result rev-iter`, the edit that
+binds the new value to the local's name for the call:
+`prim seq-int.push locals { result } { xs idx 1 prim - result rev-iter }`.
+The local must appear just once between the operation and the call, and the
+source between them must close every bracket it opens, so the new block
+holds the call and nothing else changes. -/
+private def staleEdit (config : PipelineConfig) (source : String)
+    (wordName : String) (ifSpan : Span) (account : IfAccount) : Option BranchEdit := do
+  let net (branch : BranchAccount) : Int :=
+    (branch.leaves.length : Int) - ((branch.took.length + branch.missing : Nat) : Int)
+  let longer ← if net account.onTrue == net account.onFalse + 1 then some account.onTrue
+    else if net account.onFalse == net account.onTrue + 1 then some account.onFalse else none
+  -- The value left behind is the lowest the longer branch leaves, and the
+  -- call's result is just above it.
+  let computed ← (longer.made[0]?).join
+  let call ← (longer.made[1]?).join
+  let type ← computed.type
+  let name ← match (computed.locals.filter (·.2 == some type)).map (·.1) |>.eraseDups with
+    | [name] => some name
+    | _ => none
+  if (call.locals.filter (·.1 == name)).length != 1 then none else
+  let start := computed.span.start.offset
+  let middle := computed.span.stop.offset
+  let callStart := call.span.start.offset
+  let stop := call.span.stop.offset
+  if middle > callStart then none else
+  let between := collapseSpace (bytesText source middle callStart)
+  let tokens := (between.splitOn " ").filter (!·.isEmpty)
+  if tokens.count name != 1 then none else
+  -- Every bracket opened between them is closed there, and none closed
+  -- that was opened before.
+  let balanced := tokens.foldl (init := some (0 : Nat)) fun depth token =>
+    depth.bind fun depth =>
+      if token == "[" || token == "{" then some (depth + 1)
+      else if token == "]" || token == "}" then (if depth == 0 then none else some (depth - 1))
+      else some depth
+  if balanced != some 0 then none else
+  let replacement := s!"{collapseSpace (bytesText source start middle)} locals \{ {name} } \{ {between} {collapseSpace (bytesText source callStart stop)} }"
+  let (after, consulted) ← checkBranchEdit config source wordName ifSpan.start.offset start stop replacement
+  pure { fix := .stale name computed.operation call.operation, start, stop
+         line := (lineColumn source start).1
+         written := collapseSpace (bytesText source start stop), replacement, after, consulted }
+
+/-- For a refused `if` with a branch whose first operation short of values,
+a word, takes them only from where there are none, as in
+`candidate 1 prim + n collect-primes` for
+`collect-primes ( result:Seq Int candidate:Int n:Int -- ... )` inside
+`locals { result candidate n }`: the edit that pushes the word's inputs in
+its order, writing each input the branch did not push as the local of its
+name and type, `result candidate 1 prim + n collect-primes`. Which input a
+pushed value is for is told by the local it stands for (`candidate` for
+`candidate 1 prim +`) when every pushed value stands for a different input;
+otherwise by types, when the pushed values are the last inputs or the first
+in one way alone and none stands for another input. -/
+private def missingEdit (config : PipelineConfig) (source : String)
+    (wordName : String) (ifSpan : Span) (account : IfAccount) : Option BranchEdit := do
+  let reach ← (account.onTrue.reach.filter (·.missing > 0)) <|> (account.onFalse.reach.filter (·.missing > 0))
+  let span ← reach.span
+  let pushed := reach.own.length
+  if !reach.below.isEmpty || reach.missing + pushed != reach.count || pushed == 0 then none else
+  if reach.types.length != reach.count || reach.inputs.length != reach.count then none else
+  let lacking := reach.missing
+  let inputNames := reach.inputs.map fun input => ((input.splitOn ":").head?).getD ""
+  let inputs := inputNames.zip reach.types
+  -- The local of an input's name and type, in scope.
+  let named (name type : String) : Option (Option Nat × String) :=
+    if reach.scope.lookup name == some (some type) then some (none, name) else none
+  -- For each input, the pushed value for it (by its index, bottom to top)
+  -- or the local to write.
+  let byName : Option (List (Option Nat × String)) := do
+    let sources ← reach.ownSources.mapM id
+    if sources.eraseDups.length != sources.length || !sources.all inputNames.contains then none else
+    inputs.mapM fun (name, type) =>
+      match sources.idxOf? name with
+      | some j => if reach.ownTypes[j]? == some (some type) then some (some j, name) else none
+      | none => named name type
+  let byType : Option (List (Option Nat × String)) := do
+    let asLast := reach.ownTypes == (reach.types.drop lacking).map some
+    let asFirst := reach.ownTypes == (reach.types.take pushed).map some
+    if asLast == asFirst then none else
+    let order : List (Option Nat) := if asLast
+      then List.replicate lacking none ++ (List.range pushed).map some
+      else (List.range pushed).map some ++ List.replicate lacking none
+    -- A pushed value that stands for a local named like another input, as
+    -- a new `result` computed from `result` does, was meant for that
+    -- input: the types alone would place it wrong.
+    let misplaced := (order.zip inputNames).any fun (value, name) =>
+      match value.bind (reach.ownSources[·]?) |>.join with
+      | some source => inputNames.contains source && source != name
+      | none => false
+    if misplaced then none else
+    (order.zip inputs).mapM fun (value, name, type) =>
+      match value with
+      | some j => some (some j, name)
+      | none => named name type
+  let plan ← byName <|> byType
+  let names := plan.filterMap fun (value, name) => if value.isNone then some name else none
+  -- A local the branch already passes is not written again.
+  if reach.ownSources.any (fun source => source.any names.contains) then none else
+  let pieces := plan.filterMap (·.1)
+  let reordered := pieces != List.range pushed
+  -- Without reordering, the locals go before the pushed values or just
+  -- before the word; otherwise every pushed value must have its own piece
+  -- of source, one after another up to the word.
+  let namesFirst := (plan.take lacking).all (·.1.isNone)
+  let namesLast := (plan.drop pushed).all (·.1.isNone)
+  let (start, texts) ← if !reordered && namesFirst then do
+      let first ← (reach.ownOrigins[0]?).join
+      pure (first.1, names ++ [collapseSpace (bytesText source first.1 span.start.offset)])
+    else if !reordered && namesLast then
+      pure (span.start.offset, names)
+    else do
+      let ranges ← reach.ownOrigins.mapM id
+      let ends := ranges.map (·.2)
+      let starts := (ranges.drop 1).map (·.1) ++ [span.start.offset]
+      if !(ends.zip starts).all (fun (a, b) => a ≤ b && (bytesText source a b).all Char.isWhitespace) then none else
+      let first ← ranges.head?
+      let texts ← plan.mapM fun (value, name) => match value with
+        | some j => ranges[j]?.map fun (a, b) => collapseSpace (bytesText source a b)
+        | none => some name
+      pure (first.1, texts)
+  let stop := span.stop.offset
+  let replacement := " ".intercalate (texts ++ [collapseSpace (bytesText source span.start.offset stop)])
+  let (after, consulted) ← checkBranchEdit config source wordName ifSpan.start.offset start stop replacement
+  pure { fix := .missing names reordered, start, stop
+         line := (lineColumn source start).1
+         written := collapseSpace (bytesText source start stop), replacement, after, consulted }
+
+/-- The edit for a refused `if`, when one is found and gets past it: a value
+left behind, then inputs lacking. -/
+private def branchEdit (config : PipelineConfig) (source wordName : String) (ifSpan : Span)
+    (account : IfAccount) : Option BranchEdit :=
+  if !config.checkEdits then none else
+  (staleEdit config source wordName ifSpan account).orElse fun _ =>
+    missingEdit config source wordName ifSpan account
+
+/-- A refused `if` with its account, and the edit `branchEdit` finds for it. -/
+private def withBranchEdit (config : PipelineConfig) (source : String) :
+    PipelineDiagnostic → PipelineDiagnostic
+  | .erasure word (.branchShape span onTrue onFalse locals (some account)) =>
+      let account := { account with edit := branchEdit config source word span account }
+      .erasure word (.branchShape span onTrue onFalse locals (some account))
+  | .stackEffect diagnostic =>
+      match diagnostic.ifAccount, diagnostic.word with
+      | some account, some word =>
+          let account := { account with edit := branchEdit config source word diagnostic.primary account }
+          .stackEffect { diagnostic with ifAccount := some account }
+      | _, _ => .stackEffect diagnostic
+  | other => other
+
 /-- A misordered `locals` refusal whose suggested edits have been applied and
 checked. A block is marked `checked` when its word, edited as the diagnostic
 would say, is accepted, or is refused no earlier in the source than the word
@@ -528,7 +712,7 @@ private def checkWord (config : PipelineConfig) (source : String)
   | some (callee, span), .ok _ => .skipped callee span
   | none, _ =>
   match erase env word.effect word.body with
-  | .error error => .refused [withAccount config source words (.erasure word.name error)]
+  | .error error => .refused [withBranchEdit config source (withAccount config source words (.erasure word.name error))]
   | .ok erased =>
   match schemeOfEffect word.effect with
   | .error diagnostic => .refused [.stackEffect diagnostic]
@@ -536,7 +720,8 @@ private def checkWord (config : PipelineConfig) (source : String)
   match check typing declared erased.program word.effect.span with
   | .error diagnostic =>
       let diagnostic := withFirstMisfed config source words { diagnostic with word := some word.name }
-      .refused [withCallAccount config source words (withAccount config source words (.stackEffect diagnostic))]
+      .refused [withCallAccount config source words
+        (withBranchEdit config source (withAccount config source words (.stackEffect diagnostic)))]
   | .ok _ =>
       let premises := config.refinementBuilder config.requestId config.sourcePath
         word erased.program declared
