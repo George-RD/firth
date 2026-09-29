@@ -1233,7 +1233,9 @@ rules and tests committed before the first author started
   `Grep` and `Bash`, and allows the permitted reads.
 - Every author saw `AGENTS.md` blob `7c89481` and `CLAUDE.md` blob
   `43c994c`, run 8's (`seen_agents.py` on each raw log, exit 0 for every
-  sample; the blobs are in each `agents-seen.json`).
+  sample, void ones included; the blobs are in each of the 26
+  `agents-seen.json` files). A5 and B5 read only their prompt before the
+  restart (their `transcript.json`).
 - Arm A's harness predates #173, so every one of its results was searched
   for toolchain text before its feedback was sent. None had any.
 
@@ -1317,8 +1319,12 @@ and are not counted. Each directory has a `void.md` saying why.
   passing a task against arm A's 9 of 10, so the primary would still not
   favour arm B.
 - B8's final hand-back named another author ("Control author B10").
-  None of its calls could have read that name, so (inferred) it reached
-  it through the session the sub-agents share, one more reason for
+  Its raw log shows where the name came from: at 18:52:15 the harness
+  injected a `task_status` attachment into B8's context describing B10's
+  task, with the path of B10's output log. B8 made no call on that path.
+  The excerpt is `8ea4a1d/haiku-firth-8/handback.txt`. A scan of all 26
+  author logs finds this one attachment and no call touching any task
+  output, but the channel exists, one more reason for
   `todo.s7-author-enforced-allowlist`.
 
 **Departures from the pre-registration.**
