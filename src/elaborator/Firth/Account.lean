@@ -32,6 +32,9 @@ structure Context where
   external : String → Option (Nat × Nat) := fun _ => none
   source : String
   target : Nat
+  /-- Stop instead at the first word or primitive handed a value whose known
+  type is not the one it takes at that position (`Account.firstMisfed`). -/
+  misfed : Bool := false
 
 /-- One value on the stack, named by the source that pushed it. `own` marks
 the values a branch pushed itself; `quotation` keeps a literal quotation's
@@ -45,6 +48,10 @@ structure Entry where
   /-- For a quotation, the types of the locals where it was written: a
   local it names is that one, whatever the locals where it runs. -/
   scope : List (String × String) := []
+  /-- The byte range of the source that pushed this value and nothing else,
+  where there is one: a literal, a local, a quotation, or an operation with
+  one result together with the source that pushed its inputs. -/
+  origin : Option (Nat × Nat) := none
 
 /-- The stack (top first), the locals in scope, whether the word's inputs
 were bound by `locals`, and the first operation that took a value its branch
@@ -76,6 +83,7 @@ inductive Outcome where
   | lost
   | next (walk : Walk)
   | found (account : IfAccount)
+  | called (account : CallAccount)
 deriving Inhabited
 
 private def sourceText (source : String) (span : Span) : String :=
@@ -88,6 +96,42 @@ def quotationStart (source : String) (span : Span) : String :=
   let tokens := (spaced.splitOn " ").filter (!·.isEmpty)
   if tokens.length ≤ 10 then " ".intercalate tokens
   else " ".intercalate (tokens.take 8) ++ " ..."
+
+/-- Whether only whitespace lies between byte offsets `start` and `stop`. -/
+private def blank (source : String) (start stop : Nat) : Bool :=
+  start ≤ stop && (sourceText source { start := { offset := start, line := 0, column := 0 },
+                                       stop := { offset := stop, line := 0, column := 0 } }).all Char.isWhitespace
+
+/-- The source ranges that pushed `values` (bottom to top), when each has
+one and they follow one another, with only whitespace between them and
+before `stop`. -/
+private def pieces (source : String) (values : List Entry) (stop : Nat) : Option (List (Nat × Nat)) := do
+  let ranges ← values.mapM (·.origin)
+  let ends := ranges.map (·.2)
+  let starts := (ranges.drop 1).map (·.1) ++ [stop]
+  if (ends.zip starts).all fun (a, b) => blank source a b then some ranges else none
+
+/-- The source ranges that pushed `values` (bottom to top), in whatever
+order, when each has one, they do not overlap, and between them and before
+`stop` there is only whitespace and `swap`: the source from the first of
+them to `stop` does nothing but push these values and exchange them. -/
+private def callPieces (source : String) (values : List Entry) (stop : Nat) : Option (List (Nat × Nat)) := do
+  let ranges ← values.mapM (·.origin)
+  let sorted := ranges.toArray.qsort (fun a b => a.1 < b.1) |>.toList
+  let ends := sorted.map (·.2)
+  let starts := (sorted.drop 1).map (·.1) ++ [stop]
+  let gap (a b : Nat) : Bool :=
+    a ≤ b && ((sourceText source { start := { offset := a, line := 0, column := 0 },
+                                   stop := { offset := b, line := 0, column := 0 } }).map
+      (fun c => if c.isWhitespace then ' ' else c) |>.splitOn " ").all fun token => token.isEmpty || token == "swap"
+  if (ends.zip starts).all fun (a, b) => gap a b then some ranges else none
+
+/-- The origin of an operation's single result: from where the source that
+pushed its inputs starts, or the operation itself when it takes nothing, to
+the end of the operation. -/
+private def resultOrigin (source : String) (taken : List Entry) (span : Span) : Option (Nat × Nat) := do
+  let ranges ← pieces source taken.reverse span.start.offset
+  pure ((ranges.head?.map (·.1)).getD span.start.offset, span.stop.offset)
 
 private def literalText : Firth.Elaborator.Literal → String
   | .integer value => toString value
@@ -181,6 +225,30 @@ private def resultLabels (operation : String) (names : List String) : List Strin
 private def ownValues (walk : Walk) : List String :=
   (walk.stack.takeWhile (·.own)).reverse.map (·.label)
 
+/-- Pushes an operation's results after it took `taken` (top first): a
+single result keeps where in the source it and its inputs were pushed. -/
+private def pushResults (context : Context) (walk : Walk) (values : List (String × Option String))
+    (taken : List Entry) (span : Span) : Walk :=
+  let origin := if values.length == 1 then resultOrigin context.source taken span else none
+  { walk with stack := values.reverse.map (fun (label, type) => { label, type, origin }) ++ walk.stack }
+
+/-- Whether values `taken` (top first) have a known plain type, at some
+position, other than the one `types` (bottom to top) declares there. -/
+private def misfedAt (taken : List Entry) (types : List String) : Bool :=
+  let plain (type : String) := type.front.isUpper
+  (taken.reverse.zip types).any fun (entry, declared) =>
+    entry.type.any fun type => plain type && plain declared && type != declared
+
+/-- The values the operation at the context's target is handed, when every
+one of them is there. -/
+private def called (context : Context) (walk : Walk) (operation : String) (inputs : List String)
+    (count : Nat) (span : Span) : CallAccount :=
+  let taken := (walk.stack.take count).reverse
+  { operation, inputs, span
+    values := if taken.length == count then taken.map (·.label) else []
+    types := taken.map (·.type)
+    pieces := if taken.length == count then callPieces context.source taken span.start.offset else none }
+
 mutual
   /-- Runs `items` from `walk`, stopping at the `if` the context names. -/
   partial def walkItems (context : Context) (walk : Walk) : List Item → Outcome
@@ -200,31 +268,44 @@ mutual
     | other => other
 
   partial def step (context : Context) (walk : Walk) : Item → Outcome
-    | .literal literal _ => .next (pushTyped walk [(s!"`{literalText literal.value}`", literalType literal.value)])
+    | .literal literal span =>
+        .next { walk with stack := { label := s!"`{literalText literal.value}`", type := literalType literal.value
+                                     origin := some (span.start.offset, span.stop.offset) } :: walk.stack }
     | .quotation items span =>
-        .next { walk with stack := { label := s!"the quotation `{quotationStart context.source span}`", quotation := some (items, span), scope := walk.localTypes } :: walk.stack }
-    | .word name _ =>
+        .next { walk with stack := { label := s!"the quotation `{quotationStart context.source span}`", quotation := some (items, span), scope := walk.localTypes
+                                     origin := some (span.start.offset, span.stop.offset) } :: walk.stack }
+    | .word name span =>
         if walk.locals.contains name then
-          .next (pushTyped walk [(s!"`{name}`", (walk.localTypes.lookup name))]) else
+          .next { walk with stack := { label := s!"`{name}`", type := walk.localTypes.lookup name
+                                       origin := some (span.start.offset, span.stop.offset) } :: walk.stack } else
         match context.words.find? (·.name == name) with
         | some word =>
             if !keepsRow word.effect then .lost else
             let inputs := valueItems word.effect.input
             let outputs := valueItems word.effect.output
-            let (taken, after) := take walk s!"`{name}`" (inputs.map fun (n, t) => s!"{n}:{t}") inputs.length (inputs.map (·.2))
+            let described := inputs.map fun (n, t) => s!"{n}:{t}"
+            if span.start.offset == context.target ||
+                (context.misfed && misfedAt (walk.stack.take inputs.length) (inputs.map (·.2))) then
+              .called (called context walk s!"`{name}`" described inputs.length span) else
+            let (taken, after) := take walk s!"`{name}`" described inputs.length (inputs.map (·.2))
             let walk := noteMisread after taken (inputs.map (·.2))
-            .next (pushTyped walk ((resultLabels s!"`{name}`" (outputs.map (·.1))).zip (outputs.map (some ·.2))))
+            .next (pushResults context walk ((resultLabels s!"`{name}`" (outputs.map (·.1))).zip (outputs.map (some ·.2))) taken span)
         | none => match context.external name with
           | some (inputs, outputs) =>
-              let (_, walk) := take walk s!"`{name}`" [] inputs
-              .next (push walk (resultLabels s!"`{name}`" (List.replicate outputs "")))
+              if span.start.offset == context.target then
+                .called (called context walk s!"`{name}`" [] inputs span) else
+              let (taken, walk) := take walk s!"`{name}`" [] inputs
+              .next (pushResults context walk ((resultLabels s!"`{name}`" (List.replicate outputs "")).map (·, none)) taken span)
           | none => .lost
-    | .primitive name _ => match context.primitive name with
+    | .primitive name span => match context.primitive name with
         | some (inputs, outputs) =>
             let operation := s!"`prim {name}`"
+            if span.start.offset == context.target ||
+                (context.misfed && misfedAt (walk.stack.take inputs.length) inputs) then
+              .called (called context walk operation inputs inputs.length span) else
             let (taken, after) := take walk operation inputs inputs.length inputs
             let walk := noteMisread after taken inputs
-            .next (pushTyped walk ((resultLabels operation (List.replicate outputs.length "")).zip (outputs.map some)))
+            .next (pushResults context walk ((resultLabels operation (List.replicate outputs.length "")).zip (outputs.map some)) taken span)
         | none => .lost
     | .locals names body _ =>
         let (taken, inner) := take walk "`locals`" [] names.length
@@ -240,7 +321,7 @@ mutual
     | .atom "dup" _ =>
         let (taken, walk) := take walk "`dup`" [] 1
         match taken with
-        | [value] => .next { walk with stack := { value with own := true } :: { value with own := true } :: walk.stack }
+        | [value] => .next { walk with stack := { value with own := true, origin := none } :: { value with own := true, origin := none } :: walk.stack }
         | _ => .lost
     | .atom "drop" _ => .next (take walk "`drop`" [] 1).2
     | .atom "swap" _ =>
@@ -258,7 +339,7 @@ mutual
         match taken with
         | [{ quotation := some (body, _), scope, .. }, kept] =>
             match runQuotation context walk body scope with
-            | .next after => .next { after with stack := { kept with own := true } :: after.stack }
+            | .next after => .next { after with stack := { kept with own := true, origin := none } :: after.stack }
             | other => other
         | _ => .lost
     | .atom "if" span =>
@@ -298,6 +379,7 @@ mutual
             else
               match runQuotation context below onTrue trueScope, runQuotation context below onFalse falseScope with
               | .found account, _ | _, .found account => .found account
+              | .called account, _ | _, .called account => .called account
               | .next afterTrue, .next afterFalse =>
                   -- Either path may run, so the walk goes on only where
                   -- both first reached below the refused `if` the same way
@@ -348,7 +430,8 @@ mutual
                     -- Two quotations can share a label, which shows only a
                     -- long quotation's start: only the same quotation is kept.
                     if onTrue.label == onFalse.label && onTrue.type == onFalse.type &&
-                        onTrue.quotation == onFalse.quotation then onTrue
+                        onTrue.quotation == onFalse.quotation then
+                      { onTrue with origin := if onTrue.origin == onFalse.origin then onTrue.origin else none }
                     else { label := "the result of an `if`", own := onTrue.own,
                            type := if onTrue.type == onFalse.type then onTrue.type else none }
                   -- A reach both paths still trust is trusted merged.
@@ -357,6 +440,18 @@ mutual
                     else if afterTrue.trusted.all (· == afterTrue.reach) &&
                         afterFalse.trusted.all (· == afterFalse.reach) then some reach
                     else some none
+                  -- A single value both paths push, over the stack below the
+                  -- `if` left as it was, is pushed by the `if` and the source
+                  -- that pushed its condition and quotations.
+                  let same (a b : Entry) := a.label == b.label && a.type == b.type && a.origin == b.origin
+                  let pushesOne (after : Walk) := after.stack.length == below.stack.length + 1 &&
+                    ((after.stack.drop 1).zip below.stack).all fun (a, b) => same a b
+                  let merged := match merged with
+                    | top :: rest =>
+                        if pushesOne afterTrue && pushesOne afterFalse then
+                          { top with origin := resultOrigin context.source taken span } :: rest
+                        else merged
+                    | [] => []
                   .next { afterTrue with stack := merged, reach, trusted }
               | _, _ => .lost
         | _ => .lost
@@ -378,6 +473,30 @@ def ofIf (context : Context) (span : Span) : Option IfAccount :=
   context.words.findSome? fun word =>
     if word.span.start.offset ≤ span.start.offset && span.start.offset < word.span.stop.offset
     then ofWord context word else none
+
+/-- The values handed to the word or primitive at `span`, as the walk names
+them, searching every word for the one the span is in. -/
+def ofCall (context : Context) (span : Span) : Option CallAccount :=
+  let context := { context with target := span.start.offset }
+  context.words.findSome? fun word =>
+    if word.span.start.offset ≤ span.start.offset && span.start.offset < word.span.stop.offset then
+      let inputs := (valueItems word.effect.input).map fun (name, type) => (s!"the input `{name}`", some type)
+      match walkItems context (pushTyped { stack := [] } inputs) word.body with
+      | .called account => if account.values.isEmpty then none else some account
+      | _ => none
+    else none
+
+/-- The first word or primitive in `word`'s body, as the walk follows it,
+handed a value whose known type is not the one it takes at that position.
+The checker infers a quotation's input from what its body does, so a
+mistake inside a branch can surface later, at another operation; the walk
+knows the types of the locals and inputs where they are written. -/
+def firstMisfed (context : Context) (word : WordDefinition) : Option CallAccount :=
+  let context := { context with misfed := true, target := context.source.utf8ByteSize + 1 }
+  let inputs := (valueItems word.effect.input).map fun (name, type) => (s!"the input `{name}`", some type)
+  match walkItems context (pushTyped { stack := [] } inputs) word.body with
+  | .called account => if account.values.isEmpty then none else some account
+  | _ => none
 
 /-- A primitive's input and output types, bottom to top, from its scheme,
 when the scheme keeps the stack below its inputs as it is. -/

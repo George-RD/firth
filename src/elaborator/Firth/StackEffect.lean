@@ -68,6 +68,9 @@ structure Diagnostic where
   /-- For a branch mismatch: what each branch does, value by value, as the
   pipeline recounts it from the source. Diagnostics only. -/
   ifAccount : Option IfAccount := none
+  /-- For a word or primitive handed values it does not take: the values it
+  gets, by the source that pushed them. Diagnostics only. -/
+  callAccount : Option CallAccount := none
   deriving Repr, BEq, Nonempty
 
 structure TypedHole where
