@@ -251,18 +251,22 @@ private def runAssumesTests : IO Unit := do
   -- `pos` drops what `f` leaves, but its report shows the whole stack, and
   -- an `f` that takes nothing leaves the `5` there. `lu` leaves its linear input unused, found at the end of its
   -- `locals` block though placed where it is bound, so an underflow at `f`
-  -- comes before it. `m2` misfeeds `p` too, but with the hint's edit it
-  -- fails at `prim +` before it calls `q`, so that check never read `q`'s
-  -- effect. `fp` leaves the wrong first type; with only that type fixed,
+  -- comes before it. `fp` leaves the wrong first type; with only that type fixed,
   -- `gp` gets past its first `prim +` and fails at the second, with
   -- another stack. `rg` (the reviewer's case) has a branch that shows what
   -- `rf` leaves, so a fix to `rf`'s output type alone changes the report.
   -- In `g3`, the branches swap `f3`'s two outputs, so only a fix that
   -- changes both output types and keeps the input gets past the `if`.
+  -- In `hs`, the edited word's erasure stops at the second `drop`, after
+  -- the call to `q` and before the one to `f`, so its hint names `q` only.
+  -- `m2` misfeeds `p` too; with the hint's edit it fails at `prim +` in
+  -- typing, before it calls `q`, but erasure has read `q`'s effect by then:
+  -- with three inputs for `q`, the edited word underflows at `q` instead.
   let source := String.intercalate "\n" [
     ": f ( a:Int -- b:Int ) true prim + ;",
     ": g ( -- b:Int ) true f ;",
     ": h ( a:Int b:Int -- r:Int ) locals { b a } { a f b prim + } ;",
+    ": hs ( a:Int b:Int -- r:Int ) locals { b a } { a q b prim + drop drop f } ;",
     ": r ( n:Int -- m:Int ) r true prim + ;",
     ": two ( -- b:Int ) true f 1 g prim + ;",
     ": three ( -- b:Int ) g true f prim + ;",
@@ -311,7 +315,7 @@ private def runAssumesTests : IO Unit := do
       let reports := envelopes.map summary
       expectEqual "assumes: the words whose reports depend on another reported word"
         (reports.map fun (word, assumes, _) => (word, assumes.1))
-        [("f", []), ("g", ["f"]), ("h", []), ("r", []), ("two", ["f"]), ("three", ["g", "f"]),
+        [("f", []), ("g", ["f"]), ("h", []), ("hs", []), ("r", []), ("two", ["f"]), ("three", ["g", "f"]),
          ("short", ["f"]), ("opens", []), ("early", []), ("other", ["f"]),
          ("k", []), ("hidden", []), ("p", []), ("q", []), ("m", ["p"]),
          ("same", []), ("typed", ["same"]), ("cb", []), ("br", ["cb"]), ("hc", []), ("h2", []), ("run", []), ("longest", ["run"]),
@@ -320,7 +324,7 @@ private def runAssumesTests : IO Unit := do
          ("rf", []), ("rg", ["rf"]), ("f3", []), ("g3", ["f3"])]
       expectEqual "assumes: the words whose hint's checked edit depends on another reported word"
         ((reports.filter fun (_, assumes, _) => !assumes.2.isEmpty).map fun (word, assumes, _) => (word, assumes.2))
-        [("h", ["f"]), ("m", ["q"]), ("h2", ["hc"]), ("m2", ["q"])]
+        [("h", ["f"]), ("hs", ["q"]), ("m", ["q"]), ("h2", ["hc"]), ("m2", ["q"])]
       let endsWith (word clause : String) (hint : Bool := false) : IO Unit :=
         match reports.find? (·.1 == word) with
         | some (_, _, message, hintText) =>
