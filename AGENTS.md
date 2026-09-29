@@ -169,8 +169,14 @@ architecture; its CI job runs only on manual dispatch.
   merge merges `main`, then regenerates in order: `lake build` (the
   exporter needs a current binary), kernel exports, inventory spec
   corpus, SMT bindings,
-  `lake build`, proof manifest, `lake build`, proof records. Then
-  it checks for conflict markers and gets re-approval (rule 14).
+  `lake build`, proof manifest, `lake build`, proof records. Two pins have
+  no script. `tools/loop/mvp_agent_manifest.toml` holds the `sha256` of
+  the agent guide and the three `src/agent` interface files it lists
+  (`check_mvp_agent_inputs.py`), so update them by hand with `sha256sum`.
+  `src/runtime/vm/fixtures/kernel.tsv` is the output of
+  `lake exe firthVmFixtures` (`check_kernel_fixtures.sh`), so regenerate it
+  after a build when that check fails. Then check for conflict markers and
+  get re-approval (rule 14).
 - **The MVP gate** (`mvp_agent_gate.py`) is a regression check that the
   corpus still builds and runs. It is not evidence for S5 or S7.
 - **The S7 eval** measures S7 and the MVP agent authoring row. Its protocol
