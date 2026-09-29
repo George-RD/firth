@@ -56,7 +56,10 @@ LABEL = re.compile(r"\bauthor ([AB][0-9]+)\b")
 ARM_SETS = {
     "run10": {"4c379e0": ("firth-r8", ("4c379e0", "firth-r8/eval")),
               "8ea4a1d": ("firth-v9", ("8ea4a1d", "firth-v9/eval"))},
-    "run11": {"arm-a": (None, ("arm-a/",)), "arm-b": (None, ("arm-b/",))},
+    # Arm B's treatment also lives beside the arm directories, in
+    # arm-b-paragraph.md, and its text can appear with no path (Codex, on #184).
+    "run11": {"arm-a": (None, ("arm-a/",)),
+              "arm-b": (None, ("arm-b/", "arm-b-paragraph", "Prefer names to stack shuffling"))},
 }
 
 
@@ -268,6 +271,16 @@ def self_test() -> None:
     other["attachment"]["filename"] = "/home/user/firth-r11/eval/s7/runs/x/arm-b/prompt-firth.md"
     got = scan(base + log(other), "haiku-firth-3", "A3", "arm-a")
     assert got["cross_sample"] and got["cross_sample"][0]["other_arm"] == ["arm-b/"], got
+    # Planted: arm B's paragraph file, or its text with no path, shown to arm A.
+    other["attachment"]["filename"] = "/home/user/firth-r11/eval/s7/runs/x/arm-b-paragraph.md"
+    got = scan(base + log(other), "haiku-firth-3", "A3", "arm-a")
+    assert got["cross_sample"] and got["cross_sample"][0]["other_arm"] == ["arm-b-paragraph"], got
+    other["attachment"]["filename"] = "note: Prefer names to stack shuffling. Open each word"
+    got = scan(base + log(other), "haiku-firth-3", "A3", "arm-a")
+    assert got["cross_sample"] and got["cross_sample"][0]["other_arm"] == [
+        "Prefer names to stack shuffling"], got
+    # Arm B's own paragraph, in its own prompt, is not flagged for arm B.
+    assert scan(base + log(other), "haiku-firth-3", "B3", "arm-b")["cross_sample"] == []
     # This arm's own files are not flagged.
     other["attachment"]["filename"] = "/x/runs/y/arm-a/haiku-firth-3/repair-1.md arm-a/prompt-firth.md"
     assert scan(base + log(other), "haiku-firth-3", "A3", "arm-a")["cross_sample"] == []
