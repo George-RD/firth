@@ -1,0 +1,6069 @@
+{
+ "checker": "5d09e25",
+ "answers": [
+  {
+   "arm": "A",
+   "sample": "A2",
+   "task": "is-sorted",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "dfc3d35be4eaafd4f9c214e57d7940c3d2f17077cddea94d77fa08b5144bbd03"
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "task": "merge-sorted",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "42c9aca1df75f12e7d4f870ebd8e3a729e47222f5b2b408ae40ef381d2679ba6"
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "fdef16a9d5ba8d3cb5e2843f70b29a28eeba01918afb04b04d7e55769a146577"
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "task": "sort",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "task": "ledger",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.declared-effect-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.declared-effect-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "da0350866ac93ba61381b63ce5ecac4d4e4ae8ecfbd8af8db5364b82741a355c"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "seq-sum",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow"
+   ],
+   "fixed": null,
+   "sha256": "dc6036e5c5b2c4d22615c64f962f0dbee8c319ca2930515433891e957e40477e"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "seq-max",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow"
+   ],
+   "fixed": null,
+   "sha256": "72362f090f1a48b1a390416d8e4a6df29d142dc81fcd7a4829e11271825c269d"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "count-below",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow"
+   ],
+   "fixed": null,
+   "sha256": "709f6f2628e1f145e732395097596d17788ef4df1d4932c88c3850772e1e5336"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "index-of",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow"
+   ],
+   "fixed": null,
+   "sha256": "84b5945ffd4ff07b1b93ce5de333ac8a7d2427316ac083913083051d55ca8ebe"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "reverse",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "69370ed0ff96e4c1350dc9db6594e68ef5e4d0fdf8eec2002d026d6737ddc501"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "prefix-sums",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow"
+   ],
+   "fixed": null,
+   "sha256": "5e822d40edf0e9b13e63ab88ea112c7690a20f1e024d92df77176215074bba63"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "keep-positive",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow"
+   ],
+   "fixed": null,
+   "sha256": "1ca232b61fb7a37c102fa805f088fb134088fa73b962f9a907fff39762b1fe2c"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "is-sorted",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow"
+   ],
+   "fixed": null,
+   "sha256": "ad8c1fdd987ef0272cb78de637219be5fbf8a167d1789df8aff20c9dbedd1755"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "dot",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow"
+   ],
+   "fixed": null,
+   "sha256": "8e3b5dee27b5fb9d9b853b18e876e83e51189c9ea7ce840a7054c46f1eb55ce3"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "all-true",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow"
+   ],
+   "fixed": null,
+   "sha256": "d7fdf7c2f0afec504e074455a934830c5a7e83cc08dc1131ede4b003196f32b8"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow"
+   ],
+   "fixed": null,
+   "sha256": "29ce69b8ad93eb38e6d15c129440bac4bbc9e65230142cab0820d56aa098bb75"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "has-pair-sum",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow",
+    "firth.type.stack-underflow"
+   ],
+   "fixed": null,
+   "sha256": "e9438a78cdf93b9e74323d89ef0246d72f28eafe3f5a19f79baf64a0176c0c5d"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow",
+    "firth.type.stack-underflow",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "6603b100aba66bf5d4afffc9436775afe13ff5724c590e75a527f0e35daae3a6"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "merge-sorted",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow"
+   ],
+   "fixed": null,
+   "sha256": "060e7bdd6ad8b36df4d27b028ebed97c4c7b296b339a9d17ea9df5cd8667009e"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": loop-dig\n  (forall ρ; ρ result:Seq Int^many n:Int^many -- ρ result:Seq Int^many)\n  locals { result n } {\n    n 0 prim < prim not\n    [ result n 10 prim mod prim seq-int.push n 10 prim div loop-dig ]\n    [ result ]\n    if\n  };\n\n: main\n  (forall ρ; ρ n:Int^many -- ρ result:Seq Int^many)\n  locals { n } {\n    n 0 prim =\n    [ { 0 } ]\n    [ prim seq-int.empty n loop-dig ]\n    if\n  };\n",
+   "sha256": "a2477a34658f76e87f65f77ff08b0ec2f1d4af820619f2f09aea74263800437c",
+   "passes_after": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "ee8c7b78be397adf9d697cdc69179b4f3dc6a78c6c974e0a99fe5b4e5005e2ed"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "d05dfa9fbacebaea30ac329b25ce62970a6a54de9c32dfc529d7ac20fc54cd11"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "73e03fc444072bce53dc082da53056015c7fa7126fac6ff2271fbba1ac8107cd"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "ledger",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow"
+   ],
+   "fixed": null,
+   "sha256": "137f14a047ee4a18baf4c5b569308c9465ecbe8ce6c1f7ed2ceb1135e732fb42"
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.name.unresolved",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.name.unresolved"
+   ],
+   "fixed": null,
+   "sha256": "a14a9d0a090318bfbb097b13db8f5f5a8ba034d204810536a6d84a14a7948ccb"
+  },
+  {
+   "arm": "A",
+   "sample": "A4",
+   "task": "seq-max",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A4",
+   "task": "reverse",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 2,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": reverse-helper\n  (forall ρ; ρ xs:Seq Int^many i:Int^many result:Seq Int^many -- ρ result:Seq Int^many)\n  locals { xs i result }\n  {\n    i 0 prim <\n    [\n      xs i 1 prim - result xs i prim seq-int.at prim seq-int.push\n      reverse-helper\n    ]\n    [\n      result\n    ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many -- ρ result:Seq Int^many)\n  locals { xs } { xs xs prim seq-int.len 1 prim - prim seq-int.empty reverse-helper };\n",
+   "sha256": "35d483987861e96a834eef18efaca063eb380713e7feba6a028fce2eb8bef507",
+   "passes_after": false
+  },
+  {
+   "arm": "A",
+   "sample": "A4",
+   "task": "prefix-sums",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "ebea86c278c4037fba9a7dcb3671540595c4423ed645005eb32b10742f0aed62"
+  },
+  {
+   "arm": "A",
+   "sample": "A4",
+   "task": "keep-positive",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A4",
+   "task": "is-sorted",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A4",
+   "task": "longest-run",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A4",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": digits-helper\n  (forall ρ; ρ n:Int^many result:Seq Int^many -- ρ result:Seq Int^many)\n  locals { n result }\n  {\n    n 0 prim =\n    [\n      result\n    ]\n    [\n      n 10 prim div\n      result n 10 prim mod prim seq-int.push\n      digits-helper\n    ]\n    if\n  };\n\n: reverse-digits\n  (forall ρ; ρ result:Seq Int^many i:Int^many reversed:Seq Int^many -- ρ result:Seq Int^many)\n  locals { result i reversed }\n  {\n    i 0 prim <\n    [\n      result i 1 prim - reversed result i prim seq-int.at prim seq-int.push\n      reverse-digits\n    ]\n    [\n      reversed\n    ]\n    if\n  };\n\n: main\n  (forall ρ; ρ n:Int^many -- ρ result:Seq Int^many)\n  locals { n }\n  {\n    n 0 prim =\n    [\n      { 0 }\n    ]\n    [\n      n prim seq-int.empty digits-helper\n      dup prim seq-int.len 1 prim -\n      prim seq-int.empty\n      reverse-digits\n    ]\n    if\n  };\n",
+   "sha256": "57b034927531a66cc7aad887529305d0c36418045ac743917d1a79e0d8b8dc2c",
+   "passes_after": false
+  },
+  {
+   "arm": "A",
+   "sample": "A4",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": is-prime-helper\n  (forall ρ; ρ n:Int^many i:Int^many -- ρ result:Bool^many)\n  locals { n i }\n  {\n    i i prim * n prim <\n    [\n      n i prim mod 0 prim =\n      [\n        false\n      ]\n      [\n        n i 1 prim + is-prime-helper\n      ]\n      if\n    ]\n    [\n      true\n    ]\n    if\n  };\n\n: primes-helper\n  (forall ρ; ρ n:Int^many i:Int^many result:Seq Int^many -- ρ result:Seq Int^many)\n  locals { n i result }\n  {\n    i n prim <\n    [\n      i 2 prim <\n      [\n        n i 1 prim + result primes-helper\n      ]\n      [\n        n i 1 prim + i 2 is-prime-helper [ result i prim seq-int.push ] [ result ] if primes-helper\n      ]\n      if\n    ]\n    [\n      result\n    ]\n    if\n  };\n\n: main\n  (forall ρ; ρ n:Int^many -- ρ result:Seq Int^many)\n  locals { n } { n 2 prim seq-int.empty primes-helper };\n",
+   "sha256": "b052aeb94a795373e67104e7c26e8debfb578e3666db03a3c88a8ddcee19d1d0",
+   "passes_after": false
+  },
+  {
+   "arm": "A",
+   "sample": "A4",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "ac1ea2060ce192afa7b4d9552b2c474b4e4cca81adc570133aaa552278007daf"
+  },
+  {
+   "arm": "A",
+   "sample": "A4",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "f6736263970fc7a30bd5b0442a0a2f5fe895cabe9d2c604fcfdce2a387737115"
+  },
+  {
+   "arm": "A",
+   "sample": "A4",
+   "task": "ledger",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "2074026e12c7b0aac0de1c36f12b5cd3166f2afd286e6a31e74ae4d78ba63a21"
+  },
+  {
+   "arm": "A",
+   "sample": "A4",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "103662a2318fff1d555142d28122fbebef7964e3745134f4c88fa306da9e1775"
+  },
+  {
+   "arm": "A",
+   "sample": "A5",
+   "task": "seq-max",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "7b148b4ad1c4c31aa272366d166fd75a8fc6f3bf5ce197544abd78d015b5d4b3"
+  },
+  {
+   "arm": "A",
+   "sample": "A5",
+   "task": "prefix-sums",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "7c875d51e559b7408147bfbdb378bf4f2067a0ad749ffcc2aa316a6d0d6d6612"
+  },
+  {
+   "arm": "A",
+   "sample": "A5",
+   "task": "keep-positive",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A5",
+   "task": "is-sorted",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A5",
+   "task": "dot",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "9d473cad2b9e55ebd63f8e465e0a8e75f0f49a016aa607e0b7345ca66d8df0b3"
+  },
+  {
+   "arm": "A",
+   "sample": "A5",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "2901edb9b5233b88a25ce904aae42776e93823610533397af21f80d13be07283"
+  },
+  {
+   "arm": "A",
+   "sample": "A5",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "603d71bd40965ace5ca89a739d27be81c645d0a252e664bd3a1f8c016f2a2458"
+  },
+  {
+   "arm": "A",
+   "sample": "A5",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": main\n  (forall ρ; ρ n:Int^many -- ρ digits:Seq Int^many)\n  locals { n } {\n    n 0 prim = [\n      { 0 }\n    ] [\n      n prim seq-int.empty digit-loop\n    ] if\n  };\n\n: digit-loop\n  (forall ρ; ρ n:Int^many result:Seq Int^many -- ρ digits:Seq Int^many)\n  locals { n result } {\n    n 0 prim < [\n      result\n    ] [\n      n 10 prim div result n 10 prim mod prim seq-int.push digit-loop\n    ] if\n  };\n",
+   "sha256": "cb6854c2c285c9242f136695ae53961da9c3554a40611c8335b4f14c67b3138c",
+   "passes_after": false
+  },
+  {
+   "arm": "A",
+   "sample": "A5",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A5",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "65770eab314e318d95f473da62b9fd4b38ecdff4f362d3f412f011d936e548c2"
+  },
+  {
+   "arm": "A",
+   "sample": "A5",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "1e6fe1738cc410bd3ba50547fdd55fd9e51d7674820d31f5755d6bf4e6c61036"
+  },
+  {
+   "arm": "A",
+   "sample": "A5",
+   "task": "ledger",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "64afbbf70c4e62f1cd9de793f02090022f4b19a961c7bb86b72ea276846416bb"
+  },
+  {
+   "arm": "A",
+   "sample": "A5",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "599065c966c25feccb779532a04da96fd20f1c009b75819fa31773a40b6cdba1"
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "task": "is-sorted",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "task": "longest-run",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "task": "sort",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "task": "allocate-batch",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "task": "count-below",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "task": "reverse",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "task": "keep-positive",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "task": "is-sorted",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.name.unresolved",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.name.unresolved"
+   ],
+   "fixed": null,
+   "sha256": "36fe9bd58b802ce6d67e5bf088a4a74c02f5cc050f3217d0d730349096511b08"
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "task": "has-pair-sum",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "10003681e0fca657f92a4785b71ea25a1b24ae2427fe8abbb6877277ec23f50e"
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "72aa4151f4c0972d54adc94f9266acc278dd57ea687810c1d47efb40d96bc60e"
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "task": "merge-sorted",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "04275444c1384ffe4f2fb5bf547cd63b217622a3b1549a9fa6f9a39f68ab33e4"
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "task": "digits",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.name.unresolved",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.name.unresolved"
+   ],
+   "fixed": null,
+   "sha256": "fc89c98a06a6d1d6578420731a87b922504246401f59a63757c3d0c0c5c66a0d"
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "task": "ledger",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "aebbb383b6844b653c7a2d05d1d4799ba51f556ca034c48c9bbef86f4498cf7f"
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "02574973818e4b2fe9f5fe0e4744618528c2ee8e317fb59c0f6ef36a1b5f5409"
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "task": "reverse",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ reversed:Seq Int^many)\n  locals { xs } {\n    xs prim seq-int.len\n    1 prim -\n    xs\n    prim seq-int.empty\n    loop-reverse\n  };\n\n: loop-reverse\n  (forall ρ; ρ i:Int^many xs:Seq Int^many result:Seq Int^many -- ρ reversed:Seq Int^many)\n  locals { i xs result } {\n    i 0 prim <\n    [\n      i 1 prim - xs result xs i prim seq-int.at prim seq-int.push\n      loop-reverse\n    ]\n    [ result ]\n    if\n  };\n",
+   "sha256": "9318af411937f52cbddcd67da525e9e543900fd78619080b205f2946f3b3de56",
+   "passes_after": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "task": "prefix-sums",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "f373b427a3e3fc38a7f647bccf27caf3e33539ecb51f0896ea9aa190609d6e09"
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "task": "keep-positive",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "f73e97811f90a2e5e964b9fc92ccd1988a5f73eb6aeb85299cd0a7f7a9bce2c5"
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "task": "is-sorted",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "0272b7d61886fa1b2e549ef634d5827a86dd3277ba546f720d5d5398890f4738"
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "task": "merge-sorted",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 4,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": main\n  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many -- ρ merged:Seq Int^many)\n  locals { xs ys } { 0 0 prim seq-int.empty xs ys loop-merge };\n\n: loop-merge\n  (forall ρ; ρ i:Int^many j:Int^many result:Seq Int^many xs:Seq Int^many ys:Seq Int^many -- ρ merged:Seq Int^many)\n  locals { i j result xs ys } {\n    i xs prim seq-int.len prim <\n    [\n      j ys prim seq-int.len prim <\n      [\n        xs i prim seq-int.at\n        ys j prim seq-int.at\n        prim <\n        [\n          i 1 prim + j result xs i prim seq-int.at prim seq-int.push xs ys\n          loop-merge\n        ]\n        [\n          i j 1 prim + result ys j prim seq-int.at prim seq-int.push xs ys\n          loop-merge\n        ]\n        if\n      ]\n      [\n        i 1 prim + j result xs i prim seq-int.at prim seq-int.push xs ys\n        loop-merge\n      ]\n      if\n    ]\n    [\n      j ys prim seq-int.len prim <\n      [\n        i j 1 prim + result ys j prim seq-int.at prim seq-int.push xs ys\n        loop-merge\n      ]\n      [ result ]\n      if\n    ]\n    if\n  };\n",
+   "sha256": "21a308b778a1c5fe5ff417be505bab38696e35b09b3b4c1a4605e97e0ba98662",
+   "passes_after": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": ": main\n  (forall ρ; ρ n:Int^many -- ρ digits:Seq Int^many)\n  locals { n } {\n    n 0 prim =\n    [ { 0 } ]\n    [ n prim seq-int.empty loop-digits-collect ]\n    if\n  };\n\n: loop-digits-collect\n  (forall ρ; ρ num:Int^many result:Seq Int^many -- ρ digits:Seq Int^many)\n  locals { num result } {\n    num 0 prim =\n    [\n      result prim seq-int.len\n      1 prim -\n      result\n      prim seq-int.empty\n      loop-reverse-helper\n    ]\n    [\n      result\n      num 10 prim mod\n      prim seq-int.push\n      num 10 prim div\n      result\n      loop-digits-collect\n    ]\n    if\n  };\n\n: loop-reverse-helper\n  (forall ρ; ρ i:Int^many seq:Seq Int^many result:Seq Int^many -- ρ result:Seq Int^many)\n  locals { i seq result } {\n    i 0 prim <\n    [\n      i 1 prim - seq result seq i prim seq-int.at prim seq-int.push\n      loop-reverse-helper\n    ]\n    [ result ]\n    if\n  };\n",
+   "sha256": "01b57b3af0b4d8e79c30eb63e8b967a86f1d90080c1bad21aedb66585e3b82b6"
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": is-prime\n  (forall ρ; ρ n:Int^many -- ρ result:Bool^many)\n  locals { n } {\n    n 2 prim <\n    [ false ]\n    [\n      n 2 prim =\n      [ true ]\n      [\n        2 n loop-check-prime\n      ]\n      if\n    ]\n    if\n  };\n\n: loop-check-prime\n  (forall ρ; ρ d:Int^many n:Int^many -- ρ result:Bool^many)\n  locals { d n } {\n    d d prim * n prim <\n    [\n      n d prim mod\n      0 prim =\n      [ false ]\n      [ d 1 prim + n loop-check-prime ]\n      if\n    ]\n    [ true ]\n    if\n  };\n\n: main\n  (forall ρ; ρ n:Int^many -- ρ primes:Seq Int^many)\n  locals { n } { 2 prim seq-int.empty n loop-primes };\n\n: loop-primes\n  (forall ρ; ρ i:Int^many result:Seq Int^many n:Int^many -- ρ primes:Seq Int^many)\n  locals { i result n } {\n    i n prim <\n    [\n      i is-prime\n      [\n        i 1 prim + result i prim seq-int.push n\n        loop-primes\n      ]\n      [\n        i 1 prim +\n        result\n        n\n        loop-primes\n      ]\n      if\n    ]\n    [ result ]\n    if\n  };\n",
+   "sha256": "feedb8b9414bbc8ffce2807526b6f86d04463e366e192ac47bc8c52f7e8f6389",
+   "passes_after": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "4d441585f6ea45312ad21a39c92d7d869a8648678803dfa7c75c51a878756b5b"
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "90034c10e0738651d2587001de9b89438c62df25234e73c7de95c27d4a8d53cf"
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "270730b7e0f2756c490f3c4f6db08aa10a89740c825e30bda77f7b0ae8450d23"
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "task": "prefix-sums",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "task": "keep-positive",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "task": "is-sorted",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "c0cf185ed6f2fecec38b7d54b9520949b49960122fe25721e38775ec2c55f680"
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "task": "all-true",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "e99b719f01d5d5886b70f825c5bc720a71a4e22cf8aea6849eb68c69de66af85"
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "75d0f15ac074c656966b5f2f1f0849af8241322e1270b5649f019369cc7e655b"
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "task": "has-pair-sum",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "14385fb9cb8cc97634b0a58a8fd443a4e508a13f685c6e3bf93121b2d1ab945e"
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "9783740a3e4407b2e7d117b737224d34a53a7560cc25ae5a39a17560e6e86d0d"
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.word-input-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "5c315b07cfb59af632a865103b4478d99ae2e3710ac4edc6b2eeb3ae486fe6e1"
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "0856f31afa7c3189ab4042f5eb27ae389bd72a3fd33afbb1057ee9273b0289d9"
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.declared-effect-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.declared-effect-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "81a2365838129987193bf7e994e249ee3f3890adf9f61479cbeb5ac3d9974cf0"
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "task": "keep-positive",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "task": "dot",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "4b1c1980dfddebcc1e191221dab7bb812a51db5238dccfb5cfe298fac9345542"
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "39f83352cabc6ac8738227dc69e3fa9cefff9139602d29a2ec88e04bbc28379b"
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "7c1cb8eee8544ef8a9dfd8163c3bb2cb1331f46fd0bb04909a3b7f75b61ada1d"
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "87741631d8b86b22a441c91799f5a64d6859c663a6969bb1b171cb77b539bde8"
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "359fcbed1097c7dfa50a40576e515932defd6b865d7e17f70322d54d2401ec7c"
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "task": "ledger",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "43871644e80db0ebeb9bbb166eb22f95563d50e7fb974b8998fcaf238a0e653e"
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "bac91190cb53eef3076f2e95538a7d63a961c7176277591a3c23e6cf678099e1"
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "task": "reverse",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "aea00ef0a9847887a74dd5af6711ff90187259475dea8bd14c4a66cb1fab9ab0"
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "task": "is-sorted",
+   "refused": true,
+   "first_code": "firth.name.locals-order",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.name.locals-order"
+   ],
+   "fixed": null,
+   "sha256": "18cad13ff7c11ed3e719d775afac29b9c086d66d1558119f854536b5cbec485f"
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "task": "has-pair-sum",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "bcde65ba8115354d017c39519567e30d4ae913c98bfa7050dcd2b5fd33dd0d92"
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "bacbfe319bc740cbaaf9c364ce7d6bb051a65608372407a34f0722f5132e1421"
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ counts:Seq Int^many)\n  locals { xs k } {\n    prim seq-int.empty 0 k build-counts xs 0 histogram-loop\n  };\n\n: build-counts\n  (forall ρ; ρ counts:Seq Int^many i:Int^many k:Int^many -- ρ result:Seq Int^many)\n  locals { counts i k } {\n    i k prim <\n    [ counts 0 prim seq-int.push i 1 prim + k build-counts ]\n    [ counts ] if\n  };\n\n: histogram-loop\n  (forall ρ; ρ counts:Seq Int^many xs:Seq Int^many i:Int^many -- ρ result:Seq Int^many)\n  locals { counts xs i } {\n    i xs prim seq-int.len prim <\n    [ counts xs i prim seq-int.at counts xs i prim seq-int.at prim seq-int.at 1 prim + prim seq-int.set xs i 1 prim + histogram-loop ]\n    [ counts ] if\n  };\n",
+   "sha256": "8352d76d191fc0024325eea2fd949bb484505cc77894c98a444462b1d428a0f4",
+   "passes_after": true
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.quotation-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.quotation-input-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "c9a6971f85cabb3823c836cd0f990fcd2dc920adfe994981b90cb148253c8605"
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.name.unresolved",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.name.unresolved"
+   ],
+   "fixed": null,
+   "sha256": "ad8fa3dbd0a958801d29fd8cb80793ddbbb53530210f8ca71a633ee37a7634f2"
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "task": "seq-max",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "task": "reverse",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "task": "keep-positive",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "task": "is-sorted",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "task": "longest-run",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "4ea6b108a786506f93c6dcb237d28790a15876ee7e765860ad374a712407408f"
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "task": "digits",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "84ad5ada46f0df046ebf66b37397f5c7e6d0986fde86be08fd9ac6bbaf7d0f65"
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "d61ae53a17b4d1c58a97d4db75c45285e7710de6230d0f238b0eff79fcf98ae4"
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "f0cc0d0934043bf0cf5652f87f259502ad9763d5a11b0c41ebb6c50b2055c50f"
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "e7fe083e2fcbca66182a39fcbf2e62768ecc6b77353c1c712608cc26a4b653ab"
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "seq-sum",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "495954b88dbe76194a016d56e56537b4d1d1b66a06e9584fa8baef161678680b"
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "seq-max",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "7733462bb23e8093a41b558d07f7e60c79b8f4a02e8a159db52054418ab3d549"
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "count-below",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "b242c0fc16c70bd1e5e4dcbda557e4ea35a914f63d4d856515fa8a69cd457129"
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "reverse",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "9948daea7844082bbe8cb7b3ba2cc7c9ca83b027ba7278956a441657eeba52f4"
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "prefix-sums",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch",
+    "firth.type.quotation-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "9d9e841702ad300552592aef18ca91bfd051be6a22526179428b8dfeda321847"
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "keep-positive",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.quotation-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "6a1ac2d0ca5f13fc6eb334cb190c74fda853087c087e48b99b3d4e7deb5e1973"
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "is-sorted",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "dot",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "8bbe07b47b5f264153fdbbc7d9563820178700f7d423b6e3aafde12cc86d28db"
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "all-true",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch",
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "7135513443a0a3933a82304faedc09b07bb1271f97d69b71b7b9b6f26f5b279a"
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "has-pair-sum",
+   "refused": true,
+   "first_code": "firth.name.unresolved",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.name.unresolved"
+   ],
+   "fixed": null,
+   "sha256": "dc29a9cee204a7a25ece8d887e3877da557ae30251f71b5f82ef0f027eef694e"
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "425ab8693a77634a39d21429d1307cec8ab40257926661194596e9a5656307b6"
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "merge-sorted",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "4285436853b45f566cd54b524943c8c6290e9021571baabe17edc3fdb5744839"
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "dfd844cca6623db23ccd282866c403879d8e1a37a01df45ff1eb6a104a17c0e8"
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "1a7bce404de053d10785cdb315f87d46ed9e02912f01296a8061260085f5afce"
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch",
+    "firth.type.quotation-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "36086a92d2dbc4e94c7fb1ff36466b52dd8604d3bd5dfe2b88318aea44f74a8e"
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "390a22f1c2dca55b3e2507b2462bd016a266c6ec5fbbae06cbce82c60510d282"
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "ledger",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "e6de6d93f4994a18d943214fc2fa802cac208c3ba275102237d1a8627574db40"
+  },
+  {
+   "arm": "A",
+   "sample": "A13",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "a80acd357487f889f62701ea8aaf067bd3f656f097567b6d148050eebfc3406f"
+  },
+  {
+   "arm": "A",
+   "sample": "A16",
+   "task": "longest-run",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A16",
+   "task": "count-distinct",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A16",
+   "task": "digits",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A16",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A16",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": ": init-zeros\n  (forall ρ; ρ k:Int^many result:Seq Int^many -- ρ final:Seq Int^many)\n  locals { k result } {\n    k 0 prim <\n    [\n      result\n    ]\n    [\n      k 1 prim - result 0 prim seq-int.push\n      init-zeros\n    ]\n    if\n  };\n\n: histogram-helper\n  (forall ρ; ρ xs:Seq Int^many k:Int^many i:Int^many result:Seq Int^many -- ρ final:Seq Int^many)\n  locals { xs k i result } {\n    i xs prim seq-int.len prim <\n    [\n      xs\n      k\n      i 1 prim +\n      result xs i prim seq-int.at prim seq-int.at\n      1 prim +\n      xs i prim seq-int.at prim seq-int.set\n      histogram-helper\n    ]\n    [\n      result\n    ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ counts:Seq Int^many)\n  locals { xs k } {\n    xs\n    k\n    0\n    k\n    prim seq-int.empty\n    init-zeros\n    histogram-helper\n  };\n",
+   "sha256": "fd1a29040e7f09c99b1376a8d8249ab68788dbc01a4dd1b7ce6fc8c160cc9079"
+  },
+  {
+   "arm": "A",
+   "sample": "A16",
+   "task": "sort",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A16",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "632fd53853a7c57724df0cba46c5714545990818462a0aa8f120133fe9e1250b"
+  },
+  {
+   "arm": "A",
+   "sample": "A17",
+   "task": "reverse",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A17",
+   "task": "prefix-sums",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A17",
+   "task": "longest-run",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A17",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "bd69163acd815b0da3fed85be273c9784bd1259cbeeda0d0c5703754c8c7f649"
+  },
+  {
+   "arm": "A",
+   "sample": "A17",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "77ea3f968e1aa4d5f1a6832a206b5cbf459d70faf1a766d78d5c857f3bf47273"
+  },
+  {
+   "arm": "A",
+   "sample": "A17",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "231aa9d2fe718c0e00349177ae289a9259fc3fb992b3af21e61d11fa002214de"
+  },
+  {
+   "arm": "A",
+   "sample": "A17",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": ": build-init\n  (forall ρ; ρ i:Int^many k:Int^many counts:Seq Int^many -- ρ counts:Seq Int^many)\n  locals { i k counts } {\n    i k prim <\n    [\n      i 1 prim +\n      k\n      counts 0 prim seq-int.push\n      build-init\n    ]\n    [ counts ]\n    if\n  };\n\n: loop\n  (forall ρ; ρ i:Int^many xs:Seq Int^many counts:Seq Int^many -- ρ counts:Seq Int^many)\n  locals { i xs counts } {\n    i xs prim seq-int.len prim <\n    [\n      i 1 prim +\n      xs\n      xs i prim seq-int.at\n      counts xs i prim seq-int.at prim seq-int.at 1 prim + prim seq-int.set\n      loop\n    ]\n    [ counts ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ counts:Seq Int^many)\n  locals { xs k } {\n    0 xs 0 k prim seq-int.empty build-init loop\n  };\n",
+   "sha256": "06442d5dcf5701f704b927120cd0c1b977823432403a80464c9bb750280dbdb4"
+  },
+  {
+   "arm": "A",
+   "sample": "A17",
+   "task": "sort",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A17",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "d172b160a400a11b5870efa45e1be5afd32d4c9a8523bc86cc6086663cb11624"
+  },
+  {
+   "arm": "A",
+   "sample": "A18",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": digit-loop\n  (forall ρ; ρ n:Int^many result:Seq Int^many -- ρ digits:Seq Int^many)\n  locals { n result } {\n    n 0 prim = [\n      result\n    ] [\n      n 10 prim mod locals { digit } {\n        n 10 prim div result digit prim seq-int.push digit-loop\n      }\n    ] if\n  };\n\n: reverse-loop\n  (forall ρ; ρ digits:Seq Int^many i:Int^many result:Seq Int^many -- ρ reversed:Seq Int^many)\n  locals { digits i result } {\n    i 0 prim < [\n      result\n    ] [\n      result digits i prim seq-int.at prim seq-int.push i 1 prim - digits reverse-loop\n    ] if\n  };\n\n: main\n  (forall ρ; ρ n:Int^many -- ρ digits:Seq Int^many)\n  locals { n } {\n    n 0 prim < [\n      n 0 prim - prim seq-int.empty digit-loop locals { digits } {\n        digits digits prim seq-int.len 1 prim - prim seq-int.empty reverse-loop\n      }\n    ] [\n      n 0 prim = [\n        prim seq-int.empty 0 prim seq-int.push\n      ] [\n        n prim seq-int.empty digit-loop locals { digits } {\n          digits digits prim seq-int.len 1 prim - prim seq-int.empty reverse-loop\n        }\n      ] if\n    ] if\n  };\n",
+   "sha256": "5fd40451c21710ff8d77852e9efc1bc7d3fbbe9fc3a8a07644a48be7b1af5e8a",
+   "passes_after": false
+  },
+  {
+   "arm": "A",
+   "sample": "A18",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A18",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.quotation-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.quotation-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "e7512242812d8a281f76e4435d380675cafe6111acc435cf42c0f3fc7ba33ec7"
+  },
+  {
+   "arm": "A",
+   "sample": "A18",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "11f1596ebfd080ad13e961b4f241048a41e52d58ed40a110f1b35e72e42fba25"
+  },
+  {
+   "arm": "A",
+   "sample": "A18",
+   "task": "allocate-batch",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A19",
+   "task": "seq-max",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "8aff2abc02a774a6136fe79f9ce93ecd3c161cd0d10e790b27b18fd793a8d32d"
+  },
+  {
+   "arm": "A",
+   "sample": "A19",
+   "task": "index-of",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "d1687575033e7b73e37c0493e692d7fada07273ed1f31cb257bce9bc992ec4a6"
+  },
+  {
+   "arm": "A",
+   "sample": "A19",
+   "task": "prefix-sums",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "6e61b99f311485b13221b076167d2a98227794b34e95b514c8405dc605f716e0"
+  },
+  {
+   "arm": "A",
+   "sample": "A19",
+   "task": "keep-positive",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "cd1e66f4f6cfefc33ada17711a8257b12277183e56888ac341fcdbae97ad6815"
+  },
+  {
+   "arm": "A",
+   "sample": "A19",
+   "task": "is-sorted",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.expected-bool"
+   ],
+   "fixed": null,
+   "sha256": "8d15276b0c04b6708c3e530fd7f50460c67bb97ae1c4ac36f1780612cdd3008b"
+  },
+  {
+   "arm": "A",
+   "sample": "A19",
+   "task": "all-true",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "a8cafafcef951dfada06068ae42ecce2b6905916eeadee94c3e19b783eba7fd9"
+  },
+  {
+   "arm": "A",
+   "sample": "A19",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "8179fcd3cf8098af2f2b6c54c640e8be0d418642c7fb04169f840ab04fbc6c3f"
+  },
+  {
+   "arm": "A",
+   "sample": "A19",
+   "task": "has-pair-sum",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "1a1cb3982daf952842e5a66b283ad211803db024a97aab0c2b7f14909ad87632"
+  },
+  {
+   "arm": "A",
+   "sample": "A19",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "8459f68244cbfc9a7b6fac80dedfe6dc8c02409016d1fde629f19a6495145f2a"
+  },
+  {
+   "arm": "A",
+   "sample": "A19",
+   "task": "merge-sorted",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-item",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-item"
+   ],
+   "fixed": null,
+   "sha256": "c97a6dd7d37b3c3bdc287089f5cdb5ed48c3368eaf0be9bf71ce9a0bfbfa368a"
+  },
+  {
+   "arm": "A",
+   "sample": "A19",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": digit-loop\n  (forall ρ; ρ n:Int^many result:Seq Int^many -- ρ digits:Seq Int^many)\n  locals { n result } {\n    n 0 prim =\n    [ result prim seq-int.len 0 prim = [ result 0 prim seq-int.push ] [ result ] if ]\n    [ n 10 prim div result n 10 prim mod prim seq-int.push digit-loop ]\n    if\n  };\n\n: main\n  (forall ρ; ρ n:Int^many -- ρ digits:Seq Int^many)\n  locals { n } { n prim seq-int.empty digit-loop };\n",
+   "sha256": "5cafcef20e673d5fe6909178a257abc671c3a2bf7d9651d5bb864b0bf41fde4a",
+   "passes_after": false
+  },
+  {
+   "arm": "A",
+   "sample": "A19",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "46a755347cb1de62d429fa17eb0ec6dd6c3e132930272d85f9952f1c6e4561ae"
+  },
+  {
+   "arm": "A",
+   "sample": "A19",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "1534d0d4d57cb8c73559afaf150e15809849bed16620dbdf262a6c2146ee873f"
+  },
+  {
+   "arm": "A",
+   "sample": "A19",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "1d926b8a98f187f048744e8e1682f8bfe79a546de8cf4684b3c1a4bbdf1c347c"
+  },
+  {
+   "arm": "A",
+   "sample": "A19",
+   "task": "ledger",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "e74dc1b8b26cf31fa5453b1f62834905e1ae14c56bb1e920f77b8f84cf497573"
+  },
+  {
+   "arm": "A",
+   "sample": "A19",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-item",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-item"
+   ],
+   "fixed": null,
+   "sha256": "0244bcab1aebf04f1892965cdc4c668f0f03954f93567c6eaacb6b7662ac2313"
+  },
+  {
+   "arm": "A",
+   "sample": "A20",
+   "task": "prefix-sums",
+   "refused": true,
+   "first_code": "firth.name.unresolved",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.name.unresolved"
+   ],
+   "fixed": null,
+   "sha256": "3499c7c7900d946afc4f2a15e76f5700f6cc44f93b5a478edf15bfbc37aadca3"
+  },
+  {
+   "arm": "A",
+   "sample": "A20",
+   "task": "is-sorted",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "6664ffbde09b8f1507b5de9319add259b57c1b2a4dabe5bb4825ce1bcaa2b620"
+  },
+  {
+   "arm": "A",
+   "sample": "A20",
+   "task": "all-true",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "d18b991447c1ae16317122ef386cf67f7bbcd342f883cabc46118b2592c4a4e1"
+  },
+  {
+   "arm": "A",
+   "sample": "A20",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.declared-effect-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.declared-effect-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "b1485277eed94f17de6c21948ce0501985fccf2375363b30428fc6ef10b59dd3"
+  },
+  {
+   "arm": "A",
+   "sample": "A20",
+   "task": "has-pair-sum",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "eb9fc8dd1bd660bede1c119a42d7510b27279ac5147aab10cc25704e34da922e"
+  },
+  {
+   "arm": "A",
+   "sample": "A20",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "bea277a36d1518a266f90fef5e4f1bef449684723b84783c65d2d05a06d172ac"
+  },
+  {
+   "arm": "A",
+   "sample": "A20",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "dd91c2c4f4c037e7632a3e79f4ef94aa0aa239a11945969510f0f9058f90c348"
+  },
+  {
+   "arm": "A",
+   "sample": "A20",
+   "task": "sort",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A20",
+   "task": "ledger",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "d740359a642ba13f98be0dad8c8952db7043028b3a206b22df258ed3e3e24e1f"
+  },
+  {
+   "arm": "A",
+   "sample": "A20",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.declared-effect-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.declared-effect-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "0e2839c177574709b5e865bd2d1ea7d8ae392d1459dbe84dcd23527884cf0a81"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "seq-sum",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "e61740fef0999d91b47fceef49d7009ba02badb2aba74ee8eddd1b05d0341d03"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "seq-max",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "6c9bb1ad189697386da80a9b307368786b7e315530d67f722322a65fb818a369"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "count-below",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "ef69f509462307a5252b0fe83deae9644bf312b4d9ef77add942a97b3f20981e"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "index-of",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "1f34a908b34c1e8e12d32aac1da83f99790c94da6b56a1f4fb1697103fe21081"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "reverse",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "62ca40f7d42428999780ab954a90c108d909e28f759f1f27a342fb375018b809"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "prefix-sums",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "46c5d16300603419952477ac28b55efa54cc1baa946c44a9033af5ba18c01c52"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "keep-positive",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "6af0129af176f32c4779eabbeadab62fb1c4a316370c95d0d87f250568b659f6"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "is-sorted",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "f3f2d2501c7ebaa5c3d6ae102b2c7e06a84c837f4e7ecb6fc1a6c8703fb0934a"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "dot",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "fa491145fd658b56ac256d072c96283bc784dcb5bc54d8e12966bd0802da2c2e"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "all-true",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "eb4b3545531306236a0ae244f4d930bb85cd11ecdcce700f9d0a107410364aa4"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "4cc5cd57f0cad7dc815d678f6c948ccb280743fea6b4992fae8fa309a64bbe9a"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "has-pair-sum",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "ea87e74967cf8d52ef052b63662f51fd914a997a8245264de90ebf3c93e654ba"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "e9168a8c20ebcfc8e65062cc9cc237e849e1f7f3ce068ef99c3242f87454abe9"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "merge-sorted",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "0449baff4ae68632b5cecc4c17ba7f27ac7820c8a14e639a0c79c67fd3cc8882"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "d0be6f05c678187c58ee9b39a7d057d2d90c85a3a092069fc8415efdc4549e9d"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "9b5120a8846253073240ca82a7f92d772eb72c890ce58989fce5a769ac298d0f"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "4ebfcb3ec0bdfba96d781cfd73375b0f4ec6a9fcd179214cab07f700e0f504f2"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "f0333165d57e0ec5bafc0c0038035ff0f5f48580b3a2e390420657cc85657c9b"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "ledger",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "8e566a6cbb082bc8a56c3436b896693ded8ce010dff3dc113ee356820e17fb40"
+  },
+  {
+   "arm": "A",
+   "sample": "A21",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "71abd8a009a6bd4a1dfbe12f0e68b7c0f95b93cb79920165e263110de5e96ccd"
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "seq-sum",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": sum-loop\n  (forall ρ; ρ xs:Seq Int^many i:Int^many acc:Int^many -- ρ result:Int^many)\n  locals { xs i acc } {\n    i xs prim seq-int.len prim <\n    [ xs\n      i 1 prim +\n      acc xs i prim seq-int.at prim +\n      sum-loop\n    ]\n    [ acc ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many -- ρ total:Int^many)\n  locals { xs } { xs 0 0 sum-loop };\n",
+   "sha256": "58da4ecbed280056cff6bc9c383049c70b64701f00beda00791c40cc41032a8e",
+   "passes_after": true
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "seq-max",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 2,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": max-loop\n  (forall ρ; ρ xs:Seq Int^many i:Int^many max:Int^many -- ρ largest:Int^many)\n  locals { xs i max } {\n    i xs prim seq-int.len prim <\n    [ xs i prim seq-int.at max prim <\n      [ xs\n        i 1 prim +\n        xs i prim seq-int.at\n        max-loop\n      ]\n      [ xs\n        i 1 prim +\n        max\n        max-loop\n      ]\n      if\n    ]\n    [ max ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many -- ρ largest:Int^many)\n  locals { xs } { xs 1 xs 0 prim seq-int.at max-loop };\n",
+   "sha256": "fd4d73793cce4ba6e6f63e3598064e42e1e42e078b5efbf31d9ad6b09aac4ef8",
+   "passes_after": false
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "count-below",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": count-loop\n  (forall ρ; ρ xs:Seq Int^many k:Int^many i:Int^many count:Int^many -- ρ result:Int^many)\n  locals { xs k i count } {\n    i xs prim seq-int.len prim <\n    [ xs i prim seq-int.at k prim <\n      [ xs\n        k\n        i 1 prim +\n        count 1 prim +\n        count-loop\n      ]\n      [ xs\n        k\n        i 1 prim +\n        count\n        count-loop\n      ]\n      if\n    ]\n    [ count ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { xs k } { xs k 0 0 count-loop };\n",
+   "sha256": "f375998dd62716a4e1761e09720f8597b7afb2ea2055ede8896122aad1e1a660",
+   "passes_after": true
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "index-of",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": ": index-loop\n  (forall ρ; ρ xs:Seq Int^many x:Int^many i:Int^many result:Int^many -- ρ index:Int^many)\n  locals { xs x i result } {\n    result 0 prim <\n    [ result ]\n    [ i xs prim seq-int.len prim <\n      [ xs i prim seq-int.at x prim =\n        [ i ]\n        [ result ]\n        if\n        xs\n        x\n        i 1 prim +\n        index-loop\n      ]\n      [ result ]\n      if\n    ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many x:Int^many -- ρ index:Int^many)\n  locals { xs x } { xs x 0 -1 index-loop };\n",
+   "sha256": "bbd83ba7a4951ef49f715cf0e83a8941887e1a9827b867bf94d47b350e0a684a"
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "prefix-sums",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 2,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": ": prefix-loop\n  (forall ρ; ρ xs:Seq Int^many i:Int^many sum:Int^many result:Seq Int^many -- ρ sums:Seq Int^many)\n  locals { xs i sum result } {\n    i xs prim seq-int.len prim <\n    [ sum xs i prim seq-int.at prim +\n      xs\n      i 1 prim +\n      result sum xs i prim seq-int.at prim + prim seq-int.push\n      prefix-loop\n    ]\n    [ result ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sums:Seq Int^many)\n  locals { xs } { xs 0 0 prim seq-int.empty prefix-loop };\n",
+   "sha256": "2cd4fa8fd8ed54ab99680419e8c6d238ab415f62557b214365ea4b63b46ab4b1"
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "keep-positive",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 2,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": keep-loop\n  (forall ρ; ρ xs:Seq Int^many i:Int^many result:Seq Int^many -- ρ positives:Seq Int^many)\n  locals { xs i result } {\n    i xs prim seq-int.len prim <\n    [ xs i prim seq-int.at 0 prim <\n      [ xs\n        i 1 prim +\n        result xs i prim seq-int.at prim seq-int.push\n        keep-loop\n      ]\n      [ xs\n        i 1 prim +\n        result\n        keep-loop\n      ]\n      if\n    ]\n    [ result ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many -- ρ positives:Seq Int^many)\n  locals { xs } { xs 0 prim seq-int.empty keep-loop };\n",
+   "sha256": "7924c8488089b39cbcd57e23a470473097f7d63dba6cc4a3643bf084cf194b89",
+   "passes_after": false
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "is-sorted",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 2,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": is-sorted-loop\n  (forall ρ; ρ xs:Seq Int^many i:Int^many sorted:Bool^many -- ρ result:Bool^many)\n  locals { xs i sorted } {\n    sorted prim not\n    [ false ]\n    [ i xs prim seq-int.len prim <\n      [ xs i prim seq-int.at xs i 1 prim + prim seq-int.at prim <\n        [ xs\n          i 1 prim +\n          false\n          is-sorted-loop\n        ]\n        [ false ]\n        if\n      ]\n      [ true ]\n      if\n    ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Bool^many)\n  locals { xs } {\n    xs prim seq-int.len 1 prim <\n    [ true ]\n    [ xs 0 true is-sorted-loop ]\n    if\n  };\n",
+   "sha256": "81b64e8de007164a80b0a21c08f78ddc229711e0d60343ef797d0e96e1439d00",
+   "passes_after": false
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "dot",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 2,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": dot-loop\n  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many i:Int^many acc:Int^many -- ρ product:Int^many)\n  locals { xs ys i acc } {\n    i xs prim seq-int.len prim <\n    [ xs\n      ys\n      i 1 prim +\n      acc xs i prim seq-int.at ys i prim seq-int.at prim * prim +\n      dot-loop\n    ]\n    [ acc ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many -- ρ product:Int^many)\n  locals { xs ys } { xs ys 0 0 dot-loop };\n",
+   "sha256": "8bfc3d986b8979d4ecb400c14ffb1520135cd26cefdb0070e2eb861d2b28169b",
+   "passes_after": true
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "all-true",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": all-loop\n  (forall ρ; ρ flags:Seq Bool^many i:Int^many result:Bool^many -- ρ all:Bool^many)\n  locals { flags i result } {\n    result prim not\n    [ false ]\n    [ i flags prim seq-bool.len prim <\n      [ flags i prim seq-bool.at\n        [ flags\n          i 1 prim +\n          true\n          all-loop\n        ]\n        [ false ]\n        if\n      ]\n      [ true ]\n      if\n    ]\n    if\n  };\n\n: main\n  (forall ρ; ρ flags:Seq Bool^many -- ρ all:Bool^many)\n  locals { flags } { flags 0 true all-loop };\n",
+   "sha256": "9d1bbcf63d4327f0c8f9bbae1915a75060f789b01f4f405ef66958b5bd7ac413",
+   "passes_after": true
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "71156b3e87b51fa6188f64f57a3f3dde27e4fdd1133901c1f63b48671ed55127"
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "has-pair-sum",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 2,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": ": inner-loop\n  (forall ρ; ρ xs:Seq Int^many i:Int^many j:Int^many target:Int^many found:Bool^many -- ρ result:Bool^many)\n  locals { xs i j target found } {\n    found\n    [ true ]\n    [ j xs prim seq-int.len prim <\n      [ xs i prim seq-int.at xs j prim seq-int.at prim + target prim =\n        [ true ]\n        [ xs\n          i\n          j 1 prim +\n          target\n          false\n          inner-loop\n        ]\n        if\n      ]\n      [ false ]\n      if\n    ]\n    if\n  };\n\n: outer-loop\n  (forall ρ; ρ xs:Seq Int^many target:Int^many i:Int^many found:Bool^many -- ρ result:Bool^many)\n  locals { xs target i found } {\n    found\n    [ true ]\n    [ i xs prim seq-int.len prim <\n      [ xs\n        target\n        i 1 prim +\n        false\n        i 1 prim +\n        inner-loop\n        outer-loop\n      ]\n      [ false ]\n      if\n    ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many target:Int^many -- ρ found:Bool^many)\n  locals { xs target } { xs target 0 false outer-loop };\n",
+   "sha256": "b0f643e8f971dab8e8f2c0e5ddb40c8ed60e13e0be664e944d0acd716be20707"
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": ": inner-distinct\n  (forall ρ; ρ xs:Seq Int^many seen:Seq Int^many val:Int^many j:Int^many found:Bool^many -- ρ result:Bool^many)\n  locals { xs seen val j found } {\n    found\n    [ true ]\n    [ j seen prim seq-int.len prim <\n      [ seen j prim seq-int.at val prim =\n        [ true ]\n        [ xs\n          seen\n          val\n          j 1 prim +\n          false\n          inner-distinct\n        ]\n        if\n      ]\n      [ false ]\n      if\n    ]\n    if\n  };\n\n: outer-distinct\n  (forall ρ; ρ xs:Seq Int^many seen:Seq Int^many i:Int^many -- ρ result:Seq Int^many)\n  locals { xs seen i } {\n    i xs prim seq-int.len prim <\n    [ i xs prim seq-int.at false 0 inner-distinct\n      [ xs\n        seen i xs prim seq-int.at prim seq-int.push\n        i 1 prim +\n        outer-distinct\n      ]\n      [ xs\n        seen\n        i 1 prim +\n        outer-distinct\n      ]\n      if\n    ]\n    [ seen ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many -- ρ count:Int^many)\n  locals { xs } { xs prim seq-int.empty 0 outer-distinct prim seq-int.len };\n",
+   "sha256": "d1b72383143ba7f7654e480b2d4c25a1d73dad46967072df6b07b7baae3cbfde"
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "merge-sorted",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 6,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": merge-loop\n  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many i:Int^many j:Int^many result:Seq Int^many -- ρ merged:Seq Int^many)\n  locals { xs ys i j result } {\n    i xs prim seq-int.len prim <\n    j ys prim seq-int.len prim < prim and prim not\n    [ i xs prim seq-int.len prim =\n      [ j ys prim seq-int.len prim <\n        [ xs\n          ys\n          i\n          j 1 prim +\n          result ys j prim seq-int.at prim seq-int.push\n          merge-loop\n        ]\n        [ result ]\n        if\n      ]\n      [ xs\n        ys\n        i 1 prim +\n        j\n        result xs i prim seq-int.at prim seq-int.push\n        merge-loop\n      ]\n      if\n    ]\n    [ xs i prim seq-int.at ys j prim seq-int.at prim <\n      [ xs\n        ys\n        i 1 prim +\n        j\n        result xs i prim seq-int.at prim seq-int.push\n        merge-loop\n      ]\n      [ xs\n        ys\n        i\n        j 1 prim +\n        result ys j prim seq-int.at prim seq-int.push\n        merge-loop\n      ]\n      if\n    ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many -- ρ merged:Seq Int^many)\n  locals { xs ys } { xs ys 0 0 prim seq-int.empty merge-loop };\n",
+   "sha256": "81be7ad62f461838943ffba96288e0ebb2820bb2161f28eba8fabf0a22674a0d",
+   "passes_after": true
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "digits",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": ": check-divisible\n  (forall ρ; ρ primes:Seq Int^many p:Int^many i:Int^many found:Bool^many -- ρ result:Bool^many)\n  locals { primes p i found } {\n    found\n    [ true ]\n    [ i primes prim seq-int.len prim <\n      [ primes i prim seq-int.at p prim mod 0 prim =\n        [ true ]\n        [ primes\n          p\n          i 1 prim +\n          false\n          check-divisible\n        ]\n        if\n      ]\n      [ false ]\n      if\n    ]\n    if\n  };\n\n: primes-loop\n  (forall ρ; ρ n:Int^many primes:Seq Int^many p:Int^many -- ρ result:Seq Int^many)\n  locals { n primes p } {\n    p n prim <\n    [ false 0 check-divisible\n      [ n\n        primes p prim seq-int.push\n        p 1 prim +\n        primes-loop\n      ]\n      [ n\n        primes\n        p 1 prim +\n        primes-loop\n      ]\n      if\n    ]\n    [ primes ]\n    if\n  };\n\n: main\n  (forall ρ; ρ n:Int^many -- ρ primes:Seq Int^many)\n  locals { n } { n prim seq-int.empty 2 primes-loop };\n",
+   "sha256": "7ec44c4e78c09de9f001f8f36f88eb11ebf21bc88faa211ac98d6e8ebfd093eb"
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 3,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": ": hist-loop\n  (forall ρ; ρ k:Int^many counts:Seq Int^many i:Int^many -- ρ result:Seq Int^many)\n  locals { k counts i } {\n    i k prim <\n    [ k\n      counts 0 prim seq-int.push\n      i 1 prim +\n      hist-loop\n    ]\n    [ counts ]\n    if\n  };\n\n: count-loop\n  (forall ρ; ρ xs:Seq Int^many counts:Seq Int^many i:Int^many -- ρ result:Seq Int^many)\n  locals { xs counts i } {\n    i xs prim seq-int.len prim <\n    [ xs\n      counts xs i prim seq-int.at counts xs i prim seq-int.at prim seq-int.at 1 prim + prim seq-int.set\n      i 1 prim +\n      count-loop\n    ]\n    [ counts ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ counts:Seq Int^many)\n  locals { xs k } { xs k prim seq-int.empty 0 hist-loop count-loop };\n",
+   "sha256": "5d971c62fca2aaa88b6697a680765b3e85e0d1860d9e99ac4333b728aa19303d"
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "3e4ec259abbf7f1ee43e2b1fd957bc2168cf391c2bac3f2efe63745e5a329af1"
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "ledger",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 2,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": ledger-loop\n  (forall ρ; ρ txs:Seq Int^many balance:Int^many rejected:Int^many i:Int^many -- ρ b:Int^many r:Int^many)\n  locals { txs balance rejected i } {\n    i txs prim seq-int.len prim <\n    [ balance txs i prim seq-int.at prim + 0 prim <\n      [ txs\n        balance\n        rejected 1 prim +\n        i 1 prim +\n        ledger-loop\n      ]\n      [ txs\n        balance txs i prim seq-int.at prim +\n        rejected\n        i 1 prim +\n        ledger-loop\n      ]\n      if\n    ]\n    [ balance rejected ]\n    if\n  };\n\n: main\n  (forall ρ; ρ start:Int^many txs:Seq Int^many -- ρ balance:Int^many rejected:Int^many)\n  locals { start txs } { txs start 0 0 ledger-loop };\n",
+   "sha256": "0f45556950afb3851fb9cac101efd20124f9f55366ace1ec692b496151bc9171",
+   "passes_after": true
+  },
+  {
+   "arm": "A",
+   "sample": "A23",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": ": allocate-loop\n  (forall ρ; ρ stock:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many j:Int^many -- ρ s:Seq Int^many a:Seq Int^many r:Seq Int^many)\n  locals { stock allocated reasons items qtys whole j } {\n    j qtys prim seq-int.len prim <\n    [ j items prim seq-int.at j qtys prim seq-int.at stock j items prim seq-int.at prim seq-int.at\n      locals { itemidx qty currstock } {\n        qty currstock prim <\n        [ stock allocated reasons items qtys whole j 1 prim + stock itemidx qty prim seq-int.set allocated qty prim seq-int.push reasons 0 prim seq-int.push allocate-loop ]\n        [ currstock 0 prim =\n          [ stock allocated reasons items qtys whole j 1 prim + stock allocated 0 prim seq-int.push reasons 2 prim seq-int.push allocate-loop ]\n          [ j whole prim seq-bool.at\n            [ stock allocated reasons items qtys whole j 1 prim + stock allocated 0 prim seq-int.push reasons 3 prim seq-int.push allocate-loop ]\n            [ stock allocated reasons items qtys whole j 1 prim + stock itemidx 0 prim seq-int.set allocated currstock prim seq-int.push reasons 1 prim seq-int.push allocate-loop ]\n            if\n          ]\n          if\n        ]\n        if\n      }\n    ]\n    [ stock allocated reasons ]\n    if\n  };\n\n: main\n  (forall ρ; ρ stock:Seq Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many -- ρ stock-left:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many)\n  locals { stock items qtys whole } { stock prim seq-int.empty prim seq-int.empty items qtys whole 0 allocate-loop };\n",
+   "sha256": "f17ded64f0de5855677f4357b25c056504ca47f9a8a01e89a275470b07c43f94"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "seq-sum",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "6f9cdfaa1626f33489d77b37bf6de8a6e722d4a98c42f0d36f04f4b74dd5a733"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "seq-max",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "7fdfd1a30153492a5ba313f4ecad2cc64044fb99116275a5a65def3555068aba"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "count-below",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "cfad1c60595632deeec6646709a5e9a91101b7ca13f9f3cee65563e093990acd"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "index-of",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "06c6f22cbfdb0ac8108e99e8db975c8a4ecba11f473f566265f2276448ef8753"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "reverse",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "72aaf0d7f4bf9632d84e0af88637e917eb480592bc311033ffceb2a698f7bfac"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "prefix-sums",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "2f4a9e38c381ea41d055dbb047824921db574078cd8363da4cfa84b63d4929dc"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "keep-positive",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "cd3e1238d4de58dc7e5e93c8201d4890fd714ec30bf0f72731a8a2998982b161"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "is-sorted",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "915ab8241f979975e61e36b89f4544e18205b03370b53dc15e63413663479362"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "dot",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "32b1bd05892b1280177687dbab741e873bcb0ef69f26136aa602f80f1d6f3adb"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "all-true",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "477e6d063ffca8ad25d32563265e8c929d0e122c727c264b60c3c491e1950623"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "fe2551665485a5f1e86f15a47b7e818a37c3d1fb3b5075c01fb924e11cd5582a"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "has-pair-sum",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "fb03c13cbff221ec51c7990159f1bb77334fabe6dcf1171a34339672d2127a5a"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "6d8de868d6dc1e65561cbe121a4074512a6e7c444f163fe26e183a90775681a7"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "merge-sorted",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "44759cd1b754ce3dfed25027bc89ad37a7b4e9c41cefa51eba3f8206a2c44376"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "digits",
+   "refused": false
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "c1241d8fa6c198fc53392cfad92125e2a226184d9a5cdf8902ea566b9b8f5cd1"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "f845493d1a6e09986b5f8447f7f483df7a1e399e809b476325a0a22586cc8a29"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "b7076a17d786079b962fa62b2de2b0df3d64ee2a8b68b6e6b1c6da63674d8f09"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "ledger",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "aab9fcd0ca3232c5b0c085e3d18cbe1350e01178a6f64ae60e4ecfde60b80444"
+  },
+  {
+   "arm": "A",
+   "sample": "A24",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.name.unresolved",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.name.unresolved",
+    "firth.type.branch-mismatch",
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "b39da4d21d9ce8010082cb197d4ea7ca89b00f1a062b09bd58ee66994a99a5ed"
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "task": "seq-max",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "ff3cfbbb8422f79eee65359c8f6ae220c3bbbb77626c903a636b571b9eb845cb"
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "task": "is-sorted",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "5d671d8b7c484ea05f6b1770478c33aff25a11751244dc14b5011bf49a23ec50"
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "task": "all-true",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "235cd32f60b73e6c6736b0d30057543f14a86f9a16aa3524ef3b557206b96a6c"
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "task": "longest-run",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "task": "has-pair-sum",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow",
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "159d67e54428b7d878f9ac826a6a5524418f68e859ecd56b8debe4ca007aca65"
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "637f371dfb24f1680cb412b88ebf3b5df3b74fd6600db79f15857510cf4309f1"
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "74968f9d9b9d419a8440ef53af941708158c63cef91d7769cd62f5efedd615a8"
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow"
+   ],
+   "fixed": null,
+   "sha256": "849e3dc5381e9eb73c899fe3b6ff480e98eb3998470ab01d12414dd0d21d55e2"
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "5b15275a1e975c1f96ad5e8291351be88bed23d77ddfd4001471e313db4fd78f"
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "task": "allocate-batch",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "task": "reverse",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-item",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-item"
+   ],
+   "fixed": null,
+   "sha256": "f81823c74e9152de807904fd3209bd6d9a8ce504b44e2dc21c893b8d2ff099dc"
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "task": "keep-positive",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-item",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-item"
+   ],
+   "fixed": null,
+   "sha256": "2d288a6038504ae731de971f59fd226d51c309f956eb03126e7b8e345ae0e6ae"
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "task": "is-sorted",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-item",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-item"
+   ],
+   "fixed": null,
+   "sha256": "ea70114e9b491391e4585b325d506110e5e535104d4973be756e90ae486fe90f"
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "55016661998c7cd2e49dfa8c4e9a808dade1b8c11ddbaafb263b3f0b1b59e325"
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.name.unresolved",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.name.unresolved"
+   ],
+   "fixed": null,
+   "sha256": "5983cadeb39e32c1cb691a7f713240fd6b06221eb6340fe409bb3789c56f13ab"
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-item",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-item"
+   ],
+   "fixed": null,
+   "sha256": "b6b7b89d5234a8ba832119e4fa7d1339e5d37bce24de57f9883cce52ce7d0e8c"
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "2e6795365ebdd3e2990f6a326e29e521dd4058fd401bd7682738023aecbc7fd1"
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "be69fd56d62fe906872f6ebc3d0c005063e82cde6d3b1368f1bdbc5a6d5a03dc"
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-item",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-item"
+   ],
+   "fixed": null,
+   "sha256": "327f9621d2c809b46e5bf02cb1ccf3c44f8f01f243428d70443ecf7ce61c96b2"
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "7282263320369c4ec91377f01f80ababc14ab8fcb0a561ee8fe29975788509d0"
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "task": "is-sorted",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "345e7e1566ab591965eee0abe7fc8332723c5c7779bb1609c65f07a0274bd940"
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "task": "has-pair-sum",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "task": "histogram",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "d1b66ebcb7cf53dcf6a71a56c7e12efc07bc5724d5f1c60c8d71b8d0344823c7"
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "000e7bae641b6c8db76849801b3ef2b7fdbef2691329fe74699a729a8864508d"
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "task": "seq-max",
+   "refused": true,
+   "first_code": "firth.elaboration.untracked-local",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.elaboration.untracked-local"
+   ],
+   "fixed": null,
+   "sha256": "ff65a92bca0630198735c9e4784b7cefb3c62e15a0ef244ef62cd6abd175e3b2"
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "task": "index-of",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": index-loop\n  (forall ρ; ρ i:Int^many xs:Seq Int^many x:Int^many -- ρ index:Int^many)\n  locals { i xs x } {\n    i xs prim seq-int.len prim <\n    [\n      xs i prim seq-int.at x prim =\n      [\n        i\n      ]\n      [\n        i 1 prim + xs x index-loop\n      ]\n      if\n    ]\n    [ -1 ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many x:Int^many -- ρ index:Int^many)\n  locals { xs x } { 0 xs x index-loop };\n",
+   "sha256": "1e5cdc6d759c59e4d92cafa7517c3279dac7395ee7c0c7d2f2ae30199e22977f",
+   "passes_after": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "task": "reverse",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": reverse-loop\n  (forall ρ; ρ result:Seq Int^many xs:Seq Int^many i:Int^many -- ρ reversed:Seq Int^many)\n  locals { result xs i } {\n    i 0 prim <\n    [\n      result xs i prim seq-int.at prim seq-int.push locals { new-result } {\n        new-result xs i 1 prim - reverse-loop\n      }\n    ]\n    [ result ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many -- ρ reversed:Seq Int^many)\n  locals { xs } { prim seq-int.empty xs xs prim seq-int.len 1 prim - reverse-loop };\n",
+   "sha256": "9741e5a1b9349ab7d885e821e08fca7c1f1ec5408c303cf219764360646169d1",
+   "passes_after": false
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "task": "keep-positive",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "9884f963dc1b77d32a1da18c8c22a37ae05a2ea3501a3326c29c75f153480a33"
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "task": "has-pair-sum",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 2,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": pair-check\n  (forall ρ; ρ i:Int^many xs:Seq Int^many target:Int^many -- ρ found:Bool^many)\n  locals { i xs target } {\n    i 1 prim + xs prim seq-int.len prim <\n    [\n      xs i prim seq-int.at locals { xi } {\n        i 1 prim + xs prim seq-int.len prim <\n        [\n          xs i 1 prim + prim seq-int.at locals { xj } {\n            xi xj prim + target prim =\n            [\n              true\n            ]\n            [\n              i 1 prim + xs target pair-check\n            ]\n            if\n          }\n        ]\n        [\n          i 1 prim + xs target pair-check\n        ]\n        if\n      }\n    ]\n    [ false ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many target:Int^many -- ρ found:Bool^many)\n  locals { xs target } { 0 xs target pair-check };\n",
+   "sha256": "8c18b1326e9cb09c5d68ab71c73eadef19d6a98675fd5e7016f357134dcccb5c",
+   "passes_after": false
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.expected-bool"
+   ],
+   "fixed": ": distinct-check\n  (forall ρ; ρ count:Int^many xs:Seq Int^many i:Int^many -- ρ result:Int^many)\n  locals { count xs i } {\n    i xs prim seq-int.len prim <\n    [\n      xs i prim seq-int.at locals { elem } {\n        0 locals { j } {\n          j xs prim seq-int.len prim <\n          [ xs j prim seq-int.at elem prim = prim not ]\n          [ false ]\n          if\n          [\n            j 1 prim +\n          ]\n          [ j ]\n          if locals { next-j } {\n            [ next-j xs prim seq-int.len prim < ] [ true ] [ true ] if\n            [ next-j 1 prim + locals { j2 } { j2 } ]\n            [ count 1 prim + ]\n            if\n          }\n        }\n        xs i 1 prim + distinct-check\n      }\n    ]\n    [ count ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many -- ρ count:Int^many)\n  locals { xs } { 0 xs 0 distinct-check };\n",
+   "sha256": "7dc40879b6cd972ffe722feb919785a291d3f03ca89934810d3eb7496cd81eae"
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": digit-loop\n  (forall ρ; ρ result:Seq Int^many n:Int^many -- ρ digits:Seq Int^many)\n  locals { result n } {\n    n 0 prim =\n    [\n      result\n    ]\n    [\n      n 10 prim mod locals { digit } {\n        result digit prim seq-int.push locals { new-result } {\n          new-result n 10 prim div digit-loop\n        }\n      }\n    ]\n    if\n  };\n\n: reverse-digits\n  (forall ρ; ρ result:Seq Int^many source:Seq Int^many i:Int^many -- ρ reversed:Seq Int^many)\n  locals { result source i } {\n    i 0 prim <\n    [\n      result source i prim seq-int.at prim seq-int.push locals { new-result } {\n        new-result source i 1 prim - reverse-digits\n      }\n    ]\n    [ result ]\n    if\n  };\n\n: main\n  (forall ρ; ρ n:Int^many -- ρ digits:Seq Int^many)\n  locals { n } {\n    n 0 prim =\n    [\n      prim seq-int.empty 0 prim seq-int.push\n    ]\n    [\n      prim seq-int.empty n digit-loop locals { rev-digits } {\n        prim seq-int.empty rev-digits rev-digits prim seq-int.len 1 prim - reverse-digits\n      }\n    ]\n    if\n  };\n",
+   "sha256": "a415988d02e7727de2dd1602ac1eeaa41166d5e0f82fb8ff8fa8cabcb575fffa",
+   "passes_after": false
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": histogram-loop\n  (forall ρ; ρ result:Seq Int^many xs:Seq Int^many i:Int^many k:Int^many -- ρ counts:Seq Int^many)\n  locals { result xs i k } {\n    i xs prim seq-int.len prim <\n    [\n      xs i prim seq-int.at locals { val } {\n        result val prim seq-int.at locals { count } {\n          result val count 1 prim + prim seq-int.set xs i 1 prim + k histogram-loop\n        }\n      }\n    ]\n    [ result ]\n    if\n  };\n\n: init-counts\n  (forall ρ; ρ result:Seq Int^many i:Int^many k:Int^many -- ρ initialized:Seq Int^many)\n  locals { result i k } {\n    i k prim <\n    [\n      result 0 prim seq-int.push i 1 prim + k init-counts\n    ]\n    [ result ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ counts:Seq Int^many)\n  locals { xs k } {\n    prim seq-int.empty 0 k init-counts xs 0 k histogram-loop\n  };\n",
+   "sha256": "2f107afbb139a213f0262b2dd166302272c39d02a67847faca08884a1465ca14",
+   "passes_after": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.expected-bool",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.expected-bool"
+   ],
+   "fixed": null,
+   "sha256": "61457feddf5125a93d46f714a0475dea0be1eb9384e3478ea85e1d7f9ca0a394"
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "task": "ledger",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "a0b2c1e3f6949380241c0d112e54f9bbe508d5bef6375b2c09d499bd217dd2f6"
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "task": "allocate-batch",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B5",
+   "task": "count-distinct",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B5",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": insert-at\n  (forall ρ; ρ sorted:Seq Int^many x:Int^many pos:Int^many idx:Int^many result:Seq Int^many -- ρ final:Seq Int^many)\n  locals { sorted x pos idx result } {\n    idx sorted prim seq-int.len prim <\n    [\n      idx pos prim =\n      [\n        result x prim seq-int.push\n        locals { new-result } {\n          new-result sorted idx prim seq-int.at prim seq-int.push\n          locals { newer-result } {\n            sorted x pos idx 1 prim + newer-result insert-at\n          }\n        }\n      ]\n      [\n        sorted idx prim seq-int.at\n        locals { elem } {\n          result elem prim seq-int.push\n          locals { new-result } {\n            sorted x pos idx 1 prim + new-result insert-at\n          }\n        }\n      ]\n      if\n    ]\n    [\n      pos sorted prim seq-int.len prim =\n      [\n        result x prim seq-int.push\n      ]\n      [ result ]\n      if\n    ]\n    if\n  };\n\n: insert-sorted\n  (forall ρ; ρ x:Int^many sorted:Seq Int^many i:Int^many -- ρ result:Seq Int^many)\n  locals { x sorted i } {\n    i sorted prim seq-int.len prim <\n    [\n      sorted i prim seq-int.at\n      locals { elem } {\n        x elem prim <\n        [\n          sorted x i 0 prim seq-int.empty insert-at\n        ]\n        [\n          x sorted i 1 prim + insert-sorted\n        ]\n        if\n      }\n    ]\n    [\n      sorted x prim seq-int.push\n    ]\n    if\n  };\n\n: sort-loop\n  (forall ρ; ρ xs:Seq Int^many i:Int^many sorted:Seq Int^many -- ρ result:Seq Int^many)\n  locals { xs i sorted } {\n    i xs prim seq-int.len prim <\n    [\n      xs i prim seq-int.at\n      locals { x } {\n        x sorted 0 insert-sorted\n        locals { new-sorted } {\n          xs i 1 prim + new-sorted sort-loop\n        }\n      }\n    ]\n    [ sorted ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Seq Int^many)\n  locals { xs } { xs 0 prim seq-int.empty sort-loop };\n",
+   "sha256": "0c4de32ef56ce9e21c53a90fbcd05ef9c8bf3d8a1e410ee0661c0775506bf2b9",
+   "passes_after": true
+  },
+  {
+   "arm": "B",
+   "sample": "B5",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "489836617e03fceaec3aeb77468a1ed5319ddcda317a6c96f05ce7bb09f24e5e"
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "task": "is-sorted",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "task": "longest-run",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "task": "has-pair-sum",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "49e105dcefbac472093d0369ad97e32e98c232338e9ccd92119ddc14d52662f4"
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "task": "digits",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ counts:Seq Int^many)\n  locals { xs k } { prim seq-int.empty 0 k xs loop-init-hist };\n\n: loop-init-hist\n  (forall ρ; ρ result:Seq Int^many i:Int^many k:Int^many xs:Seq Int^many -- ρ next:Seq Int^many)\n  locals { result i k xs } { i k prim < [ result 0 prim seq-int.push locals { new-result } { new-result i 1 prim + k xs loop-init-hist } ] [ result 0 xs loop-count-hist ] if };\n\n: loop-count-hist\n  (forall ρ; ρ result:Seq Int^many j:Int^many xs:Seq Int^many -- ρ final:Seq Int^many)\n  locals { result j xs } { j xs prim seq-int.len prim < [ xs j prim seq-int.at locals { val } { result val prim seq-int.at locals { count } { result val count 1 prim + prim seq-int.set locals { new-result } { new-result j 1 prim + xs loop-count-hist } } } ] [ result ] if };\n",
+   "sha256": "71bf5fb1c0ef0a4b28b90a01e3fe76096f5f23e760b43579871dd304cf1ef962",
+   "passes_after": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.quotation-compose-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.quotation-compose-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "5dbf4e2ef08e8956c2510321c91369912526351536497058522813022f75ced0"
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-item",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-item"
+   ],
+   "fixed": null,
+   "sha256": "294325a2d14ab326ea5bb531114994fb73f8d16daedb2336734e76686601b244"
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "task": "is-sorted",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "78edf3227ede4afcd01e16fecc752455f5c5d91b9d8fe9bcd15cdc7322c50ce1"
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "task": "has-pair-sum",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "b6bcb458dcfea0d29bbe70850692e046e25d39f987aa43e57160efb2fec484cf"
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "task": "merge-sorted",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "90308c1f7b451743be9c497c44652b0858c3bfa6bf0e8ba2ee27a57db9f1c40d"
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ counts:Seq Int^many)\n  locals { xs k } {\n    0 xs 0 k make-zeros histogram-helper\n  };\n\n: make-zeros\n  (forall ρ; ρ i:Int^many k:Int^many -- ρ result:Seq Int^many)\n  locals { i k } {\n    i k prim =\n    [ prim seq-int.empty ]\n    [ prim seq-int.empty 0 prim seq-int.push i 1 prim + k make-zeros ]\n    if\n  };\n\n: histogram-helper\n  (forall ρ; ρ i:Int^many xs:Seq Int^many counts:Seq Int^many -- ρ result:Seq Int^many)\n  locals { i xs counts } {\n    i xs prim seq-int.len prim =\n    [ counts ]\n    [ xs i prim seq-int.at locals { v } {\n        counts v prim seq-int.at 1 prim + locals { new-count } {\n          i 1 prim + xs counts v new-count prim seq-int.set histogram-helper\n        }\n      }\n    ]\n    if\n  };\n",
+   "sha256": "e77044c3106f644978ac04e8025935367397e88b61634f8dcc133ca298549898"
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "task": "sort",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.declared-effect-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.declared-effect-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "4dd2e1febcc834417f98037d5a58c3187893e7104b815cda00a987c30308a68f"
+  },
+  {
+   "arm": "B",
+   "sample": "B9",
+   "task": "reverse",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B9",
+   "task": "keep-positive",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B9",
+   "task": "is-sorted",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B9",
+   "task": "all-true",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch",
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "506f9bda04f110746d5e5cb35d888e5e1545806767ba108630f290d55c7a3672"
+  },
+  {
+   "arm": "B",
+   "sample": "B9",
+   "task": "longest-run",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B9",
+   "task": "has-pair-sum",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B9",
+   "task": "digits",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B9",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B9",
+   "task": "histogram",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B9",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 3,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow",
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Seq Int^many)\n  locals { xs } { xs 0 xs prim seq-int.len loop-sort };\n\n: loop-sort\n  (forall ρ; ρ xs:Seq Int^many i:Int^many len:Int^many -- ρ sorted:Seq Int^many)\n  locals { xs i len } {\n    i len prim <\n    [ xs i len find-min locals { j } { xs i j swap-elements i 1 prim + len loop-sort } ]\n    [ xs ]\n    if\n  };\n\n: find-min\n  (forall ρ; ρ xs:Seq Int^many start:Int^many len:Int^many -- ρ minidx:Int^many)\n  locals { xs start len } {\n    start 1 prim + len find-min-loop start\n  };\n\n: find-min-loop\n  (forall ρ; ρ xs:Seq Int^many i:Int^many len:Int^many minidx:Int^many -- ρ result:Int^many)\n  locals { xs i len minidx } {\n    i len prim <\n    [ xs i prim seq-int.at xs minidx prim seq-int.at prim < [ xs i len i 1 prim + find-min-loop ] [ xs i 1 prim + len minidx find-min-loop ] if ]\n    [ minidx ]\n    if\n  };\n\n: swap-elements\n  (forall ρ; ρ xs:Seq Int^many i:Int^many j:Int^many -- ρ result:Seq Int^many)\n  locals { xs i j } {\n    xs i prim seq-int.at locals { tmp } { xs j prim seq-int.at xs i prim seq-int.set xs j tmp prim seq-int.set }\n  };\n",
+   "sha256": "fe4882882c6341c25c491b3b1328485622de32375c57cc0063552e9e76adcbda"
+  },
+  {
+   "arm": "B",
+   "sample": "B9",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "f2644efb97524a427c82c160107bc2a86cc80bf9df49d0a5b3e5661f4eacaa73"
+  },
+  {
+   "arm": "B",
+   "sample": "B10",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "5a70b96835f95a6d44d0c5e3efb1b2c449c7010e40298a120fba33c46a51df13"
+  },
+  {
+   "arm": "B",
+   "sample": "B10",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "f615501db98fa9cd3b7208ce2abae0db899101d0cffd0c94c9cb4dae04f67307"
+  },
+  {
+   "arm": "B",
+   "sample": "B10",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.type.declared-effect-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.declared-effect-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "2b4531963597267fb5f306361ec058476aa0301e18c16b7b8bbaf4796595e218"
+  },
+  {
+   "arm": "B",
+   "sample": "B10",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "699a1a237a57930f5a7e42d4dd80e34708659633f293899555e686e2256507d8"
+  },
+  {
+   "arm": "B",
+   "sample": "B10",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "3a796694e68566e1ce14f360b041595386f92e4eb9b0ecf93f2d34a7709e336b"
+  },
+  {
+   "arm": "B",
+   "sample": "B10",
+   "task": "allocate-batch",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "task": "reverse",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "807390d2dc5ba953971a0d4a64ff41c45f867630e4db931f834a63e76b29b485"
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "task": "keep-positive",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ result:Seq Int^many)\n  locals { xs } {\n    prim seq-int.empty 0 xs keep-positive-loop\n  };\n\n: keep-positive-loop\n  (forall ρ; ρ result:Seq Int^many i:Int^many seq:Seq Int^many -- ρ result:Seq Int^many)\n  locals { result i seq } {\n    i seq prim seq-int.len prim <\n    [ seq i prim seq-int.at locals { val } {\n        val 0 prim <\n        [ result i 1 prim + seq keep-positive-loop ]\n        [ result val prim seq-int.push i 1 prim + seq keep-positive-loop ]\n        if\n      }\n    ]\n    [ result ]\n    if\n  };\n",
+   "sha256": "4ee4acf7ec33338c98777d449fe77efa693ca567716964d3fbce542cb0d7edc7",
+   "passes_after": false
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "task": "is-sorted",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "f3215f565746f7a641481dcb6993215e70174626e52e42cba40c8faa2f417ad9"
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "cf1118715dcaa1fd1e72fe4cb68cbaebcada99ef7daf2afa9a7a4cee14affa93"
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "task": "has-pair-sum",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "d4aea8ca77d9f0034cf66c601d8c1c6d609f2c065cdcb5f5d20c82c9e99aad26"
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "43fb0a1513ce3bf1c1896f8a3223d8ad8c4553cae5c22824f30b8a185ad7f659"
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 2,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch",
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ result:Seq Int^many)\n  locals { xs k } {\n    0 k prim seq-int.empty init-histogram-counts xs histogram-loop\n  };\n\n: init-histogram-counts\n  (forall ρ; ρ i:Int^many k:Int^many counts:Seq Int^many -- ρ counts:Seq Int^many)\n  locals { i k counts } {\n    i k prim <\n    [ i 1 prim + k counts 0 prim seq-int.push init-histogram-counts ]\n    [ counts ]\n    if\n  };\n\n: histogram-loop\n  (forall ρ; ρ i:Int^many xs:Seq Int^many counts:Seq Int^many -- ρ result:Seq Int^many)\n  locals { i xs counts } {\n    i xs prim seq-int.len prim <\n    [ xs i prim seq-int.at locals { val } {\n        counts val prim seq-int.at 1 prim + counts val prim seq-int.set\n        locals { new-counts } { i 1 prim + xs new-counts histogram-loop }\n      }\n    ]\n    [ counts ]\n    if\n  };\n",
+   "sha256": "b185c33aa29891b4b6763ae274826470f67ad79a0d77887bd2cd9885aebb20a3"
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "566626311e6bfda1a9304d66392c851faae34c04a4f0f764c36dac6279c364a3"
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.declared-effect-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.declared-effect-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "70dd9f03d58344ba404318bec3073f9c398529d4f7129196687ea54bf754afef"
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "task": "seq-max",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "6a4ba2ed69be5b5fe0c604dcd4a5416cb0977728592e7817e34ff1252f83a6c1"
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "2229858741560f3e41487bcf44313b9b33bf000f682f4dcb111b31bba5088141"
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "ea62d50e58fea0c89cee9e11e11670bdbd2f6a49424f5eb80e6fe06e9861eec5"
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "b28631aca3090ead9fc1d36b51d9d6e7da0f9f383f10cafd5cea7e4563be7a02"
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "603c89cc10964a899d501616726e82d3177c06a48ce441c3d0929b380718780e"
+  },
+  {
+   "arm": "B",
+   "sample": "B15",
+   "task": "seq-max",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B15",
+   "task": "count-below",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-token"
+   ],
+   "fixed": null,
+   "sha256": "20605db9fcdf5c86b51ead939fdae1bb015aa250c6590982d1a8619b736fde0c"
+  },
+  {
+   "arm": "B",
+   "sample": "B15",
+   "task": "reverse",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-token"
+   ],
+   "fixed": null,
+   "sha256": "3015ddbe8a78402fcf282950557238516d3ac198be25922ad2d1f473a3828ac3"
+  },
+  {
+   "arm": "B",
+   "sample": "B15",
+   "task": "keep-positive",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-token"
+   ],
+   "fixed": null,
+   "sha256": "2c68724170f08742b13d472ff156a9f8c574ffa83827d341d0b297c4297ff809"
+  },
+  {
+   "arm": "B",
+   "sample": "B15",
+   "task": "is-sorted",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B15",
+   "task": "dot",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-token"
+   ],
+   "fixed": null,
+   "sha256": "e7cbb3805d079e8ef6c85af76d76da93bbd41cc0cc324dc0e34ca2bc15af1b1c"
+  },
+  {
+   "arm": "B",
+   "sample": "B15",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-token"
+   ],
+   "fixed": null,
+   "sha256": "b25179f860fd298b5552783f4a5989404506cc6e75e9f364cd76516ef16498f8"
+  },
+  {
+   "arm": "B",
+   "sample": "B15",
+   "task": "has-pair-sum",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B15",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-token"
+   ],
+   "fixed": null,
+   "sha256": "f1457f14ca426f4be8186c073d327bb7a71b0adb4161b6bd04a6721e602db265"
+  },
+  {
+   "arm": "B",
+   "sample": "B15",
+   "task": "merge-sorted",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "33c0ebae10279b7005e8dbff87237efc1a43353179f78b5cc3586a96d0c7462d"
+  },
+  {
+   "arm": "B",
+   "sample": "B15",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-token"
+   ],
+   "fixed": null,
+   "sha256": "5652ad0b529c39eee59de71d30627458e3eed18e78c55906026e8947c82b5ff3"
+  },
+  {
+   "arm": "B",
+   "sample": "B15",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B15",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-token"
+   ],
+   "fixed": null,
+   "sha256": "1c5caf9830571e149bff47683ed42bdd330a3bdb4f11b11dfd56a3498c7629b3"
+  },
+  {
+   "arm": "B",
+   "sample": "B15",
+   "task": "sort",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B15",
+   "task": "ledger",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-token"
+   ],
+   "fixed": null,
+   "sha256": "5aa9029dc668c04fac63a8c60099f6a11f2aa48f191b10741a4db549c01a4912"
+  },
+  {
+   "arm": "B",
+   "sample": "B15",
+   "task": "allocate-batch",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B16",
+   "task": "longest-run",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B16",
+   "task": "has-pair-sum",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "b8edbdcfe07ce2a65ce51c175a886497ec2b10156be935e8b996b3235d4be942"
+  },
+  {
+   "arm": "B",
+   "sample": "B16",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B16",
+   "task": "sort",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B16",
+   "task": "allocate-batch",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B17",
+   "task": "seq-sum",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ total:Int^many)\n  0 locals { xs } { xs 0 sum-helper };\n\n: sum-helper\n  (forall ρ; ρ xs:Seq Int^many i:Int^many -- ρ total:Int^many)\n  locals { xs i } {\n    i xs prim seq-int.len prim <\n    [ xs i prim seq-int.at xs i 1 prim + sum-helper prim + ]\n    [ 0 ]\n    if\n  };\n",
+   "sha256": "bc945d5fc2491f7dc17d0e8c39ce42914d9a2e4c11614f9378f900edabc9a7ed"
+  },
+  {
+   "arm": "B",
+   "sample": "B17",
+   "task": "seq-max",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "087ba65000fe8699a16cc7f214866be03cd311f3e54e0a4ffcea5773893b8cd3"
+  },
+  {
+   "arm": "B",
+   "sample": "B17",
+   "task": "count-below",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "68b30a65eb0b367d0398fcf9bd341135e8741139d17dfbaef543f0622628e1e0"
+  },
+  {
+   "arm": "B",
+   "sample": "B17",
+   "task": "reverse",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ reversed:Seq Int^many)\n  locals { xs } { prim seq-int.empty xs xs prim seq-int.len 1 prim - reverse-helper };\n\n: reverse-helper\n  (forall ρ; ρ result:Seq Int^many xs:Seq Int^many i:Int^many -- ρ reversed:Seq Int^many)\n  locals { result xs i } {\n    i 0 prim <\n    [ result xs i prim seq-int.at prim seq-int.push xs i 1 prim - reverse-helper ]\n    [ result ]\n    if\n  };\n",
+   "sha256": "bf1e358cd0993e695051ce64c2516b0438d4434a9ddb17d12a00e2b665c5d34f",
+   "passes_after": false
+  },
+  {
+   "arm": "B",
+   "sample": "B17",
+   "task": "keep-positive",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "534195b8ad4ee944f9656d94dd461e4effc6d4499202268bee522c59fd349716"
+  },
+  {
+   "arm": "B",
+   "sample": "B17",
+   "task": "is-sorted",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "ad325dc33c082afc716c1eef18ba10fb2eb5af5e8ae5ae69d805be626a0b18fa"
+  },
+  {
+   "arm": "B",
+   "sample": "B17",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "52fac603d5be41d34bd9131ddcbf4dc03a8467297efc63af21ecf5c3b167e9ad"
+  },
+  {
+   "arm": "B",
+   "sample": "B17",
+   "task": "has-pair-sum",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B17",
+   "task": "count-distinct",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B17",
+   "task": "digits",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B17",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B17",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "ebcefd5b0117439eb2b517cfa6f0409e530bffa8c35a1acb73bf0f1af73abd25"
+  },
+  {
+   "arm": "B",
+   "sample": "B17",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch",
+    "firth.type.quotation-compose-mismatch",
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "d8ed4c4132a2e706d8bc663c16fed63c5e498aad0381ba86d5d0e7d3a562b9fe"
+  },
+  {
+   "arm": "B",
+   "sample": "B17",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "351ccb46506d5698da30e0e08db472f5a85ed8f1e652650d7f8b77880a2d035b"
+  },
+  {
+   "arm": "B",
+   "sample": "B18",
+   "task": "index-of",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B18",
+   "task": "reverse",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B18",
+   "task": "keep-positive",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B18",
+   "task": "is-sorted",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B18",
+   "task": "longest-run",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B18",
+   "task": "has-pair-sum",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B18",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "a34a7fd32c602e6d8bac051a0dfef1e0f3d86c302012c424a813f9e850235fe9"
+  },
+  {
+   "arm": "B",
+   "sample": "B18",
+   "task": "merge-sorted",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "8950cc3285fd50769221d72c28c9b6c28a3c6cdea4ae954143807cf9393450bf"
+  },
+  {
+   "arm": "B",
+   "sample": "B18",
+   "task": "digits",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B18",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B18",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "7435ab2012c3f656593ed28cd002317709832cbee1b477ba67538882b376ae81"
+  },
+  {
+   "arm": "B",
+   "sample": "B18",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "f3fa40b2907a7cb709996491b000d84c7fff9157228279d6e19f02a12ab899ac"
+  },
+  {
+   "arm": "B",
+   "sample": "B18",
+   "task": "allocate-batch",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "seq-sum",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ total:Int^many)\n  locals { xs } { 0 0 xs helper-sum };\n\n: helper-sum\n  (forall ρ; ρ idx:Int^many acc:Int^many xs:Seq Int^many -- ρ result:Int^many)\n  locals { idx acc xs } { xs prim seq-int.len idx prim = [ acc ] [ xs idx prim seq-int.at acc prim + idx 1 prim + xs helper-sum ] if };\n",
+   "sha256": "3855bc8cc8fd0812b81e98f7444360c725f5e4bf4c12184117ebb9fecfda6b5b",
+   "passes_after": false
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "seq-max",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 2,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ largest:Int^many)\n  locals { xs } { xs 0 prim seq-int.at 1 xs helper-max };\n\n: helper-max\n  (forall ρ; ρ idx:Int^many max:Int^many xs:Seq Int^many -- ρ result:Int^many)\n  locals { idx max xs } { xs prim seq-int.len idx prim = [ max ] [ xs idx prim seq-int.at max prim < [ xs idx prim seq-int.at ] [ max ] if idx 1 prim + xs helper-max ] if };\n",
+   "sha256": "9a21478f4d5a6047b03f956d0787643647342f72517676713d19f092ddf0e92f",
+   "passes_after": false
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "count-below",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { xs k } { 0 0 xs k helper-count };\n\n: helper-count\n  (forall ρ; ρ idx:Int^many count:Int^many xs:Seq Int^many k:Int^many -- ρ result:Int^many)\n  locals { idx count xs k } { xs prim seq-int.len idx prim = [ count ] [ xs idx prim seq-int.at k prim < [ count 1 prim + ] [ count ] if idx 1 prim + xs k helper-count ] if };\n",
+   "sha256": "a187e5ada6e44b8a416936570ff2b32c6cb9480e9c31983008d77b8fb2005e09",
+   "passes_after": false
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "index-of",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": main\n  (forall ρ; ρ xs:Seq Int^many x:Int^many -- ρ index:Int^many)\n  locals { xs x } { 0 xs x helper-find };\n\n: helper-find\n  (forall ρ; ρ idx:Int^many xs:Seq Int^many x:Int^many -- ρ result:Int^many)\n  locals { idx xs x } { xs prim seq-int.len idx prim = [ -1 ] [ xs idx prim seq-int.at x prim = [ idx ] [ idx 1 prim + xs x helper-find ] if ] if };\n",
+   "sha256": "09b0edb6106397949254a2682b88d0557fe145122c094e7811c6fff55cff64a4",
+   "passes_after": true
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "reverse",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 2,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ reversed:Seq Int^many)\n  locals { xs } { prim seq-int.empty 0 xs helper-reverse };\n\n: helper-reverse\n  (forall ρ; ρ result:Seq Int^many idx:Int^many xs:Seq Int^many -- ρ result:Seq Int^many)\n  locals { result idx xs } { xs prim seq-int.len idx prim = [ result ] [ result xs idx prim seq-int.at prim seq-int.push idx 1 prim + xs helper-reverse ] if };\n",
+   "sha256": "0ab687f905a05a717ac9b0195670bd1e56b73822a4125259db44dba93b87669f",
+   "passes_after": false
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "prefix-sums",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "b387ea0fb513a7f7dea3f24feaf832a64757c3b7af428eff18e59e14aae5ac95"
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "keep-positive",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "b42190af0d9c0d859284e3695f45c8996bb9ab59755e8d74c33676c13f2a7955"
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "is-sorted",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 2,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Bool^many)\n  locals { xs } { true 0 xs helper-check };\n\n: helper-check\n  (forall ρ; ρ sorted:Bool^many idx:Int^many xs:Seq Int^many -- ρ sorted:Bool^many)\n  locals { sorted idx xs } { xs prim seq-int.len 1 prim - idx prim = [ sorted ] [ xs idx prim seq-int.at xs idx 1 prim + prim seq-int.at prim < [ false ] [ true ] if sorted prim and idx 1 prim + xs helper-check ] if };\n",
+   "sha256": "7904dba14b40179ace8e4eac6bd8c59e444cb71d52d02e47656a5f876aac76ca",
+   "passes_after": false
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "dot",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 2,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": main\n  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many -- ρ product:Int^many)\n  locals { xs ys } { 0 0 xs ys helper-dot };\n\n: helper-dot\n  (forall ρ; ρ sum:Int^many idx:Int^many xs:Seq Int^many ys:Seq Int^many -- ρ product:Int^many)\n  locals { sum idx xs ys } { xs prim seq-int.len idx prim = [ sum ] [ xs idx prim seq-int.at ys idx prim seq-int.at prim * sum prim + idx 1 prim + xs ys helper-dot ] if };\n",
+   "sha256": "69a1e6e5b4defa865fec89607816142e17e06557fed49343dbd518c4e0090467",
+   "passes_after": true
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "all-true",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "eba6e5048f726c507b7812a439d08b2593e1332c1b42da7dff3d9c2e5f0fd9cc"
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "f52b787ec3783bdecac6d0c1e5e8a226df9ca8a9ff2d15b025cc449c3e3a4530"
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "has-pair-sum",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "93fbdc8ecbda2acafad1ac27311f4a67d8cce69586b6a8dbfe431b3ecafbf225"
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "merge-sorted",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "ce378506fff42ee6939212149d52b238b7e1a333242cf4e62d5d3eca62bffb76"
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "digits",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "histogram",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.name.unresolved",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.name.unresolved"
+   ],
+   "fixed": null,
+   "sha256": "447afbacfa9caee4138e3f85664e6eb451c913a2d1bfece688b70a2dcdaae632"
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "ledger",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": true,
+   "edits_applied": 1,
+   "checks_after": true,
+   "codes_after": [],
+   "fixed": ": main\n  (forall ρ; ρ start:Int^many txs:Seq Int^many -- ρ balance:Int^many rejected:Int^many)\n  locals { start txs } { start 0 0 txs helper-ledger };\n\n: helper-ledger\n  (forall ρ; ρ balance:Int^many rejected:Int^many idx:Int^many txs:Seq Int^many -- ρ balance:Int^many rejected:Int^many)\n  locals { balance rejected idx txs } { txs prim seq-int.len idx prim = [ balance rejected ] [ txs idx prim seq-int.at balance prim + dup 0 prim < [ drop balance rejected 1 prim + ] [ rejected ] if idx 1 prim + txs helper-ledger ] if };\n",
+   "sha256": "49935cf80ab84e0b830c2bb03fc8c9ed986b5b3cb9f93646237d203db26db010",
+   "passes_after": true
+  },
+  {
+   "arm": "B",
+   "sample": "B19",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.declared-effect-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.declared-effect-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "f39b5cab3a7195205be48b220bbbdeaf3fa03e1ea7a341a2f1829bd1388d368b"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "seq-sum",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "b0f5e82457885d3339f2608d18941f20a8e74bc9b618e6e9dfa7ded38b678c06"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "seq-max",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "df559c80e5e1e3df5536996aaa01f5d82e18ed90263bc3464ab7b7614c50988c"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "count-below",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "459d02c1b3355cb5573bbce78253c4e7ed92de4f6b8143f68d834578eb37b013"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "index-of",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "57c2da455eec90139ed97085a6f6ce668df6326989d50c2b5ef84b6eb33bc256"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "reverse",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "c37d5c47f2580f8b58ccb82d013d109b90cc76233d7663a0058fb5576d63d384"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "prefix-sums",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "a7624cfd387eda4739e61ff0868c06b7239df470f7750160a15b22534c3fcfe2"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "keep-positive",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "84f17c177bdf319fba4a23c61b1e6e6390bb082a0f04f69952b05ca9274b6a57"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "is-sorted",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "8ac5cfa679bcd3166f253b4a3fb3735770c19b43992d37ca9e52aa317ba31205"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "dot",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "f6e400252b7abfc7b1b00cf8cb8af018f80f23b4196b041b88f0c9bb42043950"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "all-true",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "59efcc43fea2e1e8610f142b7af26a742537754ba3633f8433a925c2277d16b9"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "ff2d6c6890ba1fa82081ec886d3458ee6ea37516cab3a666b39b7e83b1b8c979"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "has-pair-sum",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "9776589cc00b4448a399b0290178fbcb2c0c22e24b59288689d2089114fe03b1"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "c85e4daa437ab073ba5b083840819ade376466dc7d87b804bd19864ad9cdd02f"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "merge-sorted",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "1b07cd44187b58b0e542933a4733b5e1cd3308a4a67e6b5422779e41363966eb"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "3ccbbfc737acb2f3ac2b16b62f25a6763fe5161b9c9806eb913bb104c9395483"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "6e1054427a2056de46119e778b194821839f35d2084944fdcde0c490d1606e81"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "d39c05eb17ab95fa7cfac9b4863fdd9d7fc7ee3d1ea11cd2c0035220ec14d135"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "c8d228105c598abe5aea314e2e6a977785d1c0f5aa9266f42675d5646074e030"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "ledger",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "880951b237dafd95c0140403029e931f0f69d887651564bc739725d2e9bb3db4"
+  },
+  {
+   "arm": "B",
+   "sample": "B21",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.syntax.unexpected-token",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.unexpected-token"
+   ],
+   "fixed": null,
+   "sha256": "bc1a20bfc294252d911b022d689d99dbd969d932ed40df3181a3a73cdfa0ba22"
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "seq-sum",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "55bdae14a8805339083325da9dc0605647c9ee591d0c4be702d7015e33c549b7"
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "seq-max",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "4c07ee45c97bf5637f859beaccaec2af3bdaf2a1048030e8f604b04937bab05a"
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "count-below",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "3d11eccc630e1b6931f85c15017564a0f2215e17e344c1add89e005bb77f1696"
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "index-of",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "3a49808680197b6e6391814e44c37d4942d3ab02b509b6c833996257c7db251e"
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "reverse",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "prefix-sums",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "ffcb28d91d493e7f19943469b8148a4b633642268fc3e49b111d72b2fedbcb97"
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "keep-positive",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "64fbffacdeae49f7cc62a78ee939a5c1ad2924bec5db58632d68239c4abaabdc"
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "is-sorted",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "20992d173fd81b3b49789a5910c21eb0c2e14abef5a36730b6cf7c6593a20016"
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "dot",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "984883217d7c0271bd8439090e9cd837edb23e3b38c9ff259a36cd391efeee8a"
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "df8327da90cdd380d7086db86df677f2e2df3b0116d2671fc4c48b8077417a17"
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "has-pair-sum",
+   "refused": true,
+   "first_code": "firth.type.declared-effect-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.declared-effect-mismatch",
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "c50478bd96715fa298c3c854f026b00af3cfec94257605ed950014a381632bfa"
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "3a2d778115fd626c0a604a846ec333dc5ae48d1354c03abfa8779ad6f1ae9c76"
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "merge-sorted",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "a657cbd189a8a845106ffd3229eec0512970b23778d5ad9bd07e9669466ba06a"
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "digits",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "1cbba42a247237a5843a02ae6b19683d8074f506f78b46101ff601f96f074112"
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "a4bb55c05ca57be648489ef0a41db62876a731c824e85acb22aab34bbadcc366"
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "ledger",
+   "refused": true,
+   "first_code": "firth.type.primitive-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "07e850f59241bb4d8191dc46f7e1a88b994647fc12115f564d351e08e38db6c5"
+  },
+  {
+   "arm": "B",
+   "sample": "B22",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "91f07096b34698043851ca041677140a4ce621806952c9c9d4132c2daa26f0d4"
+  },
+  {
+   "arm": "B",
+   "sample": "B24",
+   "task": "primes-up-to",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B24",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.branch-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.branch-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "6c8510709fd7e020443025c8ed938f9e40104ecffde75d7d2dd7fc9797e2b160"
+  },
+  {
+   "arm": "B",
+   "sample": "B24",
+   "task": "allocate-batch",
+   "refused": false
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "seq-sum",
+   "refused": true,
+   "first_code": "firth.syntax.expected-name",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.expected-name"
+   ],
+   "fixed": null,
+   "sha256": "e8d543457a374f084d17948975da05e81f5ff486cfb384408727e7027bf1175d"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "seq-max",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch",
+    "firth.elaboration.untracked-local"
+   ],
+   "fixed": null,
+   "sha256": "dbf7a96be227560bb7aecb99e7a43f558d3f7404867fd84ac288c4869f3b61d5"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "count-below",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow",
+    "firth.elaboration.untracked-local"
+   ],
+   "fixed": null,
+   "sha256": "b7f1d7bf4f47f34787a6cc3224cb02691a3ed20f178e6912eef90236ea3f2db5"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "index-of",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow",
+    "firth.elaboration.untracked-local"
+   ],
+   "fixed": null,
+   "sha256": "d4be2bc272eeadd23905382023f7cf7d8ffef9d1dcef52296cfe1f656fc72cf3"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "reverse",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch",
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "14d972978cd0b6109f4d4bceefb7454742f362d6931292f56683dbcc03489d1d"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "prefix-sums",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch",
+    "firth.type.expected-bool"
+   ],
+   "fixed": null,
+   "sha256": "042f6f3805f0bf8ad1b0bbaee8027f162ab7a99c47606d3d35449e5938f196a2"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "keep-positive",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch",
+    "firth.elaboration.untracked-local"
+   ],
+   "fixed": null,
+   "sha256": "e63902d956db4b0610cebf484c52c4a5f7d17f4cd36b60c9c4643d341a472b36"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "is-sorted",
+   "refused": true,
+   "first_code": "firth.syntax.invalid-item",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.syntax.invalid-item"
+   ],
+   "fixed": null,
+   "sha256": "f23154a4b089263ff100ffad398074423b9b6dd3fd511271595fbb8059b291e0"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "dot",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow",
+    "firth.type.expected-bool"
+   ],
+   "fixed": null,
+   "sha256": "dc69a8b9afe83baff7092f10fec829a1b6d266c49e1ed6b78e232f9d9bddfe7c"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "all-true",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch",
+    "firth.type.expected-bool"
+   ],
+   "fixed": null,
+   "sha256": "8b6e64480a3f5c0bbddb2c517c5d457c1d1966227b0049882ec648db3e22856f"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "longest-run",
+   "refused": true,
+   "first_code": "firth.name.unresolved-effect",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.name.unresolved-effect",
+    "firth.elaboration.untracked-local"
+   ],
+   "fixed": null,
+   "sha256": "2aa0fe3a4d4b02db3428fd1e05baf8b7efd37943395d60065b2fc26c73521cb0"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "has-pair-sum",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow",
+    "firth.elaboration.untracked-local",
+    "firth.elaboration.untracked-local"
+   ],
+   "fixed": null,
+   "sha256": "51ba6d77be747dad1017238d317398ce587e4ed0c37c9ed3d01f38109c91de3f"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "count-distinct",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch",
+    "firth.type.branch-mismatch",
+    "firth.type.expected-bool"
+   ],
+   "fixed": null,
+   "sha256": "167d28f3a2797a4dd2222a984025a65c46361ac089df22dfaa7503ffd8338528"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "merge-sorted",
+   "refused": true,
+   "first_code": "firth.type.stack-underflow",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.stack-underflow",
+    "firth.elaboration.untracked-local",
+    "firth.type.primitive-input-mismatch",
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "0d23018a544fb6942168c9434d338f94f519974b6994ec06f0f2e0ef5dc9b2c0"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "digits",
+   "refused": true,
+   "first_code": "firth.type.expected-bool",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.expected-bool",
+    "firth.name.unresolved-effect",
+    "firth.type.declared-effect-mismatch",
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "a153e0933b695a9e3cac3a793be4fbebd36fa8191ffaa043ab5b8d2b5bf46a4e"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "primes-up-to",
+   "refused": true,
+   "first_code": "firth.type.expected-bool",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.expected-bool",
+    "firth.type.expected-bool"
+   ],
+   "fixed": null,
+   "sha256": "f8dc52e7f259041149f198027dd9792a60a971f84ce72303ef6d50127cb241d1"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "histogram",
+   "refused": true,
+   "first_code": "firth.name.unresolved",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.name.unresolved",
+    "firth.type.primitive-input-mismatch"
+   ],
+   "fixed": null,
+   "sha256": "47939371a81072ad0e80ea747781f41fbbadc5443bcba07fb7f7e0a9a901e941"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "sort",
+   "refused": true,
+   "first_code": "firth.type.expected-bool",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.expected-bool",
+    "firth.elaboration.untracked-local"
+   ],
+   "fixed": null,
+   "sha256": "e9ede8df8be3f7218bbee20d8ff09408b5073d0de87e540615787fab198420e3"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "ledger",
+   "refused": true,
+   "first_code": "firth.type.word-input-mismatch",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.type.word-input-mismatch",
+    "firth.elaboration.untracked-local"
+   ],
+   "fixed": null,
+   "sha256": "afa585e7092687debb50775de443cbbb5b637aba61d6e6b53d76dd2e9fb1578a"
+  },
+  {
+   "arm": "B",
+   "sample": "B25",
+   "task": "allocate-batch",
+   "refused": true,
+   "first_code": "firth.name.unresolved",
+   "edits_offered": false,
+   "edits_applied": 0,
+   "checks_after": false,
+   "codes_after": [
+    "firth.name.unresolved",
+    "firth.elaboration.untracked-local"
+   ],
+   "fixed": null,
+   "sha256": "2258a3617519ea4858a775b04ba810cdf2e2ca9b439be1319786d5767bc3037e"
+  }
+ ]
+}
