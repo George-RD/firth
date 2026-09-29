@@ -984,21 +984,34 @@ def assumesClause (word : String) (callees : List String) : String :=
   | _ =>
       s!"`{word}` calls {wordList callees}, which have errors of their own; this report assumes they keep their stack effects."
 
+/-- The sentence saying that the edit a hint offers was checked against the
+declared effects of `callees`, which have errors of their own, though the
+report itself does not depend on them. -/
+def editAssumesClause (callees : List String) : String :=
+  match callees with
+  | [callee] => s!"That edit was checked assuming `{callee}`, which has an error of its own, keeps its stack effect."
+  | _ => s!"That edit was checked assuming {wordList callees}, which have errors of their own, keep their stack effects."
+
 /-- The clause joins the message, where a reader of the report sees it, and
-the callees are also given as `message_params.assumes`. -/
-private def withAssumes (word : String) (callees : List String) (envelope : Envelope) :
+the callees are also given as `message_params.assumes`. Callees only the
+hint's checked edit depends on join the hint instead, as
+`message_params.edit_assumes`. -/
+private def withAssumes (word : String) (callees edits : List String) (envelope : Envelope) :
     Envelope :=
   match envelope.body with
   | .diagnostic diagnostic =>
       match diagnostic.messageParams with
       | .obj fields =>
-          let clause := assumesClause word callees
-          let message := match fields.get? "message" with
-            | some (.str text) => s!"{text} {clause}"
-            | _ => clause
-          { envelope with body := .diagnostic { diagnostic with
-              messageParams := .obj ((fields.insert "message" (.str message)).insert
-                "assumes" (.arr (callees.map Lean.Json.str).toArray)) } }
+          let append (fields : Std.TreeMap.Raw String Lean.Json compare) (key clause : String) :=
+            match fields.get? key with
+            | some (.str text) => fields.insert key (.str s!"{text} {clause}")
+            | _ => fields.insert key (.str clause)
+          let names (list : List String) : Lean.Json := .arr (list.map Lean.Json.str).toArray
+          let fields := if callees.isEmpty then fields else
+            (append fields "message" (assumesClause word callees)).insert "assumes" (names callees)
+          let fields := if edits.isEmpty then fields else
+            (append fields "hint" (editAssumesClause edits)).insert "edit_assumes" (names edits)
+          { envelope with body := .diagnostic { diagnostic with messageParams := .obj fields } }
       | _ => envelope
   | _ => envelope
 
@@ -1010,7 +1023,7 @@ private def pipelineDiagnosticEnvelope (context : EmissionContext) :
   | .refinement _ diagnostic => withContextSource context (refinementEnvelope diagnostic)
   | .unchecked word callee span => uncheckedEnvelope context word callee span
   | .internal span => internalEnvelope context span
-  | .assumes word callees inner => withAssumes word callees (pipelineDiagnosticEnvelope context inner)
+  | .assumes word callees edits inner => withAssumes word callees edits (pipelineDiagnosticEnvelope context inner)
 
 private def positionWithin (span : Firth.Elaborator.Span) (position : Position) : Bool :=
   let start : Position := { line := span.start.line, column := span.start.column }

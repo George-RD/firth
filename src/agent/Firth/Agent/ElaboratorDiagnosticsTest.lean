@@ -235,7 +235,17 @@ private def runAssumesTests : IO Unit := do
   -- of values, one of them through `f`. `hidden`'s true branch underflows
   -- on its own: `k`'s effect changes nothing the report shows, only what
   -- it does not. `m` hands `p` its values out of order, and the checked
-  -- edit in its hint depends on `q` too.
+  -- edit in its hint depends on `q` too. `typed` fails after its call to
+  -- `same`, at two values it pushed itself: the message names only those,
+  -- but the report's stack does change with `same`'s effect. `br` hands
+  -- `cb`, in one branch of an `if`, its values out of order; a probe that
+  -- changes `cb`'s shape gives a typing error after the report, which
+  -- shows the report depends on `cb`. `longest` (from a recorded answer)
+  -- does the same with `run`, where only `run`'s own effect with other
+  -- types shows it. The checked edits in the
+  -- hints of `h` and `m` depend on `f` and `q`, which the reports do not:
+  -- the hint says so instead. So does `h2`'s, where the check found that
+  -- the edit alone does not fix the word.
   let source := String.intercalate "\n" [
     ": f ( a:Int -- b:Int ) true prim + ;",
     ": g ( -- b:Int ) true f ;",
@@ -251,36 +261,52 @@ private def runAssumesTests : IO Unit := do
     ": hidden (forall ρ; ρ xs:Seq Bool^many -- ρ b:Bool^many) dup prim seq-bool.len 0 prim = [ drop drop true ] [ swap 0 true k ] if ;",
     ": p (forall ρ; ρ a:Int^many b:Bool^many -- ρ r:Int^many) prim + ;",
     ": q (forall ρ; ρ r:Int^many -- ρ s:Int^many) true prim + ;",
-    ": m (forall ρ; ρ -- ρ r:Int^many) true 1 p q ;"]
-  let summary (envelope : Envelope) : String × List String × String :=
+    ": m (forall ρ; ρ -- ρ r:Int^many) true 1 p q ;",
+    ": same (forall ρ; ρ -- ρ) drop ;",
+    ": typed (forall ρ; ρ a:Int^many b:Int^many c:Int^many -- ρ r:Int^many) same true 1 prim + ;",
+    ": cb (forall ρ; ρ a:Int^many b:Bool^many -- ρ r:Int^many) prim + ;",
+    ": br (forall ρ; ρ x:Int^many -- ρ r:Int^many) dup 0 prim = [ true 1 cb prim + ] [ ] if ;",
+    ": hc (forall ρ; ρ acc:Int^many k:Int^many xs:Seq Int^many -- ρ r:Int^many) true prim + ;",
+    ": h2 (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ n:Int^many) locals { k xs } { 0 xs k hc } ;",
+    ": run (forall ρ; ρ xs:Seq Int^many prev:Int^many n:Int^many most:Int^many i:Int^many -- ρ r:Int^many) true prim + ;",
+    ": longest (forall ρ; ρ xs:Seq Int^many -- ρ r:Int^many) locals { xs } { xs prim seq-int.len 0 prim = [ 0 ] [ xs 0 prim seq-int.at 1 0 1 xs run ] if } ;"]
+  let summary (envelope : Envelope) : String × (List String × List String) × String × String :=
     match Lean.Json.parse (encode envelope) with
     | .ok json =>
         let params := (json.getObjValD "body").getObjValD "message_params"
-        let assumes := match params.getObjValD "assumes" with
+        let names (key : String) := match params.getObjValD key with
           | .arr callees => callees.toList.filterMap (·.getStr?.toOption)
           | _ => []
-        ((params.getObjValD "word").getStr?.toOption.getD "", assumes,
-          (params.getObjValD "message").getStr?.toOption.getD "")
-    | .error _ => ("", [], "")
+        ((params.getObjValD "word").getStr?.toOption.getD "", (names "assumes", names "edit_assumes"),
+          (params.getObjValD "message").getStr?.toOption.getD "",
+          (params.getObjValD "hint").getStr?.toOption.getD "")
+    | .error _ => ("", ([], []), "", "")
   match elaboratePipeline pipelineContext source agentConfig with
   | .success _ => fail "assumes: the program was accepted"
   | .failure envelopes =>
       let reports := envelopes.map summary
       expectEqual "assumes: the words whose reports depend on another reported word"
-        (reports.map fun (word, assumes, _) => (word, assumes))
+        (reports.map fun (word, assumes, _) => (word, assumes.1))
         [("f", []), ("g", ["f"]), ("h", []), ("r", []), ("two", ["f"]), ("three", ["g", "f"]),
          ("short", ["f"]), ("opens", []), ("early", []), ("other", ["f"]),
-         ("k", []), ("hidden", []), ("p", []), ("q", []), ("m", ["p", "q"])]
-      let endsWith (word clause : String) : IO Unit :=
+         ("k", []), ("hidden", []), ("p", []), ("q", []), ("m", ["p"]),
+         ("same", []), ("typed", ["same"]), ("cb", []), ("br", ["cb"]), ("hc", []), ("h2", []), ("run", []), ("longest", ["run"])]
+      expectEqual "assumes: the words whose hint's checked edit depends on another reported word"
+        ((reports.filter fun (_, assumes, _) => !assumes.2.isEmpty).map fun (word, assumes, _) => (word, assumes.2))
+        [("h", ["f"]), ("m", ["q"]), ("h2", ["hc"])]
+      let endsWith (word clause : String) (hint : Bool := false) : IO Unit :=
         match reports.find? (·.1 == word) with
-        | some (_, _, message) =>
-            unless message.endsWith clause do
-              fail s!"assumes: `{word}`'s message does not end with the clause: {message}"
+        | some (_, _, message, hintText) =>
+            let text := if hint then hintText else message
+            unless text.endsWith clause do
+              fail s!"assumes: `{word}`'s {if hint then "hint" else "message"} does not end with the clause: {text}"
         | none => fail s!"assumes: no report for `{word}`"
       endsWith "g" "`g` calls `f`, which has an error of its own; this report assumes `f` keeps its stack effect."
       endsWith "two" "`two` calls `f`, which has an error of its own; this report assumes `f` keeps its stack effect."
       endsWith "three" "`three` calls `g` and `f`, which have errors of their own; this report assumes they keep their stack effects."
-      for (word, _, message) in reports do
+      endsWith "m" "That edit was checked assuming `q`, which has an error of its own, keeps its stack effect." (hint := true)
+      endsWith "h" "That edit was checked assuming `f`, which has an error of its own, keeps its stack effect." (hint := true)
+      for (word, _, message, _) in reports do
         if ["f", "h", "r", "opens", "early", "hidden"].contains word && (message.splitOn "this report assumes").length > 1 then
           fail s!"assumes: `{word}`'s report says it depends on another word: {message}"
       match validateBatch (envelopes.map encode) with

@@ -287,10 +287,13 @@ calls that is itself reported, the message ends by saying so ("`g` calls `f`,
 which has an error of its own; this report assumes `f` keeps its stack
 effect."), and `message_params.assumes` lists those words: if the fix for `f`
 is to its stack effect rather than its body, `g`'s report can change or go.
-The checker tests this: it checks `g` again with other effects for `f`, and
-names `f` only when the report changes at or before where it is. A report
-without the sentence, such as an underflow at `g`'s own `locals`, is `g`'s
-alone.
+The checker tests this: it checks `g` again with other effects for `f` (four
+fixed ones, and `f`'s own with other types), and names `f` when one of them
+changes the report. A report none of them changes, such as an underflow at
+`g`'s own `locals`, has no sentence. When only the edit a hint offers was
+checked against `f`'s effect, the hint ends by saying so ("That edit was
+checked assuming `f`, which has an error of its own, keeps its stack
+effect."), and `message_params.edit_assumes` lists those words.
 A syntax error, a duplicate name or a `use` that names no vocabulary in the
 file or reuses an alias ends the file there: the words before a bad `use` are still reported.
 Each diagnostic in one response has its own payload identifier.
