@@ -209,6 +209,19 @@ private def runCallAccountTests : IO Unit := do
   -- The second report's edit drops that `swap`; with both, 123 gives its
   -- digits from the last.
   let digits := ": extract-digits\n  (forall ρ; ρ result:Seq Int^many n:Int^many -- ρ final:Seq Int^many)\n  locals { result n } {\n    n 0 prim =\n    [ result ]\n    [\n      n 10 prim mod result prim seq-int.push\n      n 10 prim div swap extract-digits\n    ]\n    if\n  };"
+  -- The same with the values on two lines: the edit joins them, so the
+  -- next error is on the line after the edit, one earlier than in the
+  -- source as written. The edited source is written out here by hand, and
+  -- the checker must report its error where the hint says.
+  let digitsTwoLines := digits.replace "n 10 prim mod result prim seq-int.push" "n 10 prim mod\n      result prim seq-int.push"
+  let digitsJoined := digits.replace "n 10 prim mod result prim seq-int.push" "result n 10 prim mod prim seq-int.push"
+  let _ ← callReport "digits, the values on two lines" "firth.type.primitive-input-mismatch" digitsTwoLines
+    ["write `result n 10 prim mod` in place of `n 10 prim mod result`. With that edit, the next error in `extract-digits` is at line 8, column 26."]
+  match elaboratePipeline pipelineContext digitsJoined agentConfig with
+  | .failure [envelope] =>
+      unless (encode envelope).contains "\"start\":{\"line\":8,\"column\":26}" do
+        fail s!"digits, the values on two lines: the edited source is refused elsewhere: {encode envelope}"
+  | _ => fail "digits, the values on two lines: expected one report for the edited source"
   let (hint, operation) ← callReport "digits" "firth.type.primitive-input-mismatch" digits
     ["write `result n 10 prim mod` in place of `n 10 prim mod result`. With that edit, the next error in `extract-digits` is at line 8, column 26."]
   match applyCallHint digits hint operation with
@@ -234,6 +247,26 @@ private def runCallAccountTests : IO Unit := do
     ["`prim seq-int.push` in `prefix-loop` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int) and `result` (Seq Int).",
      "The top value, `result` (Seq Int), is not what `prim seq-int.push` takes there (Int)."]
     ["in place of"]
+  -- A word the environment defines outside the file (`nth`, Seq Int Int --
+  -- Int) has no input names in the account, so the report takes its input
+  -- types from the checker's scheme, not only a count (Codex on #171).
+  let nthScheme : Firth.Elaborator.StackEffect.Scheme :=
+    { rowVariables := ["ρ"]
+      input := .snoc (.snoc (.row (.rigid "ρ")) (.base "Seq Int" .many)) (.base "Int" .many)
+      output := .snoc (.row (.rigid "ρ")) (.base "Int" .many) }
+  let externalConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := { Elaborate.gammaErasure with
+        word := fun name => if name == "nth" then some { input := [.many, .many], output := [.many] } else none }
+      typingEnv := { Elaborate.gammaTyping with
+        word := fun name => if name == "nth" then some nthScheme else none } }
+  match elaboratePipeline pipelineContext ": first\n  (forall ρ; ρ xs:Seq Int^many -- ρ r:Int^many)\n  locals { xs } { 0 xs nth };" externalConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      for needle in ["`nth` in `first` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, `0` (Int) and `xs` (Seq Int).",
+                     "write `xs 0` in place of `0 xs`. With that edit `first` checks."] do
+        unless emitted.contains needle do
+          fail s!"external word: the report does not say {needle}: {emitted}"
+  | _ => fail "external word: expected one diagnostic"
 
 def runElaboratorDiagnosticTests : IO Unit := do
   let parseError : ParseError := {

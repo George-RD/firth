@@ -637,8 +637,11 @@ private def callExplanation (inWord : String) (word : Option String) (wanted pre
     match (if plain checked then some checked else walked.filter plain) with
     | some type => s!"{label} ({type})"
     | none => label
-  let takes := if account.inputs.isEmpty then s!"takes {valueCount count}"
-    else s!"takes {", ".intercalate account.inputs}"
+  -- A word the environment defines outside the file has no names for its
+  -- inputs in the account; its types are the checker's.
+  let takes ← if !account.inputs.isEmpty then some s!"takes {", ".intercalate account.inputs}"
+    else if (wanted.map renderType).all plain then some s!"takes {", ".intercalate (wanted.map renderType)}"
+    else none
   let message := s!"{account.operation}{inWord} {takes}, bottom to top, but here it gets, bottom to top, {listing typed}."
   match account.edit with
   | some edit =>

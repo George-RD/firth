@@ -89,8 +89,8 @@ structure IfAccount where
 /-- An edit that pushes an operation's values in the order it takes them:
 the source from `start` to `stop` (byte offsets) replaced by `replacement`,
 the pieces of source that pushed each value, reordered. `after` is where the
-word's next error is once the edit is made, or `none` when the word then
-checks. Diagnostics only. -/
+word's next error is once the edit is made, as a line and column of the edited
+source, or `none` when the word then checks. Diagnostics only. -/
 structure CallEdit where
   start : Nat
   stop : Nat

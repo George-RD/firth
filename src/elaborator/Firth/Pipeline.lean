@@ -384,7 +384,9 @@ private def withCallAccount (config : PipelineConfig) (source : String)
           | none => some none
           | some offset =>
               if offset ≤ operation then none
-              else some (some (lineColumn source ((offset : Int) - shift).toNat))
+              -- In the source as edited: the author applies the edit, and
+              -- a replaced text that spans lines leaves fewer of them.
+              else some (some (lineColumn edited offset))
         pure { start, stop, written := collapse (bytesText source start stop),
                replacement, after }
       -- Where the types and names leave the order open, the message says
