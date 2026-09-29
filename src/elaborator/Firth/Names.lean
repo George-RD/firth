@@ -105,28 +105,44 @@ private def withEffectNames (effect : StackEffect) (error : ParseError) : ParseE
       else error
   | _, _ => error
 
-private partial def resolveScope (keys vocabularies : List String) (external : String → Bool)
-    (scopeName : String) (uses : List UseDecl) :
-    List Declaration → Except ParseError (List WordDefinition)
-  | [] => pure []
-  | .use use :: rest => do
-      if !vocabularies.contains use.name then
-        throw (nameError "firth.name.unresolved" use.name use.span)
-      if let some alias := use.alias then
+/-- A `use` declaration names a vocabulary the file does not declare, or an
+alias already taken. -/
+private def badUse (vocabularies : List String) (uses : List UseDecl) (use : UseDecl) :
+    Option ParseError :=
+  if !vocabularies.contains use.name then some (nameError "firth.name.unresolved" use.name use.span)
+  else match use.alias with
+    | some alias =>
         if uses.any (fun prior => prior.alias == some alias) ||
             vocabularies.any (fun name => (name.splitOn ".").head? == some alias) then
-          throw (nameError "firth.name.duplicate-alias" alias use.span)
-      resolveScope keys vocabularies external scopeName (uses ++ [use]) rest
-  | .word word :: rest => do
-      let body ← match resolveItems keys external scopeName uses [] word.body with
-        | .ok body => pure body
-        | .error error => throw (withEffectNames word.effect error)
-      let tail ← resolveScope keys vocabularies external scopeName uses rest
-      return { word with name := qualified scopeName word.name, body } :: tail
-  | .vocabulary name body _ :: rest => do
-      let inside ← resolveScope keys vocabularies external (qualified scopeName name) uses body
-      let outside ← resolveScope keys vocabularies external scopeName uses rest
-      return inside ++ outside
+          some (nameError "firth.name.duplicate-alias" alias use.span)
+        else none
+    | none => none
+
+/-- Every word in source order, its body resolved, or as written together with
+the first name in it that does not resolve. A bad `use` declaration ends the
+walk: the words before it are returned with it, since the ones after it
+cannot be resolved as their author meant. -/
+private partial def resolveScope (keys vocabularies : List String) (external : String → Bool)
+    (scopeName : String) (uses : List UseDecl) :
+    List Declaration → List (WordDefinition × Option ParseError) × Option ParseError
+  | [] => ([], none)
+  | .use use :: rest =>
+      match badUse vocabularies uses use with
+      | some error => ([], some error)
+      | none => resolveScope keys vocabularies external scopeName (uses ++ [use]) rest
+  | .word word :: rest =>
+      let name := qualified scopeName word.name
+      let this := match resolveItems keys external scopeName uses [] word.body with
+        | .ok body => ({ word with name, body }, none)
+        | .error error => ({ word with name }, some (withEffectNames word.effect error))
+      let (tail, stop) := resolveScope keys vocabularies external scopeName uses rest
+      (this :: tail, stop)
+  | .vocabulary name body _ :: rest =>
+      match resolveScope keys vocabularies external (qualified scopeName name) uses body with
+      | (inside, some error) => (inside, some error)
+      | (inside, none) =>
+          let (outside, stop) := resolveScope keys vocabularies external scopeName uses rest
+          (inside ++ outside, stop)
 
 private def freshBinder (name : String) (taken : List String) : Nat → Nat → String
   | 0, _ => name
@@ -262,16 +278,29 @@ def checkInputLocals (words : List WordDefinition) (written : List WordDefinitio
       throw { code := "firth.name.locals-order", primary := bound.span, cause := .validation,
               actual := some block.word, localsBlocks := blocks.map (·.2) }
 
-/-- Resolve lexical imports and canonical word names before erasure/checking.
+/-- Name resolution word by word. Duplicate canonical names are refused for
+the whole file. Otherwise each word comes back with its body resolved, or as
+written together with the first name in it that does not resolve, and a bad
+`use` declaration comes last, ending the words that could be resolved.
 Local names remain sugar; they must not be rewritten into dictionary calls.
 `external` names words the caller's environment defines outside the file; any
-other reference without a candidate is refused here as `firth.name.unresolved`. -/
-def resolveNames (declarations : List Declaration) (external : String → Bool := fun _ => false) :
-    Except ParseError (List WordDefinition) := do
+other reference without a candidate is refused as `firth.name.unresolved`. -/
+def resolveEach (declarations : List Declaration) (external : String → Bool := fun _ => false) :
+    Except ParseError (List (WordDefinition × Option ParseError) × Option ParseError) := do
   let words := collectWords declarations
   let vocabularies := collectVocabularies "" declarations
   checkUnique (words.map (fun word => (word.name, word.span)))
   checkUnique vocabularies
-  resolveScope (words.map (·.name)) (vocabularies.map (·.1)) external "" [] declarations
+  pure (resolveScope (words.map (·.name)) (vocabularies.map (·.1)) external "" [] declarations)
+
+/-- Resolve lexical imports and canonical word names before erasure/checking,
+refusing at the first error in the source (`resolveEach`). -/
+def resolveNames (declarations : List Declaration) (external : String → Bool := fun _ => false) :
+    Except ParseError (List WordDefinition) := do
+  let (words, stop) ← resolveEach declarations external
+  match words.findSome? (·.2), stop with
+  | some error, _ => throw error
+  | none, some error => throw error
+  | none, none => pure (words.map (·.1))
 
 end Firth.Elaborator

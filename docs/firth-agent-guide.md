@@ -274,14 +274,27 @@ solver availability, or host addresses to break a tie. Duplicate JSON members,
 malformed JSON, empty identifiers, unsupported versions, invalid locations, and
 out-of-order matches are protocol failures.
 
+A refused program gets one diagnostic for each word the checker refuses: that
+word's first error, found by checking the word against the declared stack
+effects of the words it calls, whatever their bodies do. So two mistakes in two
+words are reported together, and fixing one never hides or moves the other. Its
+`message_params.word` names the word. A word that calls one whose declared
+effect is not a valid signature (`firth.type.invalid-signature`) is not
+type-checked, and is reported as `firth.type.unchecked-word` at that call, so
+it is never taken for a checked word; its own errors show once that signature
+is fixed.
+A syntax error, a duplicate name or a `use` that names no vocabulary in the
+file or reuses an alias ends the file there: the words before a bad `use` are still reported.
+Each diagnostic in one response has its own payload identifier.
+
 The diagnostic loop is:
 
 1. Submit one source request with a fresh request identifier.
 2. Parse every returned envelope and reject protocol-invalid payloads.
 3. Sort valid diagnostics with the specified key.
 4. Apply only a proposed fix whose applicability is accepted by the caller.
-5. Re-elaborate the changed word and repeat until success or a non-success
-   obligation remains.
+5. Fix every reported word, re-elaborate, and repeat until success or a
+   non-success obligation remains.
 
 A timeout, unknown solver result, missing proof, or deferred obligation is not
 success. Preserve its obligation identifier and evidence state for the next

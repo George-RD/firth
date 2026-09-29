@@ -549,11 +549,13 @@ def score(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int) ->
     return res
 
 
-FIELDS = ("code", "message", "expected", "actual", "hint")
+FIELDS = ("code", "word", "message", "expected", "actual", "hint")
 # Where the checker points in the author's program, shown as `at: line L, column C`
 # after the code: a real author sees it, and without it an author cannot tell
 # which `if` or word a message means (run 7's `sort` edited the wrong word).
-ORDER = ("code", "at", "message", "expected", "actual", "hint")
+# The checker reports the first error in each word it refuses, and names the
+# word, so an author can fix every word at once.
+ORDER = ("code", "word", "at", "message", "expected", "actual", "hint")
 
 
 def readable(error: str) -> str:
@@ -563,16 +565,23 @@ def readable(error: str) -> str:
     repr of the diagnostic list. Python quotes a string that holds an apostrophe
     with double quotes, so the fields are read from the decoded structure, not by
     matching single-quoted text: a hint such as "`xs` is a name in the word's stack
-    effect" was dropped that way, and authors never saw it."""
-    fields = _diagnostic_fields(error)
-    if "message" not in fields:
+    effect" was dropped that way, and authors never saw it.
+
+    Every diagnostic is shown, in the checker's order (source order), each
+    under `error N of M` when there is more than one."""
+    blocks = [f for f in (_diagnostic_fields(d) for d in _diagnostics(error)) if "message" in f]
+    if not blocks:
         return error
-    return "\n".join(f"{k}: {v}" for k, v in fields.items())
+    shown = ["\n".join(f"{k}: {v}" for k, v in fields.items()) for fields in blocks]
+    if len(shown) == 1:
+        return shown[0]
+    return (f"The checker found {len(shown)} errors, one for each word it did not accept. "
+            "Fix them all before you run it again.\n\n"
+            + "\n\n".join(f"error {i} of {len(shown)}\n{text}" for i, text in enumerate(shown, 1)))
 
 
-def _diagnostic_fields(error: str) -> dict[str, str]:
-    """The first string value of each of FIELDS, in the order the diagnostic
-    lists them, or {} when the envelope cannot be decoded."""
+def _diagnostics(error: str) -> list:
+    """The decoded diagnostic list at the end of the runner's error, or []."""
     text = error
     try:
         text = json.loads(error).get("error", error)
@@ -583,11 +592,17 @@ def _diagnostic_fields(error: str) -> dict[str, str]:
         found = ast.literal_eval(text[start:]) if start >= 0 else None
     except (ValueError, SyntaxError, MemoryError, RecursionError):
         found = None
-    if found is None:
-        return {}
+    if isinstance(found, dict):
+        return [found]
+    return list(found) if isinstance(found, (list, tuple)) else []
+
+
+def _diagnostic_fields(diagnostic) -> dict[str, str]:
+    """The first string value of each of FIELDS in one diagnostic, in ORDER."""
     fields: dict[str, str] = {}
 
     def walk(v) -> None:
+        """Record the first string under each of FIELDS, depth first."""
         if isinstance(v, dict):
             for k, x in v.items():
                 if k in FIELDS and isinstance(x, str) and k not in fields:
@@ -596,17 +611,17 @@ def _diagnostic_fields(error: str) -> dict[str, str]:
         elif isinstance(v, (list, tuple)):
             for x in v:
                 walk(x)
-    walk(found)
-    at = _location(found)
+    walk(diagnostic)
+    at = _location(diagnostic)
     if at:
         fields["at"] = at
     return {k: fields[k] for k in ORDER if k in fields}
 
 
 def _location(v) -> str | None:
-    """The start of the first diagnostic's `location` range, as the checker gives
-    it: lines and columns of the submitted program, which is the author's answer
-    as written (`run_firth` writes it unchanged)."""
+    """The start of a diagnostic's `location` range, as the checker gives it:
+    lines and columns of the submitted program, which is the author's answer as
+    written (`run_firth` writes it unchanged)."""
     if isinstance(v, dict):
         loc = v.get("location")
         if isinstance(loc, dict):

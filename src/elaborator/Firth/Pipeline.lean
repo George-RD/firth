@@ -61,6 +61,10 @@ inductive PipelineDiagnostic where
   | erasure (word : String) (error : ErasureError)
   | stackEffect (diagnostic : StackEffect.Diagnostic)
   | refinement (word : String) (diagnostic : Refinement.RefinementDiagnostic)
+  /-- `word` was not type-checked: at `span` it calls `callee`, whose
+  declared effect is not a type scheme, so there is nothing to check the
+  call against. -/
+  | unchecked (word callee : String) (span : Span)
   | internal (span : Span)
   deriving Repr, BEq
 
@@ -100,56 +104,9 @@ private def makeErasureEnv (config : PipelineConfig)
       | some signature => some signature
       | none => config.erasureEnv.word name }
 
-private def eraseWords (env : EffectEnv) :
-    List WordDefinition → Except (String × ErasureError) (List (WordDefinition × ErasureResult))
-  | [] => .ok []
-  | word :: rest =>
-      match erase env word.effect word.body with
-      | .error error => .error (word.name, error)
-      | .ok result =>
-          match eraseWords env rest with
-          | .error error => .error error
-          | .ok tail => .ok ((word, result) :: tail)
-
-private def definitionsOf :
-    List (WordDefinition × ErasureResult) → List StackEffect.Definition
-  | [] => []
-  | (word, erased) :: rest =>
-      { name := word.name
-        declared := word.effect
-        program := erased.program
-        span := word.span } :: definitionsOf rest
-
 private def refinementDiagnostics (word : String) :
     Refinement.PipelineResult → List PipelineDiagnostic
   | result => result.diagnostics.map (PipelineDiagnostic.refinement word)
-
-private def finishWords (config : PipelineConfig)
-    (erased : List (WordDefinition × ErasureResult))
-    (checked : List CheckedDefinition) : ElaborationResult :=
-  match erased, checked with
-  | [], [] => .success { words := [] }
-  | (word, result) :: erasedRest, checkedWord :: checkedRest =>
-      let premises := config.refinementBuilder config.requestId config.sourcePath
-        word result.program checkedWord.effect
-      let refinement := Refinement.checkBodyRefinements config.requestId premises
-      let issues := refinementDiagnostics word.name refinement
-      if !issues.isEmpty then
-        .failure issues
-      else if !refinement.leanQueue.isEmpty || !refinement.smtQueue.isEmpty then
-        .failure [.internal word.span]
-      else
-        match finishWords config erasedRest checkedRest with
-        | .failure diagnostics => .failure diagnostics
-        | .success tail =>
-            .success { words :=
-              { name := word.name
-                scheme := checkedWord.effect
-                program := result.program
-                warnings := result.warnings
-                refinement } :: tail.words }
-  | (word, _) :: _, _ => .failure [.internal word.span]
-  | _, _ :: _ => .failure [.internal { start := { offset := 0, line := 1, column := 1 }, stop := { offset := 0, line := 1, column := 1 } }]
 
 /-- Source annotations are not yet translated into body-typing premises.
 Reject them before erasure can discard the predicates. An injected builder is
@@ -377,8 +334,11 @@ private def withCallAccount (config : PipelineConfig) (source : String)
         let file ← match parse edited with
           | .success file => some file
           | .failure _ => none
-        let editedWords ← (resolveNames file.declarations (fun name => (config.erasureEnv.word name).isSome)).toOption
-        let word ← editedWords.find? (·.name == name)
+        -- Other words keep whatever errors they have: only this one must
+        -- resolve.
+        let (resolved, _) ← (resolveEach file.declarations (fun name => (config.erasureEnv.word name).isSome)).toOption
+        let editedWords := resolved.map (·.1)
+        let word ← (resolved.find? fun (word, error) => word.name == name && error.isNone).map (·.1)
         let operation := ((diagnostic.primary.start.offset : Int) + shift).toNat
         let after ← match outcomeAlone config edited editedWords word with
           | none => some none
@@ -419,32 +379,118 @@ private def checkLocalsEdits (config : PipelineConfig) (source : String) (words 
           { block with checked := checked && !block.rebound }
       | none => block }
 
+/-- The dictionary words a body calls, where, outside the `locals` that
+shadow them. -/
+private partial def calledWords (bound : List String) : List Item → List (String × Span)
+  | [] => []
+  | .word name span :: rest =>
+      (if bound.contains name then [] else [(name, span)]) ++ calledWords bound rest
+  | .quotation items _ :: rest => calledWords bound items ++ calledWords bound rest
+  | .locals names items _ :: rest =>
+      calledWords (names.map (·.name) ++ bound) items ++ calledWords bound rest
+  | _ :: rest => calledWords bound rest
+
+/-- What checking one word came to. -/
+private inductive WordOutcome where
+  | checked (word : CheckedWord)
+  /-- The word's first error, or for refinements the obligations it failed. -/
+  | refused (diagnostics : List PipelineDiagnostic)
+  /-- Not type-checked: it calls a word whose declared effect is not a type
+  scheme, so there is nothing to check its call against. -/
+  | skipped (callee : String) (span : Span)
+
+/-- One word, stage by stage, as the whole-program pipeline would check it:
+names, the `locals` order, source refinements, erasure, the declared effect,
+typing and refinements. A word that calls a word whose effect is refused is
+skipped before erasure, unless its own effect is refused too. The other words are trusted to have their declared
+effects, whatever their bodies do, so an error in one word is never charged
+to another. `words` are all the file's words, resolved where they could be. -/
+private def checkWord (config : PipelineConfig) (source : String)
+    (words written : List WordDefinition) (env : EffectEnv) (typing : Env)
+    (unusable : List String) (word : WordDefinition) (resolution : Option ParseError) :
+    WordOutcome :=
+  match resolution with
+  | some error => .refused [.parse error]
+  | none =>
+  match checkInputLocals [word] (written.filter (·.name == word.name)) with
+  | .error error => .refused [.parse (checkLocalsEdits config source words error)]
+  | .ok () =>
+  match unsupportedSourceRefinements word with
+  | diagnostic :: _ => .refused [diagnostic]
+  | [] =>
+  -- Before erasure: erasing a call to a word whose effect is refused reads
+  -- that effect's shape all the same, and an underflow it finds there says
+  -- nothing about this word. The word's own effect is its own error.
+  match (calledWords [] word.body).find? (unusable.contains ·.1), schemeOfEffect word.effect with
+  | some _, .error diagnostic => .refused [.stackEffect diagnostic]
+  | some (callee, span), .ok _ => .skipped callee span
+  | none, _ =>
+  match erase env word.effect word.body with
+  | .error error => .refused [withAccount config source words (.erasure word.name error)]
+  | .ok erased =>
+  match schemeOfEffect word.effect with
+  | .error diagnostic => .refused [.stackEffect diagnostic]
+  | .ok declared =>
+  match check typing declared erased.program word.effect.span with
+  | .error diagnostic =>
+      let diagnostic := withFirstMisfed config source words { diagnostic with word := some word.name }
+      .refused [withCallAccount config source words (withAccount config source words (.stackEffect diagnostic))]
+  | .ok _ =>
+      let premises := config.refinementBuilder config.requestId config.sourcePath
+        word erased.program declared
+      let refinement := Refinement.checkBodyRefinements config.requestId premises
+      let issues := refinementDiagnostics word.name refinement
+      if !issues.isEmpty then .refused issues
+      else if !refinement.leanQueue.isEmpty || !refinement.smtQueue.isEmpty then
+        .refused [.internal word.span]
+      else .checked
+        { name := word.name
+          scheme := declared
+          program := erased.program
+          warnings := erased.warnings
+          refinement }
+
+/-- Elaborate a file. A parse error, a duplicate name or a bad `use` refuses
+the file there. Otherwise every word is checked on its own (`checkWord`), and
+the file is refused with each refused word's first error, in source order:
+one error per word, so a mistake is reported where it is made and not again
+at every later operation it upsets. A word that calls one whose declared
+effect is no type scheme is not type-checked, and is reported as unchecked. -/
 def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResult :=
   match parse source with
   | .failure errors => .failure (errors.map PipelineDiagnostic.parse)
   | .success file =>
-      match resolveNames file.declarations (fun name => (config.erasureEnv.word name).isSome) with
+      match resolveEach file.declarations (fun name => (config.erasureEnv.word name).isSome) with
       | .error error => .failure [.parse error]
-      | .ok words =>
-          match checkInputLocals words (collectWords file.declarations) with
-          | .error error => .failure [.parse (checkLocalsEdits config source words error)]
-          | .ok () =>
-          if words.isEmpty then
+      | .ok (resolved, stop) =>
+          let words := resolved.map (·.1)
+          let written := collectWords file.declarations
+          let env := makeErasureEnv config words
+          let schemes := words.map fun word => (word.name, (schemeOfEffect word.effect).toOption)
+          let typing : Env := { config.typingEnv with
+            word := fun name =>
+              match schemes.find? (·.1 == name) with
+              | some entry => entry.2
+              | none => config.typingEnv.word name }
+          let unusable := (schemes.filter (·.2.isNone)).map (·.1)
+          let outcomes := resolved.map fun (word, resolution) =>
+            checkWord config source words written env typing unusable word resolution
+          -- A word left unchecked says so, so that no one reads its
+          -- silence as a pass.
+          let errors : List PipelineDiagnostic := (resolved.zip outcomes).flatMap
+            fun ((word, _), outcome) => match outcome with
+              | .refused diagnostics => diagnostics
+              | .skipped callee span => [.unchecked word.name callee span]
+              | .checked _ => []
+          let tail := (stop.map PipelineDiagnostic.parse).toList
+          if !(errors ++ tail).isEmpty then .failure (errors ++ tail)
+          else if words.isEmpty then
             .failure [.parse { code := "firth.elaboration.empty-program"
                                primary := file.span, cause := .validation }]
           else
-            let unsupported := words.flatMap unsupportedSourceRefinements
-            if !unsupported.isEmpty then .failure unsupported
-            else
-              let env := makeErasureEnv config words
-              match eraseWords env words with
-              | .error (word, error) => .failure [withAccount config source words (.erasure word error)]
-              | .ok erased =>
-                  match checkDictionary config.typingEnv (definitionsOf erased) with
-                  | .error diagnostic =>
-                      let diagnostic := withFirstMisfed config source words diagnostic
-                      .failure [withCallAccount config source words (withAccount config source words (.stackEffect diagnostic))]
-                  | .ok checked => finishWords config erased checked
+            .success { words := outcomes.filterMap fun
+              | .checked word => some word
+              | _ => none }
 
 def elaborate (source : String) : ElaborationResult := elaborateWith {} source
 

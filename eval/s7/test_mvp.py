@@ -227,7 +227,7 @@ def feedback_shows_location() -> None:
     finally:
         harness.compact = real
     got = harness.compact(raw)
-    check("code: firth.type.branch-mismatch\nat: line 5, column 21\n" in got,
+    check("code: firth.type.branch-mismatch\nword: main\nat: line 5, column 21\n" in got,
           f"feedback names the line and column of the mismatched `if`: {got[:200]!r}")
     # Planted: the same checker output without its location shows none, so the
     # check above depends on the location reaching the text.
@@ -235,6 +235,40 @@ def feedback_shows_location() -> None:
                       r"'end': \{[^}]*\}\}\}, ", "", raw)
     check(stripped != raw and "at: line" not in harness.compact(stripped),
           "without the location the feedback shows none (the planted case)")
+
+
+def feedback_shows_every_error() -> None:
+    """The checker reports the first error in each word it refuses. The feedback
+    must show each of them with its word and place, so an author can fix both
+    words at once: `main` uses its input name without `locals` (line 3), and
+    `twice` adds a Bool (line 6)."""
+    source = (": main\n"
+              "  (forall ρ; ρ n:Int^many -- ρ out:Int^many)\n"
+              "  n twice;\n"
+              ": twice\n"
+              "  (forall ρ; ρ n:Int^many -- ρ out:Int^many)\n"
+              "  true prim +;\n")
+    real = harness.compact
+    harness.compact = lambda text: text  # keep the runner's raw output
+    try:
+        raw = harness.run_firth(source, (2,), harness.MVP_FUEL).get("error", "")
+    finally:
+        harness.compact = real
+    got = harness.compact(raw)
+    first = got.find("error 1 of 2\ncode: firth.name.unresolved\nword: main\nat: line 3, column 3\n")
+    second = got.find("error 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: twice\nat: line 6, column 8\n")
+    check(got.startswith("The checker found 2 errors") and 0 < first < second,
+          f"feedback shows both words' errors, in source order: {got[:300]!r}")
+    # Planted: feedback that reads only the first diagnostic, as before, loses
+    # the second word's error.
+    real_list = harness._diagnostics
+    harness._diagnostics = lambda error: real_list(error)[:1]
+    try:
+        planted = harness.compact(raw)
+    finally:
+        harness._diagnostics = real_list
+    check("twice" not in planted and "error 2 of 2" not in planted,
+          "feedback that reads only the first diagnostic misses `twice` (the planted case)")
 
 
 def subagent_audit() -> None:
@@ -586,6 +620,7 @@ def main() -> int:
     rounds_prompt()
     feedback_keeps_hints()
     feedback_shows_location()
+    feedback_shows_every_error()
     subagent_audit()
     run_options_parsed()
     unsandboxed_python_refused()
