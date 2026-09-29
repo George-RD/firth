@@ -1443,8 +1443,8 @@ against 11 seconds).
 - Haiku's results vary widely between samples of one build (arm A of run
   10: 0 to 12 of 20). Four samples an arm is usually underpowered: only a
   large separation (4 of 4 against 0 of 4 gives one-sided Fisher p =
-  1/70) would show a change helped, and the pre-registration puts the
-  power of such a run at 0.17. Judge a change by a pre-registered control
+  1/70) would show a change helped, and under the rates the
+  pre-registration guessed, such a run has power 0.17. Judge a change by a pre-registered control
   like run 10, with about 10 samples an arm.
 - The step budget is now 100,000 steps (#119), so tasks with real loops
   (count-divisors, larger inputs) can come back.
