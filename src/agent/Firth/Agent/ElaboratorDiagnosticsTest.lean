@@ -935,6 +935,32 @@ def runElaboratorDiagnosticTests : IO Unit := do
   match elaboratePipeline pipelineContext ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ length:Int^many)\n  locals { xs } {\n    xs prim seq-int.len 0 prim =\n    [ 0 ]\n    [ xs 0 prim seq-int.at 1 1 0 xs longest-run-loop ] if\n  };\n\n: longest-run-loop\n  (forall ρ; ρ prev:Int^many curr-run:Int^many max-run:Int^many idx:Int^many xs:Seq Int^many -- ρ result:Int^many)\n  locals { prev curr-run max-run idx xs } { max-run } ;" agentConfig with
   | .success _ => pure ()
   | .failure _ => fail "longest-run: the edit that puts `idx` in the middle is refused"
+  -- Where an operation is handed values of types no order of its inputs
+  -- fits, the walk has handed out values meant for another operation, and
+  -- nothing after it is blamed: Haiku's histogram answer at c6a964a
+  -- (haiku-firth-2, solutions-3) leaves out `v` in `result 0 xs 0
+  -- count-value`, so the walk gives `result` to `count-value` as `cnt`.
+  -- Blaming `prim seq-int.push` and asking for `result` before
+  -- `count-value`'s result sends the author to an edit that is refused
+  -- (review of #166); the checker's account is kept, and the right edit,
+  -- the missing `v`, makes `build-histogram` check.
+  let histogramMissingV := ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ counts:Seq Int^many)\n  swap prim seq-int.empty swap 0 0 build-histogram;\n\n: build-histogram\n  (forall ρ; ρ xs:Seq Int^many result:Seq Int^many k:Int^many v:Int^many -- ρ counts:Seq Int^many)\n  locals { xs result k v } {\n    v k prim < [\n      result 0 xs 0 count-value prim seq-int.push xs k v 1 prim + build-histogram\n    ] [ result ] if\n  };\n\n: count-value\n  (forall ρ; ρ cnt:Int^many xs:Seq Int^many idx:Int^many v:Int^many -- ρ count:Int^many)\n  locals { cnt xs idx v } {\n    idx xs prim seq-int.len prim < [\n      idx xs prim seq-int.at v prim = [\n        cnt 1 prim +\n      ] [ cnt ] if\n      xs idx 1 prim + v count-value\n    ] [ cnt ] if\n  };"
+  match elaboratePipeline pipelineContext histogramMissingV agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      if (emitted.splitOn "seq-int.push").length > 1 || (emitted.splitOn "push `result`").length > 1 then
+        fail s!"histogram missing `v`: the account blames the push: {emitted}"
+      if (emitted.splitOn "belongs to the caller").length == 1 then
+        fail s!"histogram missing `v`: expected the checker's account: {emitted}"
+  | _ => fail "histogram missing `v`: expected one diagnostic"
+  -- With `v`, `build-histogram` checks; what is left is a separate
+  -- mistake in `main`, which leaves an extra value.
+  match elaboratePipeline pipelineContext (histogramMissingV.replace "result 0 xs 0 count-value" "result 0 xs 0 v count-value") agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      if (emitted.splitOn "declared-effect-mismatch").length == 1 || (emitted.splitOn "`main` declares").length == 1 then
+        fail s!"histogram missing `v`: with `v`, expected only `main`'s extra value: {emitted}"
+  | _ => fail "histogram missing `v`: with `v`, expected one diagnostic about `main`"
   -- A quotation's locals are those where it was written: `[ a ]` pushes the
   -- outer `a:Int`, though it runs where `a` is the Seq Int. So `a` stands
   -- for the last input of `prim seq-int.push`, and the Seq Int goes before
