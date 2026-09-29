@@ -1,0 +1,2550 @@
+{
+  "lang": "firth",
+  "tasks": {
+    "seq-sum": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            15
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: sum-helper\nat: line 9, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs idx acc } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: sum-helper\nat: line 9, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs idx acc } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: sum-helper\nat: line 9, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs idx acc } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -3,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: sum-helper\nat: line 9, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs idx acc } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10
+            ]
+          ],
+          "expected": [
+            55
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: sum-helper\nat: line 9, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs idx acc } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -5,
+              -6
+            ]
+          ],
+          "expected": [
+            -11
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: sum-helper\nat: line 9, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs idx acc } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "seq-max": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              9,
+              2
+            ]
+          ],
+          "expected": [
+            9
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 55\nmessage: Unexpected `prim`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: prim\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 55\nmessage: Unexpected `prim`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: prim\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -4,
+              -2,
+              -9
+            ]
+          ],
+          "expected": [
+            -2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 55\nmessage: Unexpected `prim`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: prim\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 55\nmessage: Unexpected `prim`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: prim\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              8,
+              8,
+              3
+            ]
+          ],
+          "expected": [
+            8
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 55\nmessage: Unexpected `prim`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: prim\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 55\nmessage: Unexpected `prim`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: prim\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "count-below": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              5,
+              2,
+              8
+            ],
+            4
+          ],
+          "expected": [
+            2
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 39\nmessage: Unexpected `cnt`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cnt\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            3
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 39\nmessage: Unexpected `cnt`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cnt\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            4
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 39\nmessage: Unexpected `cnt`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cnt\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              0,
+              1
+            ],
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 39\nmessage: Unexpected `cnt`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cnt\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              1,
+              9,
+              1,
+              9
+            ],
+            10
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 39\nmessage: Unexpected `cnt`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cnt\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              3
+            ],
+            -5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 39\nmessage: Unexpected `cnt`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cnt\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "index-of": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              7,
+              3,
+              9,
+              3
+            ],
+            3
+          ],
+          "expected": [
+            1
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 24\nmessage: Unexpected `idx`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: idx\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            1
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 24\nmessage: Unexpected `idx`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: idx\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 24\nmessage: Unexpected `idx`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: idx\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 24\nmessage: Unexpected `idx`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: idx\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            2
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 24\nmessage: Unexpected `idx`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: idx\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              -2,
+              -3
+            ],
+            -3
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 24\nmessage: Unexpected `idx`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: idx\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "reverse": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              2,
+              1
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: reverse\nat: line 3, column 58\nmessage: `rev-helper` in `reverse` needs Seq Int Int Seq Int on top of the stack, but the stack before it is \u03c1 Seq Int Int. `reverse` calls `rev-helper`, which has an error of its own; this report assumes `rev-helper` keeps its stack effect.\nexpected: .. Seq Int Int Seq Int\nactual: \u03c1 Seq Int Int\nhint: `rev-helper` takes 3 values but only 2 values are available. Push or keep the missing input before it (for example `dup` to copy, or `over` if defined), or take it as a parameter in the signature. Here \u03c1 stands for the caller's values that this word must leave untouched.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: rev-helper\nat: line 9, column 5\nmessage: `idx` is not a defined word, primitive or local.\nactual: idx\nhint: `idx` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: reverse\nat: line 3, column 58\nmessage: `rev-helper` in `reverse` needs Seq Int Int Seq Int on top of the stack, but the stack before it is \u03c1 Seq Int Int. `reverse` calls `rev-helper`, which has an error of its own; this report assumes `rev-helper` keeps its stack effect.\nexpected: .. Seq Int Int Seq Int\nactual: \u03c1 Seq Int Int\nhint: `rev-helper` takes 3 values but only 2 values are available. Push or keep the missing input before it (for example `dup` to copy, or `over` if defined), or take it as a parameter in the signature. Here \u03c1 stands for the caller's values that this word must leave untouched.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: rev-helper\nat: line 9, column 5\nmessage: `idx` is not a defined word, primitive or local.\nactual: idx\nhint: `idx` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: reverse\nat: line 3, column 58\nmessage: `rev-helper` in `reverse` needs Seq Int Int Seq Int on top of the stack, but the stack before it is \u03c1 Seq Int Int. `reverse` calls `rev-helper`, which has an error of its own; this report assumes `rev-helper` keeps its stack effect.\nexpected: .. Seq Int Int Seq Int\nactual: \u03c1 Seq Int Int\nhint: `rev-helper` takes 3 values but only 2 values are available. Push or keep the missing input before it (for example `dup` to copy, or `over` if defined), or take it as a parameter in the signature. Here \u03c1 stands for the caller's values that this word must leave untouched.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: rev-helper\nat: line 9, column 5\nmessage: `idx` is not a defined word, primitive or local.\nactual: idx\nhint: `idx` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              -4,
+              4,
+              -4,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              -4,
+              4,
+              -4,
+              4
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: reverse\nat: line 3, column 58\nmessage: `rev-helper` in `reverse` needs Seq Int Int Seq Int on top of the stack, but the stack before it is \u03c1 Seq Int Int. `reverse` calls `rev-helper`, which has an error of its own; this report assumes `rev-helper` keeps its stack effect.\nexpected: .. Seq Int Int Seq Int\nactual: \u03c1 Seq Int Int\nhint: `rev-helper` takes 3 values but only 2 values are available. Push or keep the missing input before it (for example `dup` to copy, or `over` if defined), or take it as a parameter in the signature. Here \u03c1 stands for the caller's values that this word must leave untouched.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: rev-helper\nat: line 9, column 5\nmessage: `idx` is not a defined word, primitive or local.\nactual: idx\nhint: `idx` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: reverse\nat: line 3, column 58\nmessage: `rev-helper` in `reverse` needs Seq Int Int Seq Int on top of the stack, but the stack before it is \u03c1 Seq Int Int. `reverse` calls `rev-helper`, which has an error of its own; this report assumes `rev-helper` keeps its stack effect.\nexpected: .. Seq Int Int Seq Int\nactual: \u03c1 Seq Int Int\nhint: `rev-helper` takes 3 values but only 2 values are available. Push or keep the missing input before it (for example `dup` to copy, or `over` if defined), or take it as a parameter in the signature. Here \u03c1 stands for the caller's values that this word must leave untouched.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: rev-helper\nat: line 9, column 5\nmessage: `idx` is not a defined word, primitive or local.\nactual: idx\nhint: `idx` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "prefix-sums": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              3,
+              6
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: prefix-helper\nat: line 9, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result sum idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: prefix-helper\nat: line 9, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result sum idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: prefix-helper\nat: line 9, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result sum idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              -3,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              3,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: prefix-helper\nat: line 9, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result sum idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              20,
+              30,
+              40,
+              50,
+              60
+            ]
+          ],
+          "expected": [
+            [
+              10,
+              30,
+              60,
+              100,
+              150,
+              210
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: prefix-helper\nat: line 9, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result sum idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "keep-positive": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              -1,
+              0,
+              4
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              4
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 52\nmessage: Unexpected `result`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: result\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 52\nmessage: Unexpected `result`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: result\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              -2
+            ]
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 52\nmessage: Unexpected `result`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: result\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 52\nmessage: Unexpected `result`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: result\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              0,
+              5,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 52\nmessage: Unexpected `result`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: result\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -7,
+              7,
+              -7,
+              7,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              7,
+              7,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 52\nmessage: Unexpected `result`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: result\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "is-sorted": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              5
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 3, column 41\nmessage: Unexpected `prim`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: prim\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 3, column 41\nmessage: Unexpected `prim`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: prim\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 3, column 41\nmessage: Unexpected `prim`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: prim\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 3, column 41\nmessage: Unexpected `prim`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: prim\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 3, column 41\nmessage: Unexpected `prim`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: prim\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -5,
+              -5,
+              0,
+              7
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 3, column 41\nmessage: Unexpected `prim`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: prim\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 3, column 41\nmessage: Unexpected `prim`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: prim\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "dot": {
+      "needs": [
+        "loop",
+        "mul",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            32
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: dot-helper\nat: line 9, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { sum idx xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: dot-helper\nat: line 9, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { sum idx xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2
+            ],
+            [
+              -3
+            ]
+          ],
+          "expected": [
+            -6
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: dot-helper\nat: line 9, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { sum idx xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              -1
+            ],
+            [
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: dot-helper\nat: line 9, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { sum idx xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              3,
+              3,
+              3
+            ],
+            [
+              1,
+              2,
+              3,
+              4
+            ]
+          ],
+          "expected": [
+            30
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: dot-helper\nat: line 9, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { sum idx xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "all-true": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              true,
+              true,
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 11\nmessage: Unexpected `idx`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: idx\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 11\nmessage: Unexpected `idx`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: idx\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 11\nmessage: Unexpected `idx`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: idx\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 11\nmessage: Unexpected `idx`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: idx\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 11\nmessage: Unexpected `idx`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: idx\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              false,
+              true
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 11\nmessage: Unexpected `idx`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: idx\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "longest-run": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              1,
+              2,
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 69\nmessage: Unexpected `cur-len`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cur-len\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 69\nmessage: Unexpected `cur-len`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cur-len\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 69\nmessage: Unexpected `cur-len`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cur-len\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 69\nmessage: Unexpected `cur-len`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cur-len\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 69\nmessage: Unexpected `cur-len`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cur-len\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              1,
+              1,
+              1,
+              1,
+              3
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 69\nmessage: Unexpected `cur-len`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cur-len\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "has-pair-sum": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              6,
+              2
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 22\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            0
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 22\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ],
+            8
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 22\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 22\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            7
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 22\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              -2,
+              9,
+              0
+            ],
+            -2
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 22\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              1,
+              3
+            ],
+            2
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 22\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "count-distinct": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 52\nmessage: Unexpected `cnt`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cnt\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 52\nmessage: Unexpected `cnt`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cnt\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 52\nmessage: Unexpected `cnt`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cnt\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 52\nmessage: Unexpected `cnt`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cnt\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 52\nmessage: Unexpected `cnt`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cnt\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              1,
+              -1,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 52\nmessage: Unexpected `cnt`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: cnt\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "merge-sorted": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              9
+            ],
+            [
+              2,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              9,
+              10
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 7\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 7\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            [
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 7\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 7\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 7\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -3,
+              0,
+              8
+            ],
+            [
+              -4,
+              8,
+              9,
+              9
+            ]
+          ],
+          "expected": [
+            [
+              -4,
+              -3,
+              0,
+              8,
+              8,
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 8, column 7\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "digits": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            305
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              5
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 3, column 5\nmessage: Unexpected `n`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: n\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            [
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 3, column 5\nmessage: Unexpected `n`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: n\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            [
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 3, column 5\nmessage: Unexpected `n`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: n\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              1,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 3, column 5\nmessage: Unexpected `n`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: n\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            99
+          ],
+          "expected": [
+            [
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 3, column 5\nmessage: Unexpected `n`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: n\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            420
+          ],
+          "expected": [
+            [
+              4,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 3, column 5\nmessage: Unexpected `n`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: n\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            987
+          ],
+          "expected": [
+            [
+              9,
+              8,
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 3, column 5\nmessage: Unexpected `n`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: n\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            1005
+          ],
+          "expected": [
+            [
+              1,
+              0,
+              0,
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 3, column 5\nmessage: Unexpected `n`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: n\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            40213
+          ],
+          "expected": [
+            [
+              4,
+              0,
+              2,
+              1,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 3, column 5\nmessage: Unexpected `n`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: n\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 8
+    },
+    "primes-up-to": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 25\nmessage: Unexpected `result`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: result\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 25\nmessage: Unexpected `result`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: result\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 25\nmessage: Unexpected `result`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: result\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            2
+          ],
+          "expected": [
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 25\nmessage: Unexpected `result`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: result\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            13
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 25\nmessage: Unexpected `result`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: result\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            30
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13,
+              17,
+              19,
+              23,
+              29
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 25\nmessage: Unexpected `result`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: result\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "histogram": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              0,
+              2,
+              2,
+              1,
+              2
+            ],
+            3
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: histogram\nat: line 3, column 44\nmessage: The quotation run by `dip` in `histogram` does not accept the stack below it (\u03c1 Int Seq Int Int Seq Int [ .. Seq Int Int Int Seq Int -- .. Seq Int ]). `histogram` calls `hist-init`, which has an error of its own; this report assumes `hist-init` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: hist-init\nat: line 9, column 5\nmessage: `init` is not a defined word, primitive or local.\nactual: init\nhint: `init` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { init idx k xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: hist-loop\nat: line 17, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { counts idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: histogram\nat: line 3, column 44\nmessage: The quotation run by `dip` in `histogram` does not accept the stack below it (\u03c1 Int Seq Int Int Seq Int [ .. Seq Int Int Int Seq Int -- .. Seq Int ]). `histogram` calls `hist-init`, which has an error of its own; this report assumes `hist-init` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: hist-init\nat: line 9, column 5\nmessage: `init` is not a defined word, primitive or local.\nactual: init\nhint: `init` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { init idx k xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: hist-loop\nat: line 17, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { counts idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            1
+          ],
+          "expected": [
+            [
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: histogram\nat: line 3, column 44\nmessage: The quotation run by `dip` in `histogram` does not accept the stack below it (\u03c1 Int Seq Int Int Seq Int [ .. Seq Int Int Int Seq Int -- .. Seq Int ]). `histogram` calls `hist-init`, which has an error of its own; this report assumes `hist-init` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: hist-init\nat: line 9, column 5\nmessage: `init` is not a defined word, primitive or local.\nactual: init\nhint: `init` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { init idx k xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: hist-loop\nat: line 17, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { counts idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: histogram\nat: line 3, column 44\nmessage: The quotation run by `dip` in `histogram` does not accept the stack below it (\u03c1 Int Seq Int Int Seq Int [ .. Seq Int Int Int Seq Int -- .. Seq Int ]). `histogram` calls `hist-init`, which has an error of its own; this report assumes `hist-init` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: hist-init\nat: line 9, column 5\nmessage: `init` is not a defined word, primitive or local.\nactual: init\nhint: `init` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { init idx k xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: hist-loop\nat: line 17, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { counts idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              0,
+              3,
+              1,
+              0,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            [
+              2,
+              1,
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: histogram\nat: line 3, column 44\nmessage: The quotation run by `dip` in `histogram` does not accept the stack below it (\u03c1 Int Seq Int Int Seq Int [ .. Seq Int Int Int Seq Int -- .. Seq Int ]). `histogram` calls `hist-init`, which has an error of its own; this report assumes `hist-init` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: hist-init\nat: line 9, column 5\nmessage: `init` is not a defined word, primitive or local.\nactual: init\nhint: `init` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { init idx k xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: hist-loop\nat: line 17, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { counts idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              1
+            ],
+            4
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: histogram\nat: line 3, column 44\nmessage: The quotation run by `dip` in `histogram` does not accept the stack below it (\u03c1 Int Seq Int Int Seq Int [ .. Seq Int Int Int Seq Int -- .. Seq Int ]). `histogram` calls `hist-init`, which has an error of its own; this report assumes `hist-init` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: hist-init\nat: line 9, column 5\nmessage: `init` is not a defined word, primitive or local.\nactual: init\nhint: `init` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { init idx k xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: hist-loop\nat: line 17, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { counts idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "sort": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 16, column 7\nmessage: Unexpected `j`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: j\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 16, column 7\nmessage: Unexpected `j`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: j\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 16, column 7\nmessage: Unexpected `j`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: j\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 16, column 7\nmessage: Unexpected `j`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: j\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              -1,
+              4,
+              -1,
+              0,
+              7,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              -1,
+              -1,
+              0,
+              3,
+              4,
+              7,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 16, column 7\nmessage: Unexpected `j`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: j\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 16, column 7\nmessage: Unexpected `j`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: j\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "ledger": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10,
+            [
+              5,
+              -20,
+              -15,
+              4
+            ]
+          ],
+          "expected": [
+            4,
+            1
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 63\nmessage: Unexpected `drop`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: drop\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            []
+          ],
+          "expected": [
+            0,
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 63\nmessage: Unexpected `drop`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: drop\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            [
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 63\nmessage: Unexpected `drop`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: drop\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            5,
+            [
+              -5,
+              -1,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 63\nmessage: Unexpected `drop`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: drop\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            100,
+            [
+              -50,
+              -60,
+              20,
+              -70
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 63\nmessage: Unexpected `drop`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: drop\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            3,
+            [
+              -1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 9, column 63\nmessage: Unexpected `drop`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: drop\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "allocate-batch": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              10,
+              3
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              4,
+              5,
+              7,
+              1
+            ],
+            [
+              false,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              2
+            ],
+            [
+              4,
+              0,
+              6,
+              1
+            ],
+            [
+              0,
+              3,
+              1,
+              0
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 16, column 29\nmessage: Unexpected `qty`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: qty\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            [],
+            [],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ],
+            [],
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 16, column 29\nmessage: Unexpected `qty`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: qty\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              3
+            ],
+            [
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 16, column 29\nmessage: Unexpected `qty`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: qty\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              1,
+              1,
+              1
+            ],
+            [
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              2,
+              2,
+              0
+            ],
+            [
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 16, column 29\nmessage: Unexpected `qty`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: qty\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              9
+            ],
+            [
+              1,
+              0,
+              1,
+              0
+            ],
+            [
+              9,
+              5,
+              1,
+              0
+            ],
+            [
+              true,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              4,
+              0
+            ],
+            [
+              9,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              3,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 16, column 29\nmessage: Unexpected `qty`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: qty\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              2,
+              2,
+              1,
+              1
+            ],
+            [
+              false,
+              false,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 16, column 29\nmessage: Unexpected `qty`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: qty\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    }
+  },
+  "label": "run 11 arm-a firth 21 round 1",
+  "firth_commit": "5d09e25d8115952ca56f3bb837253d29967b06c8",
+  "eval_sha256": {
+    "task.py": "f982b19a56550012ba4614e5355fbee2b5cf3e961ed0f28c5f99fdc536c7308a",
+    "tasks.py": "fff2402680c865b52ca2b661d4636430d1d62c507972d5913a1c79f99c654e17",
+    "mvp_tasks.py": "9905f4a5cdc3b64fa4cc1f4180e80106cdfbcd0b00c8105b91bf12c629c391e1",
+    "harness.py": "4eb01a6b037dee68b4159945ab684c6c61b544df17dcb6ff1611fbe3076eb7a3",
+    "isolate.py": "8aba58cd416521b896756432546129cb43f1d53761f7373ccf6c5de43b5aa9dc"
+  },
+  "prompt_docs": [
+    "prompt --tier mvp --rounds 2 at 5d09e25",
+    " arm-a"
+  ]
+}

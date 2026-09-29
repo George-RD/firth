@@ -1,0 +1,8 @@
+run 11 pin, written 2026-09-29T21:38:39Z before the first author starts
+worktree /home/user/firth-r11 HEAD 5d09e25d8115952ca56f3bb837253d29967b06c8
+make_prompts.py --check: ok: arm A 49580 chars, arm B 50356 chars
+9251deb16e1ced44796cef1cbd42442b2bf4137f44d4053d083577de8c039447  eval/s7/runs/2026-09-29-locals-guide/arm-a/prompt-firth.md
+f8bf7237ce6f128d357e1f8125d4ba0eac61d71886b4c13767489b14b48b44e5  eval/s7/runs/2026-09-29-locals-guide/arm-b/prompt-firth.md
+pinned AGENTS.md blob cef346c054e3fe84bfa8993df0bf9a833e02cf48 CLAUDE.md blob 43c994c2d3617f947bcb5adf1933e21dabe46bb5
+main checkout /home/user/firth at fca58f6f87561e1580fd5be9a7626411d5cbd261: AGENTS.md cef346c054e3fe84bfa8993df0bf9a833e02cf48 CLAUDE.md 43c994c2d3617f947bcb5adf1933e21dabe46bb5
+worktree files: AGENTS.md cef346c054e3fe84bfa8993df0bf9a833e02cf48 CLAUDE.md 43c994c2d3617f947bcb5adf1933e21dabe46bb5

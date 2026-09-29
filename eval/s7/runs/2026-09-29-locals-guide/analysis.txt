@@ -1,0 +1,57 @@
+arm A: 20 counted samples
+  haiku-firth-2   first  0  final 12  shuffle share first 0.00 final 0.00
+  haiku-firth-3   first  0  final  0  shuffle share first 1.00 final 0.95
+  haiku-firth-4   first  0  final  8  shuffle share first 0.30 final 0.30
+  haiku-firth-5   first  0  final  7  shuffle share first 0.40 final 0.35
+  haiku-firth-6   first  6  final 15  shuffle share first 0.00 final 0.05
+  haiku-firth-7   first  0  final  7  shuffle share first 0.05 final 0.00
+  haiku-firth-8   first  6  final  9  shuffle share first 0.30 final 0.25
+  haiku-firth-9   first  0  final  9  shuffle share first 0.10 final 0.15
+  haiku-firth-10  first  5  final 11  shuffle share first 0.55 final 0.45
+  haiku-firth-11  first  0  final 12  shuffle share first 0.45 final 0.10
+  haiku-firth-12  first  0  final  9  shuffle share first 0.20 final 0.00
+  haiku-firth-13  first  0  final  1  shuffle share first 0.30 final 0.90
+  haiku-firth-16  first  3  final 13  shuffle share first 0.20 final 0.10
+  haiku-firth-17  first  7  final 11  shuffle share first 0.00 final 0.00
+  haiku-firth-18  first  7  final 15  shuffle share first 0.00 final 0.00
+  haiku-firth-19  first  0  final  4  shuffle share first 1.00 final 0.60
+  haiku-firth-20  first  5  final 10  shuffle share first 0.10 final 0.20
+  haiku-firth-21  first  0  final  0  shuffle share first 0.40 final 0.45
+  haiku-firth-23  first  0  final  1  shuffle share first 1.00 final 0.00
+  haiku-firth-24  first  0  final  0  shuffle share first 1.00 final 0.30
+  haiku-firth-1   VOID, not counted; passes by round 4 / - / -
+  haiku-firth-14  VOID, not counted; passes by round 0 / 4 / 4
+  haiku-firth-15  VOID, not counted; passes by round 1 / 8 / -
+  haiku-firth-22  VOID, not counted; passes by round 0 / - / -
+arm B: 20 counted samples
+  haiku-firth-1   first  0  final  9  shuffle share first 0.00 final 0.00
+  haiku-firth-2   first  0  final 10  shuffle share first 0.00 final 0.00
+  haiku-firth-3   first  5  final 13  shuffle share first 0.00 final 0.00
+  haiku-firth-4   first  0  final  7  shuffle share first 0.00 final 0.00
+  haiku-firth-5   first  4  final 17  shuffle share first 0.00 final 0.00
+  haiku-firth-6   first  0  final 11  shuffle share first 0.00 final 0.00
+  haiku-firth-7   first  7  final 13  shuffle share first 0.00 final 0.00
+  haiku-firth-9   first  0  final  9  shuffle share first 0.00 final 0.00
+  haiku-firth-10  first  6  final 14  shuffle share first 0.00 final 0.00
+  haiku-firth-13  first  0  final 10  shuffle share first 0.00 final 0.00
+  haiku-firth-14  first 11  final 14  shuffle share first 0.00 final 0.00
+  haiku-firth-15  first  0  final  4  shuffle share first 0.00 final 0.00
+  haiku-firth-16  first  4  final 15  shuffle share first 0.00 final 0.00
+  haiku-firth-17  first  0  final  6  shuffle share first 0.10 final 0.10
+  haiku-firth-18  first  0  final  7  shuffle share first 0.00 final 0.00
+  haiku-firth-19  first  0  final  0  shuffle share first 0.90 final 0.10
+  haiku-firth-21  first  0  final  0  shuffle share first 0.00 final 0.05
+  haiku-firth-22  first  0  final  1  shuffle share first 0.00 final 0.00
+  haiku-firth-24  first 11  final 17  shuffle share first 0.00 final 0.00
+  haiku-firth-25  first  0  final  0  shuffle share first 0.10 final 0.00
+  haiku-firth-8   VOID, not counted; passes by round 2 / 13 / -
+  haiku-firth-11  VOID, not counted; passes by round 0 / 12 / 15
+  haiku-firth-12  VOID, not counted; passes by round 0 / - / -
+  haiku-firth-20  VOID, not counted; passes by round 0 / 11 / 16
+  haiku-firth-23  VOID, not counted; passes by round 8 / - / -
+
+Primary: tasks passed after round 2, B > A: sums A 154 B 177; U_B = 224.0, one-sided exact p = 0.2615
+Secondary 1: samples passing >= 1 task after round 2: A 17/20 B 17/20; one-sided Fisher p = 0.6693
+Secondary 2: tasks passed in the first answer, B > A: sums A 39 B 48; U_B = 203.5, one-sided exact p = 0.4589
+Manipulation check: share of first answers using shuffle words, A > B: mean A 0.37 B 0.06; U_A = 338.0, one-sided exact p = 0.0000
+  (final answers, reported only: mean A 0.26 B 0.01)
