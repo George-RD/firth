@@ -515,6 +515,23 @@ private def checkBranchEdit (config : PipelineConfig) (source wordName : String)
 private def collapseSpace (text : String) : String :=
   " ".intercalate (((text.map fun c => if c.isWhitespace then ' ' else c).splitOn " ").filter (!·.isEmpty))
 
+/-- Where an edit from byte `start` to byte `stop` of `source` is, for a hint
+that says "in place of `written` on line L": the line, and the column too
+when `written`, as whole items, is found more than once on the lines the
+edit spans, as `candidate 1 prim + n collect-primes` is in both branches of
+`[ result candidate prim seq-int.push candidate 1 prim + n collect-primes ]
+[ candidate 1 prim + n collect-primes ] if`. -/
+private def editPlace (source : String) (start stop : Nat) (written : String) : Nat × Option Nat :=
+  let (line, column) := lineColumn source start
+  let lastLine := (lineColumn source stop).1
+  let lines := ((source.splitOn "\n").drop (line - 1)).take (lastLine + 1 - line)
+  let items (text : String) := ((collapseSpace text).splitOn " ").filter (!·.isEmpty)
+  let text := items ("\n".intercalate lines)
+  let wanted := items written
+  let found := (List.range (text.length + 1)).countP fun i =>
+    !wanted.isEmpty && (text.drop i).take wanted.length == wanted
+  (line, if found > 1 then some column else none)
+
 /-- For a refused `if` whose longer branch leaves one value more than the
 other, below the result of a call: when that value was computed by an
 operation handed exactly one local of the value's type, and the call was
@@ -558,9 +575,10 @@ private def staleEdit (config : PipelineConfig) (source : String)
   if balanced != some 0 then none else
   let replacement := s!"{collapseSpace (bytesText source start middle)} locals \{ {name} } \{ {between} {collapseSpace (bytesText source callStart stop)} }"
   let (after, consulted) ← checkBranchEdit config source wordName byErasure ifSpan.start.offset start stop replacement
-  pure { fix := .stale name computed.operation call.operation, start, stop
-         line := (lineColumn source start).1
-         written := collapseSpace (bytesText source start stop), replacement, after, consulted }
+  let written := collapseSpace (bytesText source start stop)
+  let (line, column) := editPlace source start stop written
+  pure { fix := .stale name computed.operation call.operation, start, stop, line, column
+         written, replacement, after, consulted }
 
 /-- For a refused `if` with a branch whose first operation short of values,
 a word, takes them only from where there are none, as in
@@ -648,9 +666,10 @@ private def missingEdit (config : PipelineConfig) (source : String)
   let stop := span.stop.offset
   let replacement := " ".intercalate (texts ++ [collapseSpace (bytesText source span.start.offset stop)])
   let (after, consulted) ← checkBranchEdit config source wordName byErasure ifSpan.start.offset start stop replacement
-  pure { fix := .missing names reordered, start, stop
-         line := (lineColumn source start).1
-         written := collapseSpace (bytesText source start stop), replacement, after, consulted }
+  let written := collapseSpace (bytesText source start stop)
+  let (line, column) := editPlace source start stop written
+  pure { fix := .missing names reordered, start, stop, line, column
+         written, replacement, after, consulted }
 
 /-- The edit for a refused `if`, when one is found and gets past it: a value
 left behind, then inputs lacking. -/

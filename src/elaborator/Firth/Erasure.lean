@@ -128,6 +128,10 @@ structure BranchEdit where
   stop : Nat
   /-- The line `start` is on. -/
   line : Nat
+  /-- The column `start` is at, counting from 1, when `written` is found
+  more than once on the lines the edit spans, so the line alone does not
+  say which to replace. -/
+  column : Option Nat := none
   written : String
   replacement : String
   after : Option (Nat × Nat) := none

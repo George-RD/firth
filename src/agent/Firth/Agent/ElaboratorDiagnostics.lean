@@ -230,6 +230,12 @@ private def listing (labels : List String) : String :=
 private def valueCount (count : Nat) : String :=
   if count == 1 then "1 value" else s!"{count} values"
 
+/-- Where a checked edit is, as "on line L", or "on line L, column C" when
+the text it replaces is found more than once there. -/
+private def editPlace (line : Nat) : Option Nat → String
+  | some column => s!"on line {line}, column {column}"
+  | none => s!"on line {line}"
+
 /-- What a checked edit leads to, as the sentence ending a hint: the word
 then checks, or where its next error is. -/
 private def editOutcome (word : String) (after : Option (Nat × Nat)) : String :=
@@ -331,16 +337,16 @@ private def accountExplanation (word : String) (account : Firth.Elaborator.IfAcc
           -- Checked by the pipeline (`missingEdit`): the inputs lacking
           -- are named like locals in scope of their types.
           let named (first : Bool) := match account.edit with
-            | some { fix := .missing names false, written, replacement, after, line, .. } =>
+            | some { fix := .missing names false, written, replacement, after, line, column, .. } =>
                 let place := if first then asLast else asFirst
                 if !place then none else
-                some s!"by writing the {if names.length == 1 then "local" else "locals"} of {if names.length == 1 then "that name" else "those names"}, {listing (names.map (s!"`{·}`"))}: write `{replacement}` in place of `{written}` on line {line}.{editOutcome word after}"
+                some s!"by writing the {if names.length == 1 then "local" else "locals"} of {if names.length == 1 then "that name" else "those names"}, {listing (names.map (s!"`{·}`"))}: write `{replacement}` in place of `{written}` {editPlace line column}.{editOutcome word after}"
             | _ => none
           let locals := s!"for example by writing the locals that hold {if lacking == 1 then "it" else "them"}"
           let count (n : Nat) := if n == 1 then "one" else toString n
           let tail := s!"If {reach.operation} should not be in this branch, remove it. {noEvening}"
           match account.edit with
-          | some { fix := .missing names true, written, replacement, after, line, .. } =>
+          | some { fix := .missing names true, written, replacement, after, line, column, .. } =>
               -- Checked by the pipeline (`missingEdit`): each value the
               -- branch pushed stands for a local named like an input.
               let described := (reach.own.zip reach.ownSources).map fun (label, source) =>
@@ -349,7 +355,7 @@ private def accountExplanation (word : String) (account : Firth.Elaborator.IfAcc
                 | none => label
               let lacks := if names.isEmpty then "" else
                 s!", and write the {if names.length == 1 then "local" else "locals"} {listing (names.map (s!"`{·}`"))} for the {if names.length == 1 then "input" else "inputs"} it does not push"
-              s!"Make the branch push, just before {reach.operation}, exactly the values it takes, in this order: {", ".intercalate reach.inputs}. The branch already pushes, bottom to top, {listing described}, which by their names are for inputs in another order. Push each in its input's place{lacks}: write `{replacement}` in place of `{written}` on line {line}.{editOutcome word after} {tail}"
+              s!"Make the branch push, just before {reach.operation}, exactly the values it takes, in this order: {", ".intercalate reach.inputs}. The branch already pushes, bottom to top, {listing described}, which by their names are for inputs in another order. Push each in its input's place{lacks}: write `{replacement}` in place of `{written}` {editPlace line column}.{editOutcome word after} {tail}"
           | _ =>
           if asLast then
             match named true with
@@ -388,10 +394,10 @@ private def accountExplanation (word : String) (account : Firth.Elaborator.IfAcc
       let kept := (usedUp shorterBranch).drop (usedUp longerBranch).length
       let hint :=
         match account.edit with
-        | some { fix := .stale name operation call, written, replacement, after, line, .. } =>
+        | some { fix := .stale name operation call, written, replacement, after, line, column, .. } =>
             -- Checked by the pipeline (`staleEdit`): the value left behind
             -- was computed from the local the call was handed again.
-            s!"The result of {operation} is computed from `{name}`, but {call} is then handed `{name}` as it was before, so the new value is left below. If {call} should get the new value, bind it to the name `{name}` for the call: write `{replacement}` in place of `{written}` on line {line}.{editOutcome word after} {rule}"
+            s!"The result of {operation} is computed from `{name}`, but {call} is then handed `{name}` as it was before, so the new value is left below. If {call} should get the new value, bind it to the name `{name}` for the call: write `{replacement}` in place of `{written}` {editPlace line column}.{editOutcome word after} {rule}"
         | _ =>
         if kept.length ≥ extra && extra > 0 then
           let strays := kept.take extra

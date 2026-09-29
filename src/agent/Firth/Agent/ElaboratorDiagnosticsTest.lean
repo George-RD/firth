@@ -609,8 +609,17 @@ private def runCallAccountTests : IO Unit := do
   -- it replaces must occur once, and runs the result on the reference
   -- interpreter against values worked out by hand. Each answer is from run
   -- 10 (eval/s7/runs/2026-09-29-control), verbatim.
+  let collapse (text : String) : String :=
+    " ".intercalate (((text.map fun c => if c.isWhitespace then ' ' else c).splitOn " ").filter (!·.isEmpty))
+  -- The line and column in "on line L, column C", when the hint gives one.
+  let placeOf (text : String) : Option (Nat × Nat) := do
+    let rest ← (text.splitOn "` on line ")[1]?
+    let line ← (upTo rest ",").toNat?
+    let column ← (upTo ((rest.splitOn ", column ")[1]?.getD "") ".").toNat?
+    pure (line, column)
   let applyBranchHint (source hint : String) : Option String :=
-    let source := " ".intercalate (((source.map fun c => if c.isWhitespace then ' ' else c).splitOn " ").filter (!·.isEmpty))
+    let original := source
+    let source := collapse source
     match (hint.splitOn "write `")[1]? with
     | none => none
     | some rest =>
@@ -619,8 +628,18 @@ private def runCallAccountTests : IO Unit := do
         | none => none
         | some after =>
             let written := upTo after "`"
-            if (source.splitOn written).length != 2 then none
-            else some (source.replace written replacement)
+            -- "on line L, column C" says where, when the text is found
+            -- more than once; the edit then goes there and nowhere else.
+            match placeOf after with
+            | some (line, column) =>
+                let lines := original.splitOn "\n"
+                let before := "\n".intercalate (lines.take (line - 1))
+                let prefix_ := (if line > 1 then before ++ "\n" else "") ++ (((lines[line - 1]?).getD "").take (column - 1)).toString
+                let rest := collapse (original.drop prefix_.length).toString
+                if rest.startsWith written then some (prefix_ ++ replacement ++ (rest.drop written.length).toString) else none
+            | none =>
+                if (source.splitOn written).length != 2 then none
+                else some (source.replace written replacement)
   let branchCase (label source : String) (needles : List String) (word : String)
       (inputs expected : List Firth.Interpreter.Literal) : IO Unit := do
     let (hint, _) ← callReport label "firth.type.branch-mismatch" source needles
@@ -642,6 +661,15 @@ private def runCallAccountTests : IO Unit := do
     ["the result of `prim +` (from `acc`) and the result of `prim +` (from `index`), which by their names are for inputs in another order.",
      "write `xs index 1 prim + xs index prim seq-int.at acc prim + seq-sum-loop` in place of `xs index prim seq-int.at acc prim + index 1 prim + seq-sum-loop` on line 5. With that edit `seq-sum-loop` checks."]
     "main" [.intSeq [4, 5, 6]] [.int 15]
+  -- primes-up-to (4c379e0, haiku-firth-3, answer 3): the text the edit
+  -- replaces is in both branches on line 9, and only the second is the
+  -- branch refused. Planted: without the column the hint would name either,
+  -- and the first leaves the `if` refused. The primes below 4; the answer's
+  -- own `check-divisor` tests `d d prim * n prim <`, so it takes 4 and 9
+  -- for primes, a mistake of its own the edit leaves alone.
+  branchCase "the text replaced found twice on its line" ": main\n  (forall ρ; ρ n:Int^many -- ρ primes:Seq Int^many)\n  locals { n } { prim seq-int.empty 2 n collect-primes };\n\n: collect-primes\n  (forall ρ; ρ result:Seq Int^many candidate:Int^many n:Int^many -- ρ primes:Seq Int^many)\n  locals { result candidate n } {\n    candidate n prim <\n    [ candidate is-prime-simple [ result candidate prim seq-int.push candidate 1 prim + n collect-primes ] [ candidate 1 prim + n collect-primes ] if ]\n    [ result ]\n    if\n  };\n\n: is-prime-simple\n  (forall ρ; ρ n:Int^many -- ρ result:Bool^many)\n  locals { n } {\n    n 2 prim <\n    [ false ]\n    [ n 2 prim = [ true ] [ n 2 check-divisor ] if ]\n    if\n  };\n\n: check-divisor\n  (forall ρ; ρ n:Int^many d:Int^many -- ρ result:Bool^many)\n  locals { n d } {\n    d d prim * n prim <\n    [ n d prim mod 0 prim = [ false ] [ n d 1 prim + check-divisor ] if ]\n    [ true ]\n    if\n  };\n"
+    ["write `result candidate 1 prim + n collect-primes` in place of `candidate 1 prim + n collect-primes` on line 9, column 110. With that edit `collect-primes` checks."]
+    "main" [.int 4] [.intSeq [2, 3]]
   -- all-true (4c379e0, haiku-firth-1, answer 2): the recursive call inside
   -- an inner `if` is given only the changed index.
   branchCase "an input named like a local" ": all-loop\n  (forall ρ; ρ flags:Seq Bool^many idx:Int^many -- ρ all:Bool^many)\n  locals { flags idx } {\n    idx flags prim seq-bool.len prim <\n    [ \n      flags idx prim seq-bool.at\n      [ idx 1 prim + all-loop ]\n      [ false ]\n      if\n    ]\n    [ true ]\n    if\n  };\n\n: main\n  (forall ρ; ρ flags:Seq Bool^many -- ρ all:Bool^many)\n  0 all-loop;\n"
