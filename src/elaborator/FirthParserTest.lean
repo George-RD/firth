@@ -283,6 +283,10 @@ def runParserTests : IO Unit := do
   expectSpanFailure ": x ( -- ) '" "firth.syntax.unterminated-character" 11 12
   expectSpanFailure ": x ( -- ) 'abc" "firth.syntax.overlong-character" 11 15
   expectSpanFailure ": x ( a:Int -- q':Int ) a ;" "firth.syntax.quote-in-name" 15 17
+  expectSpanFailure ": x ( a':Int b':Int -- r:Int ) a ;" "firth.syntax.quote-in-name" 6 8
+  -- A closed literal against a name keeps the literal's own error.
+  expectSpanFailure ": x ( -- ) dup'ab' ;" "firth.syntax.overlong-character" 14 18
+  expectFailure ": x ( -- ) dup'\\q' ;" "firth.syntax.invalid-escape"
   -- A literal separated from the name before it is still a character.
   match (← success ": chars ( -- ) dup 'a' ;").declarations with
   | [.word { body := [_, .literal { value := .character 'a', .. } _], .. }] => pure ()

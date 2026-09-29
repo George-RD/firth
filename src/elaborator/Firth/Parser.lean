@@ -298,10 +298,11 @@ private partial def lex (st : LexState) (acc : List Token) : Except ParseError L
       else if c = '\'' then
         match lexCharacter st rest, acc with
         | .ok (token, next), _ => lex next (token :: acc)
-        -- A `'` touching the name before it that starts no literal, as in
-        -- `q'`, was meant as part of that name.
+        -- A `'` touching the name before it, with no closing `'` before the
+        -- next space, as in `q':Int`, was meant as part of that name. A closed
+        -- literal such as `dup'ab'` keeps the literal's own error.
         | .error e, { kind := .identifier name, span } :: _ =>
-            if span.stop == st.position then
+            if span.stop == st.position && !(rest.takeWhile (fun x => !" \t\n\r".contains x)).contains '\'' then
               .error (err "firth.syntax.quote-in-name" (mkSpan span.start (advance st.position c))
                 .lexical none (some (name ++ "'")))
             else .error e
@@ -522,10 +523,19 @@ whether a `;` then ends the word before the next declaration or the end of
 the input. -/
 private def closesAll (tokens : Array Token) (start : Nat) (pending : List String) :
     Option (String × Span × Bool) :=
+  -- A `;` ends the word only outside every bracket opened after the closer.
   let ended (i : Nat) : Bool :=
-    ((tokens.toList.drop i).takeWhile fun t =>
-      t.kind != .symbol ":" && t.kind != .identifier "use" && t.kind != .identifier "vocab").any
-        (·.kind == .symbol ";")
+    let rest := (tokens.toList.drop i).takeWhile fun t =>
+      t.kind != .symbol ":" && t.kind != .identifier "use" && t.kind != .identifier "vocab"
+    let step (state : Nat × Bool) (t : Token) : Nat × Bool :=
+      let (depth, found) := state
+      if found then state
+      else match t.kind with
+        | .symbol "[" | .symbol "{" => (depth + 1, false)
+        | .symbol "]" | .symbol "}" => (depth - 1, false)
+        | .symbol ";" => (depth, depth == 0)
+        | _ => state
+    (rest.foldl step (0, false)).2
   let rec go (fuel i : Nat) (nested pending : List String) : Option (String × Span × Bool) :=
     match fuel, tokens[i]? with
     | 0, _ | _, none => none
