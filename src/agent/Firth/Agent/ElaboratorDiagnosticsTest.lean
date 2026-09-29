@@ -467,7 +467,13 @@ def runElaboratorDiagnosticTests : IO Unit := do
     -- resolves to `v.b`, and the input `b` is still bound as `b2`.
     ("input label that names a word, in a vocabulary", "v.sub",
       "vocab v {\n: b\n  (forall ρ; ρ x:Int^many -- ρ r:Int^many)\n  1 prim + ;\n\n: sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x a prim + b };\n}",
-      ["Write `locals { a b2 }` in `v.sub`", "In its body, write `b2` for `x`"], [10, 3], [14])]
+      ["Write `locals { a b2 }` in `v.sub`", "In its body, write `b2` for `x`"], [10, 3], [14]),
+    -- A repeated input label is numbered, and the number avoids a name the
+    -- old block binds to another input (CodeRabbit on #167): `b2` holds
+    -- the second input there, so the third is bound as `b3`.
+    ("numbered binder beside an old name", "f",
+      ": f\n  (forall ρ; ρ a:Int^many b:Int^many b:Int^many -- ρ r:Int^many)\n  locals { b b2 a } { b2 };",
+      ["Write `locals { a b b3 }` in `f`", "In its body, write `b3` for `b2`"], [1, 2, 3], [3])]
   for (label, word, source, needles, inputs, expected) in localsCases do
     match elaboratePipeline pipelineContext source agentConfig with
     | .failure [envelope] =>

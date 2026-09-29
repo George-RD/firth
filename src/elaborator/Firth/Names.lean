@@ -207,11 +207,14 @@ private def misorderedInputLocals (word : WordDefinition) (written : List Item) 
           -- Names the body uses that the old block does not bind, words it
           -- calls and inner locals, which a new binder must not shadow. They
           -- are read from the body as written, before word names are
-          -- resolved, since the author edits that text.
+          -- resolved, since the author edits that text. The old block's
+          -- names that are to be renamed are reserved too, so that a
+          -- numbered binder is never one of them (`b2` for a repeated `b`
+          -- where the old block binds `b2` to another input).
           let items := match written with
             | .locals _ items _ :: _ => items
             | _ => []
-          let reserved := (bodyNames items).filter fun name => !names.any (·.name == name)
+          let reserved := (bodyNames items).filter (fun name => !names.any (·.name == name)) ++ fresh
           -- A name to rename that an inner block binds again means two
           -- things in the body, so "write `b` for `x`" would be read for
           -- both: no edit is stated.
