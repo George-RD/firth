@@ -245,7 +245,13 @@ private def runAssumesTests : IO Unit := do
   -- types shows it. The checked edits in the
   -- hints of `h` and `m` depend on `f` and `q`, which the reports do not:
   -- the hint says so instead. So does `h2`'s, where the check found that
-  -- the edit alone does not fix the word.
+  -- the edit alone does not fix the word. `quiet` and `late` call `f` in a
+  -- quotation they drop: a probe that makes `f` refuse its input stops the
+  -- check there, before the report, which says nothing about the report.
+  -- `pos` drops what `f` leaves, but its report shows the whole stack, and
+  -- an `f` that takes nothing leaves the `5` there. `lu` leaves its linear input unused, found at the end of its
+  -- `locals` block though placed where it is bound, so an underflow at `f`
+  -- comes before it.
   let source := String.intercalate "\n" [
     ": f ( a:Int -- b:Int ) true prim + ;",
     ": g ( -- b:Int ) true f ;",
@@ -269,7 +275,11 @@ private def runAssumesTests : IO Unit := do
     ": hc (forall ρ; ρ acc:Int^many k:Int^many xs:Seq Int^many -- ρ r:Int^many) true prim + ;",
     ": h2 (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ n:Int^many) locals { k xs } { 0 xs k hc } ;",
     ": run (forall ρ; ρ xs:Seq Int^many prev:Int^many n:Int^many most:Int^many i:Int^many -- ρ r:Int^many) true prim + ;",
-    ": longest (forall ρ; ρ xs:Seq Int^many -- ρ r:Int^many) locals { xs } { xs prim seq-int.len 0 prim = [ 0 ] [ xs 0 prim seq-int.at 1 0 1 xs run ] if } ;"]
+    ": longest (forall ρ; ρ xs:Seq Int^many -- ρ r:Int^many) locals { xs } { xs prim seq-int.len 0 prim = [ 0 ] [ xs 0 prim seq-int.at 1 0 1 xs run ] if } ;",
+    ": quiet ( -- r:Int ) [ 5 f ] drop true 1 prim + ;",
+    ": pos ( -- r:Int ) 5 f drop true 1 prim + ;",
+    ": late ( -- r:Bool ) [ 5 f ] drop 7 ;",
+    ": lu ( a:Int^linear -- r:Int ) locals { a } { 5 f } ;"]
   let summary (envelope : Envelope) : String × (List String × List String) × String × String :=
     match Lean.Json.parse (encode envelope) with
     | .ok json =>
@@ -290,7 +300,8 @@ private def runAssumesTests : IO Unit := do
         [("f", []), ("g", ["f"]), ("h", []), ("r", []), ("two", ["f"]), ("three", ["g", "f"]),
          ("short", ["f"]), ("opens", []), ("early", []), ("other", ["f"]),
          ("k", []), ("hidden", []), ("p", []), ("q", []), ("m", ["p"]),
-         ("same", []), ("typed", ["same"]), ("cb", []), ("br", ["cb"]), ("hc", []), ("h2", []), ("run", []), ("longest", ["run"])]
+         ("same", []), ("typed", ["same"]), ("cb", []), ("br", ["cb"]), ("hc", []), ("h2", []), ("run", []), ("longest", ["run"]),
+         ("quiet", []), ("pos", ["f"]), ("late", []), ("lu", [])]
       expectEqual "assumes: the words whose hint's checked edit depends on another reported word"
         ((reports.filter fun (_, assumes, _) => !assumes.2.isEmpty).map fun (word, assumes, _) => (word, assumes.2))
         [("h", ["f"]), ("m", ["q"]), ("h2", ["hc"])]
@@ -307,11 +318,23 @@ private def runAssumesTests : IO Unit := do
       endsWith "m" "That edit was checked assuming `q`, which has an error of its own, keeps its stack effect." (hint := true)
       endsWith "h" "That edit was checked assuming `f`, which has an error of its own, keeps its stack effect." (hint := true)
       for (word, _, message, _) in reports do
-        if ["f", "h", "r", "opens", "early", "hidden"].contains word && (message.splitOn "this report assumes").length > 1 then
+        if ["f", "h", "r", "opens", "early", "hidden", "quiet", "late", "lu"].contains word && (message.splitOn "this report assumes").length > 1 then
           fail s!"assumes: `{word}`'s report says it depends on another word: {message}"
       match validateBatch (envelopes.map encode) with
       | .ok _ => pure ()
       | .error error => fail s!"assumes: the reports are not a valid batch: {error.code}"
+  -- merge-sorted at cec3707 (haiku-firth-2, answer 1), verbatim. `merge-loop`
+  -- calls `merge-loop-y` only in the true branch of its outer `if`, and the
+  -- report is about the false branch. A probe that changes
+  -- `merge-loop-y`'s shape stops the check at the inner `if` of the true
+  -- branch, before the report.
+  let mergeSorted := ": main\n  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many -- ρ merged:Seq Int^many)\n  locals { xs ys } { 0 0 prim seq-int.empty xs ys merge-loop };\n\n: merge-loop\n  (forall ρ; ρ i:Int^many j:Int^many result:Seq Int^many xs:Seq Int^many ys:Seq Int^many -- ρ final:Seq Int^many)\n  locals { i j result xs ys } {\n    i xs prim seq-int.len prim =\n    [\n      j ys prim seq-int.len prim =\n      [ result ]\n      [ ys j prim seq-int.at result prim seq-int.push j 1 prim + ys xs merge-loop-y ]\n      if\n    ]\n    [\n      j ys prim seq-int.len prim =\n      [ xs i prim seq-int.at result prim seq-int.push i 1 prim + xs ys merge-loop ]\n      [\n        xs i prim seq-int.at ys j prim seq-int.at prim <\n        [ xs i prim seq-int.at result prim seq-int.push i 1 prim + xs ys merge-loop ]\n        [ ys j prim seq-int.at result prim seq-int.push j 1 prim + xs ys merge-loop ]\n        if\n      ]\n      if\n    ]\n    if\n  };\n\n: merge-loop-y\n  (forall ρ; ρ j:Int^many result:Seq Int^many ys:Seq Int^many xs:Seq Int^many -- ρ final:Seq Int^many)\n  locals { j result ys xs } {\n    j ys prim seq-int.len prim =\n    [ result ]\n    [ ys j prim seq-int.at result prim seq-int.push j 1 prim + ys xs merge-loop-y ]\n    if\n  };\n"
+  match elaboratePipeline pipelineContext mergeSorted agentConfig with
+  | .success _ => fail "assumes: merge-sorted was accepted"
+  | .failure envelopes =>
+      expectEqual "assumes: merge-sorted's reports depend on no other word"
+        (envelopes.map fun envelope => let (word, assumes, _) := summary envelope; (word, assumes.1))
+        [("merge-loop", []), ("merge-loop-y", [])]
 
 /-- Reports of a word or primitive handed values it does not take. -/
 private def runCallAccountTests : IO Unit := do

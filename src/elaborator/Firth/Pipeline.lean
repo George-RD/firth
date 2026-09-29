@@ -181,6 +181,31 @@ private def PipelineDiagnostic.stage : PipelineDiagnostic → Nat
   | .refinement .. | .internal _ => 3
   | .assumes _ _ _ inner => inner.stage
 
+/-- The end of the `locals` block that binds the name at `span`, if one in
+`items` does. -/
+private def bindingBlockEnd (span : Span) : List Item → Option Nat
+  | [] => none
+  | .locals names body block :: rest =>
+      if names.any (·.span == span) then some block.stop.offset
+      else (bindingBlockEnd span body).orElse fun _ => bindingBlockEnd span rest
+  | .quotation body _ :: rest => (bindingBlockEnd span body).orElse fun _ => bindingBlockEnd span rest
+  | _ :: rest => bindingBlockEnd span rest
+
+/-- How far checking got in its stage when it made a report, as a source
+offset: a stage checks a word's body in order, and a construct once it has
+checked what is inside it, so most reports are made where they end. Two are
+placed before the point they are made at. The comparison with the declared
+effect is at the signature but comes after the body, and a `locals` name left
+on the stack is found where its block ends. -/
+private def PipelineDiagnostic.reached (word : WordDefinition) : PipelineDiagnostic → Nat
+  | .stackEffect diagnostic =>
+      if diagnostic.code == "firth.type.declared-effect-mismatch" then word.span.stop.offset
+      else diagnostic.primary.stop.offset
+  | .erasure _ (.linearUnused _ span) | .erasure _ (.untrackedStack _ span _) =>
+      (bindingBlockEnd span word.body).getD span.stop.offset
+  | .assumes _ _ _ inner => inner.reached word
+  | other => (other.span?.map (·.stop.offset)).getD 0
+
 /-- A misordered `locals` report whose edit `checkLocalsEdits` checks: its
 hint says either that the edit fixes the word or that the body was written
 for the names as they are, and both come from that check. -/
@@ -556,11 +581,11 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
           -- A report depends on the effect of a called word with an error of
           -- its own when, made without checking edits and with that callee
           -- given one of the probe effects, or its own effect with other
-          -- types, the word is accepted or is refused with other reports:
-          -- one of them no earlier a stage than this one, or no later in the
-          -- source. An earlier stage's report only after this one says
-          -- nothing about it: erasure walks the whole body before typing, so
-          -- an arity error there hides a type error before it. Apart from
+          -- types, checking gets at least as far as this report and finds
+          -- something else: the word is accepted, or is refused with other
+          -- reports, one of them from a later stage or from this stage no
+          -- earlier in the order it checks (`reached`). A report made before
+          -- this one only hides it, and says nothing about it. Apart from
           -- that, a hint whose edit was checked (a misordered `locals`
           -- block, or a report that differs from the one made without
           -- checking edits) was checked against the effect of every such
@@ -570,16 +595,15 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
               (resolution : Option ParseError) : WordOutcome :=
             let (env, typing, unusable) := environments unedited declared
             checkWord unedited source declared written env typing unusable word resolution
-          let changes (outcome : WordOutcome) (diagnostic : PipelineDiagnostic) : Bool :=
+          let changes (word : WordDefinition) (outcome : WordOutcome)
+              (diagnostic : PipelineDiagnostic) : Bool :=
             match outcome with
             | .refused diagnostics =>
                 !diagnostics.any (config.sameReport · diagnostic) && diagnostics.any fun other =>
-                  other.stage ≥ diagnostic.stage ||
-                  match other.span?, diagnostic.span? with
-                  | some found, some report =>
-                      found.start.offset ≤ report.start.offset || found.start.offset < report.stop.offset
-                  | _, _ => true
-            | _ => true
+                  other.stage > diagnostic.stage ||
+                  other.stage == diagnostic.stage && other.reached word ≥ diagnostic.reached word
+            | .checked _ => true
+            | .skipped .. => false
           -- For each report, as made without checking edits, whether it
           -- depends on `callee`, starting from `marks`. The probes stop once
           -- every report is shown to depend on it.
@@ -591,7 +615,7 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
               let declared := declared.map fun other =>
                 if other.name == callee then { other with effect } else other
               let outcome := recheck declared word resolution
-              (marks.zip bases).map fun (mark, base) => mark || changes outcome base
+              (marks.zip bases).map fun (mark, base) => mark || changes word outcome base
           -- A word left unchecked says so, so that no one reads its
           -- silence as a pass. A report that depends on the effect of a word
           -- with an error of its own says so too: fixing that word's effect

@@ -1056,13 +1056,32 @@ private def uniquePayloadIds (envelopes : List Envelope) : List Envelope :=
       (id :: envelope.payloadId :: seen, out ++ [{ envelope with payloadId := id }])
   out
 
+/-- `text` with the checker's inferred variables numbered in the order they
+first appear, one numbering for each kind: rows, types (in the source
+notation too, as `?t`) and usages. Two reports that differ only in how many
+variables the checker made before them then read the same. -/
+private def renumberVariables (text : String) : String :=
+  let kinds := [["Row.mvar "], ["AType.mvar ", "?t"], ["AUsage.mvar "]]
+  kinds.foldl (init := text) fun text prefixes =>
+    (prefixes.foldl (init := (text, ([] : List String))) fun (text, seen) pre =>
+      match text.splitOn pre with
+      | [] => (text, seen)
+      | first :: parts =>
+          let (pieces, seen) := parts.foldl (init := ([first], seen)) fun (pieces, seen) part =>
+            let digits := String.ofList (part.toList.takeWhile Char.isDigit)
+            if digits.isEmpty then (pieces ++ [part], seen) else
+            let seen := if seen.contains digits then seen else seen ++ [digits]
+            (pieces ++ [s!"{seen.idxOf digits}" ++ String.ofList (part.toList.drop digits.length)], seen)
+          (pre.intercalate pieces, seen)).1
+
 def elaboratePipeline (context : EmissionContext) (source : String)
     (config : Firth.Elaborator.PipelineConfig := {}) : StructuredElaborationResult :=
   let config := { config with
     requestId := context.requestId
     sourcePath := sourcePath context.source
     sameReport := fun one other =>
-      encode (pipelineDiagnosticEnvelope context one) == encode (pipelineDiagnosticEnvelope context other) }
+      renumberVariables (encode (pipelineDiagnosticEnvelope context one)) ==
+        renumberVariables (encode (pipelineDiagnosticEnvelope context other)) }
   match Firth.Elaborator.elaborateWith config source with
   | .success program => .success program
   | .failure diagnostics =>
