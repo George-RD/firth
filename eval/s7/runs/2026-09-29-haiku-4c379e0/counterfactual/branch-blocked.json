@@ -1,0 +1,329 @@
+{
+ "note": "Counterfactual, hand-edited, not scored. Every first answer or round-1 answer of a counted sample that failed on firth.type.branch-mismatch, and the author's next answer for that task. Where the next answer failed first on another error, that error was removed by the listed mechanical edits (the `] if;` edit only where a `}` follows, so a word ending in `] if;` keeps its terminator) and the edited answer checked at 4c379e0, to see whether the branch mismatch behind it was repaired.",
+ "rows": [
+  {
+   "sample": 2,
+   "answer": 2,
+   "next_answer": 3,
+   "task": "count-distinct",
+   "branch_word": "count-distinct-outer",
+   "next_first_error": "firth.type.branch-mismatch"
+  },
+  {
+   "sample": 2,
+   "answer": 2,
+   "next_answer": 3,
+   "task": "histogram",
+   "branch_word": "histogram-loop",
+   "next_first_error": "firth.type.stack-underflow",
+   "hand_edits": [
+    "main gets the task stack effect",
+    "locals in effect order"
+   ],
+   "edited_source": ": histogram-loop\n  (forall \u03c1; \u03c1 xs:Seq Int^many k:Int^many i:Int^many result:Seq Int^many -- \u03c1 result:Seq Int^many)\n  locals { xs k i result } {\n    i xs prim seq-int.len prim < [\n      xs k i 1 prim + result\n      xs i prim seq-int.at dup result prim seq-int.at 1 prim + prim seq-int.set\n      histogram-loop\n    ] [\n      result\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 xs:Seq Int^many k:Int^many -- \u03c1 counts:Seq Int^many)\n  locals { xs k } {\n    xs k 0 prim seq-int.empty histogram-loop\n  };\n",
+   "edited_first_error": "firth.type.primitive-input-mismatch",
+   "edited_error_word": "histogram-loop"
+  },
+  {
+   "sample": 2,
+   "answer": 2,
+   "next_answer": 3,
+   "task": "sort",
+   "branch_word": "insert-sorted",
+   "next_first_error": "firth.type.branch-mismatch"
+  },
+  {
+   "sample": 2,
+   "answer": 2,
+   "next_answer": 3,
+   "task": "ledger",
+   "branch_word": "ledger-loop",
+   "next_first_error": "firth.syntax.expected-name",
+   "hand_edits": [
+    "main gets the task stack effect",
+    "prim before a literal dropped",
+    "locals in effect order"
+   ],
+   "edited_source": ": ledger-loop\n  (forall \u03c1; \u03c1 balance:Int^many txs:Seq Int^many i:Int^many rejected:Int^many -- \u03c1 balance:Int^many rejected:Int^many)\n  locals { balance txs i rejected } {\n    i txs prim seq-int.len prim < [\n      balance txs i prim seq-int.at prim + dup 0 prim < [\n        drop balance rejected 1 prim + i 1 prim + ledger-loop\n      ] [\n        balance rejected i 1 prim + ledger-loop\n      ] if\n    ] [\n      balance rejected\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 start:Int^many txs:Seq Int^many -- \u03c1 balance:Int^many rejected:Int^many)\n  locals { start txs } {\n    start txs 0 0 ledger-loop\n  };\n",
+   "edited_first_error": "firth.type.branch-mismatch",
+   "edited_error_word": "ledger-loop"
+  },
+  {
+   "sample": 2,
+   "answer": 2,
+   "next_answer": 3,
+   "task": "allocate-batch",
+   "branch_word": "allocate-one",
+   "next_first_error": "firth.syntax.invalid-item",
+   "hand_edits": [
+    "main gets the task stack effect",
+    "prim before a literal dropped",
+    "locals in effect order"
+   ],
+   "edited_source": ": allocate-item\n  (forall \u03c1; \u03c1 stock:Seq Int^many item:Int^many qty:Int^many whole:Bool^many -- \u03c1 stock:Seq Int^many allocated:Int^many reason:Int^many)\n  locals { stock item qty whole } {\n    stock item prim seq-int.at qty prim <= [\n      stock item qty prim - prim seq-int.set qty 0\n    ] [\n      stock item prim seq-int.at 0 prim = [\n        stock 0 2\n      ] [\n        whole [\n          stock 0 3\n        ] [\n          stock item prim seq-int.at dup\n          stock item 0 prim seq-int.set\n          1\n        ] if\n      ] if\n    ] if\n  };\n\n: allocate-loop\n  (forall \u03c1; \u03c1 stock:Seq Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many i:Int^many allocated:Seq Int^many reasons:Seq Int^many -- \u03c1 stock:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many)\n  locals { stock items qtys whole i allocated reasons } {\n    i items prim seq-int.len prim < [\n      stock items i prim seq-int.at qtys i prim seq-int.at whole i prim seq-bool.at allocate-item\n      allocated prim seq-int.push\n      reasons prim seq-int.push\n      stock items qtys whole i 1 prim + allocated reasons allocate-loop\n    ] [\n      stock allocated reasons\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 stock:Seq Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many -- \u03c1 stock-left:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many)\n  locals { stock items qtys whole } {\n    stock items qtys whole 0 prim seq-int.empty prim seq-int.empty allocate-loop\n  };\n",
+   "edited_first_error": "firth.syntax.invalid-item",
+   "edited_error_word": "allocate-item"
+  },
+  {
+   "sample": 5,
+   "answer": 1,
+   "next_answer": 2,
+   "task": "seq-sum",
+   "branch_word": "main",
+   "next_first_error": "firth.syntax.invalid-item",
+   "hand_edits": [
+    "`] if;` to `] if`",
+    "bind main inputs with locals"
+   ],
+   "edited_source": ": sum-helper\n  (forall \u03c1; \u03c1 xs:Seq Int^many i:Int^many acc:Int^many -- \u03c1 result:Int^many)\n  locals { xs i acc } {\n    i xs prim seq-int.len prim = [ acc ] [\n      acc xs i prim seq-int.at prim +\n      xs i 1 prim + acc prim +\n      sum-helper\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 xs:Seq Int^many -- \u03c1 total:Int^many)\n  locals { xs } {\n  xs 0 0 sum-helper };\n",
+   "edited_first_error": "firth.type.word-input-mismatch",
+   "edited_error_word": "sum-helper"
+  },
+  {
+   "sample": 5,
+   "answer": 1,
+   "next_answer": 2,
+   "task": "count-below",
+   "branch_word": "main",
+   "next_first_error": "firth.syntax.invalid-item",
+   "hand_edits": [
+    "`] if;` to `] if`",
+    "bind main inputs with locals"
+   ],
+   "edited_source": ": count-helper\n  (forall \u03c1; \u03c1 xs:Seq Int^many k:Int^many i:Int^many acc:Int^many -- \u03c1 result:Int^many)\n  locals { xs k i acc } {\n    i xs prim seq-int.len prim = [ acc ] [\n      xs i prim seq-int.at k prim <\n      [ acc 1 prim + ] [ acc ] if\n      xs k i 1 prim + count-helper\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 xs:Seq Int^many k:Int^many -- \u03c1 count:Int^many)\n  locals { xs k } {\n  xs k 0 0 count-helper };\n",
+   "edited_first_error": "firth.type.word-input-mismatch",
+   "edited_error_word": "count-helper"
+  },
+  {
+   "sample": 5,
+   "answer": 1,
+   "next_answer": 2,
+   "task": "index-of",
+   "branch_word": "main",
+   "next_first_error": "firth.syntax.invalid-item",
+   "hand_edits": [
+    "`] if;` to `] if`",
+    "bind main inputs with locals"
+   ],
+   "edited_source": ": index-helper\n  (forall \u03c1; \u03c1 xs:Seq Int^many x:Int^many i:Int^many -- \u03c1 result:Int^many)\n  locals { xs x i } {\n    i xs prim seq-int.len prim = [ -1 ] [\n      xs i prim seq-int.at x prim =\n      [ i ] [ xs x i 1 prim + index-helper ] if\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 xs:Seq Int^many x:Int^many -- \u03c1 index:Int^many)\n  locals { xs x } {\n  xs x 0 index-helper };\n",
+   "edited_first_error": null,
+   "edited_error_word": null,
+   "edited_passes": true
+  },
+  {
+   "sample": 5,
+   "answer": 1,
+   "next_answer": 2,
+   "task": "reverse",
+   "branch_word": "main",
+   "next_first_error": "firth.syntax.invalid-item",
+   "hand_edits": [
+    "`] if;` to `] if`",
+    "bind main inputs with locals"
+   ],
+   "edited_source": ": reverse-helper\n  (forall \u03c1; \u03c1 xs:Seq Int^many i:Int^many result:Seq Int^many -- \u03c1 reversed:Seq Int^many)\n  locals { xs i result } {\n    i 0 prim < [ result ] [\n      xs i prim seq-int.at result prim seq-int.push\n      xs i 1 prim - result prim seq-int.push\n      reverse-helper\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 xs:Seq Int^many -- \u03c1 reversed:Seq Int^many)\n  locals { xs } {\n  xs xs prim seq-int.len 1 prim - prim seq-int.empty reverse-helper };\n",
+   "edited_first_error": "firth.type.primitive-input-mismatch",
+   "edited_error_word": "reverse-helper"
+  },
+  {
+   "sample": 5,
+   "answer": 1,
+   "next_answer": 2,
+   "task": "keep-positive",
+   "branch_word": "main",
+   "next_first_error": "firth.syntax.invalid-item",
+   "hand_edits": [
+    "`] if;` to `] if`",
+    "bind main inputs with locals"
+   ],
+   "edited_source": ": keep-helper\n  (forall \u03c1; \u03c1 xs:Seq Int^many i:Int^many result:Seq Int^many -- \u03c1 positives:Seq Int^many)\n  locals { xs i result } {\n    i xs prim seq-int.len prim = [ result ] [\n      xs i prim seq-int.at\n      dup 0 prim <\n      [ drop xs i 1 prim + result keep-helper ]\n      [ prim seq-int.push xs i 1 prim + result keep-helper ] if\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 xs:Seq Int^many -- \u03c1 positives:Seq Int^many)\n  locals { xs } {\n  xs 0 prim seq-int.empty keep-helper };\n",
+   "edited_first_error": "firth.type.branch-mismatch",
+   "edited_error_word": "keep-helper"
+  },
+  {
+   "sample": 5,
+   "answer": 1,
+   "next_answer": 2,
+   "task": "all-true",
+   "branch_word": "main",
+   "next_first_error": "firth.syntax.invalid-item",
+   "hand_edits": [
+    "`] if;` to `] if`",
+    "bind main inputs with locals"
+   ],
+   "edited_source": ": all-helper\n  (forall \u03c1; \u03c1 flags:Seq Bool^many i:Int^many -- \u03c1 all:Bool^many)\n  locals { flags i } {\n    i flags prim seq-bool.len prim = [ true ] [\n      flags i prim seq-bool.at\n      [ flags i 1 prim + all-helper ]\n      [ false ] if\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 flags:Seq Bool^many -- \u03c1 all:Bool^many)\n  locals { flags } {\n  flags 0 all-helper };\n",
+   "edited_first_error": null,
+   "edited_error_word": null,
+   "edited_passes": true
+  },
+  {
+   "sample": 5,
+   "answer": 1,
+   "next_answer": 2,
+   "task": "has-pair-sum",
+   "branch_word": "main",
+   "next_first_error": "firth.syntax.invalid-item",
+   "hand_edits": [
+    "`] if;` to `] if`",
+    "bind main inputs with locals"
+   ],
+   "edited_source": ": find-complement\n  (forall \u03c1; \u03c1 xs:Seq Int^many complement:Int^many i:Int^many -- \u03c1 result:Bool^many)\n  locals { xs complement i } {\n    i xs prim seq-int.len prim = [ false ] [\n      xs i prim seq-int.at complement prim = [ true ] [ xs complement i 1 prim + find-complement ] if\n    ] if\n  };\n\n: has-pair-helper\n  (forall \u03c1; \u03c1 xs:Seq Int^many target:Int^many i:Int^many -- \u03c1 result:Bool^many)\n  locals { xs target i } {\n    i xs prim seq-int.len prim = [ false ] [\n      xs i prim seq-int.at target swap prim -\n      xs target i 1 prim + find-complement\n      [ true ] [ xs target i 1 prim + has-pair-helper ] if\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 xs:Seq Int^many target:Int^many -- \u03c1 found:Bool^many)\n  locals { xs target } {\n  xs target 0 has-pair-helper };\n",
+   "edited_first_error": "firth.type.branch-mismatch",
+   "edited_error_word": "has-pair-helper"
+  },
+  {
+   "sample": 5,
+   "answer": 1,
+   "next_answer": 2,
+   "task": "count-distinct",
+   "branch_word": "main",
+   "next_first_error": "firth.syntax.invalid-item",
+   "hand_edits": [
+    "`] if;` to `] if`",
+    "bind main inputs with locals"
+   ],
+   "edited_source": ": is-in-seen\n  (forall \u03c1; \u03c1 seen:Seq Int^many x:Int^many i:Int^many -- \u03c1 result:Bool^many)\n  locals { seen x i } {\n    i seen prim seq-int.len prim = [ false ] [\n      seen i prim seq-int.at x prim = [ true ] [ seen x i 1 prim + is-in-seen ] if\n    ] if\n  };\n\n: count-helper\n  (forall \u03c1; \u03c1 xs:Seq Int^many seen:Seq Int^many i:Int^many -- \u03c1 result:Int^many)\n  locals { xs seen i } {\n    i xs prim seq-int.len prim = [ seen prim seq-int.len ] [\n      xs i prim seq-int.at\n      seen xs i prim seq-int.at is-in-seen\n      [ xs seen i 1 prim + count-helper ]\n      [ xs i prim seq-int.at prim seq-int.push xs seen i 1 prim + count-helper ] if\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 xs:Seq Int^many -- \u03c1 count:Int^many)\n  locals { xs } {\n  xs prim seq-int.empty 0 count-helper };\n",
+   "edited_first_error": "firth.type.word-input-mismatch",
+   "edited_error_word": "count-helper"
+  },
+  {
+   "sample": 5,
+   "answer": 1,
+   "next_answer": 2,
+   "task": "merge-sorted",
+   "branch_word": "main",
+   "next_first_error": "firth.syntax.invalid-item",
+   "hand_edits": [
+    "`] if;` to `] if`",
+    "bind main inputs with locals"
+   ],
+   "edited_source": ": merge-helper\n  (forall \u03c1; \u03c1 xs:Seq Int^many ys:Seq Int^many i:Int^many j:Int^many result:Seq Int^many -- \u03c1 merged:Seq Int^many)\n  locals { xs ys i j result } {\n    i xs prim seq-int.len prim = [ result prim seq-int.len j prim seq-int.len [ drop ] dip ] [\n      j ys prim seq-int.len prim = [ result prim seq-int.len prim seq-int.len drop ] [\n        xs i prim seq-int.at ys j prim seq-int.at [ prim < ] dip\n        [ xs i prim seq-int.at prim seq-int.push xs ys i 1 prim + j result merge-helper ]\n        [ ys j prim seq-int.at prim seq-int.push xs ys i j 1 prim + result merge-helper ] if\n      ] if\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 xs:Seq Int^many ys:Seq Int^many -- \u03c1 merged:Seq Int^many)\n  locals { xs ys } {\n  xs ys 0 0 prim seq-int.empty merge-helper };\n",
+   "edited_first_error": "firth.type.branch-mismatch",
+   "edited_error_word": "merge-helper"
+  },
+  {
+   "sample": 5,
+   "answer": 1,
+   "next_answer": 2,
+   "task": "digits",
+   "branch_word": "main",
+   "next_first_error": "firth.syntax.invalid-item",
+   "hand_edits": [
+    "`] if;` to `] if`",
+    "bind main inputs with locals"
+   ],
+   "edited_source": ": digits-helper\n  (forall \u03c1; \u03c1 n:Int^many result:Seq Int^many -- \u03c1 digits:Seq Int^many)\n  locals { n result } {\n    n 0 prim = [ result ] [\n      n 10 prim mod prim seq-int.push\n      n 10 prim div result\n      digits-helper\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 n:Int^many -- \u03c1 digits:Seq Int^many)\n  locals { n } {\n  n 0 prim = [ { 0 } ] [\n    prim seq-int.empty n digits-helper\n    dup prim seq-int.len 1 prim - [ dup prim seq-int.len 1 prim - swap prim seq-int.at swap prim seq-int.len 1 prim - dup 1 prim - prim seq-int.at swap 0 swap prim seq-int.set dup 1 prim - prim seq-int.set ] dip\n  ] if };\n",
+   "edited_first_error": "firth.type.branch-mismatch",
+   "edited_error_word": "main"
+  },
+  {
+   "sample": 5,
+   "answer": 1,
+   "next_answer": 2,
+   "task": "histogram",
+   "branch_word": "main",
+   "next_first_error": "firth.syntax.invalid-item",
+   "hand_edits": [
+    "`] if;` to `] if`"
+   ],
+   "edited_source": ": histogram-helper\n  (forall \u03c1; \u03c1 xs:Seq Int^many k:Int^many counts:Seq Int^many i:Int^many -- \u03c1 result:Seq Int^many)\n  locals { xs k counts i } {\n    i xs prim seq-int.len prim = [ counts ] [\n      xs i prim seq-int.at\n      dup counts swap prim seq-int.at 1 prim +\n      swap prim seq-int.set\n      xs k counts i 1 prim + histogram-helper\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 xs:Seq Int^many k:Int^many -- \u03c1 counts:Seq Int^many)\n  locals { xs k } {\n    prim seq-int.empty\n    k 0\n    [ prim seq-int.push ] dip\n    xs k 0 histogram-helper\n  };\n",
+   "edited_first_error": "firth.type.branch-mismatch",
+   "edited_error_word": "histogram-helper"
+  },
+  {
+   "sample": 5,
+   "answer": 1,
+   "next_answer": 2,
+   "task": "allocate-batch",
+   "branch_word": "main",
+   "next_first_error": "firth.syntax.invalid-item",
+   "hand_edits": [
+    "`] if;` to `] if`",
+    "bind main inputs with locals"
+   ],
+   "edited_source": ": allocate-helper\n  (forall \u03c1; \u03c1 stock:Seq Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many\n             stock-left:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many i:Int^many\n    -- \u03c1 sl:Seq Int^many al:Seq Int^many re:Seq Int^many)\n  locals { stock items qtys whole stock-left allocated reasons i } {\n    i qtys prim seq-int.len prim = [ stock-left allocated reasons ] [\n      items i prim seq-int.at stock swap prim seq-int.at\n      qtys i prim seq-int.at\n      dup [ prim < ] dip\n      [ qtys i prim seq-int.at prim seq-int.push 0 ]\n      [ dup 0 prim = [ drop drop 2 ] [ whole i prim seq-bool.at [ drop drop 3 ] [ prim seq-int.push 1 ] if ] if ] if\n      prim seq-int.push\n      stock items qtys whole stock-left allocated reasons i 1 prim + allocate-helper\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 stock:Seq Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many\n    -- \u03c1 stock-left:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many)\n  locals { stock items qtys whole } {\n  stock items qtys whole prim seq-int.empty prim seq-int.empty prim seq-int.empty 0 allocate-helper };\n",
+   "edited_first_error": "firth.type.branch-mismatch",
+   "edited_error_word": "allocate-helper"
+  },
+  {
+   "sample": 6,
+   "answer": 2,
+   "next_answer": 3,
+   "task": "keep-positive",
+   "branch_word": "keep-positive-loop",
+   "next_first_error": "firth.type.branch-mismatch"
+  },
+  {
+   "sample": 6,
+   "answer": 2,
+   "next_answer": 3,
+   "task": "is-sorted",
+   "branch_word": "main",
+   "next_first_error": "firth.type.branch-mismatch"
+  },
+  {
+   "sample": 6,
+   "answer": 2,
+   "next_answer": 3,
+   "task": "longest-run",
+   "branch_word": "main",
+   "next_first_error": "firth.type.branch-mismatch"
+  },
+  {
+   "sample": 6,
+   "answer": 2,
+   "next_answer": 3,
+   "task": "count-distinct",
+   "branch_word": "count-distinct-loop",
+   "next_first_error": "firth.type.branch-mismatch"
+  },
+  {
+   "sample": 6,
+   "answer": 2,
+   "next_answer": 3,
+   "task": "merge-sorted",
+   "branch_word": "merge-sorted-loop",
+   "next_first_error": "firth.type.branch-mismatch"
+  },
+  {
+   "sample": 6,
+   "answer": 2,
+   "next_answer": 3,
+   "task": "digits",
+   "branch_word": "digits-loop",
+   "next_first_error": "firth.type.branch-mismatch"
+  },
+  {
+   "sample": 6,
+   "answer": 2,
+   "next_answer": 3,
+   "task": "primes-up-to",
+   "branch_word": "primes-loop",
+   "next_first_error": "firth.type.branch-mismatch"
+  },
+  {
+   "sample": 6,
+   "answer": 2,
+   "next_answer": 3,
+   "task": "histogram",
+   "branch_word": "create-histogram",
+   "next_first_error": "firth.type.branch-mismatch"
+  },
+  {
+   "sample": 6,
+   "answer": 2,
+   "next_answer": 3,
+   "task": "sort",
+   "branch_word": "insertion-sort-loop",
+   "next_first_error": "firth.type.branch-mismatch"
+  },
+  {
+   "sample": 6,
+   "answer": 2,
+   "next_answer": 3,
+   "task": "ledger",
+   "branch_word": "ledger-loop",
+   "next_first_error": "firth.type.branch-mismatch"
+  }
+ ]
+}

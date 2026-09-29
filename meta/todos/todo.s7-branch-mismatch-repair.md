@@ -67,3 +67,14 @@ diagnostic, in `eval/s7/runs/2026-09-28-haiku-470c6d0/`:
   Five run 7 answers are fixtures in `ElaboratorDiagnosticsTest.lean`: the
   edit each report suggests removes the mistake at that `if`. Whether
   Haiku repairs more from it needs the next rerun (second criterion).
+- Run 8 (`eval/s7/README.md`, "Run 8"; `runs/2026-09-29-haiku-4c379e0/`,
+  four counted samples, two void by the transcript audit) is the rerun
+  after that message (#164, #166), with the `locals` order rule (#161)
+  and a changed prompt. For the second criterion: of 27 resubmitted
+  branch mismatches, none got past the checker, 12 failed on a branch
+  mismatch again, and 15 failed first on another error (14 of them
+  answers that no longer parsed). With that error removed by hand, 7
+  more recur, 2 pass, 5 fail on another type error and 1 still does not
+  parse (`counterfactual/branch-blocked.json`): 19 recurred, and between
+  2 and 8 were repaired. Sample 6 repeated all 10
+  of its round-1 mismatches. Repair did not improve, and this todo stays open.

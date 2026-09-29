@@ -1,0 +1,150 @@
+{
+ "note": "Taken from the raw sub-agent logs of this session, which are not kept in the repository. prompt_reads: every Read of prompt-firth.md by each author, with offset and limit when given and the first and last line numbers returned (the file has 1,020 lines; Read numbers a final empty line as 1021). stopped_first_launch: every tool call of the four authors started first with a differently worded instruction and stopped; none wrote a file.",
+ "prompt_reads": {
+  "haiku-firth-1": [
+   {
+    "at": "2026-09-29T02:12:36.527Z",
+    "tool": "Read",
+    "path": "prompt-firth.md",
+    "lines_returned": [
+     1,
+     1021
+    ]
+   },
+   {
+    "at": "2026-09-29T02:14:09.954Z",
+    "tool": "Read",
+    "path": "prompt-firth.md",
+    "offset": 1,
+    "limit": 200,
+    "lines_returned": [
+     1,
+     200
+    ]
+   },
+   {
+    "at": "2026-09-29T02:14:12.603Z",
+    "tool": "Read",
+    "path": "prompt-firth.md",
+    "offset": 850,
+    "limit": 200,
+    "lines_returned": [
+     850,
+     1021
+    ]
+   }
+  ],
+  "haiku-firth-2": [
+   {
+    "at": "2026-09-29T02:12:38.362Z",
+    "tool": "Read",
+    "path": "prompt-firth.md",
+    "lines_returned": [
+     1,
+     1021
+    ]
+   },
+   {
+    "at": "2026-09-29T02:15:26.562Z",
+    "tool": "Read",
+    "path": "prompt-firth.md",
+    "offset": 1,
+    "limit": 400,
+    "lines_returned": [
+     1,
+     400
+    ]
+   }
+  ],
+  "haiku-firth-3": [
+   {
+    "at": "2026-09-29T02:12:40.402Z",
+    "tool": "Read",
+    "path": "prompt-firth.md",
+    "lines_returned": [
+     1,
+     1021
+    ]
+   }
+  ],
+  "haiku-firth-4": [
+   {
+    "at": "2026-09-29T02:12:42.734Z",
+    "tool": "Read",
+    "path": "prompt-firth.md",
+    "lines_returned": [
+     1,
+     1021
+    ]
+   }
+  ],
+  "haiku-firth-5": [
+   {
+    "at": "2026-09-29T02:36:14.118Z",
+    "tool": "Read",
+    "path": "prompt-firth.md",
+    "lines_returned": [
+     1,
+     1021
+    ]
+   }
+  ],
+  "haiku-firth-6": [
+   {
+    "at": "2026-09-29T02:36:16.321Z",
+    "tool": "Read",
+    "path": "prompt-firth.md",
+    "lines_returned": [
+     1,
+     1021
+    ]
+   }
+  ]
+ },
+ "stopped_first_launch": {
+  "aa0d483400b9d0774": [
+   {
+    "at": "2026-09-29T02:12:09.928Z",
+    "tool": "Read",
+    "path": "prompt-firth.md",
+    "lines_returned": [
+     1,
+     1021
+    ]
+   }
+  ],
+  "a79f85d2184e8cb5f": [
+   {
+    "at": "2026-09-29T02:12:11.285Z",
+    "tool": "Read",
+    "path": "prompt-firth.md",
+    "lines_returned": [
+     1,
+     1021
+    ]
+   }
+  ],
+  "ae8d55c5e08f88277": [
+   {
+    "at": "2026-09-29T02:12:13.381Z",
+    "tool": "Read",
+    "path": "prompt-firth.md",
+    "lines_returned": [
+     1,
+     1021
+    ]
+   }
+  ],
+  "abe59fa1430d83639": [
+   {
+    "at": "2026-09-29T02:12:15.305Z",
+    "tool": "Read",
+    "path": "prompt-firth.md",
+    "lines_returned": [
+     1,
+     1021
+    ]
+   }
+  ]
+ }
+}
