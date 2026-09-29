@@ -111,7 +111,9 @@ private def runEveryErrorTests : IO Unit := do
   -- Bool too: only the first is its error. `k` calls `f` as declared and
   -- is fine; `k2` hands `f` a Bool. `u` puts its row in the middle, so
   -- `c`, which calls it, cannot be checked, and is reported as unchecked
-  -- rather than left silent. `g` names a word that does not
+  -- rather than left silent. So is `c2`, which calls `u` on an empty stack:
+  -- erasing it against `u`'s refused effect would report an underflow that
+  -- says nothing about `c2`. `g` names a word that does not
   -- exist. The checker that stopped at the first error reported only
   -- `g`'s, the only name error.
   let source := String.intercalate "\n" [
@@ -121,6 +123,7 @@ private def runEveryErrorTests : IO Unit := do
     ": k2 ( -- b:Int ) true f ;",
     ": u (forall ρ; x:Int ρ -- ρ) drop ;",
     ": c ( -- ) 1 u ;",
+    ": c2 ( -- ) u ;",
     ": g ( -- b:Int ) 1 bar ;"]
   let expected : List (String × String × Nat × Nat) := [
     ("f", "firth.type.primitive-input-mismatch", 1, 29),
@@ -128,7 +131,8 @@ private def runEveryErrorTests : IO Unit := do
     ("k2", "firth.type.word-input-mismatch", 4, 24),
     ("u", "firth.type.invalid-signature", 5, 22),
     ("c", "firth.type.unchecked-word", 6, 14),
-    ("g", "firth.name.unresolved", 7, 20)]
+    ("c2", "firth.type.unchecked-word", 7, 13),
+    ("g", "firth.name.unresolved", 8, 20)]
   let summary (envelope : Envelope) : String × String × Nat × Nat :=
     match Lean.Json.parse (encode envelope) with
     | .ok json =>
@@ -151,20 +155,21 @@ private def runEveryErrorTests : IO Unit := do
   -- Each word's report is the one the program with only that word as
   -- written gets: the others reduced to a call to themselves, which checks
   -- against the declared effect. `u`'s effect is refused whatever its body,
-  -- so `u` and `c` are left out, except for `u` and `c` themselves, which
-  -- are kept together.
+  -- so `u`, `c` and `c2` are left out, except for `u`, `c` and `c2`
+  -- themselves, which are kept together.
+  let unusable := ["u", "c", "c2"]
   for (word, code, line, column) in expected do
     let alone := String.intercalate "\n" ((source.splitOn "\n").map fun text =>
       match (text.splitOn " ").drop 1 with
       | name :: _ =>
-          if name == word || ((word == "u" || word == "c") && (name == "u" || name == "c")) then text
-          else if name == "u" || name == "c" then ""
+          if name == word || (unusable.contains word && unusable.contains name) then text
+          else if unusable.contains name then ""
           else (text.splitOn ")").headD "" ++ ") " ++ name ++ " ;"
       | [] => text)
     let reports := match elaboratePipeline pipelineContext alone agentConfig with
       | .failure envelopes => envelopes.map summary
       | .success _ => []
-    let wanted := if word == "u" || word == "c" then expected.filter (["u", "c"].contains ·.1)
+    let wanted := if unusable.contains word then expected.filter (unusable.contains ·.1)
       else [(word, code, line, column)]
     expectEqual s!"every error: `{word}` alone" reports wanted
   -- A bad `use` ends the words that can be resolved: the ones before it
@@ -175,6 +180,15 @@ private def runEveryErrorTests : IO Unit := do
         (envelopes.map fun envelope => let (_, code, line, column) := summary envelope; (code, line, column))
         [("firth.name.unresolved", 1, 18), ("firth.name.unresolved", 2, 1)]
   | .success _ => fail "every error: a bad use was accepted"
+  -- A word whose own effect is refused reports that, even when it also
+  -- calls a word whose effect is refused.
+  match elaboratePipeline pipelineContext
+      ": u (forall ρ; x:Int ρ -- ρ) drop ;\n: w (forall ρ; y:Int ρ -- ρ) u ;" agentConfig with
+  | .failure envelopes =>
+      expectEqual "every error: a word's own refused effect comes before an unchecked call"
+        (envelopes.map fun envelope => let (word, code, _, _) := summary envelope; (word, code))
+        [("u", "firth.type.invalid-signature"), ("w", "firth.type.invalid-signature")]
+  | .success _ => fail "every error: two refused effects were accepted"
 
 /-- Reports of a word or primitive handed values it does not take. -/
 private def runCallAccountTests : IO Unit := do

@@ -238,10 +238,10 @@ def feedback_shows_location() -> None:
 
 
 def feedback_shows_every_error() -> None:
-    # The checker reports the first error in each word it refuses. The feedback
-    # must show each of them with its word and place, so an author can fix both
-    # words at once: `main` uses its input name without `locals` (line 3), and
-    # `twice` adds a Bool (line 6).
+    """The checker reports the first error in each word it refuses. The feedback
+    must show each of them with its word and place, so an author can fix both
+    words at once: `main` uses its input name without `locals` (line 3), and
+    `twice` adds a Bool (line 6)."""
     source = (": main\n"
               "  (forall ρ; ρ n:Int^many -- ρ out:Int^many)\n"
               "  n twice;\n"

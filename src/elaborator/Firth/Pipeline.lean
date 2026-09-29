@@ -401,7 +401,8 @@ private inductive WordOutcome where
 
 /-- One word, stage by stage, as the whole-program pipeline would check it:
 names, the `locals` order, source refinements, erasure, the declared effect,
-typing and refinements. The other words are trusted to have their declared
+typing and refinements. A word that calls a word whose effect is refused is
+skipped before erasure, unless its own effect is refused too. The other words are trusted to have their declared
 effects, whatever their bodies do, so an error in one word is never charged
 to another. `words` are all the file's words, resolved where they could be. -/
 private def checkWord (config : PipelineConfig) (source : String)
@@ -417,15 +418,19 @@ private def checkWord (config : PipelineConfig) (source : String)
   match unsupportedSourceRefinements word with
   | diagnostic :: _ => .refused [diagnostic]
   | [] =>
+  -- Before erasure: erasing a call to a word whose effect is refused reads
+  -- that effect's shape all the same, and an underflow it finds there says
+  -- nothing about this word. The word's own effect is its own error.
+  match (calledWords [] word.body).find? (unusable.contains ·.1), schemeOfEffect word.effect with
+  | some _, .error diagnostic => .refused [.stackEffect diagnostic]
+  | some (callee, span), .ok _ => .skipped callee span
+  | none, _ =>
   match erase env word.effect word.body with
   | .error error => .refused [withAccount config source words (.erasure word.name error)]
   | .ok erased =>
   match schemeOfEffect word.effect with
   | .error diagnostic => .refused [.stackEffect diagnostic]
   | .ok declared =>
-  match (calledWords [] word.body).find? (unusable.contains ·.1) with
-  | some (callee, span) => .skipped callee span
-  | none =>
   match check typing declared erased.program word.effect.span with
   | .error diagnostic =>
       let diagnostic := withFirstMisfed config source words { diagnostic with word := some word.name }

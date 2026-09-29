@@ -602,6 +602,7 @@ def _diagnostic_fields(diagnostic) -> dict[str, str]:
     fields: dict[str, str] = {}
 
     def walk(v) -> None:
+        """Record the first string under each of FIELDS, depth first."""
         if isinstance(v, dict):
             for k, x in v.items():
                 if k in FIELDS and isinstance(x, str) and k not in fields:
