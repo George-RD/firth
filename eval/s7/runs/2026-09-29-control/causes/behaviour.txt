@@ -1,0 +1,42 @@
+== Per sample (first-answer measures; passes of 20)
+  sample   reread  minutes    chars   locals shuffles    words   first  final
+  A1         1.00     1.89 11929.00     0.56     0.00     2.25       0      3
+  A2         0.00     1.64 17129.00     1.00     1.20     2.10       0      9
+  A3         0.00     0.95 14149.00     1.00     1.05     2.80       0     10
+  A6         1.00     2.70 10712.00     0.55     4.15     2.20       1      1
+  A7         1.00     1.27 16864.00     1.00     0.10     2.30       5     10
+  A8         0.00     0.70 10547.00     1.00     7.65     1.00       0      3
+  A9         0.00     1.69 15066.00     0.55     0.00     2.20       0     12
+  A10        0.00     0.87 13153.00     0.53     1.05     2.35       0      6
+  A11        0.00     0.65  9908.00     1.00     5.60     1.00       0      0
+  A12        1.00     0.97 13298.00     0.84     0.10     2.25       0      8
+  B1         1.00     2.79 13160.00     0.92     1.65     2.40       1      8
+  B2         1.00     1.58 13748.00     0.76     1.55     2.50       0      0
+  B3         0.00     1.02 13847.00     1.00     0.20     2.45       6      9
+  B4         0.00     2.33 13903.00     0.72     1.30     2.30       0      0
+  B6         0.00     2.13 15208.00     0.57     2.45     2.35       1     13
+  B7         0.00     0.66  9024.00     1.00     1.75     1.00       0      7
+  B11        0.00     2.98 12293.00     1.00     0.05     2.30       2      2
+  B12        0.00     1.54 13418.00     0.56     2.90     2.25       0      2
+  B13        0.00     1.98 12294.00     1.00     0.00     2.10       1      8
+  B14        0.00     2.38 12289.00     0.54     0.60     2.30       0      0
+
+== Spearman with final passes (n = 20, permutation p, exploratory)
+  reread    rho -0.07  p 0.791
+  minutes   rho -0.12  p 0.620
+  chars     rho +0.60  p 0.006
+  locals    rho +0.24  p 0.301
+  shuffles  rho -0.34  p 0.149
+  words     rho +0.15  p 0.522
+
+== Final answers: final pass rate with and without shuffle words
+  no shuffle words   94 of 228 pass (41%)
+  shuffle words      17 of 172 pass (10%)
+  within tasks that vary: no-shuffle rate higher in 17, lower in 0, equal in 0
+  within samples that vary: no-shuffle rate higher in 10, lower in 1, equal in 0
+
+== First answers, scored by the task's final result: final pass rate with and without shuffle words
+  no shuffle words   81 of 211 pass (38%)
+  shuffle words      30 of 189 pass (16%)
+  within tasks that vary: no-shuffle rate higher in 16, lower in 1, equal in 0
+  within samples that vary: no-shuffle rate higher in 8, lower in 2, equal in 0

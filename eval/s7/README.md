@@ -1395,6 +1395,130 @@ and are not counted. Each directory has a `void.md` saying why.
   The three of them that count passed 2, 8 and 0 of 20 (B12, B13, B14).
   The result is reported with that caveat.
 
+## Run 10 failure analysis: what separates passing from failing answers
+
+This reads run 10's 20 counted samples again (no new authoring) to find
+what the failing answers failed on. Scripts and outputs are in
+`runs/2026-09-29-control/causes/`; each table below is printed by the named
+script from the committed files.
+
+**Method.** `recheck.py` ran `8ea4a1d`'s checker over all 1,064 distinct
+sources the counted authors submitted, keeping every diagnostic
+(`rechecked.json`). `causes.py` groups the first diagnostic each author was
+shown into families by code (`units.json`, `causes.txt`). `jev_causes.py`
+asked Jev (`jev-1.13.0`) for a finer cause of each failing first and final
+answer (`jev.json`). I labelled a fixed-seed sample of 30 of those by hand
+without seeing Jev's labels (`handcheck.md`): 22 of 30 agree: 15 of 17 on
+syntax, unknown-name and input-mismatch failures, 6 of 9 on branch
+mismatches and 1 of 4 on wrong results. So Jev's label only splits checker
+failures, and wrong results stay one group. Among the stack-juggling,
+stale-local-state and argument-order labels the splits below use, Jev
+matched the hand label on 9 of 13, and every miss was a swap among those
+three, so each of those sub-rows is approximate and could be off by a lot
+either way. Condition-after-the-quotations agreed 4 of 4. `rank.py` ranks the causes (`rank.txt`) and
+`behaviour.py` looks for author behaviour that predicts passing
+(`behaviour.txt`).
+
+**First answers** (400 tasks, 17 passed). The first thing shown was a
+syntax error for 125 (33%), a branch mismatch for 109 (28%), another input
+mismatch for 85 (22%) and an unknown name for 47 (12%). Most samples made
+one mistake across nearly every task: A1 and A3 wrote `locals { ... }`
+without a braced body (20 tasks each), B4 put parentheses around
+conditions (19), A9 used its stack-effect names without binding them (20),
+and A11 and B2 had a branch mismatch in 18 tasks each. 323 of 383 failing
+answers had one independent error (one word refused), 48 had two.
+
+**Feedback** (`rank.txt`). Of failing tasks rewritten in the next round,
+the next answer's first error was in the same family for 50% of branch
+mismatches, 54% of input mismatches and 48% of syntax errors, but only 16%
+of unknown names and 12% of locals errors; 13% or fewer of the first three
+passed next time. Every author read each feedback file whole (all are under
+the Read tool's 2,000 line default), so whether feedback was read does not
+vary; 33% of rewrites kept the same first error on the same word
+(`causes.txt`).
+
+**Final answers** (400 tasks, 111 passed, 289 failed), ranked by an
+inferred count of answers a fix could recover. "Single" is a final answer
+whose independent errors are all in that family, so fixing that family
+alone would leave a program that checks. Of written answers that checked,
+59% passed (111 of 187), so "recoverable" is single x 0.59. That assumes
+fixed answers pass at the same rate and that a fix reveals no other error;
+it is an estimate, not a measurement.
+
+| Rank | Cause (first shown; Jev's split) | Final | Single | Recoverable (inferred) | Where |
+|---|---|---|---|---|---|
+| 1 | Branch mismatch | 107 | 94 | 56 | 18 of 20 samples |
+| | of which stack-juggling (approx.) | 71 | 60 | 36 | |
+| | of which stale local state (approx.) | 35 | 33 | 20 | |
+| 2 | Input mismatch | 85 | 78 | 46 | |
+| | of which argument order (approx.) | 39 | 36 | 21 | B2 9, A6 6 |
+| | of which condition after the quotations (approx.) | 17 | 15 | 9 | B11 12, B14 5 |
+| | of which stale local state or stack-juggling (approx.) | 29 | 27 | 16 | |
+| 3 | Syntax | 39 | 39 | 23, but see below | B4 20 (parentheses) |
+| 4 | Wrong result (checks, runs, wrong) | 40 | - | - | 4 are reversed loop guards, all B2 |
+| 5 | Unknown name | 16 | 7 | 4 | A11 8 (stack-effect names unbound) |
+
+"Stale local state" is the pattern where a loop computes a new value (a
+pushed sequence, an incremented index) and then gives the recursive call
+the old local's name, or gives it only the changed arguments, so a computed
+value is left over or the call is short. "Condition after the quotations"
+is Joy/Factor's `[ .. ] [ .. ] condition if`.
+
+Syntax's "single" is true by construction: a syntax error ends the parse,
+so the checker reports nothing else for that answer (all 211 answers with a
+syntax error have only syntax errors), and what lies behind it is unseen.
+For B4, `b4_parens.py` measured it: with every parenthesised condition
+unwrapped (a hand-made counterfactual, not scored), none of B4's 20 final
+answers checks. Eleven then fail on locals, eight on input mismatches, three
+on branch mismatches and two on unknown names (some on more than one;
+`b4_parens.txt`). So fixing B4's parentheses alone would recover none of
+its answers, and syntax's 23 overstates what a syntax fix recovers.
+
+**Behaviour** (`behaviour.txt`; exploratory, 20 samples, six measures, no
+correction for multiple tests). Re-reading the prompt, time to the first
+answer, locals share and definitions per task showed nothing (Spearman
+|rho| at most 0.24 with final passes, p at least 0.30), and shuffle words
+per task little (rho -0.34, p 0.15). The first answer's
+length did: rho +0.60, p 0.006, which is a lead to test, not a finding.
+Answers without kernel shuffle words (`dup`, `drop`, `swap`, `dip`, and
+Forth's `over`, `rot` and the like) passed far more often: 41% of final
+answers without them against 10% with them. It holds within each task (17
+of 17 tasks where both kinds occur and outcomes differ) and within samples
+(10 of 11), and already in first answers, before any feedback (38%
+against 16% final passes; 16 of 17 tasks, 8 of 10 samples). This is an
+association: an author who avoids shuffles may simply be the stronger
+author on that task. Whether telling authors to bind everything with
+`locals` and avoid shuffles helps would need a pre-registered run, since
+the guide is an eval input.
+
+**Voids.** Six samples were void. Three were container restarts, unrelated
+to how the author wrote. The three audit voids, all in arm B, had passed
+0, 5 and 11 of 20 before voiding, across the range of the counted samples.
+Their last kept answers (`rank.txt`) add 21 branch mismatches, 12 input
+mismatches, 5 syntax errors and 4 wrong results; restart A4, the one with
+kept answers, adds 7, 12, 1 and 0. Adding them leaves the ranking of the
+families unchanged, so the voids do not distort it.
+
+**What this suggests for the language and diagnostics** (inferred from the
+ranking; each needs its own measured check):
+
+1. Branch mismatches from stale local state: when a branch leaves a value
+   computed from a local and then calls a word with that local's old name
+   (or with too few arguments), say so and name the computed value.
+2. Condition after the quotations: when `if` finds a Bool on top of two
+   quotations, say the condition goes before the first `[`. The current
+   message states the rule but B11 repeated the mistake in 12 final answers.
+3. Argument order on primitives: name the operand order of
+   `seq-int.set` (sequence, index, value) and `seq-int.at` when their
+   inputs arrive in another order.
+4. Parentheses in bodies: #180's diagnostic, which targets B4's 20 answers;
+   those answers also have locals and stack errors behind the parse.
+5. The guide could steer authors to `locals` over shuffle words; test it
+   with a pre-registered run.
+
+Wrong results (40) are outside what the checker can see; the four read by
+hand were two reversed comparisons, an off-by-one start and `<` for `<=`.
+
 ## What the ten runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from

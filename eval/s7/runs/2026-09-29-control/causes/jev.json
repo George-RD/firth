@@ -1,0 +1,6064 @@
+{
+ "model": "jev-1.13.0",
+ "labels": {
+  "stale-local-state": "In a loop or recursive word, a new value (an updated accumulator, index or sequence) is computed, but the recursive call or the next step is then given the old local names, as if a local were a variable the computation updated. So a computed value is left over, or the call gets too few arguments.",
+  "argument-order": "The right number of values reach a primitive or word, but in the wrong order (for example the index before the sequence, or the value before the index in seq-int.set).",
+  "quoted-condition": "The condition of an `if` is written as a quotation `[ condition ]`, as in Joy or Factor, instead of a Bool computed before the two branches.",
+  "locals-form": "A `locals` block is written in a form the language does not accept: no braces around its body, names used in a word that never binds them, or names bound in the wrong order.",
+  "other-syntax": "Parentheses, comments, `;`, brackets or literals are written in a form the parser rejects.",
+  "unknown-word": "The program calls a word or primitive that is not defined: a Forth word such as over or rot, a made-up primitive, or a helper that was never written.",
+  "stack-juggling": "Another stack-shape mistake: dup, swap, drop, dip or a branch leaves too many, too few or the wrong values, not because of old local names.",
+  "wrong-algorithm": "The program checks and runs but its algorithm gives the wrong result for some input.",
+  "other": "None of the above."
+ },
+ "answers": [
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "seq-sum",
+   "label": "locals-form",
+   "confidence": 0.87,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "seq-max",
+   "label": "locals-form",
+   "confidence": 0.91,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "count-below",
+   "label": "locals-form",
+   "confidence": 0.86,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "index-of",
+   "label": "locals-form",
+   "confidence": 0.89,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "reverse",
+   "label": "locals-form",
+   "confidence": 0.58,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "locals-form",
+   "confidence": 0.8,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "locals-form",
+   "confidence": 0.85,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "locals-form",
+   "confidence": 0.93,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "dot",
+   "label": "locals-form",
+   "confidence": 0.87,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "all-true",
+   "label": "locals-form",
+   "confidence": 0.72,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "longest-run",
+   "label": "locals-form",
+   "confidence": 0.89,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "locals-form",
+   "confidence": 0.79,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "locals-form",
+   "confidence": 0.84,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "locals-form",
+   "confidence": 0.7,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "digits",
+   "label": "locals-form",
+   "confidence": 0.5,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "locals-form",
+   "confidence": 0.78,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "histogram",
+   "label": "locals-form",
+   "confidence": 0.76,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "sort",
+   "label": "locals-form",
+   "confidence": 0.83,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "ledger",
+   "label": "locals-form",
+   "confidence": 0.77,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "other-syntax",
+   "confidence": 0.43,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 3,
+   "task": "seq-sum",
+   "label": "stale-local-state",
+   "confidence": 0.59,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 3,
+   "task": "seq-max",
+   "label": "stale-local-state",
+   "confidence": 0.43,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 3,
+   "task": "count-below",
+   "label": "stack-juggling",
+   "confidence": 0.5,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 3,
+   "task": "reverse",
+   "label": "stale-local-state",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 3,
+   "task": "prefix-sums",
+   "label": "argument-order",
+   "confidence": 0.37,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 3,
+   "task": "keep-positive",
+   "label": "stale-local-state",
+   "confidence": 0.33,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "wrong-algorithm",
+   "confidence": 0.38,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 3,
+   "task": "dot",
+   "label": "stale-local-state",
+   "confidence": 0.8,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 3,
+   "task": "longest-run",
+   "label": "stale-local-state",
+   "confidence": 0.63,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 3,
+   "task": "count-distinct",
+   "label": "stack-juggling",
+   "confidence": 0.7,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 3,
+   "task": "merge-sorted",
+   "label": "stale-local-state",
+   "confidence": 0.65,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 3,
+   "task": "digits",
+   "label": "stack-juggling",
+   "confidence": 0.85,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "stack-juggling",
+   "confidence": 0.57,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 3,
+   "task": "histogram",
+   "label": "stale-local-state",
+   "confidence": 0.46,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 3,
+   "task": "sort",
+   "label": "stale-local-state",
+   "confidence": 0.45,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 3,
+   "task": "ledger",
+   "label": "stack-juggling",
+   "confidence": 0.58,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A1",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "argument-order",
+   "confidence": 0.47,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "seq-sum",
+   "label": "other-syntax",
+   "confidence": 0.44,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "seq-max",
+   "label": "other-syntax",
+   "confidence": 0.41,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "count-below",
+   "label": "other-syntax",
+   "confidence": 0.47,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "index-of",
+   "label": "other-syntax",
+   "confidence": 0.61,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "reverse",
+   "label": "other-syntax",
+   "confidence": 0.47,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "other-syntax",
+   "confidence": 0.49,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "other-syntax",
+   "confidence": 0.3,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "other-syntax",
+   "confidence": 0.65,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "dot",
+   "label": "other-syntax",
+   "confidence": 0.45,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "all-true",
+   "label": "other-syntax",
+   "confidence": 0.64,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "longest-run",
+   "label": "other-syntax",
+   "confidence": 0.57,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "other-syntax",
+   "confidence": 0.65,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "other-syntax",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "other-syntax",
+   "confidence": 0.53,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "digits",
+   "label": "other-syntax",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "other-syntax",
+   "confidence": 0.69,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "histogram",
+   "label": "other-syntax",
+   "confidence": 0.45,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "sort",
+   "label": "other-syntax",
+   "confidence": 0.61,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "ledger",
+   "label": "other-syntax",
+   "confidence": 0.47,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "other-syntax",
+   "confidence": 0.45,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 3,
+   "task": "reverse",
+   "label": "stale-local-state",
+   "confidence": 0.78,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "other-syntax",
+   "confidence": 0.74,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 3,
+   "task": "all-true",
+   "label": "other-syntax",
+   "confidence": 0.77,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 3,
+   "task": "longest-run",
+   "label": "stale-local-state",
+   "confidence": 0.76,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 3,
+   "task": "has-pair-sum",
+   "label": "other-syntax",
+   "confidence": 0.65,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 3,
+   "task": "count-distinct",
+   "label": "wrong-algorithm",
+   "confidence": 0.48,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 3,
+   "task": "digits",
+   "label": "stale-local-state",
+   "confidence": 0.43,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "other-syntax",
+   "confidence": 0.65,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 3,
+   "task": "histogram",
+   "label": "stack-juggling",
+   "confidence": 0.85,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 3,
+   "task": "sort",
+   "label": "other-syntax",
+   "confidence": 0.65,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A2",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "stale-local-state",
+   "confidence": 0.8,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "seq-sum",
+   "label": "other-syntax",
+   "confidence": 0.8,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "seq-max",
+   "label": "other-syntax",
+   "confidence": 0.81,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "count-below",
+   "label": "other-syntax",
+   "confidence": 0.75,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "index-of",
+   "label": "other-syntax",
+   "confidence": 0.77,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "reverse",
+   "label": "other-syntax",
+   "confidence": 0.8,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "other-syntax",
+   "confidence": 0.79,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "other-syntax",
+   "confidence": 0.72,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "other-syntax",
+   "confidence": 0.61,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "dot",
+   "label": "other-syntax",
+   "confidence": 0.81,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "all-true",
+   "label": "other-syntax",
+   "confidence": 0.61,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "longest-run",
+   "label": "other-syntax",
+   "confidence": 0.75,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "other-syntax",
+   "confidence": 0.54,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "other-syntax",
+   "confidence": 0.77,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "other-syntax",
+   "confidence": 0.53,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "digits",
+   "label": "other-syntax",
+   "confidence": 0.69,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "other-syntax",
+   "confidence": 0.56,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "histogram",
+   "label": "other-syntax",
+   "confidence": 0.78,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "sort",
+   "label": "other-syntax",
+   "confidence": 0.77,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "ledger",
+   "label": "other-syntax",
+   "confidence": 0.77,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "other-syntax",
+   "confidence": 0.71,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 3,
+   "task": "prefix-sums",
+   "label": "stack-juggling",
+   "confidence": 0.87,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 3,
+   "task": "keep-positive",
+   "label": "stack-juggling",
+   "confidence": 0.57,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "stale-local-state",
+   "confidence": 0.34,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 3,
+   "task": "longest-run",
+   "label": "stack-juggling",
+   "confidence": 0.73,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 3,
+   "task": "has-pair-sum",
+   "label": "stale-local-state",
+   "confidence": 0.61,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "stale-local-state",
+   "confidence": 0.69,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 3,
+   "task": "histogram",
+   "label": "stack-juggling",
+   "confidence": 0.53,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 3,
+   "task": "sort",
+   "label": "unknown-word",
+   "confidence": 0.97,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 3,
+   "task": "ledger",
+   "label": "stale-local-state",
+   "confidence": 0.46,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A3",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "stack-juggling",
+   "confidence": 0.61,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "seq-max",
+   "label": "locals-form",
+   "confidence": 0.49,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "count-below",
+   "label": "argument-order",
+   "confidence": 0.41,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "index-of",
+   "label": "stale-local-state",
+   "confidence": 0.67,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "reverse",
+   "label": "locals-form",
+   "confidence": 0.44,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "stack-juggling",
+   "confidence": 0.36,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "argument-order",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "stale-local-state",
+   "confidence": 0.65,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "dot",
+   "label": "argument-order",
+   "confidence": 0.38,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "all-true",
+   "label": "argument-order",
+   "confidence": 0.71,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "longest-run",
+   "label": "locals-form",
+   "confidence": 0.56,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "stale-local-state",
+   "confidence": 0.54,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "stack-juggling",
+   "confidence": 0.54,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "stale-local-state",
+   "confidence": 0.38,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "digits",
+   "label": "locals-form",
+   "confidence": 0.54,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "stale-local-state",
+   "confidence": 0.42,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "histogram",
+   "label": "locals-form",
+   "confidence": 0.64,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "sort",
+   "label": "other-syntax",
+   "confidence": 0.39,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "ledger",
+   "label": "stack-juggling",
+   "confidence": 0.79,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "stack-juggling",
+   "confidence": 0.98,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "seq-max",
+   "label": "stale-local-state",
+   "confidence": 0.46,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "count-below",
+   "label": "argument-order",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "index-of",
+   "label": "stale-local-state",
+   "confidence": 0.56,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "reverse",
+   "label": "stack-juggling",
+   "confidence": 0.31,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "prefix-sums",
+   "label": "stack-juggling",
+   "confidence": 0.41,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "keep-positive",
+   "label": "argument-order",
+   "confidence": 0.64,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "stale-local-state",
+   "confidence": 0.65,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "dot",
+   "label": "argument-order",
+   "confidence": 0.32,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "all-true",
+   "label": "stale-local-state",
+   "confidence": 0.62,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "longest-run",
+   "label": "stack-juggling",
+   "confidence": 0.96,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "has-pair-sum",
+   "label": "argument-order",
+   "confidence": 0.68,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "count-distinct",
+   "label": "argument-order",
+   "confidence": 0.31,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "merge-sorted",
+   "label": "stale-local-state",
+   "confidence": 0.35,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "digits",
+   "label": "argument-order",
+   "confidence": 0.53,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "stale-local-state",
+   "confidence": 0.35,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "histogram",
+   "label": "stack-juggling",
+   "confidence": 0.64,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "sort",
+   "label": "unknown-word",
+   "confidence": 0.42,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "ledger",
+   "label": "stack-juggling",
+   "confidence": 0.67,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A6",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "stack-juggling",
+   "confidence": 0.87,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 1,
+   "task": "seq-max",
+   "label": "stack-juggling",
+   "confidence": 0.43,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 1,
+   "task": "reverse",
+   "label": "stale-local-state",
+   "confidence": 0.67,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "stale-local-state",
+   "confidence": 0.84,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "locals-form",
+   "confidence": 0.39,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "unknown-word",
+   "confidence": 0.41,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 1,
+   "task": "all-true",
+   "label": "unknown-word",
+   "confidence": 0.68,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 1,
+   "task": "longest-run",
+   "label": "unknown-word",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "unknown-word",
+   "confidence": 0.41,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "other-syntax",
+   "confidence": 0.29,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 1,
+   "task": "digits",
+   "label": "stack-juggling",
+   "confidence": 0.79,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "unknown-word",
+   "confidence": 0.54,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 1,
+   "task": "histogram",
+   "label": "locals-form",
+   "confidence": 0.48,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 1,
+   "task": "sort",
+   "label": "stack-juggling",
+   "confidence": 0.76,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 1,
+   "task": "ledger",
+   "label": "stale-local-state",
+   "confidence": 0.3,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "locals-form",
+   "confidence": 0.4,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 3,
+   "task": "prefix-sums",
+   "label": "stale-local-state",
+   "confidence": 0.38,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 3,
+   "task": "keep-positive",
+   "label": "wrong-algorithm",
+   "confidence": 0.78,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 3,
+   "task": "longest-run",
+   "label": "stale-local-state",
+   "confidence": 0.73,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 3,
+   "task": "has-pair-sum",
+   "label": "stale-local-state",
+   "confidence": 0.53,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 3,
+   "task": "count-distinct",
+   "label": "stale-local-state",
+   "confidence": 0.35,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 3,
+   "task": "digits",
+   "label": "stack-juggling",
+   "confidence": 0.59,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "stale-local-state",
+   "confidence": 0.4,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 3,
+   "task": "histogram",
+   "label": "stale-local-state",
+   "confidence": 0.48,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 3,
+   "task": "sort",
+   "label": "stack-juggling",
+   "confidence": 0.81,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A7",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "stack-juggling",
+   "confidence": 0.58,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "seq-sum",
+   "label": "argument-order",
+   "confidence": 0.41,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "seq-max",
+   "label": "stack-juggling",
+   "confidence": 0.51,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "count-below",
+   "label": "stack-juggling",
+   "confidence": 0.74,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "index-of",
+   "label": "stack-juggling",
+   "confidence": 0.65,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "reverse",
+   "label": "stack-juggling",
+   "confidence": 0.51,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "argument-order",
+   "confidence": 0.54,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "stack-juggling",
+   "confidence": 0.97,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "other-syntax",
+   "confidence": 0.77,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "dot",
+   "label": "argument-order",
+   "confidence": 0.54,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "all-true",
+   "label": "argument-order",
+   "confidence": 0.51,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "longest-run",
+   "label": "other-syntax",
+   "confidence": 0.8,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "stack-juggling",
+   "confidence": 0.82,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "stack-juggling",
+   "confidence": 0.86,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "stack-juggling",
+   "confidence": 0.43,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "digits",
+   "label": "stack-juggling",
+   "confidence": 0.7,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "other-syntax",
+   "confidence": 0.73,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "histogram",
+   "label": "stale-local-state",
+   "confidence": 0.33,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "sort",
+   "label": "stack-juggling",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "ledger",
+   "label": "stack-juggling",
+   "confidence": 0.45,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "other-syntax",
+   "confidence": 0.71,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 3,
+   "task": "seq-sum",
+   "label": "unknown-word",
+   "confidence": 1.0,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 3,
+   "task": "seq-max",
+   "label": "unknown-word",
+   "confidence": 1.0,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 3,
+   "task": "reverse",
+   "label": "stack-juggling",
+   "confidence": 0.43,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 3,
+   "task": "prefix-sums",
+   "label": "stale-local-state",
+   "confidence": 0.49,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 3,
+   "task": "keep-positive",
+   "label": "stack-juggling",
+   "confidence": 0.29,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "wrong-algorithm",
+   "confidence": 0.4,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 3,
+   "task": "dot",
+   "label": "unknown-word",
+   "confidence": 1.0,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 3,
+   "task": "all-true",
+   "label": "argument-order",
+   "confidence": 0.58,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 3,
+   "task": "longest-run",
+   "label": "stack-juggling",
+   "confidence": 0.75,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 3,
+   "task": "has-pair-sum",
+   "label": "stack-juggling",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 3,
+   "task": "count-distinct",
+   "label": "stack-juggling",
+   "confidence": 0.59,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 3,
+   "task": "merge-sorted",
+   "label": "stack-juggling",
+   "confidence": 0.7,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 3,
+   "task": "digits",
+   "label": "argument-order",
+   "confidence": 0.48,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "stale-local-state",
+   "confidence": 0.45,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 3,
+   "task": "histogram",
+   "label": "stack-juggling",
+   "confidence": 0.74,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 3,
+   "task": "sort",
+   "label": "stack-juggling",
+   "confidence": 0.68,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A8",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "other-syntax",
+   "confidence": 0.59,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "seq-sum",
+   "label": "locals-form",
+   "confidence": 0.38,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "seq-max",
+   "label": "locals-form",
+   "confidence": 0.51,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "count-below",
+   "label": "locals-form",
+   "confidence": 0.52,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "index-of",
+   "label": "locals-form",
+   "confidence": 0.52,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "reverse",
+   "label": "locals-form",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "locals-form",
+   "confidence": 0.43,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "locals-form",
+   "confidence": 0.45,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "locals-form",
+   "confidence": 0.41,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "dot",
+   "label": "unknown-word",
+   "confidence": 0.36,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "all-true",
+   "label": "locals-form",
+   "confidence": 0.62,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "longest-run",
+   "label": "locals-form",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "locals-form",
+   "confidence": 0.59,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "locals-form",
+   "confidence": 0.58,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "locals-form",
+   "confidence": 0.35,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "digits",
+   "label": "locals-form",
+   "confidence": 0.5,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "locals-form",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "histogram",
+   "label": "locals-form",
+   "confidence": 0.71,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "sort",
+   "label": "locals-form",
+   "confidence": 0.65,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "ledger",
+   "label": "unknown-word",
+   "confidence": 0.43,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "unknown-word",
+   "confidence": 0.45,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 3,
+   "task": "reverse",
+   "label": "stack-juggling",
+   "confidence": 0.4,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 3,
+   "task": "prefix-sums",
+   "label": "stack-juggling",
+   "confidence": 0.47,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "wrong-algorithm",
+   "confidence": 0.53,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 3,
+   "task": "longest-run",
+   "label": "stale-local-state",
+   "confidence": 0.49,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "stale-local-state",
+   "confidence": 0.39,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 3,
+   "task": "histogram",
+   "label": "stack-juggling",
+   "confidence": 0.86,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 3,
+   "task": "sort",
+   "label": "argument-order",
+   "confidence": 0.63,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A9",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "stack-juggling",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "seq-sum",
+   "label": "unknown-word",
+   "confidence": 0.96,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "seq-max",
+   "label": "stack-juggling",
+   "confidence": 0.66,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "count-below",
+   "label": "locals-form",
+   "confidence": 1.0,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "index-of",
+   "label": "stack-juggling",
+   "confidence": 0.86,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "reverse",
+   "label": "other-syntax",
+   "confidence": 0.59,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "locals-form",
+   "confidence": 1.0,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "locals-form",
+   "confidence": 1.0,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "other-syntax",
+   "confidence": 0.68,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "dot",
+   "label": "locals-form",
+   "confidence": 1.0,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "all-true",
+   "label": "locals-form",
+   "confidence": 1.0,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "longest-run",
+   "label": "locals-form",
+   "confidence": 0.61,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "locals-form",
+   "confidence": 0.99,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "unknown-word",
+   "confidence": 0.67,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "other-syntax",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "digits",
+   "label": "locals-form",
+   "confidence": 0.46,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "locals-form",
+   "confidence": 0.66,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "histogram",
+   "label": "other-syntax",
+   "confidence": 0.64,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "sort",
+   "label": "other-syntax",
+   "confidence": 0.66,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "ledger",
+   "label": "locals-form",
+   "confidence": 1.0,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "other-syntax",
+   "confidence": 0.49,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 3,
+   "task": "seq-sum",
+   "label": "stale-local-state",
+   "confidence": 0.31,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 3,
+   "task": "seq-max",
+   "label": "stale-local-state",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 3,
+   "task": "reverse",
+   "label": "stale-local-state",
+   "confidence": 0.5,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 3,
+   "task": "prefix-sums",
+   "label": "stale-local-state",
+   "confidence": 0.45,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "other-syntax",
+   "confidence": 0.67,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 3,
+   "task": "longest-run",
+   "label": "stale-local-state",
+   "confidence": 0.68,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 3,
+   "task": "has-pair-sum",
+   "label": "stale-local-state",
+   "confidence": 0.46,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 3,
+   "task": "count-distinct",
+   "label": "stack-juggling",
+   "confidence": 0.72,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 3,
+   "task": "merge-sorted",
+   "label": "other-syntax",
+   "confidence": 0.58,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 3,
+   "task": "digits",
+   "label": "wrong-algorithm",
+   "confidence": 0.52,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "stack-juggling",
+   "confidence": 0.68,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 3,
+   "task": "histogram",
+   "label": "other-syntax",
+   "confidence": 0.53,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 3,
+   "task": "sort",
+   "label": "other-syntax",
+   "confidence": 0.59,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A10",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "other-syntax",
+   "confidence": 0.57,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "seq-sum",
+   "label": "stack-juggling",
+   "confidence": 0.88,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "seq-max",
+   "label": "unknown-word",
+   "confidence": 1.0,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "count-below",
+   "label": "stack-juggling",
+   "confidence": 0.94,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "index-of",
+   "label": "stack-juggling",
+   "confidence": 0.98,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "reverse",
+   "label": "stack-juggling",
+   "confidence": 0.87,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "stack-juggling",
+   "confidence": 0.9,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "stack-juggling",
+   "confidence": 0.89,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "stack-juggling",
+   "confidence": 0.99,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "dot",
+   "label": "stack-juggling",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "all-true",
+   "label": "stack-juggling",
+   "confidence": 0.99,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "longest-run",
+   "label": "stack-juggling",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "stack-juggling",
+   "confidence": 0.99,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "stack-juggling",
+   "confidence": 0.95,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "other-syntax",
+   "confidence": 0.43,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "digits",
+   "label": "stack-juggling",
+   "confidence": 0.92,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "stack-juggling",
+   "confidence": 0.96,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "histogram",
+   "label": "stack-juggling",
+   "confidence": 0.98,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "sort",
+   "label": "stack-juggling",
+   "confidence": 0.95,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "ledger",
+   "label": "stack-juggling",
+   "confidence": 0.87,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "stack-juggling",
+   "confidence": 0.7,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "seq-sum",
+   "label": "stack-juggling",
+   "confidence": 0.88,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "seq-max",
+   "label": "locals-form",
+   "confidence": 0.58,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "count-below",
+   "label": "stack-juggling",
+   "confidence": 0.92,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "index-of",
+   "label": "stack-juggling",
+   "confidence": 0.96,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "reverse",
+   "label": "locals-form",
+   "confidence": 0.66,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "prefix-sums",
+   "label": "stack-juggling",
+   "confidence": 0.88,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "keep-positive",
+   "label": "stack-juggling",
+   "confidence": 0.9,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "locals-form",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "dot",
+   "label": "stack-juggling",
+   "confidence": 0.89,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "all-true",
+   "label": "stack-juggling",
+   "confidence": 0.95,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "longest-run",
+   "label": "locals-form",
+   "confidence": 0.66,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "has-pair-sum",
+   "label": "stack-juggling",
+   "confidence": 0.97,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "count-distinct",
+   "label": "stack-juggling",
+   "confidence": 0.98,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "merge-sorted",
+   "label": "stale-local-state",
+   "confidence": 0.77,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "digits",
+   "label": "locals-form",
+   "confidence": 0.64,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "stack-juggling",
+   "confidence": 0.61,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "histogram",
+   "label": "stack-juggling",
+   "confidence": 0.87,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "sort",
+   "label": "locals-form",
+   "confidence": 0.65,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "ledger",
+   "label": "locals-form",
+   "confidence": 0.46,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A11",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "locals-form",
+   "confidence": 0.44,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "seq-sum",
+   "label": "stale-local-state",
+   "confidence": 0.87,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "seq-max",
+   "label": "stale-local-state",
+   "confidence": 0.87,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "count-below",
+   "label": "stale-local-state",
+   "confidence": 0.77,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "index-of",
+   "label": "stale-local-state",
+   "confidence": 0.91,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "reverse",
+   "label": "stack-juggling",
+   "confidence": 0.43,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "stale-local-state",
+   "confidence": 0.72,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "stack-juggling",
+   "confidence": 0.63,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "other-syntax",
+   "confidence": 0.68,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "dot",
+   "label": "stale-local-state",
+   "confidence": 0.79,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "all-true",
+   "label": "stale-local-state",
+   "confidence": 0.91,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "longest-run",
+   "label": "locals-form",
+   "confidence": 0.56,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "stale-local-state",
+   "confidence": 0.85,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "locals-form",
+   "confidence": 0.71,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "stack-juggling",
+   "confidence": 0.44,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "digits",
+   "label": "stack-juggling",
+   "confidence": 0.41,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "other-syntax",
+   "confidence": 0.63,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "histogram",
+   "label": "unknown-word",
+   "confidence": 1.0,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "sort",
+   "label": "locals-form",
+   "confidence": 0.64,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "ledger",
+   "label": "stale-local-state",
+   "confidence": 0.73,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "other-syntax",
+   "confidence": 0.63,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 3,
+   "task": "seq-max",
+   "label": "stale-local-state",
+   "confidence": 0.57,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 3,
+   "task": "reverse",
+   "label": "other-syntax",
+   "confidence": 0.57,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 3,
+   "task": "keep-positive",
+   "label": "stale-local-state",
+   "confidence": 0.45,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "other-syntax",
+   "confidence": 0.65,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 3,
+   "task": "longest-run",
+   "label": "stale-local-state",
+   "confidence": 0.69,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 3,
+   "task": "count-distinct",
+   "label": "stack-juggling",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 3,
+   "task": "merge-sorted",
+   "label": "stack-juggling",
+   "confidence": 0.73,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 3,
+   "task": "digits",
+   "label": "stack-juggling",
+   "confidence": 0.57,
+   "review": true
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "other-syntax",
+   "confidence": 0.72,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 3,
+   "task": "histogram",
+   "label": "stack-juggling",
+   "confidence": 0.77,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 3,
+   "task": "sort",
+   "label": "stack-juggling",
+   "confidence": 0.76,
+   "review": false
+  },
+  {
+   "arm": "A",
+   "sample": "A12",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "other-syntax",
+   "confidence": 0.65,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "seq-sum",
+   "label": "argument-order",
+   "confidence": 0.31,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "seq-max",
+   "label": "unknown-word",
+   "confidence": 0.47,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "count-below",
+   "label": "argument-order",
+   "confidence": 0.56,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "reverse",
+   "label": "argument-order",
+   "confidence": 0.99,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "argument-order",
+   "confidence": 0.7,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "argument-order",
+   "confidence": 0.47,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "locals-form",
+   "confidence": 0.52,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "dot",
+   "label": "argument-order",
+   "confidence": 0.38,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "all-true",
+   "label": "argument-order",
+   "confidence": 0.39,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "longest-run",
+   "label": "locals-form",
+   "confidence": 0.58,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "stack-juggling",
+   "confidence": 0.59,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "stack-juggling",
+   "confidence": 0.86,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "argument-order",
+   "confidence": 1.0,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "digits",
+   "label": "argument-order",
+   "confidence": 0.99,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "stack-juggling",
+   "confidence": 0.8,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "histogram",
+   "label": "argument-order",
+   "confidence": 0.93,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "sort",
+   "label": "argument-order",
+   "confidence": 0.29,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "ledger",
+   "label": "argument-order",
+   "confidence": 0.94,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "argument-order",
+   "confidence": 0.66,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 3,
+   "task": "seq-max",
+   "label": "stack-juggling",
+   "confidence": 0.93,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 3,
+   "task": "prefix-sums",
+   "label": "stack-juggling",
+   "confidence": 0.46,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 3,
+   "task": "keep-positive",
+   "label": "stack-juggling",
+   "confidence": 0.95,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "stack-juggling",
+   "confidence": 0.84,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 3,
+   "task": "has-pair-sum",
+   "label": "stack-juggling",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 3,
+   "task": "count-distinct",
+   "label": "argument-order",
+   "confidence": 0.97,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 3,
+   "task": "digits",
+   "label": "locals-form",
+   "confidence": 0.65,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "stale-local-state",
+   "confidence": 0.8,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 3,
+   "task": "histogram",
+   "label": "argument-order",
+   "confidence": 0.63,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 3,
+   "task": "sort",
+   "label": "argument-order",
+   "confidence": 0.99,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 3,
+   "task": "ledger",
+   "label": "argument-order",
+   "confidence": 0.54,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B1",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "stack-juggling",
+   "confidence": 0.84,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "seq-sum",
+   "label": "stack-juggling",
+   "confidence": 0.43,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "seq-max",
+   "label": "stale-local-state",
+   "confidence": 0.78,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "count-below",
+   "label": "stale-local-state",
+   "confidence": 0.77,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "index-of",
+   "label": "stale-local-state",
+   "confidence": 0.91,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "reverse",
+   "label": "stale-local-state",
+   "confidence": 0.8,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "stale-local-state",
+   "confidence": 0.77,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "stack-juggling",
+   "confidence": 0.93,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "stale-local-state",
+   "confidence": 0.89,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "dot",
+   "label": "stale-local-state",
+   "confidence": 0.78,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "all-true",
+   "label": "stale-local-state",
+   "confidence": 0.89,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "longest-run",
+   "label": "stale-local-state",
+   "confidence": 0.88,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "stack-juggling",
+   "confidence": 0.75,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "stack-juggling",
+   "confidence": 0.62,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "stale-local-state",
+   "confidence": 0.79,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "digits",
+   "label": "argument-order",
+   "confidence": 1.0,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "stale-local-state",
+   "confidence": 0.83,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "histogram",
+   "label": "stale-local-state",
+   "confidence": 0.87,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "sort",
+   "label": "stack-juggling",
+   "confidence": 0.87,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "ledger",
+   "label": "stale-local-state",
+   "confidence": 0.67,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "other-syntax",
+   "confidence": 0.79,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "seq-sum",
+   "label": "argument-order",
+   "confidence": 0.89,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "seq-max",
+   "label": "argument-order",
+   "confidence": 0.88,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "count-below",
+   "label": "argument-order",
+   "confidence": 0.69,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "index-of",
+   "label": "stale-local-state",
+   "confidence": 0.74,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "reverse",
+   "label": "argument-order",
+   "confidence": 0.98,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "prefix-sums",
+   "label": "stale-local-state",
+   "confidence": 0.73,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "keep-positive",
+   "label": "stack-juggling",
+   "confidence": 0.8,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "stale-local-state",
+   "confidence": 0.47,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "dot",
+   "label": "argument-order",
+   "confidence": 0.54,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "all-true",
+   "label": "stale-local-state",
+   "confidence": 0.52,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "longest-run",
+   "label": "argument-order",
+   "confidence": 0.69,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "has-pair-sum",
+   "label": "stale-local-state",
+   "confidence": 0.71,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "count-distinct",
+   "label": "stale-local-state",
+   "confidence": 0.52,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "merge-sorted",
+   "label": "argument-order",
+   "confidence": 0.75,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "digits",
+   "label": "stack-juggling",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "stale-local-state",
+   "confidence": 0.52,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "histogram",
+   "label": "stack-juggling",
+   "confidence": 0.74,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "sort",
+   "label": "argument-order",
+   "confidence": 0.97,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "ledger",
+   "label": "argument-order",
+   "confidence": 0.45,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B2",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "other-syntax",
+   "confidence": 0.78,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 1,
+   "task": "seq-sum",
+   "label": "argument-order",
+   "confidence": 0.61,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 1,
+   "task": "seq-max",
+   "label": "argument-order",
+   "confidence": 0.89,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 1,
+   "task": "reverse",
+   "label": "argument-order",
+   "confidence": 0.99,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "stale-local-state",
+   "confidence": 0.82,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "wrong-algorithm",
+   "confidence": 0.68,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "wrong-algorithm",
+   "confidence": 0.43,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 1,
+   "task": "longest-run",
+   "label": "stale-local-state",
+   "confidence": 0.79,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "stack-juggling",
+   "confidence": 0.52,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "stale-local-state",
+   "confidence": 0.85,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 1,
+   "task": "digits",
+   "label": "wrong-algorithm",
+   "confidence": 0.27,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "argument-order",
+   "confidence": 0.99,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 1,
+   "task": "histogram",
+   "label": "stack-juggling",
+   "confidence": 0.59,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 1,
+   "task": "sort",
+   "label": "argument-order",
+   "confidence": 0.98,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "stale-local-state",
+   "confidence": 0.39,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 3,
+   "task": "seq-max",
+   "label": "argument-order",
+   "confidence": 0.99,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 3,
+   "task": "reverse",
+   "label": "stale-local-state",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 3,
+   "task": "prefix-sums",
+   "label": "stack-juggling",
+   "confidence": 0.41,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "wrong-algorithm",
+   "confidence": 0.44,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 3,
+   "task": "longest-run",
+   "label": "stack-juggling",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 3,
+   "task": "has-pair-sum",
+   "label": "stack-juggling",
+   "confidence": 0.43,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 3,
+   "task": "digits",
+   "label": "stale-local-state",
+   "confidence": 0.29,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "stale-local-state",
+   "confidence": 0.38,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 3,
+   "task": "histogram",
+   "label": "argument-order",
+   "confidence": 0.56,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 3,
+   "task": "sort",
+   "label": "stack-juggling",
+   "confidence": 0.75,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B3",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "stale-local-state",
+   "confidence": 0.47,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "seq-sum",
+   "label": "other-syntax",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "seq-max",
+   "label": "other-syntax",
+   "confidence": 0.57,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "count-below",
+   "label": "other-syntax",
+   "confidence": 0.66,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "index-of",
+   "label": "other-syntax",
+   "confidence": 0.69,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "reverse",
+   "label": "other-syntax",
+   "confidence": 0.63,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "other-syntax",
+   "confidence": 0.56,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "other-syntax",
+   "confidence": 0.58,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "other-syntax",
+   "confidence": 0.58,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "dot",
+   "label": "other-syntax",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "all-true",
+   "label": "other-syntax",
+   "confidence": 0.57,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "longest-run",
+   "label": "other-syntax",
+   "confidence": 0.63,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "other-syntax",
+   "confidence": 0.62,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "other-syntax",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "other-syntax",
+   "confidence": 0.49,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "digits",
+   "label": "argument-order",
+   "confidence": 0.99,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "other-syntax",
+   "confidence": 0.61,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "histogram",
+   "label": "other-syntax",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "sort",
+   "label": "other-syntax",
+   "confidence": 0.57,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "ledger",
+   "label": "other-syntax",
+   "confidence": 0.53,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "other-syntax",
+   "confidence": 0.5,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "seq-sum",
+   "label": "other-syntax",
+   "confidence": 0.59,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "seq-max",
+   "label": "other-syntax",
+   "confidence": 0.58,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "count-below",
+   "label": "other-syntax",
+   "confidence": 0.63,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "index-of",
+   "label": "other-syntax",
+   "confidence": 0.69,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "reverse",
+   "label": "other-syntax",
+   "confidence": 0.64,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "prefix-sums",
+   "label": "other-syntax",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "keep-positive",
+   "label": "other-syntax",
+   "confidence": 0.53,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "other-syntax",
+   "confidence": 0.58,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "dot",
+   "label": "other-syntax",
+   "confidence": 0.48,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "all-true",
+   "label": "other-syntax",
+   "confidence": 0.57,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "longest-run",
+   "label": "other-syntax",
+   "confidence": 0.64,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "has-pair-sum",
+   "label": "other-syntax",
+   "confidence": 0.58,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "count-distinct",
+   "label": "other-syntax",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "merge-sorted",
+   "label": "other-syntax",
+   "confidence": 0.53,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "digits",
+   "label": "other-syntax",
+   "confidence": 0.58,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "other-syntax",
+   "confidence": 0.59,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "histogram",
+   "label": "other-syntax",
+   "confidence": 0.47,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "sort",
+   "label": "other-syntax",
+   "confidence": 0.57,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "ledger",
+   "label": "other-syntax",
+   "confidence": 0.54,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B4",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "other-syntax",
+   "confidence": 0.54,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "seq-max",
+   "label": "stack-juggling",
+   "confidence": 0.72,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "count-below",
+   "label": "stack-juggling",
+   "confidence": 0.45,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "index-of",
+   "label": "stack-juggling",
+   "confidence": 0.65,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "reverse",
+   "label": "argument-order",
+   "confidence": 0.98,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "stale-local-state",
+   "confidence": 0.87,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "stale-local-state",
+   "confidence": 0.34,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "argument-order",
+   "confidence": 0.53,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "dot",
+   "label": "stack-juggling",
+   "confidence": 0.48,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "all-true",
+   "label": "argument-order",
+   "confidence": 0.54,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "longest-run",
+   "label": "stack-juggling",
+   "confidence": 0.71,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "argument-order",
+   "confidence": 0.52,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "stack-juggling",
+   "confidence": 0.67,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "stack-juggling",
+   "confidence": 0.44,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "digits",
+   "label": "argument-order",
+   "confidence": 1.0,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "argument-order",
+   "confidence": 0.69,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "histogram",
+   "label": "stack-juggling",
+   "confidence": 0.73,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "sort",
+   "label": "locals-form",
+   "confidence": 0.59,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "ledger",
+   "label": "stack-juggling",
+   "confidence": 0.81,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "argument-order",
+   "confidence": 0.58,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 3,
+   "task": "prefix-sums",
+   "label": "stack-juggling",
+   "confidence": 0.42,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 3,
+   "task": "keep-positive",
+   "label": "wrong-algorithm",
+   "confidence": 0.63,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 3,
+   "task": "longest-run",
+   "label": "wrong-algorithm",
+   "confidence": 0.47,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 3,
+   "task": "digits",
+   "label": "stale-local-state",
+   "confidence": 0.5,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "stale-local-state",
+   "confidence": 0.41,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 3,
+   "task": "sort",
+   "label": "stale-local-state",
+   "confidence": 0.68,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B6",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "stack-juggling",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "seq-sum",
+   "label": "stack-juggling",
+   "confidence": 0.74,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "seq-max",
+   "label": "other-syntax",
+   "confidence": 0.76,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "count-below",
+   "label": "stack-juggling",
+   "confidence": 0.85,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "index-of",
+   "label": "stack-juggling",
+   "confidence": 0.86,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "reverse",
+   "label": "stack-juggling",
+   "confidence": 0.89,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "other-syntax",
+   "confidence": 0.69,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "other-syntax",
+   "confidence": 0.75,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "stack-juggling",
+   "confidence": 0.75,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "dot",
+   "label": "stack-juggling",
+   "confidence": 0.75,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "all-true",
+   "label": "stack-juggling",
+   "confidence": 0.79,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "longest-run",
+   "label": "stack-juggling",
+   "confidence": 0.84,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "stack-juggling",
+   "confidence": 0.81,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "stack-juggling",
+   "confidence": 0.82,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "other-syntax",
+   "confidence": 0.74,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "digits",
+   "label": "stack-juggling",
+   "confidence": 0.77,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "stack-juggling",
+   "confidence": 0.82,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "histogram",
+   "label": "stack-juggling",
+   "confidence": 0.95,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "sort",
+   "label": "stack-juggling",
+   "confidence": 0.93,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "ledger",
+   "label": "other-syntax",
+   "confidence": 0.75,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "other-syntax",
+   "confidence": 0.68,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 3,
+   "task": "reverse",
+   "label": "argument-order",
+   "confidence": 0.96,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 3,
+   "task": "keep-positive",
+   "label": "wrong-algorithm",
+   "confidence": 0.63,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "wrong-algorithm",
+   "confidence": 0.34,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 3,
+   "task": "longest-run",
+   "label": "stack-juggling",
+   "confidence": 0.89,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 3,
+   "task": "has-pair-sum",
+   "label": "stack-juggling",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 3,
+   "task": "count-distinct",
+   "label": "stack-juggling",
+   "confidence": 0.72,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 3,
+   "task": "merge-sorted",
+   "label": "stale-local-state",
+   "confidence": 0.61,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 3,
+   "task": "digits",
+   "label": "stale-local-state",
+   "confidence": 0.66,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "stack-juggling",
+   "confidence": 0.88,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 3,
+   "task": "histogram",
+   "label": "argument-order",
+   "confidence": 0.94,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 3,
+   "task": "sort",
+   "label": "argument-order",
+   "confidence": 0.98,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 3,
+   "task": "ledger",
+   "label": "unknown-word",
+   "confidence": 0.39,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B7",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "argument-order",
+   "confidence": 0.99,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "seq-max",
+   "label": "argument-order",
+   "confidence": 0.91,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "count-below",
+   "label": "quoted-condition",
+   "confidence": 0.36,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "index-of",
+   "label": "quoted-condition",
+   "confidence": 0.49,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "reverse",
+   "label": "stack-juggling",
+   "confidence": 0.58,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "other-syntax",
+   "confidence": 0.51,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "stale-local-state",
+   "confidence": 0.53,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "argument-order",
+   "confidence": 0.56,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "all-true",
+   "label": "argument-order",
+   "confidence": 0.51,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "longest-run",
+   "label": "stack-juggling",
+   "confidence": 0.42,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "argument-order",
+   "confidence": 0.4,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "unknown-word",
+   "confidence": 0.99,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "argument-order",
+   "confidence": 0.62,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "digits",
+   "label": "argument-order",
+   "confidence": 0.31,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "quoted-condition",
+   "confidence": 0.34,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "histogram",
+   "label": "argument-order",
+   "confidence": 0.71,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "sort",
+   "label": "other-syntax",
+   "confidence": 0.56,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "ledger",
+   "label": "unknown-word",
+   "confidence": 0.86,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "stack-juggling",
+   "confidence": 0.56,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "seq-max",
+   "label": "argument-order",
+   "confidence": 0.97,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "count-below",
+   "label": "quoted-condition",
+   "confidence": 0.48,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "index-of",
+   "label": "quoted-condition",
+   "confidence": 0.43,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "reverse",
+   "label": "quoted-condition",
+   "confidence": 0.38,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "prefix-sums",
+   "label": "quoted-condition",
+   "confidence": 0.48,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "keep-positive",
+   "label": "quoted-condition",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "quoted-condition",
+   "confidence": 0.92,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "all-true",
+   "label": "quoted-condition",
+   "confidence": 0.74,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "longest-run",
+   "label": "quoted-condition",
+   "confidence": 0.43,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "has-pair-sum",
+   "label": "quoted-condition",
+   "confidence": 0.88,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "count-distinct",
+   "label": "quoted-condition",
+   "confidence": 0.81,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "merge-sorted",
+   "label": "quoted-condition",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "digits",
+   "label": "argument-order",
+   "confidence": 0.29,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "quoted-condition",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "histogram",
+   "label": "stale-local-state",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "sort",
+   "label": "argument-order",
+   "confidence": 0.32,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "ledger",
+   "label": "unknown-word",
+   "confidence": 0.76,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B11",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "unknown-word",
+   "confidence": 0.81,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "seq-sum",
+   "label": "argument-order",
+   "confidence": 0.87,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "seq-max",
+   "label": "stack-juggling",
+   "confidence": 0.89,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "count-below",
+   "label": "argument-order",
+   "confidence": 0.82,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "index-of",
+   "label": "argument-order",
+   "confidence": 0.91,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "reverse",
+   "label": "argument-order",
+   "confidence": 0.99,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "argument-order",
+   "confidence": 0.41,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "argument-order",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "argument-order",
+   "confidence": 0.9,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "dot",
+   "label": "argument-order",
+   "confidence": 0.72,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "all-true",
+   "label": "argument-order",
+   "confidence": 0.96,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "longest-run",
+   "label": "stack-juggling",
+   "confidence": 0.74,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "stack-juggling",
+   "confidence": 0.57,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "stack-juggling",
+   "confidence": 0.68,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "stack-juggling",
+   "confidence": 0.53,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "digits",
+   "label": "argument-order",
+   "confidence": 1.0,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "argument-order",
+   "confidence": 1.0,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "histogram",
+   "label": "stack-juggling",
+   "confidence": 0.59,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "sort",
+   "label": "stack-juggling",
+   "confidence": 0.93,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "ledger",
+   "label": "stack-juggling",
+   "confidence": 0.67,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "stack-juggling",
+   "confidence": 0.96,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "seq-sum",
+   "label": "stale-local-state",
+   "confidence": 0.84,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "seq-max",
+   "label": "stale-local-state",
+   "confidence": 0.79,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "count-below",
+   "label": "stale-local-state",
+   "confidence": 0.74,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "reverse",
+   "label": "stale-local-state",
+   "confidence": 0.83,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "prefix-sums",
+   "label": "stale-local-state",
+   "confidence": 0.82,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "keep-positive",
+   "label": "stack-juggling",
+   "confidence": 0.9,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "wrong-algorithm",
+   "confidence": 0.62,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "dot",
+   "label": "stale-local-state",
+   "confidence": 0.77,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "longest-run",
+   "label": "stale-local-state",
+   "confidence": 0.77,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "has-pair-sum",
+   "label": "argument-order",
+   "confidence": 0.87,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "count-distinct",
+   "label": "stale-local-state",
+   "confidence": 0.39,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "merge-sorted",
+   "label": "argument-order",
+   "confidence": 0.82,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "digits",
+   "label": "stale-local-state",
+   "confidence": 0.78,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "argument-order",
+   "confidence": 0.94,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "histogram",
+   "label": "stack-juggling",
+   "confidence": 0.42,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "sort",
+   "label": "stale-local-state",
+   "confidence": 0.82,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "ledger",
+   "label": "stale-local-state",
+   "confidence": 0.87,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B12",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "stale-local-state",
+   "confidence": 0.84,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "seq-sum",
+   "label": "other-syntax",
+   "confidence": 0.59,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "seq-max",
+   "label": "other-syntax",
+   "confidence": 0.65,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "count-below",
+   "label": "other-syntax",
+   "confidence": 0.63,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "reverse",
+   "label": "other-syntax",
+   "confidence": 0.63,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "other-syntax",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "other-syntax",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "stack-juggling",
+   "confidence": 0.86,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "dot",
+   "label": "other-syntax",
+   "confidence": 0.49,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "all-true",
+   "label": "argument-order",
+   "confidence": 0.91,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "longest-run",
+   "label": "other-syntax",
+   "confidence": 0.63,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "stack-juggling",
+   "confidence": 0.43,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "other-syntax",
+   "confidence": 0.7,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "other-syntax",
+   "confidence": 0.54,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "digits",
+   "label": "other-syntax",
+   "confidence": 0.71,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "other-syntax",
+   "confidence": 0.67,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "histogram",
+   "label": "other-syntax",
+   "confidence": 0.55,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "sort",
+   "label": "other-syntax",
+   "confidence": 0.61,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "ledger",
+   "label": "other-syntax",
+   "confidence": 0.61,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "other-syntax",
+   "confidence": 0.41,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 3,
+   "task": "reverse",
+   "label": "stale-local-state",
+   "confidence": 0.81,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 3,
+   "task": "keep-positive",
+   "label": "wrong-algorithm",
+   "confidence": 0.72,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "stack-juggling",
+   "confidence": 0.88,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 3,
+   "task": "all-true",
+   "label": "stack-juggling",
+   "confidence": 0.85,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 3,
+   "task": "longest-run",
+   "label": "stale-local-state",
+   "confidence": 0.54,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 3,
+   "task": "has-pair-sum",
+   "label": "stack-juggling",
+   "confidence": 0.72,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 3,
+   "task": "count-distinct",
+   "label": "stack-juggling",
+   "confidence": 0.92,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 3,
+   "task": "digits",
+   "label": "stack-juggling",
+   "confidence": 0.3,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "stack-juggling",
+   "confidence": 0.86,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 3,
+   "task": "sort",
+   "label": "stale-local-state",
+   "confidence": 0.54,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 3,
+   "task": "ledger",
+   "label": "stale-local-state",
+   "confidence": 0.79,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B13",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "stale-local-state",
+   "confidence": 0.57,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "seq-sum",
+   "label": "argument-order",
+   "confidence": 0.91,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "seq-max",
+   "label": "locals-form",
+   "confidence": 0.66,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "count-below",
+   "label": "stack-juggling",
+   "confidence": 0.49,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "index-of",
+   "label": "argument-order",
+   "confidence": 0.68,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "reverse",
+   "label": "locals-form",
+   "confidence": 0.73,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "prefix-sums",
+   "label": "argument-order",
+   "confidence": 0.7,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "keep-positive",
+   "label": "argument-order",
+   "confidence": 0.73,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "is-sorted",
+   "label": "argument-order",
+   "confidence": 0.92,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "dot",
+   "label": "argument-order",
+   "confidence": 0.81,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "all-true",
+   "label": "argument-order",
+   "confidence": 0.96,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "longest-run",
+   "label": "locals-form",
+   "confidence": 0.68,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "has-pair-sum",
+   "label": "argument-order",
+   "confidence": 0.58,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "count-distinct",
+   "label": "stack-juggling",
+   "confidence": 0.79,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "merge-sorted",
+   "label": "stale-local-state",
+   "confidence": 0.76,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "digits",
+   "label": "locals-form",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "primes-up-to",
+   "label": "argument-order",
+   "confidence": 0.86,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "histogram",
+   "label": "locals-form",
+   "confidence": 0.64,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "sort",
+   "label": "stale-local-state",
+   "confidence": 0.42,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "ledger",
+   "label": "stack-juggling",
+   "confidence": 0.71,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 1,
+   "task": "allocate-batch",
+   "label": "other-syntax",
+   "confidence": 0.5,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "seq-sum",
+   "label": "argument-order",
+   "confidence": 0.8,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "seq-max",
+   "label": "stack-juggling",
+   "confidence": 0.68,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "count-below",
+   "label": "argument-order",
+   "confidence": 0.8,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "index-of",
+   "label": "quoted-condition",
+   "confidence": 0.89,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "reverse",
+   "label": "stack-juggling",
+   "confidence": 0.43,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "prefix-sums",
+   "label": "stack-juggling",
+   "confidence": 0.52,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "keep-positive",
+   "label": "stack-juggling",
+   "confidence": 0.76,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "is-sorted",
+   "label": "quoted-condition",
+   "confidence": 0.96,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "dot",
+   "label": "argument-order",
+   "confidence": 0.73,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "all-true",
+   "label": "quoted-condition",
+   "confidence": 0.88,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "longest-run",
+   "label": "stack-juggling",
+   "confidence": 0.68,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "has-pair-sum",
+   "label": "stack-juggling",
+   "confidence": 0.71,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "count-distinct",
+   "label": "argument-order",
+   "confidence": 0.96,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "merge-sorted",
+   "label": "stack-juggling",
+   "confidence": 0.62,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "digits",
+   "label": "quoted-condition",
+   "confidence": 0.96,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "primes-up-to",
+   "label": "other-syntax",
+   "confidence": 0.62,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "histogram",
+   "label": "quoted-condition",
+   "confidence": 0.99,
+   "review": false
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "sort",
+   "label": "stack-juggling",
+   "confidence": 0.6,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "ledger",
+   "label": "stale-local-state",
+   "confidence": 0.44,
+   "review": true
+  },
+  {
+   "arm": "B",
+   "sample": "B14",
+   "round": 3,
+   "task": "allocate-batch",
+   "label": "other-syntax",
+   "confidence": 0.56,
+   "review": true
+  }
+ ]
+}
