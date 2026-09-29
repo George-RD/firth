@@ -728,6 +728,21 @@ private def runCallAccountTests : IO Unit := do
   -- branches leave different numbers of values): no edit.
   let _ ← callReport "a condition moved that does not get past the `if`" "firth.type.word-input-mismatch" ": main\n  (forall ρ; ρ n:Int^many -- ρ primes:Seq Int^many)\n  locals { n } {\n    prim seq-int.empty 2 primes-loop\n  };\n\n: primes-loop\n  (forall ρ; ρ result:Seq Int^many candidate:Int^many -- ρ out:Seq Int^many)\n  locals { result candidate } {\n    [ candidate 10 prim < ]\n    [ [ result candidate prim seq-int.push candidate 1 prim + ] [ candidate 1 prim + ] is-prime if primes-loop ]\n    [ 0 prim not prim not ]\n    candidate 10 prim <\n    if\n  };\n\n: is-prime\n  (forall ρ; ρ candidate:Int^many -- ρ prime:Bool^many)\n  locals { candidate } {\n    [ prim not prim not ]\n    [ candidate 2 2 is-prime-check ]\n    candidate 2 prim <\n    if\n  };\n\n: is-prime-check\n  (forall ρ; ρ candidate:Int^many divisor:Int^many limit:Int^many -- ρ prime:Bool^many)\n  locals { candidate divisor limit } {\n    [ candidate divisor prim mod 0 prim = prim not ]\n    [ [ prim not prim not ] [ divisor 1 prim + limit is-prime-check ] divisor limit prim < if ]\n    [ 0 prim not prim not ]\n    divisor divisor prim * candidate prim <\n    if\n  };\n"
     ["`is-prime` in `primes-loop`"] ["before the first `[`"]
+  -- Planted: a condition that, as written, acts on the quotations under it.
+  -- The checker accepts `swap` on top of them and refuses only the `if`;
+  -- moved first, `swap` would exchange `a` and `b` and the word would check
+  -- with another meaning, so no edit is offered (the reviewer on #187).
+  let _ ← callReport "a condition that acts on its quotations" "firth.type.expected-bool"
+    ": pick2\n  (forall ρ; ρ a:Int^many b:Int^many c:Int^many -- ρ r:Int^many)\n  locals { a b c } {\n    a b [ prim + ] [ prim - ] swap c 0 prim < if\n  };"
+    [] ["before the first `[`"]
+  -- Refused inside the condition, the condition was never accepted on the
+  -- quotations, so moving it has one reading: `dup` then copies `n`.
+  let dupFirst := ": g\n  (forall ρ; ρ n:Int^many -- ρ n2:Int^many r:Int^many)\n  [ 1 ] [ 2 ] dup 0 prim < if\n  ;"
+  let (hint, _) ← callReport "a condition refused on its quotations" "firth.type.primitive-input-mismatch" dupFirst
+    ["Write the condition before the first `[`: write `dup 0 prim < [ 1 ] [ 2 ] if` in place of `[ 1 ] [ 2 ] dup 0 prim < if` on line 3. With that edit `g` checks."]
+  match applyBranchHint dupFirst hint with
+  | some edited => expectRuns "a condition refused on its quotations" edited "g" [.int 5] [.int 5, .int 2]
+  | none => fail s!"a condition refused on its quotations: the hint's edit does not apply: {hint}"
   -- An edit is said to get past the refused `if` only when its next error
   -- shows the check went beyond it. Planted: an error at the `if`, or one
   -- before it found by erasure, or found by typing when typing refused the
@@ -769,6 +784,26 @@ private def runCallAccountTests : IO Unit := do
       callCase "digits, then the call" "firth.type.word-input-mismatch" once
         ["write `result n 10 prim mod prim seq-int.push n 10 prim div` in place of `result n 10 prim mod prim seq-int.push n 10 prim div swap` on line 1. With that edit `extract-digits` checks."]
         [] "extract-digits" [.intSeq [], .int 123] [.intSeq [3, 2, 1]]
+  -- The next error's place is where the author will see it once the edit
+  -- is made: the line break before the call stays as written. ledger at
+  -- 8ea4a1d (haiku-firth-2, answer 2), verbatim; the checker then reports the
+  -- call on line 10, not the start of its values on line 9 (the reviewer on
+  -- #187).
+  let ledger := ": ledger-loop\n  (forall ρ; ρ txs:Seq Int^many i:Int^many bal:Int^many rej:Int^many -- ρ result1:Int^many result2:Int^many)\n  locals { txs i bal rej } {\n    txs prim seq-int.len i prim < [\n      bal txs i prim seq-int.at prim + dup 0 prim < [\n        drop bal rej 1 prim + txs swap i swap\n        ledger-loop\n      ] [\n        i 1 prim + txs swap rej swap\n        ledger-loop\n      ] if\n    ] [\n      bal rej\n    ] if\n  };\n\n: main\n  (forall ρ; ρ start:Int^many txs:Seq Int^many -- ρ balance:Int^many rejected:Int^many)\n  locals { start txs } {\n    txs 0 start 0 ledger-loop\n  };\n"
+  let (hint, _) ← callReport "the next error after an edit before a line break" "firth.type.word-input-mismatch" ledger
+    ["write `txs i bal rej 1 prim +` in place of `bal rej 1 prim + txs swap i swap` on line 6. With that edit, the next error in `ledger-loop` is at line 10, column 9."]
+  -- Applied on line 6, where the text replaced is found once, with the
+  -- source's line breaks kept as the author's would be.
+  let written := "bal rej 1 prim + txs swap i swap"
+  unless hint.contains s!"in place of `{written}` on line 6." &&
+      (ledger.splitOn written).length == 2 && (((ledger.splitOn "\n")[5]?).getD "").contains written do
+    fail s!"ledger: the hint's edit is not the one on line 6: {hint}"
+  let edited := ledger.replace written "txs i bal rej 1 prim +"
+  match reportsWithCode (elaboratePipeline pipelineContext edited agentConfig) "firth.type.word-input-mismatch" with
+  | [envelope] =>
+      unless (encode envelope).contains "\"start\":{\"line\":10,\"column\":9}" do
+        fail s!"ledger: the edited source is not refused at line 10, column 9: {encode envelope}"
+  | _ => fail "ledger: expected one report for the edited source"
   -- Where values of one type could go either way, the report says which
   -- values are certain and leaves the rest to the author, with no edit:
   -- seq-sum at 470c6d0 (haiku-firth-1, answer 1), where pushing the Int

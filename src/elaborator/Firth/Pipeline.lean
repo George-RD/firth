@@ -457,11 +457,15 @@ private def withCallAccount (config : PipelineConfig) (source : String)
         -- The edit replaces everything from the first piece as written up to
         -- the operation, `swap`s included, with the pieces in order.
         let start ← (ranges.map (·.1)).min?
-        let stop := diagnostic.primary.start.offset
+        -- Up to the last item before the operation: the space after it,
+        -- line breaks included, stays as written, as it does when the
+        -- author makes the edit, so the next error's line is the one the
+        -- author will see.
+        let stop := start + (bytesText source start diagnostic.primary.start.offset).trimAsciiEnd.toString.utf8ByteSize
         let texts ← order.mapM fun i => ranges[i]?.map fun (a, b) => bytesText source a b
         let replacement := " ".intercalate (texts.map collapse)
-        let edited := bytesText source 0 start ++ replacement ++ " " ++ bytesText source stop source.utf8ByteSize
-        let shift : Int := (replacement.utf8ByteSize + 1 : Int) - ((stop - start : Nat) : Int)
+        let edited := bytesText source 0 start ++ replacement ++ bytesText source stop source.utf8ByteSize
+        let shift : Int := (replacement.utf8ByteSize : Int) - ((stop - start : Nat) : Int)
         let name ← diagnostic.word
         let file ← match parse edited with
           | .success file => some file
@@ -716,15 +720,55 @@ private def itemsIn (source : String) (start stop : Nat) : List (String × Nat �
   | some (item, from_) => items ++ [(item, from_, stop)]
   | none => items
 
+/-- The items of a body with quotations and `locals` blocks opened, each with
+its span and the locals bound around it. -/
+private partial def leafItems (bound : List String) : List Item → List (Item × Span × List String)
+  | [] => []
+  | .quotation inner _ :: rest => leafItems bound inner ++ leafItems bound rest
+  | .locals names inner _ :: rest =>
+      leafItems (names.map (·.name) ++ bound) inner ++ leafItems bound rest
+  | item@(.literal _ span) :: rest => (item, span, bound) :: leafItems bound rest
+  | item@(.word _ span) :: rest => (item, span, bound) :: leafItems bound rest
+  | item@(.atom _ span) :: rest => (item, span, bound) :: leafItems bound rest
+  | item@(.primitive _ span) :: rest => (item, span, bound) :: leafItems bound rest
+
+/-- Whether a run of items, as written, takes a value from below where it
+starts: `some false` when every item's arity is known and none reaches
+below, `some true` when one does, `none` when an item's arity is not known
+(a higher-order atom, or an effect that does not keep the rest of the
+stack). A local or a literal pushes one value. -/
+private def takesBelow (env : EffectEnv) (run : List (Item × Span × List String)) : Option Bool := do
+  let arity : Item × Span × List String → Option (Nat × Nat)
+    | (.literal _ _, _, _) => some (0, 1)
+    | (.word name _, _, bound) =>
+        if bound.contains name then some (0, 1)
+        else (env.word name).bind fun signature =>
+          if signature.rowPreserving then some (signature.input.length, signature.output.length) else none
+    | (.primitive name _, _, _) => (env.primitive name).bind fun signature =>
+        if signature.rowPreserving then some (signature.input.length, signature.output.length) else none
+    | (.atom "dup" _, _, _) => some (1, 2)
+    | (.atom "drop" _, _, _) => some (1, 0)
+    | (.atom "swap" _, _, _) => some (2, 2)
+    | _ => none
+  let (below, _) ← run.foldlM (init := (false, 0)) fun (below, depth) item => do
+    let (takes, gives) ← arity item
+    pure (below || takes > depth, depth - takes + gives)
+  pure below
+
 /-- For an error at `offset` in `word` that lies in the condition of an `if`
 written after its two quotations, `[ a ] [ b ] x 0 prim < if`, or at that
 `if`: the edit that writes the condition first,
 `x 0 prim < [ a ] [ b ] if`. The condition is the items between the second
 quotation and the `if`, with no bracket, comment or `;` among them. The
 edit is kept only when the edited word then checks, or its next error is
-after the `if`. -/
-private def conditionEdit (config : PipelineConfig) (source : String) (word : WordDefinition)
-    (offset : Nat) : Option CallEdit := do
+after the `if`. When the error is at the `if`, the checker accepted the
+condition on top of the quotations, so it may act on them, as `swap` in
+`[ a ] [ b ] swap x if` exchanges them: moved first, it would act on other
+values, and the edit could check with another meaning. So then the edit is
+kept only when the condition, as written, takes nothing from below where
+it starts. -/
+private def conditionEdit (config : PipelineConfig) (source : String) (words : List WordDefinition)
+    (word : WordDefinition) (offset : Nat) : Option CallEdit := do
   if !config.checkEdits then none else
   let items := (itemsIn source word.span.start.offset word.span.stop.offset).toArray
   let opener (close : Nat) : Option Nat :=
@@ -753,9 +797,14 @@ private def conditionEdit (config : PipelineConfig) (source : String) (word : Wo
     let open1 ← opener (open2 - 1)
     let (_, conditionStart, _) ← items[first]?
     if offset < conditionStart || offset ≥ ifStop then none else
+    let (_, ifStart, _) ← items[k]?
+    let (_, _, conditionStop) ← items[k - 1]?
+    if offset ≥ ifStart then
+      let run := (leafItems [] word.body).filter fun (_, span, _) =>
+        span.start.offset ≥ conditionStart && span.stop.offset ≤ conditionStop
+      if takesBelow (makeErasureEnv config words) run != some false then none
     let (_, start, _) ← items[open1]?
     let (_, _, quotationsStop) ← items[close2]?
-    let (_, _, conditionStop) ← items[k - 1]?
     some (start, ifStop, collapseSpace (bytesText source conditionStart conditionStop),
       collapseSpace (bytesText source start quotationsStop))
   let (start, stop, conditionText, quotations) ← found
@@ -783,12 +832,13 @@ private def conditionEdit (config : PipelineConfig) (source : String) (word : Wo
 
 /-- A type error with the condition-first edit `conditionEdit` finds, when no
 reordering edit was found for it. -/
-private def withConditionEdit (config : PipelineConfig) (source : String) (word : WordDefinition) :
+private def withConditionEdit (config : PipelineConfig) (source : String) (words : List WordDefinition)
+    (word : WordDefinition) :
     PipelineDiagnostic → PipelineDiagnostic
   | .stackEffect diagnostic =>
       if (diagnostic.callAccount.bind (·.edit)).isSome then .stackEffect diagnostic else
       .stackEffect { diagnostic with
-        conditionEdit := conditionEdit config source word diagnostic.primary.start.offset }
+        conditionEdit := conditionEdit config source words word diagnostic.primary.start.offset }
   | other => other
 
 /-- A misordered `locals` refusal whose suggested edits have been applied and
@@ -859,7 +909,7 @@ private def checkWord (config : PipelineConfig) (source : String)
   match check typing declared erased.program word.effect.span with
   | .error diagnostic =>
       let diagnostic := withFirstMisfed config source words { diagnostic with word := some word.name }
-      .refused [withConditionEdit config source word (withCallAccount config source words
+      .refused [withConditionEdit config source words word (withCallAccount config source words
         (withBranchEdit config source (withAccount config source words (.stackEffect diagnostic))))]
   | .ok _ =>
       let premises := config.refinementBuilder config.requestId config.sourcePath
