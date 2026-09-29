@@ -174,9 +174,12 @@ architecture; its CI job runs only on manual dispatch.
 - **The S7 eval** measures S7 and the MVP agent authoring row. Its protocol
   is applied as written: a run with a flagged audit call is void, and a
   toolchain build failure stops scoring with `ToolchainError`.
-  `docs/getting-started.md` and `docs/firth-agent-guide.md` are the eval's
-  input, so a change to them changes what the next run measures; say so in
-  the PR.
+  The eval's input is `docs/getting-started.md`,
+  `docs/firth-agent-guide.md`, `examples/programs/README.md` (MVP tier,
+  `eval/s7/harness.py`) and this file, which a sub-agent author sees through
+  `CLAUDE.md`. A change to any of them changes what the next run measures:
+  say so in the PR, and record in the run's notes which version its authors
+  saw.
 - **Every source file (tests included) must fall under a module `path` in
   `cairn.blueprint`.** If none fits, extend a module's paths or declare a new
   module before writing the file.
