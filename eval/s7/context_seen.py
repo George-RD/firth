@@ -57,10 +57,29 @@ ARM_SETS = {
     "run10": {"4c379e0": ("firth-r8", ("4c379e0", "firth-r8/eval")),
               "8ea4a1d": ("firth-v9", ("8ea4a1d", "firth-v9/eval"))},
     # Arm B's treatment also lives beside the arm directories, in
-    # arm-b-paragraph.md, and its text can appear with no path (Codex, on #184).
-    "run11": {"arm-a": (None, ("arm-a/",)),
-              "arm-b": (None, ("arm-b/", "arm-b-paragraph", "Prefer names to stack shuffling"))},
+    # arm-b-paragraph.md, and any part of its text can appear with no path
+    # (Codex, on #184): every clause of it is a marker, below.
+    "run11": {"arm-a": (None, ("arm-a/",)), "arm-b": (None, ("arm-b/", "arm-b-paragraph"))},
 }
+RUN11 = Path(__file__).resolve().parent / "runs" / "2026-09-29-locals-guide"
+
+
+def squash(text: str) -> str:
+    """Whitespace collapsed, JSON's escaped newlines included, so a quote
+    re-wrapped or on one line still matches."""
+    return " ".join(text.replace("\\n", " ").split())
+
+
+def treatment_clauses() -> tuple[str, ...]:
+    """Arm B's paragraph, cut at sentence and clause punctuation into pieces of
+    at least 20 characters that never occur in arm A's prompt."""
+    text = squash((RUN11 / "arm-b-paragraph.md").read_text())
+    arm_a = squash((RUN11 / "arm-a" / "prompt-firth.md").read_text())
+    pieces = {c.strip().rstrip(".") for c in re.split(r"[.,:;]\s", text)}
+    return tuple(sorted(c for c in pieces if len(c) >= 20 and c not in arm_a))
+
+
+ARM_SETS["run11"]["arm-b"] = (None, ARM_SETS["run11"]["arm-b"][1] + treatment_clauses())
 
 
 def use_arms(name: str) -> None:
@@ -123,7 +142,7 @@ def crossing(body: str, sample: str | None, label: str | None, arm: str | None) 
         # eval tree, where the samples, prompts and harness live (run 10), or
         # into its run directory (run 11).
         "other_arm": sorted({k for c, ks in MARKERS.items() if c != arm
-                             for k in ks if k in body}) if arm else [],
+                             for k in ks if k in body or k in squash(body)}) if arm else [],
         "labels": sorted({l for l in LABEL.findall(body) if l != label}),
         "task_paths": sorted(set(TASKS.findall(body))),
     }
@@ -279,6 +298,17 @@ def self_test() -> None:
     got = scan(base + log(other), "haiku-firth-3", "A3", "arm-a")
     assert got["cross_sample"] and got["cross_sample"][0]["other_arm"] == [
         "Prefer names to stack shuffling"], got
+    # Planted: a later excerpt alone, re-wrapped across lines (Codex, on #184).
+    other["attachment"]["filename"] = "hint: leave a name unused\ninstead of `drop`"
+    got = scan(base + log(other), "haiku-firth-3", "A3", "arm-a")
+    assert got["cross_sample"] and got["cross_sample"][0]["other_arm"] == [
+        "leave a name unused instead of `drop`"], got
+    # Every clause is a marker, and none of them is in arm A's own prompt.
+    clauses = treatment_clauses()
+    assert len(clauses) >= 8, clauses
+    arm_a = squash((RUN11 / "arm-a" / "prompt-firth.md").read_text())
+    assert not any(c in arm_a for c in clauses)
+    assert all(c in squash((RUN11 / "arm-b" / "prompt-firth.md").read_text()) for c in clauses)
     # Arm B's own paragraph, in its own prompt, is not flagged for arm B.
     assert scan(base + log(other), "haiku-firth-3", "B3", "arm-b")["cross_sample"] == []
     # This arm's own files are not flagged.
