@@ -603,6 +603,123 @@ private def runCallAccountTests : IO Unit := do
       ": at\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs n } { xs n swap prim seq-int.at };"
       ["write `xs n` in place of `xs n swap`. With that edit `at` checks."]
       [] "at" [.intSeq [5, 6, 7], .int 1] [.int 6]
+  -- A refused `if` whose branch mends with an edit the pipeline checked
+  -- (`staleEdit`, `missingEdit`): the test applies the edit as the hint
+  -- writes it, on the source with its whitespace collapsed, where the text
+  -- it replaces must occur once, and runs the result on the reference
+  -- interpreter against values worked out by hand. Each answer is from run
+  -- 10 (eval/s7/runs/2026-09-29-control), verbatim.
+  let collapse (text : String) : String :=
+    " ".intercalate (((text.map fun c => if c.isWhitespace then ' ' else c).splitOn " ").filter (!·.isEmpty))
+  -- The line and column in "on line L, column C", when the hint gives one.
+  let placeOf (text : String) : Option (Nat × Nat) := do
+    let rest ← (text.splitOn "` on line ")[1]?
+    let line ← (upTo rest ",").toNat?
+    let column ← (upTo ((rest.splitOn ", column ")[1]?.getD "") ".").toNat?
+    pure (line, column)
+  let applyBranchHint (source hint : String) : Option String :=
+    let original := source
+    let source := collapse source
+    match (hint.splitOn "write `")[1]? with
+    | none => none
+    | some rest =>
+        let replacement := upTo rest "`"
+        match (rest.splitOn "` in place of `")[1]? with
+        | none => none
+        | some after =>
+            let written := upTo after "`"
+            -- "on line L, column C" says where, when the text is found
+            -- more than once; the edit then goes there and nowhere else.
+            match placeOf after with
+            | some (line, column) =>
+                let lines := original.splitOn "\n"
+                let before := "\n".intercalate (lines.take (line - 1))
+                let prefix_ := (if line > 1 then before ++ "\n" else "") ++ (((lines[line - 1]?).getD "").take (column - 1)).toString
+                let rest := collapse (original.drop prefix_.length).toString
+                if rest.startsWith written then some (prefix_ ++ replacement ++ (rest.drop written.length).toString) else none
+            | none =>
+                if (source.splitOn written).length != 2 then none
+                else some (source.replace written replacement)
+  let branchCase (label source : String) (needles : List String) (word : String)
+      (inputs expected : List Firth.Interpreter.Literal) : IO Unit := do
+    let (hint, _) ← callReport label "firth.type.branch-mismatch" source needles
+    match applyBranchHint source hint with
+    | some edited => expectRuns label edited word inputs expected
+    | none => fail s!"{label}: the hint's edit does not apply: {hint}"
+  -- prefix-sums (4c379e0, haiku-firth-10, answer 3): the pushed sequence
+  -- is left below the call, which gets `result` as it was. [1, 2, 3] has
+  -- prefix sums [1, 3, 6].
+  branchCase "a local's old value passed on" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sums:Seq Int^many)\n  locals { xs } {\n    0 0 prim seq-int.empty xs prefix-sums-helper\n  };\n\n: prefix-sums-helper\n  (forall ρ; ρ i:Int^many sum:Int^many result:Seq Int^many xs:Seq Int^many -- ρ result:Seq Int^many)\n  locals { i sum result xs } {\n    i xs prim seq-int.len prim = [ result ] [\n      xs i prim seq-int.at sum prim + locals { newsum } {\n        result newsum prim seq-int.push\n        i 1 prim + newsum result xs prefix-sums-helper\n      }\n    ] if\n  };\n"
+    ["The result of `prim seq-int.push` is computed from `result`, but `prefix-sums-helper` is then handed `result` as it was before, so the new value is left below.",
+     "write `prim seq-int.push locals { result } { i 1 prim + newsum result xs prefix-sums-helper }` in place of `prim seq-int.push i 1 prim + newsum result xs prefix-sums-helper` on line 12. With that edit `prefix-sums-helper` checks."]
+    "main" [.intSeq [1, 2, 3]] [.intSeq [1, 3, 6]]
+  -- seq-sum (8ea4a1d, haiku-firth-12, answer 3): the new `acc` and the new
+  -- `index` are pushed in the other order, and `xs` not at all. By types
+  -- the two Int values could go either way; by the locals they are
+  -- computed from, only one. 4 + 5 + 6.
+  branchCase "inputs by the locals they stand for" ": seq-sum-loop\n  (forall ρ; ρ xs:Seq Int^many index:Int^many acc:Int^many -- ρ result:Int^many)\n  locals { xs index acc } {\n    index xs prim seq-int.len prim < [\n      xs index prim seq-int.at acc prim +\n      index 1 prim +\n      seq-sum-loop\n    ] [\n      acc\n    ] if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many -- ρ result:Int^many)\n  locals { xs } {\n    xs 0 0 seq-sum-loop\n  };\n"
+    ["the result of `prim +` (from `acc`) and the result of `prim +` (from `index`), which by their names are for inputs in another order.",
+     "write `xs index 1 prim + xs index prim seq-int.at acc prim + seq-sum-loop` in place of `xs index prim seq-int.at acc prim + index 1 prim + seq-sum-loop` on line 5. With that edit `seq-sum-loop` checks."]
+    "main" [.intSeq [4, 5, 6]] [.int 15]
+  -- primes-up-to (4c379e0, haiku-firth-3, answer 3): the text the edit
+  -- replaces is in both branches on line 9, and only the second is the
+  -- branch refused. Planted: without the column the hint would name either,
+  -- and the first leaves the `if` refused. The primes below 4; the answer's
+  -- own `check-divisor` tests `d d prim * n prim <`, so it takes 4 and 9
+  -- for primes, a mistake of its own the edit leaves alone.
+  branchCase "the text replaced found twice on its line" ": main\n  (forall ρ; ρ n:Int^many -- ρ primes:Seq Int^many)\n  locals { n } { prim seq-int.empty 2 n collect-primes };\n\n: collect-primes\n  (forall ρ; ρ result:Seq Int^many candidate:Int^many n:Int^many -- ρ primes:Seq Int^many)\n  locals { result candidate n } {\n    candidate n prim <\n    [ candidate is-prime-simple [ result candidate prim seq-int.push candidate 1 prim + n collect-primes ] [ candidate 1 prim + n collect-primes ] if ]\n    [ result ]\n    if\n  };\n\n: is-prime-simple\n  (forall ρ; ρ n:Int^many -- ρ result:Bool^many)\n  locals { n } {\n    n 2 prim <\n    [ false ]\n    [ n 2 prim = [ true ] [ n 2 check-divisor ] if ]\n    if\n  };\n\n: check-divisor\n  (forall ρ; ρ n:Int^many d:Int^many -- ρ result:Bool^many)\n  locals { n d } {\n    d d prim * n prim <\n    [ n d prim mod 0 prim = [ false ] [ n d 1 prim + check-divisor ] if ]\n    [ true ]\n    if\n  };\n"
+    ["write `result candidate 1 prim + n collect-primes` in place of `candidate 1 prim + n collect-primes` on line 9, column 110. With that edit `collect-primes` checks."]
+    "main" [.int 4] [.intSeq [2, 3]]
+  -- all-true (4c379e0, haiku-firth-1, answer 2): the recursive call inside
+  -- an inner `if` is given only the changed index.
+  branchCase "an input named like a local" ": all-loop\n  (forall ρ; ρ flags:Seq Bool^many idx:Int^many -- ρ all:Bool^many)\n  locals { flags idx } {\n    idx flags prim seq-bool.len prim <\n    [ \n      flags idx prim seq-bool.at\n      [ idx 1 prim + all-loop ]\n      [ false ]\n      if\n    ]\n    [ true ]\n    if\n  };\n\n: main\n  (forall ρ; ρ flags:Seq Bool^many -- ρ all:Bool^many)\n  0 all-loop;\n"
+    ["Push the first one (flags:Seq Bool) before it by writing the local of that name, `flags`: write `flags idx 1 prim + all-loop` in place of `idx 1 prim + all-loop` on line 7. With that edit `all-loop` checks."]
+    "main" [.boolSeq [true, false, true]] [.bool false]
+  branchCase "an input named like a local, all true" ": all-loop\n  (forall ρ; ρ flags:Seq Bool^many idx:Int^many -- ρ all:Bool^many)\n  locals { flags idx } {\n    idx flags prim seq-bool.len prim <\n    [ \n      flags idx prim seq-bool.at\n      [ idx 1 prim + all-loop ]\n      [ false ]\n      if\n    ]\n    [ true ]\n    if\n  };\n\n: main\n  (forall ρ; ρ flags:Seq Bool^many -- ρ all:Bool^many)\n  0 all-loop;\n" []
+    "main" [.boolSeq [true, true]] [.bool true]
+  -- Planted: the edit that binds the pushed sequence for the call would
+  -- make the branches leave Int and Seq Int, so the refusal stays at the
+  -- `if` and no edit is offered.
+  let _ ← callReport "an edit that does not get past the `if`" "firth.type.branch-mismatch" ": count\n  (forall ρ; ρ xs:Seq Int^many -- ρ c:Int^many)\n  prim seq-int.len;\n\n: f\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { xs n } { n 0 prim < [ xs ] [ xs n prim seq-int.push xs count ] if };"
+    ["the result of `prim seq-int.push` is left below the result of `count`"] ["bind it to the name", "in place of"]
+  -- Planted: by types alone the sequence computed from `ys` would go to
+  -- `xs`, the first Seq Int input, and `k` after the empty one. The empty
+  -- sequence stands for no local, so the names cannot say where each goes,
+  -- and the one that does stand for a local says the types chose wrong: no
+  -- edit.
+  let _ ← callReport "types that would misplace a value" "firth.type.branch-mismatch"
+    ": w\n  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many k:Int^many -- ρ r:Seq Int^many)\n  locals { xs ys k } { k 0 prim < [ ys ] [ ys 1 prim seq-int.push prim seq-int.empty w ] if };"
+    ["`w` needs 3 values (xs:Seq Int, ys:Seq Int, k:Int)"] ["in place of"]
+  -- Planted: by types the new `result` would go to `xs`, and the local
+  -- `result` would be written for the input left: no edit.
+  let _ ← callReport "a new value for another input" "firth.type.branch-mismatch" ": g\n  (forall ρ; ρ xs:Seq Int^many k:Int^many result:Seq Int^many -- ρ r:Seq Int^many)\n  locals { xs k result } { k 0 prim < [ result ] [ result k prim seq-int.push 5 g ] if };"
+    ["`g` needs 3 values (xs:Seq Int, k:Int, result:Seq Int)"] ["in place of"]
+  -- Planted: an effect naming two inputs alike. The one pushed value,
+  -- from `x`, would fill both by name, and the edit would compute it twice:
+  -- no edit.
+  let _ ← callReport "two inputs of one name" "firth.type.branch-mismatch"
+    ": h (forall ρ; ρ x:Int^many x:Int^many -- ρ r:Int^many) prim + ;\n: g\n  (forall ρ; ρ x:Int^many n:Int^many -- ρ r:Int^many)\n  locals { x n } { n 0 prim < [ x ] [ x 1 prim + h ] if };"
+    ["exactly the values it takes, in this order: x:Int, x:Int"] ["in place of"]
+  -- Planted: two results of an `if` merged by an outer `if`, one standing
+  -- for `a` and one for `b`. The merged value stands for neither, so its
+  -- place is told by types alone, not "by their names" as if from `a`.
+  let _ ← callReport "an `if` whose paths stand for different locals" "firth.type.branch-mismatch"
+    ": h (forall ρ; ρ a:Int^many s:Seq Int^many b:Int^many -- ρ r:Int^many) drop drop ;\n: g\n  (forall ρ; ρ a:Int^many b:Int^many s:Seq Int^many c:Int^many -- ρ r:Int^many)\n  locals { a b s c } {\n    c 0 prim = [ 0 ] [\n      s c 1 prim < [ c 2 prim < [ a 1 prim + ] [ a 1 prim - ] if ] [ c 3 prim < [ b 1 prim + ] [ b 1 prim - ] if ] if h\n    ] if\n  };\n"
+    ["in the place of the last 2 (s:Seq Int, b:Int)"] ["(from `a`)", "by their names"]
+  -- An edit is said to get past the refused `if` only when its next error
+  -- shows the check went beyond it. Planted: an error at the `if`, or one
+  -- before it found by erasure, or found by typing when typing refused the
+  -- `if`, may have stopped the check short of it.
+  let pastCases : List (String × Bool × Bool × Nat × Bool) :=
+    [ ("after, by erasure", true, false, 20, true)
+    , ("after, by typing", false, true, 20, true)
+    , ("a type error before an `if` erasure refused", true, true, 5, true)
+    , ("at the `if`", true, true, 10, false)
+    , ("before, by erasure", true, false, 5, false)
+    , ("before, by typing, when typing refused it", false, true, 5, false) ]
+  for (name, byErasure, typing, offset, expected) in pastCases do
+    if editGetsPast byErasure typing 10 offset != expected then
+      throw <| IO.userError s!"edit gets past its `if`: {name}: expected {expected}"
   -- An edit that gets past this operation but not the next mistake says
   -- where that is: digits at cec3707 (haiku-firth-1, answer 1), the helper
   -- verbatim, where a `swap` also puts the sequence on top for the call.
@@ -1355,7 +1472,8 @@ def runElaboratorDiagnosticTests : IO Unit := do
     ("sort (answer 1)",
       ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Seq Int^many)\n  dup prim seq-int.len 0 insertion-sort;\n\n: insertion-sort\n  (forall ρ; ρ xs:Seq Int^many len:Int^many idx:Int^many -- ρ sorted:Seq Int^many)\n  locals { xs len idx } {\n    idx len prim < [\n      idx xs insert-at xs len idx 1 prim + insertion-sort\n    ] [ xs ] if\n  };\n\n: insert-at\n  (forall ρ; ρ xs:Seq Int^many idx:Int^many -- ρ sorted:Seq Int^many)\n  locals { xs idx } {\n    idx 0 prim = [\n      xs\n    ] [\n      idx 1 prim - xs prim seq-int.at idx xs prim seq-int.at prim < [\n        idx 1 prim - idx xs prim seq-int.at xs prim seq-int.set\n        idx 1 prim - xs prim seq-int.at xs idx 1 prim - prim seq-int.set\n        idx 1 prim - xs insert-at\n      ] [ xs ] if\n    ] if\n  };\n",
       ["The true branch leaves 2 values, bottom to top: the result of `insert-at` and the result of `insertion-sort`; the false branch leaves `xs`.",
-        "the result of `insert-at` is left below the result of `insertion-sort`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it"],
+        "The result of `insert-at` is computed from `xs`, but `insertion-sort` is then handed `xs` as it was before, so the new value is left below.",
+        "write `insert-at locals { xs } { xs len idx 1 prim + insertion-sort }` in place of `insert-at xs len idx 1 prim + insertion-sort` on line 9. With that edit, the next error in `insertion-sort` is at line 9, column 14."],
       -- The result of `insert-at` passed to `insertion-sort` as its sequence.
       -- The edit also puts `insert-at`'s arguments in its order (`xs idx`),
       -- a second mistake the report does not name.
@@ -1378,7 +1496,8 @@ def runElaboratorDiagnosticTests : IO Unit := do
     ("reverse (answer 2)",
       ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ reversed:Seq Int^many)\n  dup prim seq-int.len prim seq-int.empty swap 0 reverse-loop;\n\n: reverse-loop\n  (forall ρ; ρ result:Seq Int^many xs:Seq Int^many len:Int^many idx:Int^many -- ρ reversed:Seq Int^many)\n  locals { result xs len idx } {\n    idx len prim < [\n      len idx 1 prim - prim - xs prim seq-int.at result prim seq-int.push\n      result xs len idx 1 prim + reverse-loop\n    ] [ result ] if\n  };\n",
       ["The true branch leaves 2 values, bottom to top: the result of `prim seq-int.push` and the result of `reverse-loop`; the false branch leaves `result`.",
-        "the result of `prim seq-int.push` is left below the result of `reverse-loop`"],
+        "The result of `prim seq-int.push` is computed from `result`, but `reverse-loop` is then handed `result` as it was before, so the new value is left below.",
+        "write `prim seq-int.push locals { result } { result xs len idx 1 prim + reverse-loop }` in place of `prim seq-int.push result xs len idx 1 prim + reverse-loop` on line 9. With that edit, the next error in `reverse-loop` is at line 9, column 34."],
       -- The pushed sequence passed on instead of the old `result`.
       ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ reversed:Seq Int^many)\n  dup prim seq-int.len prim seq-int.empty swap 0 reverse-loop;\n\n: reverse-loop\n  (forall ρ; ρ result:Seq Int^many xs:Seq Int^many len:Int^many idx:Int^many -- ρ reversed:Seq Int^many)\n  locals { result xs len idx } {\n    idx len prim < [\n      len idx 1 prim - prim - xs prim seq-int.at result prim seq-int.push\n      xs len idx 1 prim + reverse-loop\n    ] [ result ] if\n  };\n",
       "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `reverse-loop` leave different numbers of values: the true branch pushes 2 values, and the false branch pushes 1 value. So the true branch leaves 1 value more than the false branch.\nhint: If the values below those already agree, either add `drop` at the end of the true branch, or make the false branch push 1 value more, of the same type the true branch leaves on top. If they do not, the branches also leave different types, and each must be changed until both leave the same values. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.")]
@@ -1555,13 +1674,13 @@ def runElaboratorDiagnosticTests : IO Unit := do
   let takesThree := ": f (forall ρ; ρ xs:Seq Int^many n:Int^many b:Bool^many -- ρ r:Int^many) locals { xs n b } { n } ;\n\n"
   let pushedFirst := takesThree ++ ": g (forall ρ; ρ xs:Seq Int^many b:Bool^many -- ρ r:Int^many) locals { xs b } { true [ xs 1 f ] [ 0 ] if } ;"
   branchReport "branch pushed the first operands" pushedFirst
-    ["The branch already pushes `xs` and `1`, in the place of the first 2 (xs:Seq Int, n:Int): keep each where it has that type and replace it where it does not. Then push the last one (b:Bool) after them"]
+    ["The branch already pushes `xs` and `1`, in the place of the first 2 (xs:Seq Int, n:Int). Push the last one (b:Bool) after them by writing the local of that name, `b`: write `xs 1 b f` in place of `xs 1 f` on line 3. With that edit `g` checks."]
   -- Following the hint as written: the name before the colon of the input
   -- it asks for, written after the values the branch pushes.
   match elaboratePipeline pipelineContext pushedFirst agentConfig with
   | .failure [envelope] =>
       let emitted := encode envelope
-      match (emitted.splitOn "Then push the last one (").drop 1 with
+      match (emitted.splitOn "Push the last one (").drop 1 with
       | rest :: _ =>
           let name := ((rest.splitOn ":").headD "").trimAscii.toString
           let followed := pushedFirst.replace "[ xs 1 f ]" s!"[ xs 1 {name} f ]"

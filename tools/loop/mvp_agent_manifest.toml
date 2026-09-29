@@ -30,7 +30,7 @@ role = "envelope-validation"
 
 [[inputs.interface]]
 path = "src/agent/Firth/Agent/ElaboratorDiagnostics.lean"
-sha256 = "b6c33b6a73b1201550b17b65b658926a44c8b4e51ac5e49a1315bd1f85c08626"
+sha256 = "c12d398d4cddda04a620a8b8ee5a55fa11c2c308bdd11301e93f4103fd75374e"
 role = "elaborator-to-envelope-adapters"
 
 [gamma]

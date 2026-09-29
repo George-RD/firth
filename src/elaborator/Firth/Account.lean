@@ -52,6 +52,14 @@ structure Entry where
   where there is one: a literal, a local, a quotation, or an operation with
   one result together with the source that pushed its inputs. -/
   origin : Option (Nat × Nat) := none
+  /-- The local this value was pushed by writing, while it is that local's
+  value as written. -/
+  localName : Option String := none
+  /-- The operation that pushed this value as its single result. -/
+  made : Option Made := none
+  /-- For the result of an `if`, the local both paths' values stand for
+  (`source`), where they stand for the same one. -/
+  stands : Option String := none
 
 /-- The stack (top first), the locals in scope, whether the word's inputs
 were bound by `locals`, and the first operation that took a value its branch
@@ -154,12 +162,22 @@ private def valueItems (items : List StackItem) : List (String × String) :=
     | .value name type _ => some (name, type.name ++ if type.usage == .linear then "^linear" else "")
     | .row _ _ => none
 
+/-- The local a value stands for: the one that pushed it, or the one local
+of its type the operation that pushed it was handed. -/
+private def source (entry : Entry) : Option String :=
+  (entry.localName.orElse fun _ => entry.stands).orElse fun _ => entry.made.bind fun made =>
+    match made.type with
+    | none => none
+    | some type => match (made.locals.filter (·.2 == some type)).map (·.1) |>.eraseDups with
+      | [name] => some name
+      | _ => none
+
 /-- Takes `count` values for `operation`, recording it as the branch's first
 reach below its own values when it takes one it did not push, or as its
 first reach past the bottom when it takes a value that is not there. Returns
 the values taken, top first. -/
 private def take (walk : Walk) (operation : String) (inputs : List String) (count : Nat)
-    (types : List String := []) : List Entry × Walk :=
+    (types : List String := []) (span : Option Span := none) : List Entry × Walk :=
   let taken := walk.stack.take count
   let ownTop := (walk.stack.takeWhile (·.own)).length
   let this : BranchReach :=
@@ -169,7 +187,11 @@ private def take (walk : Walk) (operation : String) (inputs : List String) (coun
       below := (taken.dropWhile (·.own)).reverse.map (·.label)
       missing := count - taken.length
       inLocals := walk.inLocals
-      nested := walk.nesting > 0 }
+      nested := walk.nesting > 0
+      span
+      ownOrigins := (taken.takeWhile (·.own)).reverse.map (·.origin)
+      scope := walk.locals.map fun name => (name, walk.localTypes.lookup name)
+      ownSources := (taken.takeWhile (·.own)).reverse.map source }
   -- The first operation that takes a value that is not there is the
   -- mistake to report, even when an earlier one took a value from below
   -- that was there.
@@ -227,10 +249,13 @@ private def ownValues (walk : Walk) : List String :=
 
 /-- Pushes an operation's results after it took `taken` (top first): a
 single result keeps where in the source it and its inputs were pushed. -/
-private def pushResults (context : Context) (walk : Walk) (values : List (String × Option String))
-    (taken : List Entry) (span : Span) : Walk :=
+private def pushResults (context : Context) (walk : Walk) (operation : String)
+    (values : List (String × Option String)) (taken : List Entry) (span : Span) : Walk :=
   let origin := if values.length == 1 then resultOrigin context.source taken span else none
-  { walk with stack := values.reverse.map (fun (label, type) => { label, type, origin }) ++ walk.stack }
+  let made (type : Option String) : Option Made := if values.length != 1 then none else
+    some { operation, span, type
+           locals := taken.reverse.filterMap fun entry => entry.localName.map (·, entry.type) }
+  { walk with stack := values.reverse.map (fun (label, type) => { label, type, origin, made := made type }) ++ walk.stack }
 
 /-- Whether values `taken` (top first) have a known plain type, at some
 position, other than the one `types` (bottom to top) declares there. -/
@@ -277,7 +302,8 @@ mutual
     | .word name span =>
         if walk.locals.contains name then
           .next { walk with stack := { label := s!"`{name}`", type := walk.localTypes.lookup name
-                                       origin := some (span.start.offset, span.stop.offset) } :: walk.stack } else
+                                       origin := some (span.start.offset, span.stop.offset)
+                                       localName := some name } :: walk.stack } else
         match context.words.find? (·.name == name) with
         | some word =>
             if !keepsRow word.effect then .lost else
@@ -287,15 +313,15 @@ mutual
             if span.start.offset == context.target ||
                 (context.misfed && misfedAt (walk.stack.take inputs.length) (inputs.map (·.2))) then
               .called (called context walk s!"`{name}`" described inputs.length span) else
-            let (taken, after) := take walk s!"`{name}`" described inputs.length (inputs.map (·.2))
+            let (taken, after) := take walk s!"`{name}`" described inputs.length (inputs.map (·.2)) (some span)
             let walk := noteMisread after taken (inputs.map (·.2))
-            .next (pushResults context walk ((resultLabels s!"`{name}`" (outputs.map (·.1))).zip (outputs.map (some ·.2))) taken span)
+            .next (pushResults context walk s!"`{name}`" ((resultLabels s!"`{name}`" (outputs.map (·.1))).zip (outputs.map (some ·.2))) taken span)
         | none => match context.external name with
           | some (inputs, outputs) =>
               if span.start.offset == context.target then
                 .called (called context walk s!"`{name}`" [] inputs span) else
               let (taken, walk) := take walk s!"`{name}`" [] inputs
-              .next (pushResults context walk ((resultLabels s!"`{name}`" (List.replicate outputs "")).map (·, none)) taken span)
+              .next (pushResults context walk s!"`{name}`" ((resultLabels s!"`{name}`" (List.replicate outputs "")).map (·, none)) taken span)
           | none => .lost
     | .primitive name span => match context.primitive name with
         | some (inputs, outputs) =>
@@ -303,9 +329,9 @@ mutual
             if span.start.offset == context.target ||
                 (context.misfed && misfedAt (walk.stack.take inputs.length) inputs) then
               .called (called context walk operation inputs inputs.length span) else
-            let (taken, after) := take walk operation inputs inputs.length inputs
+            let (taken, after) := take walk operation inputs inputs.length inputs (some span)
             let walk := noteMisread after taken inputs
-            .next (pushResults context walk ((resultLabels operation (List.replicate outputs.length "")).zip (outputs.map some)) taken span)
+            .next (pushResults context walk operation ((resultLabels operation (List.replicate outputs.length "")).zip (outputs.map some)) taken span)
         | none => .lost
     | .locals names body _ =>
         let (taken, inner) := take walk "`locals`" [] names.length
@@ -321,7 +347,10 @@ mutual
     | .atom "dup" _ =>
         let (taken, walk) := take walk "`dup`" [] 1
         match taken with
-        | [value] => .next { walk with stack := { value with own := true, origin := none } :: { value with own := true, origin := none } :: walk.stack }
+        | [value] =>
+            -- Two copies: neither is the only one the local or operation pushed.
+            let copy := { value with own := true, origin := none, localName := none, made := none }
+            .next { walk with stack := copy :: copy :: walk.stack }
         | _ => .lost
     | .atom "drop" _ => .next (take walk "`drop`" [] 1).2
     | .atom "swap" _ =>
@@ -369,7 +398,8 @@ mutual
                 | .next after =>
                     if after.trusted.any (· != after.reach) then none else
                     some { reach := after.reach, took := after.took,
-                           missing := after.missing, leaves := ownValues after }
+                           missing := after.missing, leaves := ownValues after
+                           made := (after.stack.takeWhile (·.own)).reverse.map (·.made) }
                 | _ => none
               match branch onTrue trueScope, branch onFalse falseScope with
               | some onTrueAccount, some onFalseAccount =>
@@ -406,11 +436,21 @@ mutual
                     match afterTrue.reach, afterFalse.reach with
                     | none, none => some none
                     | some onTrue, some onFalse =>
-                        if { onTrue with own := onFalse.own, ownTypes := onFalse.ownTypes } == onFalse then
+                        -- Where the paths wrote the operation and its
+                        -- values is kept only where they agree.
+                        if { onTrue with own := onFalse.own, ownTypes := onFalse.ownTypes, span := onFalse.span
+                                         ownOrigins := onFalse.ownOrigins, ownSources := onFalse.ownSources
+                                         scope := onFalse.scope } == onFalse then
                           some (some { onTrue with
                             own := (onTrue.own.zip onFalse.own).map fun (a, b) =>
                               if a == b then a else s!"{a} or {b}"
                             ownTypes := (onTrue.ownTypes.zip onFalse.ownTypes).map fun (a, b) =>
+                              if a == b then a else none
+                            span := if onTrue.span == onFalse.span then onTrue.span else none
+                            scope := if onTrue.scope == onFalse.scope then onTrue.scope else []
+                            ownOrigins := (onTrue.ownOrigins.zip onFalse.ownOrigins).map fun (a, b) =>
+                              if a == b then a else none
+                            ownSources := (onTrue.ownSources.zip onFalse.ownSources).map fun (a, b) =>
                               if a == b then a else none })
                         else none
                     -- A path that reaches below and one that does not also
@@ -431,9 +471,15 @@ mutual
                     -- long quotation's start: only the same quotation is kept.
                     if onTrue.label == onFalse.label && onTrue.type == onFalse.type &&
                         onTrue.quotation == onFalse.quotation then
-                      { onTrue with origin := if onTrue.origin == onFalse.origin then onTrue.origin else none }
+                      { onTrue with origin := if onTrue.origin == onFalse.origin then onTrue.origin else none
+                                    localName := if onTrue.localName == onFalse.localName then onTrue.localName else none
+                                    made := if onTrue.made == onFalse.made then onTrue.made else none
+                                    -- Two results of an `if` look alike
+                                    -- but may stand for different locals.
+                                    stands := if onTrue.stands == onFalse.stands then onTrue.stands else none }
                     else { label := "the result of an `if`", own := onTrue.own,
-                           type := if onTrue.type == onFalse.type then onTrue.type else none }
+                           type := if onTrue.type == onFalse.type then onTrue.type else none
+                           stands := if source onTrue == source onFalse then source onTrue else none }
                   -- A reach both paths still trust is trusted merged.
                   let trusted : Option (Option BranchReach) :=
                     if afterTrue.trusted.isNone && afterFalse.trusted.isNone then none

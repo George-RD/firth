@@ -63,6 +63,28 @@ structure BranchReach where
   /-- Whether the operation is inside a quotation within the branch, such as
   a branch of an inner `if`, rather than in the branch itself. -/
   nested : Bool := false
+  /-- Where the operation is, for a word or primitive. -/
+  span : Option Span := none
+  /-- For each of the branch's own values it takes, bottom to top, the byte
+  range of the source that pushed it and nothing else, where there is one. -/
+  ownOrigins : List (Option (Nat × Nat)) := []
+  /-- The locals in scope there, innermost first, with their types where
+  known. -/
+  scope : List (String × Option String) := []
+  /-- For each of the branch's own values it takes, bottom to top, the local
+  it stands for, where there is one: the local that pushed it, or the one
+  local of its type an operation computed it from. -/
+  ownSources : List (Option String) := []
+  deriving Repr, BEq
+
+/-- The operation that pushed a value, where the walk knows it: the
+operation as written, where it is, the locals it was handed (bottom to top,
+with their types where known), and the type of the value. Diagnostics only. -/
+structure Made where
+  operation : String
+  span : Span
+  locals : List (String × Option String) := []
+  type : Option String := none
   deriving Repr, BEq
 
 /-- What one branch of an `if` does, value by value. Diagnostics only. -/
@@ -76,6 +98,45 @@ structure BranchAccount where
   missing : Nat := 0
   /-- The values the branch leaves above what it took, bottom to top. -/
   leaves : List String := []
+  /-- For each of `leaves`, the operation that pushed it, where known. -/
+  made : List (Option Made) := []
+  deriving Repr, BEq
+
+/-- Which mistake a `BranchEdit` mends. `stale`: a branch leaves one value
+more than the other because an operation computed a new value from a local
+and a later call was handed that local again, as in
+`result prim seq-int.push xs idx result rev-iter`; the edit binds the new
+value to the local's name for the call. `missing`: an operation in a branch
+takes more values than the branch pushed, and the ones it lacks are inputs
+named like locals in scope, as in `candidate 1 prim + n collect-primes` for
+`collect-primes ( result:Seq Int candidate:Int n:Int -- ... )`; the edit
+writes those locals where the inputs go, and `reordered` when it also puts
+the values the branch pushed in the order of the inputs they stand for.
+Diagnostics only. -/
+inductive BranchFix where
+  | stale (name operation call : String)
+  | missing (names : List String) (reordered : Bool)
+  deriving Repr, BEq
+
+/-- An edit for a refused `if`: the source from `start` to `stop`,
+`written`, becomes `replacement`. `after` is where the word's next error is
+once the edit is made, as a line and column of the edited source, or `none`
+when the word then checks. Diagnostics only. -/
+structure BranchEdit where
+  fix : BranchFix
+  start : Nat
+  stop : Nat
+  /-- The line `start` is on. -/
+  line : Nat
+  /-- The column `start` is at, counting from 1, when `written` is found
+  more than once on the lines the edit spans, so the line alone does not
+  say which to replace. -/
+  column : Option Nat := none
+  written : String
+  replacement : String
+  after : Option (Nat × Nat) := none
+  /-- The words whose declared effects checking the edit read. -/
+  consulted : List String := []
   deriving Repr, BEq
 
 /-- Both branches of an `if`, and the start of its true branch as written, so
@@ -84,6 +145,9 @@ structure IfAccount where
   trueSource : String
   onTrue : BranchAccount
   onFalse : BranchAccount
+  /-- An edit that mends the branch the account reports, checked by the
+  pipeline. -/
+  edit : Option BranchEdit := none
   deriving Repr, BEq
 
 /-- An edit that pushes an operation's values in the order it takes them:
