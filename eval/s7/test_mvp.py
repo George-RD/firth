@@ -500,6 +500,21 @@ def hashes_recorded() -> None:
         probe.unlink(missing_ok=True)
 
 
+def run10_causes() -> None:
+    """The run 10 failure analysis scripts' own checks, and the hand labels still
+    match the sample they were written for."""
+    causes = HERE / "runs/2026-09-29-control/causes"
+    for script, arg in (("causes.py", "--self-test"), ("recheck.py", "--self-test"),
+                        ("rank.py", "--self-test"), ("behaviour.py", "--self-test"),
+                        ("handcheck_sample.py", "--self-test"),
+                        ("b4_parens.py", "--self-test"),
+                        ("handcheck_sample.py", "--compare")):
+        r = subprocess.run([sys.executable, str(causes / script), arg], cwd=HERE,
+                           capture_output=True, text=True)
+        check(r.returncode == 0, f"run 10 {script} {arg} passes"
+              + ("" if r.returncode == 0 else ": " + r.stderr[-300:]))
+
+
 def classify_default() -> None:
     import subprocess
     import tempfile
@@ -625,6 +640,7 @@ def main() -> int:
     run_options_parsed()
     unsandboxed_python_refused()
     classify_default()
+    run10_causes()
     build_failure_stops_scoring()
     if "--no-firth" not in sys.argv:
         firth_references()

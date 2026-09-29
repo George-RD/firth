@@ -537,20 +537,24 @@ private def closesAll (tokens : Array Token) (start : Nat) (pending : List Strin
   let atDeclarationEnd (i : Nat) : Bool :=
     match tokens[i]? with
     | none => true
-    | some t => t.kind == .symbol ":" || t.kind == .identifier "use" || t.kind == .identifier "vocab"
+    -- A `}` here closes the enclosing vocabulary.
+    | some t => t.kind == .symbol ":" || t.kind == .symbol "}" || t.kind == .identifier "use"
+        || t.kind == .identifier "vocab"
   -- A `;` ends the word only outside every bracket opened after the closer.
   let ended (i : Nat) : Bool :=
     let rest := (tokens.toList.drop i).takeWhile fun t =>
       t.kind != .symbol ":" && t.kind != .identifier "use" && t.kind != .identifier "vocab"
-    let step (state : Nat × Bool) (t : Token) : Nat × Bool :=
-      let (depth, found) := state
-      if found then state
+    -- A closer at depth 0 leaves the word's scope (a vocabulary's `}`), so no
+    -- `;` after it can end the word.
+    let step (state : Nat × Bool × Bool) (t : Token) : Nat × Bool × Bool :=
+      let (depth, found, stopped) := state
+      if found || stopped then state
       else match t.kind with
-        | .symbol "[" | .symbol "{" => (depth + 1, false)
-        | .symbol "]" | .symbol "}" => (depth - 1, false)
-        | .symbol ";" => (depth, depth == 0)
+        | .symbol "[" | .symbol "{" => (depth + 1, false, false)
+        | .symbol "]" | .symbol "}" => if depth == 0 then (0, false, true) else (depth - 1, false, false)
+        | .symbol ";" => (depth, depth == 0, false)
         | _ => state
-    (rest.foldl step (0, false)).2
+    (rest.foldl step (0, false, false)).2.1
   let rec go (fuel i : Nat) (nested pending : List String) : Option (String × Span × EarlyEndFix) :=
     match fuel, tokens[i]? with
     | 0, _ | _, none => none
