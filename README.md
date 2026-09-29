@@ -42,7 +42,8 @@ checker verifies. This one sums 1 to n with a tail-recursive loop
 
 Run with `--entry sum-to --stack '[100]'`, it returns `[5050]` on both the VM
 and the reference interpreter. `sum-to` is also proved correct in Lean for
-every valid input (`src/proofs/records.json`).
+every `n` of at least 0 whose sum fits in 64 bits
+(`src/proofs/records.json`).
 
 What works, with where to check it:
 
@@ -56,18 +57,23 @@ What works, with where to check it:
   `dip`, `if`, and recursion, where tail calls run in constant frames. Named
   `locals` compile to the kernel's `pick` and `roll`. A `locals` block that
   opens a word must bind its inputs in the order of the stack effect.
-- **Diagnostics.** The checker reports the first error in every word, not
-  only the first in the program, and each diagnostic names its word
+- **Diagnostics.** The checker reports the first error in each word it
+  checks, not only the first in the program, and each diagnostic names its
+  word. A syntax error still stops the file there, and a word that calls
+  one with an invalid signature is reported as unchecked
   (`docs/firth-agent-guide.md`, the diagnostics section).
 - **Real programs.** 12 example programs, including sort, sieve, gcd,
-  Fibonacci and factorial, run 116 cases against expected results on both
-  hosts, and 5 more programs must be refused by the checker
+  Fibonacci and factorial, run 116 cases (including expected traps)
+  against expected results on both hosts, and 5 more programs must be
+  refused by the checker
   (`python3 examples/programs/check_programs.py`). The inventory allocator
   (`examples/inventory/`) passes all 53 cases of its fixed contract: 30
   run on both hosts, and 23 are invalid inputs its host must reject
   (`python3 examples/inventory/run_cases.py`).
-- **Proofs about programs.** 16 exported words carry Lean proofs of their
-  contracts over the reference interpreter, including the whole allocator
+- **Proofs about programs.** 5 contracts are proved in Lean over the
+  reference interpreter. They cover 15 distinct word bodies (16 exported
+  words, because the same `abs` is in two files), including the whole
+  allocator
   (conservation, no over-allocation, the fulfilment policy, i64 range and a
   cost bound). This is goal S5 in the [roadmap](docs/roadmap.md), met with
   two stated gaps: the compiler and VM agree with the reference only by
@@ -77,7 +83,7 @@ What works, with where to check it:
 ## How well models write it
 
 The S7 eval ([eval/s7/README.md](eval/s7/README.md)) gives a model only the
-docs and 20 fixed tasks, then scores its answers against hidden tests. The
+docs (and, for sub-agent authors, `AGENTS.md`) and 20 fixed tasks, then scores its answers against hidden tests. The
 same tasks in Python are the baseline: both models scored 20 of 20 there in
 run 4.
 
@@ -101,8 +107,8 @@ not get past them. The results for each run are in the eval README.
 - Non-tail recursion deeper than 256 frames traps on the VM.
 - No package manager, general standard library or language server.
 - Goals S2 (sustained differential fuzzing), S3 (live patching), S4 (a
-  self-hosted standard library), S6 (a third-party VM) and S7 (a weak
-  model's authoring rate) are open. See the [roadmap](docs/roadmap.md).
+  self-hosted standard library), S6 (a third-party VM) and S7 (measured
+  machine authorship against a mainstream-language baseline) are open. See the [roadmap](docs/roadmap.md).
 
 ## Documentation
 
