@@ -182,13 +182,29 @@ private def runEveryErrorTests : IO Unit := do
   | .success _ => fail "every error: a bad use was accepted"
   -- The words before a bad `use` are checked against every word's declared
   -- effect, those after it included: `a` calls `b`, declared after the
-  -- `use`, as `b` declares, and `a2` hands `b` a Bool.
-  match elaboratePipeline pipelineContext
-      ": a ( -- r:Int ) 1 b ;\n: a2 ( -- r:Int ) true b ;\nuse nope;\n: b ( x:Int -- r:Int ) 1 prim + ;" agentConfig with
+  -- `use`, as `b` declares, and `a2` hands `b` its values in the wrong
+  -- order. The report names them by their sources, walking `b` too.
+  let beforeUse := String.intercalate "\n" [
+    ": a",
+    "  (forall ρ; ρ xs:Seq Int^many -- ρ r:Int^many)",
+    "  locals { xs } { xs 0 b };",
+    ": a2",
+    "  (forall ρ; ρ xs:Seq Int^many -- ρ r:Int^many)",
+    "  locals { xs } { 0 xs b };",
+    "use nope;",
+    ": b",
+    "  (forall ρ; ρ xs:Seq Int^many i:Int^many -- ρ r:Int^many)",
+    "  prim seq-int.at;"]
+  match elaboratePipeline pipelineContext beforeUse agentConfig with
   | .failure envelopes =>
       expectEqual "every error: a word before a bad use calls one declared after it"
         (envelopes.map fun envelope => let (word, code, line, column) := summary envelope; (word, code, line, column))
-        [("a2", "firth.type.word-input-mismatch", 2, 24), ("", "firth.name.unresolved", 3, 1)]
+        [("a2", "firth.type.word-input-mismatch", 6, 24), ("", "firth.name.unresolved", 7, 1)]
+      let message := match envelopes.head? >>= fun envelope => (Lean.Json.parse (encode envelope)).toOption with
+        | some json => ((((json.getObjValD "body").getObjValD "message_params").getObjValD "message").getStr?).toOption.getD ""
+        | none => ""
+      expectEqual "every error: a call to a word after a bad use names its values"
+        message "`b` in `a2` takes xs:Seq Int, i:Int, bottom to top, but here it gets, bottom to top, `0` (Int) and `xs` (Seq Int)."
   | .success _ => fail "every error: a bad use was accepted"
   -- A word whose own effect is refused reports that, even when it also
   -- calls a word whose effect is refused.
@@ -199,6 +215,56 @@ private def runEveryErrorTests : IO Unit := do
         (envelopes.map fun envelope => let (word, code, _, _) := summary envelope; (word, code))
         [("u", "firth.type.invalid-signature"), ("w", "firth.type.invalid-signature")]
   | .success _ => fail "every error: two refused effects were accepted"
+
+/-- A report found against the declared effect of a word that has an error
+of its own says so, and names that word: fixing its effect instead of its
+body can change the report. Only a report found against the effects of
+called words (erasure, typing, refinements) says it, and a word's call to
+itself does not count. -/
+private def runAssumesTests : IO Unit := do
+  let pipelineContext := contextWithSource "pipeline-assumes" "main.fth"
+  let agentConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := Elaborate.gammaErasure, typingEnv := Elaborate.gammaTyping }
+  -- `f` adds a Bool. `g` and `two` hand `f` a Bool, found against `f`'s
+  -- declared effect. `h` binds its inputs out of order, which is found from
+  -- `h` alone, though it calls `f`. `r` calls only itself.
+  let source := String.intercalate "\n" [
+    ": f ( a:Int -- b:Int ) true prim + ;",
+    ": g ( -- b:Int ) true f ;",
+    ": h ( a:Int b:Int -- r:Int ) locals { b a } { a f b prim + } ;",
+    ": r ( n:Int -- m:Int ) r true prim + ;",
+    ": two ( -- b:Int ) true f 1 g prim + ;"]
+  let summary (envelope : Envelope) : String × List String × String :=
+    match Lean.Json.parse (encode envelope) with
+    | .ok json =>
+        let params := (json.getObjValD "body").getObjValD "message_params"
+        let assumes := match params.getObjValD "assumes" with
+          | .arr callees => callees.toList.filterMap (·.getStr?.toOption)
+          | _ => []
+        ((params.getObjValD "word").getStr?.toOption.getD "", assumes,
+          (params.getObjValD "message").getStr?.toOption.getD "")
+    | .error _ => ("", [], "")
+  match elaboratePipeline pipelineContext source agentConfig with
+  | .success _ => fail "assumes: the program was accepted"
+  | .failure envelopes =>
+      let reports := envelopes.map summary
+      expectEqual "assumes: the words whose reports depend on another reported word"
+        (reports.map fun (word, assumes, _) => (word, assumes))
+        [("f", []), ("g", ["f"]), ("h", []), ("r", []), ("two", ["f", "g"])]
+      let endsWith (word clause : String) : IO Unit :=
+        match reports.find? (·.1 == word) with
+        | some (_, _, message) =>
+            unless message.endsWith clause do
+              fail s!"assumes: `{word}`'s message does not end with the clause: {message}"
+        | none => fail s!"assumes: no report for `{word}`"
+      endsWith "g" "`g` calls `f`, which has an error of its own; this report assumes `f` keeps its stack effect."
+      endsWith "two" "`two` calls `f` and `g`, which have errors of their own; this report assumes they keep their stack effects."
+      for (word, _, message) in reports do
+        if (word == "f" || word == "h" || word == "r") && (message.splitOn "this report assumes").length > 1 then
+          fail s!"assumes: `{word}`'s report says it depends on another word: {message}"
+      match validateBatch (envelopes.map encode) with
+      | .ok _ => pure ()
+      | .error error => fail s!"assumes: the reports are not a valid batch: {error.code}"
 
 /-- Reports of a word or primitive handed values it does not take. -/
 private def runCallAccountTests : IO Unit := do
@@ -1594,5 +1660,6 @@ def runElaboratorDiagnosticTests : IO Unit := do
     fail s!"the language has {languagePrimitives.length} primitives but this test lists {everyPrimitive.length}; add the new ones above"
   runCallAccountTests
   runEveryErrorTests
+  runAssumesTests
 
 end Firth.Agent.Test

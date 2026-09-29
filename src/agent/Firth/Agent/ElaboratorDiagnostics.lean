@@ -967,6 +967,41 @@ private def withContextSource (context : EmissionContext) (envelope : Envelope) 
           location := { diagnostic.location with source := context.source } }
     | body => body }
 
+/-- `callees` as prose: "`f`", "`f` and `g`", "`f`, `g` and `h`". -/
+private def wordList (callees : List String) : String :=
+  match callees.map (s!"`{·}`") |>.reverse with
+  | [] => ""
+  | [one] => one
+  | last :: rest => s!"{", ".intercalate rest.reverse} and {last}"
+
+/-- The sentence saying that `word`'s error was found against the declared
+effects of `callees`, which have errors of their own: fixing one of their
+effects rather than its body can change this report, or remove it. -/
+def assumesClause (word : String) (callees : List String) : String :=
+  match callees with
+  | [callee] =>
+      s!"`{word}` calls `{callee}`, which has an error of its own; this report assumes `{callee}` keeps its stack effect."
+  | _ =>
+      s!"`{word}` calls {wordList callees}, which have errors of their own; this report assumes they keep their stack effects."
+
+/-- The clause joins the message, where a reader of the report sees it, and
+the callees are also given as `message_params.assumes`. -/
+private def withAssumes (word : String) (callees : List String) (envelope : Envelope) :
+    Envelope :=
+  match envelope.body with
+  | .diagnostic diagnostic =>
+      match diagnostic.messageParams with
+      | .obj fields =>
+          let clause := assumesClause word callees
+          let message := match fields.get? "message" with
+            | some (.str text) => s!"{text} {clause}"
+            | _ => clause
+          { envelope with body := .diagnostic { diagnostic with
+              messageParams := .obj ((fields.insert "message" (.str message)).insert
+                "assumes" (.arr (callees.map Lean.Json.str).toArray)) } }
+      | _ => envelope
+  | _ => envelope
+
 private def pipelineDiagnosticEnvelope (context : EmissionContext) :
     Firth.Elaborator.PipelineDiagnostic → Envelope
   | .parse error => parserEnvelope context error
@@ -975,6 +1010,7 @@ private def pipelineDiagnosticEnvelope (context : EmissionContext) :
   | .refinement _ diagnostic => withContextSource context (refinementEnvelope diagnostic)
   | .unchecked word callee span => uncheckedEnvelope context word callee span
   | .internal span => internalEnvelope context span
+  | .assumes word callees inner => withAssumes word callees (pipelineDiagnosticEnvelope context inner)
 
 private def positionWithin (span : Firth.Elaborator.Span) (position : Position) : Bool :=
   let start : Position := { line := span.start.line, column := span.start.column }
