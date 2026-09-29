@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Print the random sample of failing answers labelled by hand in handcheck.md.
 
-Usage, from eval/s7: python3 runs/2026-09-29-control/causes/handcheck_sample.py [--compare]
+Usage, from eval/s7: python3 runs/2026-09-29-control/causes/handcheck_sample.py [--compare | --self-test]
 
 Fifteen failing first answers and fifteen failing final answers, drawn with a
 fixed seed from units.json, shown as Jev saw them (jev_causes.state) but
@@ -11,6 +11,7 @@ beside Jev's label from jev.json, and the agreement.
 """
 import json
 import random
+import re
 import sys
 from pathlib import Path
 
@@ -36,8 +37,8 @@ def hand_labels(text):
     return out
 
 
-def compare():
-    hand = hand_labels((HERE / "handcheck.md").read_text())
+def compare(text=None):
+    hand = hand_labels(text if text is not None else (HERE / "handcheck.md").read_text())
     jev = {(a["sample"], a["round"], a["task"]): a
            for a in json.loads((HERE / "jev.json").read_text())["answers"]}
     rows = sample()
@@ -56,7 +57,36 @@ def compare():
     print(f"all: {agree[1] + agree[3]} of {len(rows)} agree")
 
 
-if __name__ == "__main__" and "--compare" in sys.argv:
+def self_test():
+    """--compare must refuse a table that has drifted from the sample."""
+    import contextlib
+    import io
+    good = (HERE / "handcheck.md").read_text()
+    lines = good.splitlines()
+    rows = [i for i, l in enumerate(lines) if re.match(r"\| \d+ \|", l)]
+    # Planted: two rows' sample columns swapped, one row missing, one task renamed.
+    swapped = list(lines)
+    a, b = swapped[rows[0]].split("|"), swapped[rows[1]].split("|")
+    a[2], b[2] = b[2], a[2]
+    swapped[rows[0]], swapped[rows[1]] = "|".join(a), "|".join(b)
+    missing = [l for i, l in enumerate(lines) if i != rows[-1]]
+    renamed = list(lines)
+    renamed[rows[5]] = renamed[rows[5]].replace(f"| {sample()[5]['task']} |", "| no-such-task |")
+    for name, bad in (("swapped", swapped), ("missing", missing), ("renamed", renamed)):
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                compare("\n".join(bad))
+        except AssertionError:
+            continue
+        raise AssertionError(f"--compare accepted a {name} table")
+    with contextlib.redirect_stdout(io.StringIO()):
+        compare(good)
+    print("self-test ok")
+
+
+if __name__ == "__main__" and "--self-test" in sys.argv:
+    self_test()
+elif __name__ == "__main__" and "--compare" in sys.argv:
     compare()
 elif __name__ == "__main__":
     for i, r in enumerate(sample(), 1):
