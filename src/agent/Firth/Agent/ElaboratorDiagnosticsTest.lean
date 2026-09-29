@@ -180,6 +180,16 @@ private def runEveryErrorTests : IO Unit := do
         (envelopes.map fun envelope => let (_, code, line, column) := summary envelope; (code, line, column))
         [("firth.name.unresolved", 1, 18), ("firth.name.unresolved", 2, 1)]
   | .success _ => fail "every error: a bad use was accepted"
+  -- The words before a bad `use` are checked against every word's declared
+  -- effect, those after it included: `a` calls `b`, declared after the
+  -- `use`, as `b` declares, and `a2` hands `b` a Bool.
+  match elaboratePipeline pipelineContext
+      ": a ( -- r:Int ) 1 b ;\n: a2 ( -- r:Int ) true b ;\nuse nope;\n: b ( x:Int -- r:Int ) 1 prim + ;" agentConfig with
+  | .failure envelopes =>
+      expectEqual "every error: a word before a bad use calls one declared after it"
+        (envelopes.map fun envelope => let (word, code, line, column) := summary envelope; (word, code, line, column))
+        [("a2", "firth.type.word-input-mismatch", 2, 24), ("", "firth.name.unresolved", 3, 1)]
+  | .success _ => fail "every error: a bad use was accepted"
   -- A word whose own effect is refused reports that, even when it also
   -- calls a word whose effect is refused.
   match elaboratePipeline pipelineContext

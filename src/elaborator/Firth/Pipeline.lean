@@ -465,8 +465,12 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
       | .ok (resolved, stop) =>
           let words := resolved.map (·.1)
           let written := collectWords file.declarations
-          let env := makeErasureEnv config words
-          let schemes := words.map fun word => (word.name, (schemeOfEffect word.effect).toOption)
+          -- Every word's declared effect, those after a bad `use` included:
+          -- a word before it may call one declared after it, and only the
+          -- words before it are checked.
+          let declared := words ++ written.filter fun word => !words.any (·.name == word.name)
+          let env := makeErasureEnv config declared
+          let schemes := declared.map fun word => (word.name, (schemeOfEffect word.effect).toOption)
           let typing : Env := { config.typingEnv with
             word := fun name =>
               match schemes.find? (·.1 == name) with
