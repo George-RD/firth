@@ -59,6 +59,21 @@ pain later.
    runs failed by redefining goals downward, not by marking them without
    permission, so the guard is the unchanged goal wording plus a review that
    sees nothing but the claim and its evidence.
+5. Amended on 29 September 2026. The maintainer approved four wording
+   additions, drawn from Anthropic's published prompting guidance for its
+   Claude 5 models ("Go with recomendation", project thread, 09:32 UTC):
+   - rule 8: check each progress claim against a tool result from the same
+     session, and say what was not run;
+   - rule 10: tests check correctness, they do not define the solution;
+   - rule 13: say so when an ask looks wrong, rather than quietly narrowing
+     or widening it (the review added "unless that breaks another rule", so
+     an ask cannot override the other rules);
+   - rule 14: the reviewer flags only what affects correctness, the
+     requirements or a rule.
+   The same approval covered trimming `AGENTS.md` to what an agent cannot
+   derive from the repository, following Anthropic's guidance to keep a
+   `CLAUDE.md` under 200 lines. Rule 11's check was shortened without
+   changing what it requires.
 
 ## Consequences
 
