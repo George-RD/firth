@@ -1234,7 +1234,17 @@ rules and tests committed before the first author started
   added arm-specific word or a missing round fails. The other 113 messages
   came from the harness (hand-back reminders and nudges, and one context
   compaction in B8).
-- Both arms were audited with main's `audit_subagent.py` (`74679f8`).
+- The audit checks what an author called; `context_seen.py` checks what it
+  was shown. It lists every item put into an author's context that is
+  neither its own turn, nor a result of its own call, nor one of the eval
+  session's three messages, and flags any that names another sample or
+  another task's files. Each sample keeps its `context-seen.json`. It
+  exits 1 on one sample of the 26, B8, at line 81 of its log: the
+  `task_status` attachment that named B10. Its `--self-test` plants that
+  attachment and a nudge naming another sample's answer file, and both
+  are flagged.
+- Both arms were audited with main's `audit_subagent.py` (`74679f8`),
+  with the hand-back kept whole (reviewer, on #181).
   `plant_audit.py` shows it flags a read of the eval session's own tool
   results or task outputs, another sample's feedback, `Glob`, `LS`,
   `Grep` and `Bash`, and allows the permitted reads.
@@ -1331,9 +1341,12 @@ and are not counted. Each directory has a `void.md` saying why.
   Its raw log shows where the name came from: at 18:52:15 the harness
   injected a `task_status` attachment into B8's context describing B10's
   task, with the path of B10's output log. B8 made no call on that path.
-  The excerpt is `8ea4a1d/haiku-firth-8/handback.txt`. A scan of all 26
-  author logs finds this one attachment and no call touching any task
-  output, but the channel exists, one more reason for
+  The excerpt is `8ea4a1d/haiku-firth-8/handback.txt`, and the hand-back
+  itself is in that sample's `transcript.json`. It arrived at 18:52:15,
+  after B8's last answer was written, and B8 was already void on its
+  `Bash` calls and never counted. `context_seen.py` over all 26 logs
+  finds this one item and nothing else naming another sample, but the
+  channel exists, one more reason for
   `todo.s7-author-enforced-allowlist`.
 
 **Departures from the pre-registration.**
@@ -1349,7 +1362,7 @@ and are not counted. Each directory has a `void.md` saying why.
   (above). They were not resumed, so no counted transcript spans the
   restart.
 - From 18:40:22 to 18:44:48 UTC three arm A authors ran at once (A6, A7,
-  A8), and until 18:41:36 five in total, where the design allows two per
+  A8), and until 18:42:29 five in total, where the design allows two per
   arm and four in all. The slip was in starting A8 early; it changed
   nothing an author could see.
 - Samples did not start in strict alternation. Each new author started

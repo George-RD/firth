@@ -22,7 +22,7 @@
       "at": "2026-09-29T18:36:09.514Z",
       "tool": "SubagentHandback",
       "input": {
-        "message": "Completed writing Firth solutions for all 18 sequence operation tasks to /home/user/firth-r8/eval/s7/runs/2026-09-29-control/4c379e0/haiku-firth-11/answer-1.md. Solutions include implementations for: "
+        "message": "Completed writing Firth solutions for all 18 sequence operation tasks to /home/user/firth-r8/eval/s7/runs/2026-09-29-control/4c379e0/haiku-firth-11/answer-1.md. Solutions include implementations for: seq-sum, seq-max, count-below, index-of, reverse, prefix-sums, keep-positive, is-sorted, dot, all-true, longest-run, has-pair-sum, count-distinct, merge-sorted, digits, primes-up-to, histogram, sort, ledger, and allocate-batch. Each solution follows the required format with proper stack effects and Firth syntax using available primitives and control structures."
       }
     },
     {
@@ -41,7 +41,7 @@
       "at": "2026-09-29T18:37:45.126Z",
       "tool": "SubagentHandback",
       "input": {
-        "message": "Completed writing revised Firth solutions for all 20 failing tasks to /home/user/firth-r8/eval/s7/runs/2026-09-29-control/4c379e0/haiku-firth-11/answer-2.md. Rewrote solutions using tail-recursive hel"
+        "message": "Completed writing revised Firth solutions for all 20 failing tasks to /home/user/firth-r8/eval/s7/runs/2026-09-29-control/4c379e0/haiku-firth-11/answer-2.md. Rewrote solutions using tail-recursive helper words to properly manage stack effects and fix branch-mismatch errors. All tasks now use patterns where both branches of if statements have matching stack signatures, following concatenative programming conventions for Firth."
       }
     },
     {
@@ -60,7 +60,7 @@
       "at": "2026-09-29T18:39:03.151Z",
       "tool": "SubagentHandback",
       "input": {
-        "message": "Completed writing revised Firth solutions for all 20 failing tasks to /home/user/firth-r8/eval/s7/runs/2026-09-29-control/4c379e0/haiku-firth-11/answer-3.md. Fixed the unresolved name errors by moving"
+        "message": "Completed writing revised Firth solutions for all 20 failing tasks to /home/user/firth-r8/eval/s7/runs/2026-09-29-control/4c379e0/haiku-firth-11/answer-3.md. Fixed the unresolved name errors by moving `locals` bindings to the start of each word body, ensuring all stack effect parameter names are bound before use. All solutions now properly scope the locals for the entire word, not just portions of it."
       }
     }
   ],

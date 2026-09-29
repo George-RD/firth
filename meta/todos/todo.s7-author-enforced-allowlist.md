@@ -31,7 +31,9 @@ shows the harness injected a `task_status` attachment for B10's task,
 including the path of B10's output log, into its context
 (`eval/s7/runs/2026-09-29-control/8ea4a1d/haiku-firth-8/handback.txt`).
 It made no call on that path, but an author that did would read another
-sample's work; the allowlist has to block that path too. The
+sample's work; the allowlist has to block that path too. Until it does,
+`eval/s7/context_seen.py` lists what each author was shown and flags any
+item naming another sample. The
 audit also flags an author that writes its own answer file more than
 once, because it compares every write with the kept file, which is
 stricter than the allowlist below; an enforced allowlist should settle

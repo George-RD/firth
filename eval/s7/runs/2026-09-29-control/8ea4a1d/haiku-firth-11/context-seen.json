@@ -1,0 +1,259 @@
+{
+ "note": "Everything put into this author's context that it did not fetch itself: the eval session's own instructions and the author's own tool results are left out. cross_sample marks an item naming another sample or another task's files.",
+ "sample": "haiku-firth-11",
+ "injected": [
+  {
+   "line": 2,
+   "at": "2026-09-29T18:35:26.060Z",
+   "kind": "attachment:deferred_tools_delta",
+   "chars": 17011
+  },
+  {
+   "line": 3,
+   "at": "2026-09-29T18:35:26.061Z",
+   "kind": "system-reminder",
+   "chars": 304
+  },
+  {
+   "line": 4,
+   "at": "2026-09-29T18:35:26.063Z",
+   "kind": "attachment:environment",
+   "chars": 325
+  },
+  {
+   "line": 5,
+   "at": "2026-09-29T18:35:26.063Z",
+   "kind": "attachment:model",
+   "chars": 288
+  },
+  {
+   "line": 6,
+   "at": "2026-09-29T18:35:26.064Z",
+   "kind": "attachment:skill_listing",
+   "chars": 9694
+  },
+  {
+   "line": 7,
+   "at": "2026-09-29T18:35:26.068Z",
+   "kind": "attachment:instructions",
+   "chars": 16528
+  },
+  {
+   "line": 8,
+   "at": "2026-09-29T18:35:26.068Z",
+   "kind": "attachment:session_context",
+   "chars": 321
+  },
+  {
+   "line": 9,
+   "at": "2026-09-29T18:35:26.068Z",
+   "kind": "attachment:date",
+   "chars": 38
+  },
+  {
+   "line": 10,
+   "at": "2026-09-29T18:35:26.070Z",
+   "kind": "attachment:credential_org",
+   "chars": 86
+  },
+  {
+   "line": 11,
+   "at": "2026-09-29T18:35:26.070Z",
+   "kind": "attachment:remote_session_change",
+   "chars": 455
+  },
+  {
+   "line": 12,
+   "at": "2026-09-29T18:35:26.071Z",
+   "kind": "attachment:prompt_snapshot",
+   "chars": 2917
+  },
+  {
+   "line": 17,
+   "at": "2026-09-29T18:35:28.555Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 18,
+   "at": "2026-09-29T18:35:28.677Z",
+   "kind": "attachment:prompt_snapshot",
+   "chars": 174185
+  },
+  {
+   "line": 19,
+   "at": "2026-09-29T18:35:28.731Z",
+   "kind": "attachment:mcp_instructions_delta",
+   "chars": 6014
+  },
+  {
+   "line": 20,
+   "at": "2026-09-29T18:35:28.731Z",
+   "kind": "attachment:nested_memory",
+   "chars": 236
+  },
+  {
+   "line": 21,
+   "at": "2026-09-29T18:35:28.732Z",
+   "kind": "attachment:nested_memory",
+   "chars": 33024
+  },
+  {
+   "line": 22,
+   "at": "2026-09-29T18:35:28.732Z",
+   "kind": "attachment:dynamic_skill",
+   "chars": 257
+  },
+  {
+   "line": 23,
+   "at": "2026-09-29T18:35:28.732Z",
+   "kind": "attachment:skill_listing",
+   "chars": 4177
+  },
+  {
+   "line": 24,
+   "at": "2026-09-29T18:35:28.732Z",
+   "kind": "attachment:auto_mode",
+   "chars": 136
+  },
+  {
+   "line": 25,
+   "at": "2026-09-29T18:35:28.732Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 30,
+   "at": "2026-09-29T18:38:27.351Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 31,
+   "at": "2026-09-29T18:38:27.397Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 36,
+   "at": "2026-09-29T18:38:31.494Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 38,
+   "at": "2026-09-29T18:38:34.417Z",
+   "kind": "nudge",
+   "chars": 100
+  },
+  {
+   "line": 46,
+   "at": "2026-09-29T18:39:12.436Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 47,
+   "at": "2026-09-29T18:39:12.517Z",
+   "kind": "attachment:nested_memory",
+   "chars": 236
+  },
+  {
+   "line": 48,
+   "at": "2026-09-29T18:39:12.518Z",
+   "kind": "attachment:nested_memory",
+   "chars": 33024
+  },
+  {
+   "line": 49,
+   "at": "2026-09-29T18:39:12.519Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 54,
+   "at": "2026-09-29T18:39:59.002Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 469
+  },
+  {
+   "line": 55,
+   "at": "2026-09-29T18:39:59.058Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 58,
+   "at": "2026-09-29T18:40:05.348Z",
+   "kind": "handback-enforce",
+   "chars": 128
+  },
+  {
+   "line": 62,
+   "at": "2026-09-29T18:40:10.621Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 64,
+   "at": "2026-09-29T18:40:11.901Z",
+   "kind": "nudge",
+   "chars": 100
+  },
+  {
+   "line": 72,
+   "at": "2026-09-29T18:40:35.065Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 73,
+   "at": "2026-09-29T18:40:35.140Z",
+   "kind": "attachment:nested_memory",
+   "chars": 236
+  },
+  {
+   "line": 74,
+   "at": "2026-09-29T18:40:35.141Z",
+   "kind": "attachment:nested_memory",
+   "chars": 33024
+  },
+  {
+   "line": 75,
+   "at": "2026-09-29T18:40:35.142Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 80,
+   "at": "2026-09-29T18:41:23.571Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 469
+  },
+  {
+   "line": 81,
+   "at": "2026-09-29T18:41:23.612Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 84,
+   "at": "2026-09-29T18:41:26.048Z",
+   "kind": "handback-enforce",
+   "chars": 128
+  },
+  {
+   "line": 88,
+   "at": "2026-09-29T18:41:32.466Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 90,
+   "at": "2026-09-29T18:41:33.242Z",
+   "kind": "nudge",
+   "chars": 100
+  }
+ ],
+ "cross_sample": []
+}

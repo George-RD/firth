@@ -80,7 +80,9 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
                 if not copy.is_file() or hashlib.sha256(copy.read_bytes()).hexdigest() != rec["content_sha256"]:
                     bad.append(f"{copy}: not what the author wrote")
             elif name == "SubagentHandback":
-                rec["input"] = {"message": str(inp.get("message", ""))[:200]}
+                # Whole, not truncated: the hand-back is evidence about what the
+                # author saw (reviewer, on #181).
+                rec["input"] = {"message": str(inp.get("message", ""))}
             else:
                 rec["input"] = inp
                 bad.append(f"{name}: {json.dumps(inp)[:200]}")
