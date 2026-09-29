@@ -73,7 +73,7 @@ diagnostic, in `eval/s7/runs/2026-09-28-haiku-470c6d0/`:
   and a changed prompt. For the second criterion: of 27 resubmitted
   branch mismatches, none got past the checker, 12 failed on a branch
   mismatch again, and 15 failed first on another error (14 of them
-  answers that no longer parsed). With that error removed by hand, 6
-  more recur, 2 pass, 5 fail on another type error and 2 still do not
+  answers that no longer parsed). With that error removed by hand, 7
+  more recur, 2 pass, 5 fail on another type error and 1 still does not
   parse (`counterfactual/branch-blocked.json`). Sample 6 repeated all 10
   of its round-1 mismatches. Repair did not improve, and this todo stays open.

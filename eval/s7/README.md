@@ -840,9 +840,9 @@ By sample (first answer, round 1, round 2):
   below, and 2 of sample 2's) and 1 was sample 2's empty `main` effect.
   With that error removed by hand (`] if;` to `] if` and `main`'s inputs
   bound for sample 5; `main`'s effect filled in and the literal after
-  `prim` dropped for sample 2), 6 fail on a branch mismatch again, 2 pass
+  `prim` dropped for sample 2), 7 fail on a branch mismatch again, 2 pass
   every case (sample 5's `index-of` and `all-true`), 5 fail on another
-  type error and 2 still do not parse
+  type error and 1 still does not parse
   (`counterfactual/branch-blocked.json`, hand-edited, not scored). Run
   7's counts were 0, 10 and 6 of 16 resubmitted. Sample 6 repeated all 10
   of its round-1 branch mismatches in round 2 with the new message, which
@@ -1003,7 +1003,7 @@ mismatches one operation reaches below the branch without the message
 naming it. Run 8 added a rule against reversed locals and a message
 that names that operation. The rule refused 32 answers and each was
 fixed in the next round, but no counted sample passed any task and at
-most 2 of 27 branch mismatches were repaired (18 recurred, 6 of them
+most 2 of 27 branch mismatches were repaired (19 recurred, 7 of them
 behind an earlier error). Each sample repeated a
 few mistakes across nearly every task, and with one diagnostic per
 program two feedback rounds did not get past them. The checker found

@@ -1,5 +1,5 @@
 {
- "note": "Counterfactual, hand-edited, not scored. Every first answer or round-1 answer of a counted sample that failed on firth.type.branch-mismatch, and the author's next answer for that task. Where the next answer failed first on another error, that error was removed by the listed mechanical edits and the edited answer checked at 4c379e0, to see whether the branch mismatch behind it was repaired.",
+ "note": "Counterfactual, hand-edited, not scored. Every first answer or round-1 answer of a counted sample that failed on firth.type.branch-mismatch, and the author's next answer for that task. Where the next answer failed first on another error, that error was removed by the listed mechanical edits (the `] if;` edit only where a `}` follows, so a word ending in `] if;` keeps its terminator) and the edited answer checked at 4c379e0, to see whether the branch mismatch behind it was repaired.",
  "rows": [
   {
    "sample": 2,
@@ -211,9 +211,9 @@
    "hand_edits": [
     "`] if;` to `] if`"
    ],
-   "edited_source": ": digits-helper\n  (forall \u03c1; \u03c1 n:Int^many result:Seq Int^many -- \u03c1 digits:Seq Int^many)\n  locals { n result } {\n    n 0 prim = [ result ] [\n      n 10 prim mod prim seq-int.push\n      n 10 prim div result\n      digits-helper\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 n:Int^many -- \u03c1 digits:Seq Int^many)\n  n 0 prim = [ { 0 } ] [\n    prim seq-int.empty n digits-helper\n    dup prim seq-int.len 1 prim - [ dup prim seq-int.len 1 prim - swap prim seq-int.at swap prim seq-int.len 1 prim - dup 1 prim - prim seq-int.at swap 0 swap prim seq-int.set dup 1 prim - prim seq-int.set ] dip\n  ] if\n",
-   "edited_first_error": "firth.syntax.unexpected-eof",
-   "edited_error_word": null
+   "edited_source": ": digits-helper\n  (forall \u03c1; \u03c1 n:Int^many result:Seq Int^many -- \u03c1 digits:Seq Int^many)\n  locals { n result } {\n    n 0 prim = [ result ] [\n      n 10 prim mod prim seq-int.push\n      n 10 prim div result\n      digits-helper\n    ] if\n  };\n\n: main\n  (forall \u03c1; \u03c1 n:Int^many -- \u03c1 digits:Seq Int^many)\n  locals { n } {\n  n 0 prim = [ { 0 } ] [\n    prim seq-int.empty n digits-helper\n    dup prim seq-int.len 1 prim - [ dup prim seq-int.len 1 prim - swap prim seq-int.at swap prim seq-int.len 1 prim - dup 1 prim - prim seq-int.at swap 0 swap prim seq-int.set dup 1 prim - prim seq-int.set ] dip\n  ] if };\n",
+   "edited_first_error": "firth.type.branch-mismatch",
+   "edited_error_word": "main"
   },
   {
    "sample": 5,
