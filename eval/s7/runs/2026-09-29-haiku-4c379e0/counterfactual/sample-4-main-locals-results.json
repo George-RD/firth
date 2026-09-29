@@ -1988,7 +1988,7 @@
       "hidden_total": 5
     }
   },
-  "label": "cf",
+  "label": "counterfactual, hand-edited, not scored",
   "firth_commit": "b5aa38be5c1ea9ac9ca183a92d776a469b8aeda0",
   "eval_sha256": {
     "task.py": "f982b19a56550012ba4614e5355fbee2b5cf3e961ed0f28c5f99fdc536c7308a",
@@ -1997,7 +1997,5 @@
     "harness.py": "ef7be4d4da800ad53238977ea17174acd69f58ee5231d96b4745e80107613e12",
     "isolate.py": "8aba58cd416521b896756432546129cb43f1d53761f7373ccf6c5de43b5aa9dc"
   },
-  "prompt_docs": [
-    "x"
-  ]
+  "prompt_docs": "none: hand edits of kept answers, see README \"Why the counted samples passed nothing\""
 }

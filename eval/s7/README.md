@@ -778,230 +778,194 @@ not run 7's: it gains two paragraphs on the `locals` order rule and one on
 what a branch-mismatch report says (`diff` of the two `prompt-firth.md`
 files: 13 lines in, 1 out). So the prompt and the diagnostics both
 changed. Answers were scored at `4c379e0`. Author:
-`claude-haiku-4-5-20251001`, Firth only, four samples of three answers,
-set up as in run 7 with the same author and feedback instructions.
-Everything is in `runs/2026-09-29-haiku-4c379e0/`.
+`claude-haiku-4-5-20251001`, Firth only, three answers per sample, set up
+as in run 7 with the same author and feedback instructions. Everything is
+in `runs/2026-09-29-haiku-4c379e0/`.
+
+**Samples 1 and 3 are void, and samples 5 and 6 replace them.** A run
+with a flagged call is void (above), and `audit_subagent.py --rounds 2
+--lang firth` flags two of the first four authors. Sample 1, in round 1,
+read its own `answer-2.md` back and changed it with `Edit`, a tool it had
+been told not to use; the edit appended two whole tasks, `primes-up-to`
+and `allocate-batch`, that its `Write` of that answer had left out. Sample 3 wrote `answer-1.md` twice, and the audit
+flags the first write because the kept file is the second. Neither read
+anything but the prompt, its own feedback and its own answers, but the
+rule does not depend on what a flagged call could have seen, so neither
+is counted. Samples 5 and 6 were then run the same way, and the audit
+passes for samples 2, 4, 5 and 6 (exit 0). The void samples' files stay
+in the directory; they are described at the end of this section and
+nowhere else.
 
 | Haiku 4.5, Firth, passed (of 20) | First answer | Round 1 | Round 2 |
 |---|---|---|---|
-| Sample 1 | 0 | 7 | 8 |
-| Sample 2 | 0 | 0 | 0 |
-| Sample 3 | 0 | 0 | 0 |
-| Sample 4 | 0 | 0 | 0 |
-| Run 7 | 0 and 0 | 0 and 0 | 0 and 0 |
-| Run 6 | 3 and 0 | 3 and 2 | 5 and 6 |
+| Samples 2, 4, 5 and 6 | 0 each | 0 each | 0 each |
+| Run 7 (two samples) | 0 and 0 | 0 and 0 | 0 and 0 |
+| Run 6 (two samples) | 3 and 0 | 3 and 2 | 5 and 6 |
 
-Failures by the checker's first diagnostic, summed over the samples
-(`results-N.json`; run 7 has two samples, 40 answers a round, run 8 four,
-80):
+Failures by the checker's first diagnostic, summed over the counted
+samples (`results-N.json`; run 7 has two samples, 40 answers a round,
+run 8 four, 80):
 
 | | Run 7 first | r1 | r2 | Run 8 first | r1 | r2 |
 |---|---|---|---|---|---|---|
-| passed | 0 | 0 | 0 | 0 | 7 | 8 |
-| `firth.type.branch-mismatch` | 9 | 9 | 10 | 11 | 28 | 19 |
-| `firth.name.locals-order` | (no rule) | | | 21 | 5 | 0 |
-| `firth.name.unresolved` | 2 | 2 | 20 | 8 | 16 | 15 |
-| `firth.type.stack-underflow` | 12 | 1 | 0 | 0 | 15 | 9 |
-| `firth.type.word-input-mismatch` | 5 | 11 | 0 | 7 | 1 | 6 |
-| `firth.type.primitive-input-mismatch` | 5 | 12 | 6 | 1 | 1 | 5 |
-| `firth.syntax.*` | 4 | 0 | 0 | 31 | 1 | 6 |
-| other checker errors | 2 | 2 | 2 | 0 | 0 | 10 |
-| wrong answer or runtime fault | 1 | 3 | 2 | 1 | 6 | 2 |
+| `firth.type.branch-mismatch` | 9 | 9 | 10 | 12 | 15 | 30 |
+| `firth.name.locals-order` | (no rule) | | | 27 | 5 | 0 |
+| `firth.name.unresolved` | 2 | 2 | 20 | 1 | 15 | 26 |
+| `firth.type.stack-underflow` | 12 | 1 | 0 | 0 | 24 | 11 |
+| `firth.type.word-input-mismatch` | 5 | 11 | 0 | 0 | 0 | 4 |
+| `firth.type.primitive-input-mismatch` | 5 | 12 | 6 | 1 | 1 | 1 |
+| `firth.syntax.*` | 4 | 0 | 0 | 32 | 20 | 7 |
+| other checker errors | 2 | 2 | 2 | 7 | 0 | 1 |
+| wrong answer or runtime fault | 1 | 3 | 2 | 0 | 0 | 0 |
 
 By sample (first answer, round 1, round 2):
 
-| | S1 | S2 | S3 | S4 |
+| | S2 | S4 | S5 | S6 |
 |---|---|---|---|---|
-| passed | 0, 7, 8 | 0, 0, 0 | 0, 0, 0 | 0, 0, 0 |
-| `firth.type.branch-mismatch` | 11, 3, 9 | 0, 5, 5 | 0, 20, 4 | 0, 0, 1 |
-| `firth.name.locals-order` | 0, 0, 0 | 8, 0, 0 | 13, 0, 0 | 0, 5, 0 |
-| `firth.name.unresolved` | 0, 1, 0 | 0, 0, 0 | 7, 0, 0 | 1, 15, 15 |
-| `firth.type.stack-underflow` | 0, 0, 0 | 0, 15, 9 | 0, 0, 0 | 0, 0, 0 |
-| `firth.syntax.*` | 0, 1, 0 | 12, 0, 6 | 0, 0, 0 | 19, 0, 0 |
-| other checker errors | 8, 2, 1 | 0, 0, 0 | 0, 0, 16 | 0, 0, 4 |
-| wrong answer or runtime fault | 1, 6, 2 | 0, 0, 0 | 0, 0, 0 | 0, 0, 0 |
+| `firth.type.branch-mismatch` | 0, 5, 5 | 0, 0, 1 | 12, 0, 8 | 0, 10, 16 |
+| `firth.name.locals-order` | 8, 0, 0 | 0, 5, 0 | 0, 0, 0 | 19, 0, 0 |
+| `firth.name.unresolved` | 0, 0, 0 | 1, 15, 15 | 0, 0, 10 | 0, 0, 1 |
+| `firth.type.stack-underflow` | 0, 15, 9 | 0, 0, 0 | 0, 0, 0 | 0, 9, 2 |
+| `firth.syntax.*` | 12, 0, 6 | 19, 0, 0 | 0, 20, 1 | 1, 0, 0 |
+| other checker errors | 0, 0, 0 | 0, 0, 4 | 8, 0, 1 | 0, 1, 1 |
 
-- **One sample of four passed anything.** Sample 1 went from 0 to 7 and
-  8, close to run 6's sample 2 (0, 2, 6); the other three passed nothing
-  in any round, like both of run 7's. With one sample at 8 and three at
-  0, four samples cannot say whether the changes helped.
-- **Branch mismatches were repaired more often, but still rarely.** Of the
-  39 answers that failed on `firth.type.branch-mismatch` in round 1 or 2,
-  37 were resubmitted. Of those 37, 6 then passed the checker (2 passed
-  every case, 4 ran and gave a wrong answer), 9 failed on a branch
-  mismatch again and 22 failed first on a different error, which may be
-  reported before the same unrepaired branch. In run 7 the same counts
-  were 0, 10 and 6 of 16 resubmitted. Counting the 2 unchanged answers as
-  repeats, as run 7's README did, the repeat rate fell from 12 of 18 to
-  11 of 39. All 6 answers that got past the checker are sample 1's,
-  from round 1 to round 2.
-- **The `locals` order rule refused 26 answers, and each was fixed at
-  once.** It refused 21 first answers (sample 2: 8; sample 3: 13) and 5
-  of sample 4's round-1 answers. Sample 2 wrote 28 of its 29
-  word-opening `locals` blocks in reverse, and its other 12 answers failed
-  on syntax first; sample 4's first answers also bound locals in reverse
-  (`seq-sum`: `locals { xs idx acc }` for inputs `acc idx xs`) behind a
-  syntax error. All 26 were resubmitted, and in every case the next
-  answer passed the rule (next first error: 8
-  `firth.type.stack-underflow`, 13 `firth.type.branch-mismatch`, and 3
-  `firth.type.word-input-mismatch`, 1 `firth.name.unresolved-effect` and
-  1 branch mismatch). None of the 26 went on to pass. With the names now
-  right, the argument order at the call sites was still wrong in several
-  (sample 4's `seq-sum`: `sum-loop` needs `Int Int Seq Int`, the stack has
-  `Int Seq Int Int`). So the rule removed the silent wrong binding that
-  sank run 7's sample 1, and it did not by itself make these answers
-  correct.
-- **Syntax errors came back in the first answers.** 31 of 80 first
-  answers failed to parse, against 4 of 40 in run 7. Sample 4 grouped
-  arguments in parentheses, as in `xs (idx 1 prim +) sum-loop`, 19 times;
-  the parser reports `Unexpected the end of the input.` at the `(`, which
-  says nothing about parentheses (`todo.paren-in-body-diagnostic`). Sample
-  2 wrote literals after `prim` (`i prim 0 prim <`), 12 times. Neither
-  sample had a syntax error in round 1; sample 2 had 6 again in round 2.
+- **No counted sample passed any task in any round**, as in run 7. Run 6,
+  on the prompt before the `locals` paragraphs, reached 5 and 6 after
+  feedback.
+- **Branch mismatches were not repaired.** Of the 27 answers that failed
+  on `firth.type.branch-mismatch` in round 1 or 2, all were resubmitted;
+  none then got past the checker, 12 failed on a branch mismatch again,
+  and 15 failed first on another error (12 of those are sample 5's
+  round-1 answers, which all failed to parse, below). Run 7's counts were
+  0, 10 and 6 of 16 resubmitted. Sample 6 repeated all 10 of its round-1
+  branch mismatches in round 2 with the new message, which names the
+  operation and says which values to push (`haiku-firth-6/repair-2.md`).
+- **The `locals` order rule refused 32 answers, and each was fixed in the
+  next round.** It refused 27 first answers (sample 2: 8; sample 6: 19)
+  and 5 of sample 4's round-1 answers. Sample 2 wrote 28 of its 29
+  word-opening `locals` blocks that name the inputs in reverse, and
+  sample 4 22 of 23 (behind a syntax error in its first answers). All 32
+  were resubmitted and none was refused again. None went on to pass: the
+  next error was `firth.type.stack-underflow` in 16 (sample 2's 8, sample
+  6's 8), a branch mismatch in 11, a word-input mismatch in 3, and one
+  each of `firth.type.primitive-input-mismatch` and
+  `firth.name.unresolved-effect`.
+- **"Unexpected the end of the input." misled two samples.** The parser
+  reports it at a token that is not the end of the input. Sample 4's
+  first answers grouped arguments in parentheses, as in
+  `xs (idx 1 prim +) sum-loop`, 19 times, and got it at the `(`. Sample
+  5's round-1 answers ended a block with `] if;` inside `{ ... }` (27
+  times in 20 tasks), and got it at that `;`. Sample 5 then wrote every
+  round-2 answer as a single `main` with no helper words, "to avoid
+  multi-definition parsing issues" in its words, which left it no way to
+  loop
+  (`todo.paren-in-body-diagnostic`). Sample 2 wrote literals after `prim`
+  (`i prim 0 prim <`), 12 times, reported as ``Unexpected `0`, expected
+  `primitive name`.``
 - **Sample 2 declared `main` with no inputs, and the feedback did not say
   so.** In rounds 1 and 2 every stack underflow (15, then 9) is a `main`
   whose stack effect is `( -- result:Int^many)` followed by
   `locals { xs } { ... }`. The error points at `xs` and says "A `locals`
   block or an operation here needs more values than the stack holds",
   with no mention of the empty stack effect; 8 of the 15 failed the same
-  way again, and sample 2's own summary blames the elaborator ("cannot
-  reliably handle multiple locals value references"). Filed as
-  `todo.underflow-names-declared-inputs`.
+  way again (`todo.underflow-names-declared-inputs`). Firth already
+  accepts `( -- result:Int^many)` as a stack effect with no inputs, so it
+  is not a parse error.
 - **Sample 4 never bound `main`'s inputs.** In both its round-1 and
   round-2 answers, 15 tasks used `xs` in `main` without a `locals` block
   and failed on `firth.name.unresolved`. The hint says to bind it first;
   between the two rounds Haiku changed all 15 answers, but not that.
-- **Type variables still reach the author.** 18 errors show checker type
-  variables such as `?t67 ?t66` in `actual:`, all on the
-  primitive-input, word-input and quotation-compose paths
-  (`todo.internal-operation-diagnostics`). The 9 round-2
-  `firth.type.quotation-compose-mismatch` failures are all sample 3's,
-  whose round-2 answers use `dip` 14 times against none in round 1.
-- **Jev** (`modes-1.json`, `modes-3.json`, every capability available):
-  first answers 38 `invented_syntax`, 28 `stack_order`, 13
-  `stack_effect` and 1 `logic`; last answers 42 `stack_effect`, 17
-  `invented_syntax`, 10 `stack_order`, 2 `logic` and 1
+- **Type variables still reach the author** in 5 counted errors, such as
+  `?t67 ?t66` in `actual:`, on the word-input and quotation paths
+  (`todo.internal-operation-diagnostics`).
+- **Jev** (`modes-1.json`, `modes-3.json`, every capability available),
+  counted samples: first answers 34 `invented_syntax`, 28 `stack_order`,
+  15 `stack_effect` and 3 `missing_primitive`; last answers 46
+  `stack_effect`, 29 `invented_syntax`, 4 `stack_order` and 1
   `missing_primitive`.
-- **Fixtures.** The last-round branch mismatches are sample 1's (9),
-  sample 2's (5), sample 3's (4) and sample 4's (1) `answer-3.md`, or the
-  latest answer for tasks not resubmitted.
-- **Transcripts.** `audit_subagent.py --rounds 2 --lang firth` exits 0 for
-  samples 2 and 4 and flags samples 1 and 3; the kept transcripts record
-  every call. Sample 3 wrote `answer-1.md` twice in round 1, and the audit
-  flags the first write because the kept file is the second. Sample 1, in
-  round 1, read its own `answer-2.md` back and changed it with `Edit`, a
-  tool it had been told not to use; the kept file is the edited one.
-  Neither author read any file other than the prompt, its own feedback
-  and its own answers, so no outside information reached them, and both
-  samples are scored as kept.
-- **Set-up slips, both caught before any answer was scored.** The four
+- **Fixtures.** The last-round branch mismatches are in each counted
+  sample's `answer-3.md`, or its latest answer for tasks it did not
+  resubmit: sample 2 (5), sample 4 (1), sample 5 (8), sample 6 (16).
+- **Set-up slips, caught before any answer was scored.** The first four
   authors were first started with an instruction worded differently from
-  run 7's; they were stopped before writing and restarted with run 7's
-  wording, and only the restarted authors' answers are kept. Sample 4's
-  first feedback message was also worded differently; it was stopped
-  before writing `answer-2.md` and sent run 7's wording, so its transcript
-  holds both messages.
+  run 7's; they were stopped and restarted with run 7's wording, and only
+  the restarted authors' answers are kept. Their raw logs are not kept in
+  the repository; `raw-log-extract.json` lists every tool call they made,
+  one `Read` of the prompt each and no `Write`. Sample 4's first feedback
+  message was also worded differently; it read `repair-1.md`, was stopped
+  before writing `answer-2.md`, and was sent run 7's wording, then wrote
+  its answer. The kept transcript records its tool calls but not the
+  messages it was sent, so the first message's wording is recorded only
+  here.
 - Scoring at `4c379e0` still passes run 6's passing answers (sample 2
   round 2 rescored: 6 of 20, the same tasks).
 
-### Why one sample passed 8 and three passed nothing
+### Why the counted samples passed nothing
 
-**It was not the harness or the prompt.** All four authors read the same
-`prompt-firth.md` (the first `Read` of each returned the whole file),
-got feedback from the same `repair` step and were scored by the same
-`score` call at `4c379e0`. No task failed on a harness error: every
-failure is a checker diagnostic, and the wrong answers and runtime traps
-are all sample 1's. The only differences in set-up are the two wording
-slips above (each author was restarted before writing), and that sample 1
-read two parts of the prompt a second time and sample 2 one.
+**It was not the harness or the prompt.** All six authors read the same
+`prompt-firth.md`, got feedback from the same `repair` step and were
+scored by the same `score` call at `4c379e0`. The kept transcripts record
+each `Read` by path only, without its offset and limit. The raw sub-agent
+logs, which are not kept in the repository, show that each author's first
+`Read` of the prompt had no offset or limit and returned lines 1 to the
+end; `raw-log-extract.json` lists every prompt `Read` with the lines it
+returned, extracted from those logs. Keeping offset and limit in the
+audit is a follow-up. No task failed on a harness error: every counted
+failure is a checker diagnostic.
 
-**Each zero sample repeated two or three basic mistakes in nearly every
-task, and the feedback showed only the first.** The checker reports one
-diagnostic per task, so each round of feedback uncovered the next mistake
-in the same answers, and two feedback rounds were not enough to get
-through them. Sample 1 made none of these mistakes.
+**Each sample repeated a few mistakes across nearly every task, and the
+feedback showed only the first.** The checker stops at the first error in
+a program, so each round of feedback uncovered the next mistake in the
+same answers, and two feedback rounds did not get through them:
 
-| | Sample 1 | Sample 2 | Sample 3 | Sample 4 |
+| First answers | S2 | S4 | S5 | S6 |
 |---|---|---|---|---|
-| `main` declares the task's inputs | 20 | 0 (`( -- result)`) | 20 | 20 |
-| `main` binds them with `locals` | 20 | 20 | 13 | 0 |
-| word-opening `locals` in effect order | yes | no (28 of 29 reversed) | no (13 refused) | no (5 refused in round 1) |
-| `xs i prim seq-int.at`, as documented | yes | yes | no: `i xs`, in 28 places every round | yes |
-| parse errors | 0 | 12 (`prim 0`) | 0 | 19 (parentheses) |
+| `main` declares the task's inputs | 0 (`( -- result)`) | 20 | 20 | 20 |
+| `main` binds them with `locals` | 20 | 0 | 20 | 20 |
+| helper `locals` in effect order | no (28 of 29 reversed) | no (22 of 23 reversed) | yes | no (19 refused) |
+| parse errors | 12 (`prim 0`) | 19 (parentheses) | 0 | 1 |
+| first-answer type errors | none reached | none reached | 12 branch, 7 other | none reached |
 
-(First answers. Sample 3's reversed `seq-int.at` is in all three rounds.)
+- Sample 2's round-2 answers still fail on the empty `main` effect (9) and
+  on `prim` literals (4). Checked by hand: `seq-sum`'s helper is correct
+  and only `main ( -- result:Int^many)` is wrong. With `main`'s stack
+  effect filled in from the task and nothing else changed
+  (`counterfactual/sample-2-main-effect*.json`), 2 of the 9 underflow
+  tasks pass; 5 are then refused by the `locals` order rule in `main`, 1
+  traps and 1 fails on a word-input mismatch.
+- Sample 4's round-2 answers still use `main`'s inputs unbound (15). With
+  `main`'s body wrapped in `locals { <the task's inputs> } { ... }`
+  (`counterfactual/sample-4-main-locals*.json`), none of the 15 passes;
+  they fail on word-input (5), branch (4), unresolved-effect (3) and 3
+  other type errors. These are hand edits, not Haiku's answers, and are
+  not counted in any score.
+- Sample 5 had the basics right from the start, as the table shows, and
+  its first answers failed on type errors (12 branch mismatches, and
+  `prim >`, which is not a primitive, 4 times). Its round-1 answers then
+  all failed to parse on `] if;`, the misleading message sent it to
+  single-word answers, and its last round fails on unbound names (10) and
+  branch mismatches (8).
+- Sample 6's first answers were refused by the `locals` order rule (19);
+  its round-1 answers fail on branch mismatches (10) and underflows (9),
+  and in round 2 all 10 branch mismatches recur.
 
-1. **Round-2 failures of the three zero samples.** Jev and the checker
-   agree on the class of every task (`modes-3.json`, `results-3.json`):
-   - Sample 2: 9 `firth.type.stack-underflow` (`stack_effect`), all the
-     empty `main` effect; 6 syntax (`invented_syntax`), 4 of them
-     literals after `prim` again and 2 reported as `Unexpected the end of
-     the input.`; 5 branch mismatches. Checked by hand:
-     `seq-sum`'s helper is correct and only `main ( -- result:Int^many)`
-     is wrong.
-   - Sample 3: 9 `firth.type.quotation-compose-mismatch`, each reported
-     on a `compose` the author never wrote, in answers that now use `dip`
-     14 times (none before); 5 `firth.type.primitive-input-mismatch`, 1
-     on the reversed `seq-int.at` and 4 on a `prim +` whose inputs are not
-     both Int; 4 branch mismatches; 2 word-input mismatches. Checked
-     by hand: `seq-sum` now pushes all three arguments of its loop (the
-     round-1 branch mismatch is repaired) and fails on `i xs prim
-     seq-int.at`, which no earlier feedback had reached.
-   - Sample 4: 15 `firth.name.unresolved` (`main` never binds its inputs),
-     3 word-input mismatches, 1 `firth.name.unresolved-effect`, 1 branch
-     mismatch.
+No single class explains the zero: the first answers' largest blockers are
+parse errors (samples 2 and 4), the `locals` order (sample 6) and branch
+mismatches (sample 5), and in the last round they are the empty `main`
+effect (sample 2), unbound `main` inputs (sample 4) and branch mismatches
+(samples 5 and 6).
 
-   No one blocker dominates across the three: sample 2's largest is the
-   no-input `main`, sample 3's the `dip` rewrite, sample 4's the unbound
-   `main`. Within each sample one mistake is shared by most tasks.
+### The void samples
 
-   Fixing only the largest blocker does not rescue them. With `main`'s
-   stack effect filled in from the task and nothing else changed
-   (`counterfactual/sample-2-main-effect*.json`), 2 of sample 2's 9
-   underflow tasks pass; 5 are then refused by the `locals` order rule in
-   `main`, 1 traps and 1 fails on a word-input mismatch. With `main`'s
-   body wrapped in `locals { <the task's inputs> } { ... }`
-   (`counterfactual/sample-4-main-locals*.json`), none of sample 4's 15
-   passes; they fail on word-input (5), branch (4), unresolved-effect
-   (3) and 3 other type errors. These are hand edits, not Haiku's
-   answers, and are not counted in any score.
-2. **What sample 1 did differently.** It wrote the basics right from the
-   first answer (table above): the stack effects, `locals` in `main` and
-   in effect order, and the documented `seq-int.at` order. Its first
-   answers failed on type errors inside otherwise well-formed words: 7
-   word-input mismatches, each a call given its arguments in the wrong
-   order (`seq-sum` pushes `acc i xs` where the loop takes `xs i acc`),
-   and 11 branch mismatches such as `seq-max`'s, whose true branch leaves
-   two values and its false branch one. One round fixed most of them:
-   2 passes and 4 wrong answers came from its branch mismatches, and 7
-   tasks passed. It was also the only author that read its own answer
-   back and edited it, and that re-read parts of the prompt, but the
-   code shapes, not the process, are what separate it: its round-1
-   answers are already free of every mistake in the table.
-3. **The 26 `locals` order refusals.** Each resubmitted answer bound its
-   locals in order and then failed on the next mistake down:
-   - Sample 2 (8): all 8 then failed on the no-input `main` underflow
-     (it was there in all 20 first answers, behind the refusal). In round
-     2: 5 underflows again, 1 branch mismatch, 2 syntax.
-   - Sample 3 (13): all 13 then failed on a branch mismatch, a recursive
-     call missing a loop argument. In round 2: 6 quotation-compose (the
-     `dip` rewrite), 4 primitive-input (1 the reversed `seq-int.at`, 3 a
-     `prim +`), 1 word-input, 2 branch mismatches.
-   - Sample 4 (5, refused in round 1): 3 word-input mismatches (call
-     arguments in the wrong order), 1 unresolved-effect, 1 branch
-     mismatch.
-4. **The first-answer 0 of 20 is not one error class.** Sample 1: branch
-   mismatch 11, word-input 7. Sample 2: syntax 12, `locals` order 8.
-   Sample 3: `locals` order 13, unresolved name 7. Sample 4: syntax 19,
-   unresolved name 1. What they share is the shape above: one or two
-   mistakes, each made in almost every task.
-
-So the comparison between samples stands, and the split is in what each
-author wrote in its first answer. For the language this points at the
-same few basics (stack effects on `main`, binding and ordering inputs,
-argument order) and at feedback that reports one mistake per task when
-most answers carry several. Whether showing more than one diagnostic per
-task would help is not tested here.
+Samples 1 and 3 are kept for the record and counted nowhere above.
+Sample 1 passed 0, 7 and 8, and its round-1 branch mismatches are the only
+ones in this run that got past the checker (6 of 12 resubmitted: 2 passed,
+4 gave wrong answers). Its first answers had all the basics in the table
+right. Sample 3 passed nothing; it wrote `i xs prim seq-int.at` against
+the documented `xs i` in 28 places in every round. Sample 1 suggests that
+an author who gets the basics right can repair branch mismatches from the
+new message, but a void sample is not evidence, and sample 5, which also
+had the basics right, did not.
 
 ## What the eight runs say about the bet
 
@@ -1029,11 +993,12 @@ after feedback where run 6's sample reached 6, and that is unexplained
 (variance or a regression from the new messages). In most unrepaired
 mismatches one operation reaches below the branch without the message
 naming it. Run 8 added a rule against reversed locals and a message
-that names that operation. The rule refused 26 answers and each was
-fixed in the next round, and more branch mismatches were repaired (6 of
-37 got past the checker, against none of 16 in run 7), but only one of
-four samples passed any task (8 of 20 after two rounds). The checker
-found most stack-shape errors before execution.
+that names that operation. The rule refused 32 answers and each was
+fixed in the next round, but no counted sample passed any task and no
+branch mismatch was repaired (12 of 27 recurred). Each sample repeated a
+few mistakes across nearly every task, and with one diagnostic per
+program two feedback rounds did not get past them. The checker found
+most stack-shape errors before execution.
 Wrong answers at runtime were logic slips that a signature cannot catch.
 
 So the bet holds for strong models and not yet for weak ones, and the
