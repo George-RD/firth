@@ -63,7 +63,8 @@ What works, with where to check it:
   Fibonacci and factorial, run 116 cases against expected results on both
   hosts, and 5 more programs must be refused by the checker
   (`python3 examples/programs/check_programs.py`). The inventory allocator
-  (`examples/inventory/`) passes all 53 cases of its fixed contract
+  (`examples/inventory/`) passes all 53 cases of its fixed contract: 30
+  run on both hosts, and 23 are invalid inputs its host must reject
   (`python3 examples/inventory/run_cases.py`).
 - **Proofs about programs.** 16 exported words carry Lean proofs of their
   contracts over the reference interpreter, including the whole allocator
