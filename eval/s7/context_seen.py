@@ -47,8 +47,51 @@ LABEL = re.compile(r"\bauthor ([AB][0-9]+)\b")
 # Run 10's two arms: commit and the worktree it was checked out in. The same
 # sample number exists in both, so a sample is named by arm and number
 # (reviewer, on #181).
-ARMS = {"4c379e0": "firth-r8", "8ea4a1d": "firth-v9"}
-ARM_SAMPLE = re.compile(r"(" + "|".join(ARMS) + r")/haiku-(?:firth|python)-([0-9]+)")
+#
+# Run 11 (`runs/2026-09-29-locals-guide/`) puts both arms in one worktree, in
+# the run directories `arm-a` and `arm-b`, so an arm is named by its directory
+# and a path into the other arm's directory is what crosses. `--arm-set`
+# picks the table; run 10's stays the default so its recorded commands still
+# give the same output.
+ARM_SETS = {
+    "run10": {"4c379e0": ("firth-r8", ("4c379e0", "firth-r8/eval")),
+              "8ea4a1d": ("firth-v9", ("8ea4a1d", "firth-v9/eval"))},
+    # Arm B's treatment also lives beside the arm directories, in
+    # arm-b-paragraph.md, and any part of its text can appear with no path
+    # (Codex, on #184): every clause of it is a marker, below.
+    "run11": {"arm-a": (None, ("arm-a/",)), "arm-b": (None, ("arm-b/", "arm-b-paragraph"))},
+}
+RUN11 = Path(__file__).resolve().parent / "runs" / "2026-09-29-locals-guide"
+
+
+def squash(text: str) -> str:
+    """Whitespace collapsed, JSON's escaped newlines included, so a quote
+    re-wrapped or on one line still matches."""
+    return " ".join(text.replace("\\n", " ").split())
+
+
+def treatment_clauses() -> tuple[str, ...]:
+    """Arm B's paragraph, cut at sentence and clause punctuation into pieces of
+    at least 20 characters that never occur in arm A's prompt."""
+    text = squash((RUN11 / "arm-b-paragraph.md").read_text())
+    arm_a = squash((RUN11 / "arm-a" / "prompt-firth.md").read_text())
+    pieces = {c.strip().rstrip(".") for c in re.split(r"[.,:;]\s", text)}
+    return tuple(sorted(c for c in pieces if len(c) >= 20 and c not in arm_a))
+
+
+ARM_SETS["run11"]["arm-b"] = (None, ARM_SETS["run11"]["arm-b"][1] + treatment_clauses())
+
+
+def use_arms(name: str) -> None:
+    """Point ARMS, MARKERS and ARM_SAMPLE at one run's arms."""
+    global ARMS, MARKERS, ARM_SAMPLE
+    ARMS = {arm: worktree for arm, (worktree, _) in ARM_SETS[name].items()}
+    MARKERS = {arm: markers for arm, (_, markers) in ARM_SETS[name].items()}
+    ARM_SAMPLE = re.compile(r"(?<![\w-])(" + "|".join(map(re.escape, ARMS))
+                            + r")/haiku-(?:firth|python)-([0-9]+)")
+
+
+use_arms("run10")
 REMINDER = re.compile(r"<system-reminder>.*?</system-reminder>", re.S)
 
 
@@ -96,9 +139,10 @@ def crossing(body: str, sample: str | None, label: str | None, arm: str | None) 
         "arm_samples": sorted({f"{c}/{n}" for c, n in ARM_SAMPLE.findall(body)
                                if (c, n) != (arm, own_n)}),
         # The other arm's commit anywhere, or any path into its worktree's
-        # eval tree, where the samples, prompts and harness live.
-        "other_arm": sorted({k for c, w in ARMS.items() if c != arm
-                             for k in (c, f"{w}/eval") if k in body}) if arm else [],
+        # eval tree, where the samples, prompts and harness live (run 10), or
+        # into its run directory (run 11).
+        "other_arm": sorted({k for c, ks in MARKERS.items() if c != arm
+                             for k in ks if k in body or k in squash(body)}) if arm else [],
         "labels": sorted({l for l in LABEL.findall(body) if l != label}),
         "task_paths": sorted(set(TASKS.findall(body))),
     }
@@ -110,7 +154,7 @@ def mentions(body: str, arm: str | None) -> list[str]:
     directory-scoped skills and the session's working directory by worktree
     name. Listed for every item, not counted as crossing, since it carries no
     sample's content; a path into the worktree's eval tree is (above)."""
-    return sorted({w for c, w in ARMS.items() if c != arm and w in body}) if arm else []
+    return sorted({w for c, w in ARMS.items() if c != arm and w and w in body}) if arm else []
 
 
 def scan(events: list[dict], sample: str | None, label: str | None = None,
@@ -235,6 +279,42 @@ def self_test() -> None:
     planted[2]["message"]["content"][0]["content"] = "x<system-reminder>be careful</system-reminder>"
     got = scan(planted, "haiku-firth-3", "A3", "4c379e0")
     assert got["cross_sample"] == [] and [i["kind"] for i in got["injected"]] == ["tool_result:system-reminder"]
+    # Run 11: both arms in one worktree, named by run directory.
+    use_arms("run11")
+    other = {"type": "attachment", "timestamp": "t3", "attachment": {"type": "file", "filename":
+             "/home/user/firth-r11/eval/s7/runs/2026-09-29-locals-guide/arm-b/haiku-firth-3/answer-1.md"}}
+    got = scan(base + log(other), "haiku-firth-3", "A3", "arm-a")
+    assert got["cross_sample"] and got["cross_sample"][0]["arm_samples"] == ["arm-b/3"], got
+    assert got["cross_sample"][0]["other_arm"] == ["arm-b/"], got
+    # Planted: the other arm's prompt, with no sample in the path.
+    other["attachment"]["filename"] = "/home/user/firth-r11/eval/s7/runs/x/arm-b/prompt-firth.md"
+    got = scan(base + log(other), "haiku-firth-3", "A3", "arm-a")
+    assert got["cross_sample"] and got["cross_sample"][0]["other_arm"] == ["arm-b/"], got
+    # Planted: arm B's paragraph file, or its text with no path, shown to arm A.
+    other["attachment"]["filename"] = "/home/user/firth-r11/eval/s7/runs/x/arm-b-paragraph.md"
+    got = scan(base + log(other), "haiku-firth-3", "A3", "arm-a")
+    assert got["cross_sample"] and got["cross_sample"][0]["other_arm"] == ["arm-b-paragraph"], got
+    other["attachment"]["filename"] = "note: Prefer names to stack shuffling. Open each word"
+    got = scan(base + log(other), "haiku-firth-3", "A3", "arm-a")
+    assert got["cross_sample"] and got["cross_sample"][0]["other_arm"] == [
+        "Prefer names to stack shuffling"], got
+    # Planted: a later excerpt alone, re-wrapped across lines (Codex, on #184).
+    other["attachment"]["filename"] = "hint: leave a name unused\ninstead of `drop`"
+    got = scan(base + log(other), "haiku-firth-3", "A3", "arm-a")
+    assert got["cross_sample"] and got["cross_sample"][0]["other_arm"] == [
+        "leave a name unused instead of `drop`"], got
+    # Every clause is a marker, and none of them is in arm A's own prompt.
+    clauses = treatment_clauses()
+    assert len(clauses) >= 8, clauses
+    arm_a = squash((RUN11 / "arm-a" / "prompt-firth.md").read_text())
+    assert not any(c in arm_a for c in clauses)
+    assert all(c in squash((RUN11 / "arm-b" / "prompt-firth.md").read_text()) for c in clauses)
+    # Arm B's own paragraph, in its own prompt, is not flagged for arm B.
+    assert scan(base + log(other), "haiku-firth-3", "B3", "arm-b")["cross_sample"] == []
+    # This arm's own files are not flagged.
+    other["attachment"]["filename"] = "/x/runs/y/arm-a/haiku-firth-3/repair-1.md arm-a/prompt-firth.md"
+    assert scan(base + log(other), "haiku-firth-3", "A3", "arm-a")["cross_sample"] == []
+    use_arms("run10")
     # A tool result for a call this author never made is not its own.
     planted = base + log({"type": "user", "timestamp": "t3", "message": {
         "role": "user", "content": [{"type": "tool_result", "tool_use_id": "other"}]}})
@@ -250,9 +330,19 @@ def main() -> int:
     cli.add_argument("log", type=Path, nargs="?")
     cli.add_argument("--sample", help="this author's sample directory name, e.g. haiku-firth-8")
     cli.add_argument("--label", help="this author's own label, e.g. B8 (from 'Control author B8')")
-    cli.add_argument("--arm", choices=sorted(ARMS), help="this author's arm commit")
+    cli.add_argument("--arm-set", choices=sorted(ARM_SETS), default="run10",
+                     help="which run's arms --arm names (default run10)")
+    cli.add_argument("--arm", choices=sorted({a for s in ARM_SETS.values() for a in s}),
+                     help="this author's arm: a commit (run10) or run directory (run11)")
     cli.add_argument("--self-test", action="store_true")
     a = cli.parse_args()
+    use_arms(a.arm_set)
+    if a.arm and a.arm not in ARMS:
+        cli.error(f"--arm {a.arm} is not an arm of {a.arm_set}")
+    # Without --arm nothing counts as the other arm, so a run 11 scan that
+    # omitted it would pass a sample shown the other arm's prompt (Codex, on #184).
+    if a.arm_set != "run10" and not a.self_test and not a.arm:
+        cli.error(f"--arm-set {a.arm_set} needs --arm ({' or '.join(sorted(ARMS))})")
     if a.self_test:
         self_test()
         return 0
