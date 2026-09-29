@@ -1,6 +1,7 @@
 {
- "note": "Everything put into this author's context that it did not fetch itself: the eval session's own instructions and the author's own tool results are left out. cross_sample marks an item naming another sample or another task's files.",
+ "note": "Everything put into this author's context that it did not fetch itself: the eval session's own instructions and the author's own tool results are left out, except for reminders the harness added inside a result, and every result is also scanned. cross_sample marks an item naming another sample (by number, or by arm and number), the other arm's commit or worktree, another author's label, or another task's files.",
  "sample": "haiku-firth-2",
+ "arm": "8ea4a1d",
  "injected": [
   {
    "line": 2,
@@ -18,7 +19,10 @@
    "line": 4,
    "at": "2026-09-29T18:02:20.934Z",
    "kind": "attachment:environment",
-   "chars": 333
+   "chars": 333,
+   "other_arm_worktree_named": [
+    "firth-r8"
+   ]
   },
   {
    "line": 5,
@@ -198,7 +202,10 @@
    "line": 69,
    "at": "2026-09-29T18:16:37.988Z",
    "kind": "attachment:environment",
-   "chars": 425
+   "chars": 425,
+   "other_arm_worktree_named": [
+    "firth-r8"
+   ]
   },
   {
    "line": 73,
@@ -267,5 +274,8 @@
    "chars": 100
   }
  ],
- "cross_sample": []
+ "cross_sample": [],
+ "other_arm_worktree_named": [
+  "attachment:environment"
+ ]
 }

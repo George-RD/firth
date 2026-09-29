@@ -33,7 +33,11 @@ including the path of B10's output log, into its context
 It made no call on that path, but an author that did would read another
 sample's work; the allowlist has to block that path too. Until it does,
 `eval/s7/context_seen.py` lists what each author was shown and flags any
-item naming another sample. The
+item naming another sample. It also found that the harness names both
+worktrees to every author (a skill listing scoped to `firth-r8/` and
+`firth-v9/`, and for two arm B authors a working directory in arm A's
+worktree); an enforced sandbox should show each author only its own
+arm's tree. The
 audit also flags an author that writes its own answer file more than
 once, because it compares every write with the kept file, which is
 stricter than the allowlist below; an enforced allowlist should settle

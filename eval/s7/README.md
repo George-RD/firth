@@ -1238,11 +1238,28 @@ rules and tests committed before the first author started
   was shown. It lists every item put into an author's context that is
   neither its own turn, nor a result of its own call, nor one of the eval
   session's three messages, and flags any that names another sample or
-  another task's files. Each sample keeps its `context-seen.json`. It
-  exits 1 on one sample of the 26, B8, at line 81 of its log: the
-  `task_status` attachment that named B10. Its `--self-test` plants that
-  attachment and a nudge naming another sample's answer file, and both
-  are flagged.
+  another task's files. It also scans the text of the author's own tool
+  results, where the harness can add a `<system-reminder>`, and names a
+  sample by arm and number, so the other arm's sample with the same
+  number, its commit, or a path into its worktree's `eval/` tree counts
+  as crossing. Each sample keeps its `context-seen.json`. It exits 1 on
+  one sample of the 26, B8, at line 81 of its log: the `task_status`
+  attachment that named B10. No tool result carried an added reminder.
+  Its `--self-test` plants each kind of crossing (that attachment, a
+  label alone, a nudge naming another sample's answer file, the other
+  arm's sample with the same number, a path into the other arm's `eval/`,
+  and a reminder inside a Read result) and each is flagged.
+- The scan also lists, without counting it as crossing, where the other
+  arm's worktree was named with no path into it. Every author but B2 was
+  shown a skill listing naming both worktrees (the repository's cairn
+  skills, scoped to `firth-r8/` and `firth-v9/`), and B1's and B2's first
+  environment notice gave `/home/user/firth-r8` as the working directory,
+  which was the eval session's own at the time. None of these carries a
+  sample's content, and the `CLAUDE.md` and `AGENTS.md` each author was
+  given came from its own arm's worktree and the main checkout, never the
+  other arm's (`agents-seen.json`; all have the same blobs). An enforced allowlist
+  should hide the other worktree too
+  (`todo.s7-author-enforced-allowlist`).
 - Both arms were audited with main's `audit_subagent.py` (`74679f8`),
   with the hand-back kept whole (reviewer, on #181).
   `plant_audit.py` shows it flags a read of the eval session's own tool
