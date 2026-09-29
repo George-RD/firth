@@ -526,7 +526,7 @@ def readable(error: str) -> str:
     shown = ["\n".join(f"{k}: {v}" for k, v in fields.items()) for fields in blocks]
     if len(shown) == 1:
         return shown[0]
-    return (f"The checker found {len(shown)} errors, one for each word it refused. "
+    return (f"The checker found {len(shown)} errors, one for each word it did not accept. "
             "Fix them all before you run it again.\n\n"
             + "\n\n".join(f"error {i} of {len(shown)}\n{text}" for i, text in enumerate(shown, 1)))
 
