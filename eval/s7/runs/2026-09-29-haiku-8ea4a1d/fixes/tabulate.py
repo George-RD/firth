@@ -26,7 +26,7 @@ for s in S+[4]:
         tab[f][n]+=1; bys[(s,f)][n]=bys[(s,f)].get(n,0)+1
         failing[n]+=1
         m=re.match(r'The checker found (\d+) errors',e)
-        if m: multi[n]+=1; nerr[int(m[1])]+=1
+        if m and int(m[1])>=2: multi[n]+=1; nerr[int(m[1])]+=1
     passed[(s,n)]=p
 print('passed',passed)
 print('failing',dict(failing),'multi',dict(multi),'nerr',dict(nerr))
@@ -43,7 +43,8 @@ def st(s,n):
     ok=bool(t['cases']) and all(c.get('pass') for c in t['cases'])
     e=[c for c in t['cases'] if c.get('visible')][0].get('error') or ''
     m=re.search(r'code: (firth\.[a-z.-]+)',e)
-    o[tid]=(ok,(m[1] if m else 'wrong answer or runtime fault'),bool(re.match('The checker found',e)))
+    k=re.match(r'The checker found (\d+) errors',e)
+    o[tid]=(ok,(m[1] if m else 'wrong answer or runtime fault'),bool(k and int(k[1])>=2))
   return o
 rep=collections.Counter(); regress=0
 for s in S:

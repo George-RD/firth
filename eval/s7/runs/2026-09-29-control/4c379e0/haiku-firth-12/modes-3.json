@@ -1,0 +1,82 @@
+{
+  "model": "jev-1.13.0",
+  "counts": {
+    "stack_effect": 6,
+    "invented_syntax": 4,
+    "logic": 2
+  },
+  "tasks": {
+    "seq-max": {
+      "mode": "logic",
+      "by": "jev",
+      "confidence": 0.81,
+      "review": false
+    },
+    "reverse": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.75,
+      "review": false
+    },
+    "keep-positive": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.55,
+      "review": true
+    },
+    "is-sorted": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.66,
+      "review": true
+    },
+    "longest-run": {
+      "mode": "logic",
+      "by": "jev",
+      "confidence": 0.86,
+      "review": false
+    },
+    "count-distinct": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.52,
+      "review": true
+    },
+    "merge-sorted": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.96,
+      "review": false
+    },
+    "digits": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.61,
+      "review": true
+    },
+    "primes-up-to": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.74,
+      "review": false
+    },
+    "histogram": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.67,
+      "review": true
+    },
+    "sort": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.7,
+      "review": false
+    },
+    "allocate-batch": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.61,
+      "review": true
+    }
+  }
+}

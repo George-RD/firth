@@ -1,0 +1,1 @@
+VOID: in feedback round 1 the author used the Edit tool five times on its own answer-2.md after writing it (only Read and Write are allowed), so the audit flagged the sample. Void under the pre-registered rule; no round 2 was sent. Scores before voiding: first answers 7/20, round 1 11/20 (the round-1 score includes its Edits).
