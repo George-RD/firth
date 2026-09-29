@@ -1773,6 +1773,8 @@ the named script from the committed files.
     applies, then scores what checks. It was run with the pinned checker
     and with main's (`a3fb621`, which adds #185's branch-mismatch edits).
   - `locals_body.py` braces unbraced `locals` bodies.
+  - `shown.py` reads the feedback files for which edits the authors saw,
+    and whether they applied them.
   - `closed_effect.py` opens closed effects (run 11's write-up).
 
 **Final answers.** Arm A has 246 failing final answers and arm B 223.
@@ -1863,9 +1865,19 @@ causes named here are inferred from the outcome.
   check and 15 pass, all of them input mismatches.
 - **Main's checker** (with #185) offers edits for 73 answers. 50 then
   check and 21 pass. The six extra passes are arm A branch mismatches.
-- The authors had these edits in their feedback and did not apply them.
-  A failing input mismatch was rewritten into the same family 28 to 29%
-  of the time (`rank.py` section 5).
+- Most of these edits were never shown to the authors (`shown.py`).
+  - A final answer's own errors get no feedback, since the third answer
+    is the last.
+  - For 38 of the 52 answers, neither feedback round on that task showed
+    an edit: the error shown had none, or the example passed. Those 38
+    include 13 of the 15 passes.
+- When feedback did show an edit, the next answer applied it (the new
+  text present and the old text gone) 45 of 68 times in arm A and 45 of
+  102 in arm B.
+  - This is a mechanical reading: a word rewritten some other way counts
+    as not applied.
+  - A failing input mismatch was rewritten into the same family 28 to
+    29% of the time (`rank.py` section 5).
 
 **Tasks failing in both arms** (`rank.py` section 4).
 
@@ -1897,8 +1909,13 @@ inferred.
    - Measured: 61 final answers, 46 of them with an edit. Following the
      edits makes 15 of those 46 pass. The other 15 answers got the hint
      that only the author can tell which value is which, with no edit.
-   - For the 46, the hint is correct, but the authors did not apply it. What to test
-     is its presentation, for example leading with the rewritten line.
+   - Measured: the authors never saw most of those edits. 13 of the 15
+     passes come from answers whose feedback showed no edit in either
+     round. The edit was in the final answer, which gets no feedback.
+   - When an edit was shown, the next answer applied it 90 times out of
+     170 (A 45 of 68, B 45 of 102). The rest were rewritten some other
+     way or kept. So what a change in the edit's
+     presentation could move is that uptake, not these 15 finals.
 3. **A branch leaving extra values** (63 final answers).
    - No edit is offered. #185 covers the other branch case (44 answers):
      measured on main, its edits make 6 of them pass.
