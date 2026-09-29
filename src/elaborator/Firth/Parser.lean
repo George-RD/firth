@@ -37,6 +37,9 @@ structure LocalsBlock where
   /-- Whether the word, edited as above, was checked and is accepted. When
   it is not, the diagnostic states no edit. -/
   checked : Bool := false
+  /-- The words whose declared effects checking the edit read: those the
+  word, as written and as edited, calls before its check stops. -/
+  consulted : List String := []
   deriving Repr, BEq
 
 structure ParseError where

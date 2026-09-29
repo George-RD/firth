@@ -282,7 +282,23 @@ words are reported together, and fixing one never hides or moves the other. Its
 effect is not a valid signature (`firth.type.invalid-signature`) is not
 type-checked, and is reported as `firth.type.unchecked-word` at that call, so
 it is never taken for a checked word; its own errors show once that signature
-is fixed.
+is fixed. When a word's report depends on the declared effect of a word it
+calls that is itself reported, the message ends by saying so ("`g` calls `f`,
+which has an error of its own; this report assumes `f` keeps its stack
+effect."), and `message_params.assumes` lists those words: if the fix for `f`
+is to its stack effect rather than its body, `g`'s report can change or go.
+The checker tests this: it checks `g` again with other effects for `f` (four
+fixed ones, and `f`'s own with other types: all of them, only the outputs',
+and each one alone), and names `f` when one of them changes the report once
+checking gets as far as it. A report none of them
+changes, such as an underflow at `g`'s own `locals`, has no sentence; nor has
+one that another effect only stops the check before, such as a report about
+the branch of an `if` that does not call `f`. When only the edit a hint offers was
+checked against `f`'s effect (the edited word calls `f`, and erasure, which
+reads the shape of every call, did not stop before that call), the hint ends
+by saying so ("That edit was
+checked assuming `f`, which has an error of its own, keeps its stack
+effect."), and `message_params.edit_assumes` lists those words.
 A syntax error, a duplicate name or a `use` that names no vocabulary in the
 file or reuses an alias ends the file there: the words before a bad `use` are still reported.
 Each diagnostic in one response has its own payload identifier.
