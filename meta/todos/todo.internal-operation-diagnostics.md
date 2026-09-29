@@ -13,16 +13,21 @@ the checker wrote, not the author:
 
 - `firth.type.quotation-compose-mismatch` names a `compose` the author
   never wrote, shows erasure's quotation effects with type variables, and
-  has an empty hint. `ledger` (answer 3, false branch using the new
-  balance) reaches it because `i xs prim seq-int.at` has its operands in
-  the wrong order inside a branch.
-- `firth.type.primitive-input-mismatch` for the same operand order shows
-  the stack as `.. Int Int ?t27 ?t26 Int ?t27` (`reverse`, answer 2, with
-  the extra `result` removed).
+  has an empty hint. Where the cause is a word or primitive in the
+  quotation handed values of known types it does not take, as with
+  `i xs prim seq-int.at` in a branch, the report is now at that operation
+  (all 8 recorded compose reports, `Account.firstMisfed`). It remains
+  where the walk cannot follow the body or does not know the types.
 - `firth.type.stack-underflow` from erasure can name a `swap` that erasure
   inserted to reach a local.
-- `firth.type.word-input-mismatch` in `main` shows types only, without the
-  values' sources (4 of 20 last-round failures in run 7's sample 2).
+- A word or primitive handed values it does not take is reported with each
+  value's source, and with an edit that reorders them where they were
+  pushed one after another and their names and types say where each goes.
+  No edit is stated where a value was copied with `dup`, comes from below
+  a branch, or where values of one type could go either way (the report
+  then says which values are certain); 29 of the 71 recorded reports name
+  the values without an edit. A refused `if` keeps its own account even
+  when an operation in a branch is handed values of the wrong type.
 - A branch-mismatch report whose operation is inside a quotation in the
   branch ("inside a quotation in that branch") points `at:` the outer `if`
   and does not say which inner quotation holds the operation (keep-positive

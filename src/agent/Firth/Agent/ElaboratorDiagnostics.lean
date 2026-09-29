@@ -618,6 +618,67 @@ private def branchInputExplanation (inWord : String) (below : AStack) (onTrueBra
       else (base, rule)
 
 open Firth.Elaborator.StackEffect in
+/-- The message and hint for a word or primitive handed values it does not
+take, from the account of where each value came from (`Account.ofCall`):
+what it takes, what it gets by source, and, when the pipeline found and
+checked one, the edit that pushes them in its order. `none` when there is no
+account, or its types disagree with the checker's. -/
+private def callExplanation (inWord : String) (word : Option String) (wanted present : List AType)
+    (account : Option Firth.Elaborator.CallAccount) : Option (String × String) := do
+  let account ← account
+  let count := wanted.length
+  if account.values.length != count || present.length < count then none else
+  let got := (present.drop (present.length - count)).map renderType
+  let plain (type : String) := !type.startsWith "?" && !type.startsWith "["
+  -- The walk and the checker must agree on every type both know.
+  if (got.zip account.types).any (fun (checked, walked) =>
+      walked.any fun walked => plain checked && plain walked && checked != walked) then none else
+  let typed := (account.values.zip (got.zip account.types)).map fun (label, checked, walked) =>
+    match (if plain checked then some checked else walked.filter plain) with
+    | some type => s!"{label} ({type})"
+    | none => label
+  -- A word the environment defines outside the file has no names for its
+  -- inputs in the account; its types are the checker's.
+  let takes ← if !account.inputs.isEmpty then some s!"takes {", ".intercalate account.inputs}"
+    else if (wanted.map renderType).all plain then some s!"takes {", ".intercalate (wanted.map renderType)}"
+    else none
+  let message := s!"{account.operation}{inWord} {takes}, bottom to top, but here it gets, bottom to top, {listing typed}."
+  match account.edit with
+  | some edit =>
+      let outcome := match edit.after, word with
+        | none, some word => s!" With that edit `{word}` checks."
+        | some (line, column), some word => s!" With that edit, the next error in `{word}` is at line {line}, column {column}."
+        | _, none => ""
+      pure (message, s!"These are the values {account.operation} takes, in another order. To push them in its order, write `{edit.replacement}` in place of `{edit.written}`.{outcome}")
+  | none =>
+      if !account.assignment.isEmpty then
+        let name (input : String) := ((input.splitOn ":").head?).getD input
+        let quoted (texts : List String) := listing (texts.map (s!"`{·}`"))
+        -- Inputs that could take the same values are one group, told where
+        -- the first of them is.
+        let parts := account.assignment.foldl (init := (([], []) : List String × List (List String)))
+          fun (parts, seen) ((_, choices) : String × List String) =>
+            if choices.length ≤ 1 then
+              (parts, seen)
+            else if seen.contains choices then (parts, seen)
+            else
+              let inputs := (account.assignment.filter fun (_, other) => other == choices).map fun (input, _) => name input
+              (parts ++ [s!"{quoted choices} are for {listing (inputs.map (s!"`{·}`"))}, in the order you mean"], seen ++ [choices])
+        let certain := account.assignment.filterMap fun (input, choices) =>
+          match choices with
+          | [text] => some s!"`{text}` is for `{name input}`"
+          | _ => none
+        let certainText := if certain.isEmpty then "" else s!"By their names and types, {listing certain}. "
+        pure (message, s!"These are the values {account.operation} takes, in another order. {certainText}Of the values of one type, {"; ".intercalate parts.1}: only you can tell which is which. Push them in the order of its inputs.")
+      else
+      match firstDifference wanted (present.drop (present.length - count)) with
+      | some (depth, want, _) =>
+          let index := count - 1 - depth
+          let value := (typed[index]?).getD "the value there"
+          pure (message, s!"{capitalize (ordinalFromTop depth)}, {value}, is not what {account.operation} takes there ({renderType want}). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.")
+      | none => none
+
+open Firth.Elaborator.StackEffect in
 /-- A plain-language sentence and a repair hint for a checker diagnostic,
 written for an author who sees only this message and the source. -/
 private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : String × String :=
@@ -646,6 +707,9 @@ private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Str
   | "firth.type.primitive-input-mismatch", some (wanted, _), some (present, row)
   | "firth.type.word-input-mismatch", some (wanted, _), some (present, row) =>
       let base := s!"`{at_}`{inWord} needs {renderValues wanted} on top of the stack, but the stack before it is {before}."
+      match callExplanation inWord diagnostic.word wanted present diagnostic.callAccount with
+      | some explanation => explanation
+      | none =>
       if present.length < wanted.length && row.isSome then
         (base, s!"`{at_}` takes {plural wanted.length "value"} but only {plural present.length "value"} {if present.length == 1 then "is" else "are"} available. Push or keep the missing input before it (for example `dup` to copy, or `over` if defined), or take it as a parameter in the signature." ++ rowNote)
       else match firstDifference wanted present with

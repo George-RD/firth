@@ -86,6 +86,47 @@ structure IfAccount where
   onFalse : BranchAccount
   deriving Repr, BEq
 
+/-- An edit that pushes an operation's values in the order it takes them:
+the source from `start` to `stop` (byte offsets) replaced by `replacement`,
+the pieces of source that pushed each value, reordered. `after` is where the
+word's next error is once the edit is made, as a line and column of the edited
+source, or `none` when the word then checks. Diagnostics only. -/
+structure CallEdit where
+  start : Nat
+  stop : Nat
+  written : String
+  replacement : String
+  after : Option (Nat × Nat) := none
+  deriving Repr, BEq
+
+/-- The values an operation the checker refused was handed, named by the
+source that pushed them, as `BranchReach` names them. Diagnostics only. -/
+structure CallAccount where
+  /-- The operation, as written: `sum-loop`, `prim seq-int.at`. -/
+  operation : String
+  /-- Where it is in the source. -/
+  span : Span
+  /-- What it takes, bottom to top: a word's declared inputs (`xs:Seq Int`)
+  or a primitive's input types. -/
+  inputs : List String := []
+  /-- The values it gets, bottom to top. -/
+  values : List String := []
+  /-- Their types, where the walk knows them. -/
+  types : List (Option String) := []
+  /-- The byte ranges of source that pushed each value, bottom to top, when
+  each value was pushed by its own piece of source, one after another, just
+  before the operation. -/
+  pieces : Option (List (Nat × Nat)) := none
+  /-- An edit that pushes the values in the order the operation takes them,
+  checked by the pipeline. -/
+  edit : Option CallEdit := none
+  /-- When the values were pushed one after another but their types and
+  names do not say which input each is for: for each input, bottom to top,
+  the source that pushed the value for it where that is certain, and
+  otherwise the sources that could have pushed it. Diagnostics only. -/
+  assignment : List (String × List String) := []
+  deriving Repr, BEq
+
 /-- For a depth-mismatched `if`: what the condition and the values its
 branches take below it are looked for in place of. `reached` names the unused
 locals among them: a block's unused locals are names, not values on the stack.

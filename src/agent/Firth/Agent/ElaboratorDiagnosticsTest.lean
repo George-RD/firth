@@ -81,6 +81,193 @@ private def warningByCode (code : String) : List Firth.Elaborator.LintWarning �
   | [] => none
   | warning :: rest => if warning.code == code then some warning else warningByCode code rest
 
+/-- Reports of a word or primitive handed values it does not take. -/
+private def runCallAccountTests : IO Unit := do
+  let pipelineContext := contextWithSource "pipeline-call" "main.fth"
+  let agentConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := Elaborate.gammaErasure, typingEnv := Elaborate.gammaTyping }
+  let hintOf (envelope : Envelope) : String :=
+    match Lean.Json.parse (encode envelope) with
+    | .ok json => (((json.getObjValD "body").getObjValD "message_params").getObjValD "hint").getStr?.toOption.getD ""
+    | .error _ => ""
+  let upTo (text marker : String) : String := (text.splitOn marker).headD ""
+  -- A word or primitive handed values it does not take: the report names
+  -- each value by its source (`Account.ofCall`). Where the values were
+  -- pushed one after another and their names and types say where each
+  -- goes, it gives the edit that pushes them in order, checked by the
+  -- pipeline. The test applies the edit as the hint writes it and runs the
+  -- result on the reference interpreter, against values worked out by hand.
+  let runValues (program : CheckedProgram) (word : String) (inputs : List Firth.Interpreter.Literal) :
+      Option (List Firth.Interpreter.Literal) :=
+    let toProgram (kernel : KernelProgram) : Firth.Interpreter.Program :=
+      kernel.foldr (fun located rest => .cons located.atom rest) .empty
+    let dictionary : Firth.Interpreter.Dictionary := fun name =>
+      (program.words.find? (·.name == name)).map fun checked =>
+        { type := Firth.ReferenceRun.adapterWordType, body := toProgram checked.program }
+    let rec steps : Nat → Firth.Interpreter.Config → Option Firth.Interpreter.Stack
+      | 0, _ => none
+      | fuel + 1, config =>
+          match Firth.Interpreter.step Firth.ReferenceRun.adapterGamma dictionary Firth.Interpreter.defaultCosts config with
+          | .terminal final => some final.stack
+          | .stuck _ => none
+          | .stepped next _ => steps fuel next
+    let start := (inputs.map Firth.Interpreter.Value.literal).reverse
+    (steps 100000 { stack := start, program := .cons (.word word) .empty }).bind fun stack =>
+      stack.reverse.mapM fun
+        | .literal value => some value
+        | _ => none
+  -- The edit the hint states, applied where the source has it: just
+  -- before the operation reported, which must happen once. The hint writes
+  -- the source with its whitespace collapsed, so the source is too.
+  let applyCallHint (written hint operation : String) : Option String :=
+    let source := " ".intercalate (((written.map fun c => if c.isWhitespace then ' ' else c).splitOn " ").filter (!·.isEmpty))
+    match (hint.splitOn "write `")[1]? with
+    | none => none
+    | some rest =>
+        let replacement := upTo rest "`"
+        match (rest.splitOn "` in place of `")[1]? with
+        | none => none
+        | some after =>
+            let written := upTo after "`" ++ " " ++ operation
+            if (source.splitOn written).length != 2 then none
+            else some (source.replace written (replacement ++ " " ++ operation))
+  let fieldOf (envelope : Envelope) (field : String) : String :=
+    match Lean.Json.parse (encode envelope) with
+    | .ok json => (((json.getObjValD "body").getObjValD "message_params").getObjValD field).getStr?.toOption.getD ""
+    | .error _ => ""
+  let callReport (label code source : String) (needles : List String) (absent : List String := []) :
+      IO (String × String) := do
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .failure [envelope] =>
+        let emitted := encode envelope
+        expectValidCode label code emitted
+        for needle in needles do
+          unless emitted.contains needle do
+            fail s!"{label}: the report does not say {needle}: {emitted}"
+        for needle in absent do
+          if emitted.contains needle then
+            fail s!"{label}: the report says {needle}: {emitted}"
+        pure (hintOf envelope, fieldOf envelope "at")
+    | .failure envelopes => fail s!"{label}: expected one diagnostic, got {envelopes.length}"
+    | .success _ => fail s!"{label}: the program was accepted"
+  let expectRuns (label source word : String) (inputs expected : List Firth.Interpreter.Literal) : IO Unit := do
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .success program =>
+        match runValues program word inputs with
+        | some result =>
+            unless result == expected do
+              fail s!"{label}: after the edit `{word}` leaves {repr result}, not {repr expected}"
+        | none => fail s!"{label}: after the edit `{word}` does not run"
+    | .failure envelopes => fail s!"{label}: after the edit the program is refused: {envelopes.map encode}"
+  let callCase (label code source : String) (needles absent : List String) (word : String)
+      (inputs expected : List Firth.Interpreter.Literal) : IO Unit := do
+    let (hint, operation) ← callReport label code source needles absent
+    match applyCallHint source hint operation with
+    | some edited => expectRuns label edited word inputs expected
+    | none => fail s!"{label}: the hint's edit does not apply: {hint}"
+  -- Haiku's seq-sum at 470c6d0 (haiku-firth-1, answer 2), verbatim: `main`
+  -- pushes the sequence last. `xs` is named like the input it is for, so
+  -- it goes first; the two `0`s are the same. 4 + 5 + 6.
+  callCase "sequence pushed last" "firth.type.word-input-mismatch"
+      ": sum-loop\n  (forall ρ; ρ xs:Seq Int^many acc:Int^many i:Int^many -- ρ result:Int^many)\n  locals { xs acc i } {\n    i xs prim seq-int.len prim <\n    [\n      xs i prim seq-int.at acc prim +\n      xs swap\n      i 1 prim +\n      sum-loop\n    ]\n    [ acc ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many -- ρ result:Int^many)\n  locals { xs } {\n    0 0 xs sum-loop\n  };"
+      ["`sum-loop` in `main` takes xs:Seq Int, acc:Int, i:Int, bottom to top, but here it gets, bottom to top, `0` (Int), `0` (Int) and `xs` (Seq Int).",
+       "To push them in its order, write `xs 0 0` in place of `0 0 xs`. With that edit `main` checks."]
+      [] "main" [.intSeq [4, 5, 6]] [.int 15]
+  -- keep-positive at 470c6d0 (haiku-firth-1, answer 2), verbatim: `result`
+  -- and `xs` are both Seq Int, and the order they were pushed in would put
+  -- the empty sequence in `xs`. `xs` is named, so the empty one is
+  -- `result`. The loop keeps the values that are not negative.
+  callCase "names before types" "firth.type.word-input-mismatch"
+      ": filter-loop\n  (forall ρ; ρ xs:Seq Int^many result:Seq Int^many i:Int^many -- ρ result-final:Seq Int^many)\n  locals { xs result i } {\n    i xs prim seq-int.len prim <\n    [\n      xs i prim seq-int.at 0 prim <\n      [\n        result\n      ]\n      [\n        result xs i prim seq-int.at prim seq-int.push\n      ]\n      if\n      xs swap\n      i 1 prim +\n      filter-loop\n    ]\n    [ result ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many -- ρ result:Seq Int^many)\n  locals { xs } {\n    prim seq-int.empty 0 xs filter-loop\n  };"
+      ["write `xs prim seq-int.empty 0` in place of `prim seq-int.empty 0 xs`"]
+      ["write `prim seq-int.empty xs 0`"] "main" [.intSeq [3, -1, 4]] [.intSeq [3, 4]]
+  -- seq-sum at c6a964a (haiku-firth-2, answer 1), verbatim: `idx xs` is
+  -- reversed inside a branch. The checker infers the branch's input from
+  -- its body and so only fails at the second `prim +`, with inferred
+  -- types; the report is at `prim seq-int.at`, where the mistake is.
+  callCase "operands reversed in a branch" "firth.type.primitive-input-mismatch"
+      ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ total:Int^many)\n  0 swap 0 sum-loop;\n\n: sum-loop\n  (forall ρ; ρ acc:Int^many xs:Seq Int^many idx:Int^many -- ρ total:Int^many)\n  locals { acc xs idx } {\n    idx xs prim seq-int.len prim < [\n      acc idx xs prim seq-int.at prim + xs idx 1 prim + sum-loop\n    ] [ acc ] if\n  };"
+      ["`prim seq-int.at` in `sum-loop` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, `idx` (Int) and `xs` (Seq Int).",
+       "write `xs idx` in place of `idx xs`. With that edit `sum-loop` checks."]
+      ["`prim +` in `sum-loop`", "?t"] "main" [.intSeq [4, 5, 6]] [.int 15]
+  -- count-distinct at cec3707 (haiku-firth-2, answer 1), the helper
+  -- verbatim: the push in a branch was reported as a `compose` the author
+  -- never wrote. Adding 3 to [1, 2]; 2 is there already.
+  callCase "push reversed in a branch" "firth.type.primitive-input-mismatch"
+      ": count-distinct-search\n  (forall ρ; ρ elem:Int^many j:Int^many seen:Seq Int^many -- ρ updated:Seq Int^many)\n  locals { elem j seen } {\n    j seen prim seq-int.len prim =\n    [ elem seen prim seq-int.push ]\n    [\n      seen j prim seq-int.at elem prim =\n      [ seen ]\n      [ elem j 1 prim + seen count-distinct-search ] if\n    ]\n    if\n  };"
+      ["`prim seq-int.push` in `count-distinct-search` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, `elem` (Int) and `seen` (Seq Int).",
+       "write `seen elem` in place of `elem seen`. With that edit `count-distinct-search` checks."]
+      ["compose"] "count-distinct-search" [.int 3, .int 0, .intSeq [1, 2]] [.intSeq [1, 2, 3]]
+  -- A `swap` between the values is part of what the edit replaces.
+  callCase "values exchanged by swap" "firth.type.primitive-input-mismatch"
+      ": at\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs n } { xs n swap prim seq-int.at };"
+      ["write `xs n` in place of `xs n swap`. With that edit `at` checks."]
+      [] "at" [.intSeq [5, 6, 7], .int 1] [.int 6]
+  -- An edit that gets past this operation but not the next mistake says
+  -- where that is: digits at cec3707 (haiku-firth-1, answer 1), the helper
+  -- verbatim, where a `swap` also puts the sequence on top for the call.
+  -- The second report's edit drops that `swap`; with both, 123 gives its
+  -- digits from the last.
+  let digits := ": extract-digits\n  (forall ρ; ρ result:Seq Int^many n:Int^many -- ρ final:Seq Int^many)\n  locals { result n } {\n    n 0 prim =\n    [ result ]\n    [\n      n 10 prim mod result prim seq-int.push\n      n 10 prim div swap extract-digits\n    ]\n    if\n  };"
+  -- The same with the values on two lines: the edit joins them, so the
+  -- next error is on the line after the edit, one earlier than in the
+  -- source as written. The edited source is written out here by hand, and
+  -- the checker must report its error where the hint says.
+  let digitsTwoLines := digits.replace "n 10 prim mod result prim seq-int.push" "n 10 prim mod\n      result prim seq-int.push"
+  let digitsJoined := digits.replace "n 10 prim mod result prim seq-int.push" "result n 10 prim mod prim seq-int.push"
+  let _ ← callReport "digits, the values on two lines" "firth.type.primitive-input-mismatch" digitsTwoLines
+    ["write `result n 10 prim mod` in place of `n 10 prim mod result`. With that edit, the next error in `extract-digits` is at line 8, column 26."]
+  match elaboratePipeline pipelineContext digitsJoined agentConfig with
+  | .failure [envelope] =>
+      unless (encode envelope).contains "\"start\":{\"line\":8,\"column\":26}" do
+        fail s!"digits, the values on two lines: the edited source is refused elsewhere: {encode envelope}"
+  | _ => fail "digits, the values on two lines: expected one report for the edited source"
+  let (hint, operation) ← callReport "digits" "firth.type.primitive-input-mismatch" digits
+    ["write `result n 10 prim mod` in place of `n 10 prim mod result`. With that edit, the next error in `extract-digits` is at line 8, column 26."]
+  match applyCallHint digits hint operation with
+  | none => fail s!"digits: the hint's edit does not apply: {hint}"
+  | some once =>
+      callCase "digits, then the call" "firth.type.word-input-mismatch" once
+        ["write `result n 10 prim mod prim seq-int.push n 10 prim div` in place of `result n 10 prim mod prim seq-int.push n 10 prim div swap`. With that edit `extract-digits` checks."]
+        [] "extract-digits" [.intSeq [], .int 123] [.intSeq [3, 2, 1]]
+  -- Where values of one type could go either way, the report says which
+  -- values are certain and leaves the rest to the author, with no edit:
+  -- seq-sum at 470c6d0 (haiku-firth-1, answer 1), where pushing the Int
+  -- values in the order written happens to be right, and longest-run in the
+  -- same answer, where it would put the new maximum in `prev`.
+  let _ ← callReport "same types either way" "firth.type.word-input-mismatch"
+    ": sum-loop\n  (forall ρ; ρ xs:Seq Int^many acc:Int^many i:Int^many -- ρ result:Int^many)\n  locals { xs acc i } {\n    i xs prim seq-int.len prim <\n    [\n      xs i prim seq-int.at acc prim +\n      xs\n      i 1 prim +\n      sum-loop\n    ]\n    [ acc ]\n    if\n  };"
+    ["By their names and types, `xs` is for `xs`. Of the values of one type, `xs i prim seq-int.at acc prim +` and `i 1 prim +` are for `acc` and `i`, in the order you mean: only you can tell which is which."]
+    ["in place of"]
+  -- A value the source pushed with `dup` is not a piece of source of its
+  -- own, so no edit is stated; the report still names it (prefix-sums at
+  -- c6a964a, haiku-firth-2, answer 3, with its first mistake fixed).
+  let _ ← callReport "no edit through dup" "firth.type.primitive-input-mismatch"
+    ": prefix-loop\n  (forall ρ; ρ result:Seq Int^many sum:Int^many xs:Seq Int^many idx:Int^many -- ρ sums:Seq Int^many)\n  locals { result sum xs idx } {\n    idx xs prim seq-int.len prim < [\n      sum xs idx prim seq-int.at prim + \n      dup result prim seq-int.push\n      xs idx 1 prim + prefix-loop\n    ] [ result ] if\n  };"
+    ["`prim seq-int.push` in `prefix-loop` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, the result of `prim +` (Int) and `result` (Seq Int).",
+     "The top value, `result` (Seq Int), is not what `prim seq-int.push` takes there (Int)."]
+    ["in place of"]
+  -- A word the environment defines outside the file (`nth`, Seq Int Int --
+  -- Int) has no input names in the account, so the report takes its input
+  -- types from the checker's scheme, not only a count (Codex on #171).
+  let nthScheme : Firth.Elaborator.StackEffect.Scheme :=
+    { rowVariables := ["ρ"]
+      input := .snoc (.snoc (.row (.rigid "ρ")) (.base "Seq Int" .many)) (.base "Int" .many)
+      output := .snoc (.row (.rigid "ρ")) (.base "Int" .many) }
+  let externalConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := { Elaborate.gammaErasure with
+        word := fun name => if name == "nth" then some { input := [.many, .many], output := [.many] } else none }
+      typingEnv := { Elaborate.gammaTyping with
+        word := fun name => if name == "nth" then some nthScheme else none } }
+  match elaboratePipeline pipelineContext ": first\n  (forall ρ; ρ xs:Seq Int^many -- ρ r:Int^many)\n  locals { xs } { 0 xs nth };" externalConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      for needle in ["`nth` in `first` takes Seq Int, Int, bottom to top, but here it gets, bottom to top, `0` (Int) and `xs` (Seq Int).",
+                     "write `xs 0` in place of `0 xs`. With that edit `first` checks."] do
+        unless emitted.contains needle do
+          fail s!"external word: the report does not say {needle}: {emitted}"
+  | _ => fail "external word: expected one diagnostic"
+
 def runElaboratorDiagnosticTests : IO Unit := do
   let parseError : ParseError := {
     code := "firth.syntax.unterminated-string"
@@ -1254,5 +1441,6 @@ def runElaboratorDiagnosticTests : IO Unit := do
     (encodeStackEffectDiagnostic (context "unknown-primitive") unknownPrimitive)
   if languagePrimitives.length != everyPrimitive.length then
     fail s!"the language has {languagePrimitives.length} primitives but this test lists {everyPrimitive.length}; add the new ones above"
+  runCallAccountTests
 
 end Firth.Agent.Test
