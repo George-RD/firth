@@ -80,8 +80,8 @@ The reasons are in `dec.agent-development-rules`.
 
 13. One coherent change per PR, with its tests and docs. No half features, no
     unrelated extras; follow-ups go in new PRs from `main`. If an ask looks
-    wrong, say so in one sentence and do it as asked, rather than quietly
-    narrowing or widening it.
+    wrong, say so in one sentence and do it as asked (unless that breaks
+    another rule), rather than quietly narrowing or widening it.
 14. An independent reviewer approves the exact head commit, and any push after
     approval needs approval again. Merge only with CI green on that head.
     The reviewer flags only what affects correctness, the requirements or a
@@ -179,6 +179,9 @@ CI is authoritative.
 - British spelling; no em-dashes in user-facing copy.
 - Kernel atoms are lowercase (`dup`, `drop`, `swap`, `dip`, `call`,
   `compose`, `quote`, `if`); primitives are `prim π`.
+- The cairn change workflow (`meta/changes/`) is optional
+  (`dec.agent-development-rules`); the rules above and the PR description
+  are enough.
 
 <!-- cairn:agent-guide-begin -->
 ## Cairn orientation

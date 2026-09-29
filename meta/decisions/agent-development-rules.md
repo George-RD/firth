@@ -66,7 +66,8 @@ pain later.
      session, and say what was not run;
    - rule 10: tests check correctness, they do not define the solution;
    - rule 13: say so when an ask looks wrong, rather than quietly narrowing
-     or widening it;
+     or widening it (the review added "unless that breaks another rule", so
+     an ask cannot override the other rules);
    - rule 14: the reviewer flags only what affects correctness, the
      requirements or a rule.
    The same approval covered trimming `AGENTS.md` to what an agent cannot
