@@ -282,6 +282,29 @@ class ToolchainError(RuntimeError):
 TOOLCHAIN_PREFIXES = ("toolchain: ", "lake: exit ", "cargo: exit ")
 
 
+# The runner gives lake and cargo each this long to build
+# (tools/loop/mvp_agent_gate.py, BUILD_TIMEOUT_SECONDS), far more than TIMEOUT.
+BUILD_TIMEOUT = 2 * 900 + TIMEOUT
+
+
+def warm_toolchain(source: str) -> None:
+    """Build the toolchain once, serially, before answers run in parallel. A cold
+    build can outlast TIMEOUT, and a build timeout scored as the answer's would
+    count against it, so here it stops scoring instead."""
+    with tempfile.NamedTemporaryFile("w", suffix=".firth", delete=False) as f:
+        f.write(source)
+        path = f.name
+    try:
+        p = subprocess.run([sys.executable, str(RUNNER), "check", path],
+                           cwd=ROOT, capture_output=True, text=True, timeout=BUILD_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        raise ToolchainError(f"the toolchain did not build within {BUILD_TIMEOUT}s") from None
+    finally:
+        Path(path).unlink()
+    if p.returncode:
+        toolchain_failure(p.stderr)
+
+
 def toolchain_failure(stderr: str) -> None:
     """Stop scoring on a build failure. Scored as a failed case, it would count
     against the answer and be shown to the author as if it were a diagnostic."""
@@ -501,7 +524,7 @@ def score(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int) ->
     work = [(t, args, i == 0) for t in tasks if t.id in solutions
             for i, args in enumerate((t.example, *t.hidden))]
     if lang == "firth" and work:
-        runner(solutions[work[0][0].id], work[0][1], fuel_for(work[0][0]))  # build the toolchain once, serially
+        warm_toolchain(solutions[work[0][0].id])
     with ThreadPoolExecutor(jobs) as pool:
         outs = list(pool.map(
             lambda w: runner(solutions[w[0].id], w[1], fuel_for(w[0]), types(w[0])), work))

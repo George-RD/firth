@@ -522,6 +522,20 @@ def build_failure_stops_scoring() -> None:
             got = harness.run_firth(": main ( -- ) ;", ())
             check(got["ok"] is False and "unknown checked word 'main'" in got["error"],
                   "an answer's own runner error is still scored as a failed case")
+            # A cold build that outlasts the per-answer timeout is the build's,
+            # not the answer's (Codex, on #173).
+            stub.write_text("import time\ntime.sleep(3)\n")
+            timeouts = harness.TIMEOUT, harness.BUILD_TIMEOUT
+            harness.TIMEOUT = harness.BUILD_TIMEOUT = 1
+            task = MVP[0]
+            try:
+                got = harness.score({task.id: ": main ( -- ) ;"}, "firth", [task], 1)
+            except harness.ToolchainError as e:
+                got = str(e)
+            finally:
+                harness.TIMEOUT, harness.BUILD_TIMEOUT = timeouts
+            check(got == "the toolchain did not build within 1s",
+                  "a build that times out stops scoring instead of failing the answer")
         finally:
             harness.RUNNER = old_runner
 
