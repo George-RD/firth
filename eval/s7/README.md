@@ -919,8 +919,9 @@ each `Read` by path only, without its offset and limit. The raw sub-agent
 logs, which are not kept in the repository, show that each author's first
 `Read` of the prompt had no offset or limit and returned lines 1 to the
 end; `raw-log-extract.json` lists every prompt `Read` with the lines it
-returned, extracted from those logs. Keeping offset and limit in the
-audit is a follow-up. No task failed on a harness error: every counted
+returned, extracted from those logs. From the next run on,
+`audit_subagent.py` keeps the offset and limit of each allowed `Read` in
+the transcript (the partial-read plant in `test_mvp.py`). No task failed on a harness error: every counted
 failure is a checker diagnostic.
 
 **Each sample repeated a few mistakes across nearly every task, and the
@@ -972,7 +973,8 @@ Sample 1 passed 0, 7 and 8, and its round-1 branch mismatches are the only
 ones in this run that got past the checker (6 of 12 resubmitted: 2 passed,
 4 gave wrong answers). Its first answers had all the basics in the table
 right. Sample 3 passed nothing; it wrote `i xs prim seq-int.at` against
-the documented `xs i` in 28 places in every round. Sample 1 suggests that
+the documented `xs i` in 34 places in every round (counted by the
+`seq-int.at` edit in `fixes/measure.py`). Sample 1 suggests that
 an author who gets the basics right can repair branch mismatches from the
 new message, but a void sample is not evidence, and sample 5, which also
 had the basics right, did not.
@@ -1034,11 +1036,12 @@ message itself changes no code.
 
 - **Fixing the parse message alone passes nothing.** All 39 answers it
   touches move to the next error. Sample 4's 19 first answers move to an
-  unbound `main` input (13) or the `locals` order rule (5). Sample 5's 20
-  round-1 answers move to an unbound `main` input (18). Together with
-  binding `main`'s inputs, 2 of sample 5's answers pass (`index-of` and
-  `all-true`, as in `counterfactual/branch-blocked.json`). With every
-  edit, 10 of the 20 fail on a branch mismatch.
+  unbound `main` input (13), the `locals` order rule (5) or another syntax
+  error (1). Sample 5's 20 round-1 answers move to an unbound `main` input
+  (18), another syntax error (1) or a branch mismatch (1). With every
+  edit, 2 of sample 5's 20 pass (`index-of` and `all-true`, the same two
+  that pass with only the `;` removed and `main`'s inputs bound in
+  `counterfactual/branch-blocked.json`) and 10 fail on a branch mismatch.
 - **16 of the 18 passes are sample 2's.** With every edit, 8 of its 20
   first answers and 8 of its 20 round-1 answers pass. Its answers were
   close: an empty `main` stack effect, reversed `locals` and `prim 0` were
@@ -1049,14 +1052,18 @@ message itself changes no code.
   answers move to branch mismatches (10) and underflows (8). What stops
   them is type errors in their loops, which no prompt line models.
 - **`seq-int.at` order barely matters in the counted samples.** Only 2
-  answers were edited. The 28 reversed calls were in void sample 3.
-- **Forth `( a b -- c )` comments in bodies (count only): none.** No kept
-  answer from any run writes one in a body. The Forth-style `( -- result)`
-  headers are signatures, which Firth already parses: sample 2 has 40,
-  run 7's sample 1 has 12, and #113's run has 4. Sample 4's 19
-  parenthesised answers group arguments, and a comment rule would not
-  accept those either. Accepting stack comments would change none of these
-  answers.
+  answers were edited. The reversed calls were in void sample 3, where the
+  same edit changes 34 calls in each round.
+- **Forth `( a b -- c )` comments in bodies (count only): none.** Of the
+  1,103 kept Firth answers in every run (all 60 Firth `solutions-*.json`
+  files under `runs/`), none writes one in a word body
+  (`fixes/count_comments.py`, output `fixes/comments.json`). The
+  Forth-style `( -- result)` headers are signatures, which Firth already
+  parses: run 8's sample 2 has 60 (20 in each round), run 7's sample 1
+  has 12, and #113's run has 4. Parentheses appear in 22 word bodies, 21
+  of them in sample 4's first answers, where they group arguments; a
+  comment rule would not accept those either. Accepting stack comments
+  would change none of these answers.
 - **Sample 4 saw two feedback wordings.** Its round-1 and round-2 answers
   were written in a session that received both feedback instructions (see
   "Set-up slips"). Without sample 4, the `locals` order rule refused 27
@@ -1069,9 +1076,15 @@ message itself changes no code.
 Taken together, all the edits could at most move sample 2 from 0 to 8 of
 20 and sample 5 to 2. The rest, and most of what is left after the edits,
 are type errors in loop bodies, branch mismatches first among them, which
-the checker shows one at a time. Showing every independent error is the
-change that would let an author fix several at once. It matters for 102
-of the 140 answers that could be counted.
+the checker shows one at a time. Showing every independent error is
+necessary for an author to fix several at once, and it matters for 102 of
+the 140 answers that could be counted. It is not sufficient: after every
+edit, 61 of the 135 answers that still fail the checker have two or more independent
+errors (sample 6: 36 of 40; sample 4: 20 of 40), mostly branch mismatches
+(57 words) and word-input mismatches (39) (`fixes/after_edits.py`, output
+`fixes/after_edits.json`). Run 8's branch
+mismatches, shown one at a time, recurred at least 19 times in 27, and
+only run 9 can show whether seeing every error helps Haiku repair them.
 
 ## What the eight runs say about the bet
 

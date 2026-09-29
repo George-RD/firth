@@ -128,17 +128,6 @@ def prim_literal(src, t):
     return re.sub(r'\bprim\s+(-?\d+)\b', r'\1', src)
 
 
-def forth_comments(src, t):
-    """Model: `( ... -- ... )` inside a body is a comment. Counted, not scored:
-    removing it from bodies only; signatures are left alone."""
-    edits = []
-    for w in words(src):
-        a = w['bodyspan'][0]
-        for m in re.finditer(r'\([^()]*--[^()]*\)', w['body']):
-            edits.append(((a + m.start(), a + m.end()), ' '))
-    return splice(src, edits)
-
-
 PROMPT = [fix_main_sig, bind_main, order_locals, at_order, strip_parens]
 CANDIDATES = {
     'main-signature': [fix_main_sig],

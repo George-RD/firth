@@ -69,6 +69,9 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
             r, w = repair.fullmatch(path), answer.fullmatch(path)
             if name == "Read" and (path in reads or (r and int(r[1]) <= rounds)):
                 rec["path"] = Path(path).name
+                # Which part of the file the read asked for, so the log shows
+                # whether the author read all of it (reviewer, on #169).
+                rec.update({k: inp[k] for k in ("offset", "limit") if k in inp})
             elif name == "Write" and w and int(w[1]) <= rounds + 1:
                 content = str(inp.get("content", ""))
                 rec.update(path=Path(path).name, content_chars=len(content),

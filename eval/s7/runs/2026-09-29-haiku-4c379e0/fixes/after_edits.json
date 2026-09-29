@@ -1,0 +1,1115 @@
+{
+ "summary": {
+  "still_failing": 135,
+  "two_or_more": 61,
+  "by_sample": {
+   "2": 2,
+   "4": 20,
+   "5": 3,
+   "6": 36
+  },
+  "codes_in_two_or_more": {
+   "firth.type.branch-mismatch": 57,
+   "firth.type.word-input-mismatch": 39,
+   "firth.type.stack-underflow": 24,
+   "firth.type.quotation-compose-mismatch": 3,
+   "firth.type.primitive-input-mismatch": 2,
+   "firth.type.quotation-input-mismatch": 2,
+   "firth.name.unresolved-effect": 2,
+   "firth.syntax.invalid-name": 1,
+   "firth.syntax.expected-name": 1
+  }
+ },
+ "words": {
+  "2/1/reverse": [
+   [
+    "reverse-acc",
+    "firth.type.primitive-input-mismatch"
+   ]
+  ],
+  "2/1/prefix-sums": [
+   [
+    "prefix-acc",
+    "firth.type.primitive-input-mismatch"
+   ]
+  ],
+  "2/1/keep-positive": [
+   [
+    "keep-positive-acc",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "2/1/count-distinct": [
+   [
+    "count-distinct-outer",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "2/1/digits": [
+   [
+    "digits-loop",
+    "firth.type.primitive-input-mismatch"
+   ]
+  ],
+  "2/1/histogram": [
+   [
+    "histogram-loop",
+    "firth.name.unresolved"
+   ]
+  ],
+  "2/1/sort": [
+   [
+    "insert-sorted",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "2/1/ledger": [
+   [
+    "ledger-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "2/1/allocate-batch": [
+   [
+    "allocate-one",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "allocate-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "2/2/reverse": [
+   [
+    "reverse-acc",
+    "firth.type.primitive-input-mismatch"
+   ]
+  ],
+  "2/2/prefix-sums": [
+   [
+    "prefix-acc",
+    "firth.type.primitive-input-mismatch"
+   ]
+  ],
+  "2/2/keep-positive": [
+   [
+    "keep-positive-acc",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "2/2/count-distinct": [
+   [
+    "count-distinct-outer",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "2/2/digits": [
+   [
+    "digits-loop",
+    "firth.type.primitive-input-mismatch"
+   ]
+  ],
+  "2/2/histogram": [
+   [
+    "histogram-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "2/2/sort": [
+   [
+    "insert-sorted",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "2/2/ledger": [
+   [
+    "ledger-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "2/2/allocate-batch": [
+   [
+    "allocate-one",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "allocate-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "4/1/seq-sum": [
+   [
+    "sum-loop",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "4/1/seq-max": [
+   [
+    "max-loop",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.primitive-input-mismatch"
+   ]
+  ],
+  "4/1/count-below": [
+   [
+    "count-loop",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "4/1/index-of": [
+   [
+    "find-loop",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "4/1/reverse": [
+   [
+    "reverse-loop",
+    "firth.type.primitive-input-mismatch"
+   ]
+  ],
+  "4/1/prefix-sums": [
+   [
+    "prefix-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "4/1/keep-positive": [
+   [
+    "keep-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "4/1/is-sorted": [
+   [
+    "check-sorted",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "4/1/dot": [
+   [
+    "dot-loop",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.quotation-input-mismatch"
+   ]
+  ],
+  "4/1/all-true": [
+   [
+    "all-loop",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "4/1/longest-run": [
+   [
+    "run-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "4/1/has-pair-sum": [
+   [
+    "find-pair",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "check-pair",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.stack-underflow"
+   ]
+  ],
+  "4/1/count-distinct": [
+   [
+    "count-distinct-inner",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "count-distinct-outer",
+    "firth.type.quotation-compose-mismatch"
+   ]
+  ],
+  "4/1/merge-sorted": [
+   [
+    "merge-loop",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.quotation-input-mismatch"
+   ]
+  ],
+  "4/1/digits": [
+   [
+    "digits-loop",
+    "firth.name.unresolved-effect"
+   ]
+  ],
+  "4/1/primes-up-to": [
+   [
+    "primes-loop",
+    "firth.name.unresolved-effect"
+   ]
+  ],
+  "4/1/histogram": [
+   [
+    "histogram-loop",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "main",
+    "firth.syntax.invalid-name"
+   ]
+  ],
+  "4/1/sort": [
+   [
+    "insert-sort",
+    "firth.name.unresolved-effect"
+   ]
+  ],
+  "4/1/ledger": [
+   [
+    "ledger-loop",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "4/1/allocate-batch": [
+   [
+    "allocate-single",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "4/2/seq-sum": [
+   [
+    "sum-loop",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "4/2/seq-max": [
+   [
+    "max-loop",
+    "firth.type.quotation-compose-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "4/2/count-below": [
+   [
+    "count-loop",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "4/2/index-of": [
+   [
+    "find-loop",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "4/2/reverse": [
+   [
+    "reverse-loop",
+    "firth.type.primitive-input-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "4/2/prefix-sums": [
+   [
+    "prefix-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "4/2/keep-positive": [
+   [
+    "keep-loop",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "4/2/is-sorted": [
+   [
+    "check-sorted",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "4/2/dot": [
+   [
+    "dot-loop",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "4/2/all-true": [
+   [
+    "all-loop",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "4/2/longest-run": [
+   [
+    "run-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "4/2/has-pair-sum": [
+   [
+    "find-pair",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "check-pair",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.stack-underflow"
+   ]
+  ],
+  "4/2/count-distinct": [
+   [
+    "count-distinct-inner",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "count-distinct-outer",
+    "firth.type.quotation-compose-mismatch"
+   ]
+  ],
+  "4/2/merge-sorted": [
+   [
+    "merge-loop",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "4/2/digits": [
+   [
+    "digits-loop",
+    "firth.name.unresolved-effect"
+   ]
+  ],
+  "4/2/primes-up-to": [
+   [
+    "primes-loop",
+    "firth.name.unresolved-effect"
+   ]
+  ],
+  "4/2/histogram": [
+   [
+    "init-histogram",
+    "firth.name.unresolved-effect"
+   ],
+   [
+    "histogram-loop",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.stack-underflow"
+   ]
+  ],
+  "4/2/sort": [
+   [
+    "insert-loop",
+    "firth.name.unresolved-effect"
+   ],
+   [
+    "sort-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "4/2/ledger": [
+   [
+    "ledger-loop",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "4/2/allocate-batch": [
+   [
+    "allocate-item",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.stack-underflow"
+   ]
+  ],
+  "5/1/seq-sum": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/1/seq-max": [
+   [
+    "main",
+    "firth.name.unresolved-effect"
+   ]
+  ],
+  "5/1/count-below": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/1/index-of": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/1/reverse": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/1/prefix-sums": [
+   [
+    "main",
+    "firth.type.primitive-input-mismatch"
+   ]
+  ],
+  "5/1/keep-positive": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/1/is-sorted": [
+   [
+    "main",
+    "firth.type.quotation-input-mismatch"
+   ]
+  ],
+  "5/1/dot": [
+   [
+    "main",
+    "firth.type.expected-quotation"
+   ]
+  ],
+  "5/1/all-true": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/1/longest-run": [
+   [
+    "main",
+    "firth.name.unresolved-effect"
+   ]
+  ],
+  "5/1/has-pair-sum": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/1/count-distinct": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/1/merge-sorted": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/1/digits": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/1/primes-up-to": [
+   [
+    "main",
+    "firth.name.unresolved-effect"
+   ]
+  ],
+  "5/1/histogram": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/1/sort": [
+   [
+    "main",
+    "firth.name.unresolved-effect"
+   ]
+  ],
+  "5/1/ledger": [
+   [
+    "main",
+    "firth.type.expected-quotation"
+   ]
+  ],
+  "5/1/allocate-batch": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/2/seq-sum": [
+   [
+    "sum-helper",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "5/2/seq-max": [
+   [
+    "max-helper",
+    "firth.type.stack-underflow"
+   ]
+  ],
+  "5/2/count-below": [
+   [
+    "count-helper",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "5/2/reverse": [
+   [
+    "reverse-helper",
+    "firth.type.primitive-input-mismatch"
+   ]
+  ],
+  "5/2/prefix-sums": [
+   [
+    "prefix-helper",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/2/keep-positive": [
+   [
+    "keep-helper",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/2/is-sorted": [
+   [
+    "main",
+    "firth.syntax.invalid-item"
+   ]
+  ],
+  "5/2/dot": [
+   [
+    "dot-helper",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "5/2/longest-run": [
+   [
+    "longest-helper",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/2/has-pair-sum": [
+   [
+    "has-pair-helper",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/2/count-distinct": [
+   [
+    "count-helper",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "5/2/merge-sorted": [
+   [
+    "merge-helper",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/2/digits": [
+   [
+    "digits-helper",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/2/primes-up-to": [
+   [
+    "primes-helper",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/2/histogram": [
+   [
+    "histogram-helper",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ]
+  ],
+  "5/2/sort": [
+   [
+    "min-index-helper",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "sort-helper",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "5/2/allocate-batch": [
+   [
+    "allocate-helper",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/1/seq-sum": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "sum-loop",
+    "firth.type.stack-underflow"
+   ]
+  ],
+  "6/1/seq-max": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "max-loop",
+    "firth.type.stack-underflow"
+   ]
+  ],
+  "6/1/count-below": [
+   [
+    "main",
+    "firth.type.stack-underflow"
+   ],
+   [
+    "count-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/1/index-of": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "find-index",
+    "firth.type.stack-underflow"
+   ]
+  ],
+  "6/1/reverse": [
+   [
+    "reverse-loop",
+    "firth.type.primitive-input-mismatch"
+   ]
+  ],
+  "6/1/prefix-sums": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "prefix-loop",
+    "firth.type.stack-underflow"
+   ]
+  ],
+  "6/1/keep-positive": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "keep-positive-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/1/is-sorted": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "check-sorted",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/1/dot": [
+   [
+    "main",
+    "firth.type.stack-underflow"
+   ],
+   [
+    "dot-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/1/all-true": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "all-true-loop",
+    "firth.type.stack-underflow"
+   ]
+  ],
+  "6/1/longest-run": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "longest-run-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/1/has-pair-sum": [
+   [
+    "main",
+    "firth.type.stack-underflow"
+   ],
+   [
+    "check-pairs",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "find-pair-for",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/1/count-distinct": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "count-distinct-loop",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "is-new-value",
+    "firth.type.stack-underflow"
+   ]
+  ],
+  "6/1/merge-sorted": [
+   [
+    "merge-sorted-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/1/digits": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "digits-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/1/primes-up-to": [
+   [
+    "primes-loop",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "check-divisor",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/1/histogram": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "create-histogram",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "histogram-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/1/sort": [
+   [
+    "insertion-sort-loop",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "insert-into",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/1/ledger": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "ledger-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/1/allocate-batch": [
+   [
+    "main",
+    "firth.type.stack-underflow"
+   ],
+   [
+    "allocate-loop",
+    "firth.syntax.expected-name"
+   ]
+  ],
+  "6/2/seq-sum": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "sum-loop",
+    "firth.type.stack-underflow"
+   ]
+  ],
+  "6/2/seq-max": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "max-loop",
+    "firth.type.stack-underflow"
+   ]
+  ],
+  "6/2/count-below": [
+   [
+    "main",
+    "firth.type.stack-underflow"
+   ],
+   [
+    "count-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/2/index-of": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "find-index",
+    "firth.type.stack-underflow"
+   ]
+  ],
+  "6/2/reverse": [
+   [
+    "reverse-loop",
+    "firth.type.primitive-input-mismatch"
+   ]
+  ],
+  "6/2/prefix-sums": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "prefix-loop",
+    "firth.type.stack-underflow"
+   ]
+  ],
+  "6/2/keep-positive": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "keep-positive-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/2/is-sorted": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "check-sorted",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/2/dot": [
+   [
+    "main",
+    "firth.type.stack-underflow"
+   ],
+   [
+    "dot-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/2/all-true": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "all-true-loop",
+    "firth.type.stack-underflow"
+   ]
+  ],
+  "6/2/longest-run": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "longest-run-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/2/has-pair-sum": [
+   [
+    "main",
+    "firth.type.stack-underflow"
+   ],
+   [
+    "check-pairs",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "find-pair-for",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/2/count-distinct": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "count-distinct-loop",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "is-new-value",
+    "firth.type.stack-underflow"
+   ]
+  ],
+  "6/2/merge-sorted": [
+   [
+    "merge-sorted-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/2/digits": [
+   [
+    "main",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "digits-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/2/primes-up-to": [
+   [
+    "primes-loop",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "check-divisor",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/2/histogram": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "create-histogram",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "histogram-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/2/sort": [
+   [
+    "insertion-sort-loop",
+    "firth.type.branch-mismatch"
+   ],
+   [
+    "insert-into",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/2/ledger": [
+   [
+    "main",
+    "firth.type.word-input-mismatch"
+   ],
+   [
+    "ledger-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ],
+  "6/2/allocate-batch": [
+   [
+    "main",
+    "firth.type.stack-underflow"
+   ],
+   [
+    "allocate-loop",
+    "firth.type.branch-mismatch"
+   ]
+  ]
+ }
+}

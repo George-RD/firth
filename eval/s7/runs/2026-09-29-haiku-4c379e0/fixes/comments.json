@@ -1,0 +1,16 @@
+{
+ "files": 60,
+ "answers": 1103,
+ "body_stack_comments": [],
+ "forth_style_headers": {
+  "2026-09-27-pr113/haiku-firth/solutions-1.json": 4,
+  "2026-09-28-haiku-c6a964a/haiku-firth-1/solutions-1.json": 12,
+  "2026-09-29-haiku-4c379e0/haiku-firth-2/solutions-1.json": 20,
+  "2026-09-29-haiku-4c379e0/haiku-firth-2/solutions-2.json": 20,
+  "2026-09-29-haiku-4c379e0/haiku-firth-2/solutions-3.json": 20
+ },
+ "bodies_with_parens": {
+  "2026-09-29-haiku-4c379e0/haiku-firth-2/solutions-3.json": 1,
+  "2026-09-29-haiku-4c379e0/haiku-firth-4/solutions-1.json": 21
+ }
+}
