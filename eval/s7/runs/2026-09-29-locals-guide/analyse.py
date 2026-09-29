@@ -19,6 +19,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ARMS = {"A": HERE / "arm-a", "B": HERE / "arm-b"}
+N_PER_ARM = 20  # preregistration.md: no test before both arms have exactly this many
 # The shuffle words, and how comments and stack effects are removed before
 # counting them, are run 10's (runs/2026-09-29-control/causes/behaviour.py).
 SHUFFLES = re.compile(r"(?<![\w-])(dup|drop|swap|dip|over|rot|nip|tuck|pick|roll)(?![\w-])")
@@ -98,6 +99,22 @@ def counted(arm_dir):
             yield d
 
 
+def voided(arm_dir):
+    """Void samples, with whichever rounds were scored, for the report only."""
+    for d in sorted(arm_dir.glob("haiku-firth-*"), key=lambda p: int(p.name.rsplit("-", 1)[1])):
+        if (d / "void.md").is_file():
+            yield d.name, [passed(d / f"results-{n}.json") if (d / f"results-{n}.json").is_file()
+                           else None for n in (1, 2, 3)]
+
+
+def ready(rows):
+    """None when both arms have exactly N_PER_ARM counted samples, else why not."""
+    bad = {arm: len(rs) for arm, rs in rows.items() if len(rs) != N_PER_ARM}
+    return None if not bad else (
+        f"not analysed: want exactly {N_PER_ARM} counted samples per arm, have "
+        + ", ".join(f"arm {k} {v}" for k, v in sorted(bad.items())))
+
+
 def self_test():
     rng = __import__("random").Random(11)
     for _ in range(200):
@@ -116,6 +133,9 @@ def self_test():
         res = {arm: [passed(d / "results-3.json") for d in counted(run10 / c)]
                for arm, c in (("A", "4c379e0"), ("B", "8ea4a1d"))}
         assert f"{mann_whitney_greater(res['B'], res['A'])[1]:.4f}" == "0.8196", res
+    # Planted: a partial or an oversized arm is refused before any statistic.
+    assert ready({"A": [0] * 20, "B": [0] * 20}) is None
+    assert ready({"A": [0] * 19, "B": [0] * 20}) and ready({"A": [0] * 20, "B": [0] * 21})
     assert shuffle_count(": f (forall ρ; ρ dup:Int^many -- ρ) \\ swap\n dup drop-all swap") == 2
     print("self-test ok")
 
@@ -126,11 +146,17 @@ def main():
     rows = {arm: [(d.name, passed(d / "results-1.json"), passed(d / "results-3.json"),
                    shuffle_share(d / "solutions-1.json"), shuffle_share(d / "solutions-3.json"))
                   for d in counted(path)] for arm, path in ARMS.items()}
+    why = ready(rows)
+    if why:
+        sys.exit(why)
     for arm, rs in rows.items():
         print(f"arm {arm}: {len(rs)} counted samples")
         for name, first, final, s1, s3 in rs:
             print(f"  {name:15} first {first:2}  final {final:2}  "
                   f"shuffle share first {s1:.2f} final {s3:.2f}")
+        for name, scores in voided(ARMS[arm]):
+            shown = " / ".join("-" if x is None else str(x) for x in scores)
+            print(f"  {name:15} VOID, not counted; passes by round {shown}")
     a, b = rows["A"], rows["B"]
     col = lambda rs, i: [r[i] for r in rs]  # noqa: E731
     u, p = mann_whitney_greater(col(b, 2), col(a, 2))
