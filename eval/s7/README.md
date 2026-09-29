@@ -1226,7 +1226,14 @@ rules and tests committed before the first author started
   worktree was fetched or checked out during the run.
 - Author: `claude-haiku-4-5-20251001` as an Agent-tool sub-agent, with
   runs 8 and 9's instructions word for word (only the paths changed),
-  three answers per sample.
+  three answers per sample. `runs/2026-09-29-control/instructions.json`
+  keeps every message each of the 26 authors received, taken from its raw
+  log; `instructions.py --check` reduces the eval session's three
+  messages to templates (worktree, commit and sample number replaced) and
+  finds one sequence shared by both arms, and its `--self-test` shows an
+  added arm-specific word or a missing round fails. The other 113 messages
+  came from the harness (hand-back reminders and nudges, and one context
+  compaction in B8).
 - Both arms were audited with main's `audit_subagent.py` (`74679f8`).
   `plant_audit.py` shows it flags a read of the eval session's own tool
   results or task outputs, another sample's feedback, `Glob`, `LS`,
@@ -1281,7 +1288,9 @@ than arm A.**
   B's 355 failing first and round-1 answers, 118 had feedback showing two
   or more errors (arm A: 0 of 361, one diagnostic per program). So the
   per-word feedback of #174 was exercised far more than in run 9 (10 of
-  126), and still arm B repaired no more than arm A.
+  126), and still arm B repaired no more than arm A. The arms differ by
+  every change from #168 to #176, including #171's checked reorder edits,
+  so this is a result for that whole build delta, not for #174 alone.
 - **Failure modes** (Jev, counted samples, failing tasks):
 
   | | Arm A first | Arm A round 2 | Arm B first | Arm B round 2 |
@@ -1329,6 +1338,10 @@ and are not counted. Each directory has a `void.md` saying why.
 
 **Departures from the pre-registration.**
 
+- The pre-registration says the builds differ by #174 to #176. They
+  differ by every change from #168 to #176 (`git log --first-parent
+  4c379e0..8ea4a1d`), so the comparison is between the two builds, not
+  of #174 to #176 alone. The design, rules and tests are unaffected.
 - The container restarted at about 18:34 UTC. The files and raw author
   logs survived. A3's final scoring and B4's round-1 scoring had
   finished; A4, A5 and B5 were
@@ -1397,9 +1410,11 @@ Wrong answers at runtime were logic slips that a signature cannot catch.
 So the bet holds for strong models and not yet for weak ones. The
 checker's diagnostics are still the lever most likely to move the weak
 model (the #142 hint removed a failure that every task shared), but the
-latest change, one diagnostic per refused word (#174 to #176), showed
-no gain in a controlled comparison (run 10, inconclusive: 7 of 10
-samples against the older build's 9 of 10).
+diagnostic changes from #168 to #176 taken together (among them #171's
+checked reorder edits and #174's one diagnostic per refused word) showed
+no gain in a controlled comparison of the two builds (run 10,
+inconclusive: 7 of 10 samples against the older build's 9 of 10). Run 10
+cannot say what any one of those changes did on its own.
 The costs are real. From reading the prompt to writing the first answer,
 Sonnet took about 50 to 250 times longer in Firth than in Python in runs 1
 and 3 (6 to 28 minutes against 7 to 8 seconds; run 2 kept no Sonnet Python
