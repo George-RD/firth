@@ -977,6 +977,102 @@ an author who gets the basics right can repair branch mismatches from the
 new message, but a void sample is not evidence, and sample 5, which also
 had the basics right, did not.
 
+### Which fix would help most
+
+No new eval was run for this. The stored first and round-1 answers
+(`solutions-1.json`, `solutions-2.json`) of the four counted samples, 160
+failing answers in all, were edited mechanically to model each candidate
+fix. Each edited answer was then checked and scored at `4c379e0`
+(`fixes/measure.py`, output `fixes/measure.json`). **These are
+counterfactual, hand-modelled edits, not Haiku's answers, and not
+scores.** Each edit models an author who follows the fix perfectly, so a
+count is an upper bound on what that fix could do for these answers. It is
+not a prediction of run 9.
+
+**The checker reports only the first error in a program.** Two errors in
+two different words give one diagnostic, so each feedback round shows one
+mistake. To count independent errors, each word was checked on its own
+with every other word's body replaced by a call to itself. That found at
+least this many words with an error of their own in each failing answer:
+
+| Words with their own error | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|
+| Failing answers (of 140) | 38 | 79 | 22 | 1 |
+
+So 102 of these 140 answers had at least two independent errors, and the
+author was shown one. The count is a lower bound, because a word is
+counted once however many errors it holds. Sample 5's 20 round-1 answers
+are left out: their `] if;` ends a word early for the word split, so their
+words cannot be checked apart. Reporting every independent error is a
+checker change, so it goes to Language core. Editing answers cannot
+measure it.
+
+Each candidate edit was applied to every failing answer it matches. An
+answer an edit does not match is left out of that row.
+
+| Candidate (models) | Edited | Pass | Checks, wrong answer | Next error | Same error |
+|---|---|---|---|---|---|
+| Prompt: a real `main` signature (`main` gets the task's stack effect) | 40 | 4 | 2 | 12 | 22 |
+| Prompt: bind `main`'s inputs with `locals` | 49 | 0 | 0 | 16 | 33 |
+| Prompt: `locals` in stack-effect order | 80 | 0 | 0 | 32 | 48 |
+| Prompt: `seq-int.at` argument order | 2 | 0 | 0 | 0 | 2 |
+| Prompt: `( )` is not grouping or a comment | 19 | 0 | 0 | 19 | 0 |
+| All five prompt edits together | 119 | 15 | 3 | 64 | 37 |
+| Other: no `prim` before a literal | 12 | 0 | 0 | 12 | 0 |
+| All five, and no `prim` before a literal | 119 | 16 | 6 | 72 | 25 |
+| Parse message: no `;` inside a block | 20 | 0 | 0 | 20 | 0 |
+| Parse message: no `( )` and no `;` inside a block | 39 | 0 | 0 | 39 | 0 |
+| Every edit above | 120 | 18 | 7 | 89 | 6 |
+
+"Next error" means the edited answer fails first on a different error, or
+in a different word. In the `main` signature row, 8 of those 12 are the
+`locals` order rule refusing `main` itself. "Same error" means the first
+error did not move, usually because an earlier error still hides the edit.
+The parse-message rows model an author who fixes the parentheses or the
+`;` once the message names them (`todo.paren-in-body-diagnostic`). The
+message itself changes no code.
+
+- **Fixing the parse message alone passes nothing.** All 39 answers it
+  touches move to the next error. Sample 4's 19 first answers move to an
+  unbound `main` input (13) or the `locals` order rule (5). Sample 5's 20
+  round-1 answers move to an unbound `main` input (18). Together with
+  binding `main`'s inputs, 2 of sample 5's answers pass (`index-of` and
+  `all-true`, as in `counterfactual/branch-blocked.json`). With every
+  edit, 10 of the 20 fail on a branch mismatch.
+- **16 of the 18 passes are sample 2's.** With every edit, 8 of its 20
+  first answers and 8 of its 20 round-1 answers pass. Its answers were
+  close: an empty `main` stack effect, reversed `locals` and `prim 0` were
+  most of what stood between them and passing. The other 2 are sample 5's.
+- **Samples 4 and 6 pass nothing under any edit.** With every edit,
+  sample 4's 40 answers move to word-input mismatches (15), branch
+  mismatches (12) and unresolved effects (7). Sample 6's 20 edited
+  answers move to branch mismatches (10) and underflows (8). What stops
+  them is type errors in their loops, which no prompt line models.
+- **`seq-int.at` order barely matters in the counted samples.** Only 2
+  answers were edited. The 28 reversed calls were in void sample 3.
+- **Forth `( a b -- c )` comments in bodies (count only): none.** No kept
+  answer from any run writes one in a body. The Forth-style `( -- result)`
+  headers are signatures, which Firth already parses: sample 2 has 40,
+  run 7's sample 1 has 12, and #113's run has 4. Sample 4's 19
+  parenthesised answers group arguments, and a comment rule would not
+  accept those either. Accepting stack comments would change none of these
+  answers.
+- **Sample 4 saw two feedback wordings.** Its round-1 and round-2 answers
+  were written in a session that received both feedback instructions (see
+  "Set-up slips"). Without sample 4, the `locals` order rule refused 27
+  answers, and each was fixed. The next error was an underflow in 16, a
+  branch mismatch in 10 and a primitive-input mismatch in 1. Sample 4 had
+  no branch mismatch in its first or round-1 answers, so the branch
+  counts are the same without it. In this section it adds no passes under
+  any edit.
+
+Taken together, all the edits could at most move sample 2 from 0 to 8 of
+20 and sample 5 to 2. The rest, and most of what is left after the edits,
+are type errors in loop bodies, branch mismatches first among them, which
+the checker shows one at a time. Showing every independent error is the
+change that would let an author fix several at once. It matters for 102
+of the 140 answers that could be counted.
+
 ## What the eight runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from
