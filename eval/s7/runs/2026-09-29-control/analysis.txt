@@ -1,0 +1,32 @@
+arm A (4c379e0)
+    haiku-firth-1  0 2 3     
+    haiku-firth-2  0 5 9     
+    haiku-firth-3  0 0 10    
+    haiku-firth-4  0 0 -       VOID
+    haiku-firth-5  - - -       VOID
+    haiku-firth-6  1 1 1     
+    haiku-firth-7  5 9 10    
+    haiku-firth-8  0 0 3     
+    haiku-firth-9  0 7 12    
+   haiku-firth-10  0 1 6     
+   haiku-firth-11  0 0 0     
+   haiku-firth-12  0 8 8     
+arm B (8ea4a1d)
+    haiku-firth-1  1 7 8     
+    haiku-firth-2  0 0 0     
+    haiku-firth-3  6 8 9     
+    haiku-firth-4  0 0 0     
+    haiku-firth-5  - - -       VOID
+    haiku-firth-6  1 10 13   
+    haiku-firth-7  0 0 7     
+    haiku-firth-8  0 0 0       VOID
+    haiku-firth-9  7 11 -      VOID
+   haiku-firth-10  0 5 -       VOID
+   haiku-firth-11  2 2 2     
+   haiku-firth-12  0 1 2     
+   haiku-firth-13  1 6 8     
+   haiku-firth-14  0 0 0     
+counted: A 10, B 10
+primary: passing >=1 after round 2: A 9/10, B 7/10; one-sided Fisher p = 0.9567
+secondary 1: total after round 2: A 62, B 49; U_B = 38, p = 0.8196
+secondary 2: first answers: A 6, B 11; U_B = 64.5, p = 0.1262

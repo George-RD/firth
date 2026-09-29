@@ -1090,7 +1090,312 @@ errors (sample 6: 36 of 40; sample 4: 20 of 40), mostly branch mismatches
 mismatches, shown one at a time, recurred at least 19 times in 27, and
 only run 9 can show whether seeing every error helps Haiku repair them.
 
-## What the eight runs say about the bet
+## Run 9: 29 September 2026, Haiku with one diagnostic per refused word
+
+Main at `8ea4a1d`. Since run 8 (`4c379e0`) it has:
+
+- #174: a refused program gets one diagnostic for each word the checker
+  refuses, that word's first error, found against the declared effects of
+  the words it calls. A caller of a word whose declared effect is not a
+  valid signature is reported as `firth.type.unchecked-word`. The harness
+  feedback shows every diagnostic ("The checker found N errors, one for
+  each word it did not accept. Fix them all before you run it again."),
+  each as an `error i of N` block with its code, word, position, message
+  and hint.
+- #175: the words before a bad `use` are still reported.
+- #176: a report that depends on the declared effect of a called word that
+  is itself reported says so, and so does a hint whose edit was checked
+  assuming that effect.
+
+The prompt, `prompt --lang firth --tier mvp --rounds 2` at `8ea4a1d`, is
+run 8's plus one paragraph on how refused words are reported, and step 5
+of the agent loop now reads "Fix every reported word" (`diff` of the two
+`prompt-firth.md` files: 31 lines in, 2 out). Answers were scored at
+`8ea4a1d` (`firth_commit` in every `results-N.json`). The authors ran
+against a detached worktree at that commit, so merges to main during the
+run could not reach the checker, the prompt or the `AGENTS.md` they saw
+(blob `7c89481`, the same as in run 8). Author:
+`claude-haiku-4-5-20251001`, Firth only, three answers per sample, with
+run 8's author and feedback instructions word for word. Everything is in
+`runs/2026-09-29-haiku-8ea4a1d/`.
+
+**Sample 4 is void, and sample 5 replaces it.** After writing its last
+answer, sample 4 made 16 calls outside its allowlist, and
+`audit_subagent.py --rounds 2 --lang firth` flags all 16. It made 2
+`Read` calls and 4 `Bash` commands (`head`, `grep`, `jq`, `cat`) on
+sample 3's sub-agent output file under `/tmp` (task
+`a7884e1827d752497`, which the run's id list maps to `haiku-firth-3`). It
+read part of a file of the eval session's own saved tool output
+(`tool-results/bulg7e94h.txt` under `/root/.claude/projects/`). And it
+ran `ls` and `find` over its own directory and over the whole run
+directory, which lists every sample's answer and feedback files. Its
+answers were all written before the first of these calls, but
+the rule does not depend on that, so it is not counted. Its files stay in
+the directory (it passed 0, 0 and 1). The audit passes for samples 1, 2,
+3 and 5 (exit 0, nothing flagged). Each of them made exactly nine calls:
+a `Read` of `prompt-firth.md`, its own `repair-1.md` and `repair-2.md`, a
+`Write` of each of its own three answers (each matching the kept file by
+SHA-256) and three hand-backs. So no counted author read another sample's
+files, the tasks, the references or anything else. That this was only
+detected, not prevented, is `todo.s7-author-enforced-allowlist`.
+
+| Haiku 4.5, Firth, passed (of 20) | First answer | Round 1 | Round 2 |
+|---|---|---|---|
+| Sample 1 | 0 | 1 | 3 |
+| Sample 2 | 3 | 8 | 12 |
+| Sample 3 | 9 | 13 | 17 |
+| Sample 5 | 0 | 0 | 0 |
+| Run 8 (samples 2, 4, 5, 6) | 0 each | 0 each | 0 each |
+| Run 6 (two samples) | 3 and 0 | 3 and 2 | 5 and 6 |
+
+Failures by the first diagnostic of the visible example, summed over the
+counted samples (80 answers a round; `fixes/tabulate.py`):
+
+| | First | r1 | r2 |
+|---|---|---|---|
+| `firth.type.branch-mismatch` | 23 | 26 | 10 |
+| `firth.name.unresolved` | 10 | 1 | 18 |
+| `firth.syntax.*` | 5 | 6 | 3 |
+| `firth.type.word-input-mismatch` | 2 | 4 | 5 |
+| `firth.type.primitive-input-mismatch` | 6 | 2 | 1 |
+| `firth.type.stack-underflow` | 4 | 4 | 1 |
+| other checker errors | 13 | 8 | 0 |
+| wrong answer or runtime fault | 5 | 7 | 10 |
+| **failing** | 68 | 58 | 48 |
+
+- **Three of four counted samples passed tasks, and 12 first answers
+  passed.** In run 8 no counted sample passed anything. Sample 3 reached
+  17 of 20, Haiku's best Firth result so far on the MVP task set (run 5's
+  best was 8). Sample
+  5 passed nothing in any round, and no task that passed in one round
+  failed in the next.
+- **The new feedback explains little of the gain.** Seeing every error
+  mattered little here, because these answers seldom had more than one:
+  of the 126 failing answers whose feedback the counted authors read
+  (`repair-1.md`, `repair-2.md`), 10 showed two or more errors. Run 8's
+  counted first and round-1 answers, the ones whose feedback an author
+  would read, rechecked at `8ea4a1d`, show two or more for 71 of 160
+  (`fixes/feedback_check.py`, output
+  `fixes/run8-feedback-at-8ea4a1d.json`; 109 of 240 with round 2).
+  Of the 20 tasks repaired
+  between rounds, 3 followed feedback with two or more errors. And the 12
+  first answers that passed saw no feedback at all; the only prompt
+  change they read is the paragraph on how errors are reported. So the
+  difference from run 8 is mostly in what Haiku wrote, not in what it was
+  told, and with four samples a run it is not yet separable from
+  sample-to-sample variance (run 6's two samples, on one build and
+  prompt, passed 3 and 0 first answers). Run 9's 12 of 80 first answers
+  also match runs 5 and 6 (11 of 80), which makes runs 7 and 8 (0 of 120)
+  the outliers. A control, run 8's build with run 9's protocol, would
+  separate them (run 10).
+- **More branch mismatches got past the checker.** Of the 49 answers that
+  failed on `firth.type.branch-mismatch` in the first answers or round 1,
+  6 passed in the next round, 8 got past the checker to a wrong answer,
+  14 stopped at another checker error and 21 failed on a branch mismatch
+  again (run 8: 2 to 8 of 27 repaired, at least 19 recurred). Sample 1
+  accounts for 14 of the 21.
+- **Sample 5's round-2 answers used an undefined `i` in 17 tasks.** Its
+  loop words name `i` in the stack effect and use it in the body without
+  a `locals` block. The hint names the fix
+  (`locals { xs k i len count } { ... }`), but the feedback it read before
+  that round showed this error once, and there was no round after it. Its round-1 answers had failed on
+  branch mismatches (7) and `firth.type.quotation-compose-mismatch` (4).
+- **Jev** (`modes-1.json`, `modes-3.json`), counted samples: first
+  answers 40 `stack_effect`, 16 `invented_syntax`, 7 `stack_order`, 4
+  `logic` and 1 `toolchain` (sample 5's `seq-sum`, a duplicate `main`,
+  mislabelled); last answers 20 `invented_syntax`, 13 `stack_effect`, 9
+  `logic` and 6 `stack_order`.
+- **Set-up.** Samples 1 to 4 ran at the same time in one container, as
+  sub-agents of the session running the eval, so each could have reached
+  the others' files; the audit above is what shows the counted ones did
+  not. Sample 5 started after sample 4 was voided.
+
+## Run 10: 29 September 2026, a control for run 9's gain
+
+Run 9 (`8ea4a1d`) passed 3, 12, 17 and 0 of 20 where run 8 (`4c379e0`)
+passed nothing, and four samples a run could not say whether that was the
+change between the two commits or sample-to-sample variance. Run 10 ran
+both again, fresh, 10 counted samples each, under a design, validity
+rules and tests committed before the first author started
+(`runs/2026-09-29-control/preregistration.md`, commit `6e7f963`).
+
+- **Arm A** is run 8's build and prompt: a detached worktree at
+  `4c379e0`. **Arm B** is run 9's: a detached worktree at `8ea4a1d`. Each
+  arm's prompt is byte-identical to its pilot's `prompt-firth.md`, and
+  each arm's answers were scored by its own harness and checker. Neither
+  worktree was fetched or checked out during the run.
+- Author: `claude-haiku-4-5-20251001` as an Agent-tool sub-agent, with
+  runs 8 and 9's instructions word for word (only the paths changed),
+  three answers per sample. `runs/2026-09-29-control/instructions.json`
+  keeps every message each of the 26 authors received, taken from its raw
+  log; `instructions.py --check` reduces the eval session's three
+  messages to templates (worktree, commit and sample number replaced) and
+  finds one sequence shared by both arms, and its `--self-test` shows an
+  added arm-specific word or a missing round fails. The other 113 messages
+  came from the harness (hand-back reminders and nudges, and one context
+  compaction in B8).
+- The audit checks what an author called; `context_seen.py` checks what it
+  was shown. It lists every item put into an author's context that is
+  neither its own turn, nor a result of its own call, nor one of the eval
+  session's three messages, and flags any that names another sample or
+  another task's files. It also scans the text of the author's own tool
+  results, where the harness can add a `<system-reminder>`, and names a
+  sample by arm and number, so the other arm's sample with the same
+  number, its commit, or a path into its worktree's `eval/` tree counts
+  as crossing. Each sample keeps its `context-seen.json`. It exits 1 on
+  one sample of the 26, B8, at line 81 of its log: the `task_status`
+  attachment that named B10. No tool result carried an added reminder.
+  Its `--self-test` plants each kind of crossing (that attachment, a
+  label alone, a nudge naming another sample's answer file, the other
+  arm's sample with the same number, a path into the other arm's `eval/`,
+  and a reminder inside a Read result) and each is flagged.
+- The scan also lists, without counting it as crossing, where the other
+  arm's worktree was named with no path into it. Every author but B2 was
+  shown a skill listing naming both worktrees (the repository's cairn
+  skills, scoped to `firth-r8/` and `firth-v9/`), and B1's and B2's first
+  environment notice gave `/home/user/firth-r8` as the working directory,
+  which was the eval session's own at the time. None of these carries a
+  sample's content, and the `CLAUDE.md` and `AGENTS.md` each author was
+  given came from its own arm's worktree and the main checkout, never the
+  other arm's (`agents-seen.json`; all have the same blobs). An enforced allowlist
+  should hide the other worktree too
+  (`todo.s7-author-enforced-allowlist`).
+- Both arms were audited with main's `audit_subagent.py` (`74679f8`),
+  with the hand-back kept whole (reviewer, on #181).
+  `plant_audit.py` shows it flags a read of the eval session's own tool
+  results or task outputs, another sample's feedback, `Glob`, `LS`,
+  `Grep` and `Bash`, and allows the permitted reads.
+- Every author saw `AGENTS.md` blob `7c89481` and `CLAUDE.md` blob
+  `43c994c`, run 8's (`seen_agents.py` on each raw log, exit 0 for every
+  sample, void ones included; the blobs are in each of the 26
+  `agents-seen.json` files). A5 and B5 read only their prompt before the
+  restart (their `transcript.json`).
+- Arm A's harness predates #173, so every one of its results was searched
+  for toolchain text before its feedback was sent. None had any.
+
+Everything is in `runs/2026-09-29-control/`: one directory per arm, the
+scripts that drove the rounds (`driver/`), the sample-to-author map
+(`driver/ids.txt`) and the running log (`driver/state.md`).
+`python3 runs/2026-09-29-control/analyse.py` prints the tables and tests
+below (`analysis.txt`); `--self-test` checks both tests against known
+values.
+
+| Passed (of 20): first answer, round 1, round 2 | Arm A (`4c379e0`) | Arm B (`8ea4a1d`) |
+|---|---|---|
+| Counted samples | 1: 0, 2, 3 | 1: 1, 7, 8 |
+| | 2: 0, 5, 9 | 2: 0, 0, 0 |
+| | 3: 0, 0, 10 | 3: 6, 8, 9 |
+| | 6: 1, 1, 1 | 4: 0, 0, 0 |
+| | 7: 5, 9, 10 | 6: 1, 10, 13 |
+| | 8: 0, 0, 3 | 7: 0, 0, 7 |
+| | 9: 0, 7, 12 | 11: 2, 2, 2 |
+| | 10: 0, 1, 6 | 12: 0, 1, 2 |
+| | 11: 0, 0, 0 | 13: 1, 6, 8 |
+| | 12: 0, 8, 8 | 14: 0, 0, 0 |
+| Passing at least one task after round 2 | 9 of 10 | 7 of 10 |
+| Tasks passed after round 2 | 62 | 49 |
+| First answers passed | 6 | 11 |
+
+**The result is inconclusive, as pre-registered: arm B did not do better
+than arm A.**
+
+- **Primary:** samples passing at least one task after round 2, A 9 of
+  10 and B 7 of 10, one-sided Fisher exact test (B greater than A)
+  p = 0.957.
+- **Secondary:** tasks passed after round 2, A 62 and B 49, one-sided
+  Mann-Whitney U (B greater) U = 38, p = 0.820. First answers, A 6 and
+  B 11, U = 64.5, p = 0.126.
+- The pre-registration says a non-significant primary is reported as
+  inconclusive, not as "no effect", and so it is here. What the data do
+  show: run 8's build and prompt passed tasks in 9 of 10 fresh samples,
+  so run 8's four samples passing nothing was not a property of that
+  build, and run 9's gain over run 8 did not reproduce. It is consistent
+  with the sample-to-sample variance runs 5 to 9 already suggested.
+- **Arm B's feedback did show many errors at once this time.** Of arm
+  B's 355 failing first and round-1 answers, 118 had feedback showing two
+  or more errors (arm A: 0 of 361, one diagnostic per program). So the
+  per-word feedback of #174 was exercised far more than in run 9 (10 of
+  126), and still arm B repaired no more than arm A. The arms differ by
+  every change from #168 to #176, including #171's checked reorder edits,
+  so this is a result for that whole build delta, not for #174 alone.
+- **Failure modes** (Jev, counted samples, failing tasks):
+
+  | | Arm A first | Arm A round 2 | Arm B first | Arm B round 2 |
+  |---|---|---|---|---|
+  | `stack_effect` | 60 | 71 | 88 | 72 |
+  | `invented_syntax` | 113 | 24 | 55 | 27 |
+  | `stack_order` | 20 | 21 | 43 | 32 |
+  | `logic` | 1 | 20 | 3 | 20 |
+  | other | 0 | 2 | 0 | 0 |
+
+  Arm A's first answers fail more on invented syntax; arm B's prompt adds
+  a paragraph on how refused words are reported, and its first answers
+  pass slightly more (11 against 6, not significant). After two rounds
+  both arms fail mostly on stack effects.
+
+**Void samples.** Six samples are void under the pre-registered rules
+and are not counted. Each directory has a `void.md` saying why.
+
+| Sample | Passed so far | Why void |
+|---|---|---|
+| A4 | 0, 0 | Container restart during round 2; no third answer |
+| A5 | none | Container restart before its first answer |
+| B5 | none | Container restart before its first answer |
+| B8 | 0, 0, 0 | Ran `ls` twice on its own directory after its last answer (`Bash`, flagged) |
+| B9 | 7, 11 | Used `Edit` five times on its own `answer-2.md` (flagged); no round 2 sent |
+| B10 | 0, 5 | Wrote `answer-2.md` three times; the audit flags the two writes that are not the kept file; no round 2 sent |
+
+- B10's rewrites used only the allowed tool on its own answer file, but
+  the rule voids any flagged sample, and it was applied as written. The
+  audit's rule is stricter than the allowlist the pre-registration states
+  (a `Write` of the sample's own answers); that is recorded in
+  `todo.s7-author-enforced-allowlist`.
+- Counterfactual, hand-counted, not scored: if B9 and B10 had been
+  counted on their last scored round, arm B would have 9 of 12 samples
+  passing a task against arm A's 9 of 10, so the primary would still not
+  favour arm B.
+- B8's final hand-back named another author ("Control author B10").
+  Its raw log shows where the name came from: at 18:52:15 the harness
+  injected a `task_status` attachment into B8's context describing B10's
+  task, with the path of B10's output log. B8 made no call on that path.
+  The excerpt is `8ea4a1d/haiku-firth-8/handback.txt`, and the hand-back
+  itself is in that sample's `transcript.json`. It arrived at 18:52:15,
+  after B8's last answer was written, and B8 was already void on its
+  `Bash` calls and never counted. `context_seen.py` over all 26 logs
+  finds this one item and nothing else naming another sample, but the
+  channel exists, one more reason for
+  `todo.s7-author-enforced-allowlist`.
+
+**Departures from the pre-registration.**
+
+- The pre-registration says the builds differ by #174 to #176. They
+  differ by every change from #168 to #176 (`git log --first-parent
+  4c379e0..8ea4a1d`), so the comparison is between the two builds, not
+  of #174 to #176 alone. The design, rules and tests are unaffected.
+- The container restarted at about 18:34 UTC. The files and raw author
+  logs survived. A3's final scoring and B4's round-1 scoring had
+  finished; A4, A5 and B5 were
+  killed mid-turn and, not having written all three answers, are void
+  (above). They were not resumed, so no counted transcript spans the
+  restart.
+- From 18:40:22 to 18:44:48 UTC three arm A authors ran at once (A6, A7,
+  A8), and until 18:42:29 five in total, where the design allows two per
+  arm and four in all. The slip was in starting A8 early; it changed
+  nothing an author could see.
+- Samples did not start in strict alternation. Each new author started
+  when a slot in its own arm came free, so the start order (first call
+  in each `transcript.json`) was A1, B1, A2, B2 (18:02), A3, A4 (18:17),
+  B3, B4 (18:27), A5, B5 (about 18:32, void), A11, B11, A12 (18:35), B6,
+  A6, A7, A8, B7 (18:37 to 18:42), B8, A9, B9, A10 (18:45 to 18:46), then
+  B10, B12, B13, B14 (18:51 to 18:58). Arm B had three audit voids and
+  arm A none, so arm B's last four samples ran after arm A had finished
+  (18:50) and were not interleaved with it. The whole run took under an
+  hour on one model version, but anything that changed over that hour
+  (service load, for example) would weigh only on arm B's late samples.
+  The three of them that count passed 2, 8 and 0 of 20 (B12, B13, B14).
+  The result is reported with that caveat.
+
+## What the ten runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from
 the docs alone. On main, Sonnet matches Python on every task set except
@@ -1121,12 +1426,25 @@ fixed in the next round, but no counted sample passed any task and at
 least 19 of 27 branch mismatches recurred (7 of them behind an earlier
 error) and between 2 and 8 were repaired. Each sample repeated a
 few mistakes across nearly every task, and with one diagnostic per
-program two feedback rounds did not get past them. The checker found
+program two feedback rounds did not get past them. Run 9, with one
+diagnostic for each refused word, passed 3, 12, 17 and 0 of 20 after two
+rounds, but its answers seldom had more than one error, so the new
+feedback explains little of that. Run 10 then ran both builds fresh, 10
+samples each: run 8's build passed a task in 9 of 10 samples and run 9's
+in 7 of 10, so run 9's gain did not reproduce and run 8's zeros were not a
+property of its build. Differences between single runs of four samples
+can be explained by variance alone. The checker found
 most stack-shape errors before execution.
 Wrong answers at runtime were logic slips that a signature cannot catch.
 
-So the bet holds for strong models and not yet for weak ones, and the
-checker's diagnostics are the lever that has moved the weak model most.
+So the bet holds for strong models and not yet for weak ones. The
+checker's diagnostics are still the lever most likely to move the weak
+model (the #142 hint removed a failure that every task shared), but the
+diagnostic changes from #168 to #176 taken together (among them #171's
+checked reorder edits and #174's one diagnostic per refused word) did not
+show a gain in a controlled comparison of the two builds (run 10,
+inconclusive: 7 of 10 samples against the older build's 9 of 10). Run 10
+cannot say what any one of those changes did on its own.
 The costs are real. From reading the prompt to writing the first answer,
 Sonnet took about 50 to 250 times longer in Firth than in Python in runs 1
 and 3 (6 to 28 minutes against 7 to 8 seconds; run 2 kept no Sonnet Python
@@ -1139,6 +1457,12 @@ against 11 seconds).
   tasks measure Firth's cost relative to an easy baseline, not a hard one.
 - Runs 1 and 2 used one sample per task, which is noisy: Haiku passed 7 of
   the easy tasks in run 1 and only 5 in run 2. Run 3 used three.
+- Haiku's results vary widely between samples of one build (arm A of run
+  10: 0 to 12 of 20). Four samples an arm is usually underpowered: only a
+  large separation (4 of 4 against 0 of 4 gives one-sided Fisher p =
+  1/70) would show a change helped, and under the rates the
+  pre-registration guessed, such a run has power 0.17. Judge a change by a pre-registered control
+  like run 10, with about 10 samples an arm.
 - The step budget is now 100,000 steps (#119), so tasks with real loops
   (count-divisors, larger inputs) can come back.
 - The repo docs now cover the new primitives (PR #113 `54387bd`), so the

@@ -1,0 +1,129 @@
+{
+  "model": "jev-1.13.0",
+  "counts": {
+    "stack_effect": 15,
+    "invented_syntax": 5
+  },
+  "tasks": {
+    "seq-sum": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.94,
+      "review": false
+    },
+    "seq-max": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.48,
+      "review": true
+    },
+    "count-below": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.89,
+      "review": false
+    },
+    "index-of": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.83,
+      "review": false
+    },
+    "reverse": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.43,
+      "review": true
+    },
+    "prefix-sums": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.93,
+      "review": false
+    },
+    "keep-positive": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.94,
+      "review": false
+    },
+    "is-sorted": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.53,
+      "review": true
+    },
+    "dot": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.93,
+      "review": false
+    },
+    "all-true": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.94,
+      "review": false
+    },
+    "longest-run": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.47,
+      "review": true
+    },
+    "has-pair-sum": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.86,
+      "review": false
+    },
+    "count-distinct": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.81,
+      "review": false
+    },
+    "merge-sorted": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.95,
+      "review": false
+    },
+    "digits": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.54,
+      "review": true
+    },
+    "primes-up-to": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.73,
+      "review": false
+    },
+    "histogram": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.95,
+      "review": false
+    },
+    "sort": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.54,
+      "review": true
+    },
+    "ledger": {
+      "mode": "invented_syntax",
+      "by": "jev",
+      "confidence": 0.76,
+      "review": false
+    },
+    "allocate-batch": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.51,
+      "review": true
+    }
+  }
+}

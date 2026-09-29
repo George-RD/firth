@@ -1,0 +1,2561 @@
+{
+  "lang": "firth",
+  "tasks": {
+    "seq-sum": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            15
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            15
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            7
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              -3,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            10
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10
+            ]
+          ],
+          "expected": [
+            55
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            55
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              -5,
+              -6
+            ]
+          ],
+          "expected": [
+            -11
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            -11
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 5,
+      "hidden_total": 5
+    },
+    "seq-max": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              9,
+              2
+            ]
+          ],
+          "expected": [
+            9
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 12, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 12, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -4,
+              -2,
+              -9
+            ]
+          ],
+          "expected": [
+            -2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 12, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 12, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              8,
+              8,
+              3
+            ]
+          ],
+          "expected": [
+            8
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 12, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 12, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "count-below": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              5,
+              2,
+              8
+            ],
+            4
+          ],
+          "expected": [
+            2
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 94\nmessage: `count-loop` in `count-loop` needs Seq Int Int Int Int on top of the stack, but the stack before it is .. Int Seq Int Int Int.\nexpected: .. Seq Int Int Int Int\nactual: .. Int Seq Int Int Int\nhint: The third value from the top is Seq Int but `count-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            3
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 94\nmessage: `count-loop` in `count-loop` needs Seq Int Int Int Int on top of the stack, but the stack before it is .. Int Seq Int Int Int.\nexpected: .. Seq Int Int Int Int\nactual: .. Int Seq Int Int Int\nhint: The third value from the top is Seq Int but `count-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            4
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 94\nmessage: `count-loop` in `count-loop` needs Seq Int Int Int Int on top of the stack, but the stack before it is .. Int Seq Int Int Int.\nexpected: .. Seq Int Int Int Int\nactual: .. Int Seq Int Int Int\nhint: The third value from the top is Seq Int but `count-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              0,
+              1
+            ],
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 94\nmessage: `count-loop` in `count-loop` needs Seq Int Int Int Int on top of the stack, but the stack before it is .. Int Seq Int Int Int.\nexpected: .. Seq Int Int Int Int\nactual: .. Int Seq Int Int Int\nhint: The third value from the top is Seq Int but `count-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              1,
+              9,
+              1,
+              9
+            ],
+            10
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 94\nmessage: `count-loop` in `count-loop` needs Seq Int Int Int Int on top of the stack, but the stack before it is .. Int Seq Int Int Int.\nexpected: .. Seq Int Int Int Int\nactual: .. Int Seq Int Int Int\nhint: The third value from the top is Seq Int but `count-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              3
+            ],
+            -5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 94\nmessage: `count-loop` in `count-loop` needs Seq Int Int Int Int on top of the stack, but the stack before it is .. Int Seq Int Int Int.\nexpected: .. Seq Int Int Int Int\nactual: .. Int Seq Int Int Int\nhint: The third value from the top is Seq Int but `count-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "index-of": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              7,
+              3,
+              9,
+              3
+            ],
+            3
+          ],
+          "expected": [
+            1
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 61\nmessage: `find-loop` in `find-loop` needs Seq Int Int Int on top of the stack, but the stack before it is .. Int ?t57 ?t56.\nexpected: .. Seq Int Int Int\nactual: .. Int ?t57 ?t56\nhint: The top value is ?t56 but `find-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            1
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 61\nmessage: `find-loop` in `find-loop` needs Seq Int Int Int on top of the stack, but the stack before it is .. Int ?t57 ?t56.\nexpected: .. Seq Int Int Int\nactual: .. Int ?t57 ?t56\nhint: The top value is ?t56 but `find-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 61\nmessage: `find-loop` in `find-loop` needs Seq Int Int Int on top of the stack, but the stack before it is .. Int ?t57 ?t56.\nexpected: .. Seq Int Int Int\nactual: .. Int ?t57 ?t56\nhint: The top value is ?t56 but `find-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 61\nmessage: `find-loop` in `find-loop` needs Seq Int Int Int on top of the stack, but the stack before it is .. Int ?t57 ?t56.\nexpected: .. Seq Int Int Int\nactual: .. Int ?t57 ?t56\nhint: The top value is ?t56 but `find-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            2
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 61\nmessage: `find-loop` in `find-loop` needs Seq Int Int Int on top of the stack, but the stack before it is .. Int ?t57 ?t56.\nexpected: .. Seq Int Int Int\nactual: .. Int ?t57 ?t56\nhint: The top value is ?t56 but `find-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              -2,
+              -3
+            ],
+            -3
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 61\nmessage: `find-loop` in `find-loop` needs Seq Int Int Int on top of the stack, but the stack before it is .. Int ?t57 ?t56.\nexpected: .. Seq Int Int Int\nactual: .. Int ?t57 ?t56\nhint: The top value is ?t56 but `find-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "reverse": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              2,
+              1
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 12, column 3\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 12, column 3\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 12, column 3\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              -4,
+              4,
+              -4,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              -4,
+              4,
+              -4,
+              4
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 12, column 3\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 12, column 3\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "prefix-sums": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              3,
+              6
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nat: line 5, column 50\nmessage: `prim seq-int.push` in `prefix-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int Int Int ?t35.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int Int ?t35\nhint: The top value is ?t35 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nat: line 5, column 50\nmessage: `prim seq-int.push` in `prefix-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int Int Int ?t35.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int Int ?t35\nhint: The top value is ?t35 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nat: line 5, column 50\nmessage: `prim seq-int.push` in `prefix-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int Int Int ?t35.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int Int ?t35\nhint: The top value is ?t35 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              -3,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              3,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nat: line 5, column 50\nmessage: `prim seq-int.push` in `prefix-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int Int Int ?t35.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int Int ?t35\nhint: The top value is ?t35 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              20,
+              30,
+              40,
+              50,
+              60
+            ]
+          ],
+          "expected": [
+            [
+              10,
+              30,
+              60,
+              100,
+              150,
+              210
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nat: line 5, column 50\nmessage: `prim seq-int.push` in `prefix-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int Int Int ?t35.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int Int ?t35\nhint: The top value is ?t35 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "keep-positive": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              -1,
+              0,
+              4
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              4
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 5, column 86\nmessage: In the false branch of the `if` in `filter-loop` whose true branch is `[ drop result ]`, `prim seq-int.push` takes 2 values (Seq Int, Int, bottom to top). It gets, bottom to top, the result of `prim seq-int.at` from below the `if` and `result`.\nexpected: .. Seq Int\nactual: .. Seq Int Int Int\nhint: Both branches start from the stack below the `if`, so a value `prim seq-int.push` takes from there must be the one it expects at that position. Check that it gets the values it should, in its order, and push the ones it should use inside the branch, for example by writing the locals that hold them.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 5, column 86\nmessage: In the false branch of the `if` in `filter-loop` whose true branch is `[ drop result ]`, `prim seq-int.push` takes 2 values (Seq Int, Int, bottom to top). It gets, bottom to top, the result of `prim seq-int.at` from below the `if` and `result`.\nexpected: .. Seq Int\nactual: .. Seq Int Int Int\nhint: Both branches start from the stack below the `if`, so a value `prim seq-int.push` takes from there must be the one it expects at that position. Check that it gets the values it should, in its order, and push the ones it should use inside the branch, for example by writing the locals that hold them.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              -2
+            ]
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 5, column 86\nmessage: In the false branch of the `if` in `filter-loop` whose true branch is `[ drop result ]`, `prim seq-int.push` takes 2 values (Seq Int, Int, bottom to top). It gets, bottom to top, the result of `prim seq-int.at` from below the `if` and `result`.\nexpected: .. Seq Int\nactual: .. Seq Int Int Int\nhint: Both branches start from the stack below the `if`, so a value `prim seq-int.push` takes from there must be the one it expects at that position. Check that it gets the values it should, in its order, and push the ones it should use inside the branch, for example by writing the locals that hold them.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 5, column 86\nmessage: In the false branch of the `if` in `filter-loop` whose true branch is `[ drop result ]`, `prim seq-int.push` takes 2 values (Seq Int, Int, bottom to top). It gets, bottom to top, the result of `prim seq-int.at` from below the `if` and `result`.\nexpected: .. Seq Int\nactual: .. Seq Int Int Int\nhint: Both branches start from the stack below the `if`, so a value `prim seq-int.push` takes from there must be the one it expects at that position. Check that it gets the values it should, in its order, and push the ones it should use inside the branch, for example by writing the locals that hold them.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              0,
+              5,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 5, column 86\nmessage: In the false branch of the `if` in `filter-loop` whose true branch is `[ drop result ]`, `prim seq-int.push` takes 2 values (Seq Int, Int, bottom to top). It gets, bottom to top, the result of `prim seq-int.at` from below the `if` and `result`.\nexpected: .. Seq Int\nactual: .. Seq Int Int Int\nhint: Both branches start from the stack below the `if`, so a value `prim seq-int.push` takes from there must be the one it expects at that position. Check that it gets the values it should, in its order, and push the ones it should use inside the branch, for example by writing the locals that hold them.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -7,
+              7,
+              -7,
+              7,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              7,
+              7,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 5, column 86\nmessage: In the false branch of the `if` in `filter-loop` whose true branch is `[ drop result ]`, `prim seq-int.push` takes 2 values (Seq Int, Int, bottom to top). It gets, bottom to top, the result of `prim seq-int.at` from below the `if` and `result`.\nexpected: .. Seq Int\nactual: .. Seq Int Int Int\nhint: Both branches start from the stack below the `if`, so a value `prim seq-int.push` takes from there must be the one it expects at that position. Check that it gets the values it should, in its order, and push the ones it should use inside the branch, for example by writing the locals that hold them.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "is-sorted": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              5
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 91\nmessage: `check-loop` in `check-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Int ?t35.\nexpected: .. Seq Int Int\nactual: .. Int ?t35\nhint: The top value is ?t35 but `check-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 91\nmessage: `check-loop` in `check-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Int ?t35.\nexpected: .. Seq Int Int\nactual: .. Int ?t35\nhint: The top value is ?t35 but `check-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 91\nmessage: `check-loop` in `check-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Int ?t35.\nexpected: .. Seq Int Int\nactual: .. Int ?t35\nhint: The top value is ?t35 but `check-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 91\nmessage: `check-loop` in `check-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Int ?t35.\nexpected: .. Seq Int Int\nactual: .. Int ?t35\nhint: The top value is ?t35 but `check-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 91\nmessage: `check-loop` in `check-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Int ?t35.\nexpected: .. Seq Int Int\nactual: .. Int ?t35\nhint: The top value is ?t35 but `check-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -5,
+              -5,
+              0,
+              7
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 91\nmessage: `check-loop` in `check-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Int ?t35.\nexpected: .. Seq Int Int\nactual: .. Int ?t35\nhint: The top value is ?t35 but `check-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 91\nmessage: `check-loop` in `check-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Int ?t35.\nexpected: .. Seq Int Int\nactual: .. Int ?t35\nhint: The top value is ?t35 but `check-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "dot": {
+      "needs": [
+        "loop",
+        "mul",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            32
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 102\nmessage: `dot-loop` in `dot-loop` needs Seq Int Seq Int Int Int on top of the stack, but the stack before it is .. Int Int Seq Int Seq Int.\nexpected: .. Seq Int Seq Int Int Int\nactual: .. Int Int Seq Int Seq Int\nhint: The top value is Seq Int but `dot-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 102\nmessage: `dot-loop` in `dot-loop` needs Seq Int Seq Int Int Int on top of the stack, but the stack before it is .. Int Int Seq Int Seq Int.\nexpected: .. Seq Int Seq Int Int Int\nactual: .. Int Int Seq Int Seq Int\nhint: The top value is Seq Int but `dot-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2
+            ],
+            [
+              -3
+            ]
+          ],
+          "expected": [
+            -6
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 102\nmessage: `dot-loop` in `dot-loop` needs Seq Int Seq Int Int Int on top of the stack, but the stack before it is .. Int Int Seq Int Seq Int.\nexpected: .. Seq Int Seq Int Int Int\nactual: .. Int Int Seq Int Seq Int\nhint: The top value is Seq Int but `dot-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              -1
+            ],
+            [
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 102\nmessage: `dot-loop` in `dot-loop` needs Seq Int Seq Int Int Int on top of the stack, but the stack before it is .. Int Int Seq Int Seq Int.\nexpected: .. Seq Int Seq Int Int Int\nactual: .. Int Int Seq Int Seq Int\nhint: The top value is Seq Int but `dot-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              3,
+              3,
+              3
+            ],
+            [
+              1,
+              2,
+              3,
+              4
+            ]
+          ],
+          "expected": [
+            30
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 5, column 102\nmessage: `dot-loop` in `dot-loop` needs Seq Int Seq Int Int Int on top of the stack, but the stack before it is .. Int Int Seq Int Seq Int.\nexpected: .. Seq Int Seq Int Int Int\nactual: .. Int Int Seq Int Seq Int\nhint: The top value is Seq Int but `dot-loop` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "all-true": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              true,
+              true,
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nat: line 4, column 13\nmessage: `prim seq-int.len` in `all-loop` needs Seq Int on top of the stack, but the stack before it is \u03c1 Seq Bool Int Int Seq Bool.\nexpected: .. Seq Int\nactual: \u03c1 Seq Bool Int Int Seq Bool\nhint: The top value is Seq Bool but `prim seq-int.len` expects Seq Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nat: line 4, column 13\nmessage: `prim seq-int.len` in `all-loop` needs Seq Int on top of the stack, but the stack before it is \u03c1 Seq Bool Int Int Seq Bool.\nexpected: .. Seq Int\nactual: \u03c1 Seq Bool Int Int Seq Bool\nhint: The top value is Seq Bool but `prim seq-int.len` expects Seq Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nat: line 4, column 13\nmessage: `prim seq-int.len` in `all-loop` needs Seq Int on top of the stack, but the stack before it is \u03c1 Seq Bool Int Int Seq Bool.\nexpected: .. Seq Int\nactual: \u03c1 Seq Bool Int Int Seq Bool\nhint: The top value is Seq Bool but `prim seq-int.len` expects Seq Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nat: line 4, column 13\nmessage: `prim seq-int.len` in `all-loop` needs Seq Int on top of the stack, but the stack before it is \u03c1 Seq Bool Int Int Seq Bool.\nexpected: .. Seq Int\nactual: \u03c1 Seq Bool Int Int Seq Bool\nhint: The top value is Seq Bool but `prim seq-int.len` expects Seq Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nat: line 4, column 13\nmessage: `prim seq-int.len` in `all-loop` needs Seq Int on top of the stack, but the stack before it is \u03c1 Seq Bool Int Int Seq Bool.\nexpected: .. Seq Int\nactual: \u03c1 Seq Bool Int Int Seq Bool\nhint: The top value is Seq Bool but `prim seq-int.len` expects Seq Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              false,
+              true
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nat: line 4, column 13\nmessage: `prim seq-int.len` in `all-loop` needs Seq Int on top of the stack, but the stack before it is \u03c1 Seq Bool Int Int Seq Bool.\nexpected: .. Seq Int\nactual: \u03c1 Seq Bool Int Int Seq Bool\nhint: The top value is Seq Bool but `prim seq-int.len` expects Seq Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "longest-run": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              1,
+              2,
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 13, column 3\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 13, column 3\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 13, column 3\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 13, column 3\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 13, column 3\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              1,
+              1,
+              1,
+              1,
+              3
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 13, column 3\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "has-pair-sum": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              6,
+              2
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 12, column 94\nmessage: The two branches of the `if` in `has-inner` whose true branch is `[ true ]` leave different numbers of values. The true branch leaves `true`; the false branch leaves 2 values, bottom to top: the result of `prim +` and the result of `outer-loop`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim +` is left below the result of `outer-loop`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            0
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 12, column 94\nmessage: The two branches of the `if` in `has-inner` whose true branch is `[ true ]` leave different numbers of values. The true branch leaves `true`; the false branch leaves 2 values, bottom to top: the result of `prim +` and the result of `outer-loop`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim +` is left below the result of `outer-loop`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ],
+            8
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 12, column 94\nmessage: The two branches of the `if` in `has-inner` whose true branch is `[ true ]` leave different numbers of values. The true branch leaves `true`; the false branch leaves 2 values, bottom to top: the result of `prim +` and the result of `outer-loop`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim +` is left below the result of `outer-loop`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 12, column 94\nmessage: The two branches of the `if` in `has-inner` whose true branch is `[ true ]` leave different numbers of values. The true branch leaves `true`; the false branch leaves 2 values, bottom to top: the result of `prim +` and the result of `outer-loop`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim +` is left below the result of `outer-loop`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            7
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 12, column 94\nmessage: The two branches of the `if` in `has-inner` whose true branch is `[ true ]` leave different numbers of values. The true branch leaves `true`; the false branch leaves 2 values, bottom to top: the result of `prim +` and the result of `outer-loop`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim +` is left below the result of `outer-loop`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              -2,
+              9,
+              0
+            ],
+            -2
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 12, column 94\nmessage: The two branches of the `if` in `has-inner` whose true branch is `[ true ]` leave different numbers of values. The true branch leaves `true`; the false branch leaves 2 values, bottom to top: the result of `prim +` and the result of `outer-loop`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim +` is left below the result of `outer-loop`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              1,
+              3
+            ],
+            2
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 12, column 94\nmessage: The two branches of the `if` in `has-inner` whose true branch is `[ true ]` leave different numbers of values. The true branch leaves `true`; the false branch leaves 2 values, bottom to top: the result of `prim +` and the result of `outer-loop`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim +` is left below the result of `outer-loop`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "count-distinct": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 7, column 5\nmessage: The two branches of `if` in `count-loop` leave different numbers of values: the true branch takes 1 value from the stack below the `if` and leaves 1 value, and the false branch pushes 1 value. The true branch takes 1 value from below the `if` that this code does not have: everything it was given is bound to locals or already used, so that value belongs to the caller.\nhint: Push what the branch needs inside the branch, by writing a local's name or computing the value there, or remove the operation that takes it if it should not be there. If the branch means to use a value computed before the `if`, keep a copy of it before the condition (for example with `dup`). Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 7, column 5\nmessage: The two branches of `if` in `count-loop` leave different numbers of values: the true branch takes 1 value from the stack below the `if` and leaves 1 value, and the false branch pushes 1 value. The true branch takes 1 value from below the `if` that this code does not have: everything it was given is bound to locals or already used, so that value belongs to the caller.\nhint: Push what the branch needs inside the branch, by writing a local's name or computing the value there, or remove the operation that takes it if it should not be there. If the branch means to use a value computed before the `if`, keep a copy of it before the condition (for example with `dup`). Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 7, column 5\nmessage: The two branches of `if` in `count-loop` leave different numbers of values: the true branch takes 1 value from the stack below the `if` and leaves 1 value, and the false branch pushes 1 value. The true branch takes 1 value from below the `if` that this code does not have: everything it was given is bound to locals or already used, so that value belongs to the caller.\nhint: Push what the branch needs inside the branch, by writing a local's name or computing the value there, or remove the operation that takes it if it should not be there. If the branch means to use a value computed before the `if`, keep a copy of it before the condition (for example with `dup`). Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 7, column 5\nmessage: The two branches of `if` in `count-loop` leave different numbers of values: the true branch takes 1 value from the stack below the `if` and leaves 1 value, and the false branch pushes 1 value. The true branch takes 1 value from below the `if` that this code does not have: everything it was given is bound to locals or already used, so that value belongs to the caller.\nhint: Push what the branch needs inside the branch, by writing a local's name or computing the value there, or remove the operation that takes it if it should not be there. If the branch means to use a value computed before the `if`, keep a copy of it before the condition (for example with `dup`). Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 7, column 5\nmessage: The two branches of `if` in `count-loop` leave different numbers of values: the true branch takes 1 value from the stack below the `if` and leaves 1 value, and the false branch pushes 1 value. The true branch takes 1 value from below the `if` that this code does not have: everything it was given is bound to locals or already used, so that value belongs to the caller.\nhint: Push what the branch needs inside the branch, by writing a local's name or computing the value there, or remove the operation that takes it if it should not be there. If the branch means to use a value computed before the `if`, keep a copy of it before the condition (for example with `dup`). Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              1,
+              -1,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 7, column 5\nmessage: The two branches of `if` in `count-loop` leave different numbers of values: the true branch takes 1 value from the stack below the `if` and leaves 1 value, and the false branch pushes 1 value. The true branch takes 1 value from below the `if` that this code does not have: everything it was given is bound to locals or already used, so that value belongs to the caller.\nhint: Push what the branch needs inside the branch, by writing a local's name or computing the value there, or remove the operation that takes it if it should not be there. If the branch means to use a value computed before the `if`, keep a copy of it before the condition (for example with `dup`). Adding a `drop` or pushing values to even out the branches would only move the mistake.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "merge-sorted": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              9
+            ],
+            [
+              2,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              9,
+              10
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nat: line 6, column 37\nmessage: `prim seq-int.push` in `merge-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t111 ?t110 Int ?t112.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int ?t111 ?t110 Int ?t112\nhint: The top value is ?t112 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nat: line 6, column 37\nmessage: `prim seq-int.push` in `merge-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t111 ?t110 Int ?t112.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int ?t111 ?t110 Int ?t112\nhint: The top value is ?t112 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            [
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nat: line 6, column 37\nmessage: `prim seq-int.push` in `merge-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t111 ?t110 Int ?t112.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int ?t111 ?t110 Int ?t112\nhint: The top value is ?t112 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nat: line 6, column 37\nmessage: `prim seq-int.push` in `merge-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t111 ?t110 Int ?t112.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int ?t111 ?t110 Int ?t112\nhint: The top value is ?t112 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nat: line 6, column 37\nmessage: `prim seq-int.push` in `merge-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t111 ?t110 Int ?t112.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int ?t111 ?t110 Int ?t112\nhint: The top value is ?t112 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -3,
+              0,
+              8
+            ],
+            [
+              -4,
+              8,
+              9,
+              9
+            ]
+          ],
+          "expected": [
+            [
+              -4,
+              -3,
+              0,
+              8,
+              8,
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.primitive-input-mismatch\nat: line 6, column 37\nmessage: `prim seq-int.push` in `merge-loop` needs Seq Int Int on top of the stack, but the stack before it is .. Seq Int Int ?t111 ?t110 Int ?t112.\nexpected: .. Seq Int Int\nactual: .. Seq Int Int ?t111 ?t110 Int ?t112\nhint: The top value is ?t112 but `prim seq-int.push` expects Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "digits": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            305
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              5
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 9, column 3\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            [
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 9, column 3\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            [
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 9, column 3\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              1,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 9, column 3\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            99
+          ],
+          "expected": [
+            [
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 9, column 3\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            420
+          ],
+          "expected": [
+            [
+              4,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 9, column 3\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            987
+          ],
+          "expected": [
+            [
+              9,
+              8,
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 9, column 3\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            1005
+          ],
+          "expected": [
+            [
+              1,
+              0,
+              0,
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 9, column 3\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            40213
+          ],
+          "expected": [
+            [
+              4,
+              0,
+              2,
+              1,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 9, column 3\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 8
+    },
+    "primes-up-to": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 10, column 67\nmessage: `collect-primes` in `collect-primes` needs Int Int Seq Int on top of the stack, but the stack before it is .. Int Int Int.\nexpected: .. Int Int Seq Int\nactual: .. ?t38 Int Int\nhint: The top value is Int but `collect-primes` expects Seq Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 10, column 67\nmessage: `collect-primes` in `collect-primes` needs Int Int Seq Int on top of the stack, but the stack before it is .. Int Int Int.\nexpected: .. Int Int Seq Int\nactual: .. ?t38 Int Int\nhint: The top value is Int but `collect-primes` expects Seq Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 10, column 67\nmessage: `collect-primes` in `collect-primes` needs Int Int Seq Int on top of the stack, but the stack before it is .. Int Int Int.\nexpected: .. Int Int Seq Int\nactual: .. ?t38 Int Int\nhint: The top value is Int but `collect-primes` expects Seq Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            2
+          ],
+          "expected": [
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 10, column 67\nmessage: `collect-primes` in `collect-primes` needs Int Int Seq Int on top of the stack, but the stack before it is .. Int Int Int.\nexpected: .. Int Int Seq Int\nactual: .. ?t38 Int Int\nhint: The top value is Int but `collect-primes` expects Seq Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            13
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 10, column 67\nmessage: `collect-primes` in `collect-primes` needs Int Int Seq Int on top of the stack, but the stack before it is .. Int Int Int.\nexpected: .. Int Int Seq Int\nactual: .. ?t38 Int Int\nhint: The top value is Int but `collect-primes` expects Seq Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            30
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13,
+              17,
+              19,
+              23,
+              29
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nat: line 10, column 67\nmessage: `collect-primes` in `collect-primes` needs Int Int Seq Int on top of the stack, but the stack before it is .. Int Int Int.\nexpected: .. Int Int Seq Int\nactual: .. ?t38 Int Int\nhint: The top value is Int but `collect-primes` expects Seq Int. Check the argument order (`swap` exchanges the top two values) or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "histogram": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              0,
+              2,
+              2,
+              1,
+              2
+            ],
+            3
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 12, column 26\nmessage: `k` is not a defined word, primitive or local.\nactual: k\nhint: `k` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 12, column 26\nmessage: `k` is not a defined word, primitive or local.\nactual: k\nhint: `k` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            1
+          ],
+          "expected": [
+            [
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 12, column 26\nmessage: `k` is not a defined word, primitive or local.\nactual: k\nhint: `k` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 12, column 26\nmessage: `k` is not a defined word, primitive or local.\nactual: k\nhint: `k` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              0,
+              3,
+              1,
+              0,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            [
+              2,
+              1,
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 12, column 26\nmessage: `k` is not a defined word, primitive or local.\nactual: k\nhint: `k` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              1
+            ],
+            4
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nat: line 12, column 26\nmessage: `k` is not a defined word, primitive or local.\nactual: k\nhint: `k` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "sort": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-name\nat: line 5, column 53\nmessage: Unexpected `swap`, expected `primitive name`.\nexpected: primitive name\nactual: swap\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-name\nat: line 5, column 53\nmessage: Unexpected `swap`, expected `primitive name`.\nexpected: primitive name\nactual: swap\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-name\nat: line 5, column 53\nmessage: Unexpected `swap`, expected `primitive name`.\nexpected: primitive name\nactual: swap\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-name\nat: line 5, column 53\nmessage: Unexpected `swap`, expected `primitive name`.\nexpected: primitive name\nactual: swap\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              -1,
+              4,
+              -1,
+              0,
+              7,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              -1,
+              -1,
+              0,
+              3,
+              4,
+              7,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-name\nat: line 5, column 53\nmessage: Unexpected `swap`, expected `primitive name`.\nexpected: primitive name\nactual: swap\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-name\nat: line 5, column 53\nmessage: Unexpected `swap`, expected `primitive name`.\nexpected: primitive name\nactual: swap\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "ledger": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10,
+            [
+              5,
+              -20,
+              -15,
+              4
+            ]
+          ],
+          "expected": [
+            4,
+            1
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 8, column 7\nmessage: The two branches of the `if` in `ledger-loop` whose true branch is `[ rejected 1 prim + i 1 prim ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: the output `r` of `ledger-loop` and the output `result` of `ledger-loop`; the false branch takes the result of `prim seq-int.at` from below the `if` and leaves 2 values, bottom to top: the output `r` of `ledger-loop` and the output `result` of `ledger-loop`.\nhint: The false branch takes the result of `prim seq-int.at` from below the `if`, and the true branch leaves it in place, so after the true branch it is still on the stack. If the true branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the false branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            []
+          ],
+          "expected": [
+            0,
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 8, column 7\nmessage: The two branches of the `if` in `ledger-loop` whose true branch is `[ rejected 1 prim + i 1 prim ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: the output `r` of `ledger-loop` and the output `result` of `ledger-loop`; the false branch takes the result of `prim seq-int.at` from below the `if` and leaves 2 values, bottom to top: the output `r` of `ledger-loop` and the output `result` of `ledger-loop`.\nhint: The false branch takes the result of `prim seq-int.at` from below the `if`, and the true branch leaves it in place, so after the true branch it is still on the stack. If the true branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the false branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            [
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 8, column 7\nmessage: The two branches of the `if` in `ledger-loop` whose true branch is `[ rejected 1 prim + i 1 prim ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: the output `r` of `ledger-loop` and the output `result` of `ledger-loop`; the false branch takes the result of `prim seq-int.at` from below the `if` and leaves 2 values, bottom to top: the output `r` of `ledger-loop` and the output `result` of `ledger-loop`.\nhint: The false branch takes the result of `prim seq-int.at` from below the `if`, and the true branch leaves it in place, so after the true branch it is still on the stack. If the true branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the false branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            5,
+            [
+              -5,
+              -1,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 8, column 7\nmessage: The two branches of the `if` in `ledger-loop` whose true branch is `[ rejected 1 prim + i 1 prim ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: the output `r` of `ledger-loop` and the output `result` of `ledger-loop`; the false branch takes the result of `prim seq-int.at` from below the `if` and leaves 2 values, bottom to top: the output `r` of `ledger-loop` and the output `result` of `ledger-loop`.\nhint: The false branch takes the result of `prim seq-int.at` from below the `if`, and the true branch leaves it in place, so after the true branch it is still on the stack. If the true branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the false branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            100,
+            [
+              -50,
+              -60,
+              20,
+              -70
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 8, column 7\nmessage: The two branches of the `if` in `ledger-loop` whose true branch is `[ rejected 1 prim + i 1 prim ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: the output `r` of `ledger-loop` and the output `result` of `ledger-loop`; the false branch takes the result of `prim seq-int.at` from below the `if` and leaves 2 values, bottom to top: the output `r` of `ledger-loop` and the output `result` of `ledger-loop`.\nhint: The false branch takes the result of `prim seq-int.at` from below the `if`, and the true branch leaves it in place, so after the true branch it is still on the stack. If the true branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the false branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            3,
+            [
+              -1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 8, column 7\nmessage: The two branches of the `if` in `ledger-loop` whose true branch is `[ rejected 1 prim + i 1 prim ...` leave different numbers of values. The true branch leaves 2 values, bottom to top: the output `r` of `ledger-loop` and the output `result` of `ledger-loop`; the false branch takes the result of `prim seq-int.at` from below the `if` and leaves 2 values, bottom to top: the output `r` of `ledger-loop` and the output `result` of `ledger-loop`.\nhint: The false branch takes the result of `prim seq-int.at` from below the `if`, and the true branch leaves it in place, so after the true branch it is still on the stack. If the true branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the false branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "allocate-batch": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              10,
+              3
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              4,
+              5,
+              7,
+              1
+            ],
+            [
+              false,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              2
+            ],
+            [
+              4,
+              0,
+              6,
+              1
+            ],
+            [
+              0,
+              3,
+              1,
+              0
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 6, column 143\nmessage: The two branches of the `if` in `alloc-loop` whose true branch is `[ drop 2 ]` leave different numbers of values. The true branch takes the result of `prim seq-int.at` from below the `if` and leaves `2`; the false branch leaves the result of an `if`.\nhint: The true branch takes the result of `prim seq-int.at` from below the `if`, and the false branch leaves it in place, so after the false branch it is still on the stack. If the false branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the true branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            [],
+            [],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ],
+            [],
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 6, column 143\nmessage: The two branches of the `if` in `alloc-loop` whose true branch is `[ drop 2 ]` leave different numbers of values. The true branch takes the result of `prim seq-int.at` from below the `if` and leaves `2`; the false branch leaves the result of an `if`.\nhint: The true branch takes the result of `prim seq-int.at` from below the `if`, and the false branch leaves it in place, so after the false branch it is still on the stack. If the false branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the true branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              3
+            ],
+            [
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 6, column 143\nmessage: The two branches of the `if` in `alloc-loop` whose true branch is `[ drop 2 ]` leave different numbers of values. The true branch takes the result of `prim seq-int.at` from below the `if` and leaves `2`; the false branch leaves the result of an `if`.\nhint: The true branch takes the result of `prim seq-int.at` from below the `if`, and the false branch leaves it in place, so after the false branch it is still on the stack. If the false branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the true branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              1,
+              1,
+              1
+            ],
+            [
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              2,
+              2,
+              0
+            ],
+            [
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 6, column 143\nmessage: The two branches of the `if` in `alloc-loop` whose true branch is `[ drop 2 ]` leave different numbers of values. The true branch takes the result of `prim seq-int.at` from below the `if` and leaves `2`; the false branch leaves the result of an `if`.\nhint: The true branch takes the result of `prim seq-int.at` from below the `if`, and the false branch leaves it in place, so after the false branch it is still on the stack. If the false branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the true branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              9
+            ],
+            [
+              1,
+              0,
+              1,
+              0
+            ],
+            [
+              9,
+              5,
+              1,
+              0
+            ],
+            [
+              true,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              4,
+              0
+            ],
+            [
+              9,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              3,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 6, column 143\nmessage: The two branches of the `if` in `alloc-loop` whose true branch is `[ drop 2 ]` leave different numbers of values. The true branch takes the result of `prim seq-int.at` from below the `if` and leaves `2`; the false branch leaves the result of an `if`.\nhint: The true branch takes the result of `prim seq-int.at` from below the `if`, and the false branch leaves it in place, so after the false branch it is still on the stack. If the false branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the true branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              2,
+              2,
+              1,
+              1
+            ],
+            [
+              false,
+              false,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nat: line 6, column 143\nmessage: The two branches of the `if` in `alloc-loop` whose true branch is `[ drop 2 ]` leave different numbers of values. The true branch takes the result of `prim seq-int.at` from below the `if` and leaves `2`; the false branch leaves the result of an `if`.\nhint: The true branch takes the result of `prim seq-int.at` from below the `if`, and the false branch leaves it in place, so after the false branch it is still on the stack. If the false branch should use it too, use it there, for example as an input of the operation that needs it, or drop it. If not, the true branch should not take it. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    }
+  },
+  "label": "control 4c379e0 firth haiku-firth-6 round 1",
+  "firth_commit": "4c379e0f79a0ed84ea8d6ade58e8cade9d8678f8",
+  "eval_sha256": {
+    "task.py": "f982b19a56550012ba4614e5355fbee2b5cf3e961ed0f28c5f99fdc536c7308a",
+    "tasks.py": "fff2402680c865b52ca2b661d4636430d1d62c507972d5913a1c79f99c654e17",
+    "mvp_tasks.py": "9905f4a5cdc3b64fa4cc1f4180e80106cdfbcd0b00c8105b91bf12c629c391e1",
+    "harness.py": "ef7be4d4da800ad53238977ea17174acd69f58ee5231d96b4745e80107613e12",
+    "isolate.py": "8aba58cd416521b896756432546129cb43f1d53761f7373ccf6c5de43b5aa9dc"
+  },
+  "prompt_docs": [
+    "prompt --tier mvp --rounds 2 at 4c379e0"
+  ]
+}

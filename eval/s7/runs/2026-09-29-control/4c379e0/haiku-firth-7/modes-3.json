@@ -1,0 +1,69 @@
+{
+  "model": "jev-1.13.0",
+  "counts": {
+    "stack_effect": 4,
+    "stack_order": 3,
+    "logic": 2,
+    "resource_limit": 1
+  },
+  "tasks": {
+    "prefix-sums": {
+      "mode": "stack_order",
+      "by": "jev",
+      "confidence": 0.59,
+      "review": true
+    },
+    "keep-positive": {
+      "mode": "logic",
+      "by": "jev",
+      "confidence": 0.95,
+      "review": false
+    },
+    "longest-run": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.92,
+      "review": false
+    },
+    "has-pair-sum": {
+      "mode": "resource_limit",
+      "by": "rule"
+    },
+    "count-distinct": {
+      "mode": "stack_order",
+      "by": "jev",
+      "confidence": 0.67,
+      "review": true
+    },
+    "digits": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.82,
+      "review": false
+    },
+    "primes-up-to": {
+      "mode": "logic",
+      "by": "jev",
+      "confidence": 0.83,
+      "review": false
+    },
+    "histogram": {
+      "mode": "stack_order",
+      "by": "jev",
+      "confidence": 0.61,
+      "review": true
+    },
+    "sort": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.94,
+      "review": false
+    },
+    "allocate-batch": {
+      "mode": "stack_effect",
+      "by": "jev",
+      "confidence": 0.93,
+      "review": false
+    }
+  }
+}

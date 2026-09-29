@@ -1,0 +1,254 @@
+{
+ "note": "Everything put into this author's context that it did not fetch itself: the eval session's own instructions and the author's own tool results are left out, except for reminders the harness added inside a result, and every result is also scanned. cross_sample marks an item naming another sample (by number, or by arm and number), the other arm's commit or worktree, another author's label, or another task's files.",
+ "sample": "haiku-firth-3",
+ "arm": "8ea4a1d",
+ "injected": [
+  {
+   "line": 2,
+   "at": "2026-09-29T18:27:43.305Z",
+   "kind": "attachment:deferred_tools_delta",
+   "chars": 17011
+  },
+  {
+   "line": 3,
+   "at": "2026-09-29T18:27:43.306Z",
+   "kind": "system-reminder",
+   "chars": 304
+  },
+  {
+   "line": 4,
+   "at": "2026-09-29T18:27:43.308Z",
+   "kind": "attachment:environment",
+   "chars": 325
+  },
+  {
+   "line": 5,
+   "at": "2026-09-29T18:27:43.308Z",
+   "kind": "attachment:model",
+   "chars": 288
+  },
+  {
+   "line": 6,
+   "at": "2026-09-29T18:27:43.311Z",
+   "kind": "attachment:skill_listing",
+   "chars": 9950,
+   "other_arm_worktree_named": [
+    "firth-r8"
+   ]
+  },
+  {
+   "line": 7,
+   "at": "2026-09-29T18:27:43.318Z",
+   "kind": "attachment:instructions",
+   "chars": 16528
+  },
+  {
+   "line": 8,
+   "at": "2026-09-29T18:27:43.318Z",
+   "kind": "attachment:session_context",
+   "chars": 321
+  },
+  {
+   "line": 9,
+   "at": "2026-09-29T18:27:43.318Z",
+   "kind": "attachment:date",
+   "chars": 38
+  },
+  {
+   "line": 10,
+   "at": "2026-09-29T18:27:43.320Z",
+   "kind": "attachment:credential_org",
+   "chars": 86
+  },
+  {
+   "line": 11,
+   "at": "2026-09-29T18:27:43.321Z",
+   "kind": "attachment:remote_session_change",
+   "chars": 455
+  },
+  {
+   "line": 12,
+   "at": "2026-09-29T18:27:43.322Z",
+   "kind": "attachment:prompt_snapshot",
+   "chars": 2917
+  },
+  {
+   "line": 17,
+   "at": "2026-09-29T18:27:45.888Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 18,
+   "at": "2026-09-29T18:27:45.946Z",
+   "kind": "attachment:prompt_snapshot",
+   "chars": 174185
+  },
+  {
+   "line": 19,
+   "at": "2026-09-29T18:27:45.970Z",
+   "kind": "attachment:mcp_instructions_delta",
+   "chars": 6014
+  },
+  {
+   "line": 20,
+   "at": "2026-09-29T18:27:45.971Z",
+   "kind": "attachment:nested_memory",
+   "chars": 236
+  },
+  {
+   "line": 21,
+   "at": "2026-09-29T18:27:45.971Z",
+   "kind": "attachment:nested_memory",
+   "chars": 33024
+  },
+  {
+   "line": 22,
+   "at": "2026-09-29T18:27:45.971Z",
+   "kind": "attachment:auto_mode",
+   "chars": 136
+  },
+  {
+   "line": 23,
+   "at": "2026-09-29T18:27:45.972Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 28,
+   "at": "2026-09-29T18:28:46.691Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 469
+  },
+  {
+   "line": 29,
+   "at": "2026-09-29T18:28:46.742Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 32,
+   "at": "2026-09-29T18:28:51.197Z",
+   "kind": "handback-enforce",
+   "chars": 128
+  },
+  {
+   "line": 36,
+   "at": "2026-09-29T18:28:56.862Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 38,
+   "at": "2026-09-29T18:28:57.564Z",
+   "kind": "nudge",
+   "chars": 100
+  },
+  {
+   "line": 45,
+   "at": "2026-09-29T18:29:27.284Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 46,
+   "at": "2026-09-29T18:29:27.385Z",
+   "kind": "attachment:nested_memory",
+   "chars": 236
+  },
+  {
+   "line": 47,
+   "at": "2026-09-29T18:29:27.385Z",
+   "kind": "attachment:nested_memory",
+   "chars": 33024
+  },
+  {
+   "line": 48,
+   "at": "2026-09-29T18:29:27.386Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 53,
+   "at": "2026-09-29T18:30:10.930Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 54,
+   "at": "2026-09-29T18:30:10.979Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 57,
+   "at": "2026-09-29T18:30:16.469Z",
+   "kind": "handback-enforce",
+   "chars": 128
+  },
+  {
+   "line": 61,
+   "at": "2026-09-29T18:30:21.217Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 63,
+   "at": "2026-09-29T18:30:22.074Z",
+   "kind": "nudge",
+   "chars": 100
+  },
+  {
+   "line": 70,
+   "at": "2026-09-29T18:31:14.260Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 71,
+   "at": "2026-09-29T18:31:14.374Z",
+   "kind": "attachment:nested_memory",
+   "chars": 236
+  },
+  {
+   "line": 72,
+   "at": "2026-09-29T18:31:14.375Z",
+   "kind": "attachment:nested_memory",
+   "chars": 33024
+  },
+  {
+   "line": 73,
+   "at": "2026-09-29T18:31:14.375Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 78,
+   "at": "2026-09-29T18:31:54.621Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 79,
+   "at": "2026-09-29T18:31:54.660Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 82,
+   "at": "2026-09-29T18:31:58.432Z",
+   "kind": "handback-enforce",
+   "chars": 128
+  },
+  {
+   "line": 86,
+   "at": "2026-09-29T18:32:04.133Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  }
+ ],
+ "cross_sample": [],
+ "other_arm_worktree_named": [
+  "attachment:skill_listing"
+ ]
+}
