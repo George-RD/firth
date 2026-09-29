@@ -473,7 +473,10 @@ mutual
                         onTrue.quotation == onFalse.quotation then
                       { onTrue with origin := if onTrue.origin == onFalse.origin then onTrue.origin else none
                                     localName := if onTrue.localName == onFalse.localName then onTrue.localName else none
-                                    made := if onTrue.made == onFalse.made then onTrue.made else none }
+                                    made := if onTrue.made == onFalse.made then onTrue.made else none
+                                    -- Two results of an `if` look alike
+                                    -- but may stand for different locals.
+                                    stands := if onTrue.stands == onFalse.stands then onTrue.stands else none }
                     else { label := "the result of an `if`", own := onTrue.own,
                            type := if onTrue.type == onFalse.type then onTrue.type else none
                            stands := if source onTrue == source onFalse then source onTrue else none }

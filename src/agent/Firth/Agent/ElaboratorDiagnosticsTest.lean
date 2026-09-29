@@ -700,6 +700,12 @@ private def runCallAccountTests : IO Unit := do
   let _ ← callReport "two inputs of one name" "firth.type.branch-mismatch"
     ": h (forall ρ; ρ x:Int^many x:Int^many -- ρ r:Int^many) prim + ;\n: g\n  (forall ρ; ρ x:Int^many n:Int^many -- ρ r:Int^many)\n  locals { x n } { n 0 prim < [ x ] [ x 1 prim + h ] if };"
     ["exactly the values it takes, in this order: x:Int, x:Int"] ["in place of"]
+  -- Planted: two results of an `if` merged by an outer `if`, one standing
+  -- for `a` and one for `b`. The merged value stands for neither, so its
+  -- place is told by types alone, not "by their names" as if from `a`.
+  let _ ← callReport "an `if` whose paths stand for different locals" "firth.type.branch-mismatch"
+    ": h (forall ρ; ρ a:Int^many s:Seq Int^many b:Int^many -- ρ r:Int^many) drop drop ;\n: g\n  (forall ρ; ρ a:Int^many b:Int^many s:Seq Int^many c:Int^many -- ρ r:Int^many)\n  locals { a b s c } {\n    c 0 prim = [ 0 ] [\n      s c 1 prim < [ c 2 prim < [ a 1 prim + ] [ a 1 prim - ] if ] [ c 3 prim < [ b 1 prim + ] [ b 1 prim - ] if ] if h\n    ] if\n  };\n"
+    ["in the place of the last 2 (s:Seq Int, b:Int)"] ["(from `a`)", "by their names"]
   -- An edit is said to get past the refused `if` only when its next error
   -- shows the check went beyond it. Planted: an error at the `if`, or one
   -- before it found by erasure, or found by typing when typing refused the
