@@ -1295,7 +1295,7 @@ than arm A.**
   pass slightly more (11 against 6, not significant). After two rounds
   both arms fail mostly on stack effects.
 
-**Void samples.** Seven samples are void under the pre-registered rules
+**Void samples.** Six samples are void under the pre-registered rules
 and are not counted. Each directory has a `void.md` saying why.
 
 | Sample | Passed so far | Why void |
@@ -1333,9 +1333,18 @@ and are not counted. Each directory has a `void.md` saying why.
   A8), and until 18:41:36 five in total, where the design allows two per
   arm and four in all. The slip was in starting A8 early; it changed
   nothing an author could see.
-- Arm B had three audit voids and arm A none, so arm B's last four
-  replacements (B10, B12, B13, B14, started 18:51 to 18:58) ran after
-  arm A had finished (18:50) and were not interleaved with it.
+- Samples did not start in strict alternation. Each new author started
+  when a slot in its own arm came free, so the start order (first call
+  in each `transcript.json`) was A1, B1, A2, B2 (18:02), A3, A4 (18:17),
+  B3, B4 (18:27), A5, B5 (about 18:32, void), A11, B11, A12 (18:35), B6,
+  A6, A7, A8, B7 (18:37 to 18:42), B8, A9, B9, A10 (18:45 to 18:46), then
+  B10, B12, B13, B14 (18:51 to 18:58). Arm B had three audit voids and
+  arm A none, so arm B's last four samples ran after arm A had finished
+  (18:50) and were not interleaved with it. The whole run took under an
+  hour on one model version, but anything that changed over that hour
+  (service load, for example) would weigh only on arm B's late samples.
+  The three of them that count passed 2, 8 and 0 of 20 (B12, B13, B14).
+  The result is reported with that caveat.
 
 ## What the ten runs say about the bet
 
