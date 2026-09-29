@@ -317,17 +317,22 @@ private def outcomeAlone (config : PipelineConfig) (source : String) (words : Li
         (withFirstMisfed config source (word :: words.filter (·.name != word.name)) diagnostic).primary.start.offset
     | other => (other.span?.map (·.start.offset)).getD 0
 
-/-- The words whose declared effects checking `word` among `words` read:
-every word it calls when erasure got through the body, since erasure reads
-each call's arity, else each one called before erasure stopped. -/
+/-- The words whose declared effects checking `word` among `words` read.
+Typing runs only on a body erasure got through, and erasure reads the effect
+of every call it gets to, so these are the calls erasure read. A call is read
+when erasing without that word's effect comes out otherwise: a report is not
+always placed where erasure stopped (a linear local used twice is found at its
+first use and reported at its second), so the report's place cannot say. -/
 private def consultedWords (config : PipelineConfig) (words : List WordDefinition)
     (word : WordDefinition) : List String :=
-  let calls := calledWords [] word.body
-  let reached := match firstErrorAlone config words word with
-    | some diagnostic@(.erasure ..) =>
-        calls.filter fun (call : String × Span) => call.2.stop.offset ≤ diagnostic.reached word
-    | _ => calls
-  (reached.map (·.1)).eraseDups.filter (· != word.name)
+  let env := makeErasureEnv config (word :: words.filter (·.name != word.name))
+  let erased := erase env word.effect word.body
+  let read (name : String) : Bool :=
+    match erased, erase { env with word := fun other => if other == name then none else env.word other }
+        word.effect word.body with
+    | .error error, .error without => error != without
+    | _, _ => true
+  ((calledWords [] word.body).map (·.1)).eraseDups.filter fun name => name != word.name && read name
 
 /-- The text of `source` from byte `start` to byte `stop`. -/
 private def bytesText (source : String) (start stop : Nat) : String :=

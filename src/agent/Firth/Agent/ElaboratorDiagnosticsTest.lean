@@ -259,6 +259,9 @@ private def runAssumesTests : IO Unit := do
   -- changes both output types and keeps the input gets past the `if`.
   -- In `hs`, the edited word's erasure stops at the second `drop`, after
   -- the call to `q` and before the one to `f`, so its hint names `q` only.
+  -- `hl` uses its linear `a` twice. Erasure finds that at the first `a`,
+  -- before it reads `q`, though it reports it at the second (Codex on #176),
+  -- so its hint names nothing.
   -- `m2` misfeeds `p` too; with the hint's edit it fails at `prim +` in
   -- typing, before it calls `q`, but erasure has read `q`'s effect by then:
   -- with three inputs for `q`, the edited word underflows at `q` instead.
@@ -267,6 +270,7 @@ private def runAssumesTests : IO Unit := do
     ": g ( -- b:Int ) true f ;",
     ": h ( a:Int b:Int -- r:Int ) locals { b a } { a f b prim + } ;",
     ": hs ( a:Int b:Int -- r:Int ) locals { b a } { a q b prim + drop drop f } ;",
+    ": hl ( a:Int^linear b:Int^linear -- r:Int ) locals { b a } { a q a } ;",
     ": r ( n:Int -- m:Int ) r true prim + ;",
     ": two ( -- b:Int ) true f 1 g prim + ;",
     ": three ( -- b:Int ) g true f prim + ;",
@@ -315,7 +319,7 @@ private def runAssumesTests : IO Unit := do
       let reports := envelopes.map summary
       expectEqual "assumes: the words whose reports depend on another reported word"
         (reports.map fun (word, assumes, _) => (word, assumes.1))
-        [("f", []), ("g", ["f"]), ("h", []), ("hs", []), ("r", []), ("two", ["f"]), ("three", ["g", "f"]),
+        [("f", []), ("g", ["f"]), ("h", []), ("hs", []), ("hl", []), ("r", []), ("two", ["f"]), ("three", ["g", "f"]),
          ("short", ["f"]), ("opens", []), ("early", []), ("other", ["f"]),
          ("k", []), ("hidden", []), ("p", []), ("q", []), ("m", ["p"]),
          ("same", []), ("typed", ["same"]), ("cb", []), ("br", ["cb"]), ("hc", []), ("h2", []), ("run", []), ("longest", ["run"]),
