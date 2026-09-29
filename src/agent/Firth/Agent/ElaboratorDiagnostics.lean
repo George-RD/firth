@@ -160,11 +160,30 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
         (s!"A `locals` block binds the word's inputs in a different order from its stack effect: " ++
             "; ".intercalate described ++ ".",
           s!"A `locals` block takes one value off the stack for each name, the last name from the top, so the names must follow the stack effect's inputs from left to right.{plainFix}{String.join reachingFix}{String.join uncheckedFix} Swapping values with `swap` would not help, because the names are what is wrong.")
+    | "firth.syntax.parenthesis-in-body" =>
+        (s!"{actual} is not allowed in a word's body: parentheses only enclose the stack effect after the word's name.",
+          "Pass values to an operation by pushing them in the order it takes them, with no grouping: write `n 1 prim +`, not `(n 1 prim +)`, and `xs i 1 prim + f`, not `xs (i 1 prim +) f`. To keep code to run later, quote it with `[ ... ]`.")
+    | "firth.syntax.definition-ended-early" =>
+        let opened := if error.expected == some "]" then "a quotation opened with `[`"
+          else "a `locals` body opened with `{`"
+        (s!"`;` ends the definition here, but {opened} is still open.",
+          s!"A `;` in a word's body always ends the word. Close each open bracket first, innermost first: `]` for a quotation and `}` for a `locals` body, as in `... ] if };`. Here the next one to close is `{(error.expected.getD "]")}`.")
+    | "firth.syntax.invalid-item" =>
+        (s!"{error.actual.map (s!"`{·}`") |>.getD "This"} cannot start an item in a word's body.", definitionShape)
+    | "firth.syntax.overlong-character" =>
+        ("A `'` starts a character literal, which holds one character, as in `'a'`, and a name cannot contain `'`.",
+          "Rename a name written with `'` (for example `q'` as `q2`). " ++ definitionShape)
     | _ =>
         let expected := match error.expected with
           | some expected => s!", expected `{expected}`"
           | none => ""
-        (s!"Unexpected {actual}{expected}.", definitionShape)
+        -- Only a report at the end of the input has no text of its own.
+        let message := match error.actual with
+          | some _ => s!"Unexpected {actual}{expected}."
+          | none =>
+              if error.code == "firth.syntax.unexpected-eof" then s!"The input ends here{expected}."
+              else s!"This is not valid here ({(lastSegment error.code).replace "-" " "}){expected}."
+        (message, definitionShape)
   .mkObj [("message", .str message), ("hint", .str hint)]
 
 def parserEnvelope (context : EmissionContext)

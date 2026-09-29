@@ -501,7 +501,11 @@ mutual
 private partial def parseItems (p : Parser) (closing : String) : Except ParseError (List Item × Parser × Span) :=
   match current p with
   | none => expected p closing
-  | some t => if isSymbol closing t then .ok ([], bump p, t.span) else parseItem p >>= fun (item, next) => parseItems next closing |>.map (fun (items, after, close) => (item :: items, after, close))
+  | some t => if isSymbol closing t then .ok ([], bump p, t.span)
+    -- A `;` ends the definition wherever it is, so one inside a quotation or
+    -- a `locals` body leaves that bracket open.
+    else if isSymbol ";" t then .error (err "firth.syntax.definition-ended-early" t.span .delimiter (some closing) (some ";"))
+    else parseItem p >>= fun (item, next) => parseItems next closing |>.map (fun (items, after, close) => (item :: items, after, close))
 private partial def parseItem (p : Parser) : Except ParseError (Item × Parser) :=
   match current p with
   | none => expected p "item"
@@ -514,6 +518,9 @@ private partial def parseItem (p : Parser) : Except ParseError (Item × Parser) 
       | .symbol "{" => parseSequence p t
       | .identifier name => if name ∈ ["dup", "drop", "swap", "dip", "call", "compose", "quote", "if"] then .ok ((.atom name t.span), bump p) else
           parseName p true |>.map (fun (n, s, after) => (.word n s, after))
+      -- Parentheses only enclose a stack effect.
+      | .symbol "(" | .symbol ")" => .error (err "firth.syntax.parenthesis-in-body" t.span .grammar none (some (kindText t.kind)))
+      | .symbol text => .error (err "firth.syntax.invalid-item" t.span .grammar none (some text))
       | _ => .error (err "firth.syntax.invalid-item" t.span .grammar)
 /-- `{ 1 2 3 }` or `{ true false }`: every element a literal of one type. An
 empty sequence has no element type here; it is written `prim seq-int.empty`. -/

@@ -213,6 +213,13 @@ def runParserTests : IO Unit := do
   expectFailure ": xs ( -- ) { 1 dup } ;" "firth.syntax.invalid-sequence-element"
   expectFailure ": xs ( -- ) { { 1 } } ;" "firth.syntax.invalid-sequence-element"
   expectFailure ": xs ( -- ) { 1 2 " "firth.syntax.unexpected-eof"
+  -- Parentheses only enclose a stack effect; `;` ends a definition even
+  -- inside an open bracket (S7 run 8, samples 4 and 5).
+  expectFailure ": f ( n:Int -- r:Int ) locals { n } { (n 1 prim +) } ;" "firth.syntax.parenthesis-in-body"
+  expectFailure ": f ( n:Int -- r:Int ) n 1 prim + ) ;" "firth.syntax.parenthesis-in-body"
+  expectFailure ": f ( n:Int -- r:Int ) locals { n } { n true [ 1 ] [ 2 ] if ;" "firth.syntax.definition-ended-early"
+  expectFailure ": f ( n:Int -- r:Int ) n true [ 1 ; ] [ 2 ] if ;" "firth.syntax.definition-ended-early"
+  expectFailure ": f ( n:Int -- r:Int ) n 1 = ;" "firth.syntax.invalid-item"
   match parse workedLocals with
   | .success { declarations := [.word { body := [.locals [{ name := "a", span := _ }, { name := "b", span := _ }] [.word "a" _, .word "b" _, .primitive "+" _] _], .. }], .. } => pure ()
   | _ => fail "add-top-two worked example AST shape"

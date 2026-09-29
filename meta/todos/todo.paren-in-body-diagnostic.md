@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.agent
-status: open
+status: done
 created: 2026-09-29
 ---
 
@@ -45,3 +45,11 @@ word, which left them no way to loop.
   diagnostic that says the definition ended there, checked on sample 5's
   round-1 answers.
 - The message no longer says the input ended where it did not.
+
+## Resolution
+
+The parser reports `firth.syntax.parenthesis-in-body` at a `(` or `)` in a
+body and `firth.syntax.definition-ended-early` at a `;` inside an open `[`
+or `locals` body, naming the bracket to close. Of the run 8 answers above,
+19 of sample 4's 20 now get the first and all 20 of sample 5's get the
+second. No syntax message says the input ended unless it did.
