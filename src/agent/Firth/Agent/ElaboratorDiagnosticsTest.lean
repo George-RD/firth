@@ -768,6 +768,20 @@ private def runLocalsOrderTests : IO Unit := do
         if (applyLocalsHint source (hintOf envelope)).isSome then
           fail s!"{label}: the report still states an edit: {emitted}"
     | _ => fail s!"{label}: expected one diagnostic"
+  -- A later word whose declared effect is no type scheme, after a bad `use`
+  -- or not, says nothing about whether the edit fits `get` (Codex on #176):
+  -- the hint still falls back.
+  let get := ": get\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs } { xs prim seq-int.at };\n"
+  let bad := ": bad (forall ρ; a:Int ρ -- ρ r:Int ) 1 ;\n"
+  for (label, source) in [("before a word with no scheme", get ++ bad),
+      ("before a bad `use` and a word with no scheme", get ++ "use nope;\n" ++ bad)] do
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .failure (envelope :: _) =>
+        let emitted := encode envelope
+        expectValidCode label "firth.name.locals-order" emitted
+        unless emitted.contains "In `get` the body was written for the values the names hold now, so changing the block alone does not fix it" do
+          fail s!"{label}: the report does not fall back: {emitted}"
+    | _ => fail s!"{label}: expected a refusal"
 
 def runElaboratorDiagnosticTests : IO Unit := do
   let parseError : ParseError := {

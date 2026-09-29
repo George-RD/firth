@@ -286,16 +286,19 @@ private partial def calledWords (bound : List String) : List Item → List (Stri
 /-- The first error erasure or the type checker finds in `word` among
 `words`, as it is found: `none` when the word is accepted. The other words are
 given by their declared effects only, so an error of theirs is never charged
-to `word`. -/
+to `word`. One whose declared effect is no type scheme is left out of typing:
+its own report says so, and collecting the schemes would otherwise fail on it
+before `word` is checked. -/
 private def firstErrorAlone (config : PipelineConfig) (words : List WordDefinition)
     (word : WordDefinition) : Option PipelineDiagnostic :=
   let others := words.filter (·.name != word.name)
   match erase (makeErasureEnv config (word :: others)) word.effect word.body with
   | .error error => some (.erasure word.name error)
   | .ok erased =>
+      let typed := others.filter fun other => (schemeOfEffect other.effect).toOption.isSome
       let definitions : List StackEffect.Definition :=
         { name := word.name, declared := word.effect, program := erased.program, span := word.span } ::
-          others.map fun other => { name := other.name, declared := other.effect, program := [], span := other.span }
+          typed.map fun other => { name := other.name, declared := other.effect, program := [], span := other.span }
       match checkDictionary config.typingEnv definitions with
       | .ok _ => none
       -- The word is checked first, so an error charged to another word
