@@ -277,9 +277,12 @@ class ToolchainError(RuntimeError):
     """The runner could not build its toolchain, so the answer was never run."""
 
 
-# The runner builds lake and cargo before it reads the answer, so these failures
-# say nothing about the answer (tools/loop/mvp_agent_gate.py, build_toolchain).
-TOOLCHAIN_PREFIXES = ("toolchain: ", "lake: exit ", "cargo: exit ")
+# The runner builds with lake and cargo before it reads the answer, so these
+# failures say nothing about the answer (tools/loop/mvp_agent_gate.py, run and
+# build_toolchain). An adapter that times out or fails on an answer also reports
+# "toolchain: <adapter> ..." or "<adapter>: exit", and stays the answer's failure.
+BUILD_FAILURE = re.compile(r"toolchain: (?:\S*/)?(?:lake|cargo) |(?:lake|cargo): exit "
+                           r"|toolchain: \S+ was not built$")
 
 
 # The runner gives lake and cargo each this long to build
@@ -314,7 +317,7 @@ def toolchain_failure(stderr: str) -> None:
     except ValueError:
         return
     if (isinstance(payload, dict) and payload.get("status") == "error"
-            and str(payload.get("error", "")).startswith(TOOLCHAIN_PREFIXES)):
+            and BUILD_FAILURE.match(str(payload.get("error", "")))):
         raise ToolchainError(payload["error"])
 
 

@@ -518,10 +518,30 @@ def build_failure_stops_scoring() -> None:
             except harness.ToolchainError as e:
                 got = str(e)
             check(got == lake["error"], "a failed build stops scoring instead of failing the answer")
+            for error in ("toolchain: lake is not on PATH", "toolchain: /opt/elan/bin/lake did not answer "
+                          "within 900s", "cargo: exit 101: error: could not compile", "toolchain: "
+                          "firthCompile was not built"):
+                runner_says(json.dumps({"error": error, "status": "error"}))
+                try:
+                    got = harness.run_firth(": main ( -- ) ;", ())
+                except harness.ToolchainError as e:
+                    got = str(e)
+                check(got == error, f"a build failure stops scoring: {error}")
             runner_says(json.dumps(answer))
             got = harness.run_firth(": main ( -- ) ;", ())
             check(got["ok"] is False and "unknown checked word 'main'" in got["error"],
                   "an answer's own runner error is still scored as a failed case")
+            # An adapter that times out on an answer is the answer's failure, though
+            # the runner words it like a toolchain error (Codex, on #173).
+            adapter = {"error": "toolchain: /w/.lake/build/bin/firthElaborate did not answer within 60s",
+                       "status": "error"}
+            runner_says(json.dumps(adapter))
+            try:
+                got = harness.run_firth(": main ( -- ) ;", ())
+            except harness.ToolchainError as e:
+                got = {"raised": str(e)}
+            check(got.get("ok") is False and "firthElaborate did not answer" in got.get("error", ""),
+                  "an adapter timeout on an answer is still scored as a failed case")
             # A cold build that outlasts the per-answer timeout is the build's,
             # not the answer's (Codex, on #173).
             stub.write_text("import time\ntime.sleep(3)\n")
