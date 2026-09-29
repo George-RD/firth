@@ -33,6 +33,43 @@ the checker wrote, not the author:
   can blame the wrong branch (the cec3707 ledger answer 1 in the #164
   review, where the hint still came out right). Giving each walk entry an
   identity, such as a counter, instead of comparing labels would fix it.
+- The branch account falls back where the paths of an `if` nested in the
+  refused `if`'s branch first reach below differently (7 of the recorded
+  reports in the #166 review: keep-positive, count-distinct twice,
+  longest-run-loop twice, allocate-batch, 470c6d0 longest-run answer 3).
+  The report could name both paths' operations instead.
+- An `if` before the refused one whose paths leave stacks of different
+  lengths in the walk makes the report fall back, even where the checker
+  sees the same depth. `take` pads a stack short of a value with "a value
+  that is not there", and a stack atom keeps that placeholder on the stack:
+  in 470c6d0 longest-run answer 2, `find-longest`, the true path
+  `[ drop count 1 prim + ]` leaves 1 value and the false path
+  `[ swap drop 1 ]` leaves 2, one of them the placeholder for a value
+  inside `locals` that the walk cannot name, so the merge's length check
+  loses the walk (#166 review). Following the true path when only the
+  lengths differ gets main's account back, but describes a path that may
+  not run; the fix is to account for the placeholder at the merge.
+- The branch account labels a local by its name alone, so where a
+  quotation that names an outer local runs inside a `locals` block that
+  binds the same name again, two values both read `a` (`locals { a b c }
+  { c [ [ a ] b locals { a } { call prim seq-int.push } ] [ b ] if }` in
+  the #166 review). The types are those where the quotation was written,
+  but the report cannot say which `a` it means.
+- `firth.name.locals-order` (#165) states an edit when the edited word is
+  refused no earlier in the source than the word as written. That compares
+  only first errors, so an edit can add an error hidden behind an earlier,
+  independent one: for inputs `xs:Seq Int n:Int`,
+  `locals { xs } { true prim + drop xs prim seq-int.at }` is told to start
+  the body with `n`, and once `true prim + drop` is removed the body is
+  refused (review of #165). Stating only edits whose word is accepted moves
+  23 of the 40 recorded refusals to the fallback. The reviewer's suggestion:
+  keep the edit and add "after this edit, `w` is still refused at L:C".
+- `firth.name.locals-order` (#165, found by Codex after approval; fixed in
+  the next PR from `main`): a bare call inside a vocabulary is resolved
+  before binders are chosen, so a new binder can shadow it in the source; an
+  opening block that repeats a name gets contradictory renames and hides
+  `firth.name.duplicate-local`; and the edit check renames an inner block's
+  own binder of a renamed name.
 
 ## Goal
 
