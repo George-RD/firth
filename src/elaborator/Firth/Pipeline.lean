@@ -315,14 +315,15 @@ private def outcomeAlone (config : PipelineConfig) (source : String) (words : Li
     | other => (other.span?.map (·.start.offset)).getD 0
 
 /-- The words whose declared effects checking `word` among `words` read:
-every word it calls when it is accepted, else each one called before the
-check stopped. -/
+every word it calls when erasure got through the body, since erasure reads
+each call's arity, else each one called before erasure stopped. -/
 private def consultedWords (config : PipelineConfig) (words : List WordDefinition)
     (word : WordDefinition) : List String :=
   let calls := calledWords [] word.body
   let reached := match firstErrorAlone config words word with
-    | none => calls
-    | some diagnostic => calls.filter (·.2.stop.offset ≤ diagnostic.reached word)
+    | some diagnostic@(.erasure ..) =>
+        calls.filter fun (call : String × Span) => call.2.stop.offset ≤ diagnostic.reached word
+    | _ => calls
   (reached.map (·.1)).eraseDups.filter (· != word.name)
 
 /-- The text of `source` from byte `start` to byte `stop`. -/

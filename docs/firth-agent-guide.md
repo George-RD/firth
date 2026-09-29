@@ -294,7 +294,8 @@ checking gets as far as it. A report none of them
 changes, such as an underflow at `g`'s own `locals`, has no sentence; nor has
 one that another effect only stops the check before, such as a report about
 the branch of an `if` that does not call `f`. When only the edit a hint offers was
-checked against `f`'s effect (the check reached a call to `f`), the hint ends
+checked against `f`'s effect (the edited word calls `f`, and erasure, which
+reads the shape of every call, did not stop before that call), the hint ends
 by saying so ("That edit was
 checked assuming `f`, which has an error of its own, keeps its stack
 effect."), and `message_params.edit_assumes` lists those words.

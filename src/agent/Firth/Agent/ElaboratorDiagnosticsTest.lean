@@ -320,7 +320,7 @@ private def runAssumesTests : IO Unit := do
          ("rf", []), ("rg", ["rf"]), ("f3", []), ("g3", ["f3"])]
       expectEqual "assumes: the words whose hint's checked edit depends on another reported word"
         ((reports.filter fun (_, assumes, _) => !assumes.2.isEmpty).map fun (word, assumes, _) => (word, assumes.2))
-        [("h", ["f"]), ("m", ["q"]), ("h2", ["hc"])]
+        [("h", ["f"]), ("m", ["q"]), ("h2", ["hc"]), ("m2", ["q"])]
       let endsWith (word clause : String) (hint : Bool := false) : IO Unit :=
         match reports.find? (·.1 == word) with
         | some (_, _, message, hintText) =>
@@ -351,6 +351,18 @@ private def runAssumesTests : IO Unit := do
       expectEqual "assumes: merge-sorted's reports depend on no other word"
         (envelopes.map fun envelope => let (word, assumes, _) := summary envelope; (word, assumes.1))
         [("merge-loop", []), ("merge-loop-y", [])]
+  -- merge-sorted at c6a964a (haiku-firth-2, answer 1), verbatim. The hint
+  -- for `merge-loop`'s misordered `locals` checks an edit whose first error is
+  -- a typing one before the calls to `append-rest`, but erasure has read
+  -- every call's arity by then: give `append-rest` no outputs and the edited
+  -- word's first error moves.
+  let appendRest := ": main\n  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many -- ρ merged:Seq Int^many)\n  prim seq-int.empty swap swap 0 0 merge-loop;\n\n: merge-loop\n  (forall ρ; ρ result:Seq Int^many xs:Seq Int^many ys:Seq Int^many i:Int^many j:Int^many -- ρ merged:Seq Int^many)\n  locals { result xs ys i j } {\n    i xs prim seq-int.len prim < [\n      j ys prim seq-int.len prim < [\n        i xs prim seq-int.at j ys prim seq-int.at prim < [\n          i xs prim seq-int.at result prim seq-int.push\n          xs ys i 1 prim + j merge-loop\n        ] [\n          j ys prim seq-int.at result prim seq-int.push\n          xs ys i j 1 prim + merge-loop\n        ] if\n      ] [\n        result xs i append-rest\n      ] if\n    ] [\n      result ys j append-rest\n    ] if\n  };\n\n: append-rest\n  (forall ρ; ρ result:Seq Int^many xs:Seq Int^many idx:Int^many -- ρ merged:Seq Int^many)\n  locals { result xs idx } {\n    idx xs prim seq-int.len prim < [\n      idx xs prim seq-int.at result prim seq-int.push xs idx 1 prim + append-rest\n    ] [ result ] if\n  };\n"
+  match elaboratePipeline pipelineContext appendRest agentConfig with
+  | .success _ => fail "assumes: merge-sorted (c6a964a) was accepted"
+  | .failure envelopes =>
+      expectEqual "assumes: merge-sorted (c6a964a)'s checked edits and the words they read"
+        (envelopes.map fun envelope => let (word, assumes, _) := summary envelope; (word, assumes))
+        [("merge-loop", ([], ["append-rest"])), ("append-rest", ([], []))]
 
 /-- Reports of a word or primitive handed values it does not take. -/
 private def runCallAccountTests : IO Unit := do
