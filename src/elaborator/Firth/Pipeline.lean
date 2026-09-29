@@ -524,21 +524,26 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
           -- A report only after it says nothing about this one: erasure
           -- walks the whole body before typing, so an arity error there
           -- hides a type error before it.
+          let changes (outcome : WordOutcome) (diagnostic : PipelineDiagnostic) : Bool :=
+            match outcome with
+            | .refused diagnostics =>
+                !diagnostics.any (config.sameReport · diagnostic) && diagnostics.any fun other =>
+                  match other.span?, diagnostic.span? with
+                  | some found, some report =>
+                      found.start.offset ≤ report.start.offset || found.start.offset < report.stop.offset
+                  | _, _ => true
+            | _ => true
+          -- For each of `diagnostics`, whether it depends on `callee`. The
+          -- probes stop once every report is shown to depend on it.
           let dependsOn (word : WordDefinition) (resolution : Option ParseError)
-              (callee : String) : PipelineDiagnostic → Bool :=
-            let probed := probeEffects.map fun effect =>
+              (diagnostics : List PipelineDiagnostic) (callee : String) : List Bool :=
+            probeEffects.foldl (init := diagnostics.map fun _ => false) fun marks effect =>
+              if marks.all id then marks else
               let declared := declared.map fun other =>
                 if other.name == callee then { other with effect } else other
               let (env, typing, unusable) := environments config declared
-              checkWord config source declared written env typing unusable word resolution
-            fun diagnostic => probed.any fun
-              | .refused diagnostics =>
-                  !diagnostics.any (config.sameReport · diagnostic) && diagnostics.any fun other =>
-                    match other.span?, diagnostic.span? with
-                    | some found, some report =>
-                        found.start.offset ≤ report.start.offset || found.start.offset < report.stop.offset
-                    | _, _ => true
-              | _ => true
+              let outcome := checkWord config source declared written env typing unusable word resolution
+              (marks.zip diagnostics).map fun (mark, diagnostic) => mark || changes outcome diagnostic
           -- A word left unchecked says so, so that no one reads its
           -- silence as a pass. A report that depends on the effect of a word
           -- with an error of its own says so too: fixing that word's effect
@@ -548,10 +553,10 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
               | .refused diagnostics =>
                   let probes := (((calledWords [] word.body).map (·.1)).eraseDups.filter
                     fun callee => callee != word.name && refused.contains callee).map
-                    fun callee => (callee, dependsOn word resolution callee)
-                  diagnostics.map fun diagnostic =>
-                    match probes.filterMap fun (callee, depends) =>
-                        if depends diagnostic then some callee else none with
+                    fun callee => (callee, dependsOn word resolution diagnostics callee)
+                  (List.range diagnostics.length).zip diagnostics |>.map fun (index, diagnostic) =>
+                    match probes.filterMap fun (callee, marks) =>
+                        if marks.getD index false then some callee else none with
                     | [] => diagnostic
                     | callees => .assumes word.name callees diagnostic
               | .skipped callee span => [.unchecked word.name callee span]
