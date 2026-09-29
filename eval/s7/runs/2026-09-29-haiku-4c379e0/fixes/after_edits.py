@@ -1,4 +1,4 @@
-"""Independent errors left after every edit, in the answers that still fail.
+"""Independent errors left after every edit, in the answers that still fail the checker.
 
 Applies the `everything` candidate from measure.py to each failing answer
 whose edited version still fails the checker (outcome not `pass` and not

@@ -1079,7 +1079,7 @@ are type errors in loop bodies, branch mismatches first among them, which
 the checker shows one at a time. Showing every independent error is
 necessary for an author to fix several at once, and it matters for 102 of
 the 140 answers that could be counted. It is not sufficient: after every
-edit, 61 of the 135 answers that still fail have two or more independent
+edit, 61 of the 135 answers that still fail the checker have two or more independent
 errors (sample 6: 36 of 40; sample 4: 20 of 40), mostly branch mismatches
 (57 words) and word-input mismatches (39) (`fixes/after_edits.py`, output
 `fixes/after_edits.json`). Run 8's branch
