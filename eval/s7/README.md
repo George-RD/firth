@@ -1627,8 +1627,10 @@ with 20 samples an arm.
   significant.
   - Counting every void sample at its last scored round gives A 170 over
     24 samples and B 229 over 25, p = 0.088.
-  - Dropping the four samples started last in each arm (A21, A23, A24 and
-    B25; see departures) gives p = 0.40.
+  - Dropping the samples started last (A21, A23, A24 and B25; see
+    departures) gives p = 0.40. That drop is uneven, three from arm A and
+    one from arm B. Dropping B24 as well, so each arm loses every sample
+    started after 22:28, gives A 153 over 17 and B 160 over 18, p = 0.50.
 
 **Closed-effect refusals** (`todo.closed-effect-under-locals`,
 `closed_effect.py`, `closed-effect.txt`). A word whose effect has no row
@@ -1658,8 +1660,9 @@ live, even when the author pushed exactly its inputs.
 **`pick` and `roll`.** No counted answer in either arm used `pick` or
 `roll`, in any round. Arm B's answers used no `over` or `rot` either (the
 paragraph says those are not Firth words). In arm A, 18 answers used
-`over`, all of them first answers and 16 of them A24's. 16 answers used
-`rot`: 11 from A24, 4 from A3 and 1 from A13. Both names are unresolved in
+`over`, all of them first answers and 16 of them A24's. 15 distinct
+answers used `rot`: 11 from A24, 3 from A3 and 1 from A13 (A3's round 3
+rewrote one of them unchanged, so a count of answer blocks gives 16). Both names are unresolved in
 Firth.
 
 **Void samples.** Nine samples are void under the pre-registered rules and
@@ -1736,6 +1739,194 @@ running or finished authors and the paths of their output logs.
   - No sample was started, stopped or counted on the basis of a score,
     and the counted set is the first 20 non-void samples by start order
     in each arm, as `analyse.py` computes it.
+
+## Run 11 failure analysis: what stops answers passing, by arm
+
+This reads run 11's 40 counted samples again, with no new authoring. It
+asks what the failing final answers failed on in each arm, and above all
+what stops arm B's locals-style answers. The scripts extend #182's and live
+in `runs/2026-09-29-locals-guide/causes/`. Each table below is printed by
+the named script from the committed files.
+
+**Method.**
+
+- `recheck.py` runs the pinned checker (`5d09e25`, the one both arms were
+  scored with) over all 2,036 distinct sources the counted authors
+  submitted, and keeps every diagnostic (`rechecked.json`).
+- `causes.py` groups the first diagnostic each author was shown into
+  families by code (`units.json`, `causes.txt`).
+- `rank.py` splits each family by the checker's own diagnosis, which is
+  read from the shape of its hint, and ranks the families by arm
+  (`rank.txt`).
+  - This replaces #182's Jev labels. The checker's hint is exact about
+    which of its cases fired, whereas Jev agreed with hand labels on only
+    9 of 13 sub-splits.
+  - So the sub-rows below are measured, not approximate. They say what
+    the checker saw, not what the author meant.
+- "Recoverable (inferred)" is the number of single-family answers
+  multiplied by the rate at which written answers that checked also
+  passed, as in #182. That rate is 58% for arm A and 59% for arm B.
+- Four counterfactuals are measured on the answers themselves. They are
+  not scored as part of the run.
+  - `recover.py` applies, word for word, every edit the checker's hints
+    spell out ("write `A` in place of `B`"). It re-checks until no edit
+    applies, then scores what checks. It was run with the pinned checker
+    and with main's (`a3fb621`, which adds #185's branch-mismatch edits).
+  - `locals_body.py` braces unbraced `locals` bodies.
+  - `shown.py` reads the feedback files for which edits the authors saw,
+    and whether they applied them.
+  - `closed_effect.py` opens closed effects (run 11's write-up).
+
+**Final answers.** Arm A has 246 failing final answers and arm B 223.
+
+| Rank | Cause (first error shown) | Arm A | Arm B | Recoverable, A / B (inferred) | Measured |
+|---|---|---|---|---|---|
+| 1 | Branch mismatch | 93 | 44 | 53 / 24 | Main's edits: 6 pass, all in arm A |
+| | of which one branch leaves extra values | 38 | 25 | | No edit offered |
+| | of which a call in a branch gets the wrong values | 29 (A24 14) | 15 | | #185's target |
+| 2 | Input mismatch | 68 | 70 | 35 / 36 | Checker's edits: 8 / 7 pass |
+| | of which argument order, the hint gives the edit | 27 (A23 15) | 19 | | Following the edits: 15 pass |
+| | of which argument order, left to the author | 10 | 5 | | No edit offered |
+| | of which a value of the wrong type at a position | 13 | 23 (B22 13) | | |
+| | of which too few values or underflow | 16 (A3 15) | 17 | | |
+| 3 | Wrong result or trap (checks, runs, wrong) | 51 | 61 | not checker-visible | see below |
+| 4 | Syntax | 22 | 37 | 13 / 22, overstated | Bracing: 0 pass |
+| | of which `locals { .. }` with no braced body | 20 (A21) | 20 (B21) | | 4 check, 0 pass |
+| | of which an operator that does not exist (`<=`, `>`) | 2 | 7 | | |
+| | of which a code fence left open in the first answer | 0 | 9 (B15) | | |
+| 5 | Unknown name, declared effect, locals | 12 | 11 | 6 / 3 | |
+| - | Closed effect under `locals` | 0 | 1 (B1) | | Opening the effect: checks |
+
+**What stops arm B.**
+
+- Arm B failed on branch mismatches half as often as arm A (44 against
+  93). That is the one family its paragraph plainly changed.
+- It failed on input mismatches as often as arm A (70 against 68), and
+  somewhat more often on wrong results and traps (61 against 51).
+- In arm B the largest groups are:
+  - wrong results (61);
+  - input mismatches, of which 24 are argument order (19 with the edit
+    spelled out by the checker) and 23 are an extra value pushed before an
+    operation (13 of those are B22 writing `xs i prim seq-int.len`);
+  - one sample (B21) writing every `locals` body without braces.
+- So steering authors to `locals` moved failures out of branch mismatches
+  without moving them into passes. That fits the run's inconclusive
+  primary result.
+
+**Wrong results and traps** (`rank.py` section 3). These are classified by
+fixed rules on the failing case's outcome, not by reading programs. The
+causes named here are inferred from the outcome.
+
+| Outcome | Arm A | Arm B |
+|---|---|---|
+| Equality boundary: `is-sorted` false on equal neighbours, `primes-up-to` keeping squares (4, 9), `keep-positive` keeping 0 | 15 | 14 |
+| Empty or zero result (the loop body never ran) | 16 | 3 |
+| Digits in reverse order | 2 | 5 |
+| Trap (index out of range, fuel, resource) | 6 | 11 |
+| Other wrong value | 12 | 28 |
+
+- Inferred, not measured: the equality-boundary answers are strict `<`
+  where `<=` was meant, in both arms. The rule measures only the outcome.
+  By hand, 7 of the 8 `keep-positive` answers skip on `x 0 prim <`.
+  - Firth has only `prim <` and `prim =` for comparing integers. So
+    `a <= b` has to be written `b a prim < prim not`, and `a > b` has to
+    be written `b a prim <`.
+  - Nine further final answers invented `<=` or `>`, which the parser
+    refuses (syntax, above).
+  - Six of the 19 empty results, read by hand, are a backwards loop
+    guarded by `i 0 prim <` where `i >= 0` was meant (A7, A16, B22).
+- Of the 12 primes answers that keep 4 and 9, 10 use a
+  `d d prim * n prim <` bound where `<=` was meant (read by hand; B4's
+  and B22's have no squared bound).
+- These 29 answers check and run, so no diagnostic can catch them.
+  - The language gap is the missing non-strict comparison. It is
+    recorded in `todo.comparison-primitives`.
+  - Whether adding `prim <=` would cut these errors needs its own
+    measured run.
+
+**Syntax (overstated, as in #182).**
+
+- A21 and B21 wrote every word as `locals { a b } body ;` in all three
+  rounds. Each time the checker said only "Unexpected `a`, expected `{`",
+  with the generic hint "A definition looks like ...".
+- Bracing their 40 final answers mechanically gives 4 that check and 0
+  that pass. Behind the braces are branch and input mismatches the authors
+  never saw.
+- So a specific diagnostic here would recover nothing directly. It would
+  unblock feedback that these two samples never received in three rounds.
+- B15's nine are one code fence left open in its first answer, which
+  pulled the next task's heading into the program. It never rewrote those
+  tasks.
+
+**Measured edit recoveries** (`recover.py`, `rank.py` section 2).
+
+- **Pinned checker.** Of the 357 refused final answers (195 in A, 162 in
+  B), 52 had an edit offered. Applying the edits word for word makes 37
+  check and 15 pass, all of them input mismatches.
+- **Main's checker** (with #185) offers edits for 73 answers. 50 then
+  check and 21 pass. The six extra passes are arm A branch mismatches.
+- Most of these edits were never shown to the authors (`shown.py`).
+  - A final answer's own errors get no feedback, since the third answer
+    is the last.
+  - For 38 of the 52 answers, neither feedback round on that task showed
+    an edit: the error shown had none, or the example passed. Those 38
+    include 13 of the 15 passes.
+- When feedback did show an edit, the next answer applied it 55 of 68
+  times in arm A and 86 of 102 in arm B (141 of 170).
+  - "Applied" means that, against the answer the feedback was about, the
+    old text occurs fewer times and the new text more times. A short old
+    text can correctly remain elsewhere in the task.
+  - This is a mechanical reading: a word rewritten some other way counts
+    as not applied.
+  - A failing input mismatch was rewritten into the same family 28 to
+    29% of the time (`rank.py` section 5).
+
+**Tasks failing in both arms** (`rank.py` section 4).
+
+- `sort` and `allocate-batch` failed in all 40 counted samples.
+  `primes-up-to` failed in 39, mostly with wrong results (20).
+  `longest-run`, `histogram`, `digits` and `is-sorted` failed in 30 or
+  more.
+- The four tasks with the most wrong results (`primes-up-to`,
+  `is-sorted`, `digits`, `keep-positive`) are the equality-boundary and
+  ordering tasks above.
+
+**Voids** (`rank.py` section 6). The nine void samples' last kept answers
+fail in the same families, input and branch mismatches first. Two of them
+(A22, B12) failed all 20 tasks with a syntax error in their only kept
+answer. Adding the voids leaves the ranking unchanged.
+
+**Ranked for Language core.** Each item names what is measured and what is
+inferred.
+
+1. **Non-strict comparison.**
+   - Measured: 29 wrong results with the equality-boundary outcome, and 9
+     answers that invented `<=` or `>`.
+   - Inferred: that the cause is composing `<=` from `<`, `not` and
+     argument order.
+   - The fix is a Gamma primitive (`prim <=`), or a clearer idiom in the
+     guide. The guide is an eval input, so either needs its own run.
+     Recorded as `todo.comparison-primitives`.
+2. **Argument order the checker already solves.**
+   - Measured: 61 final answers, 46 of them with an edit. Following the
+     edits makes 15 of those 46 pass. The other 15 answers got the hint
+     that only the author can tell which value is which, with no edit.
+   - Measured: the authors never saw most of those edits. 13 of the 15
+     passes come from answers whose feedback showed no edit in either
+     round. The edit was in the final answer, which gets no feedback.
+   - When an edit was shown, the next answer applied it 141 times out of
+     170 (A 55 of 68, B 86 of 102). So authors mostly do apply a shown
+     edit. The larger loss is that a final answer's new errors are never
+     shown.
+3. **A branch leaving extra values** (63 final answers).
+   - No edit is offered. #185 covers the other branch case (44 answers):
+     measured on main, its edits make 6 of them pass.
+4. **`locals` without a braced body** (40 final answers, two samples,
+   unchanged over three rounds).
+   - A specific diagnostic would unblock feedback that the generic hint
+     hid.
+   - Measured: bracing alone makes none pass.
+5. **Closed effect under `locals`.** One answer (B1). Low priority.
 
 ## What the eleven runs say about the bet
 

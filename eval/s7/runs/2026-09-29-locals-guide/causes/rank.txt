@@ -1,0 +1,133 @@
+== 1. Final failing answers, by family and the checker's diagnosis (first error shown)
+
+arm A: 246 failing final answers; written answers that checked and ran: 266, passed 154 (58%)
+  branch-mismatch      93  single   91  recoverable (inferred)  52.7
+        38  one branch leaves extra values  (16 samples; most: A13 6, A19 5)
+        29  call in a branch given the wrong values  (11 samples; most: A24 14, A5 2)
+        26  other branch mismatch  (12 samples; most: A19 4, A20 4)
+  input-mismatch       68  single   61  recoverable (inferred)  35.3
+        27  argument order, edit given  (9 samples; most: A23 15, A4 3)
+        15  stack underflow  (1 samples; most: A3 15)
+        13  wrong type at a position  (8 samples; most: A5 3, A4 2)
+        10  argument order, left to the author  (6 samples; most: A13 5, A5 1)
+         2  quotation-input-mismatch  (2 samples; most: A11 1, A18 1)
+         1  too few values for a call  (1 samples; most: A13 1)
+  wrong-result         45
+  syntax               22  single   22  recoverable (inferred)  12.7
+        20  `locals` block without a braced body  (1 samples; most: A21 20)
+         2  operator that does not exist (`<=`, `>`)  (1 samples; most: A19 2)
+  unknown-name          7  single    7  recoverable (inferred)   4.1
+         7  unresolved  (6 samples; most: A7 2, A3 1)
+  runtime-trap          6
+  declared-effect       4  single    2  recoverable (inferred)   1.2
+         4  declared-effect-mismatch  (3 samples; most: A20 2, A2 1)
+  locals                1  single    1  recoverable (inferred)   0.6
+         1  locals-order  (1 samples; most: A11 1)
+
+arm B: 223 failing final answers; written answers that checked and ran: 302, passed 177 (59%)
+  input-mismatch       70  single   61  recoverable (inferred)  35.8
+        23  wrong type at a position  (7 samples; most: B22 13, B1 3)
+        19  argument order, edit given  (7 samples; most: B19 8, B4 6)
+        10  too few values for a call  (4 samples; most: B25 7, B13 1)
+         7  stack underflow  (2 samples; most: B25 5, B1 2)
+         5  argument order, left to the author  (4 samples; most: B4 2, B6 1)
+         4  expected-bool  (2 samples; most: B25 3, B4 1)
+         1  word-input-mismatch  (1 samples; most: B1 1)
+         1  quotation-compose-mismatch  (1 samples; most: B6 1)
+  wrong-result         50
+  branch-mismatch      44  single   41  recoverable (inferred)  24.0
+        25  one branch leaves extra values  (12 samples; most: B17 7, B3 3)
+        15  call in a branch given the wrong values  (7 samples; most: B2 4, B13 4)
+         4  other branch mismatch  (4 samples; most: B10 1, B18 1)
+  syntax               37  single   37  recoverable (inferred)  21.7
+        20  `locals` block without a braced body  (1 samples; most: B21 20)
+         9  invalid token  (1 samples; most: B15 9)
+         7  operator that does not exist (`<=`, `>`)  (3 samples; most: B2 5, B6 1)
+         1  expected-name  (1 samples; most: B25 1)
+  runtime-trap         11
+  unknown-name          5  single    2  recoverable (inferred)   1.2
+         4  unresolved  (3 samples; most: B25 2, B2 1)
+         1  unresolved-effect  (1 samples; most: B25 1)
+  declared-effect       5  single    2  recoverable (inferred)   1.2
+         5  declared-effect-mismatch  (5 samples; most: B7 1, B10 1)
+  locals                1  single    1  recoverable (inferred)   0.6
+         1  untracked-local  (1 samples; most: B4 1)
+
+== 2. Measured recoveries of failing final answers (counterfactual, not scored)
+  checker 5d09e25 edits, arm A: refused 195, an edit offered 30, checks after the edits 20, passes 8 (input-mismatch 8)
+  checker 5d09e25 edits, arm B: refused 162, an edit offered 22, checks after the edits 17, passes 7 (input-mismatch 7)
+  checker a3fb621 edits, arm A: refused 195, an edit offered 47, checks after the edits 30, passes 14 (input-mismatch 8, branch-mismatch 6)
+  checker a3fb621 edits, arm B: refused 162, an edit offered 26, checks after the edits 20, passes 7 (input-mismatch 7)
+  unbraced `locals` bodies braced, arm A: 20 answers, checks after 3, passes 0
+  unbraced `locals` bodies braced, arm B: 20 answers, checks after 1, passes 0
+  closed effects opened (closed-effect.txt): arm A answer-3: counted 0, other errors too 0; arm B answer-3: counted 1, other errors too 1
+
+== 3. Wrong results and traps (checks, runs, wrong), by outcome rule
+  arm A: 51
+        16  empty or zero result (loop body never ran)
+        15  equality boundary
+        12  other wrong value
+         4  trap: primitive-fault
+         2  trap: fuel-exhausted
+         2  digits in reverse order
+  arm B: 61
+        28  other wrong value
+        14  equality boundary
+         7  trap: primitive-fault
+         5  digits in reverse order
+         3  trap: resource-fault
+         3  empty or zero result (loop body never ran)
+         1  trap: fuel-exhausted
+
+== 4. Tasks: failing final answers per arm, and the commonest family in both
+  sort            A 20  B 20  branch-mismatch 20, input-mismatch 7, wrong-result 5
+  allocate-batch  A 20  B 20  branch-mismatch 13, wrong-result 8, declared-effect 6
+  primes-up-to    A 20  B 19  wrong-result 20, branch-mismatch 11, input-mismatch 5
+  longest-run     A 17  B 16  branch-mismatch 11, wrong-result 8, input-mismatch 6
+  histogram       A 16  B 16  input-mismatch 15, branch-mismatch 10, syntax 3
+  digits          A 16  B 15  wrong-result 10, input-mismatch 8, branch-mismatch 7
+  is-sorted       A 16  B 14  wrong-result 12, input-mismatch 6, branch-mismatch 6
+  count-distinct  A 15  B 13  branch-mismatch 12, input-mismatch 9, syntax 3
+  has-pair-sum    A 10  B 15  wrong-result 8, branch-mismatch 6, input-mismatch 5
+  keep-positive   A 13  B 11  wrong-result 9, input-mismatch 6, branch-mismatch 5
+  reverse         A 10  B 11  input-mismatch 8, syntax 4, wrong-result 3
+  ledger          A 12  B  6  input-mismatch 7, branch-mismatch 7, syntax 3
+  seq-max         A  9  B  9  input-mismatch 7, branch-mismatch 5, wrong-result 3
+  merge-sorted    A  9  B  7  branch-mismatch 7, input-mismatch 6, syntax 3
+  prefix-sums     A 12  B  4  input-mismatch 7, branch-mismatch 4, wrong-result 2
+  all-true        A  8  B  5  input-mismatch 6, branch-mismatch 4, syntax 2
+  count-below     A  6  B  6  input-mismatch 6, syntax 3, branch-mismatch 2
+  dot             A  7  B  5  input-mismatch 8, syntax 3, branch-mismatch 1
+  index-of        A  5  B  6  input-mismatch 6, branch-mismatch 2, syntax 2
+  seq-sum         A  5  B  5  input-mismatch 6, syntax 3, branch-mismatch 1
+
+== 5. Feedback: failing tasks rewritten in the next round, by family first shown
+  arm A
+    branch-mismatch     267  same family  48%  passed  14%
+    input-mismatch      185  same family  29%  passed  25%
+    syntax               83  same family  23%  passed   1%
+    wrong-result         58  same family  41%  passed  41%
+    unknown-name         49  same family  10%  passed   2%
+    declared-effect       9  same family  67%  passed   0%
+    locals                9  same family   0%  passed  44%
+    runtime-trap          3  same family  33%  passed  67%
+  arm B
+    input-mismatch      205  same family  28%  passed  32%
+    syntax              147  same family  41%  passed  13%
+    branch-mismatch     122  same family  35%  passed  15%
+    wrong-result         55  same family  36%  passed  29%
+    locals               46  same family   7%  passed  13%
+    unknown-name         16  same family   0%  passed  12%
+    runtime-trap          9  same family  33%  passed  22%
+    declared-effect       6  same family  50%  passed  17%
+
+== 6. Void samples' last kept answers: passed, and failures by family first shown
+  A1   results-1.json  passed  4  input-mismatch 11, branch-mismatch 5
+  A14  results-3.json  passed  4  input-mismatch 8, branch-mismatch 8
+  A15  results-2.json  passed  8  wrong-result 4, branch-mismatch 4, input-mismatch 4
+  A22  results-1.json  passed  0  syntax 20
+  B8   results-2.json  passed 13  wrong-result 4, input-mismatch 2, branch-mismatch 1
+  B11  results-3.json  passed 15  input-mismatch 2, wrong-result 2, runtime-trap 1
+  B12  results-1.json  passed  0  syntax 20
+  B20  results-3.json  passed 16  wrong-result 3, branch-mismatch 1
+  B23  results-1.json  passed  8  wrong-result 7, runtime-trap 4, branch-mismatch 1
