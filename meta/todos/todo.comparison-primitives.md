@@ -4,13 +4,13 @@ status: open
 created: 2026-09-29
 ---
 
-# Firth has no non-strict integer comparison
+# Do the non-strict integer comparisons reduce boundary errors?
 
 Found by the run 11 failure analysis (`eval/s7/README.md`, "Run 11 failure
 analysis"; scripts and outputs in
-`eval/s7/runs/2026-09-29-locals-guide/causes/`). Gamma offers only `prim <`
-and `prim =` for comparing integers, so `a <= b` must be written
-`swap prim < prim not` (or `b a prim < prim not`) and `a > b` as
+`eval/s7/runs/2026-09-29-locals-guide/causes/`). Until Gamma 0.8, Gamma
+offered only `prim <` and `prim =` for comparing integers, so `a <= b` had
+to be written `swap prim < prim not` (or `b a prim < prim not`) and `a > b` as
 `swap prim <`.
 
 Measured in run 11's counted final answers (`rank.txt`):
@@ -27,7 +27,11 @@ Measured in run 11's counted final answers (`rank.txt`):
 Inferred, not measured: that the cause is composing `<=` from `<`, `not` and
 argument order.
 
-To close: decide between a Gamma primitive (`prim <=`, perhaps `prim >`) and
-a clearer idiom in the agent guide. The guide is an S7 eval input, and a
-new primitive changes what authors can write, so either needs its own
-pre-registered run to show it reduces these errors.
+Decided: Gamma 0.8 adds `prim <=`, `prim >` and `prim >=`
+(`dec.comparison-primitives`, #195, approved by George on the project's
+decision card). What stays open is whether they help.
+
+To close: a pre-registered S7 run on a head that has these primitives shows
+whether answers make fewer equality-boundary errors (wrong results at equal
+values, and invented comparisons) than runs 10 and 11. Record the result
+here, whichever way it goes.

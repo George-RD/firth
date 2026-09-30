@@ -49,7 +49,28 @@
   locals { xs }
   { xs 1 xs 0 prim seq-int.at max-from };
 
-\ x limited to the range lo..hi (lo at most hi).
+\ The index of the first largest element of xs from index i on, where best is
+\ the index of the largest element before i. `prim >` keeps the earlier index
+\ when two elements are equal; `prim >=` would move to the later one, so
+\ { 3 7 7 2 } gives 1 here and would give 2.
+: max-index-from
+  (forall ρ; ρ xs:Seq Int^many i:Int^many best:Int^many -- ρ r:Int^many)
+  locals { xs i best }
+  { i xs prim seq-int.len prim <
+    [ xs i prim seq-int.at xs best prim seq-int.at prim >
+      [ xs i 1 prim + i max-index-from ]
+      [ xs i 1 prim + best max-index-from ] if ]
+    [ best ] if };
+
+\ The index of the first largest element of a sequence that is not empty. An
+\ empty one traps with `primitive-fault`, since it has no element 0.
+: index-of-max
+  (forall ρ; ρ xs:Seq Int^many -- ρ r:Int^many)
+  locals { xs }
+  { xs 0 prim seq-int.at drop xs 1 0 max-index-from };
+
+\ x limited to the range lo..hi (lo at most hi). At x = hi, `prim >` and
+\ `prim >=` both give hi, so here the choice does not change the result.
 : clamp
   (forall ρ; ρ x:Int^many lo:Int^many hi:Int^many -- ρ r:Int^many)
   locals { x lo hi }
