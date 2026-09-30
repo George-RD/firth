@@ -4,8 +4,6 @@ status: open
 created: 2026-09-28
 ---
 
-Requires: compiler-vm-agreement-proof
-
 ## Goal
 
 Close the second gap stated with S5 (met 28 September 2026). The allocator's
@@ -23,6 +21,9 @@ not proved.
   moving it into Firth where the existing program logic applies. Moving host
   work into Firth needs the language features it uses (string or byte
   handling); name the gaps it hits as todos rather than working around them.
+- Attaching each allocation and reason to its request's ID by position
+  (`host_encode`) is proved to preserve IDs and order, which closes the last
+  open part of `todo.language-06b-program-property-proofs`.
 - Whatever stays in the host is listed, with the spec section that assigns
   it to the host, and is covered by the corpus and by planted-bug tests.
 - The S5 claim is updated to name the remaining trusted host code, if any.
