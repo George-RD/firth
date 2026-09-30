@@ -178,12 +178,18 @@ One author per arm, one at a time, through all three rounds, with run 13's
 prompts in a scratch directory (`runs/smoke-r14` in run 13's worktree, not
 kept):
 
-- **Serial half (done for arm B).** The arm B author ran 05:58:59 to
+- **Serial half (done).** The arm B author ran 05:58:59 to
   06:13:24Z on 30 September with nothing else running in the session. It
   was compacted once, at 06:08:35Z, and `context_seen.py` found no
   `task_status` line and no cross-sample item in its complete log (exit
   0). The audit with run 14's forms flagged nothing (exit 0); it ran the
-  check 14 times. The arm A author is being run the same way.
+  check 14 times. The arm A author ran the same way, 06:14:20 to
+  06:19:47Z: no compaction, no `task_status` line and no cross-sample
+  item (`context_seen.py`, exit 0), and the audit flagged nothing in its 9
+  calls (exit 0). Both arms' authors were sent the harness's
+  `[handback-send-enforce]` reminder on their feedback turns, so it falls
+  on both arms. Scores (smoke only, not a result): arm A 0, 7 and 9 of 20
+  by `harness.py score` over its three answers (arm B: 14 on its third).
 - **Hook half (waits for the maintainer).** In a fresh session started
   after the agent file exists: the `s7-author` agent type is available; the
   hook denies a planted off-list call and lets an allowed one through; the
