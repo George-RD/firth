@@ -119,16 +119,18 @@ Run 13 changes three things, and nothing else about the question:
   taken yet until then, and then reads their void status. Once those samples
   are final their void status cannot change, so the reading cannot either,
   and when it is read cannot decide it. Authoring continues while it waits.
-  - If 6 or more of those 10 are rule voids, authoring stops.
-  - It counts every rule void, whatever the cause, including context voids
-    from the harness's `task_status` lines. It asks whether this protocol
-    can be completed, and a context void costs a replacement as an audit
-    void does. The stop ends both arms, so it cannot favour either. The run is
+  - If 6 or more of those 10 are audit voids, authoring stops.
+  - It counts only rule voids the audit found (`rule: audit` in `void.md`,
+    whatever else the sample broke), since it asks whether arm B's authors
+    keep to the allowed forms. A sample void only for context, such as the
+    harness's `task_status` lines, is not counted here; secondary 5 reports
+    those. The stop ends both arms, so it cannot favour either. The run is
     reported as not feasible under this protocol, with every sample's scores
     and no test.
   - The look reads void status only, never a score. Its self-test plants 5
-    rule voids (continue), a toolchain void (not counted), 6 rule voids
-    (stop), a sample in the window without `final.md` (not taken yet), and
+    audit voids (continue), a toolchain void (not counted), a context void
+    (not counted), 6 audit voids, one of them also a context void (stop), a
+    sample in the window without `final.md` (not taken yet), and
     fewer than 10 starts (not taken yet).
   - Run 12's arm B had 6 rule voids in 6 such starts. At that rate, 40
     counted samples would need far more starts than the 40-void stop
@@ -246,7 +248,11 @@ As in run 12:
 - In both arms, every kept `answer-N.md` must have been made by a successful
   Write or Edit in the author's log.
 - Every `void.md` starts with `rule:` or `toolchain:`, then the reason, and
-  `analyse.py` refuses any other.
+  `analyse.py` refuses any other. After `rule:` come the rules the sample
+  broke, comma-separated from `audit`, `agent-files`, `context` and
+  `answers` (the headings above), then `:` and the reason, for example
+  `rule: audit, context: ...`. `analyse.py` refuses a rule void without
+  them (planted).
 - Void samples are reported with their scores and not counted. Validity is
   judged on these rules alone, never on scores.
 - After each round, the audit and the scans run on the log so far. A sample
@@ -373,7 +379,7 @@ Run 12's `power.py --n 40 --runs 1000` table, for co-primary 1:
 
 The run can complete only if the new sentence cuts arm B's rule voids well
 below run 12's. Applied by hand to run 12's arm B calls, the final forms
-leave 3 rule voids (B5, B6 and B7) among the 6 samples whose checks ran,
+leave 3 audit voids (B5, B6 and B7) among the 6 samples whose checks ran,
 before any effect of the sentence; B5 and B6 are also void for `task_status`
 lines. So the rule-void rate to expect without an effect is about 0.5, and
 there it is about a coin flip whether the run completes. Treating each arm B

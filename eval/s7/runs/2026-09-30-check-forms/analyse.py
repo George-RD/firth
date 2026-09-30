@@ -45,6 +45,10 @@ def ready(dirs, n=N_PER_ARM):
     return run11.ready(dirs, n)
 
 
+# The validity rules a rule void can break (preregistration.md, "Validity of a sample").
+CAUSES = ("audit", "agent-files", "context", "answers")
+
+
 def void_kind(d):
     """None for a valid sample, else `toolchain` or `rule`: void.md starts `toolchain:` or `rule:`."""
     v = d / "void.md"
@@ -54,7 +58,21 @@ def void_kind(d):
     kind = words[0].rstrip(":") if words else ""
     if kind not in ("toolchain", "rule"):
         raise ValueError(f"{v}: must start with `toolchain:` or `rule:`")
+    if kind == "rule":
+        void_causes(d)
     return kind
+
+
+def void_causes(d):
+    """The rules a rule void broke: void.md starts `rule: <causes>:`, the
+    causes comma-separated from CAUSES, then the reason."""
+    v = d / "void.md"
+    head = v.read_text().split(":", 2)
+    causes = head[1].split(",") if len(head) == 3 else []
+    causes = [c.strip() for c in causes]
+    if not causes or any(c not in CAUSES for c in causes):
+        raise ValueError(f"{v}: a rule void starts `rule: <causes>:` with causes from {', '.join(CAUSES)}")
+    return causes
 
 
 def started(arm_dir, n=N_PER_ARM):
@@ -102,15 +120,21 @@ def early_window(arm_dir, look=EARLY_LOOK):
     return None
 
 
+def audit_void(d):
+    """A rule void the audit found, whatever else it broke."""
+    return void_kind(d) == "rule" and "audit" in void_causes(d)
+
+
 def early_stop(arm_dir, look=EARLY_LOOK, limit=EARLY_LIMIT):
     """None until the look can be taken (early_window); then True when `limit`
-    or more of those samples are rule voids, of any cause. It reads void
-    status only, never a score, and once every sample in the window is final
-    the reading cannot change."""
+    or more of those samples are audit voids. Context voids alone are not
+    counted (secondary 5 reports them). It reads void status only, never a
+    score, and once every sample in the window is final the reading cannot
+    change."""
     first = early_window(arm_dir, look)
     if first is None:
         return None
-    return sum(void_kind(d) == "rule" for d in first) >= limit
+    return sum(audit_void(d) for d in first) >= limit
 
 
 def status_leaks(arm_dir):
@@ -196,7 +220,7 @@ def self_test():
             {"tasks": {f"t{k}": {"cases": [{"pass": True}]} for k in range(7)}}))
         (arm / "haiku-firth-2" / "results-2.json").write_text(json.dumps(
             {"tasks": {"t": {"cases": [{"pass": False}]}}}))
-        (arm / "haiku-firth-2" / "void.md").write_text("rule: Bash `ls`\n")
+        (arm / "haiku-firth-2" / "void.md").write_text("rule: audit: Bash `ls`\n")
         (arm / "haiku-firth-3" / "void.md").write_text("toolchain: lake exit 1\n")
         got = started(arm)
         assert len(got) == 40 and got[1].name == "haiku-firth-2"
@@ -204,19 +228,20 @@ def self_test():
         assert final_passed(got[1]) == 7 and final_passed(got[0]) == 0
         assert len(counted(arm)) == 40 and "haiku-firth-2" not in [d.name for d in counted(arm)]
         (arm / "haiku-firth-5" / "results-3.json").unlink()
-        (arm / "haiku-firth-5" / "void.md").write_text("rule: Bash `ls`\n")
+        (arm / "haiku-firth-5" / "void.md").write_text("rule: audit: Bash `ls`\n")
         try:
             final_passed(arm / "haiku-firth-5")
             raise AssertionError("a void without a third answer was scored")
         except ValueError:
             pass
         (arm / "haiku-firth-5" / "void.md").unlink()
-        (arm / "haiku-firth-4" / "void.md").write_text("because\n")
-        try:
-            started(arm)
-            raise AssertionError("an unmarked void was accepted")
-        except ValueError:
-            pass
+        for bad in ("because\n", "rule: Bash `ls`\n", "rule: grep: Bash `ls`\n"):
+            (arm / "haiku-firth-4" / "void.md").write_text(bad)
+            try:
+                started(arm)
+                raise AssertionError(f"an unmarked void was accepted: {bad!r}")
+            except ValueError:
+                pass
     # Planted: the early look fires at 6 rule voids of the first 10 started,
     # not at 5, and not on toolchain voids; it is not taken before 10 have
     # started, or while any sample up to the 10th lacks final.md.
@@ -226,11 +251,13 @@ def self_test():
             (arm / f"haiku-firth-{i}").mkdir()
             (arm / f"haiku-firth-{i}" / "final.md").write_text("final\n")
         for i in (1, 2, 3, 4, 5):
-            (arm / f"haiku-firth-{i}" / "void.md").write_text("rule: Bash `ls`\n")
+            (arm / f"haiku-firth-{i}" / "void.md").write_text("rule: audit: Bash `ls`\n")
         assert early_stop(arm) is False
         (arm / "haiku-firth-6" / "void.md").write_text("toolchain: lake exit 1\n")
         assert early_stop(arm) is False
-        (arm / "haiku-firth-11" / "void.md").write_text("rule: Bash `ls`\n")
+        (arm / "haiku-firth-11" / "void.md").write_text("rule: context: task_status\n")
+        assert early_stop(arm) is False, "a context void is not counted"
+        (arm / "haiku-firth-11" / "void.md").write_text("rule: context, audit: task_status; Bash `ls`\n")
         assert early_stop(arm) is True
         (arm / "haiku-firth-4" / "final.md").unlink()
         assert early_stop(arm) is None, "a sample in the window is not final"
@@ -255,7 +282,7 @@ def self_test():
             d.mkdir()
             (d / "context-seen.json").write_text(json.dumps({"injected": items}))
             if void:
-                (d / "void.md").write_text("rule: context\n")
+                (d / "void.md").write_text("rule: context: task_status\n")
         assert status_leaks(arm) == (2, 1), status_leaks(arm)
     # Planted: the co-primary rule needs both tests.
     assert gain_claimed(0.01, 0.04)
@@ -275,9 +302,10 @@ def main():
             print(f"arm B: the look is not taken yet: the first {EARLY_LOOK} samples started "
                   "(toolchain voids left out) are not all there with final.md")
             return None
-        kinds = [void_kind(d) for d in first]
-        print(f"arm B: {kinds.count('rule')} rule voids of the first {len(kinds)} started "
-              f"(toolchain voids left out): " + ", ".join(f"{d.name} {k or 'valid'}" for d, k in zip(first, kinds))
+        kinds = [(void_kind(d) and f"{void_kind(d)} ({', '.join(void_causes(d))})"
+                  if void_kind(d) == "rule" else "valid") for d in first]
+        print(f"arm B: {sum(audit_void(d) for d in first)} audit voids of the first {len(first)} started "
+              f"(toolchain voids left out): " + ", ".join(f"{d.name} {k}" for d, k in zip(first, kinds))
               + f"; stop at {EARLY_LIMIT} of {EARLY_LOOK}: " + ("STOP" if early_stop(ARMS["B"]) else "continue"))
         return None
     dirs = {arm: counted(path) for arm, path in ARMS.items()}
