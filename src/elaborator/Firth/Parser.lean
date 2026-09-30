@@ -376,10 +376,8 @@ private def parsePrimitiveName (p : Parser) : Except ParseError (String × Span 
           else .error (err "firth.syntax.invalid-name" t.span .validation (some "primitive name") (some s))
       | .symbol s =>
           if s ∈ ["+", "-", "*", "/", "%", "=", "<", ">", "_", "&", "|", "~"] then
-            -- `prim <=` and `prim >=` are read as one name, so that the
-            -- report says there is no such primitive and how to compare
-            -- with the ones there are, rather than that `=` cannot start
-            -- an item.
+            -- `<` or `>` directly followed by `=` is one name, the
+            -- primitives `prim <=` and `prim >=`; `prim < =` is two items.
             match current (bump p) with
             | some next =>
                 if (s == "<" || s == ">") && isSymbol "=" next &&

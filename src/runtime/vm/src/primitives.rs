@@ -56,6 +56,21 @@ fn eq_int(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     context.push_bool(left == right)
 }
 
+fn le_int(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let (left, right) = pop_int_pair(context)?;
+    context.push_bool(left <= right)
+}
+
+fn gt_int(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let (left, right) = pop_int_pair(context)?;
+    context.push_bool(left > right)
+}
+
+fn ge_int(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
+    let (left, right) = pop_int_pair(context)?;
+    context.push_bool(left >= right)
+}
+
 fn and_bool(context: &mut PrimitiveContext<'_>) -> Result<(), VmError> {
     let right = context.pop_bool()?;
     let left = context.pop_bool()?;
@@ -217,6 +232,33 @@ pub fn default_registry() -> PrimitiveRegistry {
                 name: "eqInt",
                 cost: 1,
                 handler: eq_int,
+                input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "leInt",
+                cost: 1,
+                handler: le_int,
+                input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "gtInt",
+                cost: 1,
+                handler: gt_int,
+                input: &[Usage::Many, Usage::Many],
+                output: &[Usage::Many],
+                world: false,
+                value_tags: &[],
+            },
+            PrimitiveDefinition {
+                name: "geInt",
+                cost: 1,
+                handler: ge_int,
                 input: &[Usage::Many, Usage::Many],
                 output: &[Usage::Many],
                 world: false,

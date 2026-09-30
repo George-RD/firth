@@ -159,7 +159,7 @@ private def withAccount (config : PipelineConfig) (source : String)
 private def erasureSpan : ErasureError → Span
   | .duplicateLocal _ span | .unboundLocal _ span | .unsupportedCapture _ span
   | .missingStackValue span | .linearCopy _ span | .linearUnused _ span
-  | .unresolvedEffect _ span _ | .effectUnderflow _ span _ | .usageMismatch _ span
+  | .unresolvedEffect _ span | .effectUnderflow _ span _ | .usageMismatch _ span
   | .unsupportedLiteral span | .unsupportedAtom _ span | .untrackedStack _ span _
   | .branchShape span .. | .hiddenLocal _ span => span
 
@@ -211,9 +211,8 @@ hint offers: a misordered `locals` block (`checkLocalsEdits`), whose hint
 says either that the edit fixes the word or that the body was written for the
 names as they are, a call handed its values out of order
 (`withCallAccount`), a refused `if` (`branchEdit`), a condition written
-after its quotations (`conditionEdit`), a comparison with no primitive
-(`withComparisonEdit`), or an operation handed fewer values than it takes
-(`shortEdit`). -/
+after its quotations (`conditionEdit`), or an operation handed fewer values
+than it takes (`shortEdit`). -/
 private def PipelineDiagnostic.editConsulted : PipelineDiagnostic → List String
   | .parse error => (error.localsBlocks.flatMap (·.consulted)).eraseDups
   | .stackEffect diagnostic =>
@@ -221,7 +220,6 @@ private def PipelineDiagnostic.editConsulted : PipelineDiagnostic → List Strin
         ((diagnostic.ifAccount.bind (·.edit)).map (·.consulted)).getD [] ++
         ((diagnostic.conditionEdit.map (·.consulted)).getD [])
   | .erasure _ (.branchShape _ _ _ _ (some account)) => ((account.edit.map (·.consulted)).getD [])
-  | .erasure _ (.unresolvedEffect _ _ (some edit)) => edit.consulted
   | .erasure _ (.effectUnderflow _ _ (some account)) => ((account.edit.map (·.consulted)).getD [])
   | .assumes _ _ _ inner => inner.editConsulted
   | _ => []
@@ -556,6 +554,9 @@ private def shortEdit (config : PipelineConfig) (source : String) (word : WordDe
     if primitive then ("", input)
     else (((input.splitOn ":").head?).getD "", ":".intercalate ((input.splitOn ":").drop 1))
   let spans ← (moved.zip inputs).mapM fun
+    -- The recheck below does not always reach the type checker: when
+    -- erasure fails later in the edited word, typing never runs, so a literal
+    -- of another type would pass it. Its type is compared here.
     | (.literal literal at_, (_, type)) =>
         let literalType := match literal.value with
           | .integer _ => "Int"
@@ -961,40 +962,6 @@ private def withConditionEdit (config : PipelineConfig) (source : String) (words
         conditionEdit := conditionEdit config source words word diagnostic.primary.start.offset }
   | other => other
 
-/-- A word refused for a comparison Firth has no primitive for, as
-`prim <=`, with the edit that writes every such comparison in the word with
-the primitives there are (`comparisonRewrite`), applied and checked. The
-rewrite computes the same comparison, so the edit is offered wherever the
-word's next error then is; it is left out only when the edited source does
-not parse or resolve. -/
-private def withComparisonEdit (config : PipelineConfig) (source : String)
-    (word : WordDefinition) : PipelineDiagnostic → PipelineDiagnostic
-  | .erasure name (.unresolvedEffect primitive span none) =>
-      let found : Option ComparisonEdit := do
-        if !config.checkEdits then none
-        let first ← comparisonRewrite primitive
-        -- Every comparison in the word to rewrite, in source order.
-        let targets := (leafItems [] word.body).filterMap fun
-          | (.primitive name at_, _, _) => (comparisonRewrite name).map (name, at_, ·)
-          | _ => none
-        let edited := targets.foldr (init := source) fun (_, at_, replacement) text =>
-          bytesText text 0 at_.start.offset ++ replacement ++ bytesText text at_.stop.offset text.utf8ByteSize
-        let file ← match parse edited with
-          | .success file => some file
-          | .failure _ => none
-        let (resolved, _) ← (resolveEach file.declarations (fun name => (config.erasureEnv.word name).isSome)).toOption
-        let editedWords := resolved.map (·.1)
-        let editedWord ← (resolved.find? fun (candidate, error) => candidate.name == word.name && error.isNone).map (·.1)
-        let after := (outcomeAlone config edited editedWords editedWord).map (lineColumn edited)
-        let written := bytesText source span.start.offset span.stop.offset
-        let (line, column) := editPlace source span.start.offset span.stop.offset written
-        let others := targets.filterMap fun (name, at_, _) =>
-          if at_ == span then none else some (s!"prim {name}", at_.start.line)
-        pure { written, replacement := first, line, column, others, after
-               consulted := consultedWords config editedWords editedWord }
-      .erasure name (.unresolvedEffect primitive span found)
-  | other => other
-
 /-- A misordered `locals` refusal whose suggested edits have been applied and
 checked. A block is marked `checked` when its word, edited as the diagnostic
 would say, is accepted, or is refused no earlier in the source than the word
@@ -1055,8 +1022,8 @@ private def checkWord (config : PipelineConfig) (source : String)
   | some (callee, span), .ok _ => .skipped callee span
   | none, _ =>
   match erase env word.effect word.body with
-  | .error error => .refused [withShortCall config source words word (withComparisonEdit config source word
-      (withBranchEdit config source (withAccount config source words (.erasure word.name error))))]
+  | .error error => .refused [withShortCall config source words word
+      (withBranchEdit config source (withAccount config source words (.erasure word.name error)))]
   | .ok erased =>
   match schemeOfEffect word.effect with
   | .error diagnostic => .refused [.stackEffect diagnostic]
