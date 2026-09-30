@@ -102,16 +102,17 @@ Claude Haiku 4.5 is the harder test, and it still mostly fails. Runs 5 to
 
 Run 9 looked like a jump, but run 10 re-ran its build and run 8's side by
 side and the gain didn't reproduce. That fits sample-to-sample variance
-better than an effect of the multi-error feedback. Run 11 told arm B to use `locals` instead of
-stack shuffling. Authors did as asked (shuffle words fell from 37% of first
-answers to 6%), but passes rose only from 154 to 177 tasks across 20
-samples, which isn't significant. Runs 12 and 13 let authors run the
-checker themselves. Both stopped early without a result. Most authors
-with the checker made calls the protocol doesn't allow, such as piping its
-output through `grep`, and each of those voids the sample.
+better than an effect of the multi-error feedback. Run 11 told arm B to use
+`locals` instead of stack shuffling. Authors did as asked (shuffle words
+fell from 37% of first answers to 6%), but passes rose only from 154 to 177
+tasks across 20 samples, which isn't significant. Runs 12 and 13 let authors
+run the checker themselves. Both stopped early without a result. Most
+authors with the checker made calls the protocol doesn't allow, such as
+piping its output through `grep`, and each of those voids the sample.
 
 So Firth has two gaps to close for models: Haiku can't yet write it
-reliably, and even Sonnet is slow. Each run's full results are in the eval README.
+reliably, and even Sonnet is slow. Each run's full results are in the
+eval README.
 
 ## Known gaps
 
