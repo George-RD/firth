@@ -164,13 +164,28 @@ private def valueItems (items : List StackItem) : List (String × String) :=
     | .value name type _ => some (name, type.name ++ if type.usage == .linear then "^linear" else "")
     | .row _ _ => none
 
+/-- Whether an operation's result of `type`, handed one local of that type,
+is a new value of that local. A sequence is: a sequence computed from one
+sequence is that sequence changed, as `prim seq-int.push` makes it. A number
+is only when `prim +` or `prim -` computed it, as a count or a sum is
+stepped, and a truth value only when `prim and` or `prim or` did, as a flag
+is accumulated. Others need not be: `n 10 prim mod` is a digit of `n`,
+`xs i prim seq-int.at` an element read at `i`, and a word's Int result may
+be anything computed from its inputs. -/
+private def updates (operation type : String) : Bool :=
+  type.startsWith "Seq " ||
+    ["`prim +`", "`prim -`", "`prim and`", "`prim or`"].contains operation
+
 /-- The local a value stands for: the one that pushed it, or the one local
-of its type the operation that pushed it was handed. -/
+of its type the operation that pushed it was handed, where the value is a
+new value of that local (`updates`). -/
 private def source (entry : Entry) : Option String :=
   (entry.localName.orElse fun _ => entry.stands).orElse fun _ => entry.made.bind fun made =>
     match made.type with
     | none => none
-    | some type => match (made.locals.filter (·.2 == some type)).map (·.1) |>.eraseDups with
+    | some type =>
+      if !updates made.operation type then none else
+      match (made.locals.filter (·.2 == some type)).map (·.1) |>.eraseDups with
       | [name] => some name
       | _ => none
 
