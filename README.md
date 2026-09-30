@@ -55,10 +55,10 @@ What works, and where to check it:
 - **Structure.** Words, qualified vocabulary names, quotations, `call`,
   `dip`, `if`, and recursion. Tail calls run in constant frames. Named
   `locals` compile to the kernel's `pick` and `roll`, and a `locals` block
-  that opens a word binds its inputs in stack-effect order.
+  that opens a word must bind its inputs in stack-effect order.
 - **Diagnostics.** The checker reports the first error in each word it
-  checks, not just the first in the program, and names the word. Many
-  reports come with a hint whose edit the checker has already tried. A
+  checks, not just the first in the program, and names the word. Where it
+  can, a hint states an edit the checker has applied and rechecked. A
   syntax error still stops the file there, and a word that calls one with
   an invalid signature is reported as unchecked
   (`docs/firth-agent-guide.md`, the diagnostics section).
@@ -104,11 +104,12 @@ Run 9 looked like a jump, but run 10 re-ran its build and run 8's side by
 side and the gain didn't reproduce. That fits sample-to-sample variance
 better than an effect of the multi-error feedback. Run 11 told arm B to use
 `locals` instead of stack shuffling. Authors did as asked (shuffle words
-fell from 37% of first answers to 6%), but passes rose only from 154 to 177
-tasks across 20 samples, which isn't significant. Runs 12 and 13 let authors
-run the checker themselves. Both stopped early without a result. Most
-authors with the checker made calls the protocol doesn't allow, such as
-piping its output through `grep`, and each of those voids the sample.
+fell from 37% of first answers to 6%), but tasks passed were 154 against 177
+across 20 samples an arm, which isn't significant. Runs 12 and 13 let
+authors run the checker themselves. Both stopped early without a result.
+Most authors given the checker made calls the protocol doesn't allow, such
+as extra pipes after the check command or reads of its saved output, and
+each of those voids the sample.
 
 So Firth has two gaps to close for models: Haiku can't yet write it
 reliably, and even Sonnet is slow. Each run's full results are in the
