@@ -975,10 +975,28 @@ private def checkLocalsEdits (config : PipelineConfig) (source : String) (words 
       | some word =>
           if !config.checkEdits then { block with checked := false } else
           let edited := applyLocalsBlock word block
+          -- A name the edit renames, one that claims no input by its label,
+          -- is given the input left over, whatever it held as written. When
+          -- that changes its type, only typing can show the body still
+          -- fits, so the edit is not stated when an erasure error in the
+          -- edited word keeps typing from running. A name the stack effect
+          -- declares holds the input of that name, which is the edit's point.
+          let inputs := word.effect.input.filterMap fun
+            | .value _ type _ => some type.name
+            | .row _ _ => none
+          let first := inputs.length - block.block.length
+          let editedType (name : String) : Option String :=
+            let binder := (block.renames.lookup name).getD name
+            (block.block.idxOf? binder).bind fun j => inputs[first + j]?
+          let typesKept := block.pairs.all fun (name, _, type) =>
+            (block.renames.lookup name).isNone || editedType name == some type
+          let typed := match firstErrorAlone config words edited with
+            | some (.erasure _ _) => false
+            | _ => true
           let checked := match outcomeAlone config source words edited,
               outcomeAlone config source words word with
             | none, _ => true
-            | some edited, some written => edited ≥ written
+            | some edited, some written => (typesKept || typed) && edited ≥ written
             | some _, none => false
           { block with
             checked := checked && !block.rebound

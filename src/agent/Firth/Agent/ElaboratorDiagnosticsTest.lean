@@ -1241,7 +1241,32 @@ private def runLocalsOrderTests : IO Unit := do
     -- An inner block binds `x` again, so "write `b` for `x`" would be read
     -- for both.
     ("name to rename bound again inside", "sub",
-      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x 1 prim + locals { x } { x } a prim - };")]
+      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x 1 prim + locals { x } { x } a prim - };"),
+    -- Planted: `x` holds the Int `a` and would be renamed to `b`, a Bool.
+    -- `locals { p q r }` is handed one value, an erasure error, so typing
+    -- never runs on the edited word and could not show `b 1 prim +` wrong:
+    -- the rename's type is compared instead.
+    ("a renamed name of another type, before a later erasure error", "f",
+      ": f\n  (forall ρ; ρ a:Int^many b:Bool^many -- ρ r:Int^many)\n  locals { x a } { x 1 prim + locals { p q r } { p } };")]
+  -- The same with `b` an Int: renaming `x` to `b` keeps its type, and the
+  -- edit is stated although typing does not run.
+  match elaboratePipeline pipelineContext ": f\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x 1 prim + locals { p q r } { p } };" agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      for needle in ["Write `locals { a b }` in `f`", "write `b` for `x`"] do
+        unless emitted.contains needle do
+          fail s!"a renamed name of its own type: the report does not say {needle}: {emitted}"
+  | _ => fail "a renamed name of its own type: expected one diagnostic"
+  -- A rename that changes the type, where typing does run: `x` is used as
+  -- a Bool and the edit gives it `b`, a Bool. The edited word is refused
+  -- only later, at `true prim +`, so the edit is stated.
+  match elaboratePipeline pipelineContext ": f\n  (forall ρ; ρ a:Int^many b:Bool^many -- ρ r:Int^many)\n  locals { x a } { x prim not drop a true prim + };" agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      for needle in ["Write `locals { a b }` in `f`", "write `b` for `x`"] do
+        unless emitted.contains needle do
+          fail s!"a renamed name typing checks: the report does not say {needle}: {emitted}"
+  | _ => fail "a renamed name typing checks: expected one diagnostic"
   -- A block that repeats a name is refused for that, not for its order.
   match elaboratePipeline pipelineContext ": sum\n  (forall ρ; ρ a:Int^many b:Int^many c:Int^many -- ρ r:Int^many)\n  locals { x a x } { x a x prim + prim + };" agentConfig with
   | .failure (envelope :: _) =>
