@@ -535,8 +535,7 @@ private partial def itemsAfter (span : Span) : List Item → Option (List Item)
 /-- For an operation handed fewer values than it takes (`CallAccount.missing`),
 the edit that moves the values written just after it to before it, when
 there are exactly as many of those as it is missing and each is for the
-input it would fill: a local of that input's name, or a literal (of its type,
-or the check below refuses the edit).
+input it would fill: a local of that input's name, or a literal of its type.
 `0 0 sum-helper xs` becomes `0 0 xs sum-helper` when `sum-helper`'s last
 input is `xs`. A primitive's inputs have no names, so for a primitive which
 value is missing is not certain, and there is no edit. The edit is applied
@@ -555,10 +554,15 @@ private def shortEdit (config : PipelineConfig) (source : String) (word : WordDe
     if primitive then ("", input)
     else (((input.splitOn ":").head?).getD "", ":".intercalate ((input.splitOn ":").drop 1))
   let spans ← (moved.zip inputs).mapM fun
-    -- A literal of another type than its input's is refused at the
-    -- operation itself when the edit is checked below, which drops the edit,
-    -- so the type needs no test here.
-    | (.literal _ at_, _) => some at_
+    -- The recheck below does not always reach the type checker: when
+    -- erasure fails later in the edited word, typing never runs, so a literal
+    -- of another type would pass it. Its type is compared here.
+    | (.literal literal at_, (_, type)) =>
+        let literalType := match literal.value with
+          | .integer _ => "Int"
+          | .boolean _ => "Bool"
+          | _ => ""
+        if literalType == type then some at_ else none
     | (.word name at_, (input, _)) => if account.locals.contains name && name == input then some at_ else none
     | _ => none
   let last ← spans.getLast?

@@ -976,9 +976,15 @@ private def runCallAccountTests : IO Unit := do
   let _ ← callReport "a primitive's missing value" "firth.type.stack-underflow" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ largest:Int^many)\n  locals { xs } {\n    xs prim seq-int.at 1 0 xs prim seq-int.len max-helper\n  };\n\n: max-helper\n  (forall ρ; ρ xs:Seq Int^many i:Int^many max:Int^many -- ρ result:Int^many)\n  locals { xs i max } {\n    [ i xs prim seq-int.len prim = ] [ max ] [\n      xs i prim seq-int.at max [ prim < ] [ max ] [ xs i prim seq-int.at ] if\n      i 1 prim + xs max-helper\n    ] if\n  };\n"
     ["`prim seq-int.at` in `main` takes 2 values (the sequence (Seq Int) and the index (Int)), bottom to top, but only 1 value is on the stack before it: `xs` (Seq Int)."]
     ["in place of"]
-  -- Constructed: the value written after the call is of another type than
-  -- the input it would fill. Moved, `true` is refused at `g` itself, so the
-  -- checked edit is dropped.
+  -- Constructed: the values written after the call include one of another
+  -- type than the input it would fill: no edit. Here `true` would be
+  -- refused at `g` once moved, but a later `locals` block needs more values
+  -- than there are, so erasure stops the recheck before typing; only the
+  -- literal's own type check refuses the edit.
+  let _ ← callReport "a literal of another type, with a later erasure error" "firth.type.stack-underflow" ": g (forall ρ; ρ a:Int^many b:Int^many n:Int^many -- ρ r:Int^many) prim + prim + ;\n: f (forall ρ; ρ n:Int^many -- ρ r:Int^many) locals { n } { g 1 2 true locals { a b c } { a } } ;\n"
+    ["`g` in `f` takes 3 values"]
+    ["in place of"]
+  -- The same value, moved, is refused at `g` itself.
   let _ ← callReport "a literal of another type" "firth.type.stack-underflow" ": g (forall ρ; ρ a:Int^many b:Int^many n:Int^many -- ρ r:Int^many) prim + prim + ;\n: f (forall ρ; ρ n:Int^many -- ρ r:Int^many) locals { n } { 1 2 g true } ;\n"
     ["`g` in `f` takes 3 values"]
     ["in place of"]

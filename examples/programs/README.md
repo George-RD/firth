@@ -33,9 +33,9 @@ flag [ then-branch ] [ else-branch ] if
 
 A result that does not fit a signed 64-bit integer traps on the VM.
 
-`<=`, `>` and `>=` differ from `<` only at equal values, so check that case:
-`3 3 prim <=` and `3 3 prim >=` give `true`, `3 3 prim <` and `3 3 prim >`
-give `false`. `comparisons.firth` checks that a sequence never decreases,
+`<=` differs from `<`, and `>=` from `>`, only at equal values, so check
+that case: `3 3 prim <=` and `3 3 prim >=` give `true`, `3 3 prim <` and
+`3 3 prim >` give `false`. `comparisons.firth` checks that a sequence never decreases,
 counts the elements in a range, finds the largest element and clamps a value.
 
 `div` and `mod` satisfy `a = b*q + r` with `0 <= r < |b|`, as Lean's `Int./`
