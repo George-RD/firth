@@ -747,6 +747,27 @@ private def runCallAccountTests : IO Unit := do
   let _ ← callReport "two inputs of one name" "firth.type.branch-mismatch"
     ": h (forall ρ; ρ x:Int^many x:Int^many -- ρ r:Int^many) prim + ;\n: g\n  (forall ρ; ρ x:Int^many n:Int^many -- ρ r:Int^many)\n  locals { x n } { n 0 prim < [ x ] [ x 1 prim + h ] if };"
     ["exactly the values it takes, in this order: x:Int, x:Int"] ["in place of"]
+  -- Planted: the recheck of a branch edit stops at the first erasure
+  -- error, and here one follows the `if` (`locals { a b c }` handed one
+  -- value), so typing never runs on the edited word. An edit that writes a
+  -- local of the wrong type would pass the recheck: the edit compares the
+  -- types itself. `result` is an Int here and `g` takes a Seq Int, so no
+  -- edit; with a Seq Int `result` the edit is offered.
+  let _ ← callReport "a local of another type, with a later erasure error" "firth.type.branch-mismatch"
+    ": f\n  (forall ρ; ρ result:Int^many candidate:Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { result candidate n } {\n    candidate n prim <\n    [ candidate 1 prim + n g ]\n    [ prim seq-int.empty ]\n    if locals { a b c } { a }\n  };\n\n: g\n  (forall ρ; ρ result:Seq Int^many candidate:Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { result candidate n } { result };"
+    ["`g` needs 3 values (result:Seq Int, candidate:Int, n:Int)"] ["in place of"]
+  let _ ← callReport "a local of the input's type, with a later erasure error" "firth.type.branch-mismatch"
+    ": f\n  (forall ρ; ρ result:Seq Int^many candidate:Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { result candidate n } {\n    candidate n prim <\n    [ candidate 1 prim + n g ]\n    [ prim seq-int.empty ]\n    if locals { a b c } { a }\n  };\n\n: g\n  (forall ρ; ρ result:Seq Int^many candidate:Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { result candidate n } { result };"
+    ["write `result candidate 1 prim + n g` in place of `candidate 1 prim + n g` on line 5. With that edit, the next error in `f` is at line 7, column 17."] []
+  -- Planted: likewise for a new value left behind. `xs 1 prim +` is handed
+  -- no Int local, so its result is a new value of none: no edit binding it
+  -- to `xs`. With `n 1 prim +` it is a new `n`, and the edit is offered.
+  let _ ← callReport "a result of another type, with a later erasure error" "firth.type.branch-mismatch"
+    ": g\n  (forall ρ; ρ xs:Seq Int^many -- ρ r:Seq Int^many)\n  ;\n\n: f\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { xs n } { n 0 prim < [ xs ] [ xs 1 prim + xs g ] if locals { a b c } { a } };"
+    ["the result of `prim +` is left below the result of `g`"] ["bind it to the name", "in place of"]
+  let _ ← callReport "a new value of a local, with a later erasure error" "firth.type.branch-mismatch"
+    ": g\n  (forall ρ; ρ n:Int^many -- ρ r:Seq Int^many)\n  drop prim seq-int.empty;\n\n: f\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { xs n } { n 0 prim < [ xs ] [ n 1 prim + n g ] if locals { a b c } { a } };"
+    ["write `prim + locals { n } { n g }` in place of `prim + n g` on line 7. With that edit, the next error in `f` is at line 7, column 87."] []
   -- Planted: two results of an `if` merged by an outer `if`, one standing
   -- for `a` and one for `b`. The merged value stands for neither, so its
   -- place is told by types alone, not "by their names" as if from `a`.
