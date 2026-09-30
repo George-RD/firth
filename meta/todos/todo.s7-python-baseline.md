@@ -17,10 +17,14 @@ those tasks cannot tell the two languages apart.
 - A task set harder than the MVP tier (`todo.s7-harder-task-tier`), written
   before any trial, given in both languages with the same subject model.
 - Correct on the first attempt and correct within two attempts, per
-  language, with retained transcripts naming the model and date.
+  language, with retained transcripts naming the model and date. Each is
+  measured over several independent samples per task and language, with the
+  number and the comparison rule declared before any trial. One sample per
+  task does not discharge this (`eval/s7/README.md`, run 4 caveats).
 - A plain list of what Firth's checker gives that Python does not (checked
   types, stack effects, linear ownership, declared effects; a measured cost
-  per run and a proved cost bound only where a Lean proof exists), and for
+  per run by the runner, not the checker, and a proved cost bound only
+  where a Lean proof exists), and for
   each one whether the run showed it catching a real error.
 - S7 is judged as written: a materially higher Firth pass rate on
   equivalent tasks. Parity with Python plus guarantees is reported but is
