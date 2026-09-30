@@ -91,11 +91,16 @@ requires its own accepted decision and metatheory checks, not a silent patch.
 Added 30 September 2026 at the maintainer's request. This is planned work,
 not a status change: no goal above moves because of it.
 
-**Is Firth worth reaching for?** Every S7 run so far compares Firth with
-Firth. The claim that would matter is this: a model gets correct, bounded
-programs in Firth on the first or second try about as often as it does in
-Python, and Firth also proves things Python cannot. So the baseline gives a
-model the same tasks in both languages and measures correct on the first
+**Is Firth worth reaching for?** The only Python attempts so far are the
+20 MVP tasks in the run-4 table (`eval/s7/README.md`, "Passed (of 20)"):
+Sonnet and Haiku both got 20 of 20 in Python. Every other S7 run compares
+Firth with Firth. That Python result is a ceiling, not a usable baseline:
+it cannot show a difference in either direction. The S7 criterion stays as
+written: a materially higher pass rate in Firth on equivalent tasks. The
+weaker result, correct on the first or second try about as often as in
+Python while Firth also proves things Python cannot, is reported too, but it
+does not meet S7 and is not called a pass. So the baseline gives a model the
+same harder tasks in both languages and measures correct on the first
 attempt and correct within two. It then lists the guarantees Firth adds
 (proved types, stack effect, linearity, a cost bound, declared effects) and
 says whether the runs showed any of them catching a real error. The question
@@ -111,7 +116,8 @@ DeepSeek Flash) is an option only if it can be reached without new
 credentials.
 
 **Harder tasks first.** Sonnet scores 19 to 20 of 20 on the current MVP
-tasks, and Python scored 20 of 20 for both Sonnet and Haiku. Neither the
+tasks, and Python scored 20 of 20 for both Sonnet and Haiku (run-4 table,
+`eval/s7/README.md`). Neither the
 baseline nor a Sonnet-primary run can show a difference at that ceiling, so
 both need a harder task tier written before any trial
 (`todo.s7-harder-task-tier`).
