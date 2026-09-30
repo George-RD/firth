@@ -127,6 +127,15 @@ As run 13, with these changes:
   log, including for anything that names another session. It now also
   counts compactions per author, reported per arm as a descriptive
   covariate (secondary 5).
+  - A compaction also puts back context that an uncompacted author saw
+    only once: `AGENTS.md` and `CLAUDE.md` (the agent-files check covers
+    their blobs), the session's user and organisation details, its URL
+    and attribution lines, and the sub-agent system prompt (seen in the
+    smoke author's compaction at 06:08:35Z on 30 September). None of it is
+    task or sample data. Since mainly arm B compacts, this is reported with
+    the covariate, not as a void.
+  - In the smoke, one arm B author compacted with no other author running,
+    and the compaction carried no `task_status` line.
 - **Early look.** Taken once, when the first 10 arm B samples in the start
   order above all have final validity. If 6 or more are rule voids of any
   cause, authoring stops in every session. With blocking, an audit void
