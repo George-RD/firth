@@ -9,6 +9,7 @@ input/output shape and one visible example. Hidden tests stay here.
     harness.py score   --lang firth solutions.json|DIR > results.json
     harness.py repair  --lang firth solutions.json results.json > repair.md
     harness.py try     --lang firth --task ID program.firth [--stack JSON]
+    harness.py check   --lang firth answer.md
     harness.py report  runs/*/results-*.json
 
 A task passes only when every hidden test returns exactly the expected stack.
@@ -18,6 +19,11 @@ the Lean reference interpreter agreed.
 `try` is the author's diagnostics loop for the MVP tier: it checks and runs a
 program on the task's visible example, or on inputs the author chooses, and
 never on the hidden tests.
+
+`check` is the author's checker for a whole answer file (S7 run 12's arm B):
+it type-checks each task block with the Firth checker and shows its
+diagnostics as feedback shows them. It runs no program, so it reveals no
+example or expected result.
 """
 from __future__ import annotations
 
@@ -101,24 +107,41 @@ def shape(task: Task, lang: str) -> str:
 
 
 TRY = "python3 eval/s7/harness.py try --lang {lang} --task <task id> <file>"
+# The command an author with the checker runs on its own answer file: this
+# checkout's harness by absolute path, since the author may start elsewhere.
+CHECK = f"python3 {Path(__file__).resolve()} check --lang firth <your answer file>"
 
 
 def prompt(tasks: list[Task], lang: str, extra_docs: tuple[str, ...] = (),
-           mvp: bool = False, rounds: int = 0) -> str:
+           mvp: bool = False, rounds: int = 0, check_tool: bool = False) -> str:
     """The author's prompt. With `mvp`, the author may use the `try` loop and
     nothing else; without it, the author answers from the prompt alone. With
     `rounds`, an author that cannot run `try` (a sub-agent, which the sandbox
     does not hold) gets the MVP documents instead, answers without tools, and is
     shown up to `rounds` times how its answers did on the visible examples
-    (`repair`), which is what `try` would have shown it."""
+    (`repair`), which is what `try` would have shown it. With `check_tool` as
+    well, the author may also run `check` on its own answer file (S7 run 12,
+    arm B), which checks every block and runs none."""
+    if check_tool and (lang != "firth" or not rounds):
+        raise ValueError("the check tool is for Firth answers with feedback rounds")
     if rounds and any(t.id not in MVP_IDS for t in tasks):
         # The rounds prompt carries the MVP documents and step budget, which
         # scoring grants only to MVP tasks (Codex's finding).
         raise ValueError("feedback rounds are for the MVP tier only")
     parts = []
-    loop = (
+    tools = (
+        "Do not use any tool except reading this prompt file, writing, reading and editing "
+        "your answer file, and running the Firth checker on your answer file with exactly "
+        f"this command:\n\n    {CHECK}\n\n"
+        "It checks every task block in the file with Firth's type checker and shows, for "
+        "each task, `ok` or the checker's diagnostics. It does not run your programs. Run "
+        "it as often as you like before you hand in each answer. Run no other command, and "
+        "do not use the internet. "
+        if check_tool else
         "Do not use any tool except reading this prompt file and writing your answer "
-        "file, and do not use the internet. After you answer, you will be shown how each "
+        "file, and do not use the internet. ")
+    loop = (
+        tools + "After you answer, you will be shown how each "
         "answer did on its task's example: the result, or the diagnostics if it failed. "
         f"You may then fix your answers; there are at most {rounds} such rounds.\n"
         if rounds else
@@ -639,6 +662,39 @@ def _location(v) -> str | None:
     return None
 
 
+def check_one(source: str) -> str:
+    """The checker's verdict on one program: `ok`, or its diagnostics as the
+    feedback shows them (`compact`). Nothing is run."""
+    with tempfile.NamedTemporaryFile("w", suffix=".firth", delete=False) as f:
+        f.write(source)
+        path = f.name
+    try:
+        p = subprocess.run([sys.executable, str(RUNNER), "check", path],
+                           cwd=ROOT, capture_output=True, text=True, timeout=TIMEOUT)
+    except subprocess.TimeoutExpired:
+        return "the checker timed out"
+    finally:
+        Path(path).unlink()
+    if p.returncode == 0:
+        return "ok"
+    toolchain_failure(p.stderr)
+    return compact(p.stderr.strip() or p.stdout.strip())
+
+
+def check_answer(text: str, jobs: int = 4) -> str:
+    """Check every task block of an answer file (`extract`), in file order."""
+    sols = extract(text)
+    if not sols:
+        return ("No task blocks found. Each answer is `### task: <task id>` on its own line, "
+                "then a fenced block holding the program.")
+    sources = list(sols.values())
+    # The first block alone, so a cold build is not raced by parallel checks.
+    first = check_one(sources[0])
+    with ThreadPoolExecutor(jobs) as pool:
+        verdicts = [first] + list(pool.map(check_one, sources[1:]))
+    return "\n\n".join(f"## {tid}\n{v}" for tid, v in zip(sols, verdicts))
+
+
 def repair(solutions: dict[str, str], results: dict, lang: str, tasks: list[Task]) -> str:
     """Second attempt: show only the visible example's outcome, never hidden tests."""
     wanted = {t.id for t in tasks}
@@ -718,6 +774,8 @@ def main() -> int:
     p.add_argument("--rounds", type=int, default=0,
                    help="for an author without `try`: answer without tools, then this many rounds "
                         "of feedback on the visible examples")
+    p.add_argument("--check-tool", action="store_true",
+                   help="with --rounds: the author may also run `check` on its own answer file")
     e = sub.add_parser("extract"); e.add_argument("--lang"); e.add_argument("answer", type=Path)
     e.add_argument("--workspace", type=Path, help="the author's workspace, when the answer is in it")
     s = sub.add_parser("score"); s.add_argument("--lang", required=True, choices=["firth", "python"])
@@ -736,13 +794,15 @@ def main() -> int:
     tr.add_argument("--stack", help="JSON array of inputs, bottom of the stack first")
     tr.add_argument("--workspace", type=Path, default=None,
                     help="the directory the program must be in (default: the current directory)")
+    ch = sub.add_parser("check"); ch.add_argument("--lang", required=True, choices=["firth"])
+    ch.add_argument("answer", type=Path)
     rep = sub.add_parser("report"); rep.add_argument("results", type=Path, nargs="+")
     a = cli.parse_args()
     if a.cmd == "prompt":
         if a.rounds and a.tier != "mvp":
             raise SystemExit("--rounds is for --tier mvp only")
         print(prompt(select(a.tier), a.lang, tuple(a.extra_doc), mvp=a.tier == "mvp" and not a.rounds,
-                     rounds=a.rounds).rstrip("\n"))
+                     rounds=a.rounds, check_tool=a.check_tool).rstrip("\n"))
     elif a.cmd == "extract":
         print(json.dumps(extract(read_regular(a.answer, a.workspace or plain_parent(a.answer))), indent=2))
     elif a.cmd == "score":
@@ -772,6 +832,18 @@ def main() -> int:
         except (OSError, ValueError) as e:
             raise SystemExit(f"try: {a.program} is not a plain file in the workspace ({e})")
         print(try_run(source, a.lang, BY_ID[a.task], stack, sandboxed=a.lang == "python"))
+    elif a.cmd == "check":
+        # A plain file in its own directory, as `extract` reads it, so a link
+        # cannot make the checker echo another file.
+        try:
+            text = read_regular(a.answer, plain_parent(a.answer))
+        except (OSError, ValueError) as e:
+            raise SystemExit(f"check: {a.answer} is not a plain file ({e})")
+        try:
+            print(check_answer(text))
+        except ToolchainError as e:
+            # Not a diagnostic about the answer: the run's driver stops on it.
+            raise SystemExit(f"check: the toolchain did not build ({e}); this is not about your answer")
     elif a.cmd == "report":
         print(report(a.results))
     return 0

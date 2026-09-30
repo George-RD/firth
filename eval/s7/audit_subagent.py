@@ -12,6 +12,16 @@ assistant messages. Allowed, and nothing else:
   the file that was scored (its SHA-256 is compared with the kept copy);
 - the hand-back at the end.
 
+With `--check-cmd HARNESS` (S7 run 12's arm B, whose prompt lets the author
+run the checker on its own answer file), these are allowed as well:
+
+- Bash running exactly `python3 HARNESS check --lang firth <dir>/answer-<n>.md`
+  on one of the author's own answer files, and nothing else: no other
+  command, path, option or shell syntax;
+- Read, Write and Edit of the author's own `answer-<n>.md`, as often as it
+  likes. Its writes and edits are replayed in order, and the file they leave
+  must be the kept copy that was scored.
+
 Each kept `solutions-<n>.json`, which is what `score` read, must also be the
 previous round's solutions updated with the tasks `extract` finds in
 `answer-<n>.md`, so a merge between rounds cannot change what was scored.
@@ -25,7 +35,8 @@ prompt --rounds`): `repair-1` to `repair-<rounds>` and `answer-1` to
 `answer-<rounds + 1>`. A read, write or kept file beyond that is flagged, so a
 run cannot score more feedback than it reports (Codex, on #147).
 
-    audit_subagent.py LOG.jsonl --prompt P --dir D --rounds R --lang L [--kept K] > transcript.json
+    audit_subagent.py LOG.jsonl --prompt P --dir D --rounds R --lang L [--kept K]
+        [--check-cmd HARNESS] > transcript.json
 
 `--dir` is where the author wrote (as its log records it); `--kept` is where
 the answers are kept now, when they were moved. Exits 1 if any call is flagged.
@@ -44,10 +55,14 @@ from harness import extract, repair, select  # noqa: E402
 
 
 def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: int,
-          lang: str) -> tuple[dict, list[str]]:
+          lang: str, check_cmd: Path | None = None) -> tuple[dict, list[str]]:
     reads = {str(prompt)}
     answer = re.compile(re.escape(str(run_dir)) + r"/answer-([1-9][0-9]*)\.md")
     repair = re.compile(re.escape(str(run_dir)) + r"/repair-([1-9][0-9]*)\.md")
+    checking = (re.compile(r"python3 " + re.escape(str(check_cmd)) + r" check --lang firth "
+                           + re.escape(str(run_dir)) + r"/answer-([1-9][0-9]*)\.md")
+                if check_cmd else None)
+    files: dict[str, str | None] = {}  # arm B: each answer file as its writes and edits leave it
     calls, models, times, bad = [], set(), [], []
     for ev in events:
         msg = ev.get("message") or {}
@@ -67,7 +82,26 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
             path = str(inp.get("file_path", ""))
             rec = {"at": ev.get("timestamp"), "tool": name}
             r, w = repair.fullmatch(path), answer.fullmatch(path)
-            if name == "Read" and (path in reads or (r and int(r[1]) <= rounds)):
+            own = bool(w and int(w[1]) <= rounds + 1)
+            if checking and name == "Bash":
+                c = checking.fullmatch(str(inp.get("command", "")))
+                if c and int(c[1]) <= rounds + 1 and set(inp) <= {"command", "description", "timeout"}:
+                    rec["check"] = f"answer-{c[1]}.md"
+                else:
+                    rec["input"] = inp
+                    bad.append(f"{name}: {json.dumps(inp)[:200]}")
+            elif checking and own and name in ("Read", "Write", "Edit"):
+                rec["path"] = Path(path).name
+                if name == "Read":
+                    rec.update({k: inp[k] for k in ("offset", "limit") if k in inp})
+                elif name == "Write":
+                    files[path] = str(inp.get("content", ""))
+                    rec.update(content_chars=len(files[path]),
+                               content_sha256=hashlib.sha256(files[path].encode()).hexdigest())
+                else:
+                    files[path] = replay_edit(files.get(path), inp)
+                    rec["edit_chars"] = len(str(inp.get("new_string", "")))
+            elif name == "Read" and (path in reads or (r and int(r[1]) <= rounds)):
                 rec["path"] = Path(path).name
                 # Which part of the file the read asked for, so the log shows
                 # whether the author read all of it (reviewer, on #169).
@@ -87,15 +121,34 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
                 rec["input"] = inp
                 bad.append(f"{name}: {json.dumps(inp)[:200]}")
             calls.append(rec)
+    for path, text in sorted(files.items()):
+        copy = kept / Path(path).name
+        if text is None:
+            bad.append(f"{copy}: an edit of it could not be replayed")
+        elif not copy.is_file() or copy.read_text() != text:
+            bad.append(f"{copy}: not what the author's writes and edits left")
     bad += solutions_mismatch(kept)
     bad += repair_mismatch(kept, lang)
     bad += [f"{p}: beyond the {rounds} feedback round(s) the prompt allowed"
             for p in sorted(kept.iterdir()) if beyond(p.name, rounds)]
     log = {"note": "Trimmed log of the author sub-agent: every tool call it made, with written "
                    "content reduced to a hash. The full answers are the answer-*.md files next to this one.",
+           "check_calls": sum("check" in c for c in calls),
            "models": sorted(models), "started": min(times, default=None),
            "finished": max(times, default=None), "tool_calls": calls, "flagged": bad}
     return log, bad
+
+
+def replay_edit(text: str | None, inp: dict) -> str | None:
+    """`text` after an Edit call, or None when it cannot be replayed: the file
+    was not written first, or the old text is not in it exactly as the tool
+    requires (once, unless every occurrence is replaced)."""
+    old, new = str(inp.get("old_string", "")), str(inp.get("new_string", ""))
+    if text is None or not old or old not in text:
+        return None
+    if inp.get("replace_all"):
+        return text.replace(old, new)
+    return text.replace(old, new, 1) if text.count(old) == 1 else None
 
 
 def beyond(name: str, rounds: int) -> bool:
@@ -160,11 +213,13 @@ def main() -> int:
     cli.add_argument("--dir", type=Path, required=True)
     cli.add_argument("--kept", type=Path)
     cli.add_argument("--rounds", type=int, required=True, help="the feedback rounds the prompt allowed")
+    cli.add_argument("--check-cmd", type=Path,
+                     help="arm B of S7 run 12: the harness whose `check` the author may run")
     cli.add_argument("--lang", required=True, choices=["firth", "python"],
                      help="the language the author wrote, which decides how its feedback is rebuilt")
     a = cli.parse_args()
     events = [json.loads(l) for l in a.log.read_text().splitlines() if l.strip()]
-    log, bad = audit(events, a.prompt, a.dir, a.kept or a.dir, a.rounds, a.lang)
+    log, bad = audit(events, a.prompt, a.dir, a.kept or a.dir, a.rounds, a.lang, a.check_cmd)
     print(json.dumps(log, indent=2))
     for b in bad:
         print("FLAGGED", b, file=sys.stderr)

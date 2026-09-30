@@ -1878,6 +1878,14 @@ causes named here are inferred from the outcome.
     text can correctly remain elsewhere in the task.
   - This is a mechanical reading: a word rewritten some other way counts
     as not applied.
+  - The reading is close but not exact. The reviewer applied each shown
+    edit at the occurrence nearest the error's line and column, and
+    checked the next answer there. The count rule credits 3 edits made
+    elsewhere and misses 10 made at that spot (all B9, round 1), so the
+    stricter figure is about 148 of 170.
+  - Only the first edit in a task's feedback section is judged. A section
+    with an error in two words, each with an edit, is judged on the
+    first.
   - A failing input mismatch was rewritten into the same family 28 to
     29% of the time (`rank.py` section 5).
 
