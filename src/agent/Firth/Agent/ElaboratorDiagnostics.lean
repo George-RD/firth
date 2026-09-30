@@ -487,7 +487,8 @@ private def operationRoles (operation : String) : Option (List String) :=
 /-- The message and hint for a word or primitive handed fewer values than it
 takes, as the body is written (`CallAccount.missing`): what it takes, the
 values it gets by source, and, when the pipeline found and checked one, the
-edit that moves the values written just after it to before it. -/
+edit that moves the values written just after it to before it, or that
+writes the locals named like the inputs missing. -/
 private def shortExplanation (inWord : String) (word : Option String)
     (account : Firth.Elaborator.CallAccount) : String × String :=
   let count := account.present.length + account.missing
@@ -513,6 +514,15 @@ private def shortExplanation (inWord : String) (word : Option String)
           | none, some word => s!" With that edit `{word}` checks."
           | some (line, column), some word => s!" With that edit, the next error in `{word}` is at line {line}, column {column}."
           | _, none => ""
+        if !edit.pushedLocals.isEmpty then
+          -- Checked by the pipeline (`unpushedEdit`): each input missing
+          -- is named like a local of its type, and the values present fill
+          -- the others in one way alone.
+          let missing := account.inputs.filter fun input =>
+            edit.pushedLocals.contains (((input.splitOn ":").head?).getD "")
+          let one := edit.pushedLocals.length == 1
+          s!"Push {them} ({", ".intercalate missing}) by writing the {if one then "local" else "locals"} of {if one then "that name" else "those names"}, {listing (edit.pushedLocals.map (s!"`{·}`"))}: write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}.{outcome}"
+        else
         s!"The values {account.operation} takes are pushed before it, and {listing ((edit.written.splitOn " ").drop ((edit.written.splitOn " ").length - account.missing) |>.map (s!"`{·}`"))} {if account.missing == 1 then "is" else "are"} written after it. Write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}.{outcome}"
     | none =>
         if account.locals.isEmpty then

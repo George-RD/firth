@@ -26,11 +26,16 @@ the checker wrote, not the author:
   refused a `dip` or `compose` erasure wrote: on runs 10 and 11, 59 of the
   62 `dip` reports and 5 of the 19 `compose` reports. Where the values
   written just after it are for its last inputs by name or type, an edit
-  moves them before it. Still open: 14 `compose` and 3 `dip` reports the
-  walk cannot follow, and an edit for a local that is not pushed at all
-  (`locals { xs ys } { 0 0 dot-helper }`, where the missing inputs are
-  named `xs` and `ys`): 92 of the reports name the locals in scope without
-  an edit.
+  moves them before it. Where each input missing is named like a local of
+  its type and the values present fill the others in one way alone, an
+  edit writes those locals in their places (`unpushedEdit`):
+  `locals { xs ys } { 0 0 dot-helper }` gets `xs ys 0 0 dot-helper`. On
+  runs 10 to 12 that states an edit on 53 of the 99 distinct reports that
+  named the locals in scope without one. Still open: 14 `compose` and 3
+  `dip` reports the walk cannot follow, and the 46 such reports left: 10
+  on a primitive, whose inputs have no names, and 36 on a word, where the
+  values present do not fill the other inputs in order by type, or fill
+  them in more than one way, or an input missing is not a local.
 - A word or primitive handed values it does not take is reported with each
   value's source, and with an edit that reorders them where they were
   pushed one after another and their names and types say where each goes.

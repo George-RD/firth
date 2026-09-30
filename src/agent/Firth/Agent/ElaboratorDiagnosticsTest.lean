@@ -747,6 +747,40 @@ private def runCallAccountTests : IO Unit := do
   let _ ← callReport "two inputs of one name" "firth.type.branch-mismatch"
     ": h (forall ρ; ρ x:Int^many x:Int^many -- ρ r:Int^many) prim + ;\n: g\n  (forall ρ; ρ x:Int^many n:Int^many -- ρ r:Int^many)\n  locals { x n } { n 0 prim < [ x ] [ x 1 prim + h ] if };"
     ["exactly the values it takes, in this order: x:Int, x:Int"] ["in place of"]
+  -- Planted: the recheck of a branch edit stops at the first erasure
+  -- error, and here one follows the `if` (`locals { a b c }` handed one
+  -- value), so typing never runs on the edited word. An edit that writes a
+  -- local of the wrong type would pass the recheck: the edit compares the
+  -- types itself. `result` is an Int here and `g` takes a Seq Int, so no
+  -- edit; with a Seq Int `result` the edit is offered.
+  let _ ← callReport "a local of another type, with a later erasure error" "firth.type.branch-mismatch"
+    ": f\n  (forall ρ; ρ result:Int^many candidate:Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { result candidate n } {\n    candidate n prim <\n    [ candidate 1 prim + n g ]\n    [ prim seq-int.empty ]\n    if locals { a b c } { a }\n  };\n\n: g\n  (forall ρ; ρ result:Seq Int^many candidate:Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { result candidate n } { result };"
+    ["`g` needs 3 values (result:Seq Int, candidate:Int, n:Int)"] ["in place of"]
+  let _ ← callReport "a local of the input's type, with a later erasure error" "firth.type.branch-mismatch"
+    ": f\n  (forall ρ; ρ result:Seq Int^many candidate:Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { result candidate n } {\n    candidate n prim <\n    [ candidate 1 prim + n g ]\n    [ prim seq-int.empty ]\n    if locals { a b c } { a }\n  };\n\n: g\n  (forall ρ; ρ result:Seq Int^many candidate:Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { result candidate n } { result };"
+    ["write `result candidate 1 prim + n g` in place of `candidate 1 prim + n g` on line 5. With that edit, the next error in `f` is at line 7, column 17."] []
+  -- Planted: likewise for a value the branch pushed, placed by the local
+  -- it stands for. `result 1 prim +` stands for `result`, so by names it
+  -- would go to `g`'s input `result`, but it is an Int where `g` takes a
+  -- Seq Int: no edit. (Only an edit that reorders relies on this check: one
+  -- that keeps the order is shown only where the types fit, first or last.)
+  -- With a Seq Int `result`, `result 5 prim seq-int.push` fills it and the
+  -- edit is offered.
+  let _ ← callReport "a pushed value of another type, with a later erasure error" "firth.type.branch-mismatch"
+    ": f\n  (forall ρ; ρ result:Int^many candidate:Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { result candidate n } {\n    candidate n prim <\n    [ result 1 prim + n g ]\n    [ prim seq-int.empty ]\n    if locals { a b c } { a }\n  };\n\n: g\n  (forall ρ; ρ n:Int^many result:Seq Int^many candidate:Int^many -- ρ r:Seq Int^many)\n  locals { n result candidate } { result };"
+    ["`g` needs 3 values (n:Int, result:Seq Int, candidate:Int)"] ["in place of"]
+  let _ ← callReport "a pushed value of the input's type, with a later erasure error" "firth.type.branch-mismatch"
+    ": f\n  (forall ρ; ρ result:Seq Int^many candidate:Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { result candidate n } {\n    candidate n prim <\n    [ result 5 prim seq-int.push n g ]\n    [ prim seq-int.empty ]\n    if locals { a b c } { a }\n  };\n\n: g\n  (forall ρ; ρ n:Int^many result:Seq Int^many candidate:Int^many -- ρ r:Seq Int^many)\n  locals { n result candidate } { result };"
+    ["write `n result 5 prim seq-int.push candidate g` in place of `result 5 prim seq-int.push n g` on line 5. With that edit, the next error in `f` is at line 7, column 17."] []
+  -- Planted: likewise for a new value left behind. `xs 1 prim +` is handed
+  -- no Int local, so its result is a new value of none: no edit binding it
+  -- to `xs`. With `n 1 prim +` it is a new `n`, and the edit is offered.
+  let _ ← callReport "a result of another type, with a later erasure error" "firth.type.branch-mismatch"
+    ": g\n  (forall ρ; ρ xs:Seq Int^many -- ρ r:Seq Int^many)\n  ;\n\n: f\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { xs n } { n 0 prim < [ xs ] [ xs 1 prim + xs g ] if locals { a b c } { a } };"
+    ["the result of `prim +` is left below the result of `g`"] ["bind it to the name", "in place of"]
+  let _ ← callReport "a new value of a local, with a later erasure error" "firth.type.branch-mismatch"
+    ": g\n  (forall ρ; ρ n:Int^many -- ρ r:Seq Int^many)\n  drop prim seq-int.empty;\n\n: f\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { xs n } { n 0 prim < [ xs ] [ n 1 prim + n g ] if locals { a b c } { a } };"
+    ["write `prim + locals { n } { n g }` in place of `prim + n g` on line 7. With that edit, the next error in `f` is at line 7, column 87."] []
   -- Planted: two results of an `if` merged by an outer `if`, one standing
   -- for `a` and one for `b`. The merged value stands for neither, so its
   -- place is told by types alone, not "by their names" as if from `a`.
@@ -963,12 +997,69 @@ private def runCallAccountTests : IO Unit := do
     ["`g` in `f` takes 3 values (a:Int, b:Int, xs:Int), bottom to top, but only 2 values are on the stack before it, bottom to top: `1` (Int) and `2` (Int).",
      "Write `xs g` in place of `g xs` on line 2. With that edit `f` checks."] ["dip"]
     "f" [.int 5] [.int 8]
+  -- A local not pushed at all: where each input missing is named like a
+  -- local of its type and the values present fill the others in one way
+  -- alone, the edit writes those locals in their places. The test applies
+  -- the edit and runs the result.
+  let unpushedCase (label source : String) (needles absent : List String) (word : String)
+      (inputs expected : List Firth.Interpreter.Literal) : IO Unit := do
+    let (hint, _) ← callReport label "firth.type.stack-underflow" source needles absent
+    match applyEditHint source (hint.replace ": write `" ": Write `") with
+    | some edited => expectRuns label edited word inputs expected
+    | none => fail s!"{label}: the hint's edit does not apply: {hint}"
+  -- seq-max (locals-guide arm b, haiku-firth-6, answer 2), verbatim: `xs`,
+  -- `loop-max`'s last input, is not pushed. The largest of [3, 9, 2] is 9.
+  unpushedCase "a local not pushed" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ largest:Int^many)\n  locals { xs } { xs 0 prim seq-int.at locals { first } { first 1 xs prim seq-int.len loop-max } };\n\n: loop-max\n  (forall ρ; ρ max:Int^many i:Int^many len:Int^many xs:Seq Int^many -- ρ result:Int^many)\n  locals { max i len xs } { i len prim < [ xs i prim seq-int.at locals { val } { val max prim < [ max ] [ val ] if locals { new-max } { new-max i 1 prim + len xs loop-max } } ] [ max ] if };\n"
+    ["`loop-max` in `main` takes 4 values (max:Int, i:Int, len:Int, xs:Seq Int), bottom to top, but only 3 values are on the stack before it, bottom to top: `first` (Int), `1` (Int) and the result of `prim seq-int.len` (Int).",
+     "Push the missing value (xs:Seq Int) by writing the local of that name, `xs`: write `first 1 xs prim seq-int.len xs loop-max` in place of `first 1 xs prim seq-int.len loop-max` on line 3. With that edit `main` checks."]
+    ["The local here"]
+    "main" [.intSeq [3, 9, 2]] [.int 9]
   -- count-below (locals-guide arm b, haiku-firth-17, answer 2), verbatim:
-  -- `k` is not pushed at all, so nothing says where it goes: no edit.
-  let _ ← callReport "a local not pushed" "firth.type.stack-underflow" ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { xs k } { 0 xs 0 count-below-helper };\n\n: count-below-helper\n  (forall ρ; ρ count:Int^many xs:Seq Int^many i:Int^many k:Int^many -- ρ result:Int^many)\n  locals { count xs i k } {\n    i xs prim seq-int.len prim <\n    [ xs i prim seq-int.at k prim < [ count 1 prim + ] [ count ] if i 1 prim + xs k count-below-helper ]\n    [ count ]\n    if\n  };\n"
+  -- `k` goes last, after `0 xs 0` fill the first three inputs. The helper
+  -- has a mistake of its own, which the next error is.
+  let _ ← callReport "a local not pushed, last" "firth.type.stack-underflow" ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { xs k } { 0 xs 0 count-below-helper };\n\n: count-below-helper\n  (forall ρ; ρ count:Int^many xs:Seq Int^many i:Int^many k:Int^many -- ρ result:Int^many)\n  locals { count xs i k } {\n    i xs prim seq-int.len prim <\n    [ xs i prim seq-int.at k prim < [ count 1 prim + ] [ count ] if i 1 prim + xs k count-below-helper ]\n    [ count ]\n    if\n  };\n"
     ["`count-below-helper` in `main` takes 4 values (count:Int, xs:Seq Int, i:Int, k:Int), bottom to top, but only 3 values are on the stack before it, bottom to top: `0` (Int), `xs` (Seq Int) and `0` (Int).",
-     "Push the missing value before `count-below-helper`. The locals here, `xs` and `k`, are not values on the stack: writing a local's name pushes its value."]
-    ["dip", "in place of"]
+     "Push the missing value (k:Int) by writing the local of that name, `k`: write `0 xs 0 k count-below-helper` in place of `0 xs 0 count-below-helper` on line 3."]
+    ["dip"]
+  -- Constructed, after dot (locals-guide arm b, haiku-firth-22, answer 1):
+  -- the two sequences go first. [1, 2] and [3, 4] give 3 + 8.
+  unpushedCase "two locals not pushed, first" ": dot-helper\n  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many i:Int^many sum:Int^many -- ρ result:Int^many)\n  locals { xs ys i sum } {\n    i xs prim seq-int.len prim <\n    [ xs ys i 1 prim + xs i prim seq-int.at ys i prim seq-int.at prim * sum prim + dot-helper ]\n    [ sum ]\n    if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many -- ρ result:Int^many)\n  locals { xs ys } { 0 0 dot-helper };\n"
+    ["Push the 2 missing values (xs:Seq Int, ys:Seq Int) by writing the locals of those names, `xs` and `ys`: write `xs ys 0 0 dot-helper` in place of `0 0 dot-helper` on line 12. With that edit `main` checks."] []
+    "main" [.intSeq [1, 2], .intSeq [3, 4]] [.int 11]
+  -- A value that stands for a local goes to the input of that name, not
+  -- to another: `b` fills `b`, and `a` is written before it. 7 - 2.
+  unpushedCase "a value present named like an input" ": g (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) prim - ;\n: f (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) locals { a b } { b g } ;\n"
+    ["write `a b g` in place of `b g` on line 2. With that edit `f` checks."] []
+    "f" [.int 7, .int 2] [.int 5]
+  -- Planted: one Int present and three Int inputs, each a local: it could
+  -- fill any of them, so no edit.
+  let _ ← callReport "a place the types leave open" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ a:Int^many b:Int^many c:Int^many -- ρ r:Int^many) prim + prim + ;\n: f (forall ρ; ρ a:Int^many b:Int^many c:Int^many -- ρ r:Int^many) locals { a b c } { 1 g } ;\n"
+    ["`g` in `f` takes 3 values"] ["in place of"]
+  -- Types decide the place too. Both of `g`'s inputs are locals, but `m`
+  -- is a Bool, so the Int `5` fills `m` and `n` is written. 7 - 5.
+  unpushedCase "a local's type decides" ": g (forall ρ; ρ n:Int^many m:Int^many -- ρ r:Int^many) prim - ;\n: f (forall ρ; ρ n:Int^many m:Bool^many -- ρ r:Int^many) locals { n m } { 5 g } ;\n"
+    ["write `n 5 g` in place of `5 g` on line 2. With that edit `f` checks."] []
+    "f" [.int 7, .bool true] [.int 2]
+  -- Likewise a value's: `true` can only be `flag`, so `n` is written.
+  unpushedCase "a value's type decides" ": g (forall ρ; ρ n:Int^many flag:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many flag:Bool^many -- ρ r:Int^many) locals { n flag } { true g } ;\n"
+    ["write `n true g` in place of `true g` on line 2. With that edit `f` checks."] []
+    "f" [.int 4, .bool false] [.int 4]
+  -- Planted: 30 Int inputs, each a local, and 15 Int values present. The
+  -- values could fill any 15 of the inputs, C(30, 15) ways; listing each
+  -- (as the first version did) does not finish. Counting up to two ways
+  -- does, and says the place is open: no edit.
+  let many := (List.range 30).map (s!"v{·}")
+  let manyEffect := " ".intercalate (many.map (s!"{·}:Int^many"))
+  let manyValues := " ".intercalate ((List.range 15).map toString)
+  let _ ← callReport "a place open in very many ways" "firth.type.stack-underflow"
+    s!": g (forall ρ; ρ {manyEffect} -- ρ r:Int^many) {" ".intercalate (List.replicate 29 "prim +")} ;\n: f (forall ρ; ρ {manyEffect} -- ρ r:Int^many) locals \{ {" ".intercalate many} } \{ {manyValues} g } ;\n"
+    ["`g` in `f` takes 30 values"] ["in place of"]
+  -- Planted: a local of another type is not written for an input. `xs`
+  -- here is an Int and `g` takes a Seq Int: no edit.
+  let _ ← callReport "a local of another type" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many) drop prim seq-int.len ;\n: f (forall ρ; ρ xs:Int^many n:Int^many -- ρ r:Int^many) locals { xs n } { n g } ;\n"
+    ["`g` in `f` takes 2 values"] ["in place of"]
   -- Planted: seq-max (8ea4a1d, haiku-firth-14, answer 2),
   -- verbatim. The `1` after `prim seq-int.at` would check as its index,
   -- but a primitive's inputs have no names to say it is the one missing
@@ -993,10 +1084,14 @@ private def runCallAccountTests : IO Unit := do
     ["Write `3 g` in place of `g 3` on line 2. With that edit `f` checks."] []
     "f" [.int 9] [.int 6]
   -- Planted: sort (8ea4a1d, haiku-firth-14, answer 3), verbatim. `value`,
-  -- written after `insert-sorted`, is not its last input, `pos`: no edit.
+  -- written after `insert-sorted`, is not its last input, `pos`, so it is
+  -- not moved before it. `value` is written in its own input's place
+  -- instead, between the new `result` and the new `pos`, and the `value`
+  -- written after the call is the next error.
   let _ ← callReport "a value for another input" "firth.type.stack-underflow" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Seq Int^many)\n  locals { xs } { prim seq-int.empty 0 xs sort-insert-all };\n\n: sort-insert-all\n  (forall ρ; ρ result:Seq Int^many i:Int^many xs:Seq Int^many -- ρ result:Seq Int^many)\n  locals { result i xs } {\n    [ i xs prim seq-int.len prim = ] [ result ] [\n      xs i prim seq-int.at result 0 insert-sorted\n      result i 1 prim + xs sort-insert-all\n    ] if\n  };\n\n: insert-sorted\n  (forall ρ; ρ result:Seq Int^many value:Int^many pos:Int^many -- ρ result:Seq Int^many)\n  locals { result value pos } {\n    [ pos result prim seq-int.len prim = ] [ result value prim seq-int.push ] [\n      value result pos prim seq-int.at prim <\n      [ result pos value prim seq-int.set ] [ result ] if\n      pos 1 prim + insert-sorted value\n    ] if\n  };\n"
-    ["`insert-sorted` in `insert-sorted` takes 3 values (result:Seq Int, value:Int, pos:Int), bottom to top, but only 2 values are on the stack before it"]
-    ["in place of"]
+    ["`insert-sorted` in `insert-sorted` takes 3 values (result:Seq Int, value:Int, pos:Int), bottom to top, but only 2 values are on the stack before it",
+     "Push the missing value (value:Int) by writing the local of that name, `value`: write `value result pos prim seq-int.at prim < [ result pos value prim seq-int.set ] [ result ] if value pos 1 prim + insert-sorted` in place of `value result pos prim seq-int.at prim < [ result pos value prim seq-int.set ] [ result ] if pos 1 prim + insert-sorted` on line 18. With that edit, the next error in `insert-sorted` is at line 19, column 7."]
+    ["`value insert-sorted` in place of", "`value` is written after it"]
 
 private def stackTypes : Firth.Elaborator.StackEffect.AStack → List Firth.Elaborator.StackEffect.AType
   | .snoc rest type => stackTypes rest ++ [type]
@@ -1220,7 +1315,32 @@ private def runLocalsOrderTests : IO Unit := do
     -- An inner block binds `x` again, so "write `b` for `x`" would be read
     -- for both.
     ("name to rename bound again inside", "sub",
-      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x 1 prim + locals { x } { x } a prim - };")]
+      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x 1 prim + locals { x } { x } a prim - };"),
+    -- Planted: `x` holds the Int `a` and would be renamed to `b`, a Bool.
+    -- `locals { p q r }` is handed one value, an erasure error, so typing
+    -- never runs on the edited word and could not show `b 1 prim +` wrong:
+    -- the rename's type is compared instead.
+    ("a renamed name of another type, before a later erasure error", "f",
+      ": f\n  (forall ρ; ρ a:Int^many b:Bool^many -- ρ r:Int^many)\n  locals { x a } { x 1 prim + locals { p q r } { p } };")]
+  -- The same with `b` an Int: renaming `x` to `b` keeps its type, and the
+  -- edit is stated although typing does not run.
+  match elaboratePipeline pipelineContext ": f\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x 1 prim + locals { p q r } { p } };" agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      for needle in ["Write `locals { a b }` in `f`", "write `b` for `x`"] do
+        unless emitted.contains needle do
+          fail s!"a renamed name of its own type: the report does not say {needle}: {emitted}"
+  | _ => fail "a renamed name of its own type: expected one diagnostic"
+  -- A rename that changes the type, where typing does run: `x` is used as
+  -- a Bool and the edit gives it `b`, a Bool. The edited word is refused
+  -- only later, at `true prim +`, so the edit is stated.
+  match elaboratePipeline pipelineContext ": f\n  (forall ρ; ρ a:Int^many b:Bool^many -- ρ r:Int^many)\n  locals { x a } { x prim not drop a true prim + };" agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      for needle in ["Write `locals { a b }` in `f`", "write `b` for `x`"] do
+        unless emitted.contains needle do
+          fail s!"a renamed name typing checks: the report does not say {needle}: {emitted}"
+  | _ => fail "a renamed name typing checks: expected one diagnostic"
   -- A block that repeats a name is refused for that, not for its order.
   match elaboratePipeline pipelineContext ": sum\n  (forall ρ; ρ a:Int^many b:Int^many c:Int^many -- ρ r:Int^many)\n  locals { x a x } { x a x prim + prim + };" agentConfig with
   | .failure (envelope :: _) =>

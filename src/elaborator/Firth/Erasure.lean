@@ -177,6 +177,10 @@ structure CallEdit where
   after : Option (Nat × Nat) := none
   /-- The words whose declared effects checking the edit read. -/
   consulted : List String := []
+  /-- For an operation handed fewer values than it takes, the locals the
+  edit writes for the inputs missing, bottom to top; empty when the edit
+  moves values written after the operation instead. -/
+  pushedLocals : List String := []
   deriving Repr, BEq
 
 /-- The values an operation the checker refused was handed, named by the
@@ -200,10 +204,19 @@ structure CallAccount where
   present : List String := []
   /-- The locals in scope where it is written. -/
   locals : List String := []
+  /-- Their types, where the walk knows them. -/
+  localTypes : List (String × String) := []
   /-- The byte ranges of source that pushed each value, bottom to top, when
   each value was pushed by its own piece of source, one after another, just
   before the operation. -/
   pieces : Option (List (Nat × Nat)) := none
+  /-- When some values are missing: the byte ranges of source that pushed
+  the ones present, bottom to top, when each was pushed by its own piece of
+  source, one after another in that order, just before the operation. -/
+  presentPieces : Option (List (Nat × Nat)) := none
+  /-- When some values are missing: the local each value present stands
+  for, where it stands for one (`Account.source`). -/
+  presentSources : List (Option String) := []
   /-- An edit that pushes the values in the order the operation takes them,
   checked by the pipeline. -/
   edit : Option CallEdit := none

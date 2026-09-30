@@ -532,6 +532,28 @@ private partial def itemsAfter (span : Span) : List Item → Option (List Item)
       | some found => some found
       | none => itemsAfter span rest
 
+/-- A call edit applied to `source`, replacing bytes `start` to `stop` with
+`replacement`, in which the operation starts `operationAt` bytes in: kept
+only when `word` then checks, or is refused only later in the source than
+the operation, and saying which. -/
+private def checkCallEdit (config : PipelineConfig) (source : String) (word : WordDefinition)
+    (start stop : Nat) (replacement : String) (operationAt : Nat) : Option CallEdit := do
+  let edited := bytesText source 0 start ++ replacement ++ bytesText source stop source.utf8ByteSize
+  let file ← match parse edited with
+    | .success file => some file
+    | .failure _ => none
+  let (resolved, _) ← (resolveEach file.declarations (fun name => (config.erasureEnv.word name).isSome)).toOption
+  let editedWords := resolved.map (·.1)
+  let editedWord ← (resolved.find? fun (candidate, error) => candidate.name == word.name && error.isNone).map (·.1)
+  let operation := start + operationAt
+  let after ← match outcomeAlone config edited editedWords editedWord with
+    | none => some none
+    | some offset => if offset ≤ operation then none else some (some (lineColumn edited offset))
+  let written := collapseSpace (bytesText source start stop)
+  let (line, column) := editPlace source start stop written
+  pure { start, stop, line, column, written, replacement, after
+         consulted := consultedWords config editedWords editedWord }
+
 /-- For an operation handed fewer values than it takes (`CallAccount.missing`),
 the edit that moves the values written just after it to before it, when
 there are exactly as many of those as it is missing and each is for the
@@ -570,24 +592,85 @@ private def shortEdit (config : PipelineConfig) (source : String) (word : WordDe
   let stop := last.stop.offset
   let movedText := collapseSpace (bytesText source (← spans.head?).start.offset stop)
   let operationText := collapseSpace (bytesText source start account.span.stop.offset)
-  let replacement := movedText ++ " " ++ operationText
-  let edited := bytesText source 0 start ++ replacement ++ bytesText source stop source.utf8ByteSize
-  let file ← match parse edited with
-    | .success file => some file
-    | .failure _ => none
-  let (resolved, _) ← (resolveEach file.declarations (fun name => (config.erasureEnv.word name).isSome)).toOption
-  let editedWords := resolved.map (·.1)
-  let editedWord ← (resolved.find? fun (candidate, error) => candidate.name == word.name && error.isNone).map (·.1)
-  let operation := start + movedText.utf8ByteSize + 1
-  let after ← match outcomeAlone config edited editedWords editedWord with
-    | none => some none
-    | some offset => if offset ≤ operation then none else some (some (lineColumn edited offset))
-  let written := collapseSpace (bytesText source start stop)
-  let (line, column) := editPlace source start stop written
-  pure { start, stop, line, column, written, replacement, after
-         consulted := consultedWords config editedWords editedWord }
+  checkCallEdit config source word start stop (movedText ++ " " ++ operationText) (movedText.utf8ByteSize + 1)
 
-/-- An operation handed fewer values than it takes, with `shortEdit`: as
+/-- For a word handed fewer values than it takes, where no value written
+after it is for the inputs missing (`shortEdit`): the edit that writes, for
+each input missing, the local of its name and type, in that input's place
+among the values present. `seq 0 contains-loop` becomes
+`seq 0 val contains-loop` when `contains-loop` takes
+`seq:Seq Int idx:Int val:Int` and `val` is an Int local. Every value
+present must have a known type, and the values present must fill the other
+inputs, in order and with their types, in one way alone, where each input
+left is named like a local of its type. A value present that stands for a
+local named like another input is not for this one. The recheck below does
+not always reach the type checker (a later erasure error stops it first),
+so the types are compared here. A primitive's inputs have no names, so for
+a primitive there is no edit. -/
+private def unpushedEdit (config : PipelineConfig) (source : String) (word : WordDefinition)
+    (account : CallAccount) : Option CallEdit := do
+  if !config.checkEdits || account.missing == 0 || account.operation.startsWith "`prim " then none else
+  let present := account.present.length
+  if account.types.length != present || account.presentSources.length != present then none else
+  let types ← account.types.mapM id
+  let inputs := account.inputs.map fun input =>
+    (((input.splitOn ":").head?).getD "", ":".intercalate ((input.splitOn ":").drop 1))
+  let inputNames := inputs.map (·.1)
+  if inputs.length != present + account.missing || inputNames.eraseDups.length != inputNames.length then none else
+  -- The ways to fill the inputs, bottom to top: for each input the index
+  -- of the value present for it, or `none` where the local of its name is
+  -- written. Only whether there is exactly one matters, so each suffix of
+  -- the inputs keeps, for each count of values left, how many ways there
+  -- are (counted up to 2) and one of them: the work grows with inputs times
+  -- values, where listing every way would grow with their binomial.
+  let values := ((List.range present).zip (types.zip account.presentSources)).toArray
+  let fits (name type : String) (j : Nat) : Bool := match values[j]? with
+    | some (_, valueType, stands) =>
+        let forOther := match stands with
+          | some local_ => inputNames.contains local_ && local_ != name
+          | none => false
+        valueType == type && !forOther
+    | none => false
+  let last : Array (Nat × List (Option Nat)) :=
+    (Array.range (present + 1)).map fun j => if j == present then (1, []) else (0, [])
+  let table := inputs.foldr (init := last) fun (name, type) next =>
+    (Array.range (present + 1)).map fun j =>
+      let (filledCount, filledPlan) := if fits name type j
+        then (next.getD (j + 1) (0, [])) else (0, [])
+      let (writtenCount, writtenPlan) := if account.localTypes.lookup name == some type
+        then next.getD j (0, []) else (0, [])
+      (min 2 (filledCount + writtenCount),
+       if filledCount > 0 then some j :: filledPlan else none :: writtenPlan)
+  let plan ← match table[0]? with
+    | some (1, plan) => some plan
+    | _ => none
+  let names := (plan.zip inputNames).filterMap fun (value, name) => if value.isNone then some name else none
+  let operationStart := account.span.start.offset
+  let operationText := collapseSpace (bytesText source operationStart account.span.stop.offset)
+  -- With every local after the values present, they are written just
+  -- before the operation; otherwise each value present must have its own
+  -- piece of source, one after another up to the operation.
+  let namesLast := (plan.dropWhile (·.isSome)).all (·.isNone)
+  let (start, texts) ← match account.presentPieces with
+    | some ranges =>
+        let texts ← (plan.zip inputNames).mapM fun
+          | (some j, _) => ranges[j]?.map fun (a, b) => collapseSpace (bytesText source a b)
+          | (none, name) => some name
+        pure (((ranges.head?).map (·.1)).getD operationStart, texts)
+    | none => if namesLast then some (operationStart, names) else none
+  let prefix_ := " ".intercalate texts
+  let edit ← checkCallEdit config source word start account.span.stop.offset
+    (prefix_ ++ " " ++ operationText) (prefix_.utf8ByteSize + 1)
+  pure { edit with pushedLocals := names }
+
+/-- The edit for an operation handed fewer values than it takes: the values
+written after it moved before it (`shortEdit`), or else the locals of the
+inputs missing written (`unpushedEdit`). -/
+private def shortOrUnpushed (config : PipelineConfig) (source : String) (word : WordDefinition)
+    (account : CallAccount) : Option CallEdit :=
+  (shortEdit config source word account).orElse fun _ => unpushedEdit config source word account
+
+/-- An operation handed fewer values than it takes, with `shortOrUnpushed`: as
 the checker reports it once `withFirstMisfed` found it, or as erasure
 reports it, with the values it gets (`Account.ofShortCall`). It never
 changes what is accepted. -/
@@ -596,7 +679,7 @@ private def withShortCall (config : PipelineConfig) (source : String)
   | .stackEffect diagnostic =>
       match diagnostic.callAccount.filter (·.missing > 0) with
       | some account =>
-          .stackEffect { diagnostic with callAccount := some { account with edit := shortEdit config source word account } }
+          .stackEffect { diagnostic with callAccount := some { account with edit := shortOrUnpushed config source word account } }
       | none => .stackEffect diagnostic
   | .erasure name (.effectUnderflow operation span none) =>
       let account := Account.ofShortCall {
@@ -608,7 +691,7 @@ private def withShortCall (config : PipelineConfig) (source : String)
         source
         target := span.start.offset } span
       .erasure name (.effectUnderflow operation span
-        (account.map fun account => { account with edit := shortEdit config source word account }))
+        (account.map fun account => { account with edit := shortOrUnpushed config source word account }))
   | other => other
 
 /-- Whether a refused `if` at byte `ifStart` is shown checked when, after an
@@ -975,10 +1058,28 @@ private def checkLocalsEdits (config : PipelineConfig) (source : String) (words 
       | some word =>
           if !config.checkEdits then { block with checked := false } else
           let edited := applyLocalsBlock word block
+          -- A name the edit renames, one that claims no input by its label,
+          -- is given the input left over, whatever it held as written. When
+          -- that changes its type, only typing can show the body still
+          -- fits, so the edit is not stated when an erasure error in the
+          -- edited word keeps typing from running. A name the stack effect
+          -- declares holds the input of that name, which is the edit's point.
+          let inputs := word.effect.input.filterMap fun
+            | .value _ type _ => some type.name
+            | .row _ _ => none
+          let first := inputs.length - block.block.length
+          let editedType (name : String) : Option String :=
+            let binder := (block.renames.lookup name).getD name
+            (block.block.idxOf? binder).bind fun j => inputs[first + j]?
+          let typesKept := block.pairs.all fun (name, _, type) =>
+            (block.renames.lookup name).isNone || editedType name == some type
+          let typed := match firstErrorAlone config words edited with
+            | some (.erasure _ _) => false
+            | _ => true
           let checked := match outcomeAlone config source words edited,
               outcomeAlone config source words word with
             | none, _ => true
-            | some edited, some written => edited ≥ written
+            | some edited, some written => (typesKept || typed) && edited ≥ written
             | some _, none => false
           { block with
             checked := checked && !block.rebound
