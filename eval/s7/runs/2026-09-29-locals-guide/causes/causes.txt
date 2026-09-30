@@ -1,0 +1,250 @@
+
+== First answers: 790 tasks, 87 passed, 703 failed
+
+First diagnostic shown, by family
+   216  input-mismatch  (31%)
+   182  branch-mismatch  (26%)
+   165  syntax  (23%)
+    51  locals  (7%)
+    43  unknown-name  (6%)
+    36  wrong-result  (5%)
+     6  declared-effect  (1%)
+     4  runtime-trap  (1%)
+
+First diagnostic shown, by code (checker failures)
+   182  firth.type.branch-mismatch
+    59  firth.type.primitive-input-mismatch
+    58  firth.type.word-input-mismatch
+    57  firth.type.stack-underflow
+    51  firth.name.locals-order
+    40  firth.syntax.invalid-item
+    37  firth.syntax.unexpected-token
+    36  firth.name.unresolved
+    25  firth.syntax.expected-name
+    23  firth.syntax.invalid-sequence-element
+    20  firth.syntax.parenthesis-in-body
+    17  firth.type.quotation-input-mismatch
+    14  firth.type.expected-bool
+    11  firth.type.quotation-compose-mismatch
+    10  firth.syntax.invalid-token
+     7  firth.name.unresolved-effect
+     6  firth.type.declared-effect-mismatch
+     6  firth.syntax.definition-ended-early
+     2  firth.syntax.invalid-name
+     2  firth.syntax.quote-in-name
+
+Independent errors per failing answer (5d09e25 checker, one per word)
+   567  1
+    86  2
+    42  0
+     8  3
+
+Failing answers whose independent errors are all in one family
+   182  branch-mismatch
+   165  syntax
+   156  input-mismatch
+    56  unknown-name
+    55  locals
+    44  two or more families
+    36  no checker error (wrong-result)
+     4  no checker error (runtime-trap)
+     3  declared-effect
+     2  no checker error (branch-mismatch)
+
+Failing answers with at least one independent error in each family
+   213  branch-mismatch
+   184  input-mismatch
+   165  syntax
+    70  unknown-name
+    65  locals
+    10  declared-effect
+
+Per task: failing answers, and the commonest first family
+  digits              40  input-mismatch 15, syntax 9, branch-mismatch 7
+  histogram           40  input-mismatch 17, syntax 10, branch-mismatch 5
+  keep-positive       39  input-mismatch 15, wrong-result 7, syntax 7
+  primes-up-to        39  syntax 13, branch-mismatch 11, input-mismatch 11
+  sort                39  branch-mismatch 12, syntax 10, input-mismatch 6
+  allocate-batch      39  syntax 17, branch-mismatch 9, input-mismatch 6
+  reverse             38  branch-mismatch 13, input-mismatch 12, syntax 6
+  count-distinct      38  branch-mismatch 17, input-mismatch 7, syntax 6
+  is-sorted           37  branch-mismatch 9, syntax 9, wrong-result 8
+  seq-max             36  input-mismatch 14, syntax 7, unknown-name 5
+  prefix-sums         36  input-mismatch 17, branch-mismatch 9, syntax 5
+  longest-run         36  branch-mismatch 17, syntax 10, input-mismatch 4
+  ledger              33  branch-mismatch 10, syntax 10, input-mismatch 8
+  dot                 32  input-mismatch 12, branch-mismatch 7, syntax 7
+  has-pair-sum        32  branch-mismatch 10, syntax 8, input-mismatch 6
+  merge-sorted        32  input-mismatch 10, branch-mismatch 9, syntax 9
+  seq-sum             30  input-mismatch 15, branch-mismatch 6, syntax 5
+  count-below         30  input-mismatch 11, branch-mismatch 7, syntax 7
+  all-true            29  input-mismatch 12, branch-mismatch 8, syntax 6
+  index-of            28  input-mismatch 11, branch-mismatch 6, syntax 4
+
+Per sample: passed, and the commonest first families
+  A2   passed  0  branch-mismatch 19, input-mismatch 1
+  A3   passed  0  branch-mismatch 19, unknown-name 1
+  A4   passed  0  input-mismatch 14, branch-mismatch 5, syntax 1
+  A5   passed  0  input-mismatch 10, branch-mismatch 5, unknown-name 3
+  A6   passed  6  input-mismatch 6, wrong-result 5, unknown-name 2
+  A7   passed  0  syntax 20
+  A8   passed  6  branch-mismatch 7, input-mismatch 4, wrong-result 2
+  A9   passed  0  input-mismatch 15, branch-mismatch 4, declared-effect 1
+  A10  passed  5  input-mismatch 7, branch-mismatch 4, unknown-name 3
+  A11  passed  0  locals 8, input-mismatch 6, branch-mismatch 6
+  A12  passed  0  input-mismatch 10, branch-mismatch 6, unknown-name 3
+  A13  passed  0  branch-mismatch 16, input-mismatch 2, wrong-result 1
+  A16  passed  3  input-mismatch 9, branch-mismatch 6, wrong-result 2
+  A17  passed  7  input-mismatch 5, wrong-result 4, branch-mismatch 4
+  A18  passed  7  input-mismatch 7, syntax 4, branch-mismatch 1
+  A19  passed  0  input-mismatch 9, branch-mismatch 7, syntax 3
+  A20  passed  5  branch-mismatch 7, wrong-result 3, input-mismatch 3
+  A21  passed  0  syntax 15, unknown-name 3, input-mismatch 2
+  A23  passed  0  input-mismatch 13, branch-mismatch 4, syntax 2
+  A24  passed  0  syntax 9, unknown-name 9, input-mismatch 2
+  B1   passed  0  input-mismatch 20
+  B2   passed  0  input-mismatch 15, branch-mismatch 3, syntax 2
+  B3   passed  5  branch-mismatch 6, input-mismatch 4, wrong-result 2
+  B4   passed  0  locals 19, branch-mismatch 1
+  B5   passed  4  syntax 15, wrong-result 1
+  B6   passed  0  input-mismatch 8, locals 7, syntax 3
+  B7   passed  7  wrong-result 5, branch-mismatch 3, unknown-name 2
+  B9   passed  0  input-mismatch 17, branch-mismatch 2, wrong-result 1
+  B10  passed  6  branch-mismatch 7, input-mismatch 3, wrong-result 2
+  B13  passed  0  branch-mismatch 12, syntax 4, input-mismatch 2
+  B14  passed 11  branch-mismatch 7, input-mismatch 1, syntax 1
+  B15  passed  0  syntax 10
+  B16  passed  4  syntax 15, branch-mismatch 1
+  B17  passed  0  locals 17, input-mismatch 2, syntax 1
+  B18  passed  0  syntax 20
+  B19  passed  0  input-mismatch 16, syntax 2, unknown-name 2
+  B21  passed  0  syntax 12, unknown-name 7, input-mismatch 1
+  B22  passed  0  branch-mismatch 15, unknown-name 2, input-mismatch 1
+  B24  passed 11  wrong-result 4, branch-mismatch 2, syntax 2
+  B25  passed  0  syntax 20
+
+== Final answers: 800 tasks, 331 passed, 469 failed
+
+First diagnostic shown, by family
+   138  input-mismatch  (29%)
+   137  branch-mismatch  (29%)
+    95  wrong-result  (20%)
+    59  syntax  (13%)
+    17  runtime-trap  (4%)
+    12  unknown-name  (3%)
+     9  declared-effect  (2%)
+     2  locals  (0%)
+
+First diagnostic shown, by code (checker failures)
+   137  firth.type.branch-mismatch
+    60  firth.type.primitive-input-mismatch
+    49  firth.type.word-input-mismatch
+    40  firth.syntax.unexpected-token
+    22  firth.type.stack-underflow
+    11  firth.name.unresolved
+     9  firth.type.declared-effect-mismatch
+     9  firth.syntax.invalid-item
+     9  firth.syntax.invalid-token
+     4  firth.type.expected-bool
+     2  firth.type.quotation-input-mismatch
+     1  firth.name.locals-order
+     1  firth.elaboration.untracked-local
+     1  firth.type.quotation-compose-mismatch
+     1  firth.syntax.expected-name
+     1  firth.name.unresolved-effect
+
+Independent errors per failing answer (5d09e25 checker, one per word)
+   335  1
+   113  0
+    19  2
+     2  3
+
+Failing answers whose independent errors are all in one family
+   138  branch-mismatch
+   125  input-mismatch
+    95  no checker error (wrong-result)
+    59  syntax
+    17  no checker error (runtime-trap)
+    12  two or more families
+     9  unknown-name
+     9  locals
+     4  declared-effect
+     1  no checker error (branch-mismatch)
+
+Failing answers with at least one independent error in each family
+   144  branch-mismatch
+   135  input-mismatch
+    59  syntax
+    13  unknown-name
+    12  locals
+     5  declared-effect
+
+Per task: failing answers, and the commonest first family
+  sort                40  branch-mismatch 20, input-mismatch 7, wrong-result 5
+  allocate-batch      40  branch-mismatch 13, wrong-result 8, declared-effect 6
+  primes-up-to        39  wrong-result 20, branch-mismatch 11, input-mismatch 5
+  longest-run         33  branch-mismatch 11, wrong-result 8, input-mismatch 6
+  histogram           32  input-mismatch 15, branch-mismatch 10, syntax 3
+  digits              31  wrong-result 10, input-mismatch 8, branch-mismatch 7
+  is-sorted           30  wrong-result 12, input-mismatch 6, branch-mismatch 6
+  count-distinct      28  branch-mismatch 12, input-mismatch 9, syntax 3
+  has-pair-sum        25  wrong-result 8, branch-mismatch 6, input-mismatch 5
+  keep-positive       24  wrong-result 9, input-mismatch 6, branch-mismatch 5
+  reverse             21  input-mismatch 8, syntax 4, wrong-result 3
+  ledger              18  input-mismatch 7, branch-mismatch 7, syntax 3
+  seq-max             18  input-mismatch 7, branch-mismatch 5, wrong-result 3
+  merge-sorted        16  branch-mismatch 7, input-mismatch 6, syntax 3
+  prefix-sums         16  input-mismatch 7, branch-mismatch 4, wrong-result 2
+  all-true            13  input-mismatch 6, branch-mismatch 4, syntax 2
+  count-below         12  input-mismatch 6, syntax 3, branch-mismatch 2
+  dot                 12  input-mismatch 8, syntax 3, branch-mismatch 1
+  index-of            11  input-mismatch 6, branch-mismatch 2, syntax 2
+  seq-sum             10  input-mismatch 6, syntax 3, branch-mismatch 1
+
+Per sample: passed, and the commonest first families
+  A2   passed 12  wrong-result 4, branch-mismatch 3, declared-effect 1
+  A3   passed  0  input-mismatch 17, branch-mismatch 2, unknown-name 1
+  A4   passed  8  input-mismatch 5, wrong-result 4, branch-mismatch 3
+  A5   passed  7  branch-mismatch 5, input-mismatch 5, wrong-result 3
+  A6   passed 15  wrong-result 5
+  A7   passed  7  wrong-result 6, branch-mismatch 5, unknown-name 2
+  A8   passed  9  input-mismatch 6, branch-mismatch 4, wrong-result 1
+  A9   passed  9  branch-mismatch 7, wrong-result 3, declared-effect 1
+  A10  passed 11  branch-mismatch 5, input-mismatch 2, wrong-result 1
+  A11  passed 12  branch-mismatch 3, input-mismatch 2, locals 1
+  A12  passed  9  wrong-result 6, branch-mismatch 3, input-mismatch 2
+  A13  passed  1  branch-mismatch 9, input-mismatch 7, runtime-trap 1
+  A16  passed 13  wrong-result 4, runtime-trap 1, input-mismatch 1
+  A17  passed 11  branch-mismatch 4, wrong-result 3, runtime-trap 1
+  A18  passed 15  input-mismatch 2, wrong-result 2, branch-mismatch 1
+  A19  passed  4  branch-mismatch 11, input-mismatch 3, syntax 2
+  A20  passed 10  branch-mismatch 6, declared-effect 2, unknown-name 1
+  A21  passed  0  syntax 20
+  A23  passed  1  input-mismatch 15, branch-mismatch 3, runtime-trap 1
+  A24  passed  0  branch-mismatch 18, wrong-result 1, unknown-name 1
+  B1   passed  9  input-mismatch 6, wrong-result 2, branch-mismatch 2
+  B2   passed 10  syntax 5, branch-mismatch 4, unknown-name 1
+  B3   passed 13  branch-mismatch 3, wrong-result 2, runtime-trap 2
+  B4   passed  7  input-mismatch 9, wrong-result 3, locals 1
+  B5   passed 17  input-mismatch 2, runtime-trap 1
+  B6   passed 11  wrong-result 4, input-mismatch 3, runtime-trap 1
+  B7   passed 13  branch-mismatch 3, wrong-result 2, input-mismatch 1
+  B9   passed  9  wrong-result 7, input-mismatch 3, runtime-trap 1
+  B10  passed 14  branch-mismatch 3, input-mismatch 1, declared-effect 1
+  B13  passed 10  branch-mismatch 6, input-mismatch 2, wrong-result 1
+  B14  passed 14  branch-mismatch 4, input-mismatch 1, wrong-result 1
+  B15  passed  4  syntax 9, wrong-result 5, branch-mismatch 1
+  B16  passed 15  wrong-result 3, branch-mismatch 1, runtime-trap 1
+  B17  passed  6  branch-mismatch 7, input-mismatch 3, wrong-result 3
+  B18  passed  7  wrong-result 8, branch-mismatch 2, input-mismatch 2
+  B19  passed  0  input-mismatch 9, branch-mismatch 5, wrong-result 4
+  B21  passed  0  syntax 20
+  B22  passed  1  input-mismatch 13, wrong-result 3, branch-mismatch 2
+  B24  passed 17  wrong-result 2, branch-mismatch 1
+  B25  passed  0  input-mismatch 15, unknown-name 3, syntax 2
+
+Feedback rounds: a failing task rewritten in the next round (1269; 27 failing tasks were not rewritten)
+   684  first error changed  (54%)
+   271  same first error, same word  (21%)
+   244  passed  (19%)
+    70  same first error, other word  (6%)

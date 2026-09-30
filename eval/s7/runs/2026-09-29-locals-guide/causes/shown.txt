@@ -1,0 +1,16 @@
+1. Failing final answers with an edit offered (pinned checker), by what the
+   feedback on that task showed in round 1 and round 2
+   A   23  pass after the edit  8  error, no edit / error, no edit
+   A    3  pass after the edit  0  error, no edit / edit
+   A    2  pass after the edit  0  edit / wrong value
+   A    2  pass after the edit  0  edit / edit
+   B   12  pass after the edit  3  error, no edit / error, no edit
+   B    4  pass after the edit  1  error, no edit / edit
+   B    3  pass after the edit  1  edit / edit
+   B    2  pass after the edit  2  error, no edit / wrong value
+   B    1  pass after the edit  0  wrong value / error, no edit
+   no edit shown in either round: 38 of 52, of which pass after the edit: 13
+
+2. Feedback task sections showing an edit, and whether the next answer applied it
+   A  shown  68 (in 14 samples)  applied  55
+   B  shown 102 (in 14 samples)  applied  86
