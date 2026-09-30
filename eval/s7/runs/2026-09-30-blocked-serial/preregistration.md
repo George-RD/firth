@@ -199,34 +199,90 @@ As run 13, with these changes:
 
 ### Runbook for each session
 
-1. **Setup.** Create the worktree `/home/user/firth-r14` at the pinned
-   commit (the path the prompts name). Build the toolchain there; a `check`
-   of a scratch file must print `ok`. Confirm the `s7-author` agent type is
-   available. Record `pinned.txt` as run 13 did, plus the session's name.
-2. **Preflight, before each author.** The check on a scratch file in the
-   authors' default shell, as run 13. And the hook: with STATE pointed at a
-   scratch sample, a planted off-list call must be denied and the check on
-   the scratch answer allowed (`author_hook.py` fed the JSON, and once
-   through a real `s7-author` at session start).
-3. **Nothing else runs.** From an author's start until its `final.md`,
-   the session runs nothing but that author: no other agent (a worker
-   included), no background shell and no monitor. Scoring, the audit and
-   the scans run in the foreground between rounds. A compaction lists the
-   session's running tasks, so any of these could reach a compacted
-   author, and only arm B compacts.
-4. **Queue.** The session's blocks in the order above. For each sample:
-   write STATE (`/home/user/r14-hook/state.json`, the path the agent file
-   names), start one `s7-author` (model `haiku`, description
-   `Run 14 author <session>-<arm><n>`), and send its two feedback rounds
-   from the arm's templates. Score each round, then run the audit and the
-   scans, as run 13's driver. Write `final.md` after the third answer. Start
-   the next sample only when this one has `final.md`.
-5. **Results.** Each sample's directory, the hook log, `state.md` and the
-   sample-to-author map go to `/mnt/project-files/s7-eval/run14/<session>/`
-   after each `final.md`. The run 14 driver copies them into this run
-   directory, checks them with `analyse.py`, and does the analysis.
-6. **Stop.** On the driver's word (early look, stop and review,
-   feasibility, or 40 counted per arm), finish the current sample's rounds and start no other.
+**Runner.** Each of the 5 sessions is a thread session run by Sonnet 5.5,
+the same model in all five. Its authors are Haiku, as in every run. The
+runner follows this runbook exactly and makes no judgment of its own: every
+choice is made by `session.py` in this directory, which prints what to do
+next. Void labels, departures, the early look and any `STOP:` line go to
+the driver (the S7 thread), which does the analysis.
+
+Commands name the runner script by its full path,
+`/home/user/firth-r14/eval/s7/runs/2026-09-30-blocked-serial/session.py`,
+written `session.py` below. `SESSION` is the session's name (`s1` to `s5`)
+and `PIN` the pinned commit, both given in the session's brief.
+
+1. **Setup.** Run each of these with the Bash tool, one at a time. The
+   build can take longer than one Bash call allows, so run the third with
+   `run_in_background: true` and wait for it to finish; no author is
+   running yet.
+   - `git -C /home/user/firth fetch origin main`
+   - `git -C /home/user/firth worktree add --detach /home/user/firth-r14 PIN`
+   - `python3 session.py setup SESSION --pin PIN`
+
+   `setup` checks the pin, that the main checkout's `AGENTS.md`,
+   `CLAUDE.md` and agent file are the pinned ones (authors see the main
+   checkout's), the prompts (`make_prompts.py --check`), and that the
+   check of a scratch answer prints `ok` in the authors' own shell
+   environment, which builds the toolchain. It writes the session's
+   `pinned.txt`.
+2. **Hook check.** `python3 session.py hookcheck SESSION` prints a test
+   author to start (an `s7-author` told to make one off-list call and the
+   allowed check). Start it as printed; when it hands back, run
+   `python3 session.py hookcheck SESSION <its agent id>`, which passes only
+   if the hook stopped the off-list call, with its mark in the result and
+   its denial in the hook log, and let the check run.
+3. **Nothing else runs.** From an author's start until its `final.md`, the
+   session runs nothing but that author: no other agent (a worker
+   included), no background shell and no monitor. `session.py` runs in the
+   foreground. A compaction lists the session's running tasks, so any of
+   these could reach a compacted author, and only arm B compacts.
+4. **The loop.** Repeat until `session.py` prints `DONE`, `STOPPED` or
+   `STOP:`:
+   - `python3 session.py next SESSION`. It runs the preflight (the scratch
+     check in the authors' shell, and the hook fed a planted off-list call
+     and the allowed check), writes STATE for the next sample in the order
+     above, and prints the Agent tool call to make: `subagent_type`
+     `s7-author`, `model` `haiku`, description `Run 14 author
+     <SESSION>-<arm><N>`, and the prompt text to paste unchanged.
+   - Make that call, then run `python3 session.py started SESSION <agent
+     id>` with the id the Agent tool returned.
+   - End the turn and wait for the author's hand-back. Do nothing about its
+     content.
+   - `python3 session.py round SESSION`. It scores the newest answer, runs
+     the audit (with the hook log, and for arm B the check command and run
+     14's forms), `seen_agents.py` and `context_seen.py` on the author's log
+     so far, and records every exit status in the sample's `checks.json`.
+     After answers 1 and 2 it prints the feedback to send with SendMessage
+     to the author, unchanged; after answer 3 it writes `final.md` and
+     copies the sample, the session's state and the hook log to
+     `/mnt/project-files/s7-eval/run14/SESSION/`.
+5. **Stops.** `session.py` prints `STOP:` on anything the runner must not
+   decide: a failed preflight or hook check, a toolchain or scoring
+   failure, a missing answer file, or an unreadable driver file. The runner
+   then sends the driver that line and does nothing else until the driver
+   answers. A `cross_sample` item from `context_seen.py` writes
+   `/mnt/project-files/s7-eval/run14/STOP` (stop and review), which every
+   session's `next` reads: the current sample finishes its rounds and no
+   session starts another. The driver writes the same file for the early
+   look, feasibility or 40 counted per arm. Extra blocks start only when the
+   driver lists them in `/mnt/project-files/s7-eval/run14/extra-blocks.txt`.
+6. **Numbering.** Block k (1 to 8) of session j is sample (k - 1) × 5 + j
+   in each arm, so an arm's samples 1 to 40 are its start order (block,
+   then session) and the sessions' results never share a directory. Extra
+   blocks carry the numbers the driver gives them, from 41.
+7. **Results.** The driver copies each session's samples from the shared
+   folder into this run directory, labels voids from each sample's
+   `checks.json`, the audit's trimmed log and the scans, and runs the
+   analysis. An audit flag does not stop a sample: as in run 13, it keeps
+   its slot and gets all its rounds, and the driver decides the label.
+
+`session.py --self-test` checks the order table against `Random(14)`, the
+numbering (each arm's samples 1 to 40, once each, in start order), the
+driver's extra-block lines (five malformed ones planted and refused) and
+that the texts it prints are run 13's templates with run 14's paths.
+`setup`, `hookcheck`, `next`, `started` and `round` run for the first time
+in the hook half of the smoke test, which goes through one sample of each
+arm with them before this file is final.
 
 ## Smoke test, before this file is final
 
@@ -247,7 +303,8 @@ kept):
   on both arms. Scores (smoke only, not a result): arm A 0, 7 and 9 of 20
   by `harness.py score` over its three answers (arm B: 14 on its third).
 - **Hook half (waits for the maintainer).** In a fresh session started
-  after the agent file exists: the `s7-author` agent type is available; its
+  after the agent file exists, run by Sonnet 5.5 as a runner would be and
+  following the runbook above with `session.py` (one sample of each arm): the `s7-author` agent type is available; its
   hook runs (the same documentation says a project sub-agent's frontmatter
   hooks run only once the folder's workspace trust is accepted); the hook
   denies a planted off-list call and lets an allowed one through; the

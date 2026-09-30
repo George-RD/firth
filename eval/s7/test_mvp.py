@@ -436,6 +436,12 @@ def author_hook_decides() -> None:
                          capture_output=True, text=True)
     check(cli.returncode == 0 and "self-test: ok" in cli.stdout,
           f"the author hook's self-test passes: {cli.stdout[-300:]}{cli.stderr[-300:]}")
+    # Run 14's per-session runner: the order table, the numbering across
+    # sessions, the driver's extra blocks (bad lines planted) and the texts sent.
+    run = HERE / "runs" / "2026-09-30-blocked-serial" / "session.py"
+    cli = subprocess.run([sys.executable, str(run), "--self-test"], capture_output=True, text=True)
+    check(cli.returncode == 0 and "self-test: ok" in cli.stdout,
+          f"run 14's session runner self-test passes: {cli.stdout[-300:]}{cli.stderr[-300:]}")
 
 
 def feedback_keeps_hints() -> None:
