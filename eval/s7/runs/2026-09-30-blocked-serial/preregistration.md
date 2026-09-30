@@ -290,6 +290,9 @@ and `PIN` the pinned commit, both given in the session's brief.
      `mkdir -p /tmp/r14-elan && curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/r14-elan/elan-init.sh && sh /tmp/r14-elan/elan-init.sh -y --default-toolchain none`,
      then `/root/.elan/bin/elan toolchain install leanprover/lean4:v4.30.0`,
      then `ln -s /root/.elan/bin/elan /root/.elan/bin/lake /root/.elan/bin/lean /usr/local/bin/`.
+   - `cd /home/user/firth-r14 && cargo --version`, which must print
+     `cargo 1.93.0`: the repository's `rust-toolchain.toml` pins Rust
+     1.93.0, and rustup installs it on first use in the worktree.
    - `python3 session.py setup SESSION --pin PIN`
 
    `setup` records the versions in the authors' shell (`lake --version`,

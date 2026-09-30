@@ -708,6 +708,13 @@ def self_test() -> None:
         with open(seen, "a") as f:
             f.write(row(at, "R14_SHARED=/y python3 /x/session.py next s2"))
         assert hook_registered(seen, "next", "s2", used.isoformat()) == at.isoformat()
+        # Of two new records (a `next` that stopped before its check left one),
+        # the latest is used, so the older cannot be kept for a later call.
+        assert hook_registered(seen, "next", "s2") == at.isoformat()
+        two = Path(tmp) / "two.jsonl"  # the later record first in the file
+        two.write_text(row(at, "python3 /x/session.py next s4")
+                       + row(at - timedelta(seconds=3), "python3 /x/session.py next s4"))
+        assert hook_registered(two, "next", "s4") == at.isoformat()
         # require_hook keeps the record it used, so the same call cannot pass twice.
         global SEEN, sdir
         saved, saved_sdir, SEEN = SEEN, sdir, seen
