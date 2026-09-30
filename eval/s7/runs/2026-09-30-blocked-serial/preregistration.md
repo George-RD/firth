@@ -60,9 +60,42 @@ outcomes and how they are read.
   itself uses, with run 14's forms. A call on the list runs as before. Any
   other call is denied with the same reason in both arms, which the author
   sees: "This call is not allowed in this evaluation, so it did not run.
-  Use only the tools, files and command your instructions name." Every
-  decision is logged with the call's `tool_use_id`. If the hook cannot read
-  its state or input, it denies (fails closed).
+  Use only the tools, files and command your instructions name." A denial
+  is exit code 2 with that reason on stderr, which becomes the stopped
+  call's result. Every decision is logged with the call's `tool_use_id`.
+- The hook fails closed on anything it can catch: a state or input it
+  cannot read, and an audit it cannot import (the import runs inside the
+  hook's `try`). It denies in the same way, with the same reason. A crash or
+  a timeout it cannot catch lets the call run: Claude Code's hooks
+  documentation (`code.claude.com/docs/en/hooks`, read 30 September) says
+  an exit code other than 0 or 2 is a non-blocking error, and a timed-out
+  `PreToolUse` command hook does not block the call. The audit then flags the call, which voids the
+  sample, and the void is reported under its own cause, "hook failure".
+  Such failures grow with the number of calls, so they would fall mostly
+  on arm B. The explicit timeout below is 30 seconds, and a decision takes
+  under a second (0.6 seconds measured, including Python's start).
+- **The agent file** is `.claude/agents/s7-author.md` in the pinned
+  worktree, exactly as follows. It has no `tools` line, so the author has
+  the tools a `general-purpose` author had in run 13. Its body replaces
+  that agent's system prompt in both arms alike and says nothing about the
+  tasks:
+
+  ```
+  ---
+  name: s7-author
+  description: An author in the S7 evaluation. Started only by the S7 eval driver.
+  model: haiku
+  hooks:
+    PreToolUse:
+      - matcher: "*"
+        hooks:
+          - type: command
+            command: python3 /home/user/firth-r14/eval/s7/author_hook.py --state /home/user/r14-hook/state.json
+            timeout: 30
+  ---
+  You are an author in a programming evaluation. Follow the instructions
+  you are given.
+  ```
 - The audit (`audit_subagent.py --hook-log`) keeps a stopped call in the
   trimmed log, marked `blocked`, and does not flag it. A call counts as
   stopped only when the hook log denied its id and the author's log shows
@@ -71,7 +104,9 @@ outcomes and how they are read.
   author's log does not show, a marked result the hook did not deny, and a
   call on the list that the hook stopped.
 - Planted in `author_hook.py --self-test` (18 calls in arm B, 5 in arm A,
-  a missing state file, unreadable input) and in `test_mvp.py` (each half
+  a missing state file, unreadable input, and, run as a process, a denial,
+  an allowed call and a copy of the hook beside an `audit_subagent.py`
+  that cannot be imported, which must exit 2 with the mark) and in `test_mvp.py` (each half
   of the stopped-call evidence alone, a stopped call on the list, run 14's
   `$)` form allowed while run 13's forms still flag it, and `"ok$x"`,
   `"$(id)"` and `"$HOME"` still flagged). Run 13's 20 raw logs re-audited
@@ -95,19 +130,24 @@ outcomes and how they are read.
   Each session is its own container, so no author sees another session's
   authors.
 - **Order.** Each session runs blocks of two samples, one per arm, in this
-  order (Python `random.Random(14)`, one choice of `AB` or `BA` per block,
-  sessions 1 to 5 in turn):
+  order. Each session has four `AB` blocks and four `BA` blocks, shuffled
+  with Python `random.Random(14)`, one `shuffle` per session, sessions 1 to
+  5 in turn, so each arm goes first in half of every session's blocks:
 
   | Session | Blocks 1 to 8 |
   |---|---|
-  | s1 | AB AB BA BA BA AB BA BA |
-  | s2 | BA BA BA AB BA AB BA BA |
-  | s3 | BA BA AB AB BA AB AB AB |
-  | s4 | AB BA AB AB BA AB BA BA |
-  | s5 | BA AB AB BA AB AB BA AB |
+  | s1 | AB AB AB BA BA BA BA AB |
+  | s2 | BA BA AB AB AB AB BA BA |
+  | s3 | BA BA AB AB AB AB BA BA |
+  | s4 | BA AB AB AB BA BA AB BA |
+  | s5 | AB AB BA BA BA BA AB AB |
 
-  Blocks 9 onwards, needed only to replace voids, continue the same stream.
-  A session starts a block beyond 8 only when the driver says so.
+  Blocks beyond 8 are needed only to replace voids, and a session starts
+  one only when the driver says so. The driver draws each one's order from
+  the same generator, continued after the five shuffles:
+  `choice(("AB", "BA"))`, one draw per extra block in the order the driver
+  assigns them, and records the draw in `driver/state.md` before the block
+  starts.
 - **Start order across sessions.** Samples are ordered by block, then
   session, then position in the block. The counted samples in an arm are
   its first 40 non-void ones in that order, and co-primary 2 takes the
@@ -143,6 +183,15 @@ As run 13, with these changes:
     B compacts, this is reported with the covariate, not as a void.
   - In the smoke, one arm B author compacted with no other author running,
     and the compaction carried no `task_status` line.
+- **Edit replay.** Only arm B can Edit, so a void because "an edit of it
+  could not be replayed" can fall only on arm B. It has not happened in
+  runs 12 and 13. It is reported with the voids by cause.
+- **Stop and review.** If `context_seen.py` finds a `cross_sample` item
+  in any sample's log, authoring stops in every session after the current
+  sample. Nothing starts again until the item's source is found and the
+  remedy is recorded as a departure. This reads void status only. It
+  catches run 13's mechanism the first time it comes back, not at the
+  early look.
 - **Early look.** Taken once, when the first 10 arm B samples in the start
   order above all have final validity. If 6 or more are rule voids of any
   cause, authoring stops in every session. With blocking, an audit void
@@ -159,18 +208,25 @@ As run 13, with these changes:
    scratch sample, a planted off-list call must be denied and the check on
    the scratch answer allowed (`author_hook.py` fed the JSON, and once
    through a real `s7-author` at session start).
-3. **Queue.** The session's blocks in the order above. For each sample:
-   write STATE, start one `s7-author` (model `haiku`, description
+3. **Nothing else runs.** From an author's start until its `final.md`,
+   the session runs nothing but that author: no other agent (a worker
+   included), no background shell and no monitor. Scoring, the audit and
+   the scans run in the foreground between rounds. A compaction lists the
+   session's running tasks, so any of these could reach a compacted
+   author, and only arm B compacts.
+4. **Queue.** The session's blocks in the order above. For each sample:
+   write STATE (`/home/user/r14-hook/state.json`, the path the agent file
+   names), start one `s7-author` (model `haiku`, description
    `Run 14 author <session>-<arm><n>`), and send its two feedback rounds
    from the arm's templates. Score each round, then run the audit and the
    scans, as run 13's driver. Write `final.md` after the third answer. Start
    the next sample only when this one has `final.md`.
-4. **Results.** Each sample's directory, the hook log, `state.md` and the
+5. **Results.** Each sample's directory, the hook log, `state.md` and the
    sample-to-author map go to `/mnt/project-files/s7-eval/run14/<session>/`
    after each `final.md`. The run 14 driver copies them into this run
    directory, checks them with `analyse.py`, and does the analysis.
-5. **Stop.** On the driver's word (early look, feasibility, or 40 counted
-   per arm), finish the current sample's rounds and start no other.
+6. **Stop.** On the driver's word (early look, stop and review,
+   feasibility, or 40 counted per arm), finish the current sample's rounds and start no other.
 
 ## Smoke test, before this file is final
 
@@ -191,9 +247,12 @@ kept):
   on both arms. Scores (smoke only, not a result): arm A 0, 7 and 9 of 20
   by `harness.py score` over its three answers (arm B: 14 on its third).
 - **Hook half (waits for the maintainer).** In a fresh session started
-  after the agent file exists: the `s7-author` agent type is available; the
-  hook denies a planted off-list call and lets an allowed one through; the
+  after the agent file exists: the `s7-author` agent type is available; its
+  hook runs (the same documentation says a project sub-agent's frontmatter
+  hooks run only once the folder's workspace trust is accepted); the hook
+  denies a planted off-list call and lets an allowed one through; the
   author's log shows the hook's mark in the stopped call's result, as
-  `hook_denials` expects; and the audit with `--hook-log` keeps the stopped
-  call unflagged. If the result's shape differs, `hook_denials` and its
+  `hook_denials` expects, both for a denial and for the fail-closed path
+  (a STATE file that cannot be read); and the audit with `--hook-log`
+  keeps the stopped calls unflagged. If the result's shape differs, `hook_denials` and its
   plants are changed here before this file merges.

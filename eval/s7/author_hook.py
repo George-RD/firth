@@ -20,22 +20,35 @@ output, so it runs as it would have. Any other call is denied with the same
 reason in both arms, which the author sees. Every decision, allow or deny,
 is appended to the log with the call's `tool_use_id`, which is how the audit
 tells a stopped call from one that ran (`audit_subagent.py --hook-log`).
-If the state or the input cannot be read, the call is denied: the hook fails
-closed.
+
+A denial is exit code 2 with the reason on stderr, which Claude Code turns
+into the stopped call's result, so the author and `hook_denials` see the same
+mark whatever the cause. Any failure the script can catch, including one
+importing the audit (which imports the harness), denies the same way: the
+hook fails closed. A crash or timeout it cannot catch lets the call run;
+the audit then flags it, so it voids the sample and is reported as a hook
+failure. The agent definition gives the hook an explicit timeout.
 """
 import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from audit_subagent import HOOK_MARK, allowed, check_command  # noqa: E402
-
-REASON = (f"{HOOK_MARK} This call is not allowed in this evaluation, so it did not run. "
+HERE = Path(__file__).resolve().parent
+# `audit_subagent.HOOK_MARK`, repeated so that a denial can carry it when the
+# audit cannot be imported; the self-test checks the two agree.
+MARK = "[s7-author-hook]"
+REASON = (f"{MARK} This call is not allowed in this evaluation, so it did not run. "
           "Use only the tools, files and command your instructions name.")
+DENY = 2  # Claude Code blocks the call and shows stderr as its result
 
 
 def decide(state: dict, call: dict) -> bool:
+    if str(HERE) not in sys.path:
+        sys.path.insert(0, str(HERE))
+    from audit_subagent import HOOK_MARK, allowed, check_command
+    if HOOK_MARK != MARK:
+        raise ValueError(f"hook mark {MARK!r} differs from the audit's {HOOK_MARK!r}")
     run_dir = Path(state["dir"])
     checking = (check_command(Path(state["check_cmd"]), run_dir, "run14")
                 if state.get("check_cmd") else None)
@@ -44,7 +57,8 @@ def decide(state: dict, call: dict) -> bool:
 
 
 def main(argv: list[str], stdin: str) -> tuple[int, str]:
-    """Returns the exit code and what to print on stdout."""
+    """Returns the exit code and what to print on stderr: (0, "") allows the
+    call, (2, REASON) stops it."""
     state, call, ok, why = None, {}, False, None
     try:
         if argv[:1] != ["--state"] or len(argv) != 2:
@@ -52,23 +66,20 @@ def main(argv: list[str], stdin: str) -> tuple[int, str]:
         state = json.loads(Path(argv[1]).read_text())
         call = json.loads(stdin)
         ok = decide(state, call)
-    except Exception as e:  # fail closed
-        why = f"{type(e).__name__}: {e}"
-    entry = {"at": datetime.now(timezone.utc).isoformat(), "tool_use_id": call.get("tool_use_id"),
-             "tool_name": call.get("tool_name"), "agent_type": call.get("agent_type"),
-             "sample": state and state.get("dir"), "decision": "allow" if ok else "deny"}
-    if why:
-        entry["error"] = why
+    except BaseException as e:  # fail closed, whatever went wrong
+        ok, why = False, f"{type(e).__name__}: {e}"
     try:
+        entry = {"at": datetime.now(timezone.utc).isoformat(),
+                 "tool_use_id": call.get("tool_use_id"), "tool_name": call.get("tool_name"),
+                 "agent_type": call.get("agent_type"), "sample": state and state.get("dir"),
+                 "decision": "allow" if ok else "deny"}
+        if why:
+            entry["error"] = why
         with open(state["log"], "a") as f:
             f.write(json.dumps(entry) + "\n")
-    except Exception:
+    except BaseException:
         pass  # no log: the audit then finds a marked result the log did not deny, and flags it
-    if ok:
-        return 0, ""
-    return 0, json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
-                                                 "permissionDecision": "deny",
-                                                 "permissionDecisionReason": REASON}})
+    return (0, "") if ok else (DENY, REASON)
 
 
 def self_test() -> None:
@@ -108,11 +119,7 @@ def self_test() -> None:
             code, out = main(["--state", str(sf)], json.dumps(
                 {"hook_event_name": "PreToolUse", "tool_name": tool, "tool_input": inp,
                  "tool_use_id": f"toolu_{i}", "agent_type": "s7-author"}))
-            assert code == 0, (tool, inp)
-            assert (out == "") == want, (tool, inp, out)
-            if not want:
-                o = json.loads(out)["hookSpecificOutput"]
-                assert o["permissionDecision"] == "deny" and HOOK_MARK in o["permissionDecisionReason"]
+            assert (code, out) == ((0, "") if want else (DENY, REASON)), (tool, inp, code, out)
         # Arm A: no check command, so no Bash, no Edit and no Read of its answer.
         sa = dict(state, check_cmd=None)
         sf.write_text(json.dumps(sa))
@@ -125,13 +132,37 @@ def self_test() -> None:
                                                            "tool_use_id": "toolu_a"}))
             assert (out == "") == want, ("arm A", tool, inp, out)
         # Fail closed: a missing state file or unreadable input denies.
-        assert main(["--state", str(t / "none.json")], "{}")[1] != ""
+        assert main(["--state", str(t / "none.json")], "{}") == (DENY, REASON)
         sf.write_text(json.dumps(state))
-        assert main(["--state", str(sf)], "not json")[1] != ""
+        assert main(["--state", str(sf)], "not json") == (DENY, REASON)
         log = [json.loads(l) for l in (t / "log.jsonl").read_text().splitlines()]
         assert len(log) == len(cases) + 5 + 1, len(log)
         assert [e["decision"] for e in log[:len(cases)]] == ["allow" if w else "deny" for *_, w in cases]
         assert log[0]["tool_use_id"] == "toolu_0"
+        # As a process: a denial exits 2 with the mark on stderr, an allowed
+        # call exits 0 silently, and an audit that cannot be imported denies
+        # (a copy of this script beside a broken `audit_subagent.py`).
+        import subprocess
+        def run(script: Path, tool: str, inp: dict, tid: str):
+            return subprocess.run([sys.executable, str(script), "--state", str(sf)],
+                                  input=json.dumps({"tool_name": tool, "tool_input": inp,
+                                                    "tool_use_id": tid}),
+                                  capture_output=True, text=True, timeout=60)
+        p = run(Path(__file__), "Glob", {"pattern": "*"}, "toolu_p1")
+        assert (p.returncode, p.stderr.strip(), p.stdout) == (DENY, REASON, ""), p
+        p = run(Path(__file__), "Bash", {"command": check}, "toolu_p2")
+        assert (p.returncode, p.stderr, p.stdout) == (0, "", ""), p
+        broken = t / "broken"
+        broken.mkdir()
+        (broken / "author_hook.py").write_text(Path(__file__).read_text())
+        (broken / "audit_subagent.py").write_text("raise ImportError('planted')\n")
+        p = run(broken / "author_hook.py", "Bash", {"command": check}, "toolu_p3")
+        assert (p.returncode, p.stderr.strip()) == (DENY, REASON), p
+        last = json.loads((t / "log.jsonl").read_text().splitlines()[-1])
+        assert last["tool_use_id"] == "toolu_p3" and last["decision"] == "deny"
+        assert "planted" in last["error"], last
+        from audit_subagent import HOOK_MARK
+        assert HOOK_MARK == MARK
     print("author_hook.py self-test: ok")
 
 
@@ -139,7 +170,11 @@ if __name__ == "__main__":
     if sys.argv[1:] == ["--self-test"]:
         self_test()
         raise SystemExit(0)
-    code, out = main(sys.argv[1:], sys.stdin.read())
-    if out:
-        print(out)
+    try:
+        text = sys.stdin.read()
+    except BaseException:
+        text = ""
+    code, err = main(sys.argv[1:], text)
+    if err:
+        print(err, file=sys.stderr)
     raise SystemExit(code)
