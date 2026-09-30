@@ -1,0 +1,1 @@
+rule: audit, context: 1 flagged Bash call in round 1 (check piped to grep then wc -l; audit_subagent.py --shell-forms exit 1, 2026-09-30T04:52:31Z); 2 task_status lines naming B2 and B3 at 04:53:19Z, before its last answer (context_seen.py exit 1, 2026-09-30T04:58:19Z)

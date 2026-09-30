@@ -1,0 +1,1 @@
+rule: audit, context: 5 flagged calls in round 1, among them a Read of a harness tool-results file holding long check output, a heredoc to /tmp, and checks piped to grep -E with a pattern the forms refuse (audit_subagent.py --shell-forms exit 1, 2026-09-30T05:18:05Z); context_seen.py flagged a task_status line at 05:21:43Z (exit 1)

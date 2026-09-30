@@ -1,0 +1,1 @@
+rule: audit, context: 1 flagged Bash call in round 1 (ls -la of its own sample directory; audit_subagent.py --shell-forms exit 1, 2026-09-30T04:53Z); task_status lines naming other authors at 04:55:05Z, before its last answer (context_seen.py exit 1, 2026-09-30T05:07:14Z)
