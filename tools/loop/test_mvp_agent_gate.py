@@ -48,9 +48,9 @@ def contract_tables() -> dict[str, object]:
     }
     return {
         "gamma": {
-            "version": "0.7",
-            "primitives": ["+", "-", "*", "<", "=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-int.set", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "seq-bool.set", "send"],
-            "primitive": {name: {"effect": "declared"} for name in ["+", "-", "*", "<", "=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-int.set", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "seq-bool.set", "send"]},
+            "version": "0.8",
+            "primitives": ["+", "-", "*", "<", "=", "<=", ">", ">=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-int.set", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "seq-bool.set", "send"],
+            "primitive": {name: {"effect": "declared"} for name in ["+", "-", "*", "<", "=", "<=", ">", ">=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-int.set", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "seq-bool.set", "send"]},
         },
         "entry_point": {
             name: {"version": "0.1", "adapter": adapter, "transport": "structured-json",

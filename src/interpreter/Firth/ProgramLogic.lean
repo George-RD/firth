@@ -517,6 +517,27 @@ theorem runs_eq (left right : Int) (tail : Stack) :
       (.literal (.bool (decide (left = right))) :: tail) 1 (costs.primitive "=") :=
   runs_prim (registry_prim (kernel := "eqInt") (by decide) rfl rfl) rfl
 
+/-- `a b prim <=` is whether `a` is at most `b`. -/
+theorem runs_le (left right : Int) (tail : Stack) :
+    Runs gamma dictionary costs (.cons (.prim "<=") .empty)
+      (.literal (.int right) :: .literal (.int left) :: tail)
+      (.literal (.bool (decide (left ≤ right))) :: tail) 1 (costs.primitive "<=") :=
+  runs_prim (registry_prim (kernel := "leInt") (by decide) rfl rfl) rfl
+
+/-- `a b prim >` is whether `a` is greater than `b`, stated as `b < a`. -/
+theorem runs_gt (left right : Int) (tail : Stack) :
+    Runs gamma dictionary costs (.cons (.prim ">") .empty)
+      (.literal (.int right) :: .literal (.int left) :: tail)
+      (.literal (.bool (decide (right < left))) :: tail) 1 (costs.primitive ">") :=
+  runs_prim (registry_prim (kernel := "gtInt") (by decide) rfl rfl) rfl
+
+/-- `a b prim >=` is whether `a` is at least `b`, stated as `b ≤ a`. -/
+theorem runs_ge (left right : Int) (tail : Stack) :
+    Runs gamma dictionary costs (.cons (.prim ">=") .empty)
+      (.literal (.int right) :: .literal (.int left) :: tail)
+      (.literal (.bool (decide (right ≤ left))) :: tail) 1 (costs.primitive ">=") :=
+  runs_prim (registry_prim (kernel := "geInt") (by decide) rfl rfl) rfl
+
 theorem runs_intSeq_empty (tail : Stack) :
     Runs gamma dictionary costs (.cons (.prim "seq-int.empty") .empty) tail
       (.literal (.intSeq []) :: tail) 1 (costs.primitive "seq-int.empty") :=
@@ -1058,6 +1079,9 @@ macro "runs_atom" : tactic => `(tactic| first
   | apply runs_cons (runs_mod _ ?_)
   | apply runs_cons (runs_lt _ _ _)
   | apply runs_cons (runs_eq _ _ _)
+  | apply runs_cons (runs_le _ _ _)
+  | apply runs_cons (runs_gt _ _ _)
+  | apply runs_cons (runs_ge _ _ _)
   | apply runs_cons (runs_intSeq_empty _)
   | apply runs_cons (runs_intSeq_len _ _)
   | apply runs_cons (runs_intSeq_push _ _ _)

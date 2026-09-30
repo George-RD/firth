@@ -235,8 +235,10 @@ VM fuel; a zero kernel charge does not make a VM instruction free to execute.
 Integers are signed: `-3` is a literal and `3 5 prim -` is `-2`. `prim +`,
 `prim -` and `prim *` must stay within the signed 64-bit range
 (`-9223372036854775808..9223372036854775807`) for portable execution; overflow
-fails instead of wrapping. `prim <` and `prim =` take two integers and push a
-Boolean for `if`; `prim and`, `prim or` and `prim not` combine Booleans.
+fails instead of wrapping. `prim <`, `prim <=`, `prim >`, `prim >=` and
+`prim =` take two integers and push a Boolean for `if`: `a b prim <=` is
+whether `a` is at most `b`, so `3 3 prim <=` is `true` and `3 3 prim <` is
+`false`. `prim and`, `prim or` and `prim not` combine Booleans.
 `prim div` and `prim mod` are Euclidean: `a b prim div` is the quotient `q`
 and `a b prim mod` the remainder `r` with `a = b*q + r` and `0 <= r < |b|`, so
 `-7 2 prim div` is `-4` and `-7 2 prim mod` is `1`. A zero divisor traps with
@@ -256,7 +258,7 @@ execution-trace equivalence.
 | --- | --- |
 | External inputs and final results | Signed 64-bit integers, Booleans, and sequences of either as JSON arrays (`[1, 2]` is a `Seq Int`, `[true]` a `Seq Bool`; `[]` takes its type from the word's signature) |
 | Source type name for integers | `Int`, signed; literals may be negative (`-3`) |
-| Primitive operations | `prim +`, `prim -`, `prim *`, `prim div`, `prim mod` : `Int Int -- Int` (`div` and `mod` trap on a zero divisor); `prim <`, `prim =` : `Int Int -- Bool`; `prim and`, `prim or` : `Bool Bool -- Bool`; `prim not` : `Bool -- Bool`; `prim seq-int.empty`, `.len`, `.at`, `.push`, `.set` and the same for `seq-bool` (see `examples/programs/README.md`) |
+| Primitive operations | `prim +`, `prim -`, `prim *`, `prim div`, `prim mod` : `Int Int -- Int` (`div` and `mod` trap on a zero divisor); `prim <`, `prim <=`, `prim >`, `prim >=`, `prim =` : `Int Int -- Bool`; `prim and`, `prim or` : `Bool Bool -- Bool`; `prim not` : `Bool -- Bool`; `prim seq-int.empty`, `.len`, `.at`, `.push`, `.set` and the same for `seq-bool` (see `examples/programs/README.md`) |
 | Sequences | `Seq Int` and `Seq Bool`, written `{ 1 2 3 }` or `{ true false }`; a negative or out-of-range `at` or `set` index traps with `primitive-fault` on both hosts |
 | Definitions | Explicit stack effects, multiple words, qualified vocabulary names, recursion with finite fuel |
 | Composition | Core stack operations, quotations, `call`, `if`, named locals (a block takes its values off the stack; a local may be used any number of times, inside `if` branches, inside quotations and inside nested blocks. A local can't be used after running a quotation whose stack effect is unknown there, such as one passed in as a value; that is refused with `firth.elaboration.untracked-local`); matching checked effects are required |

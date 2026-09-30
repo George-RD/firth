@@ -224,36 +224,6 @@ structure BranchLocals where
   missing : Nat := 0
   deriving Repr, BEq
 
-/-- The primitives that compute a comparison Firth has no primitive for,
-exactly: `a b prim <=` is `a b swap prim < prim not` (`a` is at most `b`
-when `b < a` is false), `a b prim >` is `a b swap prim <`, and `a b prim >=`
-is `a b prim < prim not`. Integers compare with `prim <` and `prim =` alone;
-were `<=`, `>` or `>=` made primitives, they would resolve and this would not
-be consulted. -/
-def comparisonRewrite : String → Option String
-  | "<=" => some "swap prim < prim not"
-  | ">" => some "swap prim <"
-  | ">=" => some "prim < prim not"
-  | _ => none
-
-/-- The edit for a word that uses a comparison `comparisonRewrite` covers:
-each such comparison in the word written with the primitives there are. The
-one reported is at `line` (and `column`, when its text is found more than
-once on that line); `others` are the lines of the rest, edited too. `after`
-is where the word's next error is once the edit is made, as a line and
-column of the edited source, or `none` when the word then checks.
-Diagnostics only. -/
-structure ComparisonEdit where
-  written : String
-  replacement : String
-  line : Nat
-  column : Option Nat := none
-  others : List (String × Nat) := []
-  after : Option (Nat × Nat) := none
-  /-- The words whose declared effects checking the edit read. -/
-  consulted : List String := []
-  deriving Repr, BEq
-
 inductive ErasureError where
   | duplicateLocal (name : String) (span : Span)
   | unboundLocal (name : String) (span : Span)
@@ -261,9 +231,7 @@ inductive ErasureError where
   | missingStackValue (span : Span)
   | linearCopy (name : String) (span : Span)
   | linearUnused (name : String) (span : Span)
-  /-- A primitive that does not exist; for a comparison `comparisonRewrite`
-  covers, the edit that writes it with the ones that do. -/
-  | unresolvedEffect (name : String) (span : Span) (edit : Option ComparisonEdit := none)
+  | unresolvedEffect (name : String) (span : Span)
   /-- `account` is filled by the pipeline where the operation, as the body is
   written, is handed fewer values than it takes (`CallAccount.missing`). -/
   | effectUnderflow (name : String) (span : Span) (account : Option CallAccount := none)

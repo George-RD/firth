@@ -1,5 +1,5 @@
 pub const FORMAT_VERSION: u16 = 1;
-pub const GAMMA_VERSION: u64 = 7;
+pub const GAMMA_VERSION: u64 = 8;
 /// The registry tag of a `Seq Int` value: each element as eight little-endian
 /// bytes of a two's-complement 64-bit integer.
 pub const SEQ_INT_TAG: u64 = 2;
@@ -512,7 +512,7 @@ impl PrimitiveDefinition {
                 input: &[PrimitiveType::Int, PrimitiveType::Int],
                 output: &[PrimitiveType::Int],
             },
-            "ltInt" | "eqInt" => PrimitiveSignature {
+            "ltInt" | "eqInt" | "leInt" | "gtInt" | "geInt" => PrimitiveSignature {
                 input: &[PrimitiveType::Int, PrimitiveType::Int],
                 output: &[PrimitiveType::Bool],
             },

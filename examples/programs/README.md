@@ -20,7 +20,10 @@ a b prim -    \ Int Int -- Int   (3 5 prim - gives -2)
 a b prim *    \ Int Int -- Int
 a b prim div  \ Int Int -- Int   (Euclidean quotient: -7 2 prim div gives -4)
 a b prim mod  \ Int Int -- Int   (Euclidean remainder, never negative: -7 2 prim mod gives 1)
-a b prim <    \ Int Int -- Bool
+a b prim <    \ Int Int -- Bool   (a less than b)
+a b prim <=   \ Int Int -- Bool   (a at most b: 3 3 prim <= gives true)
+a b prim >    \ Int Int -- Bool   (a greater than b)
+a b prim >=   \ Int Int -- Bool   (a at least b)
 a b prim =    \ Int Int -- Bool
 p q prim and  \ Bool Bool -- Bool
 p q prim or   \ Bool Bool -- Bool
@@ -29,6 +32,11 @@ flag [ then-branch ] [ else-branch ] if
 ```
 
 A result that does not fit a signed 64-bit integer traps on the VM.
+
+`<=` differs from `<`, and `>=` from `>`, only at equal values, so check
+that case: `3 3 prim <=` and `3 3 prim >=` give `true`, `3 3 prim <` and
+`3 3 prim >` give `false`. `comparisons.firth` checks that a sequence never decreases,
+counts the elements in a range, finds the largest element and clamps a value.
 
 `div` and `mod` satisfy `a = b*q + r` with `0 <= r < |b|`, as Lean's `Int./`
 and `Int.%`. A zero divisor traps with `primitive-fault` on both hosts.

@@ -7,7 +7,7 @@ open Firth.Interpreter
 
 def testPolicy : PrimitiveOwnershipPolicy where
   authorised := fun name consumed produced =>
-    (name ∈ ["addInt", "subInt", "mulInt", "ltInt", "eqInt", "divInt", "modInt", "andBool", "orBool",
+    (name ∈ ["addInt", "subInt", "mulInt", "ltInt", "eqInt", "leInt", "gtInt", "geInt", "divInt", "modInt", "andBool", "orBool",
         "notBool", "intSeqEmpty", "intSeqLen", "intSeqAt", "intSeqPush", "intSeqSet",
         "boolSeqEmpty", "boolSeqLen", "boolSeqAt", "boolSeqPush", "boolSeqSet"] ∧
       consumed = [] ∧ produced = []) ∨
@@ -1812,6 +1812,102 @@ theorem examplePrimitiveTagLift_modInt :
               (by simp [modIntDelta, eraseValue, hzero]) (.modInt hzero)
               (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
 
+theorem examplePrimitiveTagLift_leInt :
+    PrimitiveTagLift examplePolicy exampleGamma "leInt" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp [leIntDelta] at hdelta
+  | cons top tail =>
+    cases top with
+    | quotation => simp [leIntDelta, eraseValue] at hdelta
+    | world => simp [leIntDelta, eraseValue] at hdelta
+    | literal rightTag rightLiteral =>
+      cases tail with
+      | nil => cases rightLiteral <;> simp [leIntDelta, eraseValue] at hdelta
+      | cons below tail =>
+        cases below with
+        | quotation => cases rightLiteral <;> simp [leIntDelta, eraseValue] at hdelta
+        | world => cases rightLiteral <;> simp [leIntDelta, eraseValue] at hdelta
+        | literal leftTag leftLiteral =>
+          cases rightLiteral <;> cases leftLiteral <;>
+            first | (simp [leIntDelta, eraseValue] at hdelta; done) | skip
+          rename_i right left
+          simp only [leIntDelta, eraseValue, List.map, Option.some.injEq] at hdelta
+          subst hdelta
+          exact literalPrimitiveTagLift
+            (top := [.literal rightTag (.int right), .literal leftTag (.int left)])
+            (out := [.literal rightTag (.bool (decide (left ≤ right)))]) hname rfl rfl
+            (by simp [leIntDelta, eraseValue]) .leInt
+            (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+
+theorem examplePrimitiveTagLift_gtInt :
+    PrimitiveTagLift examplePolicy exampleGamma "gtInt" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp [gtIntDelta] at hdelta
+  | cons top tail =>
+    cases top with
+    | quotation => simp [gtIntDelta, eraseValue] at hdelta
+    | world => simp [gtIntDelta, eraseValue] at hdelta
+    | literal rightTag rightLiteral =>
+      cases tail with
+      | nil => cases rightLiteral <;> simp [gtIntDelta, eraseValue] at hdelta
+      | cons below tail =>
+        cases below with
+        | quotation => cases rightLiteral <;> simp [gtIntDelta, eraseValue] at hdelta
+        | world => cases rightLiteral <;> simp [gtIntDelta, eraseValue] at hdelta
+        | literal leftTag leftLiteral =>
+          cases rightLiteral <;> cases leftLiteral <;>
+            first | (simp [gtIntDelta, eraseValue] at hdelta; done) | skip
+          rename_i right left
+          simp only [gtIntDelta, eraseValue, List.map, Option.some.injEq] at hdelta
+          subst hdelta
+          exact literalPrimitiveTagLift
+            (top := [.literal rightTag (.int right), .literal leftTag (.int left)])
+            (out := [.literal rightTag (.bool (decide (right < left)))]) hname rfl rfl
+            (by simp [gtIntDelta, eraseValue]) .gtInt
+            (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+
+theorem examplePrimitiveTagLift_geInt :
+    PrimitiveTagLift examplePolicy exampleGamma "geInt" := by
+  intro input residue nextTag specification plainInput plainOutput
+    hname hinput hdelta hwellformed
+  have hspec := (Option.some.inj hname).symm
+  subst specification
+  subst plainInput
+  cases input with
+  | nil => simp [geIntDelta] at hdelta
+  | cons top tail =>
+    cases top with
+    | quotation => simp [geIntDelta, eraseValue] at hdelta
+    | world => simp [geIntDelta, eraseValue] at hdelta
+    | literal rightTag rightLiteral =>
+      cases tail with
+      | nil => cases rightLiteral <;> simp [geIntDelta, eraseValue] at hdelta
+      | cons below tail =>
+        cases below with
+        | quotation => cases rightLiteral <;> simp [geIntDelta, eraseValue] at hdelta
+        | world => cases rightLiteral <;> simp [geIntDelta, eraseValue] at hdelta
+        | literal leftTag leftLiteral =>
+          cases rightLiteral <;> cases leftLiteral <;>
+            first | (simp [geIntDelta, eraseValue] at hdelta; done) | skip
+          rename_i right left
+          simp only [geIntDelta, eraseValue, List.map, Option.some.injEq] at hdelta
+          subst hdelta
+          exact literalPrimitiveTagLift
+            (top := [.literal rightTag (.int right), .literal leftTag (.int left)])
+            (out := [.literal rightTag (.bool (decide (right ≤ left)))]) hname rfl rfl
+            (by simp [geIntDelta, eraseValue]) .geInt
+            (Or.inl ⟨by decide, rfl, rfl⟩) hwellformed
+
 theorem examplePrimitiveTagLift_unknown (name : Prim)
     (haddInt : name ≠ "addInt")
     (hsubInt : name ≠ "subInt")
@@ -1830,14 +1926,16 @@ theorem examplePrimitiveTagLift_unknown (name : Prim)
     (hboolSeqPush : name ≠ "boolSeqPush")
     (handBool : name ≠ "andBool") (horBool : name ≠ "orBool") (hnotBool : name ≠ "notBool")
     (hdivInt : name ≠ "divInt") (hmodInt : name ≠ "modInt")
-    (hintSeqSet : name ≠ "intSeqSet") (hboolSeqSet : name ≠ "boolSeqSet") :
+    (hintSeqSet : name ≠ "intSeqSet") (hboolSeqSet : name ≠ "boolSeqSet")
+    (hleInt : name ≠ "leInt") (hgtInt : name ≠ "gtInt") (hgeInt : name ≠ "geInt") :
     PrimitiveTagLift examplePolicy exampleGamma name := by
   intro input residue nextTag specification plainInput plainOutput hname
     hinput hdelta hwellformed
   have hnone : exampleGamma.primitive name = none := by
     simp only [List.foldr, List.singleton_append, List.cons_append, List.append_assoc, or_false, false_or, and_true, true_and, or_true, true_or, false_and, not_false_eq_true, eq_self, List.map, List.append_nil, List.nil_append, List.mem_append, List.mem_cons, List.not_mem_nil, Bool.false_eq_true, if_true, if_false, exampleGamma, defaultGamma, haddInt, hsubInt, hmulInt, hltInt, heqInt, hmakeWorld, hconsumeWorld,
       hintSeqEmpty, hintSeqLen, hintSeqAt, hintSeqPush, hboolSeqEmpty, hboolSeqLen, hboolSeqAt, hboolSeqPush,
-      handBool, horBool, hnotBool, hdivInt, hmodInt, hintSeqSet, hboolSeqSet]
+      handBool, horBool, hnotBool, hdivInt, hmodInt, hintSeqSet, hboolSeqSet, hleInt, hgtInt,
+      hgeInt]
   rw [hnone] at hname
   cases hname
 
@@ -1910,12 +2008,22 @@ theorem examplePrimitiveTagLift :
                                           · by_cases hboolSeqSet : name = "boolSeqSet"
                                             · subst name
                                               exact examplePrimitiveTagLift_boolSeqSet
-                                            · exact examplePrimitiveTagLift_unknown name haddInt
-                                                hsubInt hmulInt hltInt heqInt hmakeWorld hconsumeWorld
-                                                hintSeqEmpty hintSeqLen hintSeqAt hintSeqPush
-                                                hboolSeqEmpty hboolSeqLen hboolSeqAt hboolSeqPush
-                                                handBool horBool hnotBool hdivInt hmodInt hintSeqSet
-                                                hboolSeqSet
+                                            · by_cases hleInt : name = "leInt"
+                                              · subst name
+                                                exact examplePrimitiveTagLift_leInt
+                                              · by_cases hgtInt : name = "gtInt"
+                                                · subst name
+                                                  exact examplePrimitiveTagLift_gtInt
+                                                · by_cases hgeInt : name = "geInt"
+                                                  · subst name
+                                                    exact examplePrimitiveTagLift_geInt
+                                                  · exact examplePrimitiveTagLift_unknown name haddInt
+                                                      hsubInt hmulInt hltInt heqInt hmakeWorld
+                                                      hconsumeWorld hintSeqEmpty hintSeqLen hintSeqAt
+                                                      hintSeqPush hboolSeqEmpty hboolSeqLen hboolSeqAt
+                                                      hboolSeqPush handBool horBool hnotBool hdivInt
+                                                      hmodInt hintSeqSet hboolSeqSet hleInt hgtInt
+                                                      hgeInt
 
 #print axioms filterContainsEqSelf_explicit
 #print axioms examplePrimitiveTagLift_addInt
@@ -1927,6 +2035,9 @@ theorem examplePrimitiveTagLift :
 #print axioms examplePrimitiveTagLift_modInt
 #print axioms examplePrimitiveTagLift_intSeqSet
 #print axioms examplePrimitiveTagLift_boolSeqSet
+#print axioms examplePrimitiveTagLift_leInt
+#print axioms examplePrimitiveTagLift_gtInt
+#print axioms examplePrimitiveTagLift_geInt
 #print axioms examplePrimitiveTagLift_unknown
 #print axioms examplePrimitiveTagLift
 
@@ -2176,6 +2287,19 @@ def main : IO Unit := do
     [obligationA, obligationB, obligationC, unrelated]
   runTest "per-word vocabulary checks compose"
     (vocabulary.result == .accepted)
+  -- Every comparison on every pair of edge integers, through the surface
+  -- table. The values are written in strictly ascending order, so the
+  -- expected answers come from their positions, not from `Int`'s order.
+  let ascending : List Int := [-9223372036854775808, -9223372036854775807, -2, -1, 0, 1, 2,
+    9223372036854775806, 9223372036854775807]
+  for (left, i) in ascending.zipIdx do
+    for (right, j) in ascending.zipIdx do
+      for (surface, expected) in [("<", decide (i < j)), ("=", i == j), ("<=", decide (i ≤ j)),
+          (">", decide (i > j)), (">=", decide (i ≥ j))] do
+        let result := (kernelPrimitive surface).bind gamma.primitive |>.bind
+          (·.delta [.literal (.int right), .literal (.int left)])
+        runTest s!"{left} {right} prim {surface}"
+          (result == some [.literal (.bool expected)])
   let invalidated := invalidateKernelWordObligations "a"
     [obligationA, obligationB, obligationC, unrelated]
   runTest "changed word invalidates transitive dependants"
