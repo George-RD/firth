@@ -543,7 +543,8 @@ private def checkBranchEdit (config : PipelineConfig) (source wordName : String)
 /-- For a refused `if` whose longer branch leaves `k` values more than the
 other, just below the results of a call: when each of those values is a new value
 of a different local (computed from it by an operation handed exactly one
-local of its type, or chosen by an `if` whose paths both stand for it), and
+local of its type, where that makes a new value of it, or chosen by an `if`
+whose paths both stand for it), and
 the call was then handed each of those locals once more, as in
 `result prim seq-int.push xs idx 1 prim - result rev-iter`, the edit that
 binds the new values to the locals' names for the call:
@@ -551,8 +552,7 @@ binds the new values to the locals' names for the call:
 Each local must be
 handed to the call as it is, and appear just once between the values and
 the call, whose source must close every bracket it opens, so the new block
-holds the call and nothing else changes. An element read from a sequence is
-not a new value of its index, though it has the index's type. -/
+holds the call and nothing else changes. -/
 private def staleEdit (config : PipelineConfig) (source : String)
     (wordName : String) (byErasure : Bool) (ifSpan : Span) (account : IfAccount) : Option BranchEdit := do
   let net (branch : BranchAccount) : Int :=
@@ -566,8 +566,6 @@ private def staleEdit (config : PipelineConfig) (source : String)
   let call ← (longer.resultOf[count]?).join
   let names ← (longer.stands.take count).mapM id
   if names.length != count || names.eraseDups.length != count then none else
-  let reads := ["`prim seq-int.at`", "`prim seq-bool.at`"]
-  if (longer.made.take count).any fun made => made.any (reads.contains ·.operation) then none else
   -- The operation that pushed the top value, or the `if` that chose it.
   -- Just after it, the values left behind are the top `count`: a value
   -- between two of them would be left behind too.

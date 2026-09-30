@@ -658,29 +658,42 @@ private def runCallAccountTests : IO Unit := do
   -- is left below the call, which gets `result` as it was. [1, 2, 3] has
   -- prefix sums [1, 3, 6].
   branchCase "a local's old value passed on" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sums:Seq Int^many)\n  locals { xs } {\n    0 0 prim seq-int.empty xs prefix-sums-helper\n  };\n\n: prefix-sums-helper\n  (forall ρ; ρ i:Int^many sum:Int^many result:Seq Int^many xs:Seq Int^many -- ρ result:Seq Int^many)\n  locals { i sum result xs } {\n    i xs prim seq-int.len prim = [ result ] [\n      xs i prim seq-int.at sum prim + locals { newsum } {\n        result newsum prim seq-int.push\n        i 1 prim + newsum result xs prefix-sums-helper\n      }\n    ] if\n  };\n"
-    ["The result of `prim seq-int.push` is computed from `result`, but `prefix-sums-helper` is then handed `result` as it was before, so the new value is left below.",
+    ["The result of `prim seq-int.push` is a new value of `result`, but `prefix-sums-helper` is then handed `result` as it was before, so the new value is left below.",
      "write `prim seq-int.push locals { result } { i 1 prim + newsum result xs prefix-sums-helper }` in place of `prim seq-int.push i 1 prim + newsum result xs prefix-sums-helper` on line 12. With that edit `prefix-sums-helper` checks."]
     "main" [.intSeq [1, 2, 3]] [.intSeq [1, 3, 6]]
   -- count-below (locals-guide arm b, haiku-firth-17, answer 3): the
   -- result of the inner `if` is a new `count` on both paths, and the call
   -- is handed the old one. [1, 5, 2, 8] has two values below 4.
   branchCase "an `if` result passed on as its local's old value" ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { xs k } { 0 xs 0 k count-below-helper };\n\n: count-below-helper\n  (forall ρ; ρ count:Int^many xs:Seq Int^many i:Int^many k:Int^many -- ρ result:Int^many)\n  locals { count xs i k } {\n    i xs prim seq-int.len prim <\n    [ xs i prim seq-int.at k prim < [ count 1 prim + ] [ count ] if count xs i 1 prim + k count-below-helper ]\n    [ count ]\n    if\n  };\n"
-    ["The result of an `if` is computed from `count`, but `count-below-helper` is then handed `count` as it was before, so the new value is left below.",
+    ["The result of an `if` is a new value of `count`, but `count-below-helper` is then handed `count` as it was before, so the new value is left below.",
      "write `if locals { count } { count xs i 1 prim + k count-below-helper }` in place of `if count xs i 1 prim + k count-below-helper` on line 9. With that edit `count-below-helper` checks."]
     "main" [.intSeq [1, 5, 2, 8], .int 4] [.int 2]
   -- Constructed: two new values left behind, both handed again as they
   -- were. The even numbers below 5 and the odd ones up to 5.
   branchCase "two new values passed on as the old ones" ": fill\n  (forall ρ; ρ evens:Seq Int^many odds:Seq Int^many i:Int^many n:Int^many -- ρ e:Seq Int^many o:Seq Int^many)\n  locals { evens odds i n } {\n    i n prim <\n    [ evens i prim seq-int.push odds i 1 prim + prim seq-int.push evens odds i 2 prim + n fill ]\n    [ evens odds ]\n    if\n  };\n"
-    ["The result of `prim seq-int.push` and the result of `prim seq-int.push` are computed from `evens` and `odds`, but `fill` is then handed `evens` and `odds` as they were before, so the new values are left below.",
+    ["The result of `prim seq-int.push` and the result of `prim seq-int.push` are new values of `evens` and `odds`, but `fill` is then handed `evens` and `odds` as they were before, so the new values are left below.",
      "write `prim seq-int.push locals { evens odds } { evens odds i 2 prim + n fill }` in place of `prim seq-int.push evens odds i 2 prim + n fill` on line 5. With that edit `fill` checks."]
     "fill" [.intSeq [], .intSeq [], .int 0, .int 5] [.intSeq [0, 2, 4], .intSeq [1, 3, 5]]
   -- Planted: allocate-batch (locals-guide arm a, haiku-firth-17, answer 1),
   -- verbatim. `stock item-idx prim seq-int.at` is the stock held, an
   -- element, not a new `item-idx`, though it is the one Int local it was
   -- handed. Binding it to `item-idx` for `prim seq-int.set` checks and
-  -- would set the wrong entry; main offered that edit. No edit now.
+  -- would set the wrong entry; #185 offered that edit. No edit now.
   let _ ← callReport "an element read is not a new index" "firth.type.branch-mismatch" ": allocate-item\n  (forall ρ; ρ item-idx:Int^many qty:Int^many whole:Bool^many stock:Seq Int^many -- ρ allocated:Int^many reason:Int^many stock:Seq Int^many)\n  locals { item-idx qty whole stock } {\n    stock item-idx prim seq-int.at\n    qty prim <\n    [ qty prim < ]\n    [ qty prim = ]\n    [ 0 prim < ]\n    if\n    [ qty 0 stock item-idx qty prim - prim seq-int.set ]\n    [\n      stock item-idx prim seq-int.at 0 prim =\n      [ 0 2 stock ]\n      [\n        whole\n        [ 0 3 stock ]\n        [ stock item-idx prim seq-int.at stock item-idx 0 prim seq-int.set 1 stock ]\n        if\n      ]\n      if\n    ]\n    if\n  };\n\n: loop\n  (forall ρ; ρ i:Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many stock:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many -- ρ allocated:Seq Int^many reasons:Seq Int^many stock:Seq Int^many)\n  locals { i items qtys whole stock allocated reasons } {\n    i items prim seq-int.len prim <\n    [\n      items i prim seq-int.at\n      qtys i prim seq-int.at\n      whole i prim seq-bool.at\n      stock\n      allocate-item\n      i 1 prim +\n      items\n      qtys\n      whole\n      loop\n    ]\n    [ allocated reasons stock ]\n    if\n  };\n\n: main\n  (forall ρ; ρ stock:Seq Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many -- ρ stock-left:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many)\n  locals { stock items qtys whole } {\n    0\n    items\n    qtys\n    whole\n    stock\n    prim seq-int.empty\n    prim seq-int.empty\n    loop\n  };\n"
     ["the result of `prim seq-int.at` is left below the result of `prim seq-int.set`, `1` and `stock`."] ["bind it to the name", "in place of"]
+  -- Planted (the reviewer on #189): `n 10 prim mod` is a digit of `n`, not
+  -- a new `n`, though `n` is the one Int local it was handed. Bound to `n`
+  -- for the call, the word checks and never stops; #185 offered that edit.
+  -- Only a sequence changed, a number stepped by `prim +` or `prim -`, or a
+  -- truth value accumulated by `prim and` or `prim or` is a new value of
+  -- its local. No edit.
+  let _ ← callReport "a digit is not a new number" "firth.type.branch-mismatch" ": digits-loop\n  (forall ρ; ρ result:Seq Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { result n } { n 0 prim = [ result ] [ n 10 prim mod result n digits-loop ] if };\n"
+    ["the result of `prim mod` is left below the result of `digits-loop`."] ["bind it to the name", "in place of"]
+  -- count-distinct (4c379e0, haiku-firth-4, answer 2), verbatim: the element
+  -- read at `i` stood for `i`, so the pushed values seemed meant for other
+  -- inputs and no edit was offered. It is `val`, and the search starts at 0.
+  let _ ← callReport "an element read placed as the value it is" "firth.type.branch-mismatch" ": is-in-result\n  (forall ρ; ρ result:Seq Int^many val:Int^many i:Int^many -- ρ found:Bool^many)\n  locals { result val i } {\n    [ i result prim seq-int.len prim < ]\n    [\n      i result prim seq-int.at\n      val prim =\n      [ true ]\n      [ result val i 1 prim + is-in-result ]\n      if\n    ]\n    [\n      false\n    ] if\n  };\n\n: count-distinct-helper\n  (forall ρ; ρ xs:Seq Int^many result:Seq Int^many i:Int^many -- ρ result:Seq Int^many)\n  locals { xs result i } {\n    [ i xs prim seq-int.len prim < ]\n    [\n      i xs prim seq-int.at\n      0 is-in-result\n      [ xs result i 1 prim + count-distinct-helper ]\n      [ i xs prim seq-int.at result prim seq-int.push xs swap i 1 prim + count-distinct-helper ]\n      if\n    ]\n    [\n      result\n    ] if\n  };\n\n: main\n  (forall ρ; ρ xs:Seq Int^many -- ρ count:Int^many)\n  prim seq-int.empty 0 count-distinct-helper prim seq-int.len;\n"
+    ["write `result i xs prim seq-int.at 0 is-in-result` in place of `i xs prim seq-int.at 0 is-in-result` on line 22."]
   -- Planted: histogram (locals-guide arm b, haiku-firth-17, answer 3),
   -- verbatim. `histogram-count-loop` is handed `i` among its inputs, but
   -- the call after it is handed `i 1 prim +`, not `i`: the count is not a
@@ -1590,7 +1603,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
     ("sort (answer 1)",
       ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Seq Int^many)\n  dup prim seq-int.len 0 insertion-sort;\n\n: insertion-sort\n  (forall ρ; ρ xs:Seq Int^many len:Int^many idx:Int^many -- ρ sorted:Seq Int^many)\n  locals { xs len idx } {\n    idx len prim < [\n      idx xs insert-at xs len idx 1 prim + insertion-sort\n    ] [ xs ] if\n  };\n\n: insert-at\n  (forall ρ; ρ xs:Seq Int^many idx:Int^many -- ρ sorted:Seq Int^many)\n  locals { xs idx } {\n    idx 0 prim = [\n      xs\n    ] [\n      idx 1 prim - xs prim seq-int.at idx xs prim seq-int.at prim < [\n        idx 1 prim - idx xs prim seq-int.at xs prim seq-int.set\n        idx 1 prim - xs prim seq-int.at xs idx 1 prim - prim seq-int.set\n        idx 1 prim - xs insert-at\n      ] [ xs ] if\n    ] if\n  };\n",
       ["The true branch leaves 2 values, bottom to top: the result of `insert-at` and the result of `insertion-sort`; the false branch leaves `xs`.",
-        "The result of `insert-at` is computed from `xs`, but `insertion-sort` is then handed `xs` as it was before, so the new value is left below.",
+        "The result of `insert-at` is a new value of `xs`, but `insertion-sort` is then handed `xs` as it was before, so the new value is left below.",
         "write `insert-at locals { xs } { xs len idx 1 prim + insertion-sort }` in place of `insert-at xs len idx 1 prim + insertion-sort` on line 9. With that edit, the next error in `insertion-sort` is at line 9, column 14."],
       -- The result of `insert-at` passed to `insertion-sort` as its sequence.
       -- The edit also puts `insert-at`'s arguments in its order (`xs idx`),
@@ -1614,7 +1627,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
     ("reverse (answer 2)",
       ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ reversed:Seq Int^many)\n  dup prim seq-int.len prim seq-int.empty swap 0 reverse-loop;\n\n: reverse-loop\n  (forall ρ; ρ result:Seq Int^many xs:Seq Int^many len:Int^many idx:Int^many -- ρ reversed:Seq Int^many)\n  locals { result xs len idx } {\n    idx len prim < [\n      len idx 1 prim - prim - xs prim seq-int.at result prim seq-int.push\n      result xs len idx 1 prim + reverse-loop\n    ] [ result ] if\n  };\n",
       ["The true branch leaves 2 values, bottom to top: the result of `prim seq-int.push` and the result of `reverse-loop`; the false branch leaves `result`.",
-        "The result of `prim seq-int.push` is computed from `result`, but `reverse-loop` is then handed `result` as it was before, so the new value is left below.",
+        "The result of `prim seq-int.push` is a new value of `result`, but `reverse-loop` is then handed `result` as it was before, so the new value is left below.",
         "write `prim seq-int.push locals { result } { result xs len idx 1 prim + reverse-loop }` in place of `prim seq-int.push result xs len idx 1 prim + reverse-loop` on line 9. With that edit, the next error in `reverse-loop` is at line 9, column 34."],
       -- The pushed sequence passed on instead of the old `result`.
       ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ reversed:Seq Int^many)\n  dup prim seq-int.len prim seq-int.empty swap 0 reverse-loop;\n\n: reverse-loop\n  (forall ρ; ρ result:Seq Int^many xs:Seq Int^many len:Int^many idx:Int^many -- ρ reversed:Seq Int^many)\n  locals { result xs len idx } {\n    idx len prim < [\n      len idx 1 prim - prim - xs prim seq-int.at result prim seq-int.push\n      xs len idx 1 prim + reverse-loop\n    ] [ result ] if\n  };\n",

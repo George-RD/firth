@@ -399,10 +399,10 @@ private def accountExplanation (word : String) (account : Firth.Elaborator.IfAcc
             -- is a new value of a local the rest of the branch was handed
             -- again.
             let named := listing (names.map (s!"`{·}`"))
-            let (are, itWas, newValues, them, theName) := if names.length == 1
-              then ("is", "it was", "the new value is", "it", "the name")
-              else ("are", "they were", "the new values are", "them", "the names")
-            s!"{(listing values).capitalize} {are} computed from {named}, but {call} is then handed {named} as {itWas} before, so {newValues} left below. If {call} should get {if names.length == 1 then "the new value" else "the new values"}, bind {them} to {theName} {named} for the call: write `{replacement}` in place of `{written}` {editPlace line column}.{editOutcome word after} {rule}"
+            let (isNew, itWas, newValues, them, theName) := if names.length == 1
+              then ("is a new value of", "it was", "the new value is", "it", "the name")
+              else ("are new values of", "they were", "the new values are", "them", "the names")
+            s!"{(listing values).capitalize} {isNew} {named}, but {call} is then handed {named} as {itWas} before, so {newValues} left below. If {call} should get {if names.length == 1 then "the new value" else "the new values"}, bind {them} to {theName} {named} for the call: write `{replacement}` in place of `{written}` {editPlace line column}.{editOutcome word after} {rule}"
         | _ =>
         if kept.length ≥ extra && extra > 0 then
           let strays := kept.take extra
