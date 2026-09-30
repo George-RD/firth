@@ -111,7 +111,8 @@ def step(item: tuple, stack: list, env: dict) -> None:
     elif kind == "prim":
         right, left = integer(pop(stack)), integer(pop(stack))
         stack.append({"+": left + right, "-": left - right, "*": left * right,
-                      "<": left < right, "=": left == right}[item[1]])
+                      "<": left < right, "=": left == right, "<=": left <= right,
+                      ">": left > right, ">=": left >= right}[item[1]])
     else:
         name = item[1]
         if name == "dup":
@@ -225,7 +226,7 @@ class Generator:
         if pick == "arith":
             return [("prim", rng.choice("+-*"))]
         if pick == "compare":
-            return [("prim", rng.choice("<="))]
+            return [("prim", rng.choice(["<", "=", "<=", ">", ">="]))]
         if pick in ("dup", "drop", "swap"):
             return [("atom", pick)]
         if pick == "call":

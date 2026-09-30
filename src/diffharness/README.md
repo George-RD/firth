@@ -25,7 +25,10 @@ The profile includes signed integers, Booleans, row-polymorphic inputs, both
 external conditional branches, multiword calls, qualified names, locals, nested
 quotations, quote/call, compose, dip and swap, and the integer primitives `+`,
 `-`, `*`, `div` and `mod` with both operand orders. Conditionals are also driven
-by `<` and `=` combined with `and`, `or` and `not`. One literal in five is an
+by `<`, `<=`, `>`, `>=` and `=`, combined with `and`, `or` and `not`. In one
+comparison in four the literal is set to the value it is compared with, since
+equal values are where `<` and `<=` (or `>` and `>=`) differ; that value is the
+oracle's, before the fragment runs. One literal in five is an
 edge value (`MIN`, `MAX`, their neighbours, `-1`, `0`, `1`, `2`, `±2^31`,
 `±2^32`); the rest are from -50 to 50. Cases therefore reach zero divisors,
 `MIN div -1` and signed 64-bit overflow. Every original and reduced source is
@@ -42,7 +45,8 @@ primitive's two operands left above the row input. Each host must match it
 exactly; otherwise the case is `oracle-mismatch`, naming the host. This catches
 a bug the reference and the VM share, which host agreement cannot (rule 10 in
 `AGENTS.md`). Its hand-worked checks and planted shared bugs (truncating
-division, a signed remainder, swapped operands, a reversed `<`, a VM that
+division, a signed remainder, swapped operands, a reversed `<`, `<=`
+computed as `<`, `>` as `>=` and `>=` as `>` at equal values, a VM that
 returns 0 for a zero divisor, a bounded reference) are in
 `tools/loop/test_diffharness.py`.
 

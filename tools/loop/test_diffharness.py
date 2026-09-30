@@ -158,7 +158,8 @@ class OracleTests(unittest.TestCase):
         cases = {"add": 13, "double": 20, "call": 13, "qualified": 13, "local": 13,
                  "quote-call": 13, "quoted-value": 13, "compose": 17, "dip": 23, "if": 13,
                  "nested": 13, "swap": 13, "sub": 7, "rsub": -7, "mul": 30, "div": 3,
-                 "rdiv": 0, "mod": 1, "rmod": 3, "less": 40, "equal": 2, "and": 2}
+                 "rdiv": 0, "mod": 1, "rmod": 3, "less": 40, "equal": 2, "and": 2,
+                 "at-most": 6, "greater": 40, "at-least": 40}
         self.assertEqual(set(cases), set(h.OPS))
         for op, value in cases.items():
             with self.subTest(op=op):
@@ -169,6 +170,13 @@ class OracleTests(unittest.TestCase):
         self.assertEqual(h.apply_step(h.Step("equal", 3, 4, False), 10, True), 6)
         self.assertEqual(h.apply_step(h.Step("and", 3, 4, False), 10, True), 10)
         self.assertEqual(h.apply_step(h.Step("and", 30, 4, True), 10, True), 10)
+        # At equal values `<=` and `>=` hold and `>` does not.
+        self.assertEqual(h.apply_step(h.Step("at-most", 10, 4), 10, True), 14)
+        self.assertEqual(h.apply_step(h.Step("at-most", 11, 4), 10, True), 14)
+        self.assertEqual(h.apply_step(h.Step("greater", 10, 4), 10, True), 40)
+        self.assertEqual(h.apply_step(h.Step("greater", 11, 4), 10, True), 14)
+        self.assertEqual(h.apply_step(h.Step("at-least", 10, 4), 10, True), 40)
+        self.assertEqual(h.apply_step(h.Step("at-least", 11, 4), 10, True), 14)
 
     def test_fault_leaves_the_operands_above_the_prefix(self):
         case = case_of(9, h.Step("add", 1), h.Step("div", 0), h.Step("add", 1), prefix=(True, 4))
@@ -203,6 +211,12 @@ class OracleTests(unittest.TestCase):
         branch = case_of(10, h.Step("less", 30, 4))
         self.assertEqual(judged(branch, ("success", [40]), ("success", [40])),  # `<` reversed
                          ("agreement", "oracle-mismatch"))
+        for op, wrong in (("at-most", 6),    # `<=` computed as `<`
+                          ("greater", 14),   # `>` computed as `>=`
+                          ("at-least", 14)):  # `>=` computed as `>`
+            equal = case_of(10, h.Step(op, 10, 4))
+            self.assertEqual(judged(equal, ("success", [wrong]), ("success", [wrong])),
+                             ("agreement", "oracle-mismatch"))
         zero = case_of(7, h.Step("div", 0))
         self.assertEqual(judged(zero, ("trap", [7, 0]), ("success", [0])),  # VM returns 0
                          ("trap-mismatch", "oracle-mismatch"))
@@ -229,6 +243,22 @@ class OracleTests(unittest.TestCase):
         self.assertTrue({h.MIN_INT, h.MAX_INT, -1, 0} <= operands)
         self.assertTrue(any(v < 0 for v in operands))
         self.assertEqual(outcomes, {("success", "success"), ("success", "trap"), ("trap", "trap")})
+
+    def test_generation_reaches_equal_values(self):
+        # Each comparison fragment is generated with its literal equal to the
+        # value it compares, where `<` and `<=` (or `>` and `>=`) differ.
+        met = set()
+        for index in range(200):
+            case = h.generate(0, index)
+            n = case.value
+            for step in case.steps:
+                if step.op in h.COMPARISONS and step.a == n:
+                    met.add(step.op)
+                try:
+                    n = h.apply_step(step, n, False)
+                except h.Fault:
+                    break
+        self.assertEqual(met, set(h.COMPARISONS))
 
     def test_negative_literals_shrink_towards_zero(self):
         self.assertEqual([h.half(v) for v in (-7, -1, 0, 7, h.MIN_INT)], [-3, 0, 0, 3, -(2**62)])

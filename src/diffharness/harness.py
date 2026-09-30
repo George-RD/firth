@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools" / "loop"))
 import mvp_agent_gate as gate
 
-VERSION = "firth-portable-diff-v2"
+VERSION = "firth-portable-diff-v3"
 SCHEMA = "firth-differential-failure-v1"
 MIN_INT = -(2**63)
 MAX_INT = 2**63 - 1
@@ -30,7 +30,10 @@ MAX_OUTPUT = 4 * 1024 * 1024
 MAX_ARTIFACT = 64 * 1024 * 1024
 OPS = ("add", "double", "call", "qualified", "local", "quote-call",
        "quoted-value", "compose", "dip", "if", "nested", "swap",
-       "sub", "rsub", "mul", "div", "rdiv", "mod", "rmod", "less", "equal", "and")
+       "sub", "rsub", "mul", "div", "rdiv", "mod", "rmod", "less", "equal", "and",
+       "at-most", "greater", "at-least")
+# Fragments whose branch depends on comparing the value with the literal `a`.
+COMPARISONS = ("less", "equal", "and", "at-most", "greater", "at-least")
 # Operands are mostly small signed values; the rest sit at the portable edges,
 # where overflow, `MIN div -1` and zero divisors live.
 EDGES = (MIN_INT, MIN_INT + 1, -(2**32), -(2**31), -1, 0, 1, 2, 2**31, 2**32,
@@ -98,6 +101,9 @@ class Step:
             "less": f"dup {a} prim < [ {b} prim + ] [ {b} prim * ] if",
             "equal": f"dup {a} prim = {flag} prim or prim not [ {b} prim - ] [ {b} prim div ] if",
             "and": f"dup {a} swap prim < {flag} prim and [ {b} prim mod ] [ ] if",
+            "at-most": f"dup {a} prim <= [ {b} prim + ] [ {b} prim - ] if",
+            "greater": f"dup {a} swap prim > [ {b} prim + ] [ {b} prim * ] if",
+            "at-least": f"dup {a} prim >= [ {b} prim * ] [ {b} prim + ] if",
         }
         return bodies[self.op], ""
 
@@ -200,8 +206,31 @@ def generate(seed: int, index: int, size: int = 6, fuel: int = 4096) -> Case:
                 operand(), bool(index % 2),
                 tuple(rng.choice((False, True, rng.randrange(101))) for _ in range(rng.randrange(3))),
                 fuel=fuel)
+    case = dataclasses.replace(case, steps=at_equal_values(case.steps, case.value, rng))
     case.validate()
     return case
+
+
+def at_equal_values(steps: tuple[Step, ...], value: int, rng: random.Random) -> tuple[Step, ...]:
+    """Set one comparison literal in four to the value it will be compared with.
+
+    Independent operands almost never meet, and equal values are where `<`
+    and `<=` (or `>` and `>=`) differ. The value reaching each step is the
+    oracle's, on the reference's unbounded integers; once a step faults there,
+    later steps are left as generated.
+    """
+    result, n = [], value
+    for step in steps:
+        if (n is not None and step.op in COMPARISONS and rng.randrange(4) == 0
+                and MIN_INT <= n <= MAX_INT):
+            step = dataclasses.replace(step, a=n)
+        result.append(step)
+        if n is not None:
+            try:
+                n = apply_step(step, n, False)
+            except Fault:
+                n = None
+    return tuple(result)
 
 
 class Fault(Exception):
@@ -258,6 +287,12 @@ def apply_step(step: Step, n: int, portable: bool) -> int:
         return p("-", n, b) if not (n == a or step.flag) else p("div", n, b)
     if op == "and":
         return p("mod", n, b) if a < n and step.flag else n
+    if op == "at-most":
+        return p("+", n, b) if n <= a else p("-", n, b)
+    if op == "greater":
+        return p("+", n, b) if a > n else p("*", n, b)
+    if op == "at-least":
+        return p("*", n, b) if n >= a else p("+", n, b)
     raise HarnessError(f"no expected meaning for {op}")
 
 
