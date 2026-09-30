@@ -1,11 +1,13 @@
 # Run 14 pre-registration: does running the checker help authors? (blocked calls, one author at a time)
 
 Not final. Prompts are not built, nothing is pinned and no author has
-started. This file merges only after the hook half of the smoke test
-passes in a fresh session (see "Smoke test"), and that waits for the
-maintainer's go-ahead on the author agent file and its hook. Nothing here
-changes after the first answer is scored; any departure is reported as
-one.
+started. This file and the author agent file merge first, and the hook
+half of the smoke test (see "Smoke test") then runs in a fresh session:
+a session loads only the agent files present when it starts, and a fresh
+session starts from `main`. The smoke's result, any change it forces, the
+built prompts and `pinned.txt` go in the pin PR, and no author of the run
+starts until that PR is approved and merged. Nothing here changes after
+the first answer is scored; any departure is reported as one.
 
 ## Question
 
@@ -116,12 +118,13 @@ outcomes and how they are read.
   can make more blockable calls than arm A. That is not a void, so it
   cannot void one arm, but a block costs the author a turn, which is part
   of arm B's treatment as run.
-- **Needs the maintainer.** Writing the agent file needs the maintainer's
-  words naming it. Until then nothing here is installed.
+- **The maintainer's go-ahead.** The maintainer wrote "go ahead with the
+  S7 author agent file and its PreToolUse hook" in the S7 thread at
+  16:41Z on 30 September. The file is `.claude/agents/s7-author.md`,
+  byte for byte the text above.
 - **Open.** Whether a session started after the agent file exists picks
   it up, and whether its cwd makes the project's or the user's agents
-  directory the one read, is checked in the smoke test before this file is
-  final.
+  directory the one read, is checked in the smoke test before the pin.
 
 ### One author at a time, in parallel sessions
 
@@ -359,14 +362,18 @@ kept):
   `[handback-send-enforce]` reminder on their feedback turns, so it falls
   on both arms. Scores (smoke only, not a result): arm A 0, 7 and 9 of 20
   by `harness.py score` over its three answers (arm B: 14 on its third).
-- **Hook half (waits for the maintainer).** In a fresh session started
-  after the agent file exists, run by Sonnet 5.5 as a runner would be and
-  following the runbook above with `session.py` (one sample of each arm): the `s7-author` agent type is available; its
+- **Hook half (after this file merges).** In a fresh session started
+  from `main` once this file and the agent file are on it, run by Sonnet
+  5.5 as a runner would be and following the runbook above with
+  `session.py` (one sample of each arm, `PIN` the merge commit, with
+  `make_prompts.py` run in the worktree before `setup`, since the prompts
+  are built only at the pin): the `s7-author` agent type is available; its
   hook runs (the same documentation says a project sub-agent's frontmatter
   hooks run only once the folder's workspace trust is accepted); the hook
   denies a planted off-list call and lets an allowed one through; the
   author's log shows the hook's mark in the stopped call's result, as
   `hook_denials` expects, both for a denial and for the fail-closed path
   (a STATE file that cannot be read); and the audit with `--hook-log`
-  keeps the stopped calls unflagged. If the result's shape differs, `hook_denials` and its
-  plants are changed here before this file merges.
+  keeps the stopped calls unflagged. If the result's shape differs,
+  `hook_denials` and its plants are changed in the pin PR, with the
+  smoke's evidence, before any author starts.
