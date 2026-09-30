@@ -295,7 +295,10 @@ private def called (context : Context) (walk : Walk) (operation : String) (input
     missing := count - taken.length
     present := if taken.length == count then [] else taken.map (·.label)
     locals := walk.locals
-    pieces := if taken.length == count then callPieces context.source taken span.start.offset else none }
+    localTypes := walk.locals.filterMap fun name => (walk.localTypes.lookup name).map (name, ·)
+    pieces := if taken.length == count then callPieces context.source taken span.start.offset else none
+    presentPieces := if taken.length == count then none else pieces context.source taken span.start.offset
+    presentSources := if taken.length == count then [] else taken.map source }
 
 mutual
   /-- Runs `items` from `walk`, stopping at the `if` the context names. -/
