@@ -9,7 +9,10 @@ edit to either side alone would leave CI checking runs against a bound nobody
 proved.
 
 This script asks Lean for `batchCost n` for every batch size the spec allows
-(0 to 64 requests) and requires each to equal `run_cases.cost_bound(n)`.
+(0 to 64 requests) and every size the corpus runs (its 65-request cases are
+checked against the bound too), and requires each to equal
+`run_cases.cost_bound(n)`. The Lean contract has no length precondition, so
+`batchCost` is the proved bound at every size.
 `test_check_cost_bound.py` plants a changed value on each side and requires
 the check to fail.
 
@@ -23,6 +26,7 @@ proved bounds apart).
 """
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 import tempfile
@@ -33,17 +37,33 @@ sys.path.insert(0, str(ROOT / "examples" / "inventory"))
 import run_cases as host  # noqa: E402  (the host's cost bound)
 
 MAX_REQUESTS = 64  # the spec's bound on the batch size
-PROGRAM = f"""import proofs.Inventory.Allocate
+CORPUS = ROOT / "specs" / "inventory-allocation-cases.json"
+
+
+def corpus_sizes() -> set[int]:
+    """The request counts of the corpus cases whose requests are a list."""
+    cases = json.loads(CORPUS.read_text(encoding="utf-8"))["cases"]
+    return {len(case["input"]["requests"]) for case in cases
+            if isinstance(case["input"], dict) and isinstance(case["input"].get("requests"), list)}
+
+
+def sizes() -> list[int]:
+    """Every batch size to compare: 0 to the largest the spec allows or the corpus runs."""
+    return list(range(max({MAX_REQUESTS, *corpus_sizes()}) + 1))
+
+
+def program(top: int) -> str:
+    return f"""import proofs.Inventory.Allocate
 open Firth.Proofs.Inventory.Allocate
-#eval (List.range {MAX_REQUESTS + 1}).forM fun n => IO.println s!"{{n}} {{batchCost n}}"
+#eval (List.range {top + 1}).forM fun n => IO.println s!"{{n}} {{batchCost n}}"
 """
 
 
-def proved_costs() -> dict[int, int]:
-    """`batchCost n` for n = 0..MAX_REQUESTS, evaluated by Lean."""
+def proved_costs(top: int) -> dict[int, int]:
+    """`batchCost n` for n = 0..top, evaluated by Lean."""
     with tempfile.TemporaryDirectory() as scratch:
         path = Path(scratch) / "CostBound.lean"
-        path.write_text(PROGRAM, encoding="utf-8")
+        path.write_text(program(top), encoding="utf-8")
         result = subprocess.run(["lake", "env", "lean", str(path)], cwd=ROOT,
                                 capture_output=True, text=True, check=False)
     if result.returncode != 0:
@@ -55,11 +75,11 @@ def proved_costs() -> dict[int, int]:
     return costs
 
 
-def problems(proved: dict[int, int]) -> list[str]:
+def problems(proved: dict[int, int], wanted: list[int]) -> list[str]:
     found = []
-    if sorted(proved) != list(range(MAX_REQUESTS + 1)):
-        found.append(f"Lean gave batchCost for {sorted(proved)}, expected 0 to {MAX_REQUESTS}")
-    for n in range(MAX_REQUESTS + 1):
+    if sorted(proved) != wanted:
+        found.append(f"Lean gave batchCost for {sorted(proved)}, expected 0 to {wanted[-1]}")
+    for n in wanted:
         if n in proved and proved[n] != host.cost_bound(n):
             found.append(f"n = {n}: batchCost is {proved[n]}, run_cases.cost_bound is "
                          f"{host.cost_bound(n)}")
@@ -67,8 +87,9 @@ def problems(proved: dict[int, int]) -> list[str]:
 
 
 def main() -> int:
+    wanted = sizes()
     try:
-        found = problems(proved_costs())
+        found = problems(proved_costs(wanted[-1]), wanted)
     except (RuntimeError, ValueError) as error:
         print(error, file=sys.stderr)
         return 1
@@ -77,7 +98,7 @@ def main() -> int:
         for problem in found:
             print(f"  {problem}", file=sys.stderr)
         return 1
-    print(f"run_cases.cost_bound equals the proved batchCost for 0 to {MAX_REQUESTS} requests")
+    print(f"run_cases.cost_bound equals the proved batchCost for 0 to {wanted[-1]} requests")
     return 0
 
 
