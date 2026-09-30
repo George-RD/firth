@@ -73,7 +73,7 @@ AUTHORS_PATH = ("/root/.local/bin:/root/.cargo/bin:/usr/local/go/bin:/opt/node22
                 "/usr/sbin:/usr/bin:/sbin:/bin")  # run 13's pinned.txt
 SCRATCH = RUN / "scratch-answer.md"
 # Run 13's toolchain (its pinned.txt), as `lake --version` and `lean --version` print it.
-TOOLCHAIN = ("Lake version 5.0.0-src+d024af0", "commit d024af099ca4bf2c86f649261ebf59565dc8c622", "cargo ")
+TOOLCHAIN = ("Lake version 5.0.0-src+d024af0", "commit d024af099ca4bf2c86f649261ebf59565dc8c622", "cargo 1.93.0 ")
 HOOK_TEST_DIR = HOOK / "hook-test"
 TOOLCHAIN_TEXT = re.compile(r"toolchain:|lake: exit|cargo: exit|is not available|the toolchain did not build"
                             r"|is not on PATH")
@@ -261,14 +261,19 @@ def hook_dry_run() -> list[str]:
     return problems
 
 
-def hook_registered(seen: Path, cmd: str, session: str, within: int = 300) -> bool:
-    """True when the hook recorded, as a call that is not an author's, the
-    runner's Bash call of `session.py CMD SESSION` in the last `within`
-    seconds: the hook fires before a call runs, so the command running now
-    is there if and only if the hook is registered in this session."""
+def hook_registered(seen: Path, cmd: str, session: str, after: str | None = None,
+                    within: int = 30) -> str | None:
+    """The time of the hook's record of the runner's Bash call of
+    `session.py CMD SESSION`, recorded as not an author's in the last
+    `within` seconds and later than `after` (the record the previous check
+    used), or None. The hook fires before a call runs, so the command
+    running now has such a record if and only if the hook is registered;
+    `after` stops an earlier call's record from standing in for this one."""
     if not seen.is_file():
-        return False
+        return None
     now_t = datetime.now(timezone.utc)
+    floor = datetime.fromisoformat(after) if after else None
+    found = None
     for line in seen.read_text().splitlines():
         try:
             e = json.loads(line)
@@ -277,15 +282,21 @@ def hook_registered(seen: Path, cmd: str, session: str, within: int = 300) -> bo
             continue
         if (e.get("tool_name") == "Bash" and e.get("agent_type") is None
                 and f"session.py {cmd} {session}" in (e.get("command") or "")
-                and 0 <= (now_t - at).total_seconds() <= within):
-            return True
-    return False
+                and 0 <= (now_t - at).total_seconds() <= within
+                and (floor is None or at > floor) and (found is None or at > found)):
+            found = at
+    return found.isoformat() if found else None
 
 
-def require_hook(cmd: str, session: str) -> None:
-    if not hook_registered(SEEN, cmd, session):
-        raise Stop(f"the author hook is not registered in this session: {SEEN} has no record of this "
+def require_hook(cmd: str, session: str, st: dict) -> None:
+    """Stop unless the hook recorded this very call; the record used is kept
+    in the session's state, so it cannot satisfy a later call."""
+    at = hook_registered(SEEN, cmd, session, st.get("hook_seen"))
+    if not at:
+        raise Stop(f"the author hook is not registered in this session: {SEEN} has no new record of this "
                    f"`session.py {cmd} {session}` call (runbook step 2 invokes the s7-author-hook skill)")
+    st["hook_seen"] = at
+    save(session, st, f"hook registered: {cmd} recorded at {at}")
 
 
 def preflight() -> None:
@@ -361,7 +372,7 @@ def cmd_hookcheck(session: str, agent: str | None) -> None:
     d = HOOK_TEST_DIR / "arm-b" / "haiku-firth-1"
     check = f"python3 {S7 / 'harness.py'} check --lang firth {d}/answer-1.md"
     if not agent:
-        require_hook("hookcheck", session)
+        require_hook("hookcheck", session, load(session))
         if hook_dry_run():
             raise Stop("the hook dry run failed: " + "; ".join(hook_dry_run()))
         print("START THE HOOK-CHECK AUTHOR with the Agent tool: subagent_type \"s7-author\", "
@@ -410,7 +421,7 @@ def cmd_next(session: str) -> None:
         print(f"DONE: session {session} has no sample left. Tell the driver.")
         return
     k, arm, n = todo[0]
-    require_hook("next", session)
+    require_hook("next", session, st)
     preflight()
     d = sample_dir(arm, n)
     if d.exists() and any(d.iterdir()):
@@ -670,42 +681,61 @@ def self_test() -> None:
     line = next(l for l in r13.splitlines() if l.startswith("Toolchain, env -i"))
     assert all(v in line for v in TOOLCHAIN), line
     assert not all(v in line.replace("d024af0", "0000000") for v in TOOLCHAIN)
-    # The hook is registered only if it recorded the runner's own call just now.
+    # The hook is registered only if it recorded the runner's own call just now,
+    # and a record already used by one check cannot satisfy the next.
+    from datetime import timedelta
     with tempfile.TemporaryDirectory() as tmp:
         seen = Path(tmp) / "seen.jsonl"
-        assert not hook_registered(seen, "next", "s2"), "no record at all"
+        assert hook_registered(seen, "next", "s2") is None, "no record at all"
         at = datetime.now(timezone.utc)
-        rows = [{"at": (at.replace(year=at.year - 1)).isoformat(), "tool_name": "Bash", "agent_type": None,
-                 "command": "python3 /x/session.py next s2"},  # stale
-                {"at": at.isoformat(), "tool_name": "Bash", "agent_type": None,
-                 "command": "python3 /x/session.py next s3"},  # another session
-                {"at": at.isoformat(), "tool_name": "Bash", "agent_type": "s7-author",
-                 "command": "python3 /x/session.py next s2"},  # an author's call
-                {"at": at.isoformat(), "tool_name": "Glob", "agent_type": None, "command": None},
-                "not json"]
-        seen.write_text("".join((r if isinstance(r, str) else json.dumps(r)) + "\n" for r in rows))
-        assert not hook_registered(seen, "next", "s2")
-        assert not hook_registered(seen, "hookcheck", "s3")
-        assert hook_registered(seen, "next", "s3")
+        def row(dt, cmd, agent=None, tool="Bash"):
+            return json.dumps({"at": dt.isoformat(), "tool_name": tool, "agent_type": agent,
+                               "command": cmd}) + "\n"
+        seen.write_text(row(at - timedelta(seconds=45), "python3 /x/session.py next s2")  # outside 30 s
+                        + row(at, "python3 /x/session.py next s3")  # another session
+                        + row(at, "python3 /x/session.py next s2", "s7-author")  # an author's call
+                        + row(at, None, tool="Glob") + "not json\n")
+        assert hook_registered(seen, "next", "s2") is None
+        assert hook_registered(seen, "hookcheck", "s3") is None
+        assert hook_registered(seen, "next", "s3") == at.isoformat()
+        used = at - timedelta(seconds=5)
         with open(seen, "a") as f:
-            f.write(json.dumps({"at": at.isoformat(), "tool_name": "Bash", "agent_type": None,
-                                "command": "R14_SHARED=/y python3 /x/session.py next s2"}) + "\n")
-        assert hook_registered(seen, "next", "s2")
-        global SEEN
-        saved, SEEN = SEEN, Path(tmp) / "none.jsonl"
+            f.write(row(used, "R14_SHARED=/y python3 /x/session.py next s2"))
+        assert hook_registered(seen, "next", "s2") == used.isoformat()
+        # Planted (review of #205): the record the previous `next` used, 5 s
+        # old, must not satisfy a retried `next`.
+        assert hook_registered(seen, "next", "s2", used.isoformat()) is None
+        with open(seen, "a") as f:
+            f.write(row(at, "R14_SHARED=/y python3 /x/session.py next s2"))
+        assert hook_registered(seen, "next", "s2", used.isoformat()) == at.isoformat()
+        # require_hook keeps the record it used, so the same call cannot pass twice.
+        global SEEN, sdir
+        saved, saved_sdir, SEEN = SEEN, sdir, seen
+        sdir = lambda _s: Path(tmp) / "state"
         try:
-            require_hook("next", "s2")
-            raise AssertionError("an unregistered hook did not stop `next`")
-        except Stop:
-            pass
+            st = {"current": None, "done": [], "hook_seen": used.isoformat()}
+            require_hook("next", "s2", st)
+            assert st["hook_seen"] == at.isoformat() and load("s2")["hook_seen"] == at.isoformat()
+            for again in (st, load("s2")):
+                try:
+                    require_hook("next", "s2", again)
+                    raise AssertionError("a used record let `next` through again")
+                except Stop:
+                    pass
+            SEEN = Path(tmp) / "none.jsonl"
+            try:
+                require_hook("next", "s2", {"current": None, "done": []})
+                raise AssertionError("an unregistered hook did not stop `next`")
+            except Stop:
+                pass
         finally:
-            SEEN = saved
+            SEEN, sdir = saved, saved_sdir
     # `next` and `hookcheck` check it before an author can start.
     import inspect
     src = inspect.getsource(cmd_next)
-    assert 'require_hook("next", session)' in src and src.index("require_hook") < src.index("preflight()")
+    assert 'require_hook("next", session, st)' in src and src.index("require_hook") < src.index("preflight()")
     src = inspect.getsource(cmd_hookcheck)
-    assert src.index('require_hook("hookcheck", session)') < src.index("START THE HOOK-CHECK AUTHOR")
+    assert src.index('require_hook("hookcheck", session, load(session))') < src.index("START THE HOOK-CHECK AUTHOR")
     # The description names the author as context_seen.py's LABEL reads it.
     sys.path.insert(0, str(S7))
     from context_seen import LABEL

@@ -85,14 +85,18 @@ outcomes and how they are read.
   every call run, so `session.py` checks it before any author starts. The
   hook records each call it passes as not an author's in `seen.jsonl`
   beside STATE, and `hookcheck` and `next` stop (`STOP:`) unless that file
-  records the very Bash call that is running them, from the last five
-  minutes: the hook fires before a call runs, so the record is there if
-  and only if the hook is registered. If the script is missing the guarded
+  records the very Bash call that is running them: a record of that
+  command from the last 30 seconds, newer than the record the session's
+  previous check used (kept in the session's `state.json`), so an earlier
+  call's record, such as that of a `next` that stopped and is retried,
+  cannot stand in for this one. The hook fires before a call runs, so a
+  new record is there if and only if the hook is registered for this call. If the script is missing the guarded
   command exits 1, a non-blocking error, and records nothing, so this
   check stops the session. The hook check (runbook step 2) then shows an
   author's off-list call stopped. Planted in `session.py --self-test`: no
-  record, a stale one, another session's, an author's own call, and a
-  missing file each make `hookcheck` and `next` stop. Planted in
+  record, one 45 seconds old, another session's, an author's own call, a
+  missing file, and the record the previous check already used (5 seconds
+  old) each make `hookcheck` and `next` stop. Planted in
   `author_hook.py --self-test`: the runner's calls and another sub-agent
   type's pass and are recorded; an author's off-list call is denied, and
   an author's call with no STATE file is denied; the skill's own command
@@ -100,7 +104,10 @@ outcomes and how they are read.
   exits 0 for the runner, 2 with the mark for an author's off-list call,
   and 1 with the script missing.
 - **The skill** is `.claude/skills/s7-author-hook/SKILL.md`, and `setup`
-  checks that the main checkout's copy is the pinned one.
+  checks that the main checkout's copy is the pinned one. Authors may see
+  it in their session's skill list, beside the repository's `cairn-*`
+  skills; that is the same in both arms, and the hook denies an author's
+  `Skill` call, which is off the list.
 - **The agent file** is `.claude/agents/s7-author.md` in the pinned
   worktree, exactly as follows. It has no `tools` line, so the author has
   the tools a `general-purpose` author had in run 13. Its body replaces
@@ -286,8 +293,9 @@ and `PIN` the pinned commit, both given in the session's brief.
    - `python3 session.py setup SESSION --pin PIN`
 
    `setup` records the versions in the authors' shell (`lake --version`,
-   `lean --version`, `cargo --version`) in `pinned.txt`; they must be Lake
-   `5.0.0-src+d024af0` and Lean 4.30.0 at commit `d024af09`, as in run 13.
+   `lean --version`, `cargo --version`) in `pinned.txt`, and stops unless
+   they are run 13's: Lake `5.0.0-src+d024af0`, Lean 4.30.0 at commit
+   `d024af09` and cargo 1.93.0.
 
    `setup` checks the pin, that the main checkout's `AGENTS.md`,
    `CLAUDE.md` and agent file are the pinned ones (authors see the main
