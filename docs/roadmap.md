@@ -30,7 +30,7 @@ own wording is satisfied, not a narrowed reading of it.
 | S4. Self-hosted standard library | Open | `stdlib/core.firth` is 21 lines. Done is a library written in Firth that the M1 component actually uses, checked by the toolchain. |
 | S5. Non-trivial program, verified to a spec, run in a cost bound | Met | Previously "met" by a program that adds 1, 2 and 1. Done is the M1 inventory allocator (or a program of the same weight): it iterates over a bounded collection using arithmetic and comparison, its stated properties (conservation, no over-allocation, the fulfilment policy) are checked by the toolchain, not only by tests, and it runs on the VM with results matching the reference interpreter inside a cost bound stated as a function of input size. "Checked by the toolchain" means Lean proofs, for every valid input, over the kernel program the elaborator emits, run by the reference interpreter and admitted as rechecked evidence bound to the word digests (`language-06b`); the cost bound is proved the same way (`language-06c`). The proofs also show that every value stays within the VM's i64 for every valid input. Two gaps are stated with any such claim: agreement of the compiler's lowering and the VM with the reference interpreter rests on differential testing, not a proof, and the Python host (JSON decoding and encoding, the ID encoding) is tested, not proved. This definition was decided on 28 September 2026 (by the coordinator, on George's delegation). Until those proofs exist, the fixed independent corpus is the check and that gap is stated. Progress (27 September 2026, #121 and #123): all 53 contract cases pass: 30 run in `examples/inventory/allocator.firth` with the VM and the reference interpreter agreeing, and 23 are rejected by the host's input checks, as the spec assigns them. CI checks every run against the measured bound 165 + 202n + 163n(n−1)/2 kernel steps, taken over the costliest ID shape (the repeated-ID scan uses locals since `pick` and `roll`, #125). The partial to all-or-nothing policy change is demonstrated with changed-word and regression checks (#126). Proved since (28 September 2026, #137): `src/proofs/Inventory/Allocate.lean` proves in Lean, from the exported kernel program run by the reference interpreter, that `allocate-batch` returns the spec's result on every valid input, so the properties proved of that rule in `src/proofs/Inventory/Spec.lean` hold of its output, with every value in i64 and kernel cost at most that same bound (the constant is attained on an empty batch). The proof is recorded as evidence bound to the body digests of `allocate-batch` and the nine words it calls, the registry and the cost table, and all ten words are reported `contract_verified` (`src/proofs/records.json`). The recorded contract assumes only the host's ID encoding (four entries per request, each in [0, 65^8)); it assumes nothing about the stock or the quantities, which the program checks itself. The two stated gaps remain: VM and compiler agreement rests on differential testing (`todo.compiler-vm-agreement-proof`), and the Python host is tested, not proved (`todo.inventory-host-proof`). Met on 28 September 2026 under `AGENTS.md` rule 1, with those two gaps filed as todos. Evidence: #137 (the proofs) and #141 (the digest-bound record). |
 | S6. Third-party VM reimplementation | Open | Needs an outside party. Not a near-term goal. |
-| S7. Measured machine authorship | Open | See the next row. Full S7 also needs the same tasks in a mainstream language as the baseline, and a materially higher pass rate in Firth. |
+| S7. Measured machine authorship | Open | See the next row. Full S7 also needs the same tasks in a mainstream language as the baseline, and a materially higher pass rate in Firth. The baseline is planned under "S7 baseline" below (`todo.s7-python-baseline`, `todo.s7-harder-task-tier`). |
 | MVP agent authoring | **Reopened** | Previously "met" by four three-line programs with unverified transcripts. Done is a fixed task set written before any trial (about 20 tasks, several at allocator weight), attempted by a fresh-context model given only the guide and the diagnostics loop, several attempts per task. A pass means check, run and expected outputs all agree. Report the pass rate with retained transcripts naming the model and date. A low rate is an acceptable result; an unmeasured one is not. |
 
 The MVP gate (`tools/loop/mvp_agent_gate.py`) stays as a regression check that
@@ -85,6 +85,49 @@ Choose language additions from this workload: arithmetic and comparisons,
 structured values, explicit results/errors, bounded collections and reusable
 vocabularies. Preserve the verified kernel; a necessary semantic extension
 requires its own accepted decision and metatheory checks, not a silent patch.
+
+## S7 baseline and eval subjects
+
+Added 30 September 2026 following the maintainer's suggestions. This is planned work,
+not a status change: no goal above moves because of it.
+
+**Is Firth worth reaching for?** Runs 1 to 4 scored Python on the same
+tasks, and it was at the ceiling each time for both Sonnet and Haiku (22 of
+22, 9 of 9 on each of three attempts, 20 of 20; `eval/s7/README.md`). Runs 5
+to 13 compare Firth with Firth. A result at the ceiling cannot show a
+difference in either direction, so it is not a usable baseline for the
+harder tasks. The S7 criterion stays as
+written: a materially higher pass rate in Firth on equivalent tasks. The
+weaker result, correct on the first or second try about as often as in
+Python while Firth also proves things Python cannot, is reported too, but it
+does not meet S7 and is not called a pass. So the baseline gives a model the
+same harder tasks in both languages and measures correct on the first
+attempt and correct within two. It then lists the guarantees Firth adds
+(checked types, stack effects, linear ownership and declared effects, a
+measured cost per run, and a proved cost bound only where a Lean proof is
+written for one, as for the allocator) and
+says whether the runs showed any of them catching a real error. Measured
+and proved stay separate (`AGENTS.md` rule 8). The question
+it answers is whether Firth beats Python for agent-written code that a host
+runs without anyone reading it. If Firth loses badly, that is the most
+useful result the eval could give us. Tracked in `todo.s7-python-baseline`.
+
+**Subject models.** Sonnet 5.5 is planned as the primary subject, following
+the maintainer's suggestion: it is the realistic balance of cost and ability, and few people use Haiku for real
+work. Haiku 4.5 stays as a secondary check of how learnable the language is
+for a small model. A cheap non-Anthropic model (the maintainer named
+DeepSeek Flash) is an option only if it can be reached without new
+credentials.
+
+**Harder tasks first.** Sonnet scores 19 to 20 of 20 on the current MVP
+tasks, and Python scored 20 of 20 for both Sonnet and Haiku (run-4 table,
+`eval/s7/README.md`). Neither the
+baseline nor a Sonnet-primary run can show a difference at that ceiling, so
+both need a harder task tier written before any trial
+(`todo.s7-harder-task-tier`).
+
+**Order.** After the current run 14 (the Haiku check-tool A/B, PR #200) has
+finished. Nothing here changes what run 14 measures.
 
 ## Completion discipline
 
