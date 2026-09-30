@@ -34,3 +34,4 @@ run 13 addition: allow exactly 'cd /home/user/firth-r12 && <check>' prefix; plan
 03:44Z A10 r2 5, feedback r2 sent. B6 finished: r1 10/20, rule void (29 flagged calls), 6 cross-sample task_status at 03:37:31Z, untouched.
 03:45Z B8 finished: r1 9/20, rule void (15 flagged calls), context clean.
 03:46Z A10 r3 final. All authoring finished.
+04:10Z CORRECTION (review of #194): B1 is a rule void, not a toolchain void. Its 03:22:26Z check, run after `source ~/.elan/env`, printed checker diagnostics. B2 and B3 are the only toolchain voids. The 03:42 entry's 15 flagged calls for B5 came from the partial audit run at 03:40:07Z; B5 made two more flagged calls at 03:40:33Z and 03:40:42Z (17 in all).

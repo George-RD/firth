@@ -1981,14 +1981,21 @@ is descriptive.
 
 Arm B started 8 samples, and all 8 are void.
 
-- **Toolchain voids: B1, B2 and B3.** After a container restart, `lake` was
-  not on the authors' default PATH, so every check they ran printed "lake is
-  not on PATH". Three symlinks in `/usr/local/bin` fixed it before the next
-  start (`pinned.txt` records the toolchain versions in both
-  environments). From 03:31Z, `driver/preflight.sh` ran the check in the
-  authors' own shell before an arm B start.
-- **Rule voids: B4 to B8.** The audit flagged Bash calls that were not
-  exactly the allowed command. `driver/bash_calls.py` counts 83 such calls
+- **Toolchain voids: B2 and B3.** After a container restart, `lake` was
+  not on the authors' default PATH, so the checks B1, B2 and B3 ran first
+  printed "lake is not on PATH". B2 and B3 saw nothing else from the
+  checker. Three symlinks in `/usr/local/bin` fixed it before the next start
+  (`pinned.txt` records the toolchain versions in both environments). From
+  03:31Z, `driver/preflight.sh` ran the check in the authors' own shell
+  before an arm B start.
+- **Rule voids: B1 and B4 to B8.** The audit flagged Bash calls that were
+  not exactly the allowed command.
+  - B1 found the toolchain itself. It ran `source ~/.elan/env`, then the
+    check behind that prefix at 03:22:26Z, which printed diagnostics, and
+    made 19 edits after that. It was first recorded as a toolchain void and
+    corrected on review.
+  - `driver/bash_calls.py` counts 83 flagged calls across arm B's 91 Bash
+    calls, and only 8 calls were the allowed command. `driver/bash_calls.py` counts 83 such calls
   across arm B's 91 Bash calls, and only 8 calls were the allowed command.
   One call can add several forms:
 
@@ -1999,7 +2006,9 @@ Arm B started 8 samples, and all 8 are void.
 | piped to `head` | 25 |
 | `cd /home/user/firth-r12 &&` prefix | 10 |
 | piped to `tail` | 8 |
-| redirected to a file in `/tmp` | 2 |
+| chained with `&&`, `\|\|`, `;` or a second line (apart from the `cd` prefix) | 8 |
+| `source` of a shell profile (B1) | 2 |
+| a redirect to a file in `/tmp` (B7: one check, one heredoc) | 2 |
 | not a check at all | 9 |
 
   - The 9 non-checks were: B1's four toolchain probes (`which lake`,
@@ -2018,8 +2027,8 @@ Arm B started 8 samples, and all 8 are void.
   and stop the run if at least two of B5, B6 and B8 turned out to be rule
   voids. The rule was applied at 03:42Z on void status only. B5 and B6 were
   both flagged on their logs so far, and no score of theirs had been read.
-  - At the rate observed, with arm B's 5 samples that had a working
-    toolchain all rule voids, 40 counted arm B samples would take far more
+  - At the rate observed, with all 6 arm B samples whose checks ran being
+    rule voids, 40 counted arm B samples would take far more
     starts than the pre-registered feasibility stop at 40 voids allows. The
     early stop anticipates that stop; it does not replace it.
   - Samples already running finished. Arm A samples got their feedback
@@ -2029,7 +2038,7 @@ Arm B started 8 samples, and all 8 are void.
 
 | Passed (of 20) by answer | Arm A (as run 11) | Arm B (may run the checker) |
 |---|---|---|
-| 1 | 0, 10, 13 | 11 (toolchain void) |
+| 1 | 0, 10, 13 | 11 (rule void) |
 | 2 | 0, 2, 2 | 9 (toolchain void) |
 | 3 | 1, 7, 10 | 0 (toolchain void) |
 | 4 | 0, 5, 5 | 0 (rule void) |
@@ -2045,24 +2054,32 @@ Arm B started 8 samples, and all 8 are void.
 - Arm A's 11 samples are counted under the pre-registered rules. They
   passed 65 tasks after round 2 (median 6). They passed 1 task in the first
   answer, against run 11 arm A's 39 over 20 samples with the same prompt.
-  That difference is reported, not explained.
+  That difference is reported, not explained. It is not a checker change:
+  the reviewer of #194 re-scored run 11's arm A first answers at `e381708`
+  and got the same counts as at `5d09e25`.
 - Every arm B sample is void, and none got feedback. Only the first answer
   of each was scored. That answer was written after the author ran the
-  checker (except B1 to B3, whose checks never ran), so it is not
+  checker (except B2 and B3, whose checks never ran), so it is not
   comparable with arm A's first answer.
 - **Secondary 4**, the start-order analysis, keeps rule voids at their
   latest scored answer. It is shown here without a test, because arm A's
   latest answer is its third and arm B's is its first.
-  - Without the toolchain voids: arm A 11 samples, sum 65; arm B 5 samples
-    (B4 to B8), sum 30 (0, 11, 10, 0, 9).
+  - Without the toolchain voids: arm A 11 samples, sum 65; arm B 6 samples
+    (B1 and B4 to B8), sum 41 (11, 0, 11, 10, 0, 9).
   - With the toolchain voids: arm A 11 samples, sum 65; arm B 8 samples, sum
     50 (11, 9, 0, 0, 11, 10, 0, 9).
 - Arm B's void first answers (11, 9, 0, 0, 11, 10, 0, 9) are higher than
   arm A's (1 task over 11 samples). They are reported as void and
   descriptive only, and no claim about the checker or arm B's prompt is
-  made from them: the samples are void, B1 to B3 never saw a diagnostic,
-  and the arms were not started evenly. Run 13's secondary 3 tests first
-  answers.
+  made from them: the samples are void, B2 and B3 never saw a diagnostic,
+  and the arms were not started evenly.
+  - What the logs do show is that arm B authors revise before they hand in.
+    Every arm A author wrote `answer-1.md` once, with no edits. Every arm B
+    author revised it: B1 made 19 edits, B2 11, and B6 63. B2 made its 11
+    edits after its only check failed, with no diagnostic.
+  - Whether revising before hand-in, rather than the checker's output,
+    explains any difference is a hypothesis. Run 13's secondary 3 (first
+    answers) bears on it.
 
 ### Validity findings
 

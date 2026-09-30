@@ -28,7 +28,10 @@ FORMS = [  # (label, pattern), counted independently: one call can add several
     ("`| grep`", re.compile(r"\|\s*grep\b")),
     ("`cd … &&` prefix", re.compile(r"^cd \S+ && ")),
     ("redirect to a file", re.compile(r"(?<![0-9&])>>?\s*/(?!dev/null)")),
+    ("`source` of a shell profile", re.compile(r"(^|&& |; )source ")),
 ]
+# `&&`, `||`, `;` or a second line, apart from a leading `cd … &&`.
+CHAIN = ("chained with `&&`, `||`, `;` or a second line", re.compile(r"&&|\|\||;|\n"))
 
 
 def extract(logdir):
@@ -62,6 +65,8 @@ def classify(command, n):
     if m and m.group(1) == str(n):
         return None
     forms = [label for label, p in FORMS if p.search(command)]
+    if CHAIN[1].search(re.sub(r"^cd \S+ && ", "", command)):
+        forms.append(CHAIN[0])
     return forms if CHECK.search(command) else forms + ["not a check"]
 
 
@@ -74,6 +79,10 @@ def self_test():
         "`2>&1`", "`| tail`", "`cd … &&` prefix"]
     assert classify(f"{ok} > /tmp/out.txt 2>&1", 4) == ["`2>&1`", "redirect to a file"]
     assert classify("ls ~/.elan 2>/dev/null | head -20", 4) == ["`| head`", "not a check"]
+    assert classify(f"source ~/.elan/env && source ~/.cargo/env 2>/dev/null; {ok}", 4) == [
+        "`source` of a shell profile", "chained with `&&`, `||`, `;` or a second line"]
+    assert classify(f"{ok} > /tmp/o 2>&1 && echo ok || echo no\nhead -200 /tmp/o", 4) == [
+        "`2>&1`", "redirect to a file", "chained with `&&`, `||`, `;` or a second line"]
     print("self-test ok")
 
 
