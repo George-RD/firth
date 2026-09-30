@@ -67,6 +67,7 @@ RUN11 = Path(__file__).resolve().parent / "runs" / "2026-09-29-locals-guide"
 # instructions name, so every clause of that paragraph is a marker, and so is
 # the command itself.
 RUN12 = Path(__file__).resolve().parent / "runs" / "2026-09-30-check-tool"
+RUN13 = Path(__file__).resolve().parent / "runs" / "2026-09-30-check-forms"
 
 
 def squash(text: str) -> str:
@@ -99,6 +100,10 @@ if (RUN12 / "arm-b" / "prompt-firth.md").is_file():
     ARM_SETS["run12"] = {"arm-a": (None, ("arm-a/",)),
                          "arm-b": (None, ("arm-b/", "harness.py check")
                                    + treatment_clauses(RUN12, tool_paragraph()))}
+if (RUN13 / "arm-b" / "prompt-firth.md").is_file():
+    ARM_SETS["run13"] = {"arm-a": (None, ("arm-a/",)),
+                         "arm-b": (None, ("arm-b/", "harness.py check")
+                                   + treatment_clauses(RUN13, tool_paragraph(RUN13)))}
 
 
 def use_arms(name: str) -> None:
@@ -348,6 +353,25 @@ def self_test() -> None:
         markers = ARM_SETS["run12"]["arm-b"][1]
         assert len(markers) >= 6 and all(m in prompt_b for m in markers[1:])
         assert not any(m in prompt_a for m in markers)
+    # Run 13: the same, with run 13's paragraph, whose added sentence is a
+    # marker too.
+    if "run13" in ARM_SETS:
+        use_arms("run13")
+        for text in ("python3 /home/user/firth-r13/eval/s7/harness.py check --lang firth x.md",
+                     "note: so run it exactly as written."):
+            other["attachment"]["filename"] = text
+            got = scan(base + log(other), "haiku-firth-3", "A3", "arm-a")
+            assert got["cross_sample"] and got["cross_sample"][0]["other_arm"], (text, got)
+            assert scan(base + log(other), "haiku-firth-3", "B3", "arm-b")["cross_sample"] == []
+        # The harness's status line about another author is flagged in both
+        # arms (run 12's B5, B6 and A10 got them).
+        for label in ("A3", "B3"):
+            got = scan(base + log({"type": "attachment", "timestamp": "t2", "attachment": {
+                "type": "task_status", "description": "Run 13 author B7", "status": "running"}}),
+                "haiku-firth-3", label, "arm-" + label[0].lower())
+            assert got["cross_sample"], (label, got)
+        markers = ARM_SETS["run13"]["arm-b"][1]
+        assert not any(m in squash((RUN13 / "arm-a" / "prompt-firth.md").read_text()) for m in markers)
     use_arms("run10")
     # A tool result for a call this author never made is not its own.
     planted = base + log({"type": "user", "timestamp": "t3", "message": {
