@@ -1045,6 +1045,16 @@ private def runCallAccountTests : IO Unit := do
   unpushedCase "a value's type decides" ": g (forall ρ; ρ n:Int^many flag:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many flag:Bool^many -- ρ r:Int^many) locals { n flag } { true g } ;\n"
     ["write `n true g` in place of `true g` on line 2. With that edit `f` checks."] []
     "f" [.int 4, .bool false] [.int 4]
+  -- Planted: 30 Int inputs, each a local, and 15 Int values present. The
+  -- values could fill any 15 of the inputs, C(30, 15) ways; listing each
+  -- (as the first version did) does not finish. Counting up to two ways
+  -- does, and says the place is open: no edit.
+  let many := (List.range 30).map (s!"v{·}")
+  let manyEffect := " ".intercalate (many.map (s!"{·}:Int^many"))
+  let manyValues := " ".intercalate ((List.range 15).map toString)
+  let _ ← callReport "a place open in very many ways" "firth.type.stack-underflow"
+    s!": g (forall ρ; ρ {manyEffect} -- ρ r:Int^many) {" ".intercalate (List.replicate 29 "prim +")} ;\n: f (forall ρ; ρ {manyEffect} -- ρ r:Int^many) locals \{ {" ".intercalate many} } \{ {manyValues} g } ;\n"
+    ["`g` in `f` takes 30 values"] ["in place of"]
   -- Planted: a local of another type is not written for an input. `xs`
   -- here is an Int and `g` takes a Seq Int: no edit.
   let _ ← callReport "a local of another type" "firth.type.stack-underflow"

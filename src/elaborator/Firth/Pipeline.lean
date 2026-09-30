@@ -617,25 +617,32 @@ private def unpushedEdit (config : PipelineConfig) (source : String) (word : Wor
     (((input.splitOn ":").head?).getD "", ":".intercalate ((input.splitOn ":").drop 1))
   let inputNames := inputs.map (·.1)
   if inputs.length != present + account.missing || inputNames.eraseDups.length != inputNames.length then none else
-  -- Each way to fill the inputs, bottom to top: the index of the value
-  -- present for an input, or `none` where the local of its name is written.
-  let rec plans : List (String × String) → List (Nat × String × Option String) → List (List (Option Nat))
-    | [], [] => [[]]
-    | [], _ :: _ => []
-    | (name, type) :: rest, values =>
-        let written := if account.localTypes.lookup name == some type
-          then (plans rest values).map (none :: ·) else []
-        let filled := match values with
-          | (index, valueType, stands) :: more =>
-              let forOther := match stands with
-                | some local_ => inputNames.contains local_ && local_ != name
-                | none => false
-              if valueType == type && !forOther then (plans rest more).map (some index :: ·) else []
-          | [] => []
-        filled ++ written
-  let values := (List.range present).zip (types.zip account.presentSources)
-  let plan ← match plans inputs values with
-    | [plan] => some plan
+  -- The ways to fill the inputs, bottom to top: for each input the index
+  -- of the value present for it, or `none` where the local of its name is
+  -- written. Only whether there is exactly one matters, so each suffix of
+  -- the inputs keeps, for each count of values left, how many ways there
+  -- are (counted up to 2) and one of them: the work grows with inputs times
+  -- values, where listing every way would grow with their binomial.
+  let values := ((List.range present).zip (types.zip account.presentSources)).toArray
+  let fits (name type : String) (j : Nat) : Bool := match values[j]? with
+    | some (_, valueType, stands) =>
+        let forOther := match stands with
+          | some local_ => inputNames.contains local_ && local_ != name
+          | none => false
+        valueType == type && !forOther
+    | none => false
+  let last : Array (Nat × List (Option Nat)) :=
+    (Array.range (present + 1)).map fun j => if j == present then (1, []) else (0, [])
+  let table := inputs.foldr (init := last) fun (name, type) next =>
+    (Array.range (present + 1)).map fun j =>
+      let (filledCount, filledPlan) := if fits name type j
+        then (next.getD (j + 1) (0, [])) else (0, [])
+      let (writtenCount, writtenPlan) := if account.localTypes.lookup name == some type
+        then next.getD j (0, []) else (0, [])
+      (min 2 (filledCount + writtenCount),
+       if filledCount > 0 then some j :: filledPlan else none :: writtenPlan)
+  let plan ← match table[0]? with
+    | some (1, plan) => some plan
     | _ => none
   let names := (plan.zip inputNames).filterMap fun (value, name) => if value.isNone then some name else none
   let operationStart := account.span.start.offset
