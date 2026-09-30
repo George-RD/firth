@@ -1995,9 +1995,8 @@ Arm B started 8 samples, and all 8 are void.
     made 19 edits after that. It was first recorded as a toolchain void and
     corrected on review.
   - `driver/bash_calls.py` counts 83 flagged calls across arm B's 91 Bash
-    calls, and only 8 calls were the allowed command. `driver/bash_calls.py` counts 83 such calls
-  across arm B's 91 Bash calls, and only 8 calls were the allowed command.
-  One call can add several forms:
+    calls, and only 8 calls were the allowed command. One call can add
+    several forms:
 
 | Added to or instead of the check | Calls |
 |---|---|

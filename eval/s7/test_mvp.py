@@ -274,6 +274,55 @@ def check_tool_audit() -> None:
                 ("any other command", call("Bash", command="ls")),
                 ("an edit of another file", call("Edit", file_path=str(HERE / "harness.py"), old_string="a", new_string="b"))):
             check(len(audit(ok + [ev], prompt, d, d, 2, "firth", tool)[1]) == 1, f"arm B's audit flags {what}")
+        # Run 13 (`--shell-forms`): the check command may carry a closed set of
+        # additions that only read the checker's own output. Each allowed form
+        # passes with the flag and is flagged without it (run 12's rule).
+        root = "cd /pinned && "
+        for form in (run + " 2>&1", run + " 2>&1 | head -100", run + " | head -n 50",
+                     run + " 2>&1 | tail -50", run + " 2>&1 | tail -n 20",
+                     run + ' 2>&1 | grep -E "^## |^ok$"', run + " 2>&1 | grep -A 10 '^## reverse$'",
+                     run + ' | grep -n -i -v -c "x"', run + ' 2>&1 | grep -B 2 -C 3 "error"',
+                     run + ' 2>&1 | grep -E "^## |^ok$|^code:" | head -50',
+                     run + ' 2>&1 | grep -A 20 "^## sort$" | tail -n 25',
+                     run + r' 2>&1 | grep -A 10 "^## sort\|^## histogram"',
+                     run + ' 2>&1 | grep -E "^## |^ok|^code:" ',
+                     run + ' | grep "^ok$"', run + r' | grep -E "^## sort\$"',
+                     root + run, root + run + " 2>&1 | tail -60"):
+            ev = call("Bash", command=form)
+            shown = ("cd prefix, " if form.startswith(root) else "") + repr(form.split(run)[1])
+            check(audit(ok + [ev], prompt, d, d, 2, "firth", tool, shell_forms=True)[1] == [],
+                  f"run 13's audit allows the check with {shown}")
+            check(len(audit(ok + [ev], prompt, d, d, 2, "firth", tool)[1]) == 1,
+                  f"run 12's audit still flags the check with {shown}")
+        for what, form in (
+                ("a grep reading patterns from a file", run + f" 2>&1 | grep -f {HERE / 'mvp_tasks.py'}"),
+                ("a grep with a file operand", run + ' | grep "x" /some/file'),
+                ("a grep with an unquoted pattern", run + " 2>&1 | grep x"),
+                ("a recursive grep", run + ' | grep -r "x"'),
+                ("a grep with --include", run + ' | grep --include=*.py "x"'),
+                ("an option hidden in a quoted pattern", run + ' | grep "-r"'),
+                ("-f hidden in a quoted pattern", run + " | grep '-f/etc/passwd'"),
+                ("command substitution in a pattern", run + f' | grep "$(cat {HERE / "mvp_tasks.py"})"'),
+                ("a backquote in a pattern", run + ' | grep "`id`"'),
+                ("a variable in a pattern", run + ' | grep "$HOME"'),
+                ("a second command after a pipe", run + " | head; cat x"),
+                ("a second pipe", run + ' | head -5 | grep "x"'),
+                ("head with a file operand", run + " | head 5"),
+                ("a redirect to a file", run + " > /tmp/out"),
+                ("an appended redirect", run + " 2>&1 >> /tmp/out"),
+                ("input from a file", run + " < /etc/passwd"),
+                ("&& after the check", run + " && cat x"),
+                ("|| after the check", run + " || cat x"),
+                ("cd somewhere else first", "cd /eval && " + run),
+                ("a command between cd and the check", root + "ls && " + run),
+                ("2>&1 after the pipe", run + ' | grep "x" 2>&1'),
+                ("a third pipe", run + ' | grep "x" | head -5 | tail -1'),
+                ("a grep after head", run + ' | head -5 | grep "x"'),
+                ("an escaped quote in a pattern", run + r' | grep "a\"; cat x; \""'),
+                ("a backslash before a letter", run + r' | grep "\n"'),
+                ("a file operand after grep's head", run + ' | grep "x" | head -5 x')):
+            check(len(audit(ok + [call("Bash", command=form)], prompt, d, d, 2, "firth", tool,
+                            shell_forms=True)[1]) == 1, f"run 13's audit flags {what}")
         # The answer left by the writes and edits must be the one scored.
         stale = ok[:5]
         check(any("left" in b for b in audit(stale[:2] + stale[2:4], prompt, d, d, 2, "firth", tool)[1]),

@@ -17,7 +17,21 @@ run the checker on its own answer file), these are allowed as well:
 
 - Bash running exactly `python3 HARNESS check --lang firth <dir>/answer-<n>.md`
   on one of the author's own answer files, and nothing else: no other
-  command, path, option or shell syntax;
+  command, path, option or shell syntax. With `--shell-forms` as well (S7
+  run 13), that command may also carry these additions, in this order and
+  nothing else, since each only reads the checker's own output:
+  - the prefix `cd ROOT && `, where ROOT is the checkout HARNESS is in
+    (`ROOT/eval/s7/harness.py`);
+  - the suffix ` 2>&1`;
+  - one pipe to `head -n N`, `head -N`, `tail -n N`, `tail -N`, or `grep`
+    with options from `-n -i -v -c -E -A N -B N -C N` and one quoted
+    pattern that does not start with `-` (in double quotes: no backquote, a
+    backslash only before one of `| ( ) . ^ $ [ ]`, and `$` only before
+    `"` or `|`), and after that grep, at most one more pipe to `head` or
+    `tail` as above; then trailing spaces, and nothing else.
+  Anything else is flagged: a file operand, any other option (`-f`, `-r`,
+  `--include`), a second pipe, `;`, `&&` or `||` elsewhere, `$(`, a
+  backquote, `<`, `>` or `>>`.
 - Read, Write and Edit of the author's own `answer-<n>.md`, as often as it
   likes. Its writes and edits are replayed in order, and the file they leave
   must be the kept copy that was scored. A write or edit whose tool result
@@ -47,7 +61,7 @@ prompt --rounds`): `repair-1` to `repair-<rounds>` and `answer-1` to
 run cannot score more feedback than it reports (Codex, on #147).
 
     audit_subagent.py LOG.jsonl --prompt P --dir D --rounds R --lang L [--kept K]
-        [--check-cmd HARNESS] > transcript.json
+        [--check-cmd HARNESS [--shell-forms]] > transcript.json
 
 `--dir` is where the author wrote (as its log records it); `--kept` is where
 the answers are kept now, when they were moved. Exits 1 if any call is flagged.
@@ -65,14 +79,36 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from harness import extract, repair, select  # noqa: E402
 
 
+# `--shell-forms` (S7 run 13): what may follow the check command. A grep
+# pattern is quoted and cannot start with `-`, so it cannot smuggle in an
+# option such as `-r` (which searches the working directory) or `-f FILE`.
+# In double quotes, a backslash may only escape a regex character, which the
+# shell passes to grep unchanged, and `$` may only end the pattern or come
+# before `|`, so nothing is expanded.
+_PATTERN = (r"""(?:'(?!-)[^'\n]*'"""
+            r"""|"(?!-)(?:[^"\\`$\n]|\\[|().^$\[\]]|\$(?=["|]))*")""")
+_ENDS = r"(?:head|tail) (?:-n [0-9]+|-[0-9]+)"
+_FILTER = (r"(?: \| (?:" + _ENDS + r"|grep(?: (?:-[nivcE]|-[ABC] [0-9]+))* " + _PATTERN
+           + r"(?: \| " + _ENDS + r")?))?")
+
+
+def check_command(check_cmd: Path, run_dir: Path, shell_forms: bool = False) -> re.Pattern:
+    """The Bash command arm B may run; group 1 is the answer file's number."""
+    core = (r"python3 " + re.escape(str(check_cmd)) + r" check --lang firth "
+            + re.escape(str(run_dir)) + r"/answer-([1-9][0-9]*)\.md")
+    if not shell_forms:
+        return re.compile(core)
+    root = re.escape(str(check_cmd.parents[2]))
+    return re.compile(r"(?:cd " + root + r" && )?" + core + r"(?: 2>&1)?" + _FILTER + r" *")
+
+
 def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: int,
-          lang: str, check_cmd: Path | None = None) -> tuple[dict, list[str]]:
+          lang: str, check_cmd: Path | None = None,
+          shell_forms: bool = False) -> tuple[dict, list[str]]:
     reads = {str(prompt)}
     answer = re.compile(re.escape(str(run_dir)) + r"/answer-([1-9][0-9]*)\.md")
     repair = re.compile(re.escape(str(run_dir)) + r"/repair-([1-9][0-9]*)\.md")
-    checking = (re.compile(r"python3 " + re.escape(str(check_cmd)) + r" check --lang firth "
-                           + re.escape(str(run_dir)) + r"/answer-([1-9][0-9]*)\.md")
-                if check_cmd else None)
+    checking = check_command(check_cmd, run_dir, shell_forms) if check_cmd else None
     files: dict[str, str | None] = {}  # arm B: each answer file as its writes and edits leave it
     produced = set()  # answer files a successful Write or Edit of the author's made
     calls, models, times, bad = [], set(), [], []
@@ -100,6 +136,8 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
                 c = checking.fullmatch(str(inp.get("command", "")))
                 if c and int(c[1]) <= rounds + 1 and set(inp) <= {"command", "description", "timeout"}:
                     rec["check"] = f"answer-{c[1]}.md"
+                    if shell_forms:
+                        rec["command"] = str(inp["command"])
                 else:
                     rec["input"] = inp
                     bad.append(f"{name}: {json.dumps(inp)[:200]}")
@@ -255,12 +293,18 @@ def main() -> int:
     cli.add_argument("--kept", type=Path)
     cli.add_argument("--rounds", type=int, required=True, help="the feedback rounds the prompt allowed")
     cli.add_argument("--check-cmd", type=Path,
-                     help="arm B of S7 run 12: the harness whose `check` the author may run")
+                     help="arm B of S7 runs 12 and 13: the harness whose `check` the author may run")
+    cli.add_argument("--shell-forms", action="store_true",
+                     help="arm B of S7 run 13: also allow the closed set of additions to the check "
+                          "command listed above")
     cli.add_argument("--lang", required=True, choices=["firth", "python"],
                      help="the language the author wrote, which decides how its feedback is rebuilt")
     a = cli.parse_args()
+    if a.shell_forms and not a.check_cmd:
+        cli.error("--shell-forms needs --check-cmd")
     events = [json.loads(l) for l in a.log.read_text().splitlines() if l.strip()]
-    log, bad = audit(events, a.prompt, a.dir, a.kept or a.dir, a.rounds, a.lang, a.check_cmd)
+    log, bad = audit(events, a.prompt, a.dir, a.kept or a.dir, a.rounds, a.lang, a.check_cmd,
+                     a.shell_forms)
     print(json.dumps(log, indent=2))
     for b in bad:
         print("FLAGGED", b, file=sys.stderr)

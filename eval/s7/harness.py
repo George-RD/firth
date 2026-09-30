@@ -120,8 +120,8 @@ def prompt(tasks: list[Task], lang: str, extra_docs: tuple[str, ...] = (),
     does not hold) gets the MVP documents instead, answers without tools, and is
     shown up to `rounds` times how its answers did on the visible examples
     (`repair`), which is what `try` would have shown it. With `check_tool` as
-    well, the author may also run `check` on its own answer file (S7 run 12,
-    arm B), which checks every block and runs none."""
+    well, the author may also run `check` on its own answer file (S7 runs 12
+    and 13, arm B; run 13's wording), which checks every block and runs none."""
     if check_tool and (lang != "firth" or not rounds):
         raise ValueError("the check tool is for Firth answers with feedback rounds")
     if rounds and any(t.id not in MVP_IDS for t in tasks):
@@ -134,9 +134,11 @@ def prompt(tasks: list[Task], lang: str, extra_docs: tuple[str, ...] = (),
         "your answer file, and running the Firth checker on your answer file with exactly "
         f"this command:\n\n    {CHECK}\n\n"
         "It checks every task block in the file with Firth's type checker and shows, for "
-        "each task, `ok` or the checker's diagnostics. It does not run your programs. Run "
-        "it as often as you like before you hand in each answer. Run no other command, and "
-        "do not use the internet. "
+        "each task, `ok` or the checker's diagnostics. It does not run your programs. It "
+        "already prints everything, so run it exactly as written: add no `2>&1`, no pipe "
+        "such as `| head` or `| grep`, no redirection and no `cd`. Run it as often as you "
+        "like before you hand in each answer. Run no other command, and do not use the "
+        "internet. "
         if check_tool else
         "Do not use any tool except reading this prompt file and writing your answer "
         "file, and do not use the internet. ")
