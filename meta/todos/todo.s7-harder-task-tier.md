@@ -14,13 +14,15 @@ until the tasks get harder.
 ## Acceptance criteria
 
 - A calibration pool, separate from the scored tier, used to check that
-  Sonnet is not at the ceiling. The scored tier is then frozen and unseen
-  before its results are observed, so tasks are never swapped after a
-  ceiling result.
-- A fixed task set, written before any trial, where Sonnet does not sit at
-  the ceiling in Python or in Firth. Several tasks at allocator weight.
-- Sonnet 5.5 is the primary subject. Haiku 4.5 stays as a secondary check
-  of how learnable the language is for a small model.
+  the planned primary subject is not at the ceiling. The scored tier is
+  frozen before any scored trial, and no scored task is run during
+  calibration, so tasks are never swapped after a ceiling result.
+- A fixed scored task set, written before any scored trial, where Sonnet
+  does not sit at the ceiling in Python or in Firth. Several tasks at
+  allocator weight.
+- Sonnet 5.5 is the planned primary subject (roadmap, "Subject models");
+  the choice is confirmed before the scored tier is frozen. Haiku 4.5 stays
+  as a secondary check of how learnable the language is for a small model.
 - A cheap non-Anthropic subject (DeepSeek Flash) is added only if it can be
   reached without new credentials. If it cannot, say so here and leave it
   out.
