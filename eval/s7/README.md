@@ -2057,12 +2057,12 @@ Arm B started 8 samples, and all 8 are void.
     (B4 to B8), sum 30 (0, 11, 10, 0, 9).
   - With the toolchain voids: arm A 11 samples, sum 65; arm B 8 samples, sum
     50 (11, 9, 0, 0, 11, 10, 0, 9).
-- B1 and B2 passed 11 and 9 tasks in their first answers without seeing a
-  single diagnostic. Arm A's first answers passed 1 task over 11 samples.
-  That contrast is striking, but it comes from 8 void samples that were not
-  randomised against arm A's timing. It suggests, and does not show, that
-  the arm B prompt changes how authors write before they check. Run 13 can
-  test it.
+- Arm B's void first answers (11, 9, 0, 0, 11, 10, 0, 9) are higher than
+  arm A's (1 task over 11 samples). They are reported as void and
+  descriptive only, and no claim about the checker or arm B's prompt is
+  made from them: the samples are void, B1 to B3 never saw a diagnostic,
+  and the arms were not started evenly. Run 13's secondary 3 tests first
+  answers.
 
 ### Validity findings
 
