@@ -1,0 +1,1 @@
+rule: the audit flagged 15 of 16 Bash calls, every one a run of the check command with extra shell syntax (`2>&1` 15, `| grep` 13, `| head` 4, `| tail` 1; one call can add several). The full commands are in `bash-calls.json`. Round 1 scored 9/20; no feedback was sent (run stopped early). The context scan flagged nothing.
