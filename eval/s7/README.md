@@ -2096,12 +2096,12 @@ Arm B started 8 samples, and all 8 are void.
 ### What run 13 changes
 
 Run 13's pre-registration is a separate PR. It rewords arm B's tool
-sentence to say that the command already prints everything and needs no
-redirection or filter. It allows a closed set of exact forms of the check
-command: with or without ` 2>&1`, optionally one pipe to `head -n N`,
-`tail -n N` or a `grep` with a closed set of options and one quoted
-pattern, and optionally the prefix `cd /home/user/firth-r12 && `. It
-refuses everything else, and it makes the start-order analysis co-primary.
+sentence to say that the command already prints everything and must be run
+exactly as written. Its audit allows a closed set of exact forms of the check
+command, each of which only reads the checker's own output (` 2>&1`, a pipe
+to `head`, `tail` or a `grep` with a quoted pattern, and a `cd` into the
+worktree), and refuses everything else. It makes the start-order analysis
+co-primary.
 
 ## What the eleven runs say about the bet
 
