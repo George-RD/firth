@@ -44,6 +44,18 @@ stricter than the allowlist below; an enforced allowlist should settle
 whether rewriting one's own answer is allowed, and the audit should then
 match it.
 
+Run 11 (`eval/s7/runs/2026-09-29-locals-guide/`) was the first time an
+author acted on the harness's `task_status` channel. Forty seconds after
+its last answer, A14 was shown `task_status` items naming five other
+authors. It then read A15's raw output log and ran `tail` on it (log
+lines 95 and 101 of its log, `arm-a/haiku-firth-14/void.md`). The audit
+voided it. Had the compaction that injects these items come before its
+last answer, it could have read another sample's work first. A13 and B4
+were shown the same kind of item after their last answers and made no
+call. Eight of run 11's nine voids were authors rewriting, editing or
+re-reading their own answer file, which the allowlist below would permit
+and the audit flags, so settling that rule matters for the void rate.
+
 Close it with one of:
 
 - Run each author in its own container or sandbox, with only its prompt,

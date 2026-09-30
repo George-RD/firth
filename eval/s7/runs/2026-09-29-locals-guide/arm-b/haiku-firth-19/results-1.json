@@ -1,0 +1,2550 @@
+{
+  "lang": "firth",
+  "tasks": {
+    "seq-sum": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            15
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 21\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Seq Int [ .. Int Seq Int -- .. Int ]). `main` calls `helper-seq-sum`, which has an error of its own; this report assumes `helper-seq-sum` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: helper-seq-sum\nat: line 7, column 41\nmessage: The local `xs` is used after `call` on line 8 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-continue\nat: line 12, column 3\nmessage: `helper-continue` declares that it leaves \u03c1 but its body leaves \u03c1 Int.\nexpected: \u03c1\nactual: \u03c1 Int\nhint: The body leaves 1 extra value on top (Int). Consume or `drop` it before the end of the word, or declare it in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 21\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Seq Int [ .. Int Seq Int -- .. Int ]). `main` calls `helper-seq-sum`, which has an error of its own; this report assumes `helper-seq-sum` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: helper-seq-sum\nat: line 7, column 41\nmessage: The local `xs` is used after `call` on line 8 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-continue\nat: line 12, column 3\nmessage: `helper-continue` declares that it leaves \u03c1 but its body leaves \u03c1 Int.\nexpected: \u03c1\nactual: \u03c1 Int\nhint: The body leaves 1 extra value on top (Int). Consume or `drop` it before the end of the word, or declare it in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 21\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Seq Int [ .. Int Seq Int -- .. Int ]). `main` calls `helper-seq-sum`, which has an error of its own; this report assumes `helper-seq-sum` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: helper-seq-sum\nat: line 7, column 41\nmessage: The local `xs` is used after `call` on line 8 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-continue\nat: line 12, column 3\nmessage: `helper-continue` declares that it leaves \u03c1 but its body leaves \u03c1 Int.\nexpected: \u03c1\nactual: \u03c1 Int\nhint: The body leaves 1 extra value on top (Int). Consume or `drop` it before the end of the word, or declare it in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -3,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 21\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Seq Int [ .. Int Seq Int -- .. Int ]). `main` calls `helper-seq-sum`, which has an error of its own; this report assumes `helper-seq-sum` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: helper-seq-sum\nat: line 7, column 41\nmessage: The local `xs` is used after `call` on line 8 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-continue\nat: line 12, column 3\nmessage: `helper-continue` declares that it leaves \u03c1 but its body leaves \u03c1 Int.\nexpected: \u03c1\nactual: \u03c1 Int\nhint: The body leaves 1 extra value on top (Int). Consume or `drop` it before the end of the word, or declare it in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10
+            ]
+          ],
+          "expected": [
+            55
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 21\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Seq Int [ .. Int Seq Int -- .. Int ]). `main` calls `helper-seq-sum`, which has an error of its own; this report assumes `helper-seq-sum` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: helper-seq-sum\nat: line 7, column 41\nmessage: The local `xs` is used after `call` on line 8 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-continue\nat: line 12, column 3\nmessage: `helper-continue` declares that it leaves \u03c1 but its body leaves \u03c1 Int.\nexpected: \u03c1\nactual: \u03c1 Int\nhint: The body leaves 1 extra value on top (Int). Consume or `drop` it before the end of the word, or declare it in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -5,
+              -6
+            ]
+          ],
+          "expected": [
+            -11
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 21\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Int Seq Int [ .. Int Seq Int -- .. Int ]). `main` calls `helper-seq-sum`, which has an error of its own; this report assumes `helper-seq-sum` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: helper-seq-sum\nat: line 7, column 41\nmessage: The local `xs` is used after `call` on line 8 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-continue\nat: line 12, column 3\nmessage: `helper-continue` declares that it leaves \u03c1 but its body leaves \u03c1 Int.\nexpected: \u03c1\nactual: \u03c1 Int\nhint: The body leaves 1 extra value on top (Int). Consume or `drop` it before the end of the word, or declare it in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "seq-max": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              9,
+              2
+            ]
+          ],
+          "expected": [
+            9
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 40\nmessage: `helper-max-loop` needs more values than the stack holds here. `main` calls `helper-max-loop`, which has an error of its own; this report assumes `helper-max-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-max-loop` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved-effect\nword: helper-max-loop\nat: line 8, column 98\nmessage: `prim >` is not a primitive.\nhint: The primitives are `prim +`, `prim -`, `prim *`, `prim <`, `prim =`, `prim div`, `prim mod`, `prim and`, `prim or`, `prim not`, `prim seq-int.empty`, `prim seq-int.len`, `prim seq-int.at`, `prim seq-int.push`, `prim seq-int.set`, `prim seq-bool.empty`, `prim seq-bool.len`, `prim seq-bool.at`, `prim seq-bool.push`, `prim seq-bool.set`, `prim send`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 40\nmessage: `helper-max-loop` needs more values than the stack holds here. `main` calls `helper-max-loop`, which has an error of its own; this report assumes `helper-max-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-max-loop` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved-effect\nword: helper-max-loop\nat: line 8, column 98\nmessage: `prim >` is not a primitive.\nhint: The primitives are `prim +`, `prim -`, `prim *`, `prim <`, `prim =`, `prim div`, `prim mod`, `prim and`, `prim or`, `prim not`, `prim seq-int.empty`, `prim seq-int.len`, `prim seq-int.at`, `prim seq-int.push`, `prim seq-int.set`, `prim seq-bool.empty`, `prim seq-bool.len`, `prim seq-bool.at`, `prim seq-bool.push`, `prim seq-bool.set`, `prim send`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -4,
+              -2,
+              -9
+            ]
+          ],
+          "expected": [
+            -2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 40\nmessage: `helper-max-loop` needs more values than the stack holds here. `main` calls `helper-max-loop`, which has an error of its own; this report assumes `helper-max-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-max-loop` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved-effect\nword: helper-max-loop\nat: line 8, column 98\nmessage: `prim >` is not a primitive.\nhint: The primitives are `prim +`, `prim -`, `prim *`, `prim <`, `prim =`, `prim div`, `prim mod`, `prim and`, `prim or`, `prim not`, `prim seq-int.empty`, `prim seq-int.len`, `prim seq-int.at`, `prim seq-int.push`, `prim seq-int.set`, `prim seq-bool.empty`, `prim seq-bool.len`, `prim seq-bool.at`, `prim seq-bool.push`, `prim seq-bool.set`, `prim send`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 40\nmessage: `helper-max-loop` needs more values than the stack holds here. `main` calls `helper-max-loop`, which has an error of its own; this report assumes `helper-max-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-max-loop` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved-effect\nword: helper-max-loop\nat: line 8, column 98\nmessage: `prim >` is not a primitive.\nhint: The primitives are `prim +`, `prim -`, `prim *`, `prim <`, `prim =`, `prim div`, `prim mod`, `prim and`, `prim or`, `prim not`, `prim seq-int.empty`, `prim seq-int.len`, `prim seq-int.at`, `prim seq-int.push`, `prim seq-int.set`, `prim seq-bool.empty`, `prim seq-bool.len`, `prim seq-bool.at`, `prim seq-bool.push`, `prim seq-bool.set`, `prim send`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              8,
+              8,
+              3
+            ]
+          ],
+          "expected": [
+            8
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 40\nmessage: `helper-max-loop` needs more values than the stack holds here. `main` calls `helper-max-loop`, which has an error of its own; this report assumes `helper-max-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-max-loop` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved-effect\nword: helper-max-loop\nat: line 8, column 98\nmessage: `prim >` is not a primitive.\nhint: The primitives are `prim +`, `prim -`, `prim *`, `prim <`, `prim =`, `prim div`, `prim mod`, `prim and`, `prim or`, `prim not`, `prim seq-int.empty`, `prim seq-int.len`, `prim seq-int.at`, `prim seq-int.push`, `prim seq-int.set`, `prim seq-bool.empty`, `prim seq-bool.len`, `prim seq-bool.at`, `prim seq-bool.push`, `prim seq-bool.set`, `prim send`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 40\nmessage: `helper-max-loop` needs more values than the stack holds here. `main` calls `helper-max-loop`, which has an error of its own; this report assumes `helper-max-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-max-loop` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved-effect\nword: helper-max-loop\nat: line 8, column 98\nmessage: `prim >` is not a primitive.\nhint: The primitives are `prim +`, `prim -`, `prim *`, `prim <`, `prim =`, `prim div`, `prim mod`, `prim and`, `prim or`, `prim not`, `prim seq-int.empty`, `prim seq-int.len`, `prim seq-int.at`, `prim seq-int.push`, `prim seq-int.set`, `prim seq-bool.empty`, `prim seq-bool.len`, `prim seq-bool.at`, `prim seq-bool.push`, `prim seq-bool.set`, `prim send`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "count-below": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              5,
+              2,
+              8
+            ],
+            4
+          ],
+          "expected": [
+            2
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 23\nmessage: `helper-count-loop` needs more values than the stack holds here. `main` calls `helper-count-loop`, which has an error of its own; this report assumes `helper-count-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-count-loop` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-count-loop\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx count xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            3
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 23\nmessage: `helper-count-loop` needs more values than the stack holds here. `main` calls `helper-count-loop`, which has an error of its own; this report assumes `helper-count-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-count-loop` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-count-loop\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx count xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            4
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 23\nmessage: `helper-count-loop` needs more values than the stack holds here. `main` calls `helper-count-loop`, which has an error of its own; this report assumes `helper-count-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-count-loop` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-count-loop\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx count xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              0,
+              1
+            ],
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 23\nmessage: `helper-count-loop` needs more values than the stack holds here. `main` calls `helper-count-loop`, which has an error of its own; this report assumes `helper-count-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-count-loop` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-count-loop\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx count xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              1,
+              9,
+              1,
+              9
+            ],
+            10
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 23\nmessage: `helper-count-loop` needs more values than the stack holds here. `main` calls `helper-count-loop`, which has an error of its own; this report assumes `helper-count-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-count-loop` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-count-loop\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx count xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              3
+            ],
+            -5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 23\nmessage: `helper-count-loop` needs more values than the stack holds here. `main` calls `helper-count-loop`, which has an error of its own; this report assumes `helper-count-loop` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-count-loop` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-count-loop\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx count xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "index-of": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              7,
+              3,
+              9,
+              3
+            ],
+            3
+          ],
+          "expected": [
+            1
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 23\nmessage: `helper-find-index` needs more values than the stack holds here. `main` calls `helper-find-index`, which has an error of its own; this report assumes `helper-find-index` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-find-index` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-find-index\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx xs x } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            1
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 23\nmessage: `helper-find-index` needs more values than the stack holds here. `main` calls `helper-find-index`, which has an error of its own; this report assumes `helper-find-index` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-find-index` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-find-index\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx xs x } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 23\nmessage: `helper-find-index` needs more values than the stack holds here. `main` calls `helper-find-index`, which has an error of its own; this report assumes `helper-find-index` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-find-index` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-find-index\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx xs x } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 23\nmessage: `helper-find-index` needs more values than the stack holds here. `main` calls `helper-find-index`, which has an error of its own; this report assumes `helper-find-index` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-find-index` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-find-index\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx xs x } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            2
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 23\nmessage: `helper-find-index` needs more values than the stack holds here. `main` calls `helper-find-index`, which has an error of its own; this report assumes `helper-find-index` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-find-index` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-find-index\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx xs x } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              -2,
+              -3
+            ],
+            -3
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 23\nmessage: `helper-find-index` needs more values than the stack holds here. `main` calls `helper-find-index`, which has an error of its own; this report assumes `helper-find-index` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-find-index` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-find-index\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx xs x } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "reverse": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              2,
+              1
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 40\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Seq Int [ .. Int Seq Int Seq Int -- .. Seq Int ]). `main` calls `helper-reverse`, which has an error of its own; this report assumes `helper-reverse` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-reverse\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx result xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 40\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Seq Int [ .. Int Seq Int Seq Int -- .. Seq Int ]). `main` calls `helper-reverse`, which has an error of its own; this report assumes `helper-reverse` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-reverse\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx result xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 40\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Seq Int [ .. Int Seq Int Seq Int -- .. Seq Int ]). `main` calls `helper-reverse`, which has an error of its own; this report assumes `helper-reverse` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-reverse\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx result xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              -4,
+              4,
+              -4,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              -4,
+              4,
+              -4,
+              4
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 40\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Seq Int [ .. Int Seq Int Seq Int -- .. Seq Int ]). `main` calls `helper-reverse`, which has an error of its own; this report assumes `helper-reverse` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-reverse\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx result xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 40\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Seq Int [ .. Int Seq Int Seq Int -- .. Seq Int ]). `main` calls `helper-reverse`, which has an error of its own; this report assumes `helper-reverse` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-reverse\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx result xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "prefix-sums": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              3,
+              6
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 42\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Int Seq Int [ .. Int Int Seq Int Seq Int -- .. Seq Int ]). `main` calls `helper-prefix`, which has an error of its own; this report assumes `helper-prefix` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-prefix\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx sum result xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 42\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Int Seq Int [ .. Int Int Seq Int Seq Int -- .. Seq Int ]). `main` calls `helper-prefix`, which has an error of its own; this report assumes `helper-prefix` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-prefix\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx sum result xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 42\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Int Seq Int [ .. Int Int Seq Int Seq Int -- .. Seq Int ]). `main` calls `helper-prefix`, which has an error of its own; this report assumes `helper-prefix` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-prefix\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx sum result xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              -3,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              3,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 42\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Int Seq Int [ .. Int Int Seq Int Seq Int -- .. Seq Int ]). `main` calls `helper-prefix`, which has an error of its own; this report assumes `helper-prefix` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-prefix\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx sum result xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              20,
+              30,
+              40,
+              50,
+              60
+            ]
+          ],
+          "expected": [
+            [
+              10,
+              30,
+              60,
+              100,
+              150,
+              210
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 42\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Int Seq Int [ .. Int Int Seq Int Seq Int -- .. Seq Int ]). `main` calls `helper-prefix`, which has an error of its own; this report assumes `helper-prefix` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-prefix\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx sum result xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "keep-positive": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              -1,
+              0,
+              4
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              4
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 40\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Seq Int [ .. Int Seq Int Seq Int -- .. Seq Int ]). `main` calls `helper-keep-pos`, which has an error of its own; this report assumes `helper-keep-pos` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-keep-pos\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx result xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 40\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Seq Int [ .. Int Seq Int Seq Int -- .. Seq Int ]). `main` calls `helper-keep-pos`, which has an error of its own; this report assumes `helper-keep-pos` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-keep-pos\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx result xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              -2
+            ]
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 40\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Seq Int [ .. Int Seq Int Seq Int -- .. Seq Int ]). `main` calls `helper-keep-pos`, which has an error of its own; this report assumes `helper-keep-pos` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-keep-pos\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx result xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 40\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Seq Int [ .. Int Seq Int Seq Int -- .. Seq Int ]). `main` calls `helper-keep-pos`, which has an error of its own; this report assumes `helper-keep-pos` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-keep-pos\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx result xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              0,
+              5,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 40\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Seq Int [ .. Int Seq Int Seq Int -- .. Seq Int ]). `main` calls `helper-keep-pos`, which has an error of its own; this report assumes `helper-keep-pos` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-keep-pos\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx result xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -7,
+              7,
+              -7,
+              7,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              7,
+              7,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 40\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Seq Int [ .. Int Seq Int Seq Int -- .. Seq Int ]). `main` calls `helper-keep-pos`, which has an error of its own; this report assumes `helper-keep-pos` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-keep-pos\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx result xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "is-sorted": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              5
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 26\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Bool Int Seq Int [ .. Int Bool Seq Int -- .. Bool ]). `main` calls `helper-is-sorted`, which has an error of its own; this report assumes `helper-is-sorted` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-is-sorted\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx sorted xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 26\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Bool Int Seq Int [ .. Int Bool Seq Int -- .. Bool ]). `main` calls `helper-is-sorted`, which has an error of its own; this report assumes `helper-is-sorted` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-is-sorted\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx sorted xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 26\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Bool Int Seq Int [ .. Int Bool Seq Int -- .. Bool ]). `main` calls `helper-is-sorted`, which has an error of its own; this report assumes `helper-is-sorted` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-is-sorted\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx sorted xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 26\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Bool Int Seq Int [ .. Int Bool Seq Int -- .. Bool ]). `main` calls `helper-is-sorted`, which has an error of its own; this report assumes `helper-is-sorted` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-is-sorted\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx sorted xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 26\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Bool Int Seq Int [ .. Int Bool Seq Int -- .. Bool ]). `main` calls `helper-is-sorted`, which has an error of its own; this report assumes `helper-is-sorted` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-is-sorted\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx sorted xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -5,
+              -5,
+              0,
+              7
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 26\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Bool Int Seq Int [ .. Int Bool Seq Int -- .. Bool ]). `main` calls `helper-is-sorted`, which has an error of its own; this report assumes `helper-is-sorted` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-is-sorted\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx sorted xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 26\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Bool Int Seq Int [ .. Int Bool Seq Int -- .. Bool ]). `main` calls `helper-is-sorted`, which has an error of its own; this report assumes `helper-is-sorted` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-is-sorted\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx sorted xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "dot": {
+      "needs": [
+        "loop",
+        "mul",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            32
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 26\nmessage: `helper-dot` needs more values than the stack holds here. `main` calls `helper-dot`, which has an error of its own; this report assumes `helper-dot` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-dot` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-dot\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx sum xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 26\nmessage: `helper-dot` needs more values than the stack holds here. `main` calls `helper-dot`, which has an error of its own; this report assumes `helper-dot` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-dot` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-dot\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx sum xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2
+            ],
+            [
+              -3
+            ]
+          ],
+          "expected": [
+            -6
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 26\nmessage: `helper-dot` needs more values than the stack holds here. `main` calls `helper-dot`, which has an error of its own; this report assumes `helper-dot` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-dot` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-dot\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx sum xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              -1
+            ],
+            [
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 26\nmessage: `helper-dot` needs more values than the stack holds here. `main` calls `helper-dot`, which has an error of its own; this report assumes `helper-dot` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-dot` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-dot\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx sum xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              3,
+              3,
+              3
+            ],
+            [
+              1,
+              2,
+              3,
+              4
+            ]
+          ],
+          "expected": [
+            30
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 26\nmessage: `helper-dot` needs more values than the stack holds here. `main` calls `helper-dot`, which has an error of its own; this report assumes `helper-dot` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-dot` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-dot\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx sum xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "all-true": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              true,
+              true,
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 29\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Bool Int Seq Bool [ .. Int Bool Seq Bool -- .. Bool ]). `main` calls `helper-all-true`, which has an error of its own; this report assumes `helper-all-true` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-all-true\nat: line 7, column 7\nmessage: `flags` is not a defined word, primitive or local.\nactual: flags\nhint: `flags` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx result flags } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 29\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Bool Int Seq Bool [ .. Int Bool Seq Bool -- .. Bool ]). `main` calls `helper-all-true`, which has an error of its own; this report assumes `helper-all-true` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-all-true\nat: line 7, column 7\nmessage: `flags` is not a defined word, primitive or local.\nactual: flags\nhint: `flags` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx result flags } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 29\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Bool Int Seq Bool [ .. Int Bool Seq Bool -- .. Bool ]). `main` calls `helper-all-true`, which has an error of its own; this report assumes `helper-all-true` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-all-true\nat: line 7, column 7\nmessage: `flags` is not a defined word, primitive or local.\nactual: flags\nhint: `flags` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx result flags } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 29\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Bool Int Seq Bool [ .. Int Bool Seq Bool -- .. Bool ]). `main` calls `helper-all-true`, which has an error of its own; this report assumes `helper-all-true` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-all-true\nat: line 7, column 7\nmessage: `flags` is not a defined word, primitive or local.\nactual: flags\nhint: `flags` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx result flags } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 29\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Bool Int Seq Bool [ .. Int Bool Seq Bool -- .. Bool ]). `main` calls `helper-all-true`, which has an error of its own; this report assumes `helper-all-true` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-all-true\nat: line 7, column 7\nmessage: `flags` is not a defined word, primitive or local.\nactual: flags\nhint: `flags` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx result flags } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              false,
+              true
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 29\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Bool Int Seq Bool [ .. Int Bool Seq Bool -- .. Bool ]). `main` calls `helper-all-true`, which has an error of its own; this report assumes `helper-all-true` keeps its stack effect.\nexpected: .. Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-all-true\nat: line 7, column 7\nmessage: `flags` is not a defined word, primitive or local.\nactual: flags\nhint: `flags` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx result flags } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "longest-run": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              1,
+              2,
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-item\nat: line 8, column 314\nmessage: `]` cannot start an item in a word's body.\nactual: ]\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-item\nat: line 8, column 314\nmessage: `]` cannot start an item in a word's body.\nactual: ]\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-item\nat: line 8, column 314\nmessage: `]` cannot start an item in a word's body.\nactual: ]\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-item\nat: line 8, column 314\nmessage: `]` cannot start an item in a word's body.\nactual: ]\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-item\nat: line 8, column 314\nmessage: `]` cannot start an item in a word's body.\nactual: ]\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              1,
+              1,
+              1,
+              1,
+              3
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-item\nat: line 8, column 314\nmessage: `]` cannot start an item in a word's body.\nactual: ]\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "has-pair-sum": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              6,
+              2
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 34\nmessage: `helper-has-pair` needs more values than the stack holds here. `main` calls `helper-has-pair`, which has an error of its own; this report assumes `helper-has-pair` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-has-pair` and in what order.\n\nerror 2 of 4\ncode: firth.name.unresolved\nword: helper-has-pair\nat: line 7, column 5\nmessage: `found` is not a defined word, primitive or local.\nactual: found\nhint: `found` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 4\ncode: firth.name.unresolved\nword: helper-has-pair-inner\nat: line 11, column 3\nmessage: `i` is not a defined word, primitive or local.\nactual: i\nhint: `i` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 4 of 4\ncode: firth.type.declared-effect-mismatch\nword: helper-check-j\nat: line 14, column 3\nmessage: `helper-check-j` declares that it leaves \u03c1 Bool but its body leaves \u03c1 Int Int Bool Seq Int Int.\nexpected: \u03c1 Bool\nactual: \u03c1 Int Int Bool Seq Int Int\nhint: The body leaves 4 extra values on top (Int Bool Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            0
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 34\nmessage: `helper-has-pair` needs more values than the stack holds here. `main` calls `helper-has-pair`, which has an error of its own; this report assumes `helper-has-pair` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-has-pair` and in what order.\n\nerror 2 of 4\ncode: firth.name.unresolved\nword: helper-has-pair\nat: line 7, column 5\nmessage: `found` is not a defined word, primitive or local.\nactual: found\nhint: `found` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 4\ncode: firth.name.unresolved\nword: helper-has-pair-inner\nat: line 11, column 3\nmessage: `i` is not a defined word, primitive or local.\nactual: i\nhint: `i` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 4 of 4\ncode: firth.type.declared-effect-mismatch\nword: helper-check-j\nat: line 14, column 3\nmessage: `helper-check-j` declares that it leaves \u03c1 Bool but its body leaves \u03c1 Int Int Bool Seq Int Int.\nexpected: \u03c1 Bool\nactual: \u03c1 Int Int Bool Seq Int Int\nhint: The body leaves 4 extra values on top (Int Bool Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ],
+            8
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 34\nmessage: `helper-has-pair` needs more values than the stack holds here. `main` calls `helper-has-pair`, which has an error of its own; this report assumes `helper-has-pair` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-has-pair` and in what order.\n\nerror 2 of 4\ncode: firth.name.unresolved\nword: helper-has-pair\nat: line 7, column 5\nmessage: `found` is not a defined word, primitive or local.\nactual: found\nhint: `found` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 4\ncode: firth.name.unresolved\nword: helper-has-pair-inner\nat: line 11, column 3\nmessage: `i` is not a defined word, primitive or local.\nactual: i\nhint: `i` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 4 of 4\ncode: firth.type.declared-effect-mismatch\nword: helper-check-j\nat: line 14, column 3\nmessage: `helper-check-j` declares that it leaves \u03c1 Bool but its body leaves \u03c1 Int Int Bool Seq Int Int.\nexpected: \u03c1 Bool\nactual: \u03c1 Int Int Bool Seq Int Int\nhint: The body leaves 4 extra values on top (Int Bool Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 34\nmessage: `helper-has-pair` needs more values than the stack holds here. `main` calls `helper-has-pair`, which has an error of its own; this report assumes `helper-has-pair` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-has-pair` and in what order.\n\nerror 2 of 4\ncode: firth.name.unresolved\nword: helper-has-pair\nat: line 7, column 5\nmessage: `found` is not a defined word, primitive or local.\nactual: found\nhint: `found` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 4\ncode: firth.name.unresolved\nword: helper-has-pair-inner\nat: line 11, column 3\nmessage: `i` is not a defined word, primitive or local.\nactual: i\nhint: `i` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 4 of 4\ncode: firth.type.declared-effect-mismatch\nword: helper-check-j\nat: line 14, column 3\nmessage: `helper-check-j` declares that it leaves \u03c1 Bool but its body leaves \u03c1 Int Int Bool Seq Int Int.\nexpected: \u03c1 Bool\nactual: \u03c1 Int Int Bool Seq Int Int\nhint: The body leaves 4 extra values on top (Int Bool Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            7
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 34\nmessage: `helper-has-pair` needs more values than the stack holds here. `main` calls `helper-has-pair`, which has an error of its own; this report assumes `helper-has-pair` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-has-pair` and in what order.\n\nerror 2 of 4\ncode: firth.name.unresolved\nword: helper-has-pair\nat: line 7, column 5\nmessage: `found` is not a defined word, primitive or local.\nactual: found\nhint: `found` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 4\ncode: firth.name.unresolved\nword: helper-has-pair-inner\nat: line 11, column 3\nmessage: `i` is not a defined word, primitive or local.\nactual: i\nhint: `i` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 4 of 4\ncode: firth.type.declared-effect-mismatch\nword: helper-check-j\nat: line 14, column 3\nmessage: `helper-check-j` declares that it leaves \u03c1 Bool but its body leaves \u03c1 Int Int Bool Seq Int Int.\nexpected: \u03c1 Bool\nactual: \u03c1 Int Int Bool Seq Int Int\nhint: The body leaves 4 extra values on top (Int Bool Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              -2,
+              9,
+              0
+            ],
+            -2
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 34\nmessage: `helper-has-pair` needs more values than the stack holds here. `main` calls `helper-has-pair`, which has an error of its own; this report assumes `helper-has-pair` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-has-pair` and in what order.\n\nerror 2 of 4\ncode: firth.name.unresolved\nword: helper-has-pair\nat: line 7, column 5\nmessage: `found` is not a defined word, primitive or local.\nactual: found\nhint: `found` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 4\ncode: firth.name.unresolved\nword: helper-has-pair-inner\nat: line 11, column 3\nmessage: `i` is not a defined word, primitive or local.\nactual: i\nhint: `i` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 4 of 4\ncode: firth.type.declared-effect-mismatch\nword: helper-check-j\nat: line 14, column 3\nmessage: `helper-check-j` declares that it leaves \u03c1 Bool but its body leaves \u03c1 Int Int Bool Seq Int Int.\nexpected: \u03c1 Bool\nactual: \u03c1 Int Int Bool Seq Int Int\nhint: The body leaves 4 extra values on top (Int Bool Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              1,
+              3
+            ],
+            2
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 34\nmessage: `helper-has-pair` needs more values than the stack holds here. `main` calls `helper-has-pair`, which has an error of its own; this report assumes `helper-has-pair` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-has-pair` and in what order.\n\nerror 2 of 4\ncode: firth.name.unresolved\nword: helper-has-pair\nat: line 7, column 5\nmessage: `found` is not a defined word, primitive or local.\nactual: found\nhint: `found` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 4\ncode: firth.name.unresolved\nword: helper-has-pair-inner\nat: line 11, column 3\nmessage: `i` is not a defined word, primitive or local.\nactual: i\nhint: `i` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 4 of 4\ncode: firth.type.declared-effect-mismatch\nword: helper-check-j\nat: line 14, column 3\nmessage: `helper-check-j` declares that it leaves \u03c1 Bool but its body leaves \u03c1 Int Int Bool Seq Int Int.\nexpected: \u03c1 Bool\nactual: \u03c1 Int Int Bool Seq Int Int\nhint: The body leaves 4 extra values on top (Int Bool Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "count-distinct": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 38\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Seq Int [ .. Seq Int Seq Int -- .. Int ]). `main` calls `helper-distinct`, which has an error of its own; this report assumes `helper-distinct` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 4\ncode: firth.type.word-input-mismatch\nword: helper-distinct\nat: line 7, column 5\nmessage: `helper-count-distinct` in `helper-distinct` takes idx:Int, unique:Seq Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the input `unique` (Seq Int), the input `xs` (Seq Int) and `0` (Int). `helper-distinct` calls `helper-count-distinct`, which has an error of its own; this report assumes `helper-count-distinct` keeps its stack effect.\nexpected: .. Int Seq Int Seq Int\nactual: \u03c1 Seq Int Seq Int Int\nhint: The top value, `0` (Int), is not what `helper-count-distinct` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 3 of 4\ncode: firth.name.unresolved\nword: helper-count-distinct\nat: line 11, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx unique xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 4 of 4\ncode: firth.type.declared-effect-mismatch\nword: helper-is-in-unique\nat: line 16, column 3\nmessage: `helper-is-in-unique` declares that it leaves \u03c1 Int but its body leaves \u03c1 Int Int Seq Int Seq Int Int.\nexpected: \u03c1 Int\nactual: \u03c1 Int Int Seq Int Seq Int Int\nhint: The body leaves 4 extra values on top (Int Seq Int Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 38\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Seq Int [ .. Seq Int Seq Int -- .. Int ]). `main` calls `helper-distinct`, which has an error of its own; this report assumes `helper-distinct` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 4\ncode: firth.type.word-input-mismatch\nword: helper-distinct\nat: line 7, column 5\nmessage: `helper-count-distinct` in `helper-distinct` takes idx:Int, unique:Seq Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the input `unique` (Seq Int), the input `xs` (Seq Int) and `0` (Int). `helper-distinct` calls `helper-count-distinct`, which has an error of its own; this report assumes `helper-count-distinct` keeps its stack effect.\nexpected: .. Int Seq Int Seq Int\nactual: \u03c1 Seq Int Seq Int Int\nhint: The top value, `0` (Int), is not what `helper-count-distinct` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 3 of 4\ncode: firth.name.unresolved\nword: helper-count-distinct\nat: line 11, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx unique xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 4 of 4\ncode: firth.type.declared-effect-mismatch\nword: helper-is-in-unique\nat: line 16, column 3\nmessage: `helper-is-in-unique` declares that it leaves \u03c1 Int but its body leaves \u03c1 Int Int Seq Int Seq Int Int.\nexpected: \u03c1 Int\nactual: \u03c1 Int Int Seq Int Seq Int Int\nhint: The body leaves 4 extra values on top (Int Seq Int Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 38\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Seq Int [ .. Seq Int Seq Int -- .. Int ]). `main` calls `helper-distinct`, which has an error of its own; this report assumes `helper-distinct` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 4\ncode: firth.type.word-input-mismatch\nword: helper-distinct\nat: line 7, column 5\nmessage: `helper-count-distinct` in `helper-distinct` takes idx:Int, unique:Seq Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the input `unique` (Seq Int), the input `xs` (Seq Int) and `0` (Int). `helper-distinct` calls `helper-count-distinct`, which has an error of its own; this report assumes `helper-count-distinct` keeps its stack effect.\nexpected: .. Int Seq Int Seq Int\nactual: \u03c1 Seq Int Seq Int Int\nhint: The top value, `0` (Int), is not what `helper-count-distinct` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 3 of 4\ncode: firth.name.unresolved\nword: helper-count-distinct\nat: line 11, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx unique xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 4 of 4\ncode: firth.type.declared-effect-mismatch\nword: helper-is-in-unique\nat: line 16, column 3\nmessage: `helper-is-in-unique` declares that it leaves \u03c1 Int but its body leaves \u03c1 Int Int Seq Int Seq Int Int.\nexpected: \u03c1 Int\nactual: \u03c1 Int Int Seq Int Seq Int Int\nhint: The body leaves 4 extra values on top (Int Seq Int Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 38\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Seq Int [ .. Seq Int Seq Int -- .. Int ]). `main` calls `helper-distinct`, which has an error of its own; this report assumes `helper-distinct` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 4\ncode: firth.type.word-input-mismatch\nword: helper-distinct\nat: line 7, column 5\nmessage: `helper-count-distinct` in `helper-distinct` takes idx:Int, unique:Seq Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the input `unique` (Seq Int), the input `xs` (Seq Int) and `0` (Int). `helper-distinct` calls `helper-count-distinct`, which has an error of its own; this report assumes `helper-count-distinct` keeps its stack effect.\nexpected: .. Int Seq Int Seq Int\nactual: \u03c1 Seq Int Seq Int Int\nhint: The top value, `0` (Int), is not what `helper-count-distinct` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 3 of 4\ncode: firth.name.unresolved\nword: helper-count-distinct\nat: line 11, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx unique xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 4 of 4\ncode: firth.type.declared-effect-mismatch\nword: helper-is-in-unique\nat: line 16, column 3\nmessage: `helper-is-in-unique` declares that it leaves \u03c1 Int but its body leaves \u03c1 Int Int Seq Int Seq Int Int.\nexpected: \u03c1 Int\nactual: \u03c1 Int Int Seq Int Seq Int Int\nhint: The body leaves 4 extra values on top (Int Seq Int Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 38\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Seq Int [ .. Seq Int Seq Int -- .. Int ]). `main` calls `helper-distinct`, which has an error of its own; this report assumes `helper-distinct` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 4\ncode: firth.type.word-input-mismatch\nword: helper-distinct\nat: line 7, column 5\nmessage: `helper-count-distinct` in `helper-distinct` takes idx:Int, unique:Seq Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the input `unique` (Seq Int), the input `xs` (Seq Int) and `0` (Int). `helper-distinct` calls `helper-count-distinct`, which has an error of its own; this report assumes `helper-count-distinct` keeps its stack effect.\nexpected: .. Int Seq Int Seq Int\nactual: \u03c1 Seq Int Seq Int Int\nhint: The top value, `0` (Int), is not what `helper-count-distinct` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 3 of 4\ncode: firth.name.unresolved\nword: helper-count-distinct\nat: line 11, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx unique xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 4 of 4\ncode: firth.type.declared-effect-mismatch\nword: helper-is-in-unique\nat: line 16, column 3\nmessage: `helper-is-in-unique` declares that it leaves \u03c1 Int but its body leaves \u03c1 Int Int Seq Int Seq Int Int.\nexpected: \u03c1 Int\nactual: \u03c1 Int Int Seq Int Seq Int Int\nhint: The body leaves 4 extra values on top (Int Seq Int Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              1,
+              -1,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 38\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Seq Int [ .. Seq Int Seq Int -- .. Int ]). `main` calls `helper-distinct`, which has an error of its own; this report assumes `helper-distinct` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 4\ncode: firth.type.word-input-mismatch\nword: helper-distinct\nat: line 7, column 5\nmessage: `helper-count-distinct` in `helper-distinct` takes idx:Int, unique:Seq Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the input `unique` (Seq Int), the input `xs` (Seq Int) and `0` (Int). `helper-distinct` calls `helper-count-distinct`, which has an error of its own; this report assumes `helper-count-distinct` keeps its stack effect.\nexpected: .. Int Seq Int Seq Int\nactual: \u03c1 Seq Int Seq Int Int\nhint: The top value, `0` (Int), is not what `helper-count-distinct` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 3 of 4\ncode: firth.name.unresolved\nword: helper-count-distinct\nat: line 11, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx unique xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 4 of 4\ncode: firth.type.declared-effect-mismatch\nword: helper-is-in-unique\nat: line 16, column 3\nmessage: `helper-is-in-unique` declares that it leaves \u03c1 Int but its body leaves \u03c1 Int Int Seq Int Seq Int Int.\nexpected: \u03c1 Int\nactual: \u03c1 Int Int Seq Int Seq Int Int\nhint: The body leaves 4 extra values on top (Int Seq Int Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "merge-sorted": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              9
+            ],
+            [
+              2,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              9,
+              10
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 45\nmessage: `helper-merge` needs more values than the stack holds here. `main` calls `helper-merge`, which has an error of its own; this report assumes `helper-merge` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-merge` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-merge\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i j xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 45\nmessage: `helper-merge` needs more values than the stack holds here. `main` calls `helper-merge`, which has an error of its own; this report assumes `helper-merge` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-merge` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-merge\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i j xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            [
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 45\nmessage: `helper-merge` needs more values than the stack holds here. `main` calls `helper-merge`, which has an error of its own; this report assumes `helper-merge` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-merge` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-merge\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i j xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 45\nmessage: `helper-merge` needs more values than the stack holds here. `main` calls `helper-merge`, which has an error of its own; this report assumes `helper-merge` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-merge` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-merge\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i j xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 45\nmessage: `helper-merge` needs more values than the stack holds here. `main` calls `helper-merge`, which has an error of its own; this report assumes `helper-merge` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-merge` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-merge\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i j xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -3,
+              0,
+              8
+            ],
+            [
+              -4,
+              8,
+              9,
+              9
+            ]
+          ],
+          "expected": [
+            [
+              -4,
+              -3,
+              0,
+              8,
+              8,
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 45\nmessage: `helper-merge` needs more values than the stack holds here. `main` calls `helper-merge`, which has an error of its own; this report assumes `helper-merge` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-merge` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-merge\nat: line 7, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i j xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "digits": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            305
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              5
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: helper-get-digits\nat: line 7, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-digits-loop\nat: line 11, column 27\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n result } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            [
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: helper-get-digits\nat: line 7, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-digits-loop\nat: line 11, column 27\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n result } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            [
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: helper-get-digits\nat: line 7, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-digits-loop\nat: line 11, column 27\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n result } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              1,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: helper-get-digits\nat: line 7, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-digits-loop\nat: line 11, column 27\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n result } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            99
+          ],
+          "expected": [
+            [
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: helper-get-digits\nat: line 7, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-digits-loop\nat: line 11, column 27\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n result } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            420
+          ],
+          "expected": [
+            [
+              4,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: helper-get-digits\nat: line 7, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-digits-loop\nat: line 11, column 27\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n result } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            987
+          ],
+          "expected": [
+            [
+              9,
+              8,
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: helper-get-digits\nat: line 7, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-digits-loop\nat: line 11, column 27\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n result } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            1005
+          ],
+          "expected": [
+            [
+              1,
+              0,
+              0,
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: helper-get-digits\nat: line 7, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-digits-loop\nat: line 11, column 27\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n result } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            40213
+          ],
+          "expected": [
+            [
+              4,
+              0,
+              2,
+              1,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: helper-get-digits\nat: line 7, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-digits-loop\nat: line 11, column 27\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n result } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 8
+    },
+    "primes-up-to": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 39\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Int [ .. Seq Int Int Int -- .. Seq Int ]). `main` calls `helper-find-primes`, which has an error of its own; this report assumes `helper-find-primes` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-find-primes\nat: line 7, column 3\nmessage: `candidate` is not a defined word, primitive or local.\nactual: candidate\nhint: `candidate` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { primes candidate n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-is-prime-check\nat: line 10, column 3\nmessage: `helper-is-prime-check` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Seq Int Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Seq Int Int\nhint: The body leaves 2 extra values on top (Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 39\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Int [ .. Seq Int Int Int -- .. Seq Int ]). `main` calls `helper-find-primes`, which has an error of its own; this report assumes `helper-find-primes` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-find-primes\nat: line 7, column 3\nmessage: `candidate` is not a defined word, primitive or local.\nactual: candidate\nhint: `candidate` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { primes candidate n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-is-prime-check\nat: line 10, column 3\nmessage: `helper-is-prime-check` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Seq Int Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Seq Int Int\nhint: The body leaves 2 extra values on top (Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 39\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Int [ .. Seq Int Int Int -- .. Seq Int ]). `main` calls `helper-find-primes`, which has an error of its own; this report assumes `helper-find-primes` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-find-primes\nat: line 7, column 3\nmessage: `candidate` is not a defined word, primitive or local.\nactual: candidate\nhint: `candidate` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { primes candidate n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-is-prime-check\nat: line 10, column 3\nmessage: `helper-is-prime-check` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Seq Int Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Seq Int Int\nhint: The body leaves 2 extra values on top (Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            2
+          ],
+          "expected": [
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 39\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Int [ .. Seq Int Int Int -- .. Seq Int ]). `main` calls `helper-find-primes`, which has an error of its own; this report assumes `helper-find-primes` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-find-primes\nat: line 7, column 3\nmessage: `candidate` is not a defined word, primitive or local.\nactual: candidate\nhint: `candidate` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { primes candidate n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-is-prime-check\nat: line 10, column 3\nmessage: `helper-is-prime-check` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Seq Int Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Seq Int Int\nhint: The body leaves 2 extra values on top (Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            13
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 39\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Int [ .. Seq Int Int Int -- .. Seq Int ]). `main` calls `helper-find-primes`, which has an error of its own; this report assumes `helper-find-primes` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-find-primes\nat: line 7, column 3\nmessage: `candidate` is not a defined word, primitive or local.\nactual: candidate\nhint: `candidate` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { primes candidate n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-is-prime-check\nat: line 10, column 3\nmessage: `helper-is-prime-check` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Seq Int Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Seq Int Int\nhint: The body leaves 2 extra values on top (Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            30
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13,
+              17,
+              19,
+              23,
+              29
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.quotation-input-mismatch\nword: main\nat: line 3, column 39\nmessage: The quotation run by `dip` in `main` does not accept the stack below it (\u03c1 Seq Int Int Int [ .. Seq Int Int Int -- .. Seq Int ]). `main` calls `helper-find-primes`, which has an error of its own; this report assumes `helper-find-primes` keeps its stack effect.\nexpected: .. Seq Int\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-find-primes\nat: line 7, column 3\nmessage: `candidate` is not a defined word, primitive or local.\nactual: candidate\nhint: `candidate` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { primes candidate n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-is-prime-check\nat: line 10, column 3\nmessage: `helper-is-prime-check` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Seq Int Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Seq Int Int\nhint: The body leaves 2 extra values on top (Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "histogram": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              0,
+              2,
+              2,
+              1,
+              2
+            ],
+            3
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 42\nmessage: `helper-init-histogram` needs more values than the stack holds here. `main` calls `helper-init-histogram`, which has an error of its own; this report assumes `helper-init-histogram` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-init-histogram` and in what order.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-init-histogram\nat: line 7, column 3\nmessage: `idx` is not a defined word, primitive or local.\nactual: idx\nhint: `idx` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx counts xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: helper-fill-histogram\nat: line 11, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx counts xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 42\nmessage: `helper-init-histogram` needs more values than the stack holds here. `main` calls `helper-init-histogram`, which has an error of its own; this report assumes `helper-init-histogram` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-init-histogram` and in what order.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-init-histogram\nat: line 7, column 3\nmessage: `idx` is not a defined word, primitive or local.\nactual: idx\nhint: `idx` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx counts xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: helper-fill-histogram\nat: line 11, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx counts xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            1
+          ],
+          "expected": [
+            [
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 42\nmessage: `helper-init-histogram` needs more values than the stack holds here. `main` calls `helper-init-histogram`, which has an error of its own; this report assumes `helper-init-histogram` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-init-histogram` and in what order.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-init-histogram\nat: line 7, column 3\nmessage: `idx` is not a defined word, primitive or local.\nactual: idx\nhint: `idx` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx counts xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: helper-fill-histogram\nat: line 11, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx counts xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 42\nmessage: `helper-init-histogram` needs more values than the stack holds here. `main` calls `helper-init-histogram`, which has an error of its own; this report assumes `helper-init-histogram` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-init-histogram` and in what order.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-init-histogram\nat: line 7, column 3\nmessage: `idx` is not a defined word, primitive or local.\nactual: idx\nhint: `idx` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx counts xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: helper-fill-histogram\nat: line 11, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx counts xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              0,
+              3,
+              1,
+              0,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            [
+              2,
+              1,
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 42\nmessage: `helper-init-histogram` needs more values than the stack holds here. `main` calls `helper-init-histogram`, which has an error of its own; this report assumes `helper-init-histogram` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-init-histogram` and in what order.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-init-histogram\nat: line 7, column 3\nmessage: `idx` is not a defined word, primitive or local.\nactual: idx\nhint: `idx` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx counts xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: helper-fill-histogram\nat: line 11, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx counts xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              1
+            ],
+            4
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 42\nmessage: `helper-init-histogram` needs more values than the stack holds here. `main` calls `helper-init-histogram`, which has an error of its own; this report assumes `helper-init-histogram` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-init-histogram` and in what order.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-init-histogram\nat: line 7, column 3\nmessage: `idx` is not a defined word, primitive or local.\nactual: idx\nhint: `idx` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx counts xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: helper-fill-histogram\nat: line 11, column 7\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx counts xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "sort": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.name.unresolved\nword: helper-insertion-sort\nat: line 7, column 5\nmessage: `arr` is not a defined word, primitive or local.\nactual: arr\nhint: `arr` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { arr } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-sort-loop\nat: line 11, column 7\nmessage: `arr` is not a defined word, primitive or local.\nactual: arr\nhint: `arr` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { i arr } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-find-insert-pos\nat: line 16, column 3\nmessage: `helper-find-insert-pos` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Int Int Seq Int Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Int Int Seq Int Int\nhint: The body leaves 4 extra values on top (Int Int Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.name.unresolved\nword: helper-insertion-sort\nat: line 7, column 5\nmessage: `arr` is not a defined word, primitive or local.\nactual: arr\nhint: `arr` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { arr } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-sort-loop\nat: line 11, column 7\nmessage: `arr` is not a defined word, primitive or local.\nactual: arr\nhint: `arr` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { i arr } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-find-insert-pos\nat: line 16, column 3\nmessage: `helper-find-insert-pos` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Int Int Seq Int Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Int Int Seq Int Int\nhint: The body leaves 4 extra values on top (Int Int Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.name.unresolved\nword: helper-insertion-sort\nat: line 7, column 5\nmessage: `arr` is not a defined word, primitive or local.\nactual: arr\nhint: `arr` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { arr } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-sort-loop\nat: line 11, column 7\nmessage: `arr` is not a defined word, primitive or local.\nactual: arr\nhint: `arr` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { i arr } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-find-insert-pos\nat: line 16, column 3\nmessage: `helper-find-insert-pos` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Int Int Seq Int Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Int Int Seq Int Int\nhint: The body leaves 4 extra values on top (Int Int Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.name.unresolved\nword: helper-insertion-sort\nat: line 7, column 5\nmessage: `arr` is not a defined word, primitive or local.\nactual: arr\nhint: `arr` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { arr } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-sort-loop\nat: line 11, column 7\nmessage: `arr` is not a defined word, primitive or local.\nactual: arr\nhint: `arr` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { i arr } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-find-insert-pos\nat: line 16, column 3\nmessage: `helper-find-insert-pos` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Int Int Seq Int Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Int Int Seq Int Int\nhint: The body leaves 4 extra values on top (Int Int Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              -1,
+              4,
+              -1,
+              0,
+              7,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              -1,
+              -1,
+              0,
+              3,
+              4,
+              7,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.name.unresolved\nword: helper-insertion-sort\nat: line 7, column 5\nmessage: `arr` is not a defined word, primitive or local.\nactual: arr\nhint: `arr` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { arr } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-sort-loop\nat: line 11, column 7\nmessage: `arr` is not a defined word, primitive or local.\nactual: arr\nhint: `arr` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { i arr } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-find-insert-pos\nat: line 16, column 3\nmessage: `helper-find-insert-pos` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Int Int Seq Int Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Int Int Seq Int Int\nhint: The body leaves 4 extra values on top (Int Int Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.name.unresolved\nword: helper-insertion-sort\nat: line 7, column 5\nmessage: `arr` is not a defined word, primitive or local.\nactual: arr\nhint: `arr` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { arr } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: helper-sort-loop\nat: line 11, column 7\nmessage: `arr` is not a defined word, primitive or local.\nactual: arr\nhint: `arr` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { i arr } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.type.declared-effect-mismatch\nword: helper-find-insert-pos\nat: line 16, column 3\nmessage: `helper-find-insert-pos` declares that it leaves \u03c1 Seq Int but its body leaves \u03c1 Int Int Int Seq Int Int.\nexpected: \u03c1 Seq Int\nactual: \u03c1 Int Int Int Seq Int Int\nhint: The body leaves 4 extra values on top (Int Int Seq Int Int). Consume or `drop` them before the end of the word, or declare them in the signature's output. Here \u03c1 stands for the caller's values that this word must leave untouched.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "ledger": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10,
+            [
+              5,
+              -20,
+              -15,
+              4
+            ]
+          ],
+          "expected": [
+            4,
+            1
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 36\nmessage: `helper-process-txs` needs more values than the stack holds here. `main` calls `helper-process-txs`, which has an error of its own; this report assumes `helper-process-txs` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-process-txs` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-process-txs\nat: line 7, column 7\nmessage: `txs` is not a defined word, primitive or local.\nactual: txs\nhint: `txs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { balance rejected idx start txs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            []
+          ],
+          "expected": [
+            0,
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 36\nmessage: `helper-process-txs` needs more values than the stack holds here. `main` calls `helper-process-txs`, which has an error of its own; this report assumes `helper-process-txs` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-process-txs` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-process-txs\nat: line 7, column 7\nmessage: `txs` is not a defined word, primitive or local.\nactual: txs\nhint: `txs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { balance rejected idx start txs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            [
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 36\nmessage: `helper-process-txs` needs more values than the stack holds here. `main` calls `helper-process-txs`, which has an error of its own; this report assumes `helper-process-txs` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-process-txs` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-process-txs\nat: line 7, column 7\nmessage: `txs` is not a defined word, primitive or local.\nactual: txs\nhint: `txs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { balance rejected idx start txs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            5,
+            [
+              -5,
+              -1,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 36\nmessage: `helper-process-txs` needs more values than the stack holds here. `main` calls `helper-process-txs`, which has an error of its own; this report assumes `helper-process-txs` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-process-txs` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-process-txs\nat: line 7, column 7\nmessage: `txs` is not a defined word, primitive or local.\nactual: txs\nhint: `txs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { balance rejected idx start txs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            100,
+            [
+              -50,
+              -60,
+              20,
+              -70
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 36\nmessage: `helper-process-txs` needs more values than the stack holds here. `main` calls `helper-process-txs`, which has an error of its own; this report assumes `helper-process-txs` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-process-txs` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-process-txs\nat: line 7, column 7\nmessage: `txs` is not a defined word, primitive or local.\nactual: txs\nhint: `txs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { balance rejected idx start txs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            3,
+            [
+              -1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.stack-underflow\nword: main\nat: line 3, column 36\nmessage: `helper-process-txs` needs more values than the stack holds here. `main` calls `helper-process-txs`, which has an error of its own; this report assumes `helper-process-txs` keeps its stack effect.\nhint: Words can only use their declared inputs, values pushed earlier in the body, and locals. Check how many values are on the stack before `helper-process-txs` and in what order.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: helper-process-txs\nat: line 7, column 7\nmessage: `txs` is not a defined word, primitive or local.\nactual: txs\nhint: `txs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { balance rejected idx start txs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "allocate-batch": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              10,
+              3
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              4,
+              5,
+              7,
+              1
+            ],
+            [
+              false,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              2
+            ],
+            [
+              4,
+              0,
+              6,
+              1
+            ],
+            [
+              0,
+              3,
+              1,
+              0
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-item\nat: line 8, column 512\nmessage: `=` cannot start an item in a word's body.\nactual: =\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            [],
+            [],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ],
+            [],
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-item\nat: line 8, column 512\nmessage: `=` cannot start an item in a word's body.\nactual: =\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              3
+            ],
+            [
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-item\nat: line 8, column 512\nmessage: `=` cannot start an item in a word's body.\nactual: =\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              1,
+              1,
+              1
+            ],
+            [
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              2,
+              2,
+              0
+            ],
+            [
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-item\nat: line 8, column 512\nmessage: `=` cannot start an item in a word's body.\nactual: =\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              9
+            ],
+            [
+              1,
+              0,
+              1,
+              0
+            ],
+            [
+              9,
+              5,
+              1,
+              0
+            ],
+            [
+              true,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              4,
+              0
+            ],
+            [
+              9,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              3,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-item\nat: line 8, column 512\nmessage: `=` cannot start an item in a word's body.\nactual: =\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              2,
+              2,
+              1,
+              1
+            ],
+            [
+              false,
+              false,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-item\nat: line 8, column 512\nmessage: `=` cannot start an item in a word's body.\nactual: =\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    }
+  },
+  "label": "run 11 arm-b firth 19 round 1",
+  "firth_commit": "5d09e25d8115952ca56f3bb837253d29967b06c8",
+  "eval_sha256": {
+    "task.py": "f982b19a56550012ba4614e5355fbee2b5cf3e961ed0f28c5f99fdc536c7308a",
+    "tasks.py": "fff2402680c865b52ca2b661d4636430d1d62c507972d5913a1c79f99c654e17",
+    "mvp_tasks.py": "9905f4a5cdc3b64fa4cc1f4180e80106cdfbcd0b00c8105b91bf12c629c391e1",
+    "harness.py": "4eb01a6b037dee68b4159945ab684c6c61b544df17dcb6ff1611fbe3076eb7a3",
+    "isolate.py": "8aba58cd416521b896756432546129cb43f1d53761f7373ccf6c5de43b5aa9dc"
+  },
+  "prompt_docs": [
+    "prompt --tier mvp --rounds 2 at 5d09e25",
+    " arm-b"
+  ]
+}

@@ -1,0 +1,207 @@
+{
+ "note": "Everything put into this author's context that it did not fetch itself: the eval session's own instructions and the author's own tool results are left out, except for reminders the harness added inside a result, and every result is also scanned. cross_sample marks an item naming another sample (by number, or by arm and number), the other arm's commit or worktree, another author's label, or another task's files.",
+ "sample": "haiku-firth-3",
+ "arm": "arm-b",
+ "injected": [
+  {
+   "line": 2,
+   "at": "2026-09-29T21:39:00.450Z",
+   "kind": "attachment:deferred_tools_delta",
+   "chars": 17011
+  },
+  {
+   "line": 3,
+   "at": "2026-09-29T21:39:00.450Z",
+   "kind": "system-reminder",
+   "chars": 341
+  },
+  {
+   "line": 4,
+   "at": "2026-09-29T21:39:00.452Z",
+   "kind": "attachment:environment",
+   "chars": 334
+  },
+  {
+   "line": 5,
+   "at": "2026-09-29T21:39:00.452Z",
+   "kind": "attachment:model",
+   "chars": 288
+  },
+  {
+   "line": 6,
+   "at": "2026-09-29T21:39:00.453Z",
+   "kind": "attachment:skill_listing",
+   "chars": 9694
+  },
+  {
+   "line": 7,
+   "at": "2026-09-29T21:39:00.457Z",
+   "kind": "attachment:instructions",
+   "chars": 11012
+  },
+  {
+   "line": 8,
+   "at": "2026-09-29T21:39:00.457Z",
+   "kind": "attachment:session_context",
+   "chars": 321
+  },
+  {
+   "line": 9,
+   "at": "2026-09-29T21:39:00.457Z",
+   "kind": "attachment:date",
+   "chars": 38
+  },
+  {
+   "line": 10,
+   "at": "2026-09-29T21:39:00.458Z",
+   "kind": "attachment:credential_org",
+   "chars": 86
+  },
+  {
+   "line": 11,
+   "at": "2026-09-29T21:39:00.459Z",
+   "kind": "attachment:remote_session_change",
+   "chars": 455
+  },
+  {
+   "line": 12,
+   "at": "2026-09-29T21:39:00.460Z",
+   "kind": "attachment:prompt_snapshot",
+   "chars": 2917
+  },
+  {
+   "line": 17,
+   "at": "2026-09-29T21:39:03.046Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 18,
+   "at": "2026-09-29T21:39:03.085Z",
+   "kind": "attachment:prompt_snapshot",
+   "chars": 175206
+  },
+  {
+   "line": 19,
+   "at": "2026-09-29T21:39:03.112Z",
+   "kind": "attachment:mcp_instructions_delta",
+   "chars": 6014
+  },
+  {
+   "line": 20,
+   "at": "2026-09-29T21:39:03.112Z",
+   "kind": "attachment:nested_memory",
+   "chars": 229
+  },
+  {
+   "line": 21,
+   "at": "2026-09-29T21:39:03.113Z",
+   "kind": "attachment:nested_memory",
+   "chars": 21986
+  },
+  {
+   "line": 22,
+   "at": "2026-09-29T21:39:03.113Z",
+   "kind": "attachment:auto_mode",
+   "chars": 136
+  },
+  {
+   "line": 23,
+   "at": "2026-09-29T21:39:03.114Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 28,
+   "at": "2026-09-29T21:40:14.936Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 29,
+   "at": "2026-09-29T21:40:14.978Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 38,
+   "at": "2026-09-29T21:41:30.218Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 39,
+   "at": "2026-09-29T21:41:30.290Z",
+   "kind": "attachment:nested_memory",
+   "chars": 229
+  },
+  {
+   "line": 40,
+   "at": "2026-09-29T21:41:30.290Z",
+   "kind": "attachment:nested_memory",
+   "chars": 21986
+  },
+  {
+   "line": 41,
+   "at": "2026-09-29T21:41:30.291Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 46,
+   "at": "2026-09-29T21:42:12.779Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 47,
+   "at": "2026-09-29T21:42:12.821Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 50,
+   "at": "2026-09-29T21:42:13.651Z",
+   "kind": "handback-enforce",
+   "chars": 141
+  },
+  {
+   "line": 58,
+   "at": "2026-09-29T21:43:53.948Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 59,
+   "at": "2026-09-29T21:43:54.062Z",
+   "kind": "attachment:nested_memory",
+   "chars": 229
+  },
+  {
+   "line": 60,
+   "at": "2026-09-29T21:43:54.062Z",
+   "kind": "attachment:nested_memory",
+   "chars": 21986
+  },
+  {
+   "line": 61,
+   "at": "2026-09-29T21:43:54.063Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 65,
+   "at": "2026-09-29T21:44:27.604Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 66,
+   "at": "2026-09-29T21:44:27.641Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  }
+ ],
+ "cross_sample": [],
+ "other_arm_worktree_named": []
+}
