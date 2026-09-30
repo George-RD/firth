@@ -28,9 +28,10 @@ A sample's files stay in `arm-<a>/haiku-firth-<N>/` of this directory and
 are copied, with the session's state and hook log, to the shared folder
 after the sample's `final.md`. Validity is decided here by exit codes
 only (`void_causes`): every check's exit status goes in `checks.json`, and
-a nonzero one writes `void.md` (`rule: <causes> (round R, <time>)`, then
-the audit's flagged lines). A toolchain failure writes `void.md` and
-`final.md` both starting `toolchain: stopped <time>`, and stops the session.
+a nonzero one writes `void.md` in the form `analyse.py` reads (`write_void`:
+one header `rule: <causes>: ...`, the causes merged over rounds, then a
+line per round and the audit's flagged lines). A toolchain failure writes
+`void.md` and `final.md` (`write_toolchain`), and stops the session.
 Any exit code but 0 or 1 from a check stops the session for the driver.
 """
 import json
@@ -74,12 +75,40 @@ class Toolchain(Stop):
     """The toolchain failed: the sample is a toolchain void, and the session stops."""
 
 
+CAUSES = ("audit", "agent-files", "context")  # the names analyse.py's CAUSES uses
+
+
+def write_void(d: Path, causes: list[str], r: int, when: str, flagged: list[str]) -> None:
+    """Record a round's rule-void causes in `void.md`: one header line
+    `rule: <causes>: ...` with every round's causes merged, as `analyse.py`
+    reads the first line, then the rounds' own lines."""
+    v = d / "void.md"
+    old = v.read_text().splitlines() if v.is_file() else []
+    before = [c.strip() for c in old[0].split(":", 2)[1].split(",")] if old else []
+    merged = [c for c in CAUSES if c in before or c in causes]
+    body = old[1:] + [f"  round {r} at {when}: {', '.join(causes)}"] + [f"    {x}" for x in flagged]
+    v.write_text(f"rule: {', '.join(merged)}: exit codes of the checks, by round below (session.py)\n"
+                 + "".join(line + "\n" for line in body))
+
+
+def write_toolchain(d: Path, why: str, when: str) -> str:
+    stamp = f"toolchain: stopped {when}"
+    (d / "void.md").write_text(f"{stamp}\n{why}\n")
+    (d / "final.md").write_text(stamp + "\n")
+    return stamp
+
+
+def write_final(d: Path, when: str) -> None:
+    (d / "final.md").write_text(f"final {when}: audit and scans run on the complete log after answer 3 "
+                                "was scored\n")
+
+
 def void_causes(res: dict) -> list[str]:
     """A round's rule-void causes, from exit codes alone: the audit (a call off
     the list that ran, an unmatched hook record, an answer not rebuilt from
     the author's calls), the agent-files check and the context scan each exit
     1 when they find one. Any other code is not a verdict and stops."""
-    codes = {"audit": res["audit_exit"], "agents-file": res["agents_exit"], "context": res["context_exit"]}
+    codes = {"audit": res["audit_exit"], "agent-files": res["agents_exit"], "context": res["context_exit"]}
     odd = {k: v for k, v in codes.items() if v not in (0, 1)}
     if odd:
         raise Stop(f"a check exited with a code that is not 0 or 1: {odd}")
@@ -401,7 +430,7 @@ def scans(arm: str, n: int, log: Path, lab: str) -> dict:
         cross = json.loads(c.stdout).get("cross_sample", [])
     except ValueError:
         cross = ["context_seen.py printed no JSON"]
-    toolchain = bool(TOOLCHAIN_TEXT.search(log.read_text()))
+    toolchain = toolchain_in_checks(log)
     return {"at": now(), "audit_exit": a.returncode, "audit_flagged": a.stderr.strip().splitlines(),
             "agents_exit": g.returncode, "context_exit": c.returncode,
             "cross_sample": len(cross) if isinstance(cross, list) else cross, "toolchain_text_in_log": toolchain}
@@ -420,16 +449,14 @@ def cmd_round(session: str) -> None:
     try:
         total = score(arm, n, r)
     except Toolchain as e:
-        stamp = f"toolchain: stopped {now()}"
-        (d / "void.md").write_text(f"{stamp}\n{e}\n")
-        (d / "final.md").write_text(stamp + "\n")
+        stamp = write_toolchain(d, str(e), now())
         st["done"].append(cur)
         st["current"] = None
         save(session, st, f"{lab} r{r} {stamp}")
         publish(session)
         raise
     log = find_log(agent)
-    res = scans(arm, n, log, f"{arm}{n}")
+    res = scans(arm, n, log, lab)  # the label in its description, e.g. s2-B7
     res["round"] = r
     checks = json.loads((d / "checks.json").read_text()) if (d / "checks.json").is_file() else []
     (d / "checks.json").write_text(json.dumps(checks + [res], indent=1) + "\n")
@@ -437,9 +464,7 @@ def cmd_round(session: str) -> None:
            f"context exit {res['context_exit']}, cross_sample {res['cross_sample']}"
     causes = void_causes(res)
     if causes:
-        with open(d / "void.md", "a") as f:
-            f.write(f"rule: {', '.join(causes)} (round {r}, {now()})\n"
-                    + "".join(f"  {line}\n" for line in res["audit_flagged"]))
+        write_void(d, causes, r, now(), res["audit_flagged"])
         note += f"; VOID rule: {', '.join(causes)} (the sample keeps its slot and gets all its rounds)"
     hook_errors = [e for e in (json.loads(l) for l in (HOOK / "hook-log.jsonl").read_text().splitlines())
                    if e.get("error") and e.get("sample") == str(d)] if (HOOK / "hook-log.jsonl").is_file() else []
@@ -463,14 +488,36 @@ def cmd_round(session: str) -> None:
         return
     if arm == "B":
         (d / "bash-calls.json").write_text(json.dumps(bash_calls(log), indent=1) + "\n")
-    (d / "final.md").write_text(f"final {now()}: audit and scans run on the complete log after answer 3 "
-                                "was scored\n")
+    write_final(d, now())
     st["done"].append(cur)
     st["current"] = None
     save(session, st, note + "; final.md")
     publish(session)
     print(f"{note}\n{lab} DONE and copied to the shared folder.{stopping}\nNext run: "
           f"python3 {RUN / 'session.py'} next {session}")
+
+
+def check_results(log: Path) -> list[dict]:
+    """The tool results of the author's own Bash calls: where a check it ran
+    would report a toolchain failure."""
+    ids, out = set(), []
+    for raw in log.read_text().splitlines():
+        e = json.loads(raw)
+        content = (e.get("message") or {}).get("content")
+        if not isinstance(content, list):
+            continue
+        for b in content:
+            if not isinstance(b, dict):
+                continue
+            if e.get("type") == "assistant" and b.get("type") == "tool_use" and b.get("name") == "Bash":
+                ids.add(b.get("id"))
+            elif e.get("type") == "user" and b.get("type") == "tool_result" and b.get("tool_use_id") in ids:
+                out.append(b)
+    return out
+
+
+def toolchain_in_checks(log: Path) -> bool:
+    return any(TOOLCHAIN_TEXT.search(json.dumps(b.get("content"))) for b in check_results(log))
 
 
 def bash_calls(log: Path) -> dict:
@@ -541,6 +588,26 @@ def self_test() -> None:
             raise AssertionError(odd)
         except Stop:
             pass
+    # The description names the author as context_seen.py's LABEL reads it.
+    sys.path.insert(0, str(S7))
+    from context_seen import LABEL
+    assert LABEL.findall(f"Run 14 author {label('s2', 'B', 7)}") == ["s2-B7"]
+    # The toolchain scan reads only the author's own Bash results.
+    import tempfile
+    with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False) as f:
+        for e in ({"type": "user", "message": {"content": "the prompt mentions toolchain: lake here"}},
+                  {"type": "assistant", "message": {"content": [{"type": "tool_use", "id": "b1", "name": "Bash",
+                                                                 "input": {"command": "check"}}]}},
+                  {"type": "user", "message": {"content": [{"type": "tool_result", "tool_use_id": "b1",
+                                                            "content": "toolchain: lake exit 1"}]}}):
+            f.write(json.dumps(e) + "\n")
+    got = check_results(Path(f.name))
+    assert [b["tool_use_id"] for b in got] == ["b1"] and toolchain_in_checks(Path(f.name))
+    # The same text outside a Bash result (here, only the prompt) is not a failure.
+    lines = Path(f.name).read_text().splitlines()
+    Path(f.name).write_text(lines[0] + "\n" + lines[1] + "\n")
+    assert not toolchain_in_checks(Path(f.name))
+    Path(f.name).unlink()
     print("session.py self-test: ok")
 
 

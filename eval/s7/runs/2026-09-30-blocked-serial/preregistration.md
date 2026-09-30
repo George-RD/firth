@@ -285,13 +285,16 @@ and `PIN` the pinned commit, both given in the session's brief.
    | Check | 0 | 1 | anything else |
    |---|---|---|---|
    | `audit_subagent.py` (both arms `--hook-log`; arm B also `--check-cmd <pinned harness> --run14-forms`) | clean | rule void, cause `audit` | STOP |
-   | `seen_agents.py <log> <worktree> <pinned AGENTS.md and CLAUDE.md blobs>` | clean | rule void, cause `agents-file` | STOP |
+   | `seen_agents.py <log> <worktree> <pinned AGENTS.md and CLAUDE.md blobs>` | clean | rule void, cause `agent-files` | STOP |
    | `context_seen.py <log> --arm-set run14 --arm <arm> --sample <dir> --label <arm><N>` | clean | rule void, cause `context`; a `cross_sample` item also writes the shared STOP file | STOP |
    | `harness.py score` | scored | toolchain void | toolchain void |
 
-   A rule void appends to the sample's `void.md` the line `rule: <causes>
-   (round <R>, <UTC time>)`, then the audit's flagged lines indented by two
-   spaces; the sample keeps its slot and gets all its rounds, as in run 13.
+   A rule void writes the sample's `void.md` in the form `analyse.py`
+   reads: one header line `rule: <causes>: exit codes of the checks, by
+   round below (session.py)`, with the causes of every round so far merged
+   in the order `audit, agent-files, context`, then for each round a line
+   `  round <R> at <UTC time>: <causes>` and the audit's flagged lines. The
+   sample keeps its slot and gets all its rounds, as in run 13.
    A toolchain void writes `void.md` and `final.md` each starting
    `toolchain: stopped <UTC time>`, and stops the session. Otherwise
    `final.md` is the one line `final <UTC time>: audit and scans run on
@@ -321,7 +324,12 @@ and `PIN` the pinned commit, both given in the session's brief.
    then session) and the sessions' results never share a directory. Extra
    blocks carry the numbers the driver gives them, from 41.
 9. **Results.** The driver copies each session's samples from the shared
-   folder into this run directory and runs the analysis. It checks each
+   folder into this run directory and runs `analyse.py` in it (`python3
+   runs/2026-09-30-blocked-serial/analyse.py`, and `--early-look` for the
+   look). It is run 13's analysis applied to this directory, with the early
+   look counting rule voids of any cause and with the voids by cause,
+   compactions and blocked calls added; its self-test runs `session.py`'s
+   writers into its readers and a synthetic run through both modes. It checks each
    `void.md` against `checks.json` but does not relabel: a label differs
    from the exit codes only as a recorded departure.
 

@@ -43,7 +43,8 @@ SAMPLE = re.compile(r"haiku-(?:firth|python)-([0-9]+)")
 TASKS = re.compile(r"/tasks/([0-9a-f]{8,})")
 # How the eval session labels its authors when it starts them ("Control author
 # B10"); the harness can repeat another task's label with no path (Codex, on #181).
-LABEL = re.compile(r"\bauthor ([AB][0-9]+)\b")
+# Runs 10 to 13 label an author `B7`; run 14 adds its session, `s2-B7`.
+LABEL = re.compile(r"\bauthor ((?:s[1-5]-)?[AB][0-9]+)\b")
 # Run 10's two arms: commit and the worktree it was checked out in. The same
 # sample number exists in both, so a sample is named by arm and number
 # (reviewer, on #181).
@@ -271,6 +272,12 @@ def self_test() -> None:
          "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "x1"}]}},
     )
     clean = scan(base, "haiku-firth-3")
+    # Run 14's task_status line names another author as `s2-B7`; the
+    # author's own label is not a crossing.
+    r14 = 'Run 14 author s2-B7 is running'
+    assert crossing(r14, "haiku-firth-12", "s1-A11", "arm-a")["labels"] == ["s2-B7"]
+    assert "labels" not in crossing(r14, "haiku-firth-7", "s2-B7", "arm-b")
+    assert crossing("Run 13 author B2", "haiku-firth-1", "B1", "arm-b")["labels"] == ["B2"]
     assert clean["injected"] == [] and clean["cross_sample"] == [], clean
     assert clean["compactions"] == [], clean
     squeezed = base + [{"type": "user", "timestamp": "t3",

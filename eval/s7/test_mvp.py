@@ -442,6 +442,12 @@ def author_hook_decides() -> None:
     cli = subprocess.run([sys.executable, str(run), "--self-test"], capture_output=True, text=True)
     check(cli.returncode == 0 and "self-test: ok" in cli.stdout,
           f"run 14's session runner self-test passes: {cli.stdout[-300:]}{cli.stderr[-300:]}")
+    # Run 14's analysis, end to end: session.py's void.md and final.md into
+    # analyse.py's readers, the early look and the full analysis.
+    cli = subprocess.run([sys.executable, str(run.parent / "analyse.py"), "--self-test"],
+                         capture_output=True, text=True)
+    check(cli.returncode == 0 and "self-test: ok" in cli.stdout,
+          f"run 14's analysis self-test passes: {cli.stdout[-300:]}{cli.stderr[-300:]}")
 
 
 def feedback_keeps_hints() -> None:
