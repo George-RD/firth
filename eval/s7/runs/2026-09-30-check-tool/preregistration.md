@@ -79,8 +79,8 @@ loop.
   `Run 12 author <arm><n>` and gives three answers: the first answer and two
   feedback rounds.
 - **Sample size.** 40 counted samples per arm, the coordinator's decision on
-  review, since at 20 per arm the power to detect a gain of +2.4 tasks per
-  sample was about one half (see "Power"). The counted samples in an arm are
+  review, since at 20 per arm the power to detect a gain of about +2.4 tasks
+  per sample was about one half (see "Power"). The counted samples in an arm are
   its first 40 non-void samples by start order (`analyse.py` uses run 11's
   `counted()` with n = 40; its self-test plants 44 samples).
   - No new sample starts in an arm once 40 of its non-void samples have
@@ -262,27 +262,33 @@ per arm and asked for secondary 4. These choices are mine:
 
 ## Power
 
-`power.py` uses a fixed seed and 2,000 simulated runs per row, and takes about
-8 minutes.
+`power.py --n 40 --runs 1000` runs each row in its own process with a fixed
+seed, and took 28 minutes on four cores.
 
 - Final passes are drawn from run 11's 20 counted arm A samples, whose prompt
   is the same as this run's arm A.
 - An arm B sample then passes each task it failed with probability q.
 
-| q | mean gain per sample | power, one-sided MWU, 20 per arm |
-| --- | --- | --- |
-| 0.00 | +0.0 | 0.05 |
-| 0.05 | +0.7 | 0.12 |
-| 0.10 | +1.2 | 0.23 |
-| 0.15 | +1.9 | 0.34 |
-| 0.20 | +2.4 | 0.49 |
+| q | mean gain per sample | power at 40 per arm | power at 20 per arm |
+| --- | --- | --- | --- |
+| 0.00 | +0.1 | 0.05 | 0.05 |
+| 0.05 | +0.7 | 0.20 | 0.12 |
+| 0.10 | +1.2 | 0.32 | 0.23 |
+| 0.15 | +1.8 | 0.58 | 0.34 |
+| 0.20 | +2.5 | 0.76 | 0.49 |
+
+The 20 per arm column is from this PR's first head (`d4d6051`), which ran
+2,000 runs a row in one process with one seed. It is kept to show why the
+sample size was raised; the 40 per arm column is the one this run is read
+against.
 
 - The model of the effect is a guess, and the real power may be lower.
 - In run 11, making the offered edits turned 37 refused final answers into
   answers that check, and only 15 of them passed (`causes/recover.py`). So a
   large gain in answers that check can come with a small gain in passes.
-- At 20 per arm, this run can detect a gain of about +2.4 tasks per sample
-  half the time. A null result is read that way.
+- At 40 per arm, this run detects a gain of about +2.5 tasks per sample three
+  times in four, and +1.8 a little over half the time. A gain near +1 would
+  usually be missed, and a null result is read that way.
 
 ## Enforcement
 
