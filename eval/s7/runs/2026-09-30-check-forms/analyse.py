@@ -10,8 +10,11 @@ pre-registered early feasibility look to arm B's void status.
 A sample counts when its directory has results-1.json and results-3.json and
 no void.md; the counted samples of an arm are its first 40 non-void ones by
 start order. A void sample's void.md starts with `toolchain:` or `rule:`, the
-kind of void; the start-order analysis keeps rule voids and drops toolchain
-ones. A task passes when every case passes. The exact one-sided
+kind of void; the start-order analysis keeps rule voids, scored on their
+third answer like every other sample, and drops toolchain ones. The driver
+writes final.md in a sample's directory once the audit and the scans have
+run on its complete log after its third answer was scored, so its validity
+is final. A task passes when every case passes. The exact one-sided
 Mann-Whitney and Fisher tests are run 11's (`../2026-09-29-locals-guide/
 analyse.py`), whose self-test checks them against brute-force enumeration.
 """
@@ -56,16 +59,18 @@ def void_kind(d):
 
 def started(arm_dir, n=N_PER_ARM):
     """The first n samples by start order, rule voids kept, toolchain voids left
-    out (preregistration.md, secondary 4)."""
+    out (preregistration.md, co-primary 2)."""
     return [d for d in samples(arm_dir) if void_kind(d) != "toolchain"][:n]
 
 
-def last_passed(d):
-    """Tasks passed by the latest answer a sample had scored; 0 if none was."""
-    for r in (3, 2, 1):
-        if (d / f"results-{r}.json").is_file():
-            return passed(d / f"results-{r}.json")
-    return 0
+def final_passed(d):
+    """Tasks passed by a sample's third answer. Every started sample, void or
+    not, gets both feedback rounds (preregistration.md, "Author"), so a rule
+    void without a scored third answer is a protocol error, not a zero."""
+    f = d / "results-3.json"
+    if not f.is_file():
+        raise ValueError(f"{d}: no results-3.json; every started sample is scored on its third answer")
+    return passed(f)
 
 
 def opposed(primary, start_order):
@@ -82,12 +87,30 @@ def gain_claimed(p_primary, p_start_order, alpha=0.05):
 EARLY_LOOK, EARLY_LIMIT = 10, 6  # preregistration.md, "Early feasibility look"
 
 
+def early_window(arm_dir, look=EARLY_LOOK):
+    """The first `look` samples started in the arm, toolchain voids left out,
+    or None while any sample up to the last of them lacks final.md: until
+    then a sample's kind of void, or whether it is void, can still change."""
+    first = []
+    for d in samples(arm_dir):
+        if not (d / "final.md").is_file():
+            return None
+        if void_kind(d) != "toolchain":
+            first.append(d)
+            if len(first) == look:
+                return first
+    return None
+
+
 def early_stop(arm_dir, look=EARLY_LOOK, limit=EARLY_LIMIT):
-    """True once the first `look` samples started in the arm, toolchain voids
-    left out, are all there and `limit` or more of them are rule voids. It
-    reads void status only, never a score."""
-    first = [d for d in samples(arm_dir) if void_kind(d) != "toolchain"][:look]
-    return len(first) == look and sum(void_kind(d) == "rule" for d in first) >= limit
+    """None until the look can be taken (early_window); then True when `limit`
+    or more of those samples are rule voids, of any cause. It reads void
+    status only, never a score, and once every sample in the window is final
+    the reading cannot change."""
+    first = early_window(arm_dir, look)
+    if first is None:
+        return None
+    return sum(void_kind(d) == "rule" for d in first) >= limit
 
 
 def status_leaks(arm_dir):
@@ -158,9 +181,10 @@ def self_test():
                                                 {"tool": "Read"}, {"tool": "Bash", "check": "answer-1.md"},
                                                 {"tool": "Bash", "check": "answer-2.md"}]}))
         assert check_calls(t) == {"answer-1.md": 2, "answer-2.md": 1}
-    # Planted: 44 started samples with a rule void (scored 7 in round 2) and a
-    # toolchain void. The start-order set keeps the rule void, scored on its
-    # latest answer, drops the toolchain void, and stops at 40.
+    # Planted: 44 started samples with a rule void (scored 7 on its third
+    # answer, 0 on its second) and a toolchain void. The start-order set keeps
+    # the rule void, scored on its third answer, drops the toolchain void, and
+    # stops at 40; a started sample with no third answer is refused.
     with tempfile.TemporaryDirectory() as tmp:
         arm = Path(tmp)
         for i in range(1, 45):
@@ -168,16 +192,25 @@ def self_test():
             d.mkdir()
             for r in (1, 3):
                 (d / f"results-{r}.json").write_text(json.dumps({"tasks": {"t": {"cases": [{"pass": False}]}}}))
-        (arm / "haiku-firth-2" / "results-3.json").unlink()
-        (arm / "haiku-firth-2" / "results-2.json").write_text(json.dumps(
+        (arm / "haiku-firth-2" / "results-3.json").write_text(json.dumps(
             {"tasks": {f"t{k}": {"cases": [{"pass": True}]} for k in range(7)}}))
+        (arm / "haiku-firth-2" / "results-2.json").write_text(json.dumps(
+            {"tasks": {"t": {"cases": [{"pass": False}]}}}))
         (arm / "haiku-firth-2" / "void.md").write_text("rule: Bash `ls`\n")
         (arm / "haiku-firth-3" / "void.md").write_text("toolchain: lake exit 1\n")
         got = started(arm)
         assert len(got) == 40 and got[1].name == "haiku-firth-2"
         assert "haiku-firth-3" not in [d.name for d in got] and got[-1].name == "haiku-firth-41"
-        assert last_passed(got[1]) == 7 and last_passed(got[0]) == 0
+        assert final_passed(got[1]) == 7 and final_passed(got[0]) == 0
         assert len(counted(arm)) == 40 and "haiku-firth-2" not in [d.name for d in counted(arm)]
+        (arm / "haiku-firth-5" / "results-3.json").unlink()
+        (arm / "haiku-firth-5" / "void.md").write_text("rule: Bash `ls`\n")
+        try:
+            final_passed(arm / "haiku-firth-5")
+            raise AssertionError("a void without a third answer was scored")
+        except ValueError:
+            pass
+        (arm / "haiku-firth-5" / "void.md").unlink()
         (arm / "haiku-firth-4" / "void.md").write_text("because\n")
         try:
             started(arm)
@@ -185,21 +218,31 @@ def self_test():
         except ValueError:
             pass
     # Planted: the early look fires at 6 rule voids of the first 10 started,
-    # not at 5, not before 10 have started, and not on toolchain voids.
+    # not at 5, and not on toolchain voids; it is not taken before 10 have
+    # started, or while any sample up to the 10th lacks final.md.
     with tempfile.TemporaryDirectory() as tmp:
         arm = Path(tmp)
         for i in range(1, 13):
             (arm / f"haiku-firth-{i}").mkdir()
+            (arm / f"haiku-firth-{i}" / "final.md").write_text("final\n")
         for i in (1, 2, 3, 4, 5):
             (arm / f"haiku-firth-{i}" / "void.md").write_text("rule: Bash `ls`\n")
-        assert not early_stop(arm)
+        assert early_stop(arm) is False
         (arm / "haiku-firth-6" / "void.md").write_text("toolchain: lake exit 1\n")
-        assert not early_stop(arm)
+        assert early_stop(arm) is False
         (arm / "haiku-firth-11" / "void.md").write_text("rule: Bash `ls`\n")
-        assert early_stop(arm)
-        (arm / "haiku-firth-12").rmdir()
-        (arm / "haiku-firth-10").rmdir()
-        assert not early_stop(arm), "fewer than 10 non-toolchain starts"
+        assert early_stop(arm) is True
+        (arm / "haiku-firth-4" / "final.md").unlink()
+        assert early_stop(arm) is None, "a sample in the window is not final"
+        (arm / "haiku-firth-4" / "final.md").write_text("final\n")
+        (arm / "haiku-firth-12" / "final.md").unlink()
+        assert early_stop(arm) is True, "a later sample's finality does not matter"
+        (arm / "haiku-firth-12").joinpath("final.md").write_text("final\n")
+        for i in (10, 12):
+            for f in (arm / f"haiku-firth-{i}").iterdir():
+                f.unlink()
+            (arm / f"haiku-firth-{i}").rmdir()
+        assert early_stop(arm) is None, "fewer than 10 non-toolchain starts"
     # Planted: a task_status leak is counted, and whether it voided the
     # sample; another cross-sample kind and an unflagged status are not.
     with tempfile.TemporaryDirectory() as tmp:
@@ -227,10 +270,15 @@ def main():
     if sys.argv[1:] == ["--self-test"]:
         return self_test()
     if sys.argv[1:] == ["--early-look"]:
-        kinds = [void_kind(d) for d in samples(ARMS["B"]) if void_kind(d) != "toolchain"][:EARLY_LOOK]
+        first = early_window(ARMS["B"])
+        if first is None:
+            print(f"arm B: the look is not taken yet: the first {EARLY_LOOK} samples started "
+                  "(toolchain voids left out) are not all there with final.md")
+            return None
+        kinds = [void_kind(d) for d in first]
         print(f"arm B: {kinds.count('rule')} rule voids of the first {len(kinds)} started "
-              f"(toolchain voids left out); stop at {EARLY_LIMIT} of {EARLY_LOOK}: "
-              + ("STOP" if early_stop(ARMS["B"]) else "continue"))
+              f"(toolchain voids left out): " + ", ".join(f"{d.name} {k or 'valid'}" for d, k in zip(first, kinds))
+              + f"; stop at {EARLY_LIMIT} of {EARLY_LOOK}: " + ("STOP" if early_stop(ARMS["B"]) else "continue"))
         return None
     dirs = {arm: counted(path) for arm, path in ARMS.items()}
     why = ready(dirs)
@@ -266,10 +314,10 @@ def main():
     u, p = mann_whitney_greater(col(b, 1), col(a, 1))
     print(f"Secondary 3: tasks passed in the first answer, B > A: sums A {sum(col(a, 1))} "
           f"B {sum(col(b, 1))}; U_B = {u}, one-sided exact p = {p:.4f}")
-    st = {arm: [last_passed(d) for d in started(path)] for arm, path in ARMS.items()}
+    st = {arm: [final_passed(d) for d in started(path)] for arm, path in ARMS.items()}
     u, p_start = mann_whitney_greater(st["B"], st["A"])
     print(f"Co-primary (start order): tasks passed by the first {N_PER_ARM} started samples per arm, rule "
-          f"voids scored on their latest answer, B > A: sums A {sum(st['A'])} B {sum(st['B'])}; "
+          f"voids scored on their third answer, B > A: sums A {sum(st['A'])} B {sum(st['B'])}; "
           f"U_B = {u}, one-sided exact p = {p_start:.4f}")
     if opposed(sum(col(b, 2)) - sum(col(a, 2)), sum(st["B"]) - sum(st["A"])):
         print("The start-order analysis points the other way from the primary.")

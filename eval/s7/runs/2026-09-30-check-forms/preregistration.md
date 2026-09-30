@@ -96,6 +96,14 @@ Run 13 changes three things, and nothing else about the question:
   `haiku`) with no API key. Each author is started with the description
   `Run 13 author <arm><n>` and gives three answers: the first answer and two
   feedback rounds.
+  - Every started sample gets both feedback rounds and has its third answer
+    scored, whether or not it has been found void. Run 12 stopped a void
+    sample's rounds, which would score a sample voided in round 1 on its
+    first answer and the rest on their third, so co-primary 2 would measure
+    when voids are found. The one exception is a toolchain void whose
+    scoring stopped; co-primary 2 leaves those out.
+  - A sample found void keeps its slot until its third answer is scored.
+    Its replacement starts in its arm's next free slot.
 - **Sample size.** 40 counted samples per arm, as in run 12, whose power
   table this run shares (see "Power"). The counted samples in an arm are its
   first 40 non-void samples by start order.
@@ -104,22 +112,31 @@ Run 13 changes three things, and nothing else about the question:
   - Authoring stops when both arms have 40 counted, fully scored samples. No
     test is run before then, and `analyse.py` refuses to print any statistic
     until then.
-- **Early feasibility look.** Once 10 arm B samples have started, not
-  counting toolchain voids, `analyse.py --early-look` reads their void
-  status.
-  - If 6 or more of those 10 are rule voids, authoring stops. The run is
+- **Early feasibility look.** The look is taken once, when the first 10 arm
+  B samples by start order, not counting toolchain voids, all have final
+  validity (see "Validity of a sample"), and every sample started before the
+  10th of them does too. `analyse.py --early-look` reports that it is not
+  taken yet until then, and then reads their void status. Once those samples
+  are final their void status cannot change, so the reading cannot either,
+  and when it is read cannot decide it. Authoring continues while it waits.
+  - If 6 or more of those 10 are rule voids, authoring stops.
+  - It counts every rule void, whatever the cause, including context voids
+    from the harness's `task_status` lines. It asks whether this protocol
+    can be completed, and a context void costs a replacement as an audit
+    void does. The stop ends both arms, so it cannot favour either. The run is
     reported as not feasible under this protocol, with every sample's scores
     and no test.
   - The look reads void status only, never a score. Its self-test plants 5
     rule voids (continue), a toolchain void (not counted), 6 rule voids
-    (stop), and fewer than 10 starts (continue).
+    (stop), a sample in the window without `final.md` (not taken yet), and
+    fewer than 10 starts (not taken yet).
   - Run 12's arm B had 6 rule voids in 6 such starts. At that rate, 40
     counted samples would need far more starts than the 40-void stop
     allows. This look ends a run like that after 10.
   - The look is logged in `driver/state.md` as run 12's stop was: the time,
-    the output of `analyse.py --early-look`, the void status of each of
-    those samples, and a statement that no score was read for the
-    decision.
+    the output of `analyse.py --early-look` (which names each of those
+    samples and its void status), and a statement that no score was read for
+    the decision. The run continues or stops on that reading only.
 - **Feasibility stop.** If 40 samples of either arm are void before that
   arm has 40 counted, authoring stops, as in run 12.
 - **Interleaving.** Samples start in the order A1, B1, A2, B2, and so on.
@@ -234,7 +251,9 @@ As in run 12:
   judged on these rules alone, never on scores.
 - After each round, the audit and the scans run on the log so far. A sample
   found void at any point is void. A sample's validity is final when they
-  have run on its complete log after its third answer is scored.
+  have run on its complete log after its third answer is scored. The driver
+  then writes `final.md` in its directory with the time, and the early look
+  reads only samples that have one.
 - Every arm B Bash command is kept verbatim in the sample's
   `bash-calls.json` (`driver/bash_calls.py extract`, run 12's script with
   run 13's paths). The audit shortens a flagged call in `transcript.json`,
@@ -249,7 +268,9 @@ As in run 12:
   greater than arm A, at alpha 0.05.
 - **Co-primary 2 (start order):** tasks passed per sample by the first 40
   samples started in each arm, in start order, with rule voids kept and
-  scored on the latest answer they had scored, and toolchain voids left out.
+  scored on their third answer like every other sample (`results-3.json`),
+  and toolchain voids left out. `analyse.py` refuses a sample in this set
+  with no scored third answer.
   One-sided exact Mann-Whitney U, B greater, at alpha 0.05.
   - Arm B has more ways to break a rule, so its voids may be more numerous or
     fall on weaker authors. Dropping them could then favour arm B. This
@@ -347,6 +368,27 @@ Run 12's `power.py --n 40 --runs 1000` table, for co-primary 1:
   power to claim a gain. That was not simulated.
 - The model of the effect is run 12's guess, and the real power may be
   lower.
+
+### Feasibility
+
+The run can complete only if the new sentence cuts arm B's rule voids well
+below run 12's. Applied by hand to run 12's arm B calls, the final forms
+leave 3 rule voids (B5, B6 and B7) among the 6 samples whose checks ran,
+before any effect of the sentence; B5 and B6 are also void for `task_status`
+lines. So the rule-void rate to expect without an effect is about 0.5, and
+there it is about a coin flip whether the run completes. Treating each arm B
+start as void independently at a fixed rate (binomial and negative binomial,
+computed exactly):
+
+| rule-void rate | P(early look stops) | P(40 voids before 40 counted) | expected arm B starts for 40 counted |
+| --- | --- | --- | --- |
+| 0.3 | 0.05 | 0.00 | 57 |
+| 0.4 | 0.17 | 0.04 | 67 |
+| 0.5 | 0.38 | 0.50 | 80 |
+| 0.6 | 0.63 | 0.96 | 100 |
+
+The expected starts ignore both stops. Co-primary 2's power at a high void
+rate was not simulated.
 
 ## Enforcement
 
