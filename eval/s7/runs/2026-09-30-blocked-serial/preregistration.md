@@ -184,8 +184,18 @@ As run 13, with these changes:
   - In the smoke, one arm B author compacted with no other author running,
     and the compaction carried no `task_status` line.
 - **Edit replay.** Only arm B can Edit, so a void because "an edit of it
-  could not be replayed" can fall only on arm B. It has not happened in
-  runs 12 and 13. It is reported with the voids by cause.
+  could not be replayed" can fall only on arm B, which the design rule
+  forbids for a rule that could void one arm. It cannot be made symmetric:
+  arm A writes each answer whole, so there is nothing to replay. It stays a
+  void, because an answer the audit cannot rebuild from the author's own
+  calls is one whose origin is unchecked. It has not happened in runs 12
+  and 13. Three things keep it from biasing the result. It is reported
+  with the voids by cause, per arm. Co-primary 2 (inherited from run 13)
+  keeps every rule void, this one included, scored on its third answer,
+  and a gain is claimed only when both co-primaries are significant, so a
+  void that falls on arm B alone cannot produce the claim. And any edit
+  replay void goes to the driver as a departure, with the replay failure
+  shown, before the next early look or analysis.
 - **Stop and review.** If `context_seen.py` finds a `cross_sample` item
   in any sample's log, authoring stops in every session after the current
   sample. Nothing starts again until the item's source is found and the
