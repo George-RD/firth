@@ -78,17 +78,18 @@ loop.
   `haiku`) with no API key. Each author is started with the description
   `Run 12 author <arm><n>` and gives three answers: the first answer and two
   feedback rounds.
-- **Sample size.** 20 counted samples per arm, as in run 11. The counted
-  samples in an arm are its first 20 non-void samples by start order
-  (`analyse.py` uses run 11's `counted()`, whose self-test plants a 21st
-  sample).
-  - No new sample starts in an arm once 20 of its non-void samples have
+- **Sample size.** 40 counted samples per arm, the coordinator's decision on
+  review, since at 20 per arm the power to detect a gain of +2.4 tasks per
+  sample was about one half (see "Power"). The counted samples in an arm are
+  its first 40 non-void samples by start order (`analyse.py` uses run 11's
+  `counted()` with n = 40; its self-test plants 44 samples).
+  - No new sample starts in an arm once 40 of its non-void samples have
     started. After that, a sample starts only to replace one found void.
-  - Authoring stops when both arms have 20 counted, fully scored samples. No
+  - Authoring stops when both arms have 40 counted, fully scored samples. No
     test is run before then, and `analyse.py` refuses to print any statistic
     until then.
-  - **Feasibility stop.** If 20 samples of either arm are void before that
-    arm has 20 counted, authoring stops. The run is reported as not feasible
+  - **Feasibility stop.** If 40 samples of either arm are void before that
+    arm has 40 counted, authoring stops. The run is reported as not feasible
     under this protocol, with every sample's scores and no test.
 - **Interleaving.** Samples start in the order A1, B1, A2, B2, and so on.
   - At most six authors run at a time, three per arm.
@@ -158,6 +159,16 @@ A sample is void, and replaced, if any of these holds:
     It is reported, not voiding.
 - **Answers.** The author did not write all three answers.
 
+A tool call that failed (its result is marked as an error, for example a
+Write refused because the file was not read first, or an Edit whose old text
+did not match) changed nothing. The audit still checks its path and command,
+but it is not replayed and does not void the sample in either arm
+(`test_mvp.py` plants a refused write, a failed then corrected edit, and the
+same edit without the error mark, which is flagged).
+
+Every `void.md` starts with `rule:` (an audit, agent-file, context or answers
+rule) or `toolchain:`, then the reason. `analyse.py` refuses any other.
+
 Void samples are reported with their scores and not counted. Validity is
 judged on these rules alone, never on scores.
 
@@ -185,11 +196,23 @@ fresh check on all 800 of run 11's counted final answers.
   (`results-1.json`). One-sided exact Mann-Whitney U, B greater. Arm B's
   first answer is the only one where the tool is the sole difference, since
   feedback that follows depends on it.
+- **Secondary 4 (start order):** tasks passed per sample by the first 40
+  samples started in each arm, in start order, with rule-voided samples kept
+  and scored on the latest answer they had scored, and toolchain voids left
+  out. One-sided exact Mann-Whitney U, B greater.
+  - Arm B has more ways to break a rule, so its voids may be more numerous or
+    fall on weaker authors. Dropping them could then favour arm B. This
+    analysis keeps them.
+  - The void count per arm, by kind, is reported with it.
 - **Reported without a test:** samples passing at least one task after round
   2, with run 11's one-sided Fisher p.
 
 ## Reading the result
 
+- **Secondary 4 points the other way.** If arm B's total in secondary 4 is
+  below arm A's while the primary's is above (or the reverse), the primary is
+  not read as a gain, whatever its p value. `analyse.py` prints a line saying
+  so. The gain is reported as depending on which samples were voided.
 - **Primary significant and secondary 2 significant.** Letting the author run
   the checker raised Haiku's MVP passes at the pinned build.
   - This is a finding about the eval's protocol and the checker's value in an
@@ -203,7 +226,7 @@ fresh check on all 800 of run 11's counted final answers.
   counts and the p value, never as "no effect".
   - If secondary 2 is significant, the write-up says that answers the checker
     accepts more often produced no gain in passes large enough to detect at
-    20 per arm.
+    40 per arm.
   - The power table below says how large that is.
 - **Whatever the result.** Both arms' tables, the per-sample scores, every
   void sample and the checker runs are reported. Run 12's arm A is not pooled
@@ -214,7 +237,8 @@ fresh check on all 800 of run 11's counted final answers.
 
 The brief (the coordinator's note starting this run) fixed the arms, the
 primary and secondary outcomes, 20 per arm, the audit-based enforcement and
-the context marker. These choices are mine:
+the context marker. On review the coordinator raised the sample size to 40
+per arm and asked for secondary 4. These choices are mine:
 
 - **The check command.** Arm B runs `harness.py check` on its answer file,
   not `tools/loop/firth_run.py check` on a `.firth` file.

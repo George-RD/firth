@@ -20,7 +20,15 @@ run the checker on its own answer file), these are allowed as well:
   command, path, option or shell syntax;
 - Read, Write and Edit of the author's own `answer-<n>.md`, as often as it
   likes. Its writes and edits are replayed in order, and the file they leave
-  must be the kept copy that was scored.
+  must be the kept copy that was scored. A write or edit whose tool result
+  is an error (an `old_string` not found, a refused write) changed nothing,
+  so it is not replayed; its path is still checked. The replay matches
+  `old_string` exactly; the Edit tool also accepts curly quotes for straight
+  ones, so an answer holding curly quotes could be flagged although the edit
+  succeeded.
+
+A write whose tool result is an error is not compared with the kept copy in
+either arm, since it wrote nothing.
 
 Each kept `solutions-<n>.json`, which is what `score` read, must also be the
 previous round's solutions updated with the tasks `extract` finds in
@@ -64,6 +72,7 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
                 if check_cmd else None)
     files: dict[str, str | None] = {}  # arm B: each answer file as its writes and edits leave it
     calls, models, times, bad = [], set(), [], []
+    failed = errored(events)
     for ev in events:
         msg = ev.get("message") or {}
         if ev.get("type") != "assistant":
@@ -94,6 +103,8 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
                 rec["path"] = Path(path).name
                 if name == "Read":
                     rec.update({k: inp[k] for k in ("offset", "limit") if k in inp})
+                elif b.get("id") in failed:
+                    rec["tool_error"] = True
                 elif name == "Write":
                     files[path] = str(inp.get("content", ""))
                     rec.update(content_chars=len(files[path]),
@@ -111,7 +122,9 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
                 rec.update(path=Path(path).name, content_chars=len(content),
                            content_sha256=hashlib.sha256(content.encode()).hexdigest())
                 copy = kept / Path(path).name
-                if not copy.is_file() or hashlib.sha256(copy.read_bytes()).hexdigest() != rec["content_sha256"]:
+                if b.get("id") in failed:
+                    rec["tool_error"] = True
+                elif not copy.is_file() or hashlib.sha256(copy.read_bytes()).hexdigest() != rec["content_sha256"]:
                     bad.append(f"{copy}: not what the author wrote")
             elif name == "SubagentHandback":
                 # Whole, not truncated: the hand-back is evidence about what the
@@ -137,6 +150,17 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
            "models": sorted(models), "started": min(times, default=None),
            "finished": max(times, default=None), "tool_calls": calls, "flagged": bad}
     return log, bad
+
+
+def errored(events: list[dict]) -> set[str]:
+    """The ids of tool calls whose result the tool reported as an error."""
+    out = set()
+    for ev in events:
+        c = (ev.get("message") or {}).get("content")
+        for b in c if isinstance(c, list) else []:
+            if isinstance(b, dict) and b.get("type") == "tool_result" and b.get("is_error"):
+                out.add(b.get("tool_use_id"))
+    return out
 
 
 def replay_edit(text: str | None, inp: dict) -> str | None:

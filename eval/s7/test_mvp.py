@@ -280,7 +280,39 @@ def check_tool_audit() -> None:
               "arm B's audit flags a kept answer that is not what the last write left (the planted case)")
         lost = [call("Edit", file_path=str(ans), old_string="absent", new_string="x")]
         check(any("replayed" in b for b in audit(ok + lost, prompt, d, d, 2, "firth", tool)[1]),
-              "arm B's audit flags an edit it cannot replay")
+              "arm B's audit flags an edit reported as done that it cannot replay (the planted case)")
+
+        # A call the tool reported as an error changed nothing, so it is not
+        # replayed (the reviewer, on #190): an author retrying a mismatched
+        # old_string, or a write the tool refused, is not a void.
+        def failing(name, cid, **inp):
+            ev = call(name, **inp)
+            ev["message"]["content"][0]["id"] = cid
+            return [ev, {"type": "user", "timestamp": "t", "message": {"role": "user", "content": [
+                {"type": "tool_result", "tool_use_id": cid, "is_error": True,
+                 "content": "String to replace not found in file."}]}}]
+        retry = ok[:4] + failing("Edit", "e1", file_path=str(ans), old_string="draft ", new_string="fixed") + ok[4:]
+        check(audit(retry, prompt, d, d, 2, "firth", tool)[1] == [],
+              "arm B's audit passes a failed edit followed by the corrected one")
+        refused = ok + failing("Write", "w1", file_path=str(ans), content="never written")
+        check(audit(refused, prompt, d, d, 2, "firth", tool)[1] == [],
+              "arm B's audit does not count a write the tool refused")
+        check(audit(refused, prompt, d, d, 2, "firth", tool)[0]["tool_calls"][-1].get("tool_error"),
+              "the kept log marks the refused write")
+        # Planted: the same failed edit without its error result is flagged.
+        bare = ok[:4] + [call("Edit", file_path=str(ans), old_string="draft ", new_string="fixed")] + ok[4:]
+        check(any("replayed" in b for b in audit(bare, prompt, d, d, 2, "firth", tool)[1]),
+              "without its error result, the same edit is flagged (the planted case)")
+        arm_a = [call("Read", file_path=str(prompt)), call("Write", file_path=str(ans), content=final)]
+        check(audit(arm_a + failing("Write", "w2", file_path=str(ans), content="never written"),
+                    prompt, d, d, 2, "firth")[1] == [],
+              "arm A's audit does not count a write the tool refused either")
+        check(len(audit(arm_a + [call("Write", file_path=str(ans), content="rewritten")],
+                        prompt, d, d, 2, "firth")[1]) == 1,
+              "arm A's audit still flags a rewrite that succeeded (the planted case)")
+        outside = failing("Edit", "e2", file_path=str(HERE / "harness.py"), old_string="a", new_string="b")
+        check(len(audit(ok + outside, prompt, d, d, 2, "firth", tool)[1]) == 1,
+              "a failed edit of another file is still flagged")
 
 
 def feedback_keeps_hints() -> None:
