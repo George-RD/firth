@@ -1,0 +1,16 @@
+run 13 pin, written 2026-09-30T04:44:07Z before the first author starts
+worktree /home/user/firth-r13 HEAD 1640e015deda705511272d24f9cc490fe72e933a
+make_prompts.py --check: ok: arm A 50249 chars, arm B 50816 chars, check command /home/user/firth-r13/eval/s7/harness.py
+116198b37a0c9dc163757fba5d4a8735b918a3e66760c6f35b4f149c48cc10f1  eval/s7/runs/2026-09-30-check-forms/arm-a/prompt-firth.md
+ade31f7948b473b3f5dfa9b64c5214aff9df18394cae88b52b05d4ef8cf73f55  eval/s7/runs/2026-09-30-check-forms/arm-b/prompt-firth.md
+f00b3905cdd9e080d36cf14be3f7caf724d044e03c5e07d12d79bcd9df578671  eval/s7/runs/2026-09-30-check-forms/instructions-templates.json
+pinned AGENTS.md blob cef346c054e3fe84bfa8993df0bf9a833e02cf48 CLAUDE.md blob 43c994c2d3617f947bcb5adf1933e21dabe46bb5
+main checkout /home/user/firth at b208189c06c6ee884201c36b1c89c0b9ce4b6023: AGENTS.md cef346c054e3fe84bfa8993df0bf9a833e02cf48 CLAUDE.md 43c994c2d3617f947bcb5adf1933e21dabe46bb5
+worktree files: AGENTS.md cef346c054e3fe84bfa8993df0bf9a833e02cf48 CLAUDE.md 43c994c2d3617f947bcb5adf1933e21dabe46bb5
+git status of tracked files in worktree: 0 changed
+Toolchain, driver PATH (~/.elan/bin, ~/.cargo/bin): Lake version 5.0.0-src+d024af0 (Lean version 4.30.0); Lean (version 4.30.0, x86_64-unknown-linux-gnu, commit d024af099ca4bf2c86f649261ebf59565dc8c622, Release); cargo 1.93.0 (083ac5135 2025-12-15)
+Toolchain, env -i HOME=/root PATH=<authors' default PATH> from /home/user/firth-r13: Lake version 5.0.0-src+d024af0 (Lean version 4.30.0) Lean (version 4.30.0, x86_64-unknown-linux-gnu, commit d024af099ca4bf2c86f649261ebf59565dc8c622, Release) cargo 1.93.0 (083ac5135 2025-12-15) 
+Authors' default PATH: /root/.local/bin:/root/.cargo/bin:/usr/local/go/bin:/opt/node22/bin:/opt/maven/bin:/opt/gradle/bin:/opt/rbenv/bin:/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Scratch check in driver shell: ## sum-list ok 
+Scratch check under env -i with authors' default PATH: ## sum-list ok 
+Preflight (authors' default shell): PREFLIGHT ok 04:44:08
