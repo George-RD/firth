@@ -218,7 +218,7 @@ def runPipelineTests : IO Unit := do
   -- An unknown primitive is still an unresolved effect: nothing but the
   -- erasure environment can say whether a primitive exists.
   match elaborate ": bad ( -- ) prim nope ;" with
-  | .failure [.erasure "bad" (.unresolvedEffect "nope" _)] => pure ()
+  | .failure [.erasure "bad" (.unresolvedEffect "nope" _ _)] => pure ()
   | result => fail s!"expected an unresolved primitive effect, got {repr result}"
 
   match elaborate ": bad ( -- ) 1 ;" with

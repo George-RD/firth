@@ -376,7 +376,17 @@ private def parsePrimitiveName (p : Parser) : Except ParseError (String × Span 
           else .error (err "firth.syntax.invalid-name" t.span .validation (some "primitive name") (some s))
       | .symbol s =>
           if s ∈ ["+", "-", "*", "/", "%", "=", "<", ">", "_", "&", "|", "~"] then
-            .ok (s, t.span, bump p)
+            -- `prim <=` and `prim >=` are read as one name, so that the
+            -- report says there is no such primitive and how to compare
+            -- with the ones there are, rather than that `=` cannot start
+            -- an item.
+            match current (bump p) with
+            | some next =>
+                if (s == "<" || s == ">") && isSymbol "=" next &&
+                    next.span.start.offset == t.span.stop.offset then
+                  .ok (s ++ "=", mkSpan t.span.start next.span.stop, bump (bump p))
+                else .ok (s, t.span, bump p)
+            | none => .ok (s, t.span, bump p)
           else .error (err "firth.syntax.invalid-name" t.span .validation (some "primitive name") (some s))
       | _ => .error (err "firth.syntax.expected-name" t.span .grammar (some "primitive name") (some (kindText t.kind)))
   | none => expected p "primitive name"

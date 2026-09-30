@@ -187,6 +187,16 @@ def runParserTests : IO Unit := do
   match parse ": primitive-pi ( -- ) prim π ;" with
   | .success { declarations := [.word { body := [.primitive "π" _], .. }], .. } => pure ()
   | _ => fail "primitive pi AST shape"
+  -- `prim <=` and `prim >=` are one name each, so the checker can say
+  -- there is no such primitive; `prim < =`, spaced, stays two items.
+  match parse ": le ( -- ) prim <= prim >= ;" with
+  | .success { declarations := [.word { body := [.primitive "<=" s1, .primitive ">=" s2], .. }], .. } =>
+      expectEq (s1.start.column, s1.stop.column, s2.start.column, s2.stop.column) (13, 20, 21, 28)
+        "comparison name spans"
+  | _ => fail "prim <= and prim >= AST shape"
+  match parse ": lt ( -- ) prim < = ;" with
+  | .success _ => fail "prim < = parsed as one name"
+  | .failure _ => pure ()
   match parse workedInc with
   | .success { declarations := [.word { body := [.literal { value := .integer 1, .. } _, .primitive "+" _], .. }], .. } => pure ()
   | _ => fail "inc worked example AST shape"
