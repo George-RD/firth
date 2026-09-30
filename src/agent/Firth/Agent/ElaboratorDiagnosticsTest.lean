@@ -661,6 +661,32 @@ private def runCallAccountTests : IO Unit := do
     ["The result of `prim seq-int.push` is computed from `result`, but `prefix-sums-helper` is then handed `result` as it was before, so the new value is left below.",
      "write `prim seq-int.push locals { result } { i 1 prim + newsum result xs prefix-sums-helper }` in place of `prim seq-int.push i 1 prim + newsum result xs prefix-sums-helper` on line 12. With that edit `prefix-sums-helper` checks."]
     "main" [.intSeq [1, 2, 3]] [.intSeq [1, 3, 6]]
+  -- count-below (locals-guide arm b, haiku-firth-17, answer 3): the
+  -- result of the inner `if` is a new `count` on both paths, and the call
+  -- is handed the old one. [1, 5, 2, 8] has two values below 4.
+  branchCase "an `if` result passed on as its local's old value" ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { xs k } { 0 xs 0 k count-below-helper };\n\n: count-below-helper\n  (forall ρ; ρ count:Int^many xs:Seq Int^many i:Int^many k:Int^many -- ρ result:Int^many)\n  locals { count xs i k } {\n    i xs prim seq-int.len prim <\n    [ xs i prim seq-int.at k prim < [ count 1 prim + ] [ count ] if count xs i 1 prim + k count-below-helper ]\n    [ count ]\n    if\n  };\n"
+    ["The result of an `if` is computed from `count`, but `count-below-helper` is then handed `count` as it was before, so the new value is left below.",
+     "write `if locals { count } { count xs i 1 prim + k count-below-helper }` in place of `if count xs i 1 prim + k count-below-helper` on line 9. With that edit `count-below-helper` checks."]
+    "main" [.intSeq [1, 5, 2, 8], .int 4] [.int 2]
+  -- Constructed: two new values left behind, both handed again as they
+  -- were. The even numbers below 5 and the odd ones up to 5.
+  branchCase "two new values passed on as the old ones" ": fill\n  (forall ρ; ρ evens:Seq Int^many odds:Seq Int^many i:Int^many n:Int^many -- ρ e:Seq Int^many o:Seq Int^many)\n  locals { evens odds i n } {\n    i n prim <\n    [ evens i prim seq-int.push odds i 1 prim + prim seq-int.push evens odds i 2 prim + n fill ]\n    [ evens odds ]\n    if\n  };\n"
+    ["The result of `prim seq-int.push` and the result of `prim seq-int.push` are computed from `evens` and `odds`, but `fill` is then handed `evens` and `odds` as they were before, so the new values are left below.",
+     "write `prim seq-int.push locals { evens odds } { evens odds i 2 prim + n fill }` in place of `prim seq-int.push evens odds i 2 prim + n fill` on line 5. With that edit `fill` checks."]
+    "fill" [.intSeq [], .intSeq [], .int 0, .int 5] [.intSeq [0, 2, 4], .intSeq [1, 3, 5]]
+  -- Planted: allocate-batch (locals-guide arm a, haiku-firth-17, answer 1),
+  -- verbatim. `stock item-idx prim seq-int.at` is the stock held, an
+  -- element, not a new `item-idx`, though it is the one Int local it was
+  -- handed. Binding it to `item-idx` for `prim seq-int.set` checks and
+  -- would set the wrong entry; main offered that edit. No edit now.
+  let _ ← callReport "an element read is not a new index" "firth.type.branch-mismatch" ": allocate-item\n  (forall ρ; ρ item-idx:Int^many qty:Int^many whole:Bool^many stock:Seq Int^many -- ρ allocated:Int^many reason:Int^many stock:Seq Int^many)\n  locals { item-idx qty whole stock } {\n    stock item-idx prim seq-int.at\n    qty prim <\n    [ qty prim < ]\n    [ qty prim = ]\n    [ 0 prim < ]\n    if\n    [ qty 0 stock item-idx qty prim - prim seq-int.set ]\n    [\n      stock item-idx prim seq-int.at 0 prim =\n      [ 0 2 stock ]\n      [\n        whole\n        [ 0 3 stock ]\n        [ stock item-idx prim seq-int.at stock item-idx 0 prim seq-int.set 1 stock ]\n        if\n      ]\n      if\n    ]\n    if\n  };\n\n: loop\n  (forall ρ; ρ i:Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many stock:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many -- ρ allocated:Seq Int^many reasons:Seq Int^many stock:Seq Int^many)\n  locals { i items qtys whole stock allocated reasons } {\n    i items prim seq-int.len prim <\n    [\n      items i prim seq-int.at\n      qtys i prim seq-int.at\n      whole i prim seq-bool.at\n      stock\n      allocate-item\n      i 1 prim +\n      items\n      qtys\n      whole\n      loop\n    ]\n    [ allocated reasons stock ]\n    if\n  };\n\n: main\n  (forall ρ; ρ stock:Seq Int^many items:Seq Int^many qtys:Seq Int^many whole:Seq Bool^many -- ρ stock-left:Seq Int^many allocated:Seq Int^many reasons:Seq Int^many)\n  locals { stock items qtys whole } {\n    0\n    items\n    qtys\n    whole\n    stock\n    prim seq-int.empty\n    prim seq-int.empty\n    loop\n  };\n"
+    ["the result of `prim seq-int.at` is left below the result of `prim seq-int.set`, `1` and `stock`."] ["bind it to the name", "in place of"]
+  -- Planted: histogram (locals-guide arm b, haiku-firth-17, answer 3),
+  -- verbatim. `histogram-count-loop` is handed `i` among its inputs, but
+  -- the call after it is handed `i 1 prim +`, not `i`: the count is not a
+  -- new `i`, and binding it so would check. No edit.
+  let _ ← callReport "a local handed on changed is not handed again" "firth.type.branch-mismatch" ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ counts:Seq Int^many)\n  locals { xs k } { prim seq-int.empty xs 0 k histogram-loop };\n\n: histogram-loop\n  (forall ρ; ρ result:Seq Int^many xs:Seq Int^many i:Int^many k:Int^many -- ρ counts:Seq Int^many)\n  locals { result xs i k } {\n    i k prim <\n    [ xs 0 i histogram-count-loop result i 1 prim + xs k histogram-loop ]\n    [ result ]\n    if\n  };\n\n: histogram-count-loop\n  (forall ρ; ρ val:Int^many count:Int^many xs:Seq Int^many -- ρ res-count:Int^many)\n  locals { val count xs } {\n    xs prim seq-int.len 0 prim =\n    [ count ]\n    [ xs 0 prim seq-int.at val prim = [ count 1 prim + xs 1 drop val histogram-count-loop ] [ count xs 1 drop val histogram-count-loop ] if ]\n    if\n  };\n"
+    ["the result of `histogram-count-loop` is left below the result of `histogram-loop`."] ["bind it to the name", "in place of"]
   -- seq-sum (8ea4a1d, haiku-firth-12, answer 3): the new `acc` and the new
   -- `index` are pushed in the other order, and `xs` not at all. By types
   -- the two Int values could go either way; by the locals they are
