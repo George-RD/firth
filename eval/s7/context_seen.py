@@ -68,6 +68,8 @@ RUN11 = Path(__file__).resolve().parent / "runs" / "2026-09-29-locals-guide"
 # the command itself.
 RUN12 = Path(__file__).resolve().parent / "runs" / "2026-09-30-check-tool"
 RUN13 = Path(__file__).resolve().parent / "runs" / "2026-09-30-check-forms"
+# Run 14 is laid out as run 13; its arm set exists once its prompts are built.
+RUN14 = Path(__file__).resolve().parent / "runs" / "2026-09-30-blocked-serial"
 
 
 def squash(text: str) -> str:
@@ -104,6 +106,10 @@ if (RUN13 / "arm-b" / "prompt-firth.md").is_file():
     ARM_SETS["run13"] = {"arm-a": (None, ("arm-a/",)),
                          "arm-b": (None, ("arm-b/", "harness.py check")
                                    + treatment_clauses(RUN13, tool_paragraph(RUN13)))}
+if (RUN14 / "arm-b" / "prompt-firth.md").is_file():
+    ARM_SETS["run14"] = {"arm-a": (None, ("arm-a/",)),
+                         "arm-b": (None, ("arm-b/", "harness.py check")
+                                   + treatment_clauses(RUN14, tool_paragraph(RUN14)))}
 
 
 def use_arms(name: str) -> None:

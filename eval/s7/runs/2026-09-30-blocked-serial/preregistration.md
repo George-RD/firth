@@ -1,10 +1,11 @@
 # Run 14 pre-registration: does running the checker help authors? (blocked calls, one author at a time)
 
-DRAFT. Not pinned, prompts not built, and no author has started. Authoring
-waits for the maintainer's go-ahead on the author agent file and its hook
-(see "Blocking"), for the smoke test below, and for this file's review.
-Nothing here changes after the first answer is scored; any departure is
-reported as one.
+Not final. Prompts are not built, nothing is pinned and no author has
+started. This file merges only after the hook half of the smoke test
+passes in a fresh session (see "Smoke test"), and that waits for the
+maintainer's go-ahead on the author agent file and its hook. Nothing here
+changes after the first answer is scored; any departure is reported as
+one.
 
 ## Question
 
@@ -74,7 +75,8 @@ outcomes and how they are read.
   of the stopped-call evidence alone, a stopped call on the list, run 14's
   `$)` form allowed while run 13's forms still flag it, and `"ok$x"`,
   `"$(id)"` and `"$HOME"` still flagged). Run 13's 20 raw logs re-audited
-  with the refactored audit give byte-identical trimmed logs.
+  with the refactored audit give the same trimmed logs, apart from the new
+  `blocked_calls` count (0).
 - Blocked calls per sample and per arm are reported (secondary 6). Arm B
   can make more blockable calls than arm A. That is not a void, so it
   cannot void one arm, but a block costs the author a turn, which is part
@@ -172,12 +174,20 @@ As run 13, with these changes:
 
 ## Smoke test, before this file is final
 
-One author per arm, one at a time, through all three rounds:
+One author per arm, one at a time, through all three rounds, with run 13's
+prompts in a scratch directory (`runs/smoke-r14` in run 13's worktree, not
+kept):
 
-- `context_seen.py` finds no `task_status` line, and the number of
-  compactions is recorded. The arm B smoke is informative only if it
-  compacted.
-- The hook denies a planted off-list call and lets an allowed one through,
-  and the audit with `--hook-log` keeps the stopped call unflagged.
-- The shape of a stopped call's result in the author's log (the hook's
-  mark in the tool result) is what `hook_denials` expects.
+- **Serial half (done for arm B).** The arm B author ran 05:58:59 to
+  06:13:24Z on 30 September with nothing else running in the session. It
+  was compacted once, at 06:08:35Z, and `context_seen.py` found no
+  `task_status` line and no cross-sample item in its complete log (exit
+  0). The audit with run 14's forms flagged nothing (exit 0); it ran the
+  check 14 times. The arm A author is being run the same way.
+- **Hook half (waits for the maintainer).** In a fresh session started
+  after the agent file exists: the `s7-author` agent type is available; the
+  hook denies a planted off-list call and lets an allowed one through; the
+  author's log shows the hook's mark in the stopped call's result, as
+  `hook_denials` expects; and the audit with `--hook-log` keeps the stopped
+  call unflagged. If the result's shape differs, `hook_denials` and its
+  plants are changed here before this file merges.
