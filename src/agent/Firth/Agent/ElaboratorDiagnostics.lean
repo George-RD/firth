@@ -495,6 +495,63 @@ private def comparisonExplanation (word name : String) (edit : Option Firth.Elab
         s!"{meaning} Write `{replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}{others}.{outcome}"
   pure (message, hint)
 
+/-- What each input of a primitive is for, bottom to top, by its surface
+name, for the primitives whose inputs repeat a type beside another type:
+there the types alone cannot tell an author which value goes where, and a
+primitive's inputs have no names. `xs i v seq-int.set` is `xs` with element
+`i` replaced by `v`. Only for telling the author; it never decides the
+order. The diagnostic tests check that every such primitive is listed. -/
+def primitiveRoles : String → Option (List String)
+  | "seq-int.set" | "seq-bool.set" => some ["the sequence", "the index", "the new value"]
+  | "seq-int.at" | "seq-bool.at" => some ["the sequence", "the index"]
+  | "seq-int.push" | "seq-bool.push" => some ["the sequence", "the value pushed"]
+  | _ => none
+
+/-- `primitiveRoles` for an operation as a report writes it, `` `prim seq-int.set` ``. -/
+private def operationRoles (operation : String) : Option (List String) :=
+  if operation.startsWith "`prim " && operation.endsWith "`" then
+    primitiveRoles ((operation.drop 6).dropEnd 1).toString
+  else none
+
+/-- The message and hint for a word or primitive handed fewer values than it
+takes, as the body is written (`CallAccount.missing`): what it takes, the
+values it gets by source, and, when the pipeline found and checked one, the
+edit that moves the values written just after it to before it. -/
+private def shortExplanation (inWord : String) (word : Option String)
+    (account : Firth.Elaborator.CallAccount) : String × String :=
+  let count := account.present.length + account.missing
+  let takes := match operationRoles account.operation with
+    | some roles =>
+        if roles.length == account.inputs.length then
+          listing ((roles.zip account.inputs).map fun ((role, type) : String × String) => s!"{role} ({type})")
+        else ", ".intercalate account.inputs
+    | none => ", ".intercalate account.inputs
+  let typed := (account.present.zip (account.types ++ List.replicate account.present.length none)).map
+    fun ((label, type) : String × Option String) => match type.filter (fun type => !type.startsWith "?" && !type.startsWith "[") with
+      | some type => s!"{label} ({type})"
+      | none => label
+  let gets := match account.present.length with
+    | 0 => "but nothing is on the stack before it"
+    | 1 => s!"but only 1 value is on the stack before it: {listing typed}"
+    | n => s!"but only {n} values are on the stack before it, bottom to top: {listing typed}"
+  let message := s!"{account.operation}{inWord} takes {valueCount count} ({takes}), bottom to top, {gets}."
+  let them := if account.missing == 1 then "the missing value" else s!"the {account.missing} missing values"
+  let hint := match account.edit with
+    | some edit =>
+        let outcome := match edit.after, word with
+          | none, some word => s!" With that edit `{word}` checks."
+          | some (line, column), some word => s!" With that edit, the next error in `{word}` is at line {line}, column {column}."
+          | _, none => ""
+        s!"The values {account.operation} takes are pushed before it, and {listing ((edit.written.splitOn " ").drop ((edit.written.splitOn " ").length - account.missing) |>.map (s!"`{·}`"))} {if account.missing == 1 then "is" else "are"} written after it. Write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}.{outcome}"
+    | none =>
+        if account.locals.isEmpty then
+          s!"Push {them} before {account.operation}, or take {if account.missing == 1 then "it" else "them"} as {if account.missing == 1 then "an input" else "inputs"} in the signature."
+        else
+          let names := account.locals.eraseDups
+          let theLocals := if names.length == 1 then s!"The local here, `{names.headD ""}`, is not a value" else s!"The locals here, {listing (names.map (s!"`{·}`"))}, are not values"
+          s!"Push {them} before {account.operation}. {theLocals} on the stack: writing a local's name pushes its value."
+  (message, hint)
+
 private def erasureDiagnostic (word : String) : Firth.Elaborator.ErasureError → ErasureDiagnostic
   | .duplicateLocal name span =>
       { code := "firth.name.duplicate-local", cause := "name-resolution", params := namedParams name, span }
@@ -515,8 +572,15 @@ private def erasureDiagnostic (word : String) : Firth.Elaborator.ErasureError �
               [("message", .str message), ("hint", .str hint)]))
         | none => namedParams name
       { code := "firth.name.unresolved-effect", cause := "name-resolution", params, span }
-  | .effectUnderflow name span =>
-      { code := "firth.type.stack-underflow", cause := "type-checking", params := namedParams name, span }
+  | .effectUnderflow name span account =>
+      let params := match account.filter (·.missing > 0) with
+        | some account =>
+            let (message, hint) := shortExplanation (if word.isEmpty then "" else s!" in `{word}`")
+              (if word.isEmpty then none else some word) account
+            (namedParams name).mergeObj (.mkObj ((if word.isEmpty then [] else [("word", .str word)]) ++
+              [("message", .str message), ("hint", .str hint)]))
+        | none => namedParams name
+      { code := "firth.type.stack-underflow", cause := "type-checking", params, span }
   | .usageMismatch name span =>
       { code := "firth.linearity.usage-mismatch", cause := "linearity", params := namedParams name, span }
   | .unsupportedLiteral span =>
@@ -548,6 +612,9 @@ private def erasureExplanation (code name : String) (params : Json) : String × 
   | "firth.elaboration.unsupported-capture" =>
       (s!"The nested `locals` block uses the outer local `{name}`.", "Pass the value in on the stack instead, or bind it in the inner block.")
   | "firth.type.stack-underflow" =>
+      -- An operation handed fewer values than it takes, with the values it
+      -- gets, has its own explanation already.
+      if (params.getObjValAs? String "hint").isOk then ("", "") else
       match name with
       | "" => ("A `locals` block or an operation here needs more values than the stack holds.",
           "`locals { x y z }` takes one value from the top of the stack for each name. Words can only use their declared inputs, values pushed earlier in the body, and locals.")
@@ -732,24 +799,6 @@ private def branchInputExplanation (inWord : String) (below : AStack) (onTrueBra
         (base, s!"The {name} branch takes more values than are there. Push them before the condition, or take them as parameters in the signature. {rule}")
       else (base, rule)
 
-/-- What each input of a primitive is for, bottom to top, by its surface
-name, for the primitives whose inputs repeat a type beside another type:
-there the types alone cannot tell an author which value goes where, and a
-primitive's inputs have no names. `xs i v seq-int.set` is `xs` with element
-`i` replaced by `v`. Only for telling the author; it never decides the
-order. The diagnostic tests check that every such primitive is listed. -/
-def primitiveRoles : String → Option (List String)
-  | "seq-int.set" | "seq-bool.set" => some ["the sequence", "the index", "the new value"]
-  | "seq-int.at" | "seq-bool.at" => some ["the sequence", "the index"]
-  | "seq-int.push" | "seq-bool.push" => some ["the sequence", "the value pushed"]
-  | _ => none
-
-/-- `primitiveRoles` for an operation as a report writes it, `` `prim seq-int.set` ``. -/
-private def operationRoles (operation : String) : Option (List String) :=
-  if operation.startsWith "`prim " && operation.endsWith "`" then
-    primitiveRoles ((operation.drop 6).dropEnd 1).toString
-  else none
-
 open Firth.Elaborator.StackEffect in
 /-- The message and hint for a word or primitive handed values it does not
 take, from the account of where each value came from (`Account.ofCall`):
@@ -863,6 +912,9 @@ private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Str
             (base, s!"{capitalize (ordinalFromTop depth)} is {renderType got} but `{at_}` expects {renderType want}. Check the argument order (`swap` exchanges the top two values) or the operation.")
         | none => (base, s!"The inputs to `{at_}` do not match its signature {renderValues wanted}.")
   | "firth.type.stack-underflow", _, _ =>
+      match diagnostic.callAccount.filter (·.missing > 0) with
+      | some account => shortExplanation inWord diagnostic.word account
+      | none =>
       let count := match operandsNeeded at_ with
         | some count => s!" needs {plural count "value"} and"
         | none => ""
