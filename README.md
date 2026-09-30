@@ -24,9 +24,9 @@ choose which word runs.
 
 ## What Firth can do today
 
-A Firth program is a set of words, each with a declared stack effect that the
-checker verifies. This one sums 1 to n with a tail-recursive loop
-(`examples/programs/sum-to.firth`):
+A Firth program is a set of words. Each word declares its stack effect, and
+the checker holds it to that. This one sums 1 to n with a tail-recursive
+loop (`examples/programs/sum-to.firth`):
 
 ```firth
 : sum-to
@@ -40,63 +40,80 @@ checker verifies. This one sums 1 to n with a tail-recursive loop
   [ dup 1 prim - [ prim + ] dip sum-acc ] if;
 ```
 
-Run with `--entry sum-to --stack '[100]'`, it returns `[5050]` on both the VM
-and the reference interpreter. `sum-to` is also proved correct in Lean for
-every `n` of at least 0 whose sum fits in 64 bits
-(`src/proofs/records.json`).
+Run it with `--entry sum-to --stack '[100]'` and you get `[5050]` from both
+the VM and the reference interpreter. It's also proved correct in Lean for
+every `n` of at least 0 whose sum fits in an i64 (`src/proofs/records.json`).
 
-What works, with where to check it:
+What works, and where to check it:
 
 - **Values.** Signed 64-bit `Int`, `Bool`, and sequences `Seq Int` and
-  `Seq Bool`. Arithmetic, comparison and Boolean primitives are `prim +`,
-  `-`, `*`, `div`, `mod` (Euclidean; a zero divisor traps), `<`, `=`,
-  `and`, `or` and `not`. The sequence operations are `empty`, `len`, `at`,
-  `push` and `set`. See the support table in
+  `Seq Bool`. The primitives are `prim +`, `-`, `*`, `div` and `mod`
+  (Euclidean; a zero divisor traps), the comparisons `<`, `<=`, `>`, `>=`
+  and `=`, and `and`, `or` and `not`. Sequences have `empty`, `len`, `at`,
+  `push` and `set`. The support table is in
   [Getting started](docs/getting-started.md#supported-execution-profile).
 - **Structure.** Words, qualified vocabulary names, quotations, `call`,
-  `dip`, `if`, and recursion, where tail calls run in constant frames. Named
-  `locals` compile to the kernel's `pick` and `roll`. A `locals` block that
-  opens a word must bind its inputs in the order of the stack effect.
+  `dip`, `if`, and recursion. Tail calls run in constant frames. Named
+  `locals` compile to the kernel's `pick` and `roll`, and a `locals` block
+  that opens a word must bind its inputs in stack-effect order.
 - **Diagnostics.** The checker reports the first error in each word it
-  checks, not only the first in the program, and each diagnostic names its
-  word. A syntax error still stops the file there, and a word that calls
-  one with an invalid signature is reported as unchecked
+  checks, not just the first in the program, and names the word. Where it
+  can, a hint states an edit the checker has applied and rechecked. A
+  syntax error still stops the file there, and a word that calls one with
+  an invalid signature is reported as unchecked
   (`docs/firth-agent-guide.md`, the diagnostics section).
-- **Real programs.** 12 example programs, including sort, sieve, gcd,
-  Fibonacci and factorial, run 116 cases (including expected traps)
-  against expected results on both hosts, and 5 more programs must be
-  refused by the checker
-  (`python3 examples/programs/check_programs.py`). The inventory allocator
-  (`examples/inventory/`) passes all 53 cases of its fixed contract: 30
-  run on both hosts, and 23 are invalid inputs its host must reject
-  (`python3 examples/inventory/run_cases.py`).
+- **Real programs.** 13 example programs, including sort, sieve, gcd,
+  Fibonacci and factorial, run 141 cases on both hosts against expected
+  results: 130 values and 11 expected traps. 5 more programs must be
+  refused by the checker (`python3 examples/programs/check_programs.py`).
+  The inventory allocator (`examples/inventory/`) passes all 53 cases of
+  its fixed contract. 30 run on both hosts, and 23 are invalid inputs its
+  host must reject (`python3 examples/inventory/run_cases.py`).
 - **Proofs about programs.** 5 contracts are proved in Lean over the
   reference interpreter. They cover 15 distinct word bodies (16 exported
-  words, because the same `abs` is in two files), including the whole
-  allocator
-  (conservation, no over-allocation, the fulfilment policy, i64 range and a
-  cost bound). This is goal S5 in the [roadmap](docs/roadmap.md), met with
-  two stated gaps: the compiler and VM agree with the reference only by
-  differential testing, and the Python host that feeds the allocator is
-  tested, not proved.
+  words, because the same `abs` is in two files). One of them is the whole
+  allocator: conservation, no over-allocation, the fulfilment policy, i64
+  range and a cost bound. That meets goal S5 in the
+  [roadmap](docs/roadmap.md), with two gaps stated there. The compiler and
+  VM agree with the reference only by differential testing, and the
+  Python host that feeds the allocator is tested, not proved.
 
 ## How well models write it
 
-The S7 eval ([eval/s7/README.md](eval/s7/README.md)) gives a model only the
-docs (and, for sub-agent authors, `AGENTS.md`) and 20 fixed tasks, then scores its answers against hidden tests. The
-same tasks in Python are the baseline: both models scored 20 of 20 there in
-run 4.
+The S7 eval ([eval/s7/README.md](eval/s7/README.md)) gives a model the docs
+and 20 fixed tasks, then scores its answers against hidden tests. Sub-agent
+authors also see `AGENTS.md`. The same tasks in Python are the baseline,
+and both models scored 20 of 20 there in run 4.
 
-| Author | Firth, first answer | Firth, after feedback |
+Claude Sonnet 5 writes Firth about as reliably as Python: 19 of 20 on its
+first answers in run 4, and 20 of 20 after feedback. It's much slower,
+though. In run 4 its first answer took about 6 minutes, against 11 seconds
+in Python.
+
+Claude Haiku 4.5 is the harder test, and it still mostly fails. Runs 5 to
+13 were Haiku only, and each sample gets two rounds of checker feedback:
+
+| Haiku 4.5 runs | Samples | Tasks passed per sample, after feedback |
 | --- | --- | --- |
-| Claude Sonnet 5 (run 4) | 19 of 20 | 20 of 20 |
-| Claude Haiku 4.5 (runs 4 to 8) | 0 to 6 of 20 | 0 to 8 of 20 |
+| Runs 4 to 8 | 1 to 4 a run | 0 to 8 of 20 |
+| Run 9 | 4 | 3, 12, 17 and 0 of 20 |
+| Run 10 (control) | 10 per arm | 0 to 13 of 20 |
+| Run 11 | 20 per arm | 0 to 17 of 20 |
 
-A strong model writes Firth about as reliably as Python, but it takes much
-longer: about 6 minutes against 11 seconds for the first answer in run 4.
-A weaker model mostly fails. In run 8 each Haiku sample repeated a few
-basic mistakes on nearly every task, and two rounds of feedback did
-not get past them. The results for each run are in the eval README.
+Run 9 looked like a jump, but run 10 re-ran its build and run 8's side by
+side and the gain didn't reproduce. That fits sample-to-sample variance
+better than an effect of the multi-error feedback. Run 11 told arm B to use
+`locals` instead of stack shuffling. Authors did as asked (shuffle words
+fell from 37% of first answers to 6%), but tasks passed were 154 against 177
+across 20 samples an arm, which isn't significant. Runs 12 and 13 let
+authors run the checker themselves. Both stopped early without a result.
+Most authors given the checker made calls the protocol doesn't allow, such
+as extra pipes after the check command or reads of its saved output, and
+each of those voids the sample.
+
+So Firth has two gaps to close for models: Haiku can't yet write it
+reliably, and even Sonnet is slow. Each run's full results are in the
+eval README.
 
 ## Known gaps
 
@@ -108,7 +125,8 @@ not get past them. The results for each run are in the eval README.
 - No package manager, general standard library or language server.
 - Goals S2 (sustained differential fuzzing), S3 (live patching), S4 (a
   self-hosted standard library), S6 (a third-party VM) and S7 (measured
-  machine authorship against a mainstream-language baseline) are open. See the [roadmap](docs/roadmap.md).
+  machine authorship against a mainstream-language baseline) are open.
+  See the [roadmap](docs/roadmap.md).
 
 ## Documentation
 
