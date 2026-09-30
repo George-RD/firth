@@ -41,7 +41,8 @@ INT64 = range(-(2**63), 2**63)
 # 1,000,000-step fuel cap. It is proved for the reference interpreter
 # (`batchCost` and `allocate_batch_reference` in
 # src/proofs/Inventory/Allocate.lean) and measured by measure_cost.py. Every
-# corpus run is checked against it.
+# corpus run is checked against it. tools/loop/check_cost_bound.py checks this
+# function equals Lean's `batchCost` for 0 to 64 requests and every corpus size.
 def cost_bound(n: int) -> int:
     return 165 + 202 * n + 163 * n * (n - 1) // 2
 
