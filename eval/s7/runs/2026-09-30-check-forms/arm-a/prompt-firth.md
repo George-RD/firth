@@ -242,8 +242,10 @@ VM fuel; a zero kernel charge does not make a VM instruction free to execute.
 Integers are signed: `-3` is a literal and `3 5 prim -` is `-2`. `prim +`,
 `prim -` and `prim *` must stay within the signed 64-bit range
 (`-9223372036854775808..9223372036854775807`) for portable execution; overflow
-fails instead of wrapping. `prim <` and `prim =` take two integers and push a
-Boolean for `if`; `prim and`, `prim or` and `prim not` combine Booleans.
+fails instead of wrapping. `prim <`, `prim <=`, `prim >`, `prim >=` and
+`prim =` take two integers and push a Boolean for `if`: `a b prim <=` is
+whether `a` is at most `b`, so `3 3 prim <=` is `true` and `3 3 prim <` is
+`false`. `prim and`, `prim or` and `prim not` combine Booleans.
 `prim div` and `prim mod` are Euclidean: `a b prim div` is the quotient `q`
 and `a b prim mod` the remainder `r` with `a = b*q + r` and `0 <= r < |b|`, so
 `-7 2 prim div` is `-4` and `-7 2 prim mod` is `1`. A zero divisor traps with
@@ -263,7 +265,7 @@ execution-trace equivalence.
 | --- | --- |
 | External inputs and final results | Signed 64-bit integers, Booleans, and sequences of either as JSON arrays (`[1, 2]` is a `Seq Int`, `[true]` a `Seq Bool`; `[]` takes its type from the word's signature) |
 | Source type name for integers | `Int`, signed; literals may be negative (`-3`) |
-| Primitive operations | `prim +`, `prim -`, `prim *`, `prim div`, `prim mod` : `Int Int -- Int` (`div` and `mod` trap on a zero divisor); `prim <`, `prim =` : `Int Int -- Bool`; `prim and`, `prim or` : `Bool Bool -- Bool`; `prim not` : `Bool -- Bool`; `prim seq-int.empty`, `.len`, `.at`, `.push`, `.set` and the same for `seq-bool` (see `examples/programs/README.md`) |
+| Primitive operations | `prim +`, `prim -`, `prim *`, `prim div`, `prim mod` : `Int Int -- Int` (`div` and `mod` trap on a zero divisor); `prim <`, `prim <=`, `prim >`, `prim >=`, `prim =` : `Int Int -- Bool`; `prim and`, `prim or` : `Bool Bool -- Bool`; `prim not` : `Bool -- Bool`; `prim seq-int.empty`, `.len`, `.at`, `.push`, `.set` and the same for `seq-bool` (see `examples/programs/README.md`) |
 | Sequences | `Seq Int` and `Seq Bool`, written `{ 1 2 3 }` or `{ true false }`; a negative or out-of-range `at` or `set` index traps with `primitive-fault` on both hosts |
 | Definitions | Explicit stack effects, multiple words, qualified vocabulary names, recursion with finite fuel |
 | Composition | Core stack operations, quotations, `call`, `if`, named locals (a block takes its values off the stack; a local may be used any number of times, inside `if` branches, inside quotations and inside nested blocks. A local can't be used after running a quotation whose stack effect is unknown there, such as one passed in as a value; that is refused with `firth.elaboration.untracked-local`); matching checked effects are required |
@@ -819,7 +821,10 @@ a b prim -    \ Int Int -- Int   (3 5 prim - gives -2)
 a b prim *    \ Int Int -- Int
 a b prim div  \ Int Int -- Int   (Euclidean quotient: -7 2 prim div gives -4)
 a b prim mod  \ Int Int -- Int   (Euclidean remainder, never negative: -7 2 prim mod gives 1)
-a b prim <    \ Int Int -- Bool
+a b prim <    \ Int Int -- Bool   (a less than b)
+a b prim <=   \ Int Int -- Bool   (a at most b: 3 3 prim <= gives true)
+a b prim >    \ Int Int -- Bool   (a greater than b)
+a b prim >=   \ Int Int -- Bool   (a at least b)
 a b prim =    \ Int Int -- Bool
 p q prim and  \ Bool Bool -- Bool
 p q prim or   \ Bool Bool -- Bool
@@ -828,6 +833,11 @@ flag [ then-branch ] [ else-branch ] if
 ```
 
 A result that does not fit a signed 64-bit integer traps on the VM.
+
+`<=` differs from `<`, and `>=` from `>`, only at equal values, so check
+that case: `3 3 prim <=` and `3 3 prim >=` give `true`, `3 3 prim <` and
+`3 3 prim >` give `false`. `comparisons.firth` checks that a sequence never decreases,
+counts the elements in a range, finds the largest element and clamps a value.
 
 `div` and `mod` satisfy `a = b*q + r` with `0 <= r < |b|`, as Lean's `Int./`
 and `Int.%`. A zero divisor traps with `primitive-fault` on both hosts.

@@ -32,10 +32,12 @@ Run 13 changes three things, and nothing else about the question:
   - Arm A is run 12's arm A protocol, unchanged. Its prompt is `harness.py
     prompt --lang firth --tier mvp --rounds 2` at the pinned commit. At
     `e381708` that is byte-identical to run 11's and run 12's arm A prompts
-    (SHA-256 `9251deb1…`). #195 (comparison primitives) changes
-    `docs/getting-started.md` and `examples/programs/README.md`, so once it
-    merges both arms' prompts change with it, and run 13's arm A is no
-    longer run 12's.
+    (SHA-256 `9251deb1…`). #195 (comparison primitives, merged as
+    `a74f498`) changes `docs/getting-started.md` and
+    `examples/programs/README.md`, so both arms' prompts changed with it and
+    run 13's arm A is no longer run 12's: it is run 12's arm A prompt plus
+    #195's text on `<=`, `>` and `>=` (SHA-256 `116198b3…` at this PR's
+    head; arm B's is `ade31f79…`).
   - Arm B's prompt is the same command with `--check-tool`. That is run
     12's arm B prompt with one sentence added after "It does not run your
     programs.":
@@ -67,9 +69,8 @@ Run 13 changes three things, and nothing else about the question:
 - **Build.** Both arms use one worktree, `/home/user/firth-r13`, detached at
   main's head when authoring starts (the pinned commit). It is never fetched
   or checked out during the run.
-  - The pin comes after #195 merges, so the run measures the language with
-    `<=`, `>` and `>=`. If #195 is still open when this pre-registration is
-    approved, authoring waits for it.
+  - The pin comes after #195 (merged as `a74f498`), so the run measures the
+    language with `<=`, `>` and `>=`.
   - Both arms are scored, and arm B checks, with that worktree's harness and
     checker, so nothing that merges during the run reaches either arm.
   - The prompts in this directory were built in that worktree at this PR's
