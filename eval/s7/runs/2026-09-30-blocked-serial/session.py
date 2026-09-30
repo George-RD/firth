@@ -35,6 +35,7 @@ line per round and the audit's flagged lines). A toolchain failure writes
 Any exit code but 0 or 1 from a check stops the session for the driver.
 """
 import json
+import os
 import random
 import re
 import shutil
@@ -50,7 +51,14 @@ WORKTREE = Path("/home/user/firth-r14")  # the path the prompts name
 MAIN = Path("/home/user/firth")  # the session's own checkout, whose AGENTS.md authors see
 HOOK = Path("/home/user/r14-hook")  # STATE's path is fixed by the agent file
 AGENT_FILE = Path(".claude/agents/s7-author.md")
-SHARED = Path("/mnt/project-files/s7-eval/run14")
+RUN14_SHARED = Path("/mnt/project-files/s7-eval/run14")
+
+
+def shared() -> Path:
+    """The shared folder this session publishes to: the run's own, unless
+    `R14_SHARED` names another. The smoke test sets it to `run14-smoke`, so
+    nothing it writes (samples, STOP) can reach the run's folder."""
+    return Path(os.environ.get("R14_SHARED") or RUN14_SHARED)
 SESSIONS = ("s1", "s2", "s3", "s4", "s5")
 ARMS = {"A": "arm-a", "B": "arm-b"}
 # preregistration.md, "Order": four AB and four BA per session, one
@@ -257,8 +265,14 @@ def preflight() -> None:
         raise Stop("preflight: " + "; ".join(problems))
 
 
+def write_stop(line: str) -> None:
+    shared().mkdir(parents=True, exist_ok=True)
+    with open(shared() / "STOP", "a") as f:
+        f.write(line + "\n")
+
+
 def stop_file() -> str | None:
-    p = SHARED / "STOP"
+    p = shared() / "STOP"
     return p.read_text().strip() or "STOP" if p.is_file() else None
 
 
@@ -279,6 +293,10 @@ def cmd_setup(session: str, pin: str) -> None:
             raise Stop(f"{MAIN / f} is blob {mb}, not the pinned {b}: authors would see another {f}")
     if not (W / AGENT_FILE).is_file() or (MAIN / AGENT_FILE).read_bytes() != (W / AGENT_FILE).read_bytes():
         raise Stop(f"{MAIN / AGENT_FILE} is missing or differs from the pinned {W / AGENT_FILE}")
+    held = [d for a in ARMS.values() for d in (shared() / session / a).glob("haiku-firth-*")]
+    if held or (shared() / "STOP").exists():
+        raise Stop(f"{shared()} already holds a STOP file or {len(held)} sample(s) of {session}; "
+                   "the driver empties it first")
     p = sh("python3", RUN / "make_prompts.py", "--check", cwd=S7)
     if p.returncode:
         raise Stop(f"make_prompts.py --check: {p.stdout}{p.stderr}")
@@ -350,7 +368,7 @@ def cmd_next(session: str) -> None:
     if s:
         print(f"STOPPED by the driver: {s}\nStart no author. Tell the driver the session is idle.")
         return
-    extra = (SHARED / "extra-blocks.txt").read_text() if (SHARED / "extra-blocks.txt").is_file() else ""
+    extra = (shared() / "extra-blocks.txt").read_text() if (shared() / "extra-blocks.txt").is_file() else ""
     todo = [(k, a, n) for k, a, n in queue(session, extra) if not (sample_dir(a, n) / "final.md").is_file()]
     if not todo:
         print(f"DONE: session {session} has no sample left. Tell the driver.")
@@ -470,9 +488,7 @@ def cmd_round(session: str) -> None:
                    if e.get("error") and e.get("sample") == str(d)] if (HOOK / "hook-log.jsonl").is_file() else []
     stopping = ""
     if res["cross_sample"]:
-        SHARED.mkdir(parents=True, exist_ok=True)
-        with open(SHARED / "STOP", "a") as f:
-            f.write(f"{now()} stop and review: {lab} has a cross_sample context item (session {session})\n")
+        write_stop(f"{now()} stop and review: {lab} has a cross_sample context item (session {session})")
         stopping = ("\nSTOP AND REVIEW is now in force for every session: finish this sample's rounds, "
                     "then start no other. Tell the driver now.")
     if hook_errors:
@@ -540,9 +556,9 @@ def bash_calls(log: Path) -> dict:
 
 def publish(session: str) -> None:
     """Copy the session's finished samples, state and hook log to the shared folder."""
-    out = SHARED / session
+    out = shared() / session
     (out / "driver").mkdir(parents=True, exist_ok=True)
-    for f in sdir(session).iterdir():
+    for f in sdir(session).iterdir() if sdir(session).is_dir() else []:
         shutil.copy(f, out / "driver" / f.name)
     if (HOOK / "hook-log.jsonl").is_file():
         shutil.copy(HOOK / "hook-log.jsonl", out / "driver" / "hook-log.jsonl")
@@ -588,6 +604,30 @@ def self_test() -> None:
             raise AssertionError(odd)
         except Stop:
             pass
+    import tempfile
+    # With R14_SHARED set (the smoke), publish() and the STOP file write
+    # there and leave the run's own folder as it was.
+    # The run's folder is itself a scratch one here, so even a broken
+    # shared() cannot write to the real one during the test.
+    global RUN14_SHARED
+    real = RUN14_SHARED
+    with tempfile.TemporaryDirectory() as tmp:
+        old = os.environ.get("R14_SHARED")
+        os.environ["R14_SHARED"] = str(Path(tmp) / "run14-smoke")
+        RUN14_SHARED = Path(tmp) / "run14"
+        try:
+            assert shared() == Path(tmp) / "run14-smoke"
+            publish("s5")
+            write_stop("smoke stop")
+            assert (Path(tmp) / "run14-smoke" / "s5" / "driver").is_dir()
+            assert stop_file() == "smoke stop"
+            assert not RUN14_SHARED.exists(), "the smoke wrote into the run's shared folder"
+        finally:
+            RUN14_SHARED = real
+            if old is None:
+                del os.environ["R14_SHARED"]
+            else:
+                os.environ["R14_SHARED"] = old
     # The description names the author as context_seen.py's LABEL reads it.
     sys.path.insert(0, str(S7))
     from context_seen import LABEL

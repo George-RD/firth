@@ -367,7 +367,12 @@ kept):
   5.5 as a runner would be and following the runbook above with
   `session.py` (one sample of each arm, `PIN` the merge commit, with
   `make_prompts.py` run in the worktree before `setup`, since the prompts
-  are built only at the pin): the `s7-author` agent type is available; its
+  are built only at the pin). Every smoke command runs with
+  `R14_SHARED=/mnt/project-files/s7-eval/run14-smoke`, so its samples,
+  state and any STOP file go there and never reach the run's folder
+  (`session.py --self-test` checks that nothing reaches it). The run's own
+  sessions leave `R14_SHARED` unset, and `setup` refuses to start while the
+  run's folder holds a STOP file or any sample of its session. Checked: the `s7-author` agent type is available; its
   hook runs (the same documentation says a project sub-agent's frontmatter
   hooks run only once the folder's workspace trust is accepted); the hook
   denies a planted off-list call and lets an allowed one through; the
