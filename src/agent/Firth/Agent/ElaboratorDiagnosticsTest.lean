@@ -889,65 +889,24 @@ private def runCallAccountTests : IO Unit := do
         unless emitted.contains needle do
           fail s!"external word: the report does not say {needle}: {emitted}"
   | _ => fail "external word: expected one diagnostic"
-  -- A comparison Firth does not have, `prim <=`, `prim >` or `prim >=`:
-  -- the report gives its meaning with `prim <`, and an edit for every such
-  -- comparison in the word, checked by the pipeline. The test applies each
-  -- edit on the line the hint names and runs the result on the reference
-  -- interpreter against values worked out by hand; each case includes the
+  -- `prim <=`, `prim >` and `prim >=` are primitives. Answers from earlier
+  -- runs that wrote them, which were refused when they were not, now check
+  -- as written and give the values worked out by hand; each case includes
   -- equal values, where `<` and `<=` part.
-  let replaceOn (source : String) (line : Nat) (written replacement : String) : Option String :=
-    let lines := source.splitOn "\n"
-    match lines[line - 1]? with
-    | none => none
-    | some text =>
-        let tokens := text.splitOn " "
-        let wanted := written.splitOn " "
-        let at? := (List.range tokens.length).find? fun k => (tokens.drop k).take wanted.length == wanted
-        match at? with
-        | none => none
-        | some k =>
-            let edited := " ".intercalate (tokens.take k ++ [replacement] ++ tokens.drop (k + wanted.length))
-            some ("\n".intercalate (lines.set (line - 1) edited))
-  let applyComparisonHint (source hint : String) : Option String := do
-    let first ← (hint.splitOn "Write `")[1]?
-    let replacement := upTo first "`"
-    let after ← (first.splitOn "` in place of `")[1]?
-    let written := upTo after "`"
-    let line ← (upTo ((after.splitOn "` on line ")[1]?.getD "") "," |>.splitOn "." |>.headD "").toNat?
-    let others := ((hint.splitOn "too: ")[1]?.map (upTo · ". With")).getD ""
-    let rest := if others.isEmpty then [] else others.splitOn ", "
-    let mut edited ← replaceOn source line written replacement
-    for other in rest do
-      let piece := (other.splitOn "and ").getLast!
-      let otherWritten := upTo (piece.drop 1).toString "`"
-      let otherLine ← (upTo ((piece.splitOn "` on line ")[1]?.getD "") " ").toNat?
-      let otherReplacement := upTo ((piece.splitOn " as `")[1]?.getD "") "`"
-      edited ← replaceOn edited otherLine otherWritten otherReplacement
-    pure edited
-  let comparisonCase (label source : String) (needles : List String) (word : String)
-      (inputs expected : List Firth.Interpreter.Literal) : IO Unit := do
-    let (hint, _) ← callReport label "firth.name.unresolved-effect" source needles
-    match applyComparisonHint source hint with
-    | some edited => expectRuns label edited word inputs expected
-    | none => fail s!"{label}: the hint's edit does not apply: {hint}"
   -- keep-positive (4c379e0, haiku-firth-10, answer 2), verbatim. 0 is not
   -- positive, so it is left out.
-  comparisonCase "`prim >` written for greater than" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ positives:Seq Int^many)\n  locals { xs } {\n    0 prim seq-int.empty xs keep-positive-helper\n  };\n\n: keep-positive-helper\n  (forall ρ; ρ i:Int^many result:Seq Int^many xs:Seq Int^many -- ρ result:Seq Int^many)\n  locals { i result xs } {\n    i xs prim seq-int.len prim = [ result ] [\n      xs i prim seq-int.at locals { val } {\n        val 0 prim > [ result val prim seq-int.push ] [ result ] if\n        i 1 prim + swap xs keep-positive-helper\n      }\n    ] if\n  };\n"
-    ["`prim >` in `keep-positive-helper` is not a primitive: numbers are compared with `prim <` and `prim =`.",
-     "`a b prim >`, `a` greater than `b`, is `a b swap prim <`: `a` is greater than `b` exactly when `b < a`. Write `swap prim <` in place of `prim >` on line 12. With that edit `keep-positive-helper` checks."]
+  expectRuns "`prim >` written for greater than" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ positives:Seq Int^many)\n  locals { xs } {\n    0 prim seq-int.empty xs keep-positive-helper\n  };\n\n: keep-positive-helper\n  (forall ρ; ρ i:Int^many result:Seq Int^many xs:Seq Int^many -- ρ result:Seq Int^many)\n  locals { i result xs } {\n    i xs prim seq-int.len prim = [ result ] [\n      xs i prim seq-int.at locals { val } {\n        val 0 prim > [ result val prim seq-int.push ] [ result ] if\n        i 1 prim + swap xs keep-positive-helper\n      }\n    ] if\n  };\n"
     "main" [.intSeq [3, -1, 0, 2]] [.intSeq [3, 2]]
   -- is-sorted (4c379e0, haiku-firth-10, answer 3, a final answer),
-  -- verbatim. The answer compares from index 1, a mistake of its own the
-  -- edit leaves alone; 3 then 3 is in order.
-  comparisonCase "`prim <=` written for at most" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Bool^many)\n  locals { xs } {\n    xs prim seq-int.len 0 prim = [ true ] [\n      xs prim seq-int.len 1 prim = [ true ] [\n        1 xs is-sorted-helper\n      ] if\n    ] if\n  };\n\n: is-sorted-helper\n  (forall ρ; ρ i:Int^many xs:Seq Int^many -- ρ result:Bool^many)\n  locals { i xs } {\n    i 1 prim + xs prim seq-int.len prim = [ true ] [\n      xs i prim seq-int.at xs i 1 prim + prim seq-int.at prim <= [\n        i 1 prim + xs is-sorted-helper\n      ] [\n        false\n      ] if\n    ] if\n  };\n"
-    ["Write `swap prim < prim not` in place of `prim <=` on line 15. With that edit `is-sorted-helper` checks."]
+  -- verbatim. The answer compares from index 1, a mistake of its own;
+  -- 3 then 3 is in order.
+  expectRuns "`prim <=` written for at most" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Bool^many)\n  locals { xs } {\n    xs prim seq-int.len 0 prim = [ true ] [\n      xs prim seq-int.len 1 prim = [ true ] [\n        1 xs is-sorted-helper\n      ] if\n    ] if\n  };\n\n: is-sorted-helper\n  (forall ρ; ρ i:Int^many xs:Seq Int^many -- ρ result:Bool^many)\n  locals { i xs } {\n    i 1 prim + xs prim seq-int.len prim = [ true ] [\n      xs i prim seq-int.at xs i 1 prim + prim seq-int.at prim <= [\n        i 1 prim + xs is-sorted-helper\n      ] [\n        false\n      ] if\n    ] if\n  };\n"
     "main" [.intSeq [1, 3, 3]] [.bool true]
-  comparisonCase "`prim <=` written for at most, out of order" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Bool^many)\n  locals { xs } {\n    xs prim seq-int.len 0 prim = [ true ] [\n      xs prim seq-int.len 1 prim = [ true ] [\n        1 xs is-sorted-helper\n      ] if\n    ] if\n  };\n\n: is-sorted-helper\n  (forall ρ; ρ i:Int^many xs:Seq Int^many -- ρ result:Bool^many)\n  locals { i xs } {\n    i 1 prim + xs prim seq-int.len prim = [ true ] [\n      xs i prim seq-int.at xs i 1 prim + prim seq-int.at prim <= [\n        i 1 prim + xs is-sorted-helper\n      ] [\n        false\n      ] if\n    ] if\n  };\n" []
+  expectRuns "`prim <=` written for at most, out of order" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Bool^many)\n  locals { xs } {\n    xs prim seq-int.len 0 prim = [ true ] [\n      xs prim seq-int.len 1 prim = [ true ] [\n        1 xs is-sorted-helper\n      ] if\n    ] if\n  };\n\n: is-sorted-helper\n  (forall ρ; ρ i:Int^many xs:Seq Int^many -- ρ result:Bool^many)\n  locals { i xs } {\n    i 1 prim + xs prim seq-int.len prim = [ true ] [\n      xs i prim seq-int.at xs i 1 prim + prim seq-int.at prim <= [\n        i 1 prim + xs is-sorted-helper\n      ] [\n        false\n      ] if\n    ] if\n  };\n"
     "main" [.intSeq [1, 4, 3]] [.bool false]
-  -- Constructed: two comparisons in one word, each given its edit. The
+  -- Constructed: two comparisons in one word. The
   -- values from 2 to 4 in [1, 2, 3, 4, 5] are 2, 3 and 4.
-  comparisonCase "`prim >=` and `prim <=` in one word" ": count-in-range\n  (forall ρ; ρ xs:Seq Int^many i:Int^many lo:Int^many hi:Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs i lo hi n } {\n    i xs prim seq-int.len prim = [ n ] [\n      xs i prim seq-int.at locals { x } {\n        x lo prim >=\n        x hi prim <= prim and\n        [ n 1 prim + ] [ n ] if locals { m } { xs i 1 prim + lo hi m count-in-range }\n      }\n    ] if\n  };\n"
-    ["`a b prim >=`, `a` at least `b`, is `a b prim < prim not`: `a` is at least `b` exactly when `a < b` is false. Write `prim < prim not` in place of `prim >=` on line 6, and write the other comparison in `count-in-range` with those primitives too: `prim <=` on line 7 as `swap prim < prim not`. With those edits `count-in-range` checks."]
+  expectRuns "`prim >=` and `prim <=` in one word" ": count-in-range\n  (forall ρ; ρ xs:Seq Int^many i:Int^many lo:Int^many hi:Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs i lo hi n } {\n    i xs prim seq-int.len prim = [ n ] [\n      xs i prim seq-int.at locals { x } {\n        x lo prim >=\n        x hi prim <= prim and\n        [ n 1 prim + ] [ n ] if locals { m } { xs i 1 prim + lo hi m count-in-range }\n      }\n    ] if\n  };\n"
     "count-in-range" [.intSeq [1, 2, 3, 4, 5], .int 0, .int 2, .int 4, .int 0] [.int 3]
 
 private def stackTypes : Firth.Elaborator.StackEffect.AStack → List Firth.Elaborator.StackEffect.AType
@@ -2148,7 +2107,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
   -- Every hint that lists primitives lists all of them. The expected names
   -- are written out here, not read from `languagePrimitives`, so a hint
   -- that falls behind the language fails.
-  let everyPrimitive := ["+", "-", "*", "<", "=", "div", "mod", "and", "or", "not",
+  let everyPrimitive := ["+", "-", "*", "<", "=", "<=", ">", ">=", "div", "mod", "and", "or", "not",
     "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-int.set",
     "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "seq-bool.set", "send"]
   -- The list is the checker's: each name has a signature in the agent Gamma,

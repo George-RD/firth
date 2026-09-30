@@ -157,6 +157,40 @@ fn integer_primitives_match_the_reference_definitions() {
 }
 
 #[test]
+fn comparisons_order_every_pair_of_edge_integers() {
+    // Written in strictly ascending order, so for positions i and j the
+    // expected answers come from the positions, not from the VM's `<`.
+    let ascending = [
+        i64::MIN,
+        i64::MIN + 1,
+        -2,
+        -1,
+        0,
+        1,
+        2,
+        i64::MAX - 1,
+        i64::MAX,
+    ];
+    for (i, &left) in ascending.iter().enumerate() {
+        for (j, &right) in ascending.iter().enumerate() {
+            for (name, expected) in [
+                ("ltInt", i < j),
+                ("eqInt", i == j),
+                ("leInt", i <= j),
+                ("gtInt", i > j),
+                ("geInt", i >= j),
+            ] {
+                assert_eq!(
+                    result(binary(name, left, right)),
+                    Value::Bool(expected),
+                    "{name} {left} {right}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn multiplication_past_the_target_integer_faults() {
     let ExecutionOutcome::Trap(trap) = binary("mulInt", i64::MAX, 2) else {
         panic!("overflow must trap")

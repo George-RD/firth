@@ -352,6 +352,15 @@ theorem defaultGamma_primitivesWellFormed (dictionary : Dictionary) :
     · obtain ⟨l, r, rfl⟩ := defaultGamma_int_pair htyped
       simp only [eqIntDelta, Option.some.injEq] at hdelta; subst hdelta
       exact literal_stack _ _ rfl
+    · obtain ⟨l, r, rfl⟩ := defaultGamma_int_pair htyped
+      simp only [leIntDelta, Option.some.injEq] at hdelta; subst hdelta
+      exact literal_stack _ _ rfl
+    · obtain ⟨l, r, rfl⟩ := defaultGamma_int_pair htyped
+      simp only [gtIntDelta, Option.some.injEq] at hdelta; subst hdelta
+      exact literal_stack _ _ rfl
+    · obtain ⟨l, r, rfl⟩ := defaultGamma_int_pair htyped
+      simp only [geIntDelta, Option.some.injEq] at hdelta; subst hdelta
+      exact literal_stack _ _ rfl
     · -- divInt
       obtain ⟨l, r, rfl⟩ := defaultGamma_int_pair htyped
       simp only [divIntDelta] at hdelta

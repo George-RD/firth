@@ -466,35 +466,6 @@ private def branchShapeExplanation (word : String) (onTrue onFalse : Nat × Nat)
   (s!"The two branches of `if`{inWord} leave different numbers of values: the true branch {depthChange onTrue}, and the false branch {depthChange onFalse}. So the {longer} branch leaves {values extra} more than the {shorter} branch.",
     s!"If the values below those already agree, either add `{drops}` at the end of the {longer} branch, or make the {shorter} branch push {values extra} more, of the same {if extra == 1 then "type" else "types"} the {longer} branch leaves on top. If they do not, the branches also leave different types, and each must be changed until both leave the same values. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.")
 
-/-- The message and hint for `prim <=`, `prim >` or `prim >=` in `word`:
-the primitives that compute it (`comparisonRewrite`) and why, and the edit
-that writes every such comparison in the word with them, checked by the
-pipeline (`withComparisonEdit`). `none` for any other primitive. -/
-private def comparisonExplanation (word name : String) (edit : Option Firth.Elaborator.ComparisonEdit) :
-    Option (String × String) := do
-  let replacement ← Firth.Elaborator.comparisonRewrite name
-  let meaning := match name with
-    | "<=" => "`a b prim <=`, `a` at most `b`, is `a b swap prim < prim not`: `a` is at most `b` exactly when `b < a` is false."
-    | ">" => "`a b prim >`, `a` greater than `b`, is `a b swap prim <`: `a` is greater than `b` exactly when `b < a`."
-    | _ => "`a b prim >=`, `a` at least `b`, is `a b prim < prim not`: `a` is at least `b` exactly when `a < b` is false."
-  let inWord := if word.isEmpty then "" else s!" in `{word}`"
-  let message := s!"`prim {name}`{inWord} is not a primitive: numbers are compared with `prim <` and `prim =`."
-  let hint := match edit with
-    | none => s!"{meaning} Write `{replacement}` in place of `prim {name}`."
-    | some edit =>
-        let others := if edit.others.isEmpty then "" else
-          let each := edit.others.map fun (written, line) =>
-            let rewrite := (Firth.Elaborator.comparisonRewrite (written.drop 5).toString).getD ""
-            s!"`{written}` on line {line} as `{rewrite}`"
-          s!", and write the other {if edit.others.length == 1 then "comparison" else "comparisons"}{inWord} with those primitives too: {listing each}"
-        let outcome := if word.isEmpty then "" else
-          let those := if edit.others.isEmpty then "that edit" else "those edits"
-          match edit.after with
-          | none => s!" With {those} `{word}` checks."
-          | some (line, column) => s!" With {those}, the next error in `{word}` is at line {line}, column {column}."
-        s!"{meaning} Write `{replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}{others}.{outcome}"
-  pure (message, hint)
-
 private def erasureDiagnostic (word : String) : Firth.Elaborator.ErasureError → ErasureDiagnostic
   | .duplicateLocal name span =>
       { code := "firth.name.duplicate-local", cause := "name-resolution", params := namedParams name, span }
@@ -508,13 +479,8 @@ private def erasureDiagnostic (word : String) : Firth.Elaborator.ErasureError �
       { code := "firth.linearity.copy", cause := "linearity", params := namedParams name, span }
   | .linearUnused name span =>
       { code := "firth.linearity.unconsumed-resource", cause := "linearity", params := namedParams name, span }
-  | .unresolvedEffect name span edit =>
-      let params := match comparisonExplanation word name edit with
-        | some (message, hint) => (namedParams name).mergeObj
-            (.mkObj ((if word.isEmpty then [] else [("word", .str word)]) ++
-              [("message", .str message), ("hint", .str hint)]))
-        | none => namedParams name
-      { code := "firth.name.unresolved-effect", cause := "name-resolution", params, span }
+  | .unresolvedEffect name span =>
+      { code := "firth.name.unresolved-effect", cause := "name-resolution", params := namedParams name, span }
   | .effectUnderflow name span =>
       { code := "firth.type.stack-underflow", cause := "type-checking", params := namedParams name, span }
   | .usageMismatch name span =>
@@ -568,9 +534,7 @@ private def erasureExplanation (code name : String) (params : Json) : String × 
       (s!"The local `{name}` is used after {lostBy} ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.",
         "Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.")
   | "firth.name.unresolved-effect" =>
-      -- A comparison with no primitive has its own explanation already.
-      if (params.getObjValAs? String "hint").isOk then ("", "")
-      else (s!"`prim {name}` is not a primitive.", availablePrimitives)
+      (s!"`prim {name}` is not a primitive.", availablePrimitives)
   | "firth.linearity.copy" =>
       (s!"The linear local `{name}` is used more than once.", "A linear value must be used exactly once.")
   | "firth.linearity.unconsumed-resource" =>

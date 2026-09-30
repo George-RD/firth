@@ -117,13 +117,14 @@ sequence.
 | `w` | `CALL_WORD name(w)` | Resolves and runs the current definition of `w`. |
 | `prim π` | `PRIM id(π)` | Applies deterministic `delta_pi` from `Gamma`, threading hidden `WorldState` linearly. |
 
-The default registry is target Gamma version 7 (adapter `gamma_version` "0.7").
+The default registry is target Gamma version 8 (adapter `gamma_version` "0.8").
 Version 1 (adapter "0.1") had `addInt` as its only pure primitive, version 2
 ("0.2") added the other arithmetic and comparison primitives, version 3
 ("0.3") added sequences, version 4 made kernel integers signed, version 5
 added the Boolean `and`, `or` and `not`, version 6 added Euclidean
-integer `div` and `mod`, and version 7 added the sequence element replacement
-`seq-int.set` and `seq-bool.set`. Changing
+integer `div` and `mod`, version 7 added the sequence element replacement
+`seq-int.set` and `seq-bool.set`, and version 8 added the comparisons
+`<=`, `>` and `>=`. Changing
 the registry bumps both versions, so an image or request tagged with an older
 registry is refused rather than run under a different one. The pure
 primitives of the default registry act on signed kernel integers, carried as
@@ -138,6 +139,9 @@ target `i64` values:
 | `prim mod` | `PRIM modInt` | `Int Int -- Int`; the Euclidean remainder `r`, never negative, as Lean's `Int.%`. A zero divisor is a `primitive-fault`; `i64::MIN -1` gives `0`. |
 | `prim <` | `PRIM ltInt` | `Int Int -- Bool`. |
 | `prim =` | `PRIM eqInt` | `Int Int -- Bool`. |
+| `prim <=` | `PRIM leInt` | `Int Int -- Bool`; for `a b`, whether `a` is at most `b`. |
+| `prim >` | `PRIM gtInt` | `Int Int -- Bool`; for `a b`, whether `a` is greater than `b`. |
+| `prim >=` | `PRIM geInt` | `Int Int -- Bool`; for `a b`, whether `a` is at least `b`. |
 | `prim and` | `PRIM andBool` | `Bool Bool -- Bool`. |
 | `prim or` | `PRIM orBool` | `Bool Bool -- Bool`. |
 | `prim not` | `PRIM notBool` | `Bool -- Bool`. |

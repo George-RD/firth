@@ -1,0 +1,58 @@
+\ The comparisons `prim <=`, `prim >` and `prim >=`, next to `prim <` and
+\ `prim =`. Each word's result depends on what happens at equal values, which
+\ is where `<` and `<=` part.
+
+\ Whether xs never decreases: each element is at most the next. Equal
+\ neighbours are allowed, so { 1 3 3 } is sorted.
+: sorted-from
+  (forall ρ; ρ xs:Seq Int^many i:Int^many -- ρ ok:Bool^many)
+  locals { xs i }
+  { i 1 prim + xs prim seq-int.len prim <
+    [ xs i prim seq-int.at xs i 1 prim + prim seq-int.at prim <=
+      [ xs i 1 prim + sorted-from ]
+      [ false ] if ]
+    [ true ] if };
+
+: is-sorted
+  (forall ρ; ρ xs:Seq Int^many -- ρ ok:Bool^many)
+  0 sorted-from;
+
+\ How many elements x of xs from index i on have lo <= x <= hi, added to n.
+: count-between-from
+  (forall ρ; ρ xs:Seq Int^many lo:Int^many hi:Int^many i:Int^many n:Int^many -- ρ r:Int^many)
+  locals { xs lo hi i n }
+  { i xs prim seq-int.len prim <
+    [ xs i prim seq-int.at lo prim >= xs i prim seq-int.at hi prim <= prim and
+      [ xs lo hi i 1 prim + n 1 prim + count-between-from ]
+      [ xs lo hi i 1 prim + n count-between-from ] if ]
+    [ n ] if };
+
+\ The number of elements from lo to hi, both included.
+: count-between
+  (forall ρ; ρ xs:Seq Int^many lo:Int^many hi:Int^many -- ρ r:Int^many)
+  0 0 count-between-from;
+
+\ The largest of best and the elements from index i on.
+: max-from
+  (forall ρ; ρ xs:Seq Int^many i:Int^many best:Int^many -- ρ r:Int^many)
+  locals { xs i best }
+  { i xs prim seq-int.len prim <
+    [ xs i prim seq-int.at best prim >
+      [ xs i 1 prim + xs i prim seq-int.at max-from ]
+      [ xs i 1 prim + best max-from ] if ]
+    [ best ] if };
+
+\ The largest element of a sequence that is not empty. An empty one traps
+\ with `primitive-fault`, since it has no element 0.
+: max-of
+  (forall ρ; ρ xs:Seq Int^many -- ρ r:Int^many)
+  locals { xs }
+  { xs 1 xs 0 prim seq-int.at max-from };
+
+\ x limited to the range lo..hi (lo at most hi).
+: clamp
+  (forall ρ; ρ x:Int^many lo:Int^many hi:Int^many -- ρ r:Int^many)
+  locals { x lo hi }
+  { x hi prim >
+    [ hi ]
+    [ x lo prim < [ lo ] [ x ] if ] if };

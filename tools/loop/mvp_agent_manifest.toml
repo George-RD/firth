@@ -30,13 +30,13 @@ role = "envelope-validation"
 
 [[inputs.interface]]
 path = "src/agent/Firth/Agent/ElaboratorDiagnostics.lean"
-sha256 = "4952cde3c0476a30f78e6d605afaa87acfc1d9f187ac8303a6915ee7f8728a9f"
+sha256 = "b76d35568d1f0cd5fed3934ef6b4048086e14c9bde7afd14a58e26ea99121e7e"
 role = "elaborator-to-envelope-adapters"
 
 [gamma]
-version = "0.7"
+version = "0.8"
 portable = true
-primitives = ["+", "-", "*", "<", "=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-int.set", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "seq-bool.set", "send"]
+primitives = ["+", "-", "*", "<", "=", "<=", ">", ">=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-int.set", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "seq-bool.set", "send"]
 values = ["Int", "Bool", "Seq Int", "Seq Bool", "Handle", "Bytes", "World"]
 predicates = ["positive", "nonzero", "is-open"]
 
@@ -63,6 +63,21 @@ observation = "pure"
 [gamma.primitive."="]
 effect = "Int^many Int^many -- Bool^many"
 transition = "deterministic-integer-equality"
+observation = "pure"
+
+[gamma.primitive."<="]
+effect = "Int^many Int^many -- Bool^many"
+transition = "deterministic-integer-at-most"
+observation = "pure"
+
+[gamma.primitive.">"]
+effect = "Int^many Int^many -- Bool^many"
+transition = "deterministic-integer-greater-than"
+observation = "pure"
+
+[gamma.primitive.">="]
+effect = "Int^many Int^many -- Bool^many"
+transition = "deterministic-integer-at-least"
 observation = "pure"
 
 [gamma.primitive."div"]
