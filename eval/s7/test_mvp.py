@@ -383,6 +383,59 @@ def check_tool_audit() -> None:
                                + failing("Write", "w3", file_path=str(ans), content=final))):
                 check(any("no successful write" in b for b in audit(log, prompt, d, d, 2, "firth", cmd)[1]),
                       f"arm {arm}'s audit flags a kept answer with {what} (the planted case)")
+        # Run 14's forms: run 13's, with `$` also allowed before `)` in a grep
+        # pattern. Planted: run 13's forms still flag it, and `$` before a
+        # letter or `(` stays flagged under run 14's.
+        dollar = run + ' 2>&1 | grep -E "^(## |ok$)"'
+        check(audit(ok + [call("Bash", command=dollar)], prompt, d, d, 2, "firth", tool,
+                    shell_forms="run14")[1] == [], "run 14's audit allows `$)` in a grep pattern")
+        check(len(audit(ok + [call("Bash", command=dollar)], prompt, d, d, 2, "firth", tool,
+                        shell_forms=True)[1]) == 1, "run 13's audit still flags `$)` (the planted case)")
+        for form in (run + ' | grep "ok$x"', run + ' | grep "$(id)"', run + ' | grep "$HOME"'):
+            check(len(audit(ok + [call("Bash", command=form)], prompt, d, d, 2, "firth", tool,
+                            shell_forms="run14")[1]) == 1, f"run 14's audit flags {form.split(run)[1]!r}")
+        # Run 14's author hook stops a call before it runs. A call counts as
+        # stopped only when the hook's log denied its id and the author's log
+        # shows the hook's mark in that call's result; then it is kept, not
+        # flagged. Planted: each half alone is flagged, and so is a stopped
+        # call that was on the list.
+        from audit_subagent import HOOK_MARK
+
+        def stopped(name, cid, mark=True, **inp):
+            ev = call(name, **inp)
+            ev["message"]["content"][0]["id"] = cid
+            text = f"{HOOK_MARK} This call is not allowed" if mark else "ran"
+            return [ev, {"type": "user", "timestamp": "t", "message": {"role": "user", "content": [
+                {"type": "tool_result", "tool_use_id": cid, "is_error": True, "content": text}]}}]
+        hook_log = d / "hook-log.jsonl"
+        hook_log.write_text(json.dumps({"tool_use_id": "h1", "decision": "deny"}) + "\n"
+                            + json.dumps({"tool_use_id": "h9", "decision": "deny"}) + "\n")
+        wc = stopped("Bash", "h1", command=run + " | wc -l")
+        log, bad = audit(ok + wc, prompt, d, d, 2, "firth", tool, "run14", hook_log)
+        check(bad == [] and log["blocked_calls"] == 1 and log["tool_calls"][-1].get("blocked"),
+              f"run 14's audit keeps a call the hook stopped, unflagged: {bad}")
+        check(len(audit(ok + wc, prompt, d, d, 2, "firth", tool, "run14")[1]) == 1,
+              "without the hook log the same call is flagged (the planted case)")
+        unmarked = stopped("Bash", "h1", mark=False, command=run + " | wc -l")
+        check(len(audit(ok + unmarked, prompt, d, d, 2, "firth", tool, "run14", hook_log)[1]) == 2,
+              "a denial whose result lacks the hook's mark is flagged, and so is the call (the planted case)")
+        forged = stopped("Bash", "h2", command=run + " | wc -l")
+        check(any("did not deny" in b for b in audit(ok + forged, prompt, d, d, 2, "firth", tool, "run14",
+                                                     hook_log)[1]),
+              "a result with the hook's mark that the hook log did not deny is flagged (the planted case)")
+        on_list = stopped("Bash", "h9", command=run)
+        check(any("on the list" in b for b in audit(ok + on_list, prompt, d, d, 2, "firth", tool, "run14",
+                                                    hook_log)[1]),
+              "a call on the list that the hook stopped is flagged (the planted case)")
+
+
+def author_hook_decides() -> None:
+    # Run 14's hook asks the audit's own `allowed`; its self-test plants
+    # allowed and refused calls in both arms and a missing state file.
+    cli = subprocess.run([sys.executable, str(HERE / "author_hook.py"), "--self-test"],
+                         capture_output=True, text=True)
+    check(cli.returncode == 0 and "self-test: ok" in cli.stdout,
+          f"the author hook's self-test passes: {cli.stdout[-300:]}{cli.stderr[-300:]}")
 
 
 def feedback_keeps_hints() -> None:
@@ -830,6 +883,7 @@ def main() -> int:
     rounds_prompt()
     check_tool_prompt()
     check_tool_audit()
+    author_hook_decides()
     feedback_keeps_hints()
     feedback_shows_location()
     feedback_shows_every_error()

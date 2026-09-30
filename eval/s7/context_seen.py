@@ -230,9 +230,25 @@ def scan(events: list[dict], sample: str | None, label: str | None = None,
                     "every result is also scanned. cross_sample marks an item naming another "
                     "sample (by number, or by arm and number), the other arm's commit or "
                     "worktree, another author's label, or another task's files.",
-            "sample": sample, "arm": arm, "injected": items, "cross_sample": cross,
+            "sample": sample, "arm": arm, "compactions": compactions(events),
+            "injected": items, "cross_sample": cross,
             "other_arm_worktree_named": sorted({i["kind"] for i in items
                                                 if i.get("other_arm_worktree_named")})}
+
+
+COMPACTED = "This session is being continued from a previous conversation"
+
+
+def compactions(events: list[dict]) -> list[str]:
+    """When the harness compacted this author's context (S7 run 14 reports the
+    count per arm): the times of the user-type events that open with its
+    continuation summary."""
+    out = []
+    for ev in events:
+        c = (ev.get("message") or {}).get("content")
+        if ev.get("type") == "user" and isinstance(c, str) and c.startswith(COMPACTED):
+            out.append(ev.get("timestamp"))
+    return out
 
 
 def self_test() -> None:
@@ -250,6 +266,10 @@ def self_test() -> None:
     )
     clean = scan(base, "haiku-firth-3")
     assert clean["injected"] == [] and clean["cross_sample"] == [], clean
+    assert clean["compactions"] == [], clean
+    squeezed = base + [{"type": "user", "timestamp": "t3",
+                        "message": {"role": "user", "content": COMPACTED + " that ran out of context."}}]
+    assert scan(squeezed, "haiku-firth-3")["compactions"] == ["t3"]
     # Planted: the harness hands this author another sample's task, as it did
     # to B8. The scan must report it even though the author called nothing.
     planted = base + log({"type": "attachment", "timestamp": "t3", "attachment": {
