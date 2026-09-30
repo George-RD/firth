@@ -1,0 +1,23 @@
+{
+ "note": "Every Bash call in the author's raw log, command verbatim (driver/bash_calls.py extract).",
+ "calls": [
+  {
+   "at": "2026-09-30T03:21:02.080Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-3/answer-1.md",
+   "background": false,
+   "errored": true
+  },
+  {
+   "at": "2026-09-30T03:24:03.552Z",
+   "command": "grep -c \"^### task:\" /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-3/answer-1.md",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:24:05.299Z",
+   "command": "tail -20 /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-3/answer-1.md",
+   "background": false,
+   "errored": false
+  }
+ ]
+}

@@ -1,0 +1,1 @@
+rule: the audit flagged 9 Bash calls: the check command with extra shell syntax (`2>&1`, piped to head or grep, redirected to /tmp), a heredoc writing /tmp/fix_firth.py, and `ls -lh` of its answer. Round 1 scored 0/20; no feedback sent after the flag.

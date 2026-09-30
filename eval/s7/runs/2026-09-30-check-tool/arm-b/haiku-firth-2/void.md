@@ -1,0 +1,1 @@
+toolchain: every check the author ran printed "lake is not on PATH" (the sub-agent shell lacked ~/.elan/bin; fixed at 03:24 before the next start). The audit flagged nothing else. Round 1 scored 9/20; stopped at 03:25 by the driver.

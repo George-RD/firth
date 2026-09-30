@@ -1,0 +1,2550 @@
+{
+  "lang": "firth",
+  "tasks": {
+    "seq-sum": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            15
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 3, column 26\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.expected-quotation\nword: sum-helper\nat: line 13, column 7\nmessage: `call` in `sum-helper` needs a quotation, but the stack before it is .. Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 3, column 26\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.expected-quotation\nword: sum-helper\nat: line 13, column 7\nmessage: `call` in `sum-helper` needs a quotation, but the stack before it is .. Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 3, column 26\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.expected-quotation\nword: sum-helper\nat: line 13, column 7\nmessage: `call` in `sum-helper` needs a quotation, but the stack before it is .. Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -3,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 3, column 26\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.expected-quotation\nword: sum-helper\nat: line 13, column 7\nmessage: `call` in `sum-helper` needs a quotation, but the stack before it is .. Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10
+            ]
+          ],
+          "expected": [
+            55
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 3, column 26\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.expected-quotation\nword: sum-helper\nat: line 13, column 7\nmessage: `call` in `sum-helper` needs a quotation, but the stack before it is .. Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -5,
+              -6
+            ]
+          ],
+          "expected": [
+            -11
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 3, column 26\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.expected-quotation\nword: sum-helper\nat: line 13, column 7\nmessage: `call` in `sum-helper` needs a quotation, but the stack before it is .. Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "seq-max": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              9,
+              2
+            ]
+          ],
+          "expected": [
+            9
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.expected-quotation\nword: max-helper\nat: line 24, column 7\nmessage: `call` in `max-helper` needs a quotation, but the stack before it is .. Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.expected-quotation\nword: max-helper\nat: line 24, column 7\nmessage: `call` in `max-helper` needs a quotation, but the stack before it is .. Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -4,
+              -2,
+              -9
+            ]
+          ],
+          "expected": [
+            -2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.expected-quotation\nword: max-helper\nat: line 24, column 7\nmessage: `call` in `max-helper` needs a quotation, but the stack before it is .. Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.expected-quotation\nword: max-helper\nat: line 24, column 7\nmessage: `call` in `max-helper` needs a quotation, but the stack before it is .. Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              8,
+              8,
+              3
+            ]
+          ],
+          "expected": [
+            8
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.expected-quotation\nword: max-helper\nat: line 24, column 7\nmessage: `call` in `max-helper` needs a quotation, but the stack before it is .. Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.expected-quotation\nword: max-helper\nat: line 24, column 7\nmessage: `call` in `max-helper` needs a quotation, but the stack before it is .. Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "count-below": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              5,
+              2,
+              8
+            ],
+            4
+          ],
+          "expected": [
+            2
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: count-loop\nat: line 15, column 5\nmessage: The local `count` is used after `call` on line 26 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            3
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: count-loop\nat: line 15, column 5\nmessage: The local `count` is used after `call` on line 26 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            4
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: count-loop\nat: line 15, column 5\nmessage: The local `count` is used after `call` on line 26 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              0,
+              1
+            ],
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: count-loop\nat: line 15, column 5\nmessage: The local `count` is used after `call` on line 26 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              1,
+              9,
+              1,
+              9
+            ],
+            10
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: count-loop\nat: line 15, column 5\nmessage: The local `count` is used after `call` on line 26 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              3
+            ],
+            -5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: count-loop\nat: line 15, column 5\nmessage: The local `count` is used after `call` on line 26 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "index-of": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              7,
+              3,
+              9,
+              3
+            ],
+            3
+          ],
+          "expected": [
+            1
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: index-loop\nat: line 19, column 7\nmessage: `compose` in `index-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Seq Int Int ] [ .. Int Seq Int [ .. Int Seq Int -- .. Int Seq Int Int ] -- .. Int ]. Expected Int, found [ .. Int Seq Int -- .. Int Seq Int Int ].\nexpected: Int\nactual: [ .. Int Seq Int -- .. Int Seq Int Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            1
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: index-loop\nat: line 19, column 7\nmessage: `compose` in `index-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Seq Int Int ] [ .. Int Seq Int [ .. Int Seq Int -- .. Int Seq Int Int ] -- .. Int ]. Expected Int, found [ .. Int Seq Int -- .. Int Seq Int Int ].\nexpected: Int\nactual: [ .. Int Seq Int -- .. Int Seq Int Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: index-loop\nat: line 19, column 7\nmessage: `compose` in `index-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Seq Int Int ] [ .. Int Seq Int [ .. Int Seq Int -- .. Int Seq Int Int ] -- .. Int ]. Expected Int, found [ .. Int Seq Int -- .. Int Seq Int Int ].\nexpected: Int\nactual: [ .. Int Seq Int -- .. Int Seq Int Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: index-loop\nat: line 19, column 7\nmessage: `compose` in `index-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Seq Int Int ] [ .. Int Seq Int [ .. Int Seq Int -- .. Int Seq Int Int ] -- .. Int ]. Expected Int, found [ .. Int Seq Int -- .. Int Seq Int Int ].\nexpected: Int\nactual: [ .. Int Seq Int -- .. Int Seq Int Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            2
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: index-loop\nat: line 19, column 7\nmessage: `compose` in `index-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Seq Int Int ] [ .. Int Seq Int [ .. Int Seq Int -- .. Int Seq Int Int ] -- .. Int ]. Expected Int, found [ .. Int Seq Int -- .. Int Seq Int Int ].\nexpected: Int\nactual: [ .. Int Seq Int -- .. Int Seq Int Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              -2,
+              -3
+            ],
+            -3
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: index-loop\nat: line 19, column 7\nmessage: `compose` in `index-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Seq Int Int ] [ .. Int Seq Int [ .. Int Seq Int -- .. Int Seq Int Int ] -- .. Int ]. Expected Int, found [ .. Int Seq Int -- .. Int Seq Int Int ].\nexpected: Int\nactual: [ .. Int Seq Int -- .. Int Seq Int Int ]",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "reverse": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              2,
+              1
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: reverse-loop\nat: line 17, column 14\nmessage: `prim seq-int.push` in `reverse-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t17\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 16. With that edit, the next error in `reverse-loop` is at line 19, column 7.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: reverse-loop\nat: line 17, column 14\nmessage: `prim seq-int.push` in `reverse-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t17\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 16. With that edit, the next error in `reverse-loop` is at line 19, column 7.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: reverse-loop\nat: line 17, column 14\nmessage: `prim seq-int.push` in `reverse-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t17\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 16. With that edit, the next error in `reverse-loop` is at line 19, column 7.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              -4,
+              4,
+              -4,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              -4,
+              4,
+              -4,
+              4
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: reverse-loop\nat: line 17, column 14\nmessage: `prim seq-int.push` in `reverse-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t17\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 16. With that edit, the next error in `reverse-loop` is at line 19, column 7.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: reverse-loop\nat: line 17, column 14\nmessage: `prim seq-int.push` in `reverse-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t17\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 16. With that edit, the next error in `reverse-loop` is at line 19, column 7.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "prefix-sums": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              3,
+              6
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: prefix-loop\nat: line 15, column 5\nmessage: The local `xs` is used after `call` on line 23 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: prefix-loop\nat: line 15, column 5\nmessage: The local `xs` is used after `call` on line 23 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: prefix-loop\nat: line 15, column 5\nmessage: The local `xs` is used after `call` on line 23 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              -3,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              3,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: prefix-loop\nat: line 15, column 5\nmessage: The local `xs` is used after `call` on line 23 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              20,
+              30,
+              40,
+              50,
+              60
+            ]
+          ],
+          "expected": [
+            [
+              10,
+              30,
+              60,
+              100,
+              150,
+              210
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: prefix-loop\nat: line 15, column 5\nmessage: The local `xs` is used after `call` on line 23 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "keep-positive": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              -1,
+              0,
+              4
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              4
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: filter-loop\nat: line 14, column 5\nmessage: The local `result` is used after `call` on line 27 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: filter-loop\nat: line 14, column 5\nmessage: The local `result` is used after `call` on line 27 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              -2
+            ]
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: filter-loop\nat: line 14, column 5\nmessage: The local `result` is used after `call` on line 27 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: filter-loop\nat: line 14, column 5\nmessage: The local `result` is used after `call` on line 27 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              0,
+              5,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: filter-loop\nat: line 14, column 5\nmessage: The local `result` is used after `call` on line 27 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -7,
+              7,
+              -7,
+              7,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              7,
+              7,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: filter-loop\nat: line 14, column 5\nmessage: The local `result` is used after `call` on line 27 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "is-sorted": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              5
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: is-sorted-loop\nat: line 24, column 9\nmessage: `compose` in `is-sorted-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int Seq Int ] [ .. Int [ .. Int Int -- .. Bool Int Seq Int ] -- .. Bool ]. Expected Seq Int, found [ .. Int Int -- .. Bool Int Seq Int ].\nexpected: Seq Int\nactual: [ .. Int Int -- .. Bool Int Seq Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: is-sorted-loop\nat: line 24, column 9\nmessage: `compose` in `is-sorted-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int Seq Int ] [ .. Int [ .. Int Int -- .. Bool Int Seq Int ] -- .. Bool ]. Expected Seq Int, found [ .. Int Int -- .. Bool Int Seq Int ].\nexpected: Seq Int\nactual: [ .. Int Int -- .. Bool Int Seq Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: is-sorted-loop\nat: line 24, column 9\nmessage: `compose` in `is-sorted-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int Seq Int ] [ .. Int [ .. Int Int -- .. Bool Int Seq Int ] -- .. Bool ]. Expected Seq Int, found [ .. Int Int -- .. Bool Int Seq Int ].\nexpected: Seq Int\nactual: [ .. Int Int -- .. Bool Int Seq Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: is-sorted-loop\nat: line 24, column 9\nmessage: `compose` in `is-sorted-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int Seq Int ] [ .. Int [ .. Int Int -- .. Bool Int Seq Int ] -- .. Bool ]. Expected Seq Int, found [ .. Int Int -- .. Bool Int Seq Int ].\nexpected: Seq Int\nactual: [ .. Int Int -- .. Bool Int Seq Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: is-sorted-loop\nat: line 24, column 9\nmessage: `compose` in `is-sorted-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int Seq Int ] [ .. Int [ .. Int Int -- .. Bool Int Seq Int ] -- .. Bool ]. Expected Seq Int, found [ .. Int Int -- .. Bool Int Seq Int ].\nexpected: Seq Int\nactual: [ .. Int Int -- .. Bool Int Seq Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -5,
+              -5,
+              0,
+              7
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: is-sorted-loop\nat: line 24, column 9\nmessage: `compose` in `is-sorted-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int Seq Int ] [ .. Int [ .. Int Int -- .. Bool Int Seq Int ] -- .. Bool ]. Expected Seq Int, found [ .. Int Int -- .. Bool Int Seq Int ].\nexpected: Seq Int\nactual: [ .. Int Int -- .. Bool Int Seq Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: is-sorted-loop\nat: line 24, column 9\nmessage: `compose` in `is-sorted-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int Seq Int ] [ .. Int [ .. Int Int -- .. Bool Int Seq Int ] -- .. Bool ]. Expected Seq Int, found [ .. Int Int -- .. Bool Int Seq Int ].\nexpected: Seq Int\nactual: [ .. Int Int -- .. Bool Int Seq Int ]",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "dot": {
+      "needs": [
+        "loop",
+        "mul",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            32
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.expected-quotation\nword: dot-product\nat: line 23, column 7\nmessage: `call` in `dot-product` needs a quotation, but the stack before it is .. Int Int Seq Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.expected-quotation\nword: dot-product\nat: line 23, column 7\nmessage: `call` in `dot-product` needs a quotation, but the stack before it is .. Int Int Seq Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2
+            ],
+            [
+              -3
+            ]
+          ],
+          "expected": [
+            -6
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.expected-quotation\nword: dot-product\nat: line 23, column 7\nmessage: `call` in `dot-product` needs a quotation, but the stack before it is .. Int Int Seq Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              -1
+            ],
+            [
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.expected-quotation\nword: dot-product\nat: line 23, column 7\nmessage: `call` in `dot-product` needs a quotation, but the stack before it is .. Int Int Seq Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              3,
+              3,
+              3
+            ],
+            [
+              1,
+              2,
+              3,
+              4
+            ]
+          ],
+          "expected": [
+            30
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.expected-quotation\nword: dot-product\nat: line 23, column 7\nmessage: `call` in `dot-product` needs a quotation, but the stack before it is .. Int Int Seq Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "all-true": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              true,
+              true,
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Bool.\nexpected: [ .. -- .. ]\nactual: Seq Bool\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: all-true-loop\nat: line 21, column 9\nmessage: `compose` in `all-true-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int Seq Bool ] [ .. Int [ .. Int Int -- .. Bool Int Seq Bool ] -- .. Bool ]. Expected Seq Bool, found [ .. Int Int -- .. Bool Int Seq Bool ].\nexpected: Seq Bool\nactual: [ .. Int Int -- .. Bool Int Seq Bool ]",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Bool.\nexpected: [ .. -- .. ]\nactual: Seq Bool\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: all-true-loop\nat: line 21, column 9\nmessage: `compose` in `all-true-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int Seq Bool ] [ .. Int [ .. Int Int -- .. Bool Int Seq Bool ] -- .. Bool ]. Expected Seq Bool, found [ .. Int Int -- .. Bool Int Seq Bool ].\nexpected: Seq Bool\nactual: [ .. Int Int -- .. Bool Int Seq Bool ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Bool.\nexpected: [ .. -- .. ]\nactual: Seq Bool\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: all-true-loop\nat: line 21, column 9\nmessage: `compose` in `all-true-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int Seq Bool ] [ .. Int [ .. Int Int -- .. Bool Int Seq Bool ] -- .. Bool ]. Expected Seq Bool, found [ .. Int Int -- .. Bool Int Seq Bool ].\nexpected: Seq Bool\nactual: [ .. Int Int -- .. Bool Int Seq Bool ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Bool.\nexpected: [ .. -- .. ]\nactual: Seq Bool\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: all-true-loop\nat: line 21, column 9\nmessage: `compose` in `all-true-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int Seq Bool ] [ .. Int [ .. Int Int -- .. Bool Int Seq Bool ] -- .. Bool ]. Expected Seq Bool, found [ .. Int Int -- .. Bool Int Seq Bool ].\nexpected: Seq Bool\nactual: [ .. Int Int -- .. Bool Int Seq Bool ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Bool.\nexpected: [ .. -- .. ]\nactual: Seq Bool\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: all-true-loop\nat: line 21, column 9\nmessage: `compose` in `all-true-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int Seq Bool ] [ .. Int [ .. Int Int -- .. Bool Int Seq Bool ] -- .. Bool ]. Expected Seq Bool, found [ .. Int Int -- .. Bool Int Seq Bool ].\nexpected: Seq Bool\nactual: [ .. Int Int -- .. Bool Int Seq Bool ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              false,
+              true
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Bool.\nexpected: [ .. -- .. ]\nactual: Seq Bool\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: all-true-loop\nat: line 21, column 9\nmessage: `compose` in `all-true-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int Seq Bool ] [ .. Int [ .. Int Int -- .. Bool Int Seq Bool ] -- .. Bool ]. Expected Seq Bool, found [ .. Int Int -- .. Bool Int Seq Bool ].\nexpected: Seq Bool\nactual: [ .. Int Int -- .. Bool Int Seq Bool ]",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "longest-run": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              1,
+              2,
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-compose-mismatch\nword: main\nat: line 8, column 5\nmessage: `compose` in `main` failed the check firth.type.quotation-compose-mismatch; the stack before it is \u03c1 Int [ .. -- .. Int ] [ .. -- .. Seq Int ] [ .. [ .. Int Int Int -- .. Int Int Int Seq Int ] -- .. Int ]. Expected Seq Int, found [ .. Int Int Int -- .. Int Int Int Seq Int ]. `main` calls `longest-run-loop`, which has an error of its own; this report assumes `longest-run-loop` keeps its stack effect.\nexpected: Seq Int\nactual: [ .. Int Int Int -- .. Int Int Int Seq Int ]\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: longest-run-loop\nat: line 26, column 7\nmessage: `compose` in `longest-run-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Seq Int Int Int ?t26 Bool [ .. -- .. Int Int Seq Int ] [ .. Int Int [ .. Int Int -- .. Int Int Int Seq Int ] -- .. Int ]. Expected Seq Int, found [ .. Int Int -- .. Int Int Int Seq Int ].\nexpected: Seq Int\nactual: [ .. Int Int -- .. Int Int Int Seq Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-compose-mismatch\nword: main\nat: line 8, column 5\nmessage: `compose` in `main` failed the check firth.type.quotation-compose-mismatch; the stack before it is \u03c1 Int [ .. -- .. Int ] [ .. -- .. Seq Int ] [ .. [ .. Int Int Int -- .. Int Int Int Seq Int ] -- .. Int ]. Expected Seq Int, found [ .. Int Int Int -- .. Int Int Int Seq Int ]. `main` calls `longest-run-loop`, which has an error of its own; this report assumes `longest-run-loop` keeps its stack effect.\nexpected: Seq Int\nactual: [ .. Int Int Int -- .. Int Int Int Seq Int ]\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: longest-run-loop\nat: line 26, column 7\nmessage: `compose` in `longest-run-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Seq Int Int Int ?t26 Bool [ .. -- .. Int Int Seq Int ] [ .. Int Int [ .. Int Int -- .. Int Int Int Seq Int ] -- .. Int ]. Expected Seq Int, found [ .. Int Int -- .. Int Int Int Seq Int ].\nexpected: Seq Int\nactual: [ .. Int Int -- .. Int Int Int Seq Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-compose-mismatch\nword: main\nat: line 8, column 5\nmessage: `compose` in `main` failed the check firth.type.quotation-compose-mismatch; the stack before it is \u03c1 Int [ .. -- .. Int ] [ .. -- .. Seq Int ] [ .. [ .. Int Int Int -- .. Int Int Int Seq Int ] -- .. Int ]. Expected Seq Int, found [ .. Int Int Int -- .. Int Int Int Seq Int ]. `main` calls `longest-run-loop`, which has an error of its own; this report assumes `longest-run-loop` keeps its stack effect.\nexpected: Seq Int\nactual: [ .. Int Int Int -- .. Int Int Int Seq Int ]\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: longest-run-loop\nat: line 26, column 7\nmessage: `compose` in `longest-run-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Seq Int Int Int ?t26 Bool [ .. -- .. Int Int Seq Int ] [ .. Int Int [ .. Int Int -- .. Int Int Int Seq Int ] -- .. Int ]. Expected Seq Int, found [ .. Int Int -- .. Int Int Int Seq Int ].\nexpected: Seq Int\nactual: [ .. Int Int -- .. Int Int Int Seq Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-compose-mismatch\nword: main\nat: line 8, column 5\nmessage: `compose` in `main` failed the check firth.type.quotation-compose-mismatch; the stack before it is \u03c1 Int [ .. -- .. Int ] [ .. -- .. Seq Int ] [ .. [ .. Int Int Int -- .. Int Int Int Seq Int ] -- .. Int ]. Expected Seq Int, found [ .. Int Int Int -- .. Int Int Int Seq Int ]. `main` calls `longest-run-loop`, which has an error of its own; this report assumes `longest-run-loop` keeps its stack effect.\nexpected: Seq Int\nactual: [ .. Int Int Int -- .. Int Int Int Seq Int ]\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: longest-run-loop\nat: line 26, column 7\nmessage: `compose` in `longest-run-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Seq Int Int Int ?t26 Bool [ .. -- .. Int Int Seq Int ] [ .. Int Int [ .. Int Int -- .. Int Int Int Seq Int ] -- .. Int ]. Expected Seq Int, found [ .. Int Int -- .. Int Int Int Seq Int ].\nexpected: Seq Int\nactual: [ .. Int Int -- .. Int Int Int Seq Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-compose-mismatch\nword: main\nat: line 8, column 5\nmessage: `compose` in `main` failed the check firth.type.quotation-compose-mismatch; the stack before it is \u03c1 Int [ .. -- .. Int ] [ .. -- .. Seq Int ] [ .. [ .. Int Int Int -- .. Int Int Int Seq Int ] -- .. Int ]. Expected Seq Int, found [ .. Int Int Int -- .. Int Int Int Seq Int ]. `main` calls `longest-run-loop`, which has an error of its own; this report assumes `longest-run-loop` keeps its stack effect.\nexpected: Seq Int\nactual: [ .. Int Int Int -- .. Int Int Int Seq Int ]\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: longest-run-loop\nat: line 26, column 7\nmessage: `compose` in `longest-run-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Seq Int Int Int ?t26 Bool [ .. -- .. Int Int Seq Int ] [ .. Int Int [ .. Int Int -- .. Int Int Int Seq Int ] -- .. Int ]. Expected Seq Int, found [ .. Int Int -- .. Int Int Int Seq Int ].\nexpected: Seq Int\nactual: [ .. Int Int -- .. Int Int Int Seq Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              1,
+              1,
+              1,
+              1,
+              3
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.quotation-compose-mismatch\nword: main\nat: line 8, column 5\nmessage: `compose` in `main` failed the check firth.type.quotation-compose-mismatch; the stack before it is \u03c1 Int [ .. -- .. Int ] [ .. -- .. Seq Int ] [ .. [ .. Int Int Int -- .. Int Int Int Seq Int ] -- .. Int ]. Expected Seq Int, found [ .. Int Int Int -- .. Int Int Int Seq Int ]. `main` calls `longest-run-loop`, which has an error of its own; this report assumes `longest-run-loop` keeps its stack effect.\nexpected: Seq Int\nactual: [ .. Int Int Int -- .. Int Int Int Seq Int ]\n\nerror 2 of 2\ncode: firth.type.quotation-compose-mismatch\nword: longest-run-loop\nat: line 26, column 7\nmessage: `compose` in `longest-run-loop` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Seq Int Int Int ?t26 Bool [ .. -- .. Int Int Seq Int ] [ .. Int Int [ .. Int Int -- .. Int Int Int Seq Int ] -- .. Int ]. Expected Seq Int, found [ .. Int Int -- .. Int Int Int Seq Int ].\nexpected: Seq Int\nactual: [ .. Int Int -- .. Int Int Int Seq Int ]",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "has-pair-sum": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              6,
+              2
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.type.expected-quotation\nword: pair-sum-loop\nat: line 19, column 7\nmessage: `call` in `pair-sum-loop` needs a quotation, but the stack before it is .. Int ?t25 ?t24 Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 3 of 3\ncode: firth.type.quotation-compose-mismatch\nword: check-pairs\nat: line 37, column 7\nmessage: `compose` in `check-pairs` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Seq Int Int Int ] [ .. Int Seq Int Int [ .. Int Seq Int Int -- .. Int Seq Int Int Int ] -- .. Bool ]. Expected Int, found [ .. Int Seq Int Int -- .. Int Seq Int Int Int ].\nexpected: Int\nactual: [ .. Int Seq Int Int -- .. Int Seq Int Int Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            0
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.type.expected-quotation\nword: pair-sum-loop\nat: line 19, column 7\nmessage: `call` in `pair-sum-loop` needs a quotation, but the stack before it is .. Int ?t25 ?t24 Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 3 of 3\ncode: firth.type.quotation-compose-mismatch\nword: check-pairs\nat: line 37, column 7\nmessage: `compose` in `check-pairs` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Seq Int Int Int ] [ .. Int Seq Int Int [ .. Int Seq Int Int -- .. Int Seq Int Int Int ] -- .. Bool ]. Expected Int, found [ .. Int Seq Int Int -- .. Int Seq Int Int Int ].\nexpected: Int\nactual: [ .. Int Seq Int Int -- .. Int Seq Int Int Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ],
+            8
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.type.expected-quotation\nword: pair-sum-loop\nat: line 19, column 7\nmessage: `call` in `pair-sum-loop` needs a quotation, but the stack before it is .. Int ?t25 ?t24 Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 3 of 3\ncode: firth.type.quotation-compose-mismatch\nword: check-pairs\nat: line 37, column 7\nmessage: `compose` in `check-pairs` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Seq Int Int Int ] [ .. Int Seq Int Int [ .. Int Seq Int Int -- .. Int Seq Int Int Int ] -- .. Bool ]. Expected Int, found [ .. Int Seq Int Int -- .. Int Seq Int Int Int ].\nexpected: Int\nactual: [ .. Int Seq Int Int -- .. Int Seq Int Int Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.type.expected-quotation\nword: pair-sum-loop\nat: line 19, column 7\nmessage: `call` in `pair-sum-loop` needs a quotation, but the stack before it is .. Int ?t25 ?t24 Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 3 of 3\ncode: firth.type.quotation-compose-mismatch\nword: check-pairs\nat: line 37, column 7\nmessage: `compose` in `check-pairs` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Seq Int Int Int ] [ .. Int Seq Int Int [ .. Int Seq Int Int -- .. Int Seq Int Int Int ] -- .. Bool ]. Expected Int, found [ .. Int Seq Int Int -- .. Int Seq Int Int Int ].\nexpected: Int\nactual: [ .. Int Seq Int Int -- .. Int Seq Int Int Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            7
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.type.expected-quotation\nword: pair-sum-loop\nat: line 19, column 7\nmessage: `call` in `pair-sum-loop` needs a quotation, but the stack before it is .. Int ?t25 ?t24 Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 3 of 3\ncode: firth.type.quotation-compose-mismatch\nword: check-pairs\nat: line 37, column 7\nmessage: `compose` in `check-pairs` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Seq Int Int Int ] [ .. Int Seq Int Int [ .. Int Seq Int Int -- .. Int Seq Int Int Int ] -- .. Bool ]. Expected Int, found [ .. Int Seq Int Int -- .. Int Seq Int Int Int ].\nexpected: Int\nactual: [ .. Int Seq Int Int -- .. Int Seq Int Int Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              -2,
+              9,
+              0
+            ],
+            -2
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.type.expected-quotation\nword: pair-sum-loop\nat: line 19, column 7\nmessage: `call` in `pair-sum-loop` needs a quotation, but the stack before it is .. Int ?t25 ?t24 Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 3 of 3\ncode: firth.type.quotation-compose-mismatch\nword: check-pairs\nat: line 37, column 7\nmessage: `compose` in `check-pairs` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Seq Int Int Int ] [ .. Int Seq Int Int [ .. Int Seq Int Int -- .. Int Seq Int Int Int ] -- .. Bool ]. Expected Int, found [ .. Int Seq Int Int -- .. Int Seq Int Int Int ].\nexpected: Int\nactual: [ .. Int Seq Int Int -- .. Int Seq Int Int Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              1,
+              3
+            ],
+            2
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.type.expected-quotation\nword: pair-sum-loop\nat: line 19, column 7\nmessage: `call` in `pair-sum-loop` needs a quotation, but the stack before it is .. Int ?t25 ?t24 Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 3 of 3\ncode: firth.type.quotation-compose-mismatch\nword: check-pairs\nat: line 37, column 7\nmessage: `compose` in `check-pairs` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Seq Int Int Int ] [ .. Int Seq Int Int [ .. Int Seq Int Int -- .. Int Seq Int Int Int ] -- .. Bool ]. Expected Int, found [ .. Int Seq Int Int -- .. Int Seq Int Int Int ].\nexpected: Int\nactual: [ .. Int Seq Int Int -- .. Int Seq Int Int Int ]",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "count-distinct": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: count-distinct-main\nat: line 23, column 7\nmessage: The local `count` is used after `call` on line 21 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.branch-mismatch\nword: check-if-new\nat: line 54, column 7\nmessage: The two branches of `if` in `check-if-new` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: The two branches leave different parts of the caller's stack (\u03c1): one of them consumes values it should keep, or keeps values it should consume. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: count-distinct-main\nat: line 23, column 7\nmessage: The local `count` is used after `call` on line 21 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.branch-mismatch\nword: check-if-new\nat: line 54, column 7\nmessage: The two branches of `if` in `check-if-new` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: The two branches leave different parts of the caller's stack (\u03c1): one of them consumes values it should keep, or keeps values it should consume. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: count-distinct-main\nat: line 23, column 7\nmessage: The local `count` is used after `call` on line 21 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.branch-mismatch\nword: check-if-new\nat: line 54, column 7\nmessage: The two branches of `if` in `check-if-new` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: The two branches leave different parts of the caller's stack (\u03c1): one of them consumes values it should keep, or keeps values it should consume. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: count-distinct-main\nat: line 23, column 7\nmessage: The local `count` is used after `call` on line 21 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.branch-mismatch\nword: check-if-new\nat: line 54, column 7\nmessage: The two branches of `if` in `check-if-new` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: The two branches leave different parts of the caller's stack (\u03c1): one of them consumes values it should keep, or keeps values it should consume. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: count-distinct-main\nat: line 23, column 7\nmessage: The local `count` is used after `call` on line 21 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.branch-mismatch\nword: check-if-new\nat: line 54, column 7\nmessage: The two branches of `if` in `check-if-new` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: The two branches leave different parts of the caller's stack (\u03c1): one of them consumes values it should keep, or keeps values it should consume. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              1,
+              -1,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: count-distinct-main\nat: line 23, column 7\nmessage: The local `count` is used after `call` on line 21 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.branch-mismatch\nword: check-if-new\nat: line 54, column 7\nmessage: The two branches of `if` in `check-if-new` leave different stacks. Below the condition and the two quotations the stack is ..; the true branch leaves .. Int and the false branch leaves .. Bool.\nexpected: .. Int\nactual: .. Bool\nhint: The two branches leave different parts of the caller's stack (\u03c1): one of them consumes values it should keep, or keeps values it should consume. Both branches run on the same stack and must leave the same number and types of values, so that the code after the `if` finds one stack.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "merge-sorted": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              9
+            ],
+            [
+              2,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              9,
+              10
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 9, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int Seq Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: merge-loop\nat: line 24, column 18\nmessage: `prim seq-int.push` in `merge-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Int ?t138 Int ?t139\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 23. With that edit, the next error in `merge-loop` is at line 29, column 18.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 9, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int Seq Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: merge-loop\nat: line 24, column 18\nmessage: `prim seq-int.push` in `merge-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Int ?t138 Int ?t139\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 23. With that edit, the next error in `merge-loop` is at line 29, column 18.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            [
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 9, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int Seq Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: merge-loop\nat: line 24, column 18\nmessage: `prim seq-int.push` in `merge-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Int ?t138 Int ?t139\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 23. With that edit, the next error in `merge-loop` is at line 29, column 18.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 9, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int Seq Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: merge-loop\nat: line 24, column 18\nmessage: `prim seq-int.push` in `merge-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Int ?t138 Int ?t139\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 23. With that edit, the next error in `merge-loop` is at line 29, column 18.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 9, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int Seq Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: merge-loop\nat: line 24, column 18\nmessage: `prim seq-int.push` in `merge-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Int ?t138 Int ?t139\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 23. With that edit, the next error in `merge-loop` is at line 29, column 18.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -3,
+              0,
+              8
+            ],
+            [
+              -4,
+              8,
+              9,
+              9
+            ]
+          ],
+          "expected": [
+            [
+              -4,
+              -3,
+              0,
+              8,
+              8,
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 9, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int Seq Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: merge-loop\nat: line 24, column 18\nmessage: `prim seq-int.push` in `merge-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Int ?t138 Int ?t139\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 23. With that edit, the next error in `merge-loop` is at line 29, column 18.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "digits": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            305
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              5
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.expected-quotation\nword: main\nat: line 6, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 4\ncode: firth.type.primitive-input-mismatch\nword: extract-digits-reverse\nat: line 17, column 14\nmessage: `prim seq-int.push` in `extract-digits-reverse` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim mod` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Int Int ?t18\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result n 10 prim mod` in place of `n 10 prim mod result` on line 16. With that edit, the next error in `extract-digits-reverse` is at line 18, column 7.\n\nerror 3 of 4\ncode: firth.type.expected-quotation\nword: reverse-digits\nat: line 30, column 5\nmessage: `call` in `reverse-digits` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 4 of 4\ncode: firth.type.primitive-input-mismatch\nword: reverse-loop\nat: line 40, column 14\nmessage: `prim seq-int.push` in `reverse-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t17\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 39. With that edit, the next error in `reverse-loop` is at line 42, column 7.",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            [
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.expected-quotation\nword: main\nat: line 6, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 4\ncode: firth.type.primitive-input-mismatch\nword: extract-digits-reverse\nat: line 17, column 14\nmessage: `prim seq-int.push` in `extract-digits-reverse` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim mod` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Int Int ?t18\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result n 10 prim mod` in place of `n 10 prim mod result` on line 16. With that edit, the next error in `extract-digits-reverse` is at line 18, column 7.\n\nerror 3 of 4\ncode: firth.type.expected-quotation\nword: reverse-digits\nat: line 30, column 5\nmessage: `call` in `reverse-digits` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 4 of 4\ncode: firth.type.primitive-input-mismatch\nword: reverse-loop\nat: line 40, column 14\nmessage: `prim seq-int.push` in `reverse-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t17\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 39. With that edit, the next error in `reverse-loop` is at line 42, column 7.",
+          "pass": false
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            [
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.expected-quotation\nword: main\nat: line 6, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 4\ncode: firth.type.primitive-input-mismatch\nword: extract-digits-reverse\nat: line 17, column 14\nmessage: `prim seq-int.push` in `extract-digits-reverse` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim mod` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Int Int ?t18\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result n 10 prim mod` in place of `n 10 prim mod result` on line 16. With that edit, the next error in `extract-digits-reverse` is at line 18, column 7.\n\nerror 3 of 4\ncode: firth.type.expected-quotation\nword: reverse-digits\nat: line 30, column 5\nmessage: `call` in `reverse-digits` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 4 of 4\ncode: firth.type.primitive-input-mismatch\nword: reverse-loop\nat: line 40, column 14\nmessage: `prim seq-int.push` in `reverse-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t17\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 39. With that edit, the next error in `reverse-loop` is at line 42, column 7.",
+          "pass": false
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              1,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.expected-quotation\nword: main\nat: line 6, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 4\ncode: firth.type.primitive-input-mismatch\nword: extract-digits-reverse\nat: line 17, column 14\nmessage: `prim seq-int.push` in `extract-digits-reverse` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim mod` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Int Int ?t18\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result n 10 prim mod` in place of `n 10 prim mod result` on line 16. With that edit, the next error in `extract-digits-reverse` is at line 18, column 7.\n\nerror 3 of 4\ncode: firth.type.expected-quotation\nword: reverse-digits\nat: line 30, column 5\nmessage: `call` in `reverse-digits` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 4 of 4\ncode: firth.type.primitive-input-mismatch\nword: reverse-loop\nat: line 40, column 14\nmessage: `prim seq-int.push` in `reverse-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t17\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 39. With that edit, the next error in `reverse-loop` is at line 42, column 7.",
+          "pass": false
+        },
+        {
+          "input": [
+            99
+          ],
+          "expected": [
+            [
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.expected-quotation\nword: main\nat: line 6, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 4\ncode: firth.type.primitive-input-mismatch\nword: extract-digits-reverse\nat: line 17, column 14\nmessage: `prim seq-int.push` in `extract-digits-reverse` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim mod` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Int Int ?t18\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result n 10 prim mod` in place of `n 10 prim mod result` on line 16. With that edit, the next error in `extract-digits-reverse` is at line 18, column 7.\n\nerror 3 of 4\ncode: firth.type.expected-quotation\nword: reverse-digits\nat: line 30, column 5\nmessage: `call` in `reverse-digits` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 4 of 4\ncode: firth.type.primitive-input-mismatch\nword: reverse-loop\nat: line 40, column 14\nmessage: `prim seq-int.push` in `reverse-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t17\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 39. With that edit, the next error in `reverse-loop` is at line 42, column 7.",
+          "pass": false
+        },
+        {
+          "input": [
+            420
+          ],
+          "expected": [
+            [
+              4,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.expected-quotation\nword: main\nat: line 6, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 4\ncode: firth.type.primitive-input-mismatch\nword: extract-digits-reverse\nat: line 17, column 14\nmessage: `prim seq-int.push` in `extract-digits-reverse` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim mod` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Int Int ?t18\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result n 10 prim mod` in place of `n 10 prim mod result` on line 16. With that edit, the next error in `extract-digits-reverse` is at line 18, column 7.\n\nerror 3 of 4\ncode: firth.type.expected-quotation\nword: reverse-digits\nat: line 30, column 5\nmessage: `call` in `reverse-digits` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 4 of 4\ncode: firth.type.primitive-input-mismatch\nword: reverse-loop\nat: line 40, column 14\nmessage: `prim seq-int.push` in `reverse-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t17\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 39. With that edit, the next error in `reverse-loop` is at line 42, column 7.",
+          "pass": false
+        },
+        {
+          "input": [
+            987
+          ],
+          "expected": [
+            [
+              9,
+              8,
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.expected-quotation\nword: main\nat: line 6, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 4\ncode: firth.type.primitive-input-mismatch\nword: extract-digits-reverse\nat: line 17, column 14\nmessage: `prim seq-int.push` in `extract-digits-reverse` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim mod` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Int Int ?t18\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result n 10 prim mod` in place of `n 10 prim mod result` on line 16. With that edit, the next error in `extract-digits-reverse` is at line 18, column 7.\n\nerror 3 of 4\ncode: firth.type.expected-quotation\nword: reverse-digits\nat: line 30, column 5\nmessage: `call` in `reverse-digits` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 4 of 4\ncode: firth.type.primitive-input-mismatch\nword: reverse-loop\nat: line 40, column 14\nmessage: `prim seq-int.push` in `reverse-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t17\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 39. With that edit, the next error in `reverse-loop` is at line 42, column 7.",
+          "pass": false
+        },
+        {
+          "input": [
+            1005
+          ],
+          "expected": [
+            [
+              1,
+              0,
+              0,
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.expected-quotation\nword: main\nat: line 6, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 4\ncode: firth.type.primitive-input-mismatch\nword: extract-digits-reverse\nat: line 17, column 14\nmessage: `prim seq-int.push` in `extract-digits-reverse` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim mod` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Int Int ?t18\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result n 10 prim mod` in place of `n 10 prim mod result` on line 16. With that edit, the next error in `extract-digits-reverse` is at line 18, column 7.\n\nerror 3 of 4\ncode: firth.type.expected-quotation\nword: reverse-digits\nat: line 30, column 5\nmessage: `call` in `reverse-digits` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 4 of 4\ncode: firth.type.primitive-input-mismatch\nword: reverse-loop\nat: line 40, column 14\nmessage: `prim seq-int.push` in `reverse-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t17\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 39. With that edit, the next error in `reverse-loop` is at line 42, column 7.",
+          "pass": false
+        },
+        {
+          "input": [
+            40213
+          ],
+          "expected": [
+            [
+              4,
+              0,
+              2,
+              1,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.expected-quotation\nword: main\nat: line 6, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 4\ncode: firth.type.primitive-input-mismatch\nword: extract-digits-reverse\nat: line 17, column 14\nmessage: `prim seq-int.push` in `extract-digits-reverse` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim mod` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Int Int ?t18\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result n 10 prim mod` in place of `n 10 prim mod result` on line 16. With that edit, the next error in `extract-digits-reverse` is at line 18, column 7.\n\nerror 3 of 4\ncode: firth.type.expected-quotation\nword: reverse-digits\nat: line 30, column 5\nmessage: `call` in `reverse-digits` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 4 of 4\ncode: firth.type.primitive-input-mismatch\nword: reverse-loop\nat: line 40, column 14\nmessage: `prim seq-int.push` in `reverse-loop` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. Seq Int Int Int ?t17\nhint: These are the values `prim seq-int.push` takes, in another order. To push them in its order, write `result xs i prim seq-int.at` in place of `xs i prim seq-int.at result` on line 39. With that edit, the next error in `reverse-loop` is at line 42, column 7.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 8
+    },
+    "primes-up-to": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 4\ncode: firth.elaboration.untracked-local\nword: find-primes-loop\nat: line 17, column 7\nmessage: The local `i` is used after `call` on line 16 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 4\ncode: firth.type.quotation-compose-mismatch\nword: is-prime\nat: line 48, column 9\nmessage: `compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int ] [ .. [ .. Int -- .. Int Int ] -- .. Bool ]. Expected Int, found [ .. Int -- .. Int Int ]. `is-prime` calls `check-divisors`, which has an error of its own; this report assumes `check-divisors` keeps its stack effect.\nexpected: Int\nactual: [ .. Int -- .. Int Int ]\n\nerror 4 of 4\ncode: firth.type.quotation-compose-mismatch\nword: check-divisors\nat: line 69, column 7\nmessage: `compose` in `check-divisors` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] [ .. Int [ .. Int -- .. Int Int ] -- .. Bool ]. Expected Int, found [ .. Int -- .. Int Int ].\nexpected: Int\nactual: [ .. Int -- .. Int Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 4\ncode: firth.elaboration.untracked-local\nword: find-primes-loop\nat: line 17, column 7\nmessage: The local `i` is used after `call` on line 16 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 4\ncode: firth.type.quotation-compose-mismatch\nword: is-prime\nat: line 48, column 9\nmessage: `compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int ] [ .. [ .. Int -- .. Int Int ] -- .. Bool ]. Expected Int, found [ .. Int -- .. Int Int ]. `is-prime` calls `check-divisors`, which has an error of its own; this report assumes `check-divisors` keeps its stack effect.\nexpected: Int\nactual: [ .. Int -- .. Int Int ]\n\nerror 4 of 4\ncode: firth.type.quotation-compose-mismatch\nword: check-divisors\nat: line 69, column 7\nmessage: `compose` in `check-divisors` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] [ .. Int [ .. Int -- .. Int Int ] -- .. Bool ]. Expected Int, found [ .. Int -- .. Int Int ].\nexpected: Int\nactual: [ .. Int -- .. Int Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 4\ncode: firth.elaboration.untracked-local\nword: find-primes-loop\nat: line 17, column 7\nmessage: The local `i` is used after `call` on line 16 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 4\ncode: firth.type.quotation-compose-mismatch\nword: is-prime\nat: line 48, column 9\nmessage: `compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int ] [ .. [ .. Int -- .. Int Int ] -- .. Bool ]. Expected Int, found [ .. Int -- .. Int Int ]. `is-prime` calls `check-divisors`, which has an error of its own; this report assumes `check-divisors` keeps its stack effect.\nexpected: Int\nactual: [ .. Int -- .. Int Int ]\n\nerror 4 of 4\ncode: firth.type.quotation-compose-mismatch\nword: check-divisors\nat: line 69, column 7\nmessage: `compose` in `check-divisors` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] [ .. Int [ .. Int -- .. Int Int ] -- .. Bool ]. Expected Int, found [ .. Int -- .. Int Int ].\nexpected: Int\nactual: [ .. Int -- .. Int Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            2
+          ],
+          "expected": [
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 4\ncode: firth.elaboration.untracked-local\nword: find-primes-loop\nat: line 17, column 7\nmessage: The local `i` is used after `call` on line 16 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 4\ncode: firth.type.quotation-compose-mismatch\nword: is-prime\nat: line 48, column 9\nmessage: `compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int ] [ .. [ .. Int -- .. Int Int ] -- .. Bool ]. Expected Int, found [ .. Int -- .. Int Int ]. `is-prime` calls `check-divisors`, which has an error of its own; this report assumes `check-divisors` keeps its stack effect.\nexpected: Int\nactual: [ .. Int -- .. Int Int ]\n\nerror 4 of 4\ncode: firth.type.quotation-compose-mismatch\nword: check-divisors\nat: line 69, column 7\nmessage: `compose` in `check-divisors` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] [ .. Int [ .. Int -- .. Int Int ] -- .. Bool ]. Expected Int, found [ .. Int -- .. Int Int ].\nexpected: Int\nactual: [ .. Int -- .. Int Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            13
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 4\ncode: firth.elaboration.untracked-local\nword: find-primes-loop\nat: line 17, column 7\nmessage: The local `i` is used after `call` on line 16 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 4\ncode: firth.type.quotation-compose-mismatch\nword: is-prime\nat: line 48, column 9\nmessage: `compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int ] [ .. [ .. Int -- .. Int Int ] -- .. Bool ]. Expected Int, found [ .. Int -- .. Int Int ]. `is-prime` calls `check-divisors`, which has an error of its own; this report assumes `check-divisors` keeps its stack effect.\nexpected: Int\nactual: [ .. Int -- .. Int Int ]\n\nerror 4 of 4\ncode: firth.type.quotation-compose-mismatch\nword: check-divisors\nat: line 69, column 7\nmessage: `compose` in `check-divisors` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] [ .. Int [ .. Int -- .. Int Int ] -- .. Bool ]. Expected Int, found [ .. Int -- .. Int Int ].\nexpected: Int\nactual: [ .. Int -- .. Int Int ]",
+          "pass": false
+        },
+        {
+          "input": [
+            30
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13,
+              17,
+              19,
+              23,
+              29
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 4 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 4\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int.\nexpected: [ .. -- .. ]\nactual: Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 4\ncode: firth.elaboration.untracked-local\nword: find-primes-loop\nat: line 17, column 7\nmessage: The local `i` is used after `call` on line 16 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 4\ncode: firth.type.quotation-compose-mismatch\nword: is-prime\nat: line 48, column 9\nmessage: `compose` in `is-prime` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int ] [ .. [ .. Int -- .. Int Int ] -- .. Bool ]. Expected Int, found [ .. Int -- .. Int Int ]. `is-prime` calls `check-divisors`, which has an error of its own; this report assumes `check-divisors` keeps its stack effect.\nexpected: Int\nactual: [ .. Int -- .. Int Int ]\n\nerror 4 of 4\ncode: firth.type.quotation-compose-mismatch\nword: check-divisors\nat: line 69, column 7\nmessage: `compose` in `check-divisors` failed the check firth.type.quotation-compose-mismatch; the stack before it is .. Bool [ .. -- .. Int ] [ .. -- .. Int Int ] [ .. Int [ .. Int -- .. Int Int ] -- .. Bool ]. Expected Int, found [ .. Int -- .. Int Int ].\nexpected: Int\nactual: [ .. Int -- .. Int Int ]",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "histogram": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              0,
+              2,
+              2,
+              1,
+              2
+            ],
+            3
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.type.primitive-input-mismatch\nword: init-and-fill-histogram\nat: line 17, column 14\nmessage: `prim seq-int.push` in `init-and-fill-histogram` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, `0` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. ?t36 ?t35 ?t34 Int ?t37\nhint: The top value, `result` (Seq Int), is not what `prim seq-int.push` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 3 of 3\ncode: firth.elaboration.untracked-local\nword: fill-histogram\nat: line 37, column 5\nmessage: The local `result` is used after `call` on line 47 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.type.primitive-input-mismatch\nword: init-and-fill-histogram\nat: line 17, column 14\nmessage: `prim seq-int.push` in `init-and-fill-histogram` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, `0` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. ?t36 ?t35 ?t34 Int ?t37\nhint: The top value, `result` (Seq Int), is not what `prim seq-int.push` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 3 of 3\ncode: firth.elaboration.untracked-local\nword: fill-histogram\nat: line 37, column 5\nmessage: The local `result` is used after `call` on line 47 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            1
+          ],
+          "expected": [
+            [
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.type.primitive-input-mismatch\nword: init-and-fill-histogram\nat: line 17, column 14\nmessage: `prim seq-int.push` in `init-and-fill-histogram` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, `0` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. ?t36 ?t35 ?t34 Int ?t37\nhint: The top value, `result` (Seq Int), is not what `prim seq-int.push` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 3 of 3\ncode: firth.elaboration.untracked-local\nword: fill-histogram\nat: line 37, column 5\nmessage: The local `result` is used after `call` on line 47 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.type.primitive-input-mismatch\nword: init-and-fill-histogram\nat: line 17, column 14\nmessage: `prim seq-int.push` in `init-and-fill-histogram` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, `0` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. ?t36 ?t35 ?t34 Int ?t37\nhint: The top value, `result` (Seq Int), is not what `prim seq-int.push` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 3 of 3\ncode: firth.elaboration.untracked-local\nword: fill-histogram\nat: line 37, column 5\nmessage: The local `result` is used after `call` on line 47 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              0,
+              3,
+              1,
+              0,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            [
+              2,
+              1,
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.type.primitive-input-mismatch\nword: init-and-fill-histogram\nat: line 17, column 14\nmessage: `prim seq-int.push` in `init-and-fill-histogram` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, `0` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. ?t36 ?t35 ?t34 Int ?t37\nhint: The top value, `result` (Seq Int), is not what `prim seq-int.push` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 3 of 3\ncode: firth.elaboration.untracked-local\nword: fill-histogram\nat: line 37, column 5\nmessage: The local `result` is used after `call` on line 47 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              1
+            ],
+            4
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.type.primitive-input-mismatch\nword: init-and-fill-histogram\nat: line 17, column 14\nmessage: `prim seq-int.push` in `init-and-fill-histogram` takes the sequence (Seq Int) and the value pushed (Int), bottom to top, but here it gets, bottom to top, `0` (Int) and `result` (Seq Int).\nexpected: .. Seq Int Int\nactual: .. ?t36 ?t35 ?t34 Int ?t37\nhint: The top value, `result` (Seq Int), is not what `prim seq-int.push` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.\n\nerror 3 of 3\ncode: firth.elaboration.untracked-local\nword: fill-histogram\nat: line 37, column 5\nmessage: The local `result` is used after `call` on line 47 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "sort": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: insertion-sort-loop\nat: line 19, column 7\nmessage: The local `i` is used after `call` on line 18 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.primitive-input-mismatch\nword: insert-into-sorted\nat: line 35, column 20\nmessage: `prim seq-int.set` in `insert-into-sorted` takes the sequence (Seq Int), the index (Int) and the new value (Int), bottom to top, but here it gets, bottom to top, `elem` (Int), `result` (Seq Int) and `pos` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Seq Int Int\nhint: These are the values `prim seq-int.set` takes, in another order. By their names and types, `result` is for the sequence. Of the values of one type, `elem` and `pos` are for the index and the new value, in the order you mean: only you can tell which is which. Push them in the order of its inputs.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: insertion-sort-loop\nat: line 19, column 7\nmessage: The local `i` is used after `call` on line 18 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.primitive-input-mismatch\nword: insert-into-sorted\nat: line 35, column 20\nmessage: `prim seq-int.set` in `insert-into-sorted` takes the sequence (Seq Int), the index (Int) and the new value (Int), bottom to top, but here it gets, bottom to top, `elem` (Int), `result` (Seq Int) and `pos` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Seq Int Int\nhint: These are the values `prim seq-int.set` takes, in another order. By their names and types, `result` is for the sequence. Of the values of one type, `elem` and `pos` are for the index and the new value, in the order you mean: only you can tell which is which. Push them in the order of its inputs.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: insertion-sort-loop\nat: line 19, column 7\nmessage: The local `i` is used after `call` on line 18 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.primitive-input-mismatch\nword: insert-into-sorted\nat: line 35, column 20\nmessage: `prim seq-int.set` in `insert-into-sorted` takes the sequence (Seq Int), the index (Int) and the new value (Int), bottom to top, but here it gets, bottom to top, `elem` (Int), `result` (Seq Int) and `pos` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Seq Int Int\nhint: These are the values `prim seq-int.set` takes, in another order. By their names and types, `result` is for the sequence. Of the values of one type, `elem` and `pos` are for the index and the new value, in the order you mean: only you can tell which is which. Push them in the order of its inputs.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: insertion-sort-loop\nat: line 19, column 7\nmessage: The local `i` is used after `call` on line 18 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.primitive-input-mismatch\nword: insert-into-sorted\nat: line 35, column 20\nmessage: `prim seq-int.set` in `insert-into-sorted` takes the sequence (Seq Int), the index (Int) and the new value (Int), bottom to top, but here it gets, bottom to top, `elem` (Int), `result` (Seq Int) and `pos` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Seq Int Int\nhint: These are the values `prim seq-int.set` takes, in another order. By their names and types, `result` is for the sequence. Of the values of one type, `elem` and `pos` are for the index and the new value, in the order you mean: only you can tell which is which. Push them in the order of its inputs.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              -1,
+              4,
+              -1,
+              0,
+              7,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              -1,
+              -1,
+              0,
+              3,
+              4,
+              7,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: insertion-sort-loop\nat: line 19, column 7\nmessage: The local `i` is used after `call` on line 18 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.primitive-input-mismatch\nword: insert-into-sorted\nat: line 35, column 20\nmessage: `prim seq-int.set` in `insert-into-sorted` takes the sequence (Seq Int), the index (Int) and the new value (Int), bottom to top, but here it gets, bottom to top, `elem` (Int), `result` (Seq Int) and `pos` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Seq Int Int\nhint: These are the values `prim seq-int.set` takes, in another order. By their names and types, `result` is for the sequence. Of the values of one type, `elem` and `pos` are for the index and the new value, in the order you mean: only you can tell which is which. Push them in the order of its inputs.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.type.expected-quotation\nword: main\nat: line 7, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 3\ncode: firth.elaboration.untracked-local\nword: insertion-sort-loop\nat: line 19, column 7\nmessage: The local `i` is used after `call` on line 18 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.\n\nerror 3 of 3\ncode: firth.type.primitive-input-mismatch\nword: insert-into-sorted\nat: line 35, column 20\nmessage: `prim seq-int.set` in `insert-into-sorted` takes the sequence (Seq Int), the index (Int) and the new value (Int), bottom to top, but here it gets, bottom to top, `elem` (Int), `result` (Seq Int) and `pos` (Int).\nexpected: .. Seq Int Int Int\nactual: .. Int Seq Int Int\nhint: These are the values `prim seq-int.set` takes, in another order. By their names and types, `result` is for the sequence. Of the values of one type, `elem` and `pos` are for the index and the new value, in the order you mean: only you can tell which is which. Push them in the order of its inputs.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "ledger": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10,
+            [
+              5,
+              -20,
+              -15,
+              4
+            ]
+          ],
+          "expected": [
+            4,
+            1
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: ledger-loop\nat: line 15, column 5\nmessage: The local `balance` is used after `call` on line 31 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            []
+          ],
+          "expected": [
+            0,
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: ledger-loop\nat: line 15, column 5\nmessage: The local `balance` is used after `call` on line 31 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            [
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: ledger-loop\nat: line 15, column 5\nmessage: The local `balance` is used after `call` on line 31 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            5,
+            [
+              -5,
+              -1,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: ledger-loop\nat: line 15, column 5\nmessage: The local `balance` is used after `call` on line 31 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            100,
+            [
+              -50,
+              -60,
+              20,
+              -70
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: ledger-loop\nat: line 15, column 5\nmessage: The local `balance` is used after `call` on line 31 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            3,
+            [
+              -1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 8, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Int Int Int Seq Int.\nexpected: [ .. -- .. ]\nactual: Seq Int\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: ledger-loop\nat: line 15, column 5\nmessage: The local `balance` is used after `call` on line 31 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "allocate-batch": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              10,
+              3
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              4,
+              5,
+              7,
+              1
+            ],
+            [
+              false,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              2
+            ],
+            [
+              4,
+              0,
+              6,
+              1
+            ],
+            [
+              0,
+              3,
+              1,
+              0
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 11, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Seq Int Seq Int Int Seq Int Seq Int Seq Bool.\nexpected: [ .. -- .. ]\nactual: Seq Bool\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: allocate-loop\nat: line 22, column 18\nmessage: The local `available` is used after `call` on line 60 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            [],
+            [],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ],
+            [],
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 11, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Seq Int Seq Int Int Seq Int Seq Int Seq Bool.\nexpected: [ .. -- .. ]\nactual: Seq Bool\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: allocate-loop\nat: line 22, column 18\nmessage: The local `available` is used after `call` on line 60 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              3
+            ],
+            [
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 11, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Seq Int Seq Int Int Seq Int Seq Int Seq Bool.\nexpected: [ .. -- .. ]\nactual: Seq Bool\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: allocate-loop\nat: line 22, column 18\nmessage: The local `available` is used after `call` on line 60 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              1,
+              1,
+              1
+            ],
+            [
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              2,
+              2,
+              0
+            ],
+            [
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 11, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Seq Int Seq Int Int Seq Int Seq Int Seq Bool.\nexpected: [ .. -- .. ]\nactual: Seq Bool\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: allocate-loop\nat: line 22, column 18\nmessage: The local `available` is used after `call` on line 60 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              9
+            ],
+            [
+              1,
+              0,
+              1,
+              0
+            ],
+            [
+              9,
+              5,
+              1,
+              0
+            ],
+            [
+              true,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              4,
+              0
+            ],
+            [
+              9,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              3,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 11, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Seq Int Seq Int Int Seq Int Seq Int Seq Bool.\nexpected: [ .. -- .. ]\nactual: Seq Bool\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: allocate-loop\nat: line 22, column 18\nmessage: The local `available` is used after `call` on line 60 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              2,
+              2,
+              1,
+              1
+            ],
+            [
+              false,
+              false,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-quotation\nword: main\nat: line 11, column 5\nmessage: `call` in `main` needs a quotation, but the stack before it is \u03c1 Seq Int Seq Int Seq Int Int Seq Int Seq Int Seq Bool.\nexpected: [ .. -- .. ]\nactual: Seq Bool\nhint: Put a `[ ... ]` quotation where the operation expects one.\n\nerror 2 of 2\ncode: firth.elaboration.untracked-local\nword: allocate-loop\nat: line 22, column 18\nmessage: The local `available` is used after `call` on line 60 ran a quotation whose stack effect is not known here, so its position on the stack can't be determined.\nhint: Use the local before running that quotation, or pass the value through the stack explicitly. Quotations written inline with a fixed effect, like `[ 1 prim + ] call`, are fine.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    }
+  },
+  "label": "run 12 arm-a firth 10 round 1",
+  "firth_commit": "e381708ab7d78236ff0383da259d6df7c30b6bf0",
+  "eval_sha256": {
+    "task.py": "f982b19a56550012ba4614e5355fbee2b5cf3e961ed0f28c5f99fdc536c7308a",
+    "tasks.py": "fff2402680c865b52ca2b661d4636430d1d62c507972d5913a1c79f99c654e17",
+    "mvp_tasks.py": "9905f4a5cdc3b64fa4cc1f4180e80106cdfbcd0b00c8105b91bf12c629c391e1",
+    "harness.py": "a2aa5a567bc40b15b134ebdee00fcebd7b01a6db7d6fcd585aea1d3298f99116",
+    "isolate.py": "8aba58cd416521b896756432546129cb43f1d53761f7373ccf6c5de43b5aa9dc"
+  },
+  "prompt_docs": [
+    "prompt --tier mvp --rounds 2 at e381708",
+    " arm-a"
+  ]
+}

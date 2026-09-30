@@ -1,0 +1,119 @@
+{
+ "note": "Every Bash call in the author's raw log, command verbatim (driver/bash_calls.py extract).",
+ "calls": [
+  {
+   "at": "2026-09-30T03:27:49.012Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:28:45.351Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:29:41.791Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md 2>&1 | head -100",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:29:55.536Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md 2>&1 | tail -50",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:32:39.034Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md 2>&1 | grep -E \"^## |^ok\" | head -50",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:32:48.461Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md 2>&1 | grep -A 10 \"prefix-sums\" | head -20",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:33:07.590Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md 2>&1 | grep -A 10 \"^## all-true\\|^## longest-run\\|^## histogram\\|^## allocate-batch\"",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:33:56.282Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md 2>&1 | grep -E \"^## |^ok|error\"",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:34:05.503Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md 2>&1 | grep -A 15 \"^## longest-run\\|^## histogram\"",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:35:12.016Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md 2>&1 | grep -E \"^## |^ok\"",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:35:17.180Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md 2>&1 | grep -A 10 \"^## longest-run\\|^## allocate-batch\"",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:36:11.834Z",
+   "command": "grep -A 15 \"^: process-order\" /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md | head -20",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:36:16.036Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md 2>&1 | grep -E \"^## |^ok|error\"",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:36:21.397Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md 2>&1 | grep -A 8 \"^## longest-run\"",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:37:56.089Z",
+   "command": "cd /home/user/firth-r12 && python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:39:17.697Z",
+   "command": "cd /home/user/firth-r12 && python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:39:33.870Z",
+   "command": "cd /home/user/firth-r12 && python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:40:33.593Z",
+   "command": "cd /home/user/firth-r12 && python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:40:42.355Z",
+   "command": "cd /home/user/firth-r12 && python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-5/answer-1.md",
+   "background": false,
+   "errored": false
+  }
+ ]
+}

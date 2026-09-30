@@ -1,0 +1,11 @@
+{
+ "note": "Every Bash call in the author's raw log, command verbatim (driver/bash_calls.py extract).",
+ "calls": [
+  {
+   "at": "2026-09-30T03:22:20.692Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-2/answer-1.md",
+   "background": false,
+   "errored": true
+  }
+ ]
+}

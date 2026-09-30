@@ -1,0 +1,1 @@
+rule: the audit flagged 6 Bash calls that were the check command with extra shell syntax (`2>&1`, piped to head, tail or grep), not exactly the command. Round 1 scored 0/20; no feedback sent after the flag.
