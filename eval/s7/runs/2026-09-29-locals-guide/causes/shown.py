@@ -20,7 +20,10 @@ by the harness from the pinned checker) and what they wrote next
    correctly remain elsewhere, so the counts are compared rather than
    requiring `B` gone; an `A` already present does not count unless its
    count rises. That is a mechanical reading; an answer that rewrote the word
-   some other way counts as not applied.
+   some other way counts as not applied. Only the first edit in a section is
+   judged. Checked at the occurrence nearest the error's position instead
+   (the reviewer, on #188), 3 credited edits were made elsewhere and 10
+   uncredited ones were made there, so the stricter count is about 148 of 170.
 """
 import json
 import re
