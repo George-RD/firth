@@ -540,39 +540,49 @@ private def checkBranchEdit (config : PipelineConfig) (source wordName : String)
         else none
   pure (after, consultedWords config editedWords word)
 
-/-- For a refused `if` whose longer branch leaves one value more than the
-other, below the result of a call: when that value was computed by an
-operation handed exactly one local of the value's type, and the call was
-then handed that same local once more, as in
+/-- For a refused `if` whose longer branch leaves `k` values more than the
+other, just below the results of a call: when each of those values is a new value
+of a different local (computed from it by an operation handed exactly one
+local of its type, or chosen by an `if` whose paths both stand for it), and
+the call was then handed each of those locals once more, as in
 `result prim seq-int.push xs idx 1 prim - result rev-iter`, the edit that
-binds the new value to the local's name for the call:
+binds the new values to the locals' names for the call:
 `prim seq-int.push locals { result } { xs idx 1 prim - result rev-iter }`.
-The local must appear just once between the operation and the call, and the
-source between them must close every bracket it opens, so the new block
-holds the call and nothing else changes. -/
+Each local must be
+handed to the call as it is, and appear just once between the values and
+the call, whose source must close every bracket it opens, so the new block
+holds the call and nothing else changes. An element read from a sequence is
+not a new value of its index, though it has the index's type. -/
 private def staleEdit (config : PipelineConfig) (source : String)
     (wordName : String) (byErasure : Bool) (ifSpan : Span) (account : IfAccount) : Option BranchEdit := do
   let net (branch : BranchAccount) : Int :=
     (branch.leaves.length : Int) - ((branch.took.length + branch.missing : Nat) : Int)
-  let longer ← if net account.onTrue == net account.onFalse + 1 then some account.onTrue
-    else if net account.onFalse == net account.onTrue + 1 then some account.onFalse else none
-  -- The value left behind is the lowest the longer branch leaves, and the
-  -- call's result is just above it.
-  let computed ← (longer.made[0]?).join
-  let call ← (longer.made[1]?).join
-  let type ← computed.type
-  let name ← match (computed.locals.filter (·.2 == some type)).map (·.1) |>.eraseDups with
-    | [name] => some name
-    | _ => none
-  if (call.locals.filter (·.1 == name)).length != 1 then none else
-  let start := computed.span.start.offset
-  let middle := computed.span.stop.offset
+  let (longer, count) ← if net account.onTrue > net account.onFalse
+    then some (account.onTrue, (net account.onTrue - net account.onFalse).toNat)
+    else if net account.onFalse > net account.onTrue
+    then some (account.onFalse, (net account.onFalse - net account.onTrue).toNat) else none
+  -- The values left behind are the lowest the longer branch leaves, and
+  -- the call pushed the value just above them.
+  let call ← (longer.resultOf[count]?).join
+  let names ← (longer.stands.take count).mapM id
+  if names.length != count || names.eraseDups.length != count then none else
+  let reads := ["`prim seq-int.at`", "`prim seq-bool.at`"]
+  if (longer.made.take count).any fun made => made.any (reads.contains ·.operation) then none else
+  -- The operation that pushed the top value, or the `if` that chose it.
+  -- Just after it, the values left behind are the top `count`: a value
+  -- between two of them would be left behind too.
+  let (start, middle) ← match longer.made[count - 1]? with
+    | some (some made) => some (made.span.start.offset, made.span.stop.offset)
+    | _ => do
+        let (_, middle) ← (longer.origins[count - 1]?).join
+        if middle ≥ 2 && bytesText source (middle - 2) middle == "if" then some (middle - 2, middle) else none
   let callStart := call.span.start.offset
   let stop := call.span.stop.offset
   if middle > callStart then none else
+  if !names.all fun name => (call.locals.filter (·.1 == name)).length == 1 then none else
   let between := collapseSpace (bytesText source middle callStart)
   let tokens := (between.splitOn " ").filter (!·.isEmpty)
-  if tokens.count name != 1 then none else
+  if !names.all (tokens.count · == 1) then none else
   -- Every bracket opened between them is closed there, and none closed
   -- that was opened before.
   let balanced := tokens.foldl (init := some (0 : Nat)) fun depth token =>
@@ -581,11 +591,11 @@ private def staleEdit (config : PipelineConfig) (source : String)
       else if token == "]" || token == "}" then (if depth == 0 then none else some (depth - 1))
       else some depth
   if balanced != some 0 then none else
-  let replacement := s!"{collapseSpace (bytesText source start middle)} locals \{ {name} } \{ {between} {collapseSpace (bytesText source callStart stop)} }"
+  let replacement := s!"{collapseSpace (bytesText source start middle)} locals \{ {" ".intercalate names} } \{ {between} {collapseSpace (bytesText source callStart stop)} }"
   let (after, consulted) ← checkBranchEdit config source wordName byErasure ifSpan.start.offset start stop replacement
   let written := collapseSpace (bytesText source start stop)
   let (line, column) := editPlace source start stop written
-  pure { fix := .stale name computed.operation call.operation, start, stop, line, column
+  pure { fix := .stale names (longer.leaves.take count) call.operation, start, stop, line, column
          written, replacement, after, consulted }
 
 /-- For a refused `if` with a branch whose first operation short of values,

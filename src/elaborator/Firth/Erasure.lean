@@ -100,13 +100,23 @@ structure BranchAccount where
   leaves : List String := []
   /-- For each of `leaves`, the operation that pushed it, where known. -/
   made : List (Option Made) := []
+  /-- For each of `leaves`, the local it is a new value of: the one local of
+  its type an operation computed it from, or the local both paths of an
+  `if` that pushed it stand for. `none` for a local pushed as it is. -/
+  stands : List (Option String) := []
+  /-- For each of `leaves`, the byte range of the source that pushed it and
+  nothing else, where there is one. -/
+  origins : List (Option (Nat × Nat)) := []
+  /-- For each of `leaves`, the operation it is one of the results of. -/
+  resultOf : List (Option Made) := []
   deriving Repr, BEq
 
-/-- Which mistake a `BranchEdit` mends. `stale`: a branch leaves one value
-more than the other because an operation computed a new value from a local
-and a later call was handed that local again, as in
-`result prim seq-int.push xs idx result rev-iter`; the edit binds the new
-value to the local's name for the call. `missing`: an operation in a branch
+/-- Which mistake a `BranchEdit` mends. `stale`: a branch leaves values
+more than the other because each is a new value of a local, computed from it
+by an operation or chosen by an `if`, and a later call was handed those
+locals again, as in `result prim seq-int.push xs idx result rev-iter`; the
+edit binds the new values to the locals' names (`names`) for the call.
+`values` names the values left behind, bottom to top. `missing`: an operation in a branch
 takes more values than the branch pushed, and the ones it lacks are inputs
 named like locals in scope, as in `candidate 1 prim + n collect-primes` for
 `collect-primes ( result:Seq Int candidate:Int n:Int -- ... )`; the edit
@@ -114,7 +124,7 @@ writes those locals where the inputs go, and `reordered` when it also puts
 the values the branch pushed in the order of the inputs they stand for.
 Diagnostics only. -/
 inductive BranchFix where
-  | stale (name operation call : String)
+  | stale (names values : List String) (call : String)
   | missing (names : List String) (reordered : Bool)
   deriving Repr, BEq
 

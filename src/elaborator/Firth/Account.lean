@@ -60,6 +60,8 @@ structure Entry where
   /-- For the result of an `if`, the local both paths' values stand for
   (`source`), where they stand for the same one. -/
   stands : Option String := none
+  /-- The operation this value is one of the results of. -/
+  resultOf : Option Made := none
 
 /-- The stack (top first), the locals in scope, whether the word's inputs
 were bound by `locals`, and the first operation that took a value its branch
@@ -255,7 +257,10 @@ private def pushResults (context : Context) (walk : Walk) (operation : String)
   let made (type : Option String) : Option Made := if values.length != 1 then none else
     some { operation, span, type
            locals := taken.reverse.filterMap fun entry => entry.localName.map (·, entry.type) }
-  { walk with stack := values.reverse.map (fun (label, type) => { label, type, origin, made := made type }) ++ walk.stack }
+  let resultOf : Made := { operation, span
+                           locals := taken.reverse.filterMap fun entry => entry.localName.map (·, entry.type) }
+  { walk with stack := values.reverse.map (fun (label, type) =>
+      { label, type, origin, made := made type, resultOf := some resultOf }) ++ walk.stack }
 
 /-- Whether values `taken` (top first) have a known plain type, at some
 position, other than the one `types` (bottom to top) declares there. -/
@@ -349,7 +354,7 @@ mutual
         match taken with
         | [value] =>
             -- Two copies: neither is the only one the local or operation pushed.
-            let copy := { value with own := true, origin := none, localName := none, made := none, stands := none }
+            let copy := { value with own := true, origin := none, localName := none, made := none, stands := none, resultOf := none }
             .next { walk with stack := copy :: copy :: walk.stack }
         | _ => .lost
     | .atom "drop" _ => .next (take walk "`drop`" [] 1).2
@@ -399,7 +404,11 @@ mutual
                     if after.trusted.any (· != after.reach) then none else
                     some { reach := after.reach, took := after.took,
                            missing := after.missing, leaves := ownValues after
-                           made := (after.stack.takeWhile (·.own)).reverse.map (·.made) }
+                           made := (after.stack.takeWhile (·.own)).reverse.map (·.made)
+                           stands := (after.stack.takeWhile (·.own)).reverse.map fun entry =>
+                             if entry.localName.isSome then none else source entry
+                           origins := (after.stack.takeWhile (·.own)).reverse.map (·.origin)
+                           resultOf := (after.stack.takeWhile (·.own)).reverse.map (·.resultOf) }
                 | _ => none
               match branch onTrue trueScope, branch onFalse falseScope with
               | some onTrueAccount, some onFalseAccount =>
@@ -474,6 +483,7 @@ mutual
                       { onTrue with origin := if onTrue.origin == onFalse.origin then onTrue.origin else none
                                     localName := if onTrue.localName == onFalse.localName then onTrue.localName else none
                                     made := if onTrue.made == onFalse.made then onTrue.made else none
+                                    resultOf := if onTrue.resultOf == onFalse.resultOf then onTrue.resultOf else none
                                     -- Two results of an `if` look alike
                                     -- but may stand for different locals.
                                     stands := if onTrue.stands == onFalse.stands then onTrue.stands else none }

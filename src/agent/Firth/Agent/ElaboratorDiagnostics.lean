@@ -394,10 +394,15 @@ private def accountExplanation (word : String) (account : Firth.Elaborator.IfAcc
       let kept := (usedUp shorterBranch).drop (usedUp longerBranch).length
       let hint :=
         match account.edit with
-        | some { fix := .stale name operation call, written, replacement, after, line, column, .. } =>
-            -- Checked by the pipeline (`staleEdit`): the value left behind
-            -- was computed from the local the call was handed again.
-            s!"The result of {operation} is computed from `{name}`, but {call} is then handed `{name}` as it was before, so the new value is left below. If {call} should get the new value, bind it to the name `{name}` for the call: write `{replacement}` in place of `{written}` {editPlace line column}.{editOutcome word after} {rule}"
+        | some { fix := .stale names values call, written, replacement, after, line, column, .. } =>
+            -- Checked by the pipeline (`staleEdit`): each value left behind
+            -- is a new value of a local the rest of the branch was handed
+            -- again.
+            let named := listing (names.map (s!"`{·}`"))
+            let (are, itWas, newValues, them, theName) := if names.length == 1
+              then ("is", "it was", "the new value is", "it", "the name")
+              else ("are", "they were", "the new values are", "them", "the names")
+            s!"{(listing values).capitalize} {are} computed from {named}, but {call} is then handed {named} as {itWas} before, so {newValues} left below. If {call} should get {if names.length == 1 then "the new value" else "the new values"}, bind {them} to {theName} {named} for the call: write `{replacement}` in place of `{written}` {editPlace line column}.{editOutcome word after} {rule}"
         | _ =>
         if kept.length ≥ extra && extra > 0 then
           let strays := kept.take extra
@@ -706,7 +711,7 @@ def primitiveRoles : String → Option (List String)
 /-- `primitiveRoles` for an operation as a report writes it, `` `prim seq-int.set` ``. -/
 private def operationRoles (operation : String) : Option (List String) :=
   if operation.startsWith "`prim " && operation.endsWith "`" then
-    primitiveRoles ((operation.drop 6).dropRight 1).toString
+    primitiveRoles ((operation.drop 6).dropEnd 1).toString
   else none
 
 open Firth.Elaborator.StackEffect in
