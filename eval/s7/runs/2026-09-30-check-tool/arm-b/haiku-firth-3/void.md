@@ -1,0 +1,1 @@
+toolchain: every check the author ran printed "lake is not on PATH" (the sub-agent shell lacked ~/.elan/bin; fixed at 03:24 before the next start). Also flagged by the audit: Bash `grep -c` and `tail -20` of its own answer-1.md, after the check failed. Round 1 scored 0/20.

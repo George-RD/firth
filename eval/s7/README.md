@@ -1936,6 +1936,190 @@ inferred.
    - Measured: bracing alone makes none pass.
 5. **Closed effect under `locals`.** One answer (B1). Low priority.
 
+## Run 12: 30 September 2026, letting authors run the checker (stopped early)
+
+Run 12 asked whether letting Haiku run the checker on its own answer file,
+as often as it likes before each hand-in, raises how many MVP tasks it
+passes. The design was committed and reviewed before the first author
+started (`runs/2026-09-30-check-tool/preregistration.md`, #190, merged as
+`e381708`). Arm A got run 11's arm A prompt unchanged. Arm B got the same
+prompt with one paragraph that allows Read, Write and Edit of its own answer
+file and exactly one Bash command:
+`python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth <its answer file>`.
+
+**Run 12 has no result.** It was stopped early for feasibility, a departure
+from the pre-registration (`departures.md`). Nearly every arm B author ran
+the check command with shell syntax the pre-registration refuses, so arm B
+could not reach 40 counted samples. `analyse.py` refuses to run on fewer
+than 40 counted samples an arm, and no test was computed. Everything below
+is descriptive.
+
+- **Build.** Both arms were built and scored in one detached worktree at
+  `e381708`, never fetched or checked out during the run (`pinned.txt`).
+  The two arms saw the same `AGENTS.md` and `CLAUDE.md` blobs.
+- **Authors.** 19 authors, `claude-haiku-4-5-20251001`, run as Agent-tool
+  sub-agents: arm A 1 to 11 and arm B 1 to 8. `instructions.py --check`
+  finds that every author received exactly its own arm's templates
+  (`instructions.json`; 46 other messages came from the harness).
+- **Start order.** Starts alternated A1, B1, A2, B2 and so on up to B7. Then
+  A7 to A11 started before B8. Arm B authors ran longer (B5 took 14
+  minutes, B6 17), and at most three authors per arm ran at once, so arm A
+  ran ahead. The pre-registered start-order analysis (secondary 4) was meant
+  to cover this. It is reported below both ways, as agreed before the stop.
+- **Where everything is.** The run is in `runs/2026-09-30-check-tool/`,
+  with `driver/` holding the scripts that drove the rounds, the
+  sample-to-author map (`ids.txt`) and the running log (`state.md`).
+  - `python3 runs/2026-09-30-check-tool/describe.py` prints the scores
+    below. It computes no p-value.
+  - `python3 runs/2026-09-30-check-tool/driver/bash_calls.py` counts arm B's
+    Bash calls from `bash-calls.json` in each arm B sample. That file holds
+    every Bash command from the author's raw log, verbatim. Its
+    `--self-test` plants an allowed call, another sample's answer, and each
+    added form.
+
+### What stopped the run
+
+Arm B started 8 samples, and all 8 are void.
+
+- **Toolchain voids: B2 and B3.** After a container restart, `lake` was
+  not on the authors' default PATH, so the checks B1, B2 and B3 ran first
+  printed "lake is not on PATH". B2 and B3 saw nothing else from the
+  checker. Three symlinks in `/usr/local/bin` fixed it before the next start
+  (`pinned.txt` records the toolchain versions in both environments). From
+  03:31Z, `driver/preflight.sh` ran the check in the authors' own shell
+  before an arm B start.
+- **Rule voids: B1 and B4 to B8.** The audit flagged Bash calls that were
+  not exactly the allowed command.
+  - B1 found the toolchain itself. It ran `source ~/.elan/env`, then the
+    check behind that prefix at 03:22:26Z, which printed diagnostics, and
+    made 19 edits after that. It was first recorded as a toolchain void and
+    corrected on review.
+  - `driver/bash_calls.py` counts 83 flagged calls across arm B's 91 Bash
+    calls, and only 8 calls were the allowed command. `driver/bash_calls.py` counts 83 such calls
+  across arm B's 91 Bash calls, and only 8 calls were the allowed command.
+  One call can add several forms:
+
+| Added to or instead of the check | Calls |
+|---|---|
+| `2>&1` | 69 |
+| piped to `grep` | 49 |
+| piped to `head` | 25 |
+| `cd /home/user/firth-r12 &&` prefix | 10 |
+| piped to `tail` | 8 |
+| chained with `&&`, `\|\|`, `;` or a second line (apart from the `cd` prefix) | 8 |
+| `source` of a shell profile (B1) | 2 |
+| a redirect to a file in `/tmp` (B7: one check, one heredoc) | 2 |
+| not a check at all | 9 |
+
+  - The 9 non-checks were: B1's four toolchain probes (`which lake`,
+    `lake --version`, `ls -la ~/.elan/`, `cat ~/.elan/env`), B3's `grep -c`
+    and `tail -20` of its own answer, B5's `grep -A 15` of its own answer,
+    and B7's heredoc writing `/tmp/fix_firth.py` and its `ls -lh` of its
+    answer.
+  - Typical calls, verbatim:
+    `python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-6/answer-1.md 2>&1 | head -100`,
+    and, from B8, the same command followed by
+    `2>&1 | grep -A 10 "^## reverse$"`.
+  - None of these calls reached another sample's files or the hidden tests.
+    The pre-registration voids them anyway, because the audit cannot tell a
+    harmless filter from a harmful one without allowing shell syntax.
+- **The stop.** At 03:39Z the coordinator set a rule: start no new samples,
+  and stop the run if at least two of B5, B6 and B8 turned out to be rule
+  voids. The rule was applied at 03:42Z on void status only. B5 and B6 were
+  both flagged on their logs so far, and no score of theirs had been read.
+  - At the rate observed, with all 6 arm B samples whose checks ran being
+    rule voids, 40 counted arm B samples would take far more
+    starts than the pre-registered feasibility stop at 40 voids allows. The
+    early stop anticipates that stop; it does not replace it.
+  - Samples already running finished. Arm A samples got their feedback
+    rounds, and arm B voids got none.
+
+### Scores (descriptive only)
+
+| Passed (of 20) by answer | Arm A (as run 11) | Arm B (may run the checker) |
+|---|---|---|
+| 1 | 0, 10, 13 | 11 (rule void) |
+| 2 | 0, 2, 2 | 9 (toolchain void) |
+| 3 | 1, 7, 10 | 0 (toolchain void) |
+| 4 | 0, 5, 5 | 0 (rule void) |
+| 5 | 0, 2, 2 | 11 (rule void) |
+| 6 | 0, 0, 0 | 10 (rule void) |
+| 7 | 0, 0, 0 | 0 (rule void) |
+| 8 | 0, 1, 8 | 9 (rule void) |
+| 9 | 0, 1, 11 | |
+| 10 | 0, 5, 8 | |
+| 11 | 0, 0, 6 | |
+| Final answers, sum | 65 over 11 samples | none counted |
+
+- Arm A's 11 samples are counted under the pre-registered rules. They
+  passed 65 tasks after round 2 (median 6). They passed 1 task in the first
+  answer, against run 11 arm A's 39 over 20 samples with the same prompt.
+  That difference is reported, not explained. It is not a checker change:
+  the reviewer of #194 re-scored run 11's arm A first answers at `e381708`
+  and got the same counts as at `5d09e25`.
+- Every arm B sample is void, and none got feedback. Only the first answer
+  of each was scored. That answer was written after the author ran the
+  checker (except B2 and B3, whose checks never ran), so it is not
+  comparable with arm A's first answer.
+- **Secondary 4**, the start-order analysis, keeps rule voids at their
+  latest scored answer. It is shown here without a test, because arm A's
+  latest answer is its third and arm B's is its first.
+  - Without the toolchain voids: arm A 11 samples, sum 65; arm B 6 samples
+    (B1 and B4 to B8), sum 41 (11, 0, 11, 10, 0, 9).
+  - With the toolchain voids: arm A 11 samples, sum 65; arm B 8 samples, sum
+    50 (11, 9, 0, 0, 11, 10, 0, 9).
+- Arm B's void first answers (11, 9, 0, 0, 11, 10, 0, 9) are higher than
+  arm A's (1 task over 11 samples). They are reported as void and
+  descriptive only, and no claim about the checker or arm B's prompt is
+  made from them: the samples are void, B2 and B3 never saw a diagnostic,
+  and the arms were not started evenly.
+  - What the logs do show is that arm B authors revise before they hand in.
+    Every arm A author wrote `answer-1.md` once, with no edits. Every arm B
+    author revised it: B1 made 19 edits, B2 11, and B6 63. B2 made its 11
+    edits after its only check failed, with no diagnostic.
+  - Whether revising before hand-in, rather than the checker's output,
+    explains any difference is a hypothesis. Run 13's secondary 3 (first
+    answers) bears on it.
+
+### Validity findings
+
+- **A memory hook in the account's settings fired in every author.** 380
+  `hook_non_blocking_error` attachments across the 19 logs came from one
+  hook, `omega-memory`'s `fast_hook.py`, run on PostToolUse (Read, Write,
+  Edit, Bash) and on SessionStart after a compaction. Every one exited 127
+  because the hook's Python interpreter is not in the container, and every
+  one had empty stdout. It put nothing into any author's context beyond its
+  own error line.
+- **Status lines about other authors reached three authors.** The context
+  scan (`context_seen.py`) flagged `task_status` attachments. Each names
+  another author's label ("Run 12 author B7"), its state and its output log
+  path.
+  - B5 got 5 at 03:37:50Z and B6 got 6 at 03:37:31Z, both before their last
+    write of `answer-1.md`. The pre-registered context rule voids them for
+    that too, on top of their Bash calls.
+  - A10 got 1 at 03:45:45Z, after its last answer was written at 03:44:56Z.
+    Under the pre-registration it is reported, not voiding.
+  - No tool call of any author names another author's log or directory.
+  - Nothing in this session asked for these lines. They are the harness's
+    own, and they arrived in a burst when several authors changed state at
+    once. They can void a counted sample in either arm, so run 13 reports
+    them per arm.
+- **Toolchain.** No scored result contains toolchain text, and no check
+  run by B4 to B8 printed any (their raw logs have no "is not on PATH" or
+  "the toolchain did not build"). The preflight was logged before B7's
+  start. B4 to B6 started at 03:27Z, after the fix and before the preflight
+  existed.
+
+### What run 13 changes
+
+Run 13's pre-registration is a separate PR. It rewords arm B's tool
+sentence to say that the command already prints everything and must be run
+exactly as written. Its audit allows a closed set of exact forms of the check
+command, each of which only reads the checker's own output (` 2>&1`, a pipe
+to `head`, `tail` or a `grep` with a quoted pattern, and a `cd` into the
+worktree), and refuses everything else. It makes the start-order analysis
+co-primary.
+
 ## What the eleven runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from

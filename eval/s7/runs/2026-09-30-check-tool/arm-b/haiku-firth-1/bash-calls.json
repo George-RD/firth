@@ -1,0 +1,41 @@
+{
+ "note": "Every Bash call in the author's raw log, command verbatim (driver/bash_calls.py extract).",
+ "calls": [
+  {
+   "at": "2026-09-30T03:21:17.326Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-1/answer-1.md",
+   "background": false,
+   "errored": true
+  },
+  {
+   "at": "2026-09-30T03:21:21.673Z",
+   "command": "cd /home/user/firth-r12 && which lake || echo \"lake not found\"",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:21:23.412Z",
+   "command": "~/.elan/toolchains/leanprover--lean4--v4.30.0/bin/lake --version 2>/dev/null || echo \"Checking alternative paths\"",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:21:35.580Z",
+   "command": "ls -la ~/.elan/ 2>/dev/null | head -20 || echo \"elan not in home\"",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:22:01.261Z",
+   "command": "cat ~/.elan/env && echo \"---\" && source ~/.elan/env && which lake",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:22:26.532Z",
+   "command": "source ~/.elan/env && source ~/.cargo/env 2>/dev/null; python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-1/answer-1.md 2>&1 | head -100",
+   "background": false,
+   "errored": false
+  }
+ ]
+}

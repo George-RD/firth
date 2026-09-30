@@ -1,0 +1,18 @@
+run 12 pin, written 2026-09-30T03:19:43Z before the first author starts
+worktree /home/user/firth-r12 HEAD e381708ab7d78236ff0383da259d6df7c30b6bf0
+make_prompts.py --check: ok: arm A 49580 chars, arm B 50006 chars, check command /home/user/firth-r12/eval/s7/harness.py
+9251deb16e1ced44796cef1cbd42442b2bf4137f44d4053d083577de8c039447  eval/s7/runs/2026-09-30-check-tool/arm-a/prompt-firth.md
+4fb745b7fb8a4a054b288443b3863ce59bb32f3be45c84e6316c95ee7153dc61  eval/s7/runs/2026-09-30-check-tool/arm-b/prompt-firth.md
+39742268bff0b9295680954f4fbe68272da5bb9992264de6cf68264f0b18eea2  eval/s7/runs/2026-09-30-check-tool/instructions-templates.json
+pinned AGENTS.md blob cef346c054e3fe84bfa8993df0bf9a833e02cf48 CLAUDE.md blob 43c994c2d3617f947bcb5adf1933e21dabe46bb5
+main checkout /home/user/firth at d77e3aae347a568b710ebca94929c1e71de2d2d3: AGENTS.md cef346c054e3fe84bfa8993df0bf9a833e02cf48 CLAUDE.md 43c994c2d3617f947bcb5adf1933e21dabe46bb5
+worktree files: AGENTS.md cef346c054e3fe84bfa8993df0bf9a833e02cf48 CLAUDE.md 43c994c2d3617f947bcb5adf1933e21dabe46bb5
+
+Departure, 2026-09-30T03:24Z (after B1-B3 started): the authors' default shell had no ~/.elan/bin on PATH, so arm B's check printed "lake is not on PATH". Nothing in the worktree changed; three symlinks were added outside it:
+/usr/local/bin/elan -> /root/.elan/bin/elan
+/usr/local/bin/lake -> /root/.elan/bin/lake
+/usr/local/bin/lean -> /root/.elan/bin/lean
+Toolchain, driver PATH (~/.elan/bin): Lake version 5.0.0-src+d024af0 (Lean version 4.30.0); Lean (version 4.30.0, x86_64-unknown-linux-gnu, commit d024af099ca4bf2c86f649261ebf59565dc8c622, Release)
+Toolchain, env -i HOME=/root PATH=/usr/local/bin:/usr/bin:/bin from /home/user/firth-r12: Lake version 5.0.0-src+d024af0 (Lean version 4.30.0) Lean (version 4.30.0, x86_64-unknown-linux-gnu, commit d024af099ca4bf2c86f649261ebf59565dc8c622, Release) 
+Worktree HEAD after the fix: e381708ab7d78236ff0383da259d6df7c30b6bf0; git status of tracked files: 0 changed
+From here on, preflight.sh (the check in the authors' default shell) runs before every arm B start and is logged in driver/state.md.

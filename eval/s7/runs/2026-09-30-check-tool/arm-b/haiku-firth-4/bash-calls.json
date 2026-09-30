@@ -1,0 +1,41 @@
+{
+ "note": "Every Bash call in the author's raw log, command verbatim (driver/bash_calls.py extract).",
+ "calls": [
+  {
+   "at": "2026-09-30T03:27:39.401Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-4/answer-1.md 2>&1 | head -100",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:28:34.171Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-4/answer-1.md 2>&1 | head -150",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:29:20.762Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-4/answer-1.md 2>&1 | grep -A 5 \"^##\" | head -100",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:29:46.388Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-4/answer-1.md 2>&1 | tail -30",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:29:59.339Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-4/answer-1.md 2>&1 | tail -5",
+   "background": false,
+   "errored": false
+  },
+  {
+   "at": "2026-09-30T03:30:05.267Z",
+   "command": "python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth /home/user/firth-r12/eval/s7/runs/2026-09-30-check-tool/arm-b/haiku-firth-4/answer-1.md 2>&1",
+   "background": false,
+   "errored": false
+  }
+ ]
+}

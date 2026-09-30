@@ -1,0 +1,1954 @@
+{
+ "note": "Everything put into this author's context that it did not fetch itself: the eval session's own instructions and the author's own tool results are left out, except for reminders the harness added inside a result, and every result is also scanned. cross_sample marks an item naming another sample (by number, or by arm and number), the other arm's commit or worktree, another author's label, or another task's files.",
+ "sample": "haiku-firth-6",
+ "arm": "arm-b",
+ "injected": [
+  {
+   "line": 2,
+   "at": "2026-09-30T03:26:51.609Z",
+   "kind": "attachment:deferred_tools_delta",
+   "chars": 16937
+  },
+  {
+   "line": 3,
+   "at": "2026-09-30T03:26:51.609Z",
+   "kind": "system-reminder",
+   "chars": 341
+  },
+  {
+   "line": 4,
+   "at": "2026-09-30T03:26:51.611Z",
+   "kind": "attachment:environment",
+   "chars": 325
+  },
+  {
+   "line": 5,
+   "at": "2026-09-30T03:26:51.611Z",
+   "kind": "attachment:model",
+   "chars": 288
+  },
+  {
+   "line": 6,
+   "at": "2026-09-30T03:26:51.612Z",
+   "kind": "attachment:skill_listing",
+   "chars": 9842
+  },
+  {
+   "line": 7,
+   "at": "2026-09-30T03:26:51.615Z",
+   "kind": "attachment:instructions",
+   "chars": 11012
+  },
+  {
+   "line": 8,
+   "at": "2026-09-30T03:26:51.615Z",
+   "kind": "attachment:session_context",
+   "chars": 321
+  },
+  {
+   "line": 9,
+   "at": "2026-09-30T03:26:51.615Z",
+   "kind": "attachment:date",
+   "chars": 38
+  },
+  {
+   "line": 10,
+   "at": "2026-09-30T03:26:51.616Z",
+   "kind": "attachment:credential_org",
+   "chars": 86
+  },
+  {
+   "line": 11,
+   "at": "2026-09-30T03:26:51.617Z",
+   "kind": "attachment:remote_session_change",
+   "chars": 455
+  },
+  {
+   "line": 12,
+   "at": "2026-09-30T03:26:51.617Z",
+   "kind": "attachment:prompt_snapshot",
+   "chars": 2917
+  },
+  {
+   "line": 17,
+   "at": "2026-09-30T03:26:54.962Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 18,
+   "at": "2026-09-30T03:26:55.003Z",
+   "kind": "attachment:prompt_snapshot",
+   "chars": 175206
+  },
+  {
+   "line": 19,
+   "at": "2026-09-30T03:26:55.017Z",
+   "kind": "attachment:mcp_instructions_delta",
+   "chars": 6014
+  },
+  {
+   "line": 20,
+   "at": "2026-09-30T03:26:55.017Z",
+   "kind": "attachment:nested_memory",
+   "chars": 239
+  },
+  {
+   "line": 21,
+   "at": "2026-09-30T03:26:55.018Z",
+   "kind": "attachment:nested_memory",
+   "chars": 21996
+  },
+  {
+   "line": 22,
+   "at": "2026-09-30T03:26:55.018Z",
+   "kind": "attachment:auto_mode",
+   "chars": 136
+  },
+  {
+   "line": 23,
+   "at": "2026-09-30T03:26:55.018Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 28,
+   "at": "2026-09-30T03:27:54.914Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 29,
+   "at": "2026-09-30T03:27:54.951Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 34,
+   "at": "2026-09-30T03:27:59.951Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 35,
+   "at": "2026-09-30T03:27:59.991Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 40,
+   "at": "2026-09-30T03:28:50.413Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 41,
+   "at": "2026-09-30T03:28:50.448Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 45,
+   "at": "2026-09-30T03:28:55.980Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 46,
+   "at": "2026-09-30T03:28:56.013Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 50,
+   "at": "2026-09-30T03:29:03.435Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 51,
+   "at": "2026-09-30T03:29:03.466Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 52,
+   "at": "2026-09-30T03:29:04.210Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 56,
+   "at": "2026-09-30T03:29:07.787Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 57,
+   "at": "2026-09-30T03:29:07.819Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 58,
+   "at": "2026-09-30T03:29:09.207Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 62,
+   "at": "2026-09-30T03:29:12.689Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 63,
+   "at": "2026-09-30T03:29:12.722Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 64,
+   "at": "2026-09-30T03:29:13.855Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 68,
+   "at": "2026-09-30T03:29:17.758Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 69,
+   "at": "2026-09-30T03:29:17.789Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 70,
+   "at": "2026-09-30T03:29:19.130Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 74,
+   "at": "2026-09-30T03:29:25.043Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 75,
+   "at": "2026-09-30T03:29:25.083Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 76,
+   "at": "2026-09-30T03:29:26.417Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 80,
+   "at": "2026-09-30T03:29:32.766Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 81,
+   "at": "2026-09-30T03:29:32.799Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 82,
+   "at": "2026-09-30T03:29:34.422Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 86,
+   "at": "2026-09-30T03:29:41.424Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 87,
+   "at": "2026-09-30T03:29:41.452Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 88,
+   "at": "2026-09-30T03:29:43.661Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 92,
+   "at": "2026-09-30T03:29:49.390Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 93,
+   "at": "2026-09-30T03:29:49.423Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 94,
+   "at": "2026-09-30T03:29:51.111Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 98,
+   "at": "2026-09-30T03:29:57.131Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 99,
+   "at": "2026-09-30T03:29:57.180Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 100,
+   "at": "2026-09-30T03:30:01.165Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 104,
+   "at": "2026-09-30T03:30:06.675Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 105,
+   "at": "2026-09-30T03:30:06.705Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 106,
+   "at": "2026-09-30T03:30:08.342Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 110,
+   "at": "2026-09-30T03:30:15.900Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 111,
+   "at": "2026-09-30T03:30:15.934Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 112,
+   "at": "2026-09-30T03:30:17.213Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 116,
+   "at": "2026-09-30T03:30:24.642Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 117,
+   "at": "2026-09-30T03:30:24.677Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 118,
+   "at": "2026-09-30T03:30:26.578Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 122,
+   "at": "2026-09-30T03:30:31.228Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 123,
+   "at": "2026-09-30T03:30:31.273Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 124,
+   "at": "2026-09-30T03:30:33.051Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 128,
+   "at": "2026-09-30T03:30:42.882Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 129,
+   "at": "2026-09-30T03:30:42.916Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 130,
+   "at": "2026-09-30T03:30:43.868Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 134,
+   "at": "2026-09-30T03:30:48.068Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 135,
+   "at": "2026-09-30T03:30:48.106Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 139,
+   "at": "2026-09-30T03:30:53.990Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 140,
+   "at": "2026-09-30T03:30:54.024Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 144,
+   "at": "2026-09-30T03:31:01.626Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 145,
+   "at": "2026-09-30T03:31:01.660Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 146,
+   "at": "2026-09-30T03:31:05.373Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 150,
+   "at": "2026-09-30T03:31:09.601Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 151,
+   "at": "2026-09-30T03:31:09.633Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 152,
+   "at": "2026-09-30T03:31:11.444Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 156,
+   "at": "2026-09-30T03:31:15.231Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 157,
+   "at": "2026-09-30T03:31:15.275Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 161,
+   "at": "2026-09-30T03:31:28.115Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 162,
+   "at": "2026-09-30T03:31:28.138Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 163,
+   "at": "2026-09-30T03:31:29.185Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 167,
+   "at": "2026-09-30T03:31:33.227Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 168,
+   "at": "2026-09-30T03:31:33.262Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 172,
+   "at": "2026-09-30T03:31:37.732Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 173,
+   "at": "2026-09-30T03:31:37.767Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 177,
+   "at": "2026-09-30T03:31:42.842Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 178,
+   "at": "2026-09-30T03:31:42.876Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 182,
+   "at": "2026-09-30T03:31:51.421Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 183,
+   "at": "2026-09-30T03:31:51.453Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 184,
+   "at": "2026-09-30T03:31:53.514Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 188,
+   "at": "2026-09-30T03:31:57.426Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 189,
+   "at": "2026-09-30T03:31:57.450Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 190,
+   "at": "2026-09-30T03:31:59.680Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 194,
+   "at": "2026-09-30T03:32:03.482Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 195,
+   "at": "2026-09-30T03:32:03.521Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 196,
+   "at": "2026-09-30T03:32:04.428Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 200,
+   "at": "2026-09-30T03:32:10.327Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 201,
+   "at": "2026-09-30T03:32:10.360Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 202,
+   "at": "2026-09-30T03:32:11.648Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 206,
+   "at": "2026-09-30T03:32:18.722Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 207,
+   "at": "2026-09-30T03:32:18.754Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 208,
+   "at": "2026-09-30T03:32:19.524Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 212,
+   "at": "2026-09-30T03:32:25.333Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 213,
+   "at": "2026-09-30T03:32:25.368Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 214,
+   "at": "2026-09-30T03:32:26.401Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 218,
+   "at": "2026-09-30T03:32:32.203Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 219,
+   "at": "2026-09-30T03:32:32.232Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 220,
+   "at": "2026-09-30T03:32:32.902Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 224,
+   "at": "2026-09-30T03:32:38.787Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 225,
+   "at": "2026-09-30T03:32:38.828Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 226,
+   "at": "2026-09-30T03:32:39.704Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 230,
+   "at": "2026-09-30T03:32:46.531Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 231,
+   "at": "2026-09-30T03:32:46.571Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 232,
+   "at": "2026-09-30T03:32:47.261Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 236,
+   "at": "2026-09-30T03:32:52.005Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 237,
+   "at": "2026-09-30T03:32:52.039Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 238,
+   "at": "2026-09-30T03:32:52.750Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 242,
+   "at": "2026-09-30T03:33:01.902Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 243,
+   "at": "2026-09-30T03:33:01.936Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 244,
+   "at": "2026-09-30T03:33:02.656Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 248,
+   "at": "2026-09-30T03:33:06.687Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 249,
+   "at": "2026-09-30T03:33:06.727Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 253,
+   "at": "2026-09-30T03:33:12.213Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 254,
+   "at": "2026-09-30T03:33:12.248Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 258,
+   "at": "2026-09-30T03:33:20.270Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 259,
+   "at": "2026-09-30T03:33:20.299Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 260,
+   "at": "2026-09-30T03:33:21.059Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 264,
+   "at": "2026-09-30T03:33:26.231Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 265,
+   "at": "2026-09-30T03:33:26.262Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 269,
+   "at": "2026-09-30T03:33:35.392Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 270,
+   "at": "2026-09-30T03:33:35.422Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 271,
+   "at": "2026-09-30T03:33:36.205Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 275,
+   "at": "2026-09-30T03:33:40.858Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 276,
+   "at": "2026-09-30T03:33:40.889Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 280,
+   "at": "2026-09-30T03:33:44.275Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 281,
+   "at": "2026-09-30T03:33:44.306Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 282,
+   "at": "2026-09-30T03:33:45.062Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 286,
+   "at": "2026-09-30T03:33:48.913Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 287,
+   "at": "2026-09-30T03:33:48.948Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 291,
+   "at": "2026-09-30T03:33:54.979Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 292,
+   "at": "2026-09-30T03:33:55.016Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 293,
+   "at": "2026-09-30T03:33:55.836Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 297,
+   "at": "2026-09-30T03:33:59.682Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 298,
+   "at": "2026-09-30T03:33:59.717Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 302,
+   "at": "2026-09-30T03:34:04.527Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 303,
+   "at": "2026-09-30T03:34:04.561Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 304,
+   "at": "2026-09-30T03:34:05.321Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 308,
+   "at": "2026-09-30T03:34:11.029Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 309,
+   "at": "2026-09-30T03:34:11.044Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 313,
+   "at": "2026-09-30T03:34:19.196Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 314,
+   "at": "2026-09-30T03:34:19.235Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 315,
+   "at": "2026-09-30T03:34:20.154Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 319,
+   "at": "2026-09-30T03:34:24.028Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 320,
+   "at": "2026-09-30T03:34:24.063Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 324,
+   "at": "2026-09-30T03:34:28.886Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 325,
+   "at": "2026-09-30T03:34:28.920Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 329,
+   "at": "2026-09-30T03:34:35.331Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 330,
+   "at": "2026-09-30T03:34:35.365Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 331,
+   "at": "2026-09-30T03:34:36.066Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 335,
+   "at": "2026-09-30T03:34:39.757Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 336,
+   "at": "2026-09-30T03:34:39.791Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 340,
+   "at": "2026-09-30T03:34:47.575Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 341,
+   "at": "2026-09-30T03:34:47.617Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 342,
+   "at": "2026-09-30T03:34:49.379Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 346,
+   "at": "2026-09-30T03:34:54.528Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 347,
+   "at": "2026-09-30T03:34:54.563Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 348,
+   "at": "2026-09-30T03:34:55.830Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 352,
+   "at": "2026-09-30T03:35:02.378Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 353,
+   "at": "2026-09-30T03:35:02.415Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 354,
+   "at": "2026-09-30T03:35:03.224Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 358,
+   "at": "2026-09-30T03:35:07.802Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 359,
+   "at": "2026-09-30T03:35:07.846Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 363,
+   "at": "2026-09-30T03:35:14.284Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 364,
+   "at": "2026-09-30T03:35:14.333Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 365,
+   "at": "2026-09-30T03:35:15.053Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 369,
+   "at": "2026-09-30T03:35:19.347Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 370,
+   "at": "2026-09-30T03:35:19.381Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 374,
+   "at": "2026-09-30T03:35:24.116Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 375,
+   "at": "2026-09-30T03:35:24.150Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 376,
+   "at": "2026-09-30T03:35:25.125Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 380,
+   "at": "2026-09-30T03:35:28.926Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 381,
+   "at": "2026-09-30T03:35:28.961Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 385,
+   "at": "2026-09-30T03:35:40.300Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 386,
+   "at": "2026-09-30T03:35:40.327Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 387,
+   "at": "2026-09-30T03:35:41.116Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 391,
+   "at": "2026-09-30T03:35:45.687Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 392,
+   "at": "2026-09-30T03:35:45.713Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 396,
+   "at": "2026-09-30T03:35:50.697Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 397,
+   "at": "2026-09-30T03:35:50.734Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 401,
+   "at": "2026-09-30T03:36:00.582Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 402,
+   "at": "2026-09-30T03:36:00.614Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 403,
+   "at": "2026-09-30T03:36:03.833Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 407,
+   "at": "2026-09-30T03:36:08.545Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 408,
+   "at": "2026-09-30T03:36:08.578Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 412,
+   "at": "2026-09-30T03:36:17.680Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 413,
+   "at": "2026-09-30T03:36:17.716Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 414,
+   "at": "2026-09-30T03:36:18.783Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 418,
+   "at": "2026-09-30T03:36:22.155Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 419,
+   "at": "2026-09-30T03:36:22.182Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 420,
+   "at": "2026-09-30T03:36:22.816Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 424,
+   "at": "2026-09-30T03:36:26.793Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 425,
+   "at": "2026-09-30T03:36:26.825Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 426,
+   "at": "2026-09-30T03:36:27.516Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 430,
+   "at": "2026-09-30T03:36:31.703Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 431,
+   "at": "2026-09-30T03:36:31.736Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 435,
+   "at": "2026-09-30T03:36:36.133Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 436,
+   "at": "2026-09-30T03:36:36.168Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 440,
+   "at": "2026-09-30T03:36:43.267Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 441,
+   "at": "2026-09-30T03:36:43.304Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 442,
+   "at": "2026-09-30T03:36:44.025Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 446,
+   "at": "2026-09-30T03:36:46.847Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 447,
+   "at": "2026-09-30T03:36:46.881Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 448,
+   "at": "2026-09-30T03:36:47.555Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 452,
+   "at": "2026-09-30T03:36:50.978Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 453,
+   "at": "2026-09-30T03:36:51.013Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 454,
+   "at": "2026-09-30T03:36:52.383Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 458,
+   "at": "2026-09-30T03:36:58.481Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 459,
+   "at": "2026-09-30T03:36:58.516Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 460,
+   "at": "2026-09-30T03:37:31.858Z",
+   "kind": "other",
+   "chars": 24
+  },
+  {
+   "line": 461,
+   "at": "2026-09-30T03:37:31.859Z",
+   "kind": "compaction",
+   "chars": 6753
+  },
+  {
+   "line": 462,
+   "at": "2026-09-30T03:37:31.843Z",
+   "kind": "attachment:compact_file_reference",
+   "chars": 232
+  },
+  {
+   "line": 463,
+   "at": "2026-09-30T03:37:31.843Z",
+   "kind": "attachment:compact_file_reference",
+   "chars": 212
+  },
+  {
+   "line": 464,
+   "at": "2026-09-30T03:37:31.843Z",
+   "kind": "attachment:file",
+   "chars": 260
+  },
+  {
+   "line": 465,
+   "at": "2026-09-30T03:37:31.843Z",
+   "kind": "attachment:file",
+   "chars": 11139
+  },
+  {
+   "line": 466,
+   "at": "2026-09-30T03:37:31.843Z",
+   "kind": "attachment:task_status",
+   "chars": 273,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"aece7441d13a69add\", \"taskType\": \"local_agent\", \"description\": \"Run 12 author B5\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/aece7441d13a69add.output\"}",
+   "labels": [
+    "B5"
+   ],
+   "task_paths": [
+    "aece7441d13a69add"
+   ]
+  },
+  {
+   "line": 467,
+   "at": "2026-09-30T03:37:31.843Z",
+   "kind": "attachment:task_status",
+   "chars": 273,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"aa50d463f971aeff2\", \"taskType\": \"local_agent\", \"description\": \"Run 12 author B7\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/aa50d463f971aeff2.output\"}",
+   "labels": [
+    "B7"
+   ],
+   "task_paths": [
+    "aa50d463f971aeff2"
+   ]
+  },
+  {
+   "line": 468,
+   "at": "2026-09-30T03:37:31.843Z",
+   "kind": "attachment:task_status",
+   "chars": 275,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"afab6f088af567bab\", \"taskType\": \"local_agent\", \"description\": \"Run 12 author A8\", \"status\": \"completed\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/afab6f088af567bab.output\"}",
+   "labels": [
+    "A8"
+   ],
+   "task_paths": [
+    "afab6f088af567bab"
+   ]
+  },
+  {
+   "line": 469,
+   "at": "2026-09-30T03:37:31.843Z",
+   "kind": "attachment:task_status",
+   "chars": 273,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"a006aa8be67896c0c\", \"taskType\": \"local_agent\", \"description\": \"Run 12 author A9\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/a006aa8be67896c0c.output\"}",
+   "labels": [
+    "A9"
+   ],
+   "task_paths": [
+    "a006aa8be67896c0c"
+   ]
+  },
+  {
+   "line": 470,
+   "at": "2026-09-30T03:37:31.844Z",
+   "kind": "attachment:task_status",
+   "chars": 274,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"a560fdaedae93d934\", \"taskType\": \"local_agent\", \"description\": \"Run 12 author A10\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/a560fdaedae93d934.output\"}",
+   "labels": [
+    "A10"
+   ],
+   "task_paths": [
+    "a560fdaedae93d934"
+   ]
+  },
+  {
+   "line": 471,
+   "at": "2026-09-30T03:37:31.844Z",
+   "kind": "attachment:task_status",
+   "chars": 274,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"a7f5df152f55876e1\", \"taskType\": \"local_agent\", \"description\": \"Run 12 author A11\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/a7f5df152f55876e1.output\"}",
+   "labels": [
+    "A11"
+   ],
+   "task_paths": [
+    "a7f5df152f55876e1"
+   ]
+  },
+  {
+   "line": 472,
+   "at": "2026-09-30T03:37:31.850Z",
+   "kind": "attachment:deferred_tools_delta",
+   "chars": 16937
+  },
+  {
+   "line": 473,
+   "at": "2026-09-30T03:37:31.850Z",
+   "kind": "attachment:mcp_instructions_delta",
+   "chars": 6014
+  },
+  {
+   "line": 474,
+   "at": "2026-09-30T03:37:31.850Z",
+   "kind": "attachment:environment",
+   "chars": 325
+  },
+  {
+   "line": 475,
+   "at": "2026-09-30T03:37:31.850Z",
+   "kind": "attachment:model",
+   "chars": 288
+  },
+  {
+   "line": 476,
+   "at": "2026-09-30T03:37:31.857Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 475
+  },
+  {
+   "line": 477,
+   "at": "2026-09-30T03:37:31.952Z",
+   "kind": "attachment:instructions",
+   "chars": 11012
+  },
+  {
+   "line": 478,
+   "at": "2026-09-30T03:37:31.952Z",
+   "kind": "attachment:session_context",
+   "chars": 321
+  },
+  {
+   "line": 479,
+   "at": "2026-09-30T03:37:31.952Z",
+   "kind": "attachment:date",
+   "chars": 38
+  },
+  {
+   "line": 480,
+   "at": "2026-09-30T03:37:31.954Z",
+   "kind": "attachment:credential_org",
+   "chars": 86
+  },
+  {
+   "line": 481,
+   "at": "2026-09-30T03:37:31.954Z",
+   "kind": "attachment:remote_session_change",
+   "chars": 455
+  },
+  {
+   "line": 482,
+   "at": "2026-09-30T03:37:31.955Z",
+   "kind": "attachment:prompt_snapshot",
+   "chars": 2917
+  },
+  {
+   "line": 487,
+   "at": "2026-09-30T03:37:35.095Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 490,
+   "at": "2026-09-30T03:37:38.977Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 491,
+   "at": "2026-09-30T03:37:39.007Z",
+   "kind": "attachment:prompt_snapshot",
+   "chars": 175206
+  },
+  {
+   "line": 492,
+   "at": "2026-09-30T03:37:39.038Z",
+   "kind": "attachment:auto_mode",
+   "chars": 136
+  },
+  {
+   "line": 493,
+   "at": "2026-09-30T03:37:39.038Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 497,
+   "at": "2026-09-30T03:37:44.522Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 498,
+   "at": "2026-09-30T03:37:44.567Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 502,
+   "at": "2026-09-30T03:38:47.347Z",
+   "kind": "tool_result:system-reminder",
+   "chars": 130
+  },
+  {
+   "line": 503,
+   "at": "2026-09-30T03:38:47.324Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 504,
+   "at": "2026-09-30T03:38:47.371Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 509,
+   "at": "2026-09-30T03:38:55.610Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 510,
+   "at": "2026-09-30T03:38:55.644Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 511,
+   "at": "2026-09-30T03:39:02.309Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 515,
+   "at": "2026-09-30T03:39:04.721Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 516,
+   "at": "2026-09-30T03:39:04.766Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 517,
+   "at": "2026-09-30T03:39:05.491Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 521,
+   "at": "2026-09-30T03:39:07.875Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 522,
+   "at": "2026-09-30T03:39:07.916Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 523,
+   "at": "2026-09-30T03:39:15.796Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 527,
+   "at": "2026-09-30T03:39:20.125Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 528,
+   "at": "2026-09-30T03:39:20.184Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 529,
+   "at": "2026-09-30T03:39:22.867Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 533,
+   "at": "2026-09-30T03:39:25.571Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 534,
+   "at": "2026-09-30T03:39:25.606Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 535,
+   "at": "2026-09-30T03:39:34.349Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 539,
+   "at": "2026-09-30T03:39:37.130Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 540,
+   "at": "2026-09-30T03:39:37.181Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 541,
+   "at": "2026-09-30T03:39:37.787Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 545,
+   "at": "2026-09-30T03:39:40.384Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 468
+  },
+  {
+   "line": 546,
+   "at": "2026-09-30T03:39:40.412Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 547,
+   "at": "2026-09-30T03:40:00.462Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 551,
+   "at": "2026-09-30T03:40:06.667Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 552,
+   "at": "2026-09-30T03:40:06.711Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 553,
+   "at": "2026-09-30T03:40:07.292Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 558,
+   "at": "2026-09-30T03:40:13.753Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 559,
+   "at": "2026-09-30T03:40:13.788Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 564,
+   "at": "2026-09-30T03:41:35.447Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 565,
+   "at": "2026-09-30T03:41:35.488Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 566,
+   "at": "2026-09-30T03:41:36.600Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 570,
+   "at": "2026-09-30T03:41:39.337Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 571,
+   "at": "2026-09-30T03:41:39.372Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 572,
+   "at": "2026-09-30T03:41:40.442Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 576,
+   "at": "2026-09-30T03:41:47.198Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 577,
+   "at": "2026-09-30T03:41:47.226Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 578,
+   "at": "2026-09-30T03:41:47.957Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 582,
+   "at": "2026-09-30T03:41:52.239Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 583,
+   "at": "2026-09-30T03:41:52.300Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 588,
+   "at": "2026-09-30T03:43:05.080Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 589,
+   "at": "2026-09-30T03:43:05.127Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 590,
+   "at": "2026-09-30T03:43:06.121Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 594,
+   "at": "2026-09-30T03:43:10.521Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 595,
+   "at": "2026-09-30T03:43:10.554Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 596,
+   "at": "2026-09-30T03:43:31.700Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 601,
+   "at": "2026-09-30T03:43:33.793Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 602,
+   "at": "2026-09-30T03:43:33.826Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 603,
+   "at": "2026-09-30T03:43:34.557Z",
+   "kind": "attachment:deferred_tools_record",
+   "chars": 127
+  },
+  {
+   "line": 607,
+   "at": "2026-09-30T03:43:38.977Z",
+   "kind": "attachment:hook_non_blocking_error",
+   "chars": 467
+  },
+  {
+   "line": 608,
+   "at": "2026-09-30T03:43:39.013Z",
+   "kind": "attachment:total_tokens_reminder",
+   "chars": 94
+  },
+  {
+   "line": 611,
+   "at": "2026-09-30T03:43:40.888Z",
+   "kind": "handback-enforce",
+   "chars": 141
+  }
+ ],
+ "cross_sample": [
+  {
+   "line": 466,
+   "at": "2026-09-30T03:37:31.843Z",
+   "kind": "attachment:task_status",
+   "chars": 273,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"aece7441d13a69add\", \"taskType\": \"local_agent\", \"description\": \"Run 12 author B5\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/aece7441d13a69add.output\"}",
+   "labels": [
+    "B5"
+   ],
+   "task_paths": [
+    "aece7441d13a69add"
+   ]
+  },
+  {
+   "line": 467,
+   "at": "2026-09-30T03:37:31.843Z",
+   "kind": "attachment:task_status",
+   "chars": 273,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"aa50d463f971aeff2\", \"taskType\": \"local_agent\", \"description\": \"Run 12 author B7\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/aa50d463f971aeff2.output\"}",
+   "labels": [
+    "B7"
+   ],
+   "task_paths": [
+    "aa50d463f971aeff2"
+   ]
+  },
+  {
+   "line": 468,
+   "at": "2026-09-30T03:37:31.843Z",
+   "kind": "attachment:task_status",
+   "chars": 275,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"afab6f088af567bab\", \"taskType\": \"local_agent\", \"description\": \"Run 12 author A8\", \"status\": \"completed\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/afab6f088af567bab.output\"}",
+   "labels": [
+    "A8"
+   ],
+   "task_paths": [
+    "afab6f088af567bab"
+   ]
+  },
+  {
+   "line": 469,
+   "at": "2026-09-30T03:37:31.843Z",
+   "kind": "attachment:task_status",
+   "chars": 273,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"a006aa8be67896c0c\", \"taskType\": \"local_agent\", \"description\": \"Run 12 author A9\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/a006aa8be67896c0c.output\"}",
+   "labels": [
+    "A9"
+   ],
+   "task_paths": [
+    "a006aa8be67896c0c"
+   ]
+  },
+  {
+   "line": 470,
+   "at": "2026-09-30T03:37:31.844Z",
+   "kind": "attachment:task_status",
+   "chars": 274,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"a560fdaedae93d934\", \"taskType\": \"local_agent\", \"description\": \"Run 12 author A10\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/a560fdaedae93d934.output\"}",
+   "labels": [
+    "A10"
+   ],
+   "task_paths": [
+    "a560fdaedae93d934"
+   ]
+  },
+  {
+   "line": 471,
+   "at": "2026-09-30T03:37:31.844Z",
+   "kind": "attachment:task_status",
+   "chars": 274,
+   "cross_sample": true,
+   "excerpt": "{\"type\": \"task_status\", \"taskId\": \"a7f5df152f55876e1\", \"taskType\": \"local_agent\", \"description\": \"Run 12 author A11\", \"status\": \"running\", \"deltaSummary\": null, \"outputFilePath\": \"/tmp/claude-0/-home-user/8303955b-b8e6-5ad0-99b0-7583acb11fc5/tasks/a7f5df152f55876e1.output\"}",
+   "labels": [
+    "A11"
+   ],
+   "task_paths": [
+    "a7f5df152f55876e1"
+   ]
+  }
+ ],
+ "other_arm_worktree_named": []
+}
