@@ -49,8 +49,10 @@ S7 = RUN.parents[1]
 W = RUN.parents[3]
 WORKTREE = Path("/home/user/firth-r14")  # the path the prompts name
 MAIN = Path("/home/user/firth")  # the session's own checkout, whose AGENTS.md authors see
-HOOK = Path("/home/user/r14-hook")  # STATE's path is fixed by the agent file
+HOOK = Path("/home/user/r14-hook")  # STATE's path is fixed by the skill's hook command
 AGENT_FILE = Path(".claude/agents/s7-author.md")
+SKILL = Path(".claude/skills/s7-author-hook/SKILL.md")  # registers the hook (author_hook.py)
+SEEN = HOOK / "seen.jsonl"  # every call the hook passed as not an author's
 RUN14_SHARED = Path("/mnt/project-files/s7-eval/run14")
 
 
@@ -70,6 +72,8 @@ AUTHORS_PATH = ("/root/.local/bin:/root/.cargo/bin:/usr/local/go/bin:/opt/node22
                 "/opt/gradle/bin:/opt/rbenv/bin:/root/.bun/bin:/usr/local/sbin:/usr/local/bin:"
                 "/usr/sbin:/usr/bin:/sbin:/bin")  # run 13's pinned.txt
 SCRATCH = RUN / "scratch-answer.md"
+# Run 13's toolchain (its pinned.txt), as `lake --version` and `lean --version` print it.
+TOOLCHAIN = ("Lake version 5.0.0-src+d024af0", "commit d024af099ca4bf2c86f649261ebf59565dc8c622", "cargo ")
 HOOK_TEST_DIR = HOOK / "hook-test"
 TOOLCHAIN_TEXT = re.compile(r"toolchain:|lake: exit|cargo: exit|is not available|the toolchain did not build"
                             r"|is not on PATH")
@@ -247,13 +251,41 @@ def hook_dry_run() -> list[str]:
     check = f"python3 {S7 / 'harness.py'} check --lang firth {d}/answer-1.md"
     problems = []
     for tool, inp, want in (("Glob", {"pattern": "*"}, 2), ("Bash", {"command": check}, 0)):
-        p = subprocess.run([sys.executable, str(S7 / "author_hook.py"), "--state", str(HOOK / "state.json")],
-                           input=json.dumps({"tool_name": tool, "tool_input": inp,
+        p = subprocess.run([sys.executable, str(S7 / "author_hook.py"), "--state", str(HOOK / "state.json"),
+                            "--only", "s7-author"],
+                           input=json.dumps({"tool_name": tool, "tool_input": inp, "agent_type": "s7-author",
                                              "tool_use_id": f"preflight-{tool}"}),
                            capture_output=True, text=True, timeout=60)
         if p.returncode != want or (want == 2 and "[s7-author-hook]" not in p.stderr):
             problems.append(f"hook on {tool}: exit {p.returncode}, stderr {p.stderr.strip()[:200]!r}")
     return problems
+
+
+def hook_registered(seen: Path, cmd: str, session: str, within: int = 300) -> bool:
+    """True when the hook recorded, as a call that is not an author's, the
+    runner's Bash call of `session.py CMD SESSION` in the last `within`
+    seconds: the hook fires before a call runs, so the command running now
+    is there if and only if the hook is registered in this session."""
+    if not seen.is_file():
+        return False
+    now_t = datetime.now(timezone.utc)
+    for line in seen.read_text().splitlines():
+        try:
+            e = json.loads(line)
+            at = datetime.fromisoformat(e["at"])
+        except (ValueError, KeyError, TypeError):
+            continue
+        if (e.get("tool_name") == "Bash" and e.get("agent_type") is None
+                and f"session.py {cmd} {session}" in (e.get("command") or "")
+                and 0 <= (now_t - at).total_seconds() <= within):
+            return True
+    return False
+
+
+def require_hook(cmd: str, session: str) -> None:
+    if not hook_registered(SEEN, cmd, session):
+        raise Stop(f"the author hook is not registered in this session: {SEEN} has no record of this "
+                   f"`session.py {cmd} {session}` call (runbook step 2 invokes the s7-author-hook skill)")
 
 
 def preflight() -> None:
@@ -291,8 +323,9 @@ def cmd_setup(session: str, pin: str) -> None:
         mb = sh("git", "-C", MAIN, "hash-object", MAIN / f).stdout.strip()
         if mb != b:
             raise Stop(f"{MAIN / f} is blob {mb}, not the pinned {b}: authors would see another {f}")
-    if not (W / AGENT_FILE).is_file() or (MAIN / AGENT_FILE).read_bytes() != (W / AGENT_FILE).read_bytes():
-        raise Stop(f"{MAIN / AGENT_FILE} is missing or differs from the pinned {W / AGENT_FILE}")
+    for f in (AGENT_FILE, SKILL):
+        if not (W / f).is_file() or not (MAIN / f).is_file() or (MAIN / f).read_bytes() != (W / f).read_bytes():
+            raise Stop(f"{MAIN / f} is missing or differs from the pinned {W / f}")
     held = [d for a in ARMS.values() for d in (shared() / session / a).glob("haiku-firth-*")]
     if held or (shared() / "STOP").exists():
         raise Stop(f"{shared()} already holds a STOP file or {len(held)} sample(s) of {session}; "
@@ -300,16 +333,18 @@ def cmd_setup(session: str, pin: str) -> None:
     p = sh("python3", RUN / "make_prompts.py", "--check", cwd=S7)
     if p.returncode:
         raise Stop(f"make_prompts.py --check: {p.stdout}{p.stderr}")
+    versions = sh("bash", "-c", "lake --version; lean --version; cargo --version",
+                  env={"HOME": "/root", "PATH": AUTHORS_PATH}, cwd=W).stdout.strip()
+    if not all(v in versions for v in TOOLCHAIN):
+        raise Stop(f"the authors' shell has not the pinned toolchain {TOOLCHAIN}: {versions[:300]!r}")
     out = scratch_check()  # builds the toolchain on first use
     if out != "## sum-list\nok":
         raise Stop(f"the scratch check printed {out[:300]!r}")
-    versions = sh("bash", "-c", "lake --version; lean --version; cargo --version",
-                  env={"HOME": "/root", "PATH": AUTHORS_PATH}, cwd=W).stdout.strip()
     sdir(session).mkdir(parents=True, exist_ok=True)
     (sdir(session) / "pinned.txt").write_text(
         f"run 14 session {session}, set up {now()}\nworktree {W} HEAD {head}\n"
         f"make_prompts.py --check: {p.stdout.strip()}\npinned blobs {json.dumps(blobs)}; "
-        f"{MAIN} has the same\nagent file {AGENT_FILE} identical in {MAIN} and {W}\n"
+        f"{MAIN} has the same\nagent file {AGENT_FILE} and skill {SKILL} identical in {MAIN} and {W}\n"
         f"toolchain (authors' PATH): {versions}\nscratch check: ok\n")
     save(session, load(session), "setup ok")
     publish(session)
@@ -326,6 +361,7 @@ def cmd_hookcheck(session: str, agent: str | None) -> None:
     d = HOOK_TEST_DIR / "arm-b" / "haiku-firth-1"
     check = f"python3 {S7 / 'harness.py'} check --lang firth {d}/answer-1.md"
     if not agent:
+        require_hook("hookcheck", session)
         if hook_dry_run():
             raise Stop("the hook dry run failed: " + "; ".join(hook_dry_run()))
         print("START THE HOOK-CHECK AUTHOR with the Agent tool: subagent_type \"s7-author\", "
@@ -374,6 +410,7 @@ def cmd_next(session: str) -> None:
         print(f"DONE: session {session} has no sample left. Tell the driver.")
         return
     k, arm, n = todo[0]
+    require_hook("next", session)
     preflight()
     d = sample_dir(arm, n)
     if d.exists() and any(d.iterdir()):
@@ -628,6 +665,47 @@ def self_test() -> None:
                 del os.environ["R14_SHARED"]
             else:
                 os.environ["R14_SHARED"] = old
+    # The pinned toolchain is run 13's, as its pinned.txt recorded it; another fails.
+    r13 = (RUN.parent / "2026-09-30-check-forms" / "pinned.txt").read_text()
+    line = next(l for l in r13.splitlines() if l.startswith("Toolchain, env -i"))
+    assert all(v in line for v in TOOLCHAIN), line
+    assert not all(v in line.replace("d024af0", "0000000") for v in TOOLCHAIN)
+    # The hook is registered only if it recorded the runner's own call just now.
+    with tempfile.TemporaryDirectory() as tmp:
+        seen = Path(tmp) / "seen.jsonl"
+        assert not hook_registered(seen, "next", "s2"), "no record at all"
+        at = datetime.now(timezone.utc)
+        rows = [{"at": (at.replace(year=at.year - 1)).isoformat(), "tool_name": "Bash", "agent_type": None,
+                 "command": "python3 /x/session.py next s2"},  # stale
+                {"at": at.isoformat(), "tool_name": "Bash", "agent_type": None,
+                 "command": "python3 /x/session.py next s3"},  # another session
+                {"at": at.isoformat(), "tool_name": "Bash", "agent_type": "s7-author",
+                 "command": "python3 /x/session.py next s2"},  # an author's call
+                {"at": at.isoformat(), "tool_name": "Glob", "agent_type": None, "command": None},
+                "not json"]
+        seen.write_text("".join((r if isinstance(r, str) else json.dumps(r)) + "\n" for r in rows))
+        assert not hook_registered(seen, "next", "s2")
+        assert not hook_registered(seen, "hookcheck", "s3")
+        assert hook_registered(seen, "next", "s3")
+        with open(seen, "a") as f:
+            f.write(json.dumps({"at": at.isoformat(), "tool_name": "Bash", "agent_type": None,
+                                "command": "R14_SHARED=/y python3 /x/session.py next s2"}) + "\n")
+        assert hook_registered(seen, "next", "s2")
+        global SEEN
+        saved, SEEN = SEEN, Path(tmp) / "none.jsonl"
+        try:
+            require_hook("next", "s2")
+            raise AssertionError("an unregistered hook did not stop `next`")
+        except Stop:
+            pass
+        finally:
+            SEEN = saved
+    # `next` and `hookcheck` check it before an author can start.
+    import inspect
+    src = inspect.getsource(cmd_next)
+    assert 'require_hook("next", session)' in src and src.index("require_hook") < src.index("preflight()")
+    src = inspect.getsource(cmd_hookcheck)
+    assert src.index('require_hook("hookcheck", session)') < src.index("START THE HOOK-CHECK AUTHOR")
     # The description names the author as context_seen.py's LABEL reads it.
     sys.path.insert(0, str(S7))
     from context_seen import LABEL
