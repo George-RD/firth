@@ -12,5 +12,5 @@
    no edit shown in either round: 38 of 52, of which pass after the edit: 13
 
 2. Feedback task sections showing an edit, and whether the next answer applied it
-   A  shown  68 (in 14 samples)  applied  45
-   B  shown 102 (in 14 samples)  applied  45
+   A  shown  68 (in 14 samples)  applied  55
+   B  shown 102 (in 14 samples)  applied  86

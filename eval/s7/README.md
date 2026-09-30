@@ -1871,9 +1871,11 @@ causes named here are inferred from the outcome.
   - For 38 of the 52 answers, neither feedback round on that task showed
     an edit: the error shown had none, or the example passed. Those 38
     include 13 of the 15 passes.
-- When feedback did show an edit, the next answer applied it (the new
-  text present and the old text gone) 45 of 68 times in arm A and 45 of
-  102 in arm B.
+- When feedback did show an edit, the next answer applied it 55 of 68
+  times in arm A and 86 of 102 in arm B (141 of 170).
+  - "Applied" means that, against the answer the feedback was about, the
+    old text occurs fewer times and the new text more times. A short old
+    text can correctly remain elsewhere in the task.
   - This is a mechanical reading: a word rewritten some other way counts
     as not applied.
   - A failing input mismatch was rewritten into the same family 28 to
@@ -1912,10 +1914,10 @@ inferred.
    - Measured: the authors never saw most of those edits. 13 of the 15
      passes come from answers whose feedback showed no edit in either
      round. The edit was in the final answer, which gets no feedback.
-   - When an edit was shown, the next answer applied it 90 times out of
-     170 (A 45 of 68, B 45 of 102). The rest were rewritten some other
-     way or kept. So what a change in the edit's
-     presentation could move is that uptake, not these 15 finals.
+   - When an edit was shown, the next answer applied it 141 times out of
+     170 (A 55 of 68, B 86 of 102). So authors mostly do apply a shown
+     edit. The larger loss is that a final answer's new errors are never
+     shown.
 3. **A branch leaving extra values** (63 final answers).
    - No edit is offered. #185 covers the other branch case (44 answers):
      measured on main, its edits make 6 of them pass.
