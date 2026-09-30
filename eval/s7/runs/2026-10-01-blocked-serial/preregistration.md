@@ -132,8 +132,13 @@ As run 13, with these changes:
     their blobs), the session's user and organisation details, its URL
     and attribution lines, and the sub-agent system prompt (seen in the
     smoke author's compaction at 06:08:35Z on 30 September). None of it is
-    task or sample data. Since mainly arm B compacts, this is reported with
-    the covariate, not as a void.
+    task or sample data. `AGENTS.md` and `CLAUDE.md` are not new to a
+    compacted author: every author in both arms gets them as an
+    `instructions` attachment when it starts (run 13's A1 and B3, and the
+    smoke author, each at the seventh line of its log), and again as
+    `nested_memory` when it reads a file in the worktree. So a compaction
+    repeats guidance both arms already have; it adds none. Since mainly arm
+    B compacts, this is reported with the covariate, not as a void.
   - In the smoke, one arm B author compacted with no other author running,
     and the compaction carried no `task_status` line.
 - **Early look.** Taken once, when the first 10 arm B samples in the start
