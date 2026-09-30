@@ -26,8 +26,12 @@ beyond 8 are started only when the driver lists them in
 
 A sample's files stay in `arm-<a>/haiku-firth-<N>/` of this directory and
 are copied, with the session's state and hook log, to the shared folder
-after the sample's `final.md`. Void labels are the driver's: this script
-records every check's exit status in `checks.json` and writes no `void.md`.
+after the sample's `final.md`. Validity is decided here by exit codes
+only (`void_causes`): every check's exit status goes in `checks.json`, and
+a nonzero one writes `void.md` (`rule: <causes> (round R, <time>)`, then
+the audit's flagged lines). A toolchain failure writes `void.md` and
+`final.md` both starting `toolchain: stopped <time>`, and stops the session.
+Any exit code but 0 or 1 from a check stops the session for the driver.
 """
 import json
 import random
@@ -64,6 +68,22 @@ TOOLCHAIN_TEXT = re.compile(r"toolchain:|lake: exit|cargo: exit|is not available
 
 class Stop(Exception):
     """Something the runner must not decide: it tells the driver and stops."""
+
+
+class Toolchain(Stop):
+    """The toolchain failed: the sample is a toolchain void, and the session stops."""
+
+
+def void_causes(res: dict) -> list[str]:
+    """A round's rule-void causes, from exit codes alone: the audit (a call off
+    the list that ran, an unmatched hook record, an answer not rebuilt from
+    the author's calls), the agent-files check and the context scan each exit
+    1 when they find one. Any other code is not a verdict and stops."""
+    codes = {"audit": res["audit_exit"], "agents-file": res["agents_exit"], "context": res["context_exit"]}
+    odd = {k: v for k, v in codes.items() if v not in (0, 1)}
+    if odd:
+        raise Stop(f"a check exited with a code that is not 0 or 1: {odd}")
+    return [k for k, v in codes.items() if v == 1]
 
 
 def now() -> str:
@@ -148,8 +168,11 @@ def instruction(arm: str, n: int, r: int) -> str:
     pre, post = "The coordinator sent a message while you were working:\n", \
         "\n\nAddress this before completing your current task."
     if r:
-        assert t.startswith(pre) and t.endswith(post), (arm, r)
+        if not (t.startswith(pre) and t.endswith(post)) or "{" in t:
+            raise Stop(f"the arm {arm} template for round {r} does not fit")
         t = t[len(pre):-len(post)]
+    elif "{" in t:
+        raise Stop(f"the arm {arm} start template does not fit")
     return t
 
 
@@ -353,7 +376,7 @@ def score(arm: str, n: int, r: int) -> str:
            "--prompt-docs", f"prompt --tier mvp --rounds 2 at {pin}, {ARMS[arm]}", "--jobs", "4", cwd=W)
     (d / f"results-{r}.json").write_text(p.stdout)
     if p.returncode or TOOLCHAIN_TEXT.search(p.stdout + p.stderr):
-        raise Stop(f"toolchain or scoring failure in round {r} of {d.name}: {(p.stderr or p.stdout)[-400:]}")
+        raise Toolchain(f"toolchain or scoring failure in round {r} of {d.name}: {(p.stderr or p.stdout)[-400:]}")
     total = sh("python3", S7 / "harness.py", "report", d / f"results-{r}.json", cwd=W).stdout.strip().splitlines()
     if r < 3:
         rep = sh("python3", S7 / "harness.py", "repair", d / f"solutions-{r}.json", d / f"results-{r}.json",
@@ -394,7 +417,17 @@ def cmd_round(session: str) -> None:
     r = next_round(d)
     if not (d / f"answer-{r}.md").is_file():
         raise Stop(f"author {lab} handed back without writing answer-{r}.md")
-    total = score(arm, n, r)
+    try:
+        total = score(arm, n, r)
+    except Toolchain as e:
+        stamp = f"toolchain: stopped {now()}"
+        (d / "void.md").write_text(f"{stamp}\n{e}\n")
+        (d / "final.md").write_text(stamp + "\n")
+        st["done"].append(cur)
+        st["current"] = None
+        save(session, st, f"{lab} r{r} {stamp}")
+        publish(session)
+        raise
     log = find_log(agent)
     res = scans(arm, n, log, f"{arm}{n}")
     res["round"] = r
@@ -402,6 +435,14 @@ def cmd_round(session: str) -> None:
     (d / "checks.json").write_text(json.dumps(checks + [res], indent=1) + "\n")
     note = f"{lab} r{r} {total}; audit exit {res['audit_exit']}, agents exit {res['agents_exit']}, " \
            f"context exit {res['context_exit']}, cross_sample {res['cross_sample']}"
+    causes = void_causes(res)
+    if causes:
+        with open(d / "void.md", "a") as f:
+            f.write(f"rule: {', '.join(causes)} (round {r}, {now()})\n"
+                    + "".join(f"  {line}\n" for line in res["audit_flagged"]))
+        note += f"; VOID rule: {', '.join(causes)} (the sample keeps its slot and gets all its rounds)"
+    hook_errors = [e for e in (json.loads(l) for l in (HOOK / "hook-log.jsonl").read_text().splitlines())
+                   if e.get("error") and e.get("sample") == str(d)] if (HOOK / "hook-log.jsonl").is_file() else []
     stopping = ""
     if res["cross_sample"]:
         SHARED.mkdir(parents=True, exist_ok=True)
@@ -409,6 +450,9 @@ def cmd_round(session: str) -> None:
             f.write(f"{now()} stop and review: {lab} has a cross_sample context item (session {session})\n")
         stopping = ("\nSTOP AND REVIEW is now in force for every session: finish this sample's rounds, "
                     "then start no other. Tell the driver now.")
+    if hook_errors:
+        save(session, st, note)
+        raise Stop(f"the hook reported {len(hook_errors)} error(s) for {lab}: {hook_errors[-1]['error'][:200]}")
     if res["toolchain_text_in_log"]:
         raise Stop(f"{lab}'s log reports a toolchain failure in a check it ran ({note})")
     if r < 3:
@@ -487,6 +531,16 @@ def self_test() -> None:
             assert not t.startswith("The coordinator sent") and "Address this" not in t
     assert "/home/user/firth-r14/eval/s7/harness.py check" in instruction("B", 3, 1)
     assert "harness.py" not in instruction("A", 3, 1)
+    # Validity from exit codes: 0 clean, 1 a rule void, anything else stops.
+    base = {"audit_exit": 0, "agents_exit": 0, "context_exit": 0}
+    assert void_causes(base) == []
+    assert void_causes({**base, "audit_exit": 1, "context_exit": 1}) == ["audit", "context"]
+    for odd in (2, -9, 127):
+        try:
+            void_causes({**base, "agents_exit": odd})
+            raise AssertionError(odd)
+        except Stop:
+            pass
     print("session.py self-test: ok")
 
 

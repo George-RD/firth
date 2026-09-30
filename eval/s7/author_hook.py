@@ -119,7 +119,7 @@ def self_test() -> None:
             code, out = main(["--state", str(sf)], json.dumps(
                 {"hook_event_name": "PreToolUse", "tool_name": tool, "tool_input": inp,
                  "tool_use_id": f"toolu_{i}", "agent_type": "s7-author"}))
-            assert (code, out) == ((0, "") if want else (DENY, REASON)), (tool, inp, code, out)
+            assert (code, out) == ((0, "") if want else (2, REASON)), (tool, inp, code, out)
         # Arm A: no check command, so no Bash, no Edit and no Read of its answer.
         sa = dict(state, check_cmd=None)
         sf.write_text(json.dumps(sa))
@@ -132,9 +132,9 @@ def self_test() -> None:
                                                            "tool_use_id": "toolu_a"}))
             assert (out == "") == want, ("arm A", tool, inp, out)
         # Fail closed: a missing state file or unreadable input denies.
-        assert main(["--state", str(t / "none.json")], "{}") == (DENY, REASON)
+        assert main(["--state", str(t / "none.json")], "{}") == (2, REASON)
         sf.write_text(json.dumps(state))
-        assert main(["--state", str(sf)], "not json") == (DENY, REASON)
+        assert main(["--state", str(sf)], "not json") == (2, REASON)
         log = [json.loads(l) for l in (t / "log.jsonl").read_text().splitlines()]
         assert len(log) == len(cases) + 5 + 1, len(log)
         assert [e["decision"] for e in log[:len(cases)]] == ["allow" if w else "deny" for *_, w in cases]
@@ -149,7 +149,7 @@ def self_test() -> None:
                                                     "tool_use_id": tid}),
                                   capture_output=True, text=True, timeout=60)
         p = run(Path(__file__), "Glob", {"pattern": "*"}, "toolu_p1")
-        assert (p.returncode, p.stderr.strip(), p.stdout) == (DENY, REASON, ""), p
+        assert (p.returncode, p.stderr.strip(), p.stdout) == (2, REASON, ""), p
         p = run(Path(__file__), "Bash", {"command": check}, "toolu_p2")
         assert (p.returncode, p.stderr, p.stdout) == (0, "", ""), p
         broken = t / "broken"
@@ -157,12 +157,15 @@ def self_test() -> None:
         (broken / "author_hook.py").write_text(Path(__file__).read_text())
         (broken / "audit_subagent.py").write_text("raise ImportError('planted')\n")
         p = run(broken / "author_hook.py", "Bash", {"command": check}, "toolu_p3")
-        assert (p.returncode, p.stderr.strip()) == (DENY, REASON), p
+        assert (p.returncode, p.stderr.strip()) == (2, REASON), p
         last = json.loads((t / "log.jsonl").read_text().splitlines()[-1])
         assert last["tool_use_id"] == "toolu_p3" and last["decision"] == "deny"
         assert "planted" in last["error"], last
         from audit_subagent import HOOK_MARK
         assert HOOK_MARK == MARK
+        # Exit 2 is the only code that blocks: the expectations above are the
+        # literal 2, not DENY, so a DENY that would fail open is caught.
+        assert DENY == 2
     print("author_hook.py self-test: ok")
 
 

@@ -183,13 +183,22 @@ As run 13, with these changes:
     B compacts, this is reported with the covariate, not as a void.
   - In the smoke, one arm B author compacted with no other author running,
     and the compaction carried no `task_status` line.
-- **Edit replay.** Only arm B can Edit, so a void because "an edit of it
-  could not be replayed" can fall only on arm B, which the design rule
-  forbids for a rule that could void one arm. It cannot be made symmetric:
-  arm A writes each answer whole, so there is nothing to replay. It stays a
-  void, because an answer the audit cannot rebuild from the author's own
-  calls is one whose origin is unchecked. It has not happened in runs 12
-  and 13. Three things keep it from biasing the result. It is reported
+- **Edit replay.** The rule exists so that the scored answer is tied to
+  the author's own calls: the audit replays an author's writes and edits
+  and requires the result to be the kept copy that was scored. Arm A has
+  the same rule in its Write form (each answer's hash must match the kept
+  copy); only arm B can Edit, so the replay form, "an edit of it could not
+  be replayed", can fall only on arm B, which the design rule forbids for
+  a rule that could void one arm. It cannot be made symmetric, since arm A
+  has no edits to replay, and it stays a void, because an answer the audit
+  cannot rebuild from the author's calls has an unchecked origin. Runs 12
+  and 13 replayed 523 Edit calls (188 in run 12's 8 arm B samples, 335 in
+  run 13's 10), and none failed (no `could not be replayed` in either
+  run's files). **Triage:** if one fails, the driver checks whether the
+  replayer is at fault (for example curly quotes, noted in the audit's
+  docstring). If it is, the replayer is fixed with a planted case, both
+  arms' samples are re-audited, and the change is recorded as a
+  departure. Three things keep it from biasing the result. It is reported
   with the voids by cause, per arm. Co-primary 2 (inherited from run 13)
   keeps every rule void, this one included, scored on its third answer,
   and a gain is claimed only when both co-primaries are significant, so a
@@ -209,12 +218,15 @@ As run 13, with these changes:
 
 ### Runbook for each session
 
-**Runner.** Each of the 5 sessions is a thread session run by Sonnet 5.5,
-the same model in all five. Its authors are Haiku, as in every run. The
-runner follows this runbook exactly and makes no judgment of its own: every
-choice is made by `session.py` in this directory, which prints what to do
-next. Void labels, departures, the early look and any `STOP:` line go to
-the driver (the S7 thread), which does the analysis.
+**Runner and driver.** Each of the 5 sessions is a thread session of this
+project run by Sonnet 5.5, the same model in all five; a session run by any
+other model is a departure. Its authors are Haiku, as in every run. The
+driver is the S7 thread's own session (the one that wrote this file). It
+receives every `STOP:` line, decides departures and the early look, copies
+the results from the shared folder into this run directory, and runs the
+analysis there. The runner follows this runbook exactly and makes no
+judgment of its own: every choice is made by `session.py` in this
+directory, which prints what to do next.
 
 Commands name the runner script by its full path,
 `/home/user/firth-r14/eval/s7/runs/2026-09-30-blocked-serial/session.py`,
@@ -266,25 +278,52 @@ and `PIN` the pinned commit, both given in the session's brief.
      to the author, unchanged; after answer 3 it writes `final.md` and
      copies the sample, the session's state and the hook log to
      `/mnt/project-files/s7-eval/run14/SESSION/`.
-5. **Stops.** `session.py` prints `STOP:` on anything the runner must not
-   decide: a failed preflight or hook check, a toolchain or scoring
-   failure, a missing answer file, or an unreadable driver file. The runner
-   then sends the driver that line and does nothing else until the driver
-   answers. A `cross_sample` item from `context_seen.py` writes
+5. **Exit codes.** Every `session.py` command exits 0 when the runner
+   should do what it printed, and 1 after printing a `STOP:` line. Inside
+   `round`, each check's exit code decides validity, and nothing else does:
+
+   | Check | 0 | 1 | anything else |
+   |---|---|---|---|
+   | `audit_subagent.py` (both arms `--hook-log`; arm B also `--check-cmd <pinned harness> --run14-forms`) | clean | rule void, cause `audit` | STOP |
+   | `seen_agents.py <log> <worktree> <pinned AGENTS.md and CLAUDE.md blobs>` | clean | rule void, cause `agents-file` | STOP |
+   | `context_seen.py <log> --arm-set run14 --arm <arm> --sample <dir> --label <arm><N>` | clean | rule void, cause `context`; a `cross_sample` item also writes the shared STOP file | STOP |
+   | `harness.py score` | scored | toolchain void | toolchain void |
+
+   A rule void appends to the sample's `void.md` the line `rule: <causes>
+   (round <R>, <UTC time>)`, then the audit's flagged lines indented by two
+   spaces; the sample keeps its slot and gets all its rounds, as in run 13.
+   A toolchain void writes `void.md` and `final.md` each starting
+   `toolchain: stopped <UTC time>`, and stops the session. Otherwise
+   `final.md` is the one line `final <UTC time>: audit and scans run on
+   the complete log after answer 3 was scored`, written after the third
+   round's checks.
+6. **Stops.** The runner sends the driver the `STOP:` line, or says what
+   happened, and then does nothing else until the driver answers, on any
+   of these:
+   - any `STOP:` line: a failed setup, preflight or hook check; a check's
+     exit code other than 0 or 1; a toolchain or scoring failure; a
+     toolchain failure reported in an author's own check; a hook error (an
+     entry with `error` in the hook log for the current sample); a missing
+     answer file; a template that does not fit; an unreadable
+     `extra-blocks.txt`;
+   - an author that errors, stops without handing back, or whose id was
+     not recorded;
+   - the runner's own session restarting or losing its context mid-sample;
+   - anything this runbook does not cover.
+7. **Stop file.** A `cross_sample` item from `context_seen.py` writes
    `/mnt/project-files/s7-eval/run14/STOP` (stop and review), which every
    session's `next` reads: the current sample finishes its rounds and no
    session starts another. The driver writes the same file for the early
    look, feasibility or 40 counted per arm. Extra blocks start only when the
    driver lists them in `/mnt/project-files/s7-eval/run14/extra-blocks.txt`.
-6. **Numbering.** Block k (1 to 8) of session j is sample (k - 1) × 5 + j
+8. **Numbering.** Block k (1 to 8) of session j is sample (k - 1) × 5 + j
    in each arm, so an arm's samples 1 to 40 are its start order (block,
    then session) and the sessions' results never share a directory. Extra
    blocks carry the numbers the driver gives them, from 41.
-7. **Results.** The driver copies each session's samples from the shared
-   folder into this run directory, labels voids from each sample's
-   `checks.json`, the audit's trimmed log and the scans, and runs the
-   analysis. An audit flag does not stop a sample: as in run 13, it keeps
-   its slot and gets all its rounds, and the driver decides the label.
+9. **Results.** The driver copies each session's samples from the shared
+   folder into this run directory and runs the analysis. It checks each
+   `void.md` against `checks.json` but does not relabel: a label differs
+   from the exit codes only as a recorded departure.
 
 `session.py --self-test` checks the order table against `Random(14)`, the
 numbering (each arm's samples 1 to 40, once each, in start order), the
