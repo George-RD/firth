@@ -164,7 +164,14 @@ Write refused because the file was not read first, or an Edit whose old text
 did not match) changed nothing. The audit still checks its path and command,
 but it is not replayed and does not void the sample in either arm
 (`test_mvp.py` plants a refused write, a failed then corrected edit, and the
-same edit without the error mark, which is flagged).
+same edit without the error mark, which is flagged). Only the harness's own
+tool result marks a call as failed: a `tool_result` in a user-type event,
+carrying that call's id (planted: one in an assistant event, and one with no
+id, are not trusted).
+
+In both arms, every kept `answer-N.md` must have been made by a successful
+Write or Edit in the author's log; one that was not is flagged (planted: no
+write at all, and only a refused write).
 
 Every `void.md` starts with `rule:` (an audit, agent-file, context or answers
 rule) or `toolchain:`, then the reason. `analyse.py` refuses any other.

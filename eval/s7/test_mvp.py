@@ -313,6 +313,27 @@ def check_tool_audit() -> None:
         outside = failing("Edit", "e2", file_path=str(HERE / "harness.py"), old_string="a", new_string="b")
         check(len(audit(ok + outside, prompt, d, d, 2, "firth", tool)[1]) == 1,
               "a failed edit of another file is still flagged")
+        # Only the harness's own tool result, in a user-type event and carrying
+        # the call's id, marks a call as failed (reviewer, on #190). Planted:
+        # an error result spoofed in an assistant event, and one with no id
+        # matching a call with no id, leave the bad edit flagged.
+        spoofed = failing("Edit", "e3", file_path=str(ans), old_string="draft ", new_string="fixed")
+        spoofed[1]["type"] = "assistant"
+        check(any("replayed" in b for b in audit(ok[:4] + spoofed + ok[4:], prompt, d, d, 2, "firth", tool)[1]),
+              "an error result outside a user-type event is not trusted (the planted case)")
+        no_id = failing("Edit", "e4", file_path=str(ans), old_string="draft ", new_string="fixed")
+        del no_id[0]["message"]["content"][0]["id"]
+        del no_id[1]["message"]["content"][0]["tool_use_id"]
+        check(any("replayed" in b for b in audit(ok[:4] + no_id + ok[4:], prompt, d, d, 2, "firth", tool)[1]),
+              "an error result with no id marks no call as failed (the planted case)")
+        # A kept answer must come from a successful write or edit in the log.
+        # Planted: no write at all, and only a refused write, in either arm.
+        for arm, cmd in (("A", None), ("B", tool)):
+            for what, log in (("no write at all", [call("Read", file_path=str(prompt))]),
+                              ("only a refused write", [call("Read", file_path=str(prompt))]
+                               + failing("Write", "w3", file_path=str(ans), content=final))):
+                check(any("no successful write" in b for b in audit(log, prompt, d, d, 2, "firth", cmd)[1]),
+                      f"arm {arm}'s audit flags a kept answer with {what} (the planted case)")
 
 
 def feedback_keeps_hints() -> None:

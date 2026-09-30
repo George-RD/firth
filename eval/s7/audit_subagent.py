@@ -28,7 +28,10 @@ run the checker on its own answer file), these are allowed as well:
   succeeded.
 
 A write whose tool result is an error is not compared with the kept copy in
-either arm, since it wrote nothing.
+either arm, since it wrote nothing. Only a `tool_result` block in a user-type
+event, carrying the call's id, marks a call as failed. A kept `answer-<n>.md`
+that no successful Write (or, with `--check-cmd`, Edit) in the log produced is
+flagged.
 
 Each kept `solutions-<n>.json`, which is what `score` read, must also be the
 previous round's solutions updated with the tasks `extract` finds in
@@ -71,6 +74,7 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
                            + re.escape(str(run_dir)) + r"/answer-([1-9][0-9]*)\.md")
                 if check_cmd else None)
     files: dict[str, str | None] = {}  # arm B: each answer file as its writes and edits leave it
+    produced = set()  # answer files a successful Write or Edit of the author's made
     calls, models, times, bad = [], set(), [], []
     failed = errored(events)
     for ev in events:
@@ -106,10 +110,12 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
                 elif b.get("id") in failed:
                     rec["tool_error"] = True
                 elif name == "Write":
+                    produced.add(Path(path).name)
                     files[path] = str(inp.get("content", ""))
                     rec.update(content_chars=len(files[path]),
                                content_sha256=hashlib.sha256(files[path].encode()).hexdigest())
                 else:
+                    produced.add(Path(path).name)
                     files[path] = replay_edit(files.get(path), inp)
                     rec["edit_chars"] = len(str(inp.get("new_string", "")))
             elif name == "Read" and (path in reads or (r and int(r[1]) <= rounds)):
@@ -124,8 +130,10 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
                 copy = kept / Path(path).name
                 if b.get("id") in failed:
                     rec["tool_error"] = True
-                elif not copy.is_file() or hashlib.sha256(copy.read_bytes()).hexdigest() != rec["content_sha256"]:
-                    bad.append(f"{copy}: not what the author wrote")
+                else:
+                    produced.add(copy.name)
+                    if not copy.is_file() or hashlib.sha256(copy.read_bytes()).hexdigest() != rec["content_sha256"]:
+                        bad.append(f"{copy}: not what the author wrote")
             elif name == "SubagentHandback":
                 # Whole, not truncated: the hand-back is evidence about what the
                 # author saw (reviewer, on #181).
@@ -140,6 +148,10 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
             bad.append(f"{copy}: an edit of it could not be replayed")
         elif not copy.is_file() or copy.read_text() != text:
             bad.append(f"{copy}: not what the author's writes and edits left")
+    # A kept answer the author's log never wrote was put there some other way
+    # (reviewer, on #190).
+    bad += [f"{kept / f'answer-{n}.md'}: no successful write or edit of the author's made it"
+            for n in numbered(kept, "answer", "md") if f"answer-{n}.md" not in produced]
     bad += solutions_mismatch(kept)
     bad += repair_mismatch(kept, lang)
     bad += [f"{p}: beyond the {rounds} feedback round(s) the prompt allowed"
@@ -153,13 +165,18 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
 
 
 def errored(events: list[dict]) -> set[str]:
-    """The ids of tool calls whose result the tool reported as an error."""
+    """The ids of tool calls whose result the tool reported as an error. Only
+    the harness's own tool results count: blocks in user-type events, with an
+    id (reviewer, on #190)."""
     out = set()
     for ev in events:
+        if ev.get("type") != "user":
+            continue
         c = (ev.get("message") or {}).get("content")
         for b in c if isinstance(c, list) else []:
-            if isinstance(b, dict) and b.get("type") == "tool_result" and b.get("is_error"):
-                out.add(b.get("tool_use_id"))
+            if (isinstance(b, dict) and b.get("type") == "tool_result" and b.get("is_error")
+                    and b.get("tool_use_id") is not None):
+                out.add(b["tool_use_id"])
     return out
 
 
