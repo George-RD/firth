@@ -747,6 +747,27 @@ private def runCallAccountTests : IO Unit := do
   let _ ← callReport "two inputs of one name" "firth.type.branch-mismatch"
     ": h (forall ρ; ρ x:Int^many x:Int^many -- ρ r:Int^many) prim + ;\n: g\n  (forall ρ; ρ x:Int^many n:Int^many -- ρ r:Int^many)\n  locals { x n } { n 0 prim < [ x ] [ x 1 prim + h ] if };"
     ["exactly the values it takes, in this order: x:Int, x:Int"] ["in place of"]
+  -- Planted: the recheck of a branch edit stops at the first erasure
+  -- error, and here one follows the `if` (`locals { a b c }` handed one
+  -- value), so typing never runs on the edited word. An edit that writes a
+  -- local of the wrong type would pass the recheck: the edit compares the
+  -- types itself. `result` is an Int here and `g` takes a Seq Int, so no
+  -- edit; with a Seq Int `result` the edit is offered.
+  let _ ← callReport "a local of another type, with a later erasure error" "firth.type.branch-mismatch"
+    ": f\n  (forall ρ; ρ result:Int^many candidate:Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { result candidate n } {\n    candidate n prim <\n    [ candidate 1 prim + n g ]\n    [ prim seq-int.empty ]\n    if locals { a b c } { a }\n  };\n\n: g\n  (forall ρ; ρ result:Seq Int^many candidate:Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { result candidate n } { result };"
+    ["`g` needs 3 values (result:Seq Int, candidate:Int, n:Int)"] ["in place of"]
+  let _ ← callReport "a local of the input's type, with a later erasure error" "firth.type.branch-mismatch"
+    ": f\n  (forall ρ; ρ result:Seq Int^many candidate:Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { result candidate n } {\n    candidate n prim <\n    [ candidate 1 prim + n g ]\n    [ prim seq-int.empty ]\n    if locals { a b c } { a }\n  };\n\n: g\n  (forall ρ; ρ result:Seq Int^many candidate:Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { result candidate n } { result };"
+    ["write `result candidate 1 prim + n g` in place of `candidate 1 prim + n g` on line 5. With that edit, the next error in `f` is at line 7, column 17."] []
+  -- Planted: likewise for a new value left behind. `xs 1 prim +` is handed
+  -- no Int local, so its result is a new value of none: no edit binding it
+  -- to `xs`. With `n 1 prim +` it is a new `n`, and the edit is offered.
+  let _ ← callReport "a result of another type, with a later erasure error" "firth.type.branch-mismatch"
+    ": g\n  (forall ρ; ρ xs:Seq Int^many -- ρ r:Seq Int^many)\n  ;\n\n: f\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { xs n } { n 0 prim < [ xs ] [ xs 1 prim + xs g ] if locals { a b c } { a } };"
+    ["the result of `prim +` is left below the result of `g`"] ["bind it to the name", "in place of"]
+  let _ ← callReport "a new value of a local, with a later erasure error" "firth.type.branch-mismatch"
+    ": g\n  (forall ρ; ρ n:Int^many -- ρ r:Seq Int^many)\n  drop prim seq-int.empty;\n\n: f\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Seq Int^many)\n  locals { xs n } { n 0 prim < [ xs ] [ n 1 prim + n g ] if locals { a b c } { a } };"
+    ["write `prim + locals { n } { n g }` in place of `prim + n g` on line 7. With that edit, the next error in `f` is at line 7, column 87."] []
   -- Planted: two results of an `if` merged by an outer `if`, one standing
   -- for `a` and one for `b`. The merged value stands for neither, so its
   -- place is told by types alone, not "by their names" as if from `a`.
@@ -1220,7 +1241,32 @@ private def runLocalsOrderTests : IO Unit := do
     -- An inner block binds `x` again, so "write `b` for `x`" would be read
     -- for both.
     ("name to rename bound again inside", "sub",
-      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x 1 prim + locals { x } { x } a prim - };")]
+      ": sub\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x 1 prim + locals { x } { x } a prim - };"),
+    -- Planted: `x` holds the Int `a` and would be renamed to `b`, a Bool.
+    -- `locals { p q r }` is handed one value, an erasure error, so typing
+    -- never runs on the edited word and could not show `b 1 prim +` wrong:
+    -- the rename's type is compared instead.
+    ("a renamed name of another type, before a later erasure error", "f",
+      ": f\n  (forall ρ; ρ a:Int^many b:Bool^many -- ρ r:Int^many)\n  locals { x a } { x 1 prim + locals { p q r } { p } };")]
+  -- The same with `b` an Int: renaming `x` to `b` keeps its type, and the
+  -- edit is stated although typing does not run.
+  match elaboratePipeline pipelineContext ": f\n  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)\n  locals { x a } { x 1 prim + locals { p q r } { p } };" agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      for needle in ["Write `locals { a b }` in `f`", "write `b` for `x`"] do
+        unless emitted.contains needle do
+          fail s!"a renamed name of its own type: the report does not say {needle}: {emitted}"
+  | _ => fail "a renamed name of its own type: expected one diagnostic"
+  -- A rename that changes the type, where typing does run: `x` is used as
+  -- a Bool and the edit gives it `b`, a Bool. The edited word is refused
+  -- only later, at `true prim +`, so the edit is stated.
+  match elaboratePipeline pipelineContext ": f\n  (forall ρ; ρ a:Int^many b:Bool^many -- ρ r:Int^many)\n  locals { x a } { x prim not drop a true prim + };" agentConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      for needle in ["Write `locals { a b }` in `f`", "write `b` for `x`"] do
+        unless emitted.contains needle do
+          fail s!"a renamed name typing checks: the report does not say {needle}: {emitted}"
+  | _ => fail "a renamed name typing checks: expected one diagnostic"
   -- A block that repeats a name is refused for that, not for its order.
   match elaboratePipeline pipelineContext ": sum\n  (forall ρ; ρ a:Int^many b:Int^many c:Int^many -- ρ r:Int^many)\n  locals { x a x } { x a x prim + prim + };" agentConfig with
   | .failure (envelope :: _) =>
