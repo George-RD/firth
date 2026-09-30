@@ -259,7 +259,10 @@ As in run 12:
   found void at any point is void. A sample's validity is final when they
   have run on its complete log after its third answer is scored. The driver
   then writes `final.md` in its directory with the time, and the early look
-  reads only samples that have one.
+  reads only samples that have one. A toolchain void whose scoring stopped
+  has no third answer: the driver writes its `final.md`, with the time and
+  `toolchain: stopped`, when it stops it (planted in the early look's
+  self-test, inside the window).
 - Every arm B Bash command is kept verbatim in the sample's
   `bash-calls.json` (`driver/bash_calls.py extract`, run 12's script with
   run 13's paths). The audit shortens a flagged call in `transcript.json`,

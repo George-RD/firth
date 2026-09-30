@@ -14,7 +14,7 @@ kind of void; the start-order analysis keeps rule voids, scored on their
 third answer like every other sample, and drops toolchain ones. The driver
 writes final.md in a sample's directory once the audit and the scans have
 run on its complete log after its third answer was scored, so its validity
-is final. A task passes when every case passes. The exact one-sided
+is final, or, for a toolchain void, when it stops the sample's scoring. A task passes when every case passes. The exact one-sided
 Mann-Whitney and Fisher tests are run 11's (`../2026-09-29-locals-guide/
 analyse.py`), whose self-test checks them against brute-force enumeration.
 """
@@ -254,7 +254,9 @@ def self_test():
             (arm / f"haiku-firth-{i}" / "void.md").write_text("rule: audit: Bash `ls`\n")
         assert early_stop(arm) is False
         (arm / "haiku-firth-6" / "void.md").write_text("toolchain: lake exit 1\n")
-        assert early_stop(arm) is False
+        (arm / "haiku-firth-6" / "final.md").write_text("toolchain: stopped\n")
+        assert not (arm / "haiku-firth-6" / "results-3.json").exists()
+        assert early_stop(arm) is False, "a stopped toolchain void inside the window"
         (arm / "haiku-firth-11" / "void.md").write_text("rule: context: task_status\n")
         assert early_stop(arm) is False, "a context void is not counted"
         (arm / "haiku-firth-11" / "void.md").write_text("rule: context, audit: task_status; Bash `ls`\n")
