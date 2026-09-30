@@ -949,6 +949,48 @@ private def runCallAccountTests : IO Unit := do
   comparisonCase "`prim >=` and `prim <=` in one word" ": count-in-range\n  (forall ρ; ρ xs:Seq Int^many i:Int^many lo:Int^many hi:Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs i lo hi n } {\n    i xs prim seq-int.len prim = [ n ] [\n      xs i prim seq-int.at locals { x } {\n        x lo prim >=\n        x hi prim <= prim and\n        [ n 1 prim + ] [ n ] if locals { m } { xs i 1 prim + lo hi m count-in-range }\n      }\n    ] if\n  };\n"
     ["`a b prim >=`, `a` at least `b`, is `a b prim < prim not`: `a` is at least `b` exactly when `a < b` is false. Write `prim < prim not` in place of `prim >=` on line 6, and write the other comparison in `count-in-range` with those primitives too: `prim <=` on line 7 as `swap prim < prim not`. With those edits `count-in-range` checks."]
     "count-in-range" [.intSeq [1, 2, 3, 4, 5], .int 0, .int 2, .int 4, .int 0] [.int 3]
+  -- A word or primitive handed fewer values than it takes, as the body is
+  -- written: reported there with the values it gets, not at a `dip` or
+  -- `compose` erasure wrote. Where the values written just after it are
+  -- for its last inputs by name (a local) or type (a literal), the hint
+  -- moves them before it; the test applies that edit and runs the result.
+  let shortCase (label source : String) (needles absent : List String) (word : String)
+      (inputs expected : List Firth.Interpreter.Literal) : IO Unit := do
+    let (hint, _) ← callReport label "firth.type.stack-underflow" source needles absent
+    match applyComparisonHint source hint with
+    | some edited => expectRuns label edited word inputs expected
+    | none => fail s!"{label}: the hint's edit does not apply: {hint}"
+  -- seq-sum (locals-guide arm a, haiku-firth-5, answer 1), verbatim: the
+  -- call is written before its values. 4 + 5 + 6.
+  shortCase "a call written before its values" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ total:Int^many)\n  locals { xs } { sum-loop xs 0 0 };\n\n: sum-loop\n  (forall ρ; ρ xs:Seq Int^many i:Int^many sum:Int^many -- ρ total:Int^many)\n  locals { xs i sum } {\n    i xs prim seq-int.len prim < [\n      xs\n      i 1 prim +\n      xs i prim seq-int.at sum prim +\n      sum-loop\n    ] [\n      sum\n    ] if\n  };\n"
+    ["`sum-loop` in `main` takes 3 values (xs:Seq Int, i:Int, sum:Int), bottom to top, but nothing is on the stack before it.",
+     "The values `sum-loop` takes are pushed before it, and `xs`, `0` and `0` are written after it. Write `xs 0 0 sum-loop` in place of `sum-loop xs 0 0` on line 3. With that edit `main` checks."] []
+    "main" [.intSeq [4, 5, 6]] [.int 15]
+  -- Constructed: in a `locals` block the checker refused the `dip`
+  -- erasure wrote to reach `xs`, which the author never wrote. 1 + 2 + 5.
+  -- Planted: the moved value must fill the input of its name, `g`'s last.
+  shortCase "a value written after the call in a `locals` block" ": g (forall ρ; ρ a:Int^many b:Int^many xs:Int^many -- ρ r:Int^many) prim + prim + ;\n: f (forall ρ; ρ xs:Int^many -- ρ r:Int^many) locals { xs } { 1 2 g xs };\n"
+    ["`g` in `f` takes 3 values (a:Int, b:Int, xs:Int), bottom to top, but only 2 values are on the stack before it, bottom to top: `1` (Int) and `2` (Int).",
+     "Write `xs g` in place of `g xs` on line 2. With that edit `f` checks."] ["dip"]
+    "f" [.int 5] [.int 8]
+  -- count-below (locals-guide arm b, haiku-firth-17, answer 2), verbatim:
+  -- `k` is not pushed at all, so nothing says where it goes: no edit.
+  let _ ← callReport "a local not pushed" "firth.type.stack-underflow" ": main\n  (forall ρ; ρ xs:Seq Int^many k:Int^many -- ρ count:Int^many)\n  locals { xs k } { 0 xs 0 count-below-helper };\n\n: count-below-helper\n  (forall ρ; ρ count:Int^many xs:Seq Int^many i:Int^many k:Int^many -- ρ result:Int^many)\n  locals { count xs i k } {\n    i xs prim seq-int.len prim <\n    [ xs i prim seq-int.at k prim < [ count 1 prim + ] [ count ] if i 1 prim + xs k count-below-helper ]\n    [ count ]\n    if\n  };\n"
+    ["`count-below-helper` in `main` takes 4 values (count:Int, xs:Seq Int, i:Int, k:Int), bottom to top, but only 3 values are on the stack before it, bottom to top: `0` (Int), `xs` (Seq Int) and `0` (Int).",
+     "Push the missing value before `count-below-helper`. The locals here, `xs` and `k`, are not values on the stack: writing a local's name pushes its value."]
+    ["dip", "in place of"]
+  -- Planted: seq-max (8ea4a1d, haiku-firth-14, answer 2),
+  -- verbatim. The `1` after `prim seq-int.at` would check as its index,
+  -- but a primitive's inputs have no names to say it is the one missing
+  -- (the author's first value is read at 0). No edit.
+  let _ ← callReport "a primitive's missing value" "firth.type.stack-underflow" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ largest:Int^many)\n  locals { xs } {\n    xs prim seq-int.at 1 0 xs prim seq-int.len max-helper\n  };\n\n: max-helper\n  (forall ρ; ρ xs:Seq Int^many i:Int^many max:Int^many -- ρ result:Int^many)\n  locals { xs i max } {\n    [ i xs prim seq-int.len prim = ] [ max ] [\n      xs i prim seq-int.at max [ prim < ] [ max ] [ xs i prim seq-int.at ] if\n      i 1 prim + xs max-helper\n    ] if\n  };\n"
+    ["`prim seq-int.at` in `main` takes 2 values (the sequence (Seq Int) and the index (Int)), bottom to top, but only 1 value is on the stack before it: `xs` (Seq Int)."]
+    ["in place of"]
+  -- Planted: sort (8ea4a1d, haiku-firth-14, answer 3), verbatim. `value`,
+  -- written after `insert-sorted`, is not its last input, `pos`: no edit.
+  let _ ← callReport "a value for another input" "firth.type.stack-underflow" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Seq Int^many)\n  locals { xs } { prim seq-int.empty 0 xs sort-insert-all };\n\n: sort-insert-all\n  (forall ρ; ρ result:Seq Int^many i:Int^many xs:Seq Int^many -- ρ result:Seq Int^many)\n  locals { result i xs } {\n    [ i xs prim seq-int.len prim = ] [ result ] [\n      xs i prim seq-int.at result 0 insert-sorted\n      result i 1 prim + xs sort-insert-all\n    ] if\n  };\n\n: insert-sorted\n  (forall ρ; ρ result:Seq Int^many value:Int^many pos:Int^many -- ρ result:Seq Int^many)\n  locals { result value pos } {\n    [ pos result prim seq-int.len prim = ] [ result value prim seq-int.push ] [\n      value result pos prim seq-int.at prim <\n      [ result pos value prim seq-int.set ] [ result ] if\n      pos 1 prim + insert-sorted value\n    ] if\n  };\n"
+    ["`insert-sorted` in `insert-sorted` takes 3 values (result:Seq Int, value:Int, pos:Int), bottom to top, but only 2 values are on the stack before it"]
+    ["in place of"]
 
 private def stackTypes : Firth.Elaborator.StackEffect.AStack → List Firth.Elaborator.StackEffect.AType
   | .snoc rest type => stackTypes rest ++ [type]

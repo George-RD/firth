@@ -20,6 +20,17 @@ the checker wrote, not the author:
   where the walk cannot follow the body or does not know the types.
 - `firth.type.stack-underflow` from erasure can name a `swap` that erasure
   inserted to reach a local.
+- A word or primitive handed fewer values than it takes, as the body is
+  written, is now reported there with what it takes and the values it gets
+  (`Account.firstMisfed`, `Account.ofShortCall`), where the checker had
+  refused a `dip` or `compose` erasure wrote: on runs 10 and 11, 59 of the
+  62 `dip` reports and 5 of the 19 `compose` reports. Where the values
+  written just after it are for its last inputs by name or type, an edit
+  moves them before it. Still open: 14 `compose` and 3 `dip` reports the
+  walk cannot follow, and an edit for a local that is not pushed at all
+  (`locals { xs ys } { 0 0 dot-helper }`, where the missing inputs are
+  named `xs` and `ys`): 92 of the reports name the locals in scope without
+  an edit.
 - A word or primitive handed values it does not take is reported with each
   value's source, and with an edit that reorders them where they were
   pushed one after another and their names and types say where each goes.

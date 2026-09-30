@@ -292,6 +292,9 @@ private def called (context : Context) (walk : Walk) (operation : String) (input
   { operation, inputs, span
     values := if taken.length == count then taken.map (·.label) else []
     types := taken.map (·.type)
+    missing := count - taken.length
+    present := if taken.length == count then [] else taken.map (·.label)
+    locals := walk.locals
     pieces := if taken.length == count then callPieces context.source taken span.start.offset else none }
 
 mutual
@@ -331,7 +334,8 @@ mutual
             let outputs := valueItems word.effect.output
             let described := inputs.map fun (n, t) => s!"{n}:{t}"
             if span.start.offset == context.target ||
-                (context.misfed && misfedAt (walk.stack.take inputs.length) (inputs.map (·.2))) then
+                (context.misfed && (misfedAt (walk.stack.take inputs.length) (inputs.map (·.2)) ||
+                  walk.stack.length < inputs.length)) then
               .called (called context walk s!"`{name}`" described inputs.length span) else
             let (taken, after) := take walk s!"`{name}`" described inputs.length (inputs.map (·.2)) (some span)
             let walk := noteMisread after taken (inputs.map (·.2))
@@ -347,7 +351,8 @@ mutual
         | some (inputs, outputs) =>
             let operation := s!"`prim {name}`"
             if span.start.offset == context.target ||
-                (context.misfed && misfedAt (walk.stack.take inputs.length) inputs) then
+                (context.misfed && (misfedAt (walk.stack.take inputs.length) inputs ||
+                  walk.stack.length < inputs.length)) then
               .called (called context walk operation inputs inputs.length span) else
             let (taken, after) := take walk operation inputs inputs.length inputs (some span)
             let walk := noteMisread after taken inputs
@@ -557,16 +562,32 @@ def ofCall (context : Context) (span : Span) : Option CallAccount :=
       | _ => none
     else none
 
+/-- The values handed to the word or primitive at `span`, when, as the
+body is written, it is handed fewer than it takes. -/
+def ofShortCall (context : Context) (span : Span) : Option CallAccount :=
+  let context := { context with target := span.start.offset }
+  context.words.findSome? fun word =>
+    if word.span.start.offset ≤ span.start.offset && span.start.offset < word.span.stop.offset then
+      let inputs := (valueItems word.effect.input).map fun (name, type) => (s!"the input `{name}`", some type)
+      match walkItems context (pushTyped { stack := [] } inputs) word.body with
+      | .called account => if account.missing > 0 then some account else none
+      | _ => none
+    else none
+
 /-- The first word or primitive in `word`'s body, as the walk follows it,
-handed a value whose known type is not the one it takes at that position.
-The checker infers a quotation's input from what its body does, so a
-mistake inside a branch can surface later, at another operation; the walk
-knows the types of the locals and inputs where they are written. -/
+handed a value whose known type is not the one it takes at that position,
+or fewer values than it takes (`CallAccount.missing`). The checker infers a
+quotation's input from what its body does, so a mistake inside a branch can
+surface later, at another operation; the walk knows the types of the locals
+and inputs where they are written. And the checker checks the program
+erasure writes, so an operation in a `locals` block handed fewer values than
+it takes can be refused at a `dip` or `compose` erasure wrote, where the
+author wrote neither. -/
 def firstMisfed (context : Context) (word : WordDefinition) : Option CallAccount :=
   let context := { context with misfed := true, target := context.source.utf8ByteSize + 1 }
   let inputs := (valueItems word.effect.input).map fun (name, type) => (s!"the input `{name}`", some type)
   match walkItems context (pushTyped { stack := [] } inputs) word.body with
-  | .called account => if account.values.isEmpty then none else some account
+  | .called account => if account.values.isEmpty && account.missing == 0 then none else some account
   | _ => none
 
 /-- A primitive's input and output types, bottom to top, from its scheme,
