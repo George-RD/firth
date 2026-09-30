@@ -2230,16 +2230,29 @@ Two counterfactuals, **hand-set, not scored**:
   This counts voids only. It cannot say what an author does after a
   blocked call.
 
-### Context voids fell on arm B only
+### Context voids fell on arm B only, which breaks the design
 
 The harness's `task_status` lines, which name another author, reached 7 of
 10 arm B authors before their last answer and no arm A author (secondary
 5). Each of those 7 is void for context: B5 for that alone, and B1, B2, B7,
-B8, B9 and B10 as well as for the audit. The pre-registration applies the
-rule to both arms alike, but in practice it only hit arm B. Arm B authors
-ran 6 to 32 minutes from first to last call and arm A's 3.5 to 6. The lines
-arrive when another author of the session changes state, so a longer run
-catches more of them (inferred from times, not documented).
+B8, B9 and B10 as well as for the audit. The pre-registration applied the
+context rule to both arms because it expected the lines to reach either arm
+alike. It did not: it fell on one arm only, which breaks the rule that a
+void rule must not be able to void only one arm.
+
+The timestamps show why. Every batch of `task_status` lines in the 20 raw
+logs arrived at the same millisecond as a context compaction of that
+author ("This session is being continued from a previous conversation that
+ran out of context"). The harness lists the session's other running
+authors in the compacted context. There were 9 compactions, all in arm B
+(B1 once, B2 twice, B5, B7, B8 twice, B9, B10), and 9 batches, at the same
+9 times. No arm A author was compacted, and none got a line. So what
+separates the arms is not run time as such: arm A authors were running
+while other authors started and handed back (A1 handed back during A2's
+run, for one), and got nothing. It is how full their context got. Arm B authors ran the checker 6 to 46
+times, and one check's output can exceed 30 KB. The mechanism is inferred
+from the logs, not documented. Run 12's note that the lines "arrived in a
+burst when several authors changed state" is probably the same thing.
 
 ### Scores (descriptive only)
 
