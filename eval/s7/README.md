@@ -2119,6 +2119,161 @@ to `head`, `tail` or a `grep` with a quoted pattern, and a `cd` into the
 worktree), and refuses everything else. It makes the start-order analysis
 co-primary.
 
+## Run 13: 30 September 2026, the checker again, exact forms (stopped at the early look)
+
+Run 13 asked run 12's question again. Does letting Haiku run the checker on
+its own answer file raise how many MVP tasks it passes? This time arm B's
+prompt said the command "already prints everything, so run it exactly as
+written: add no `2>&1`, no pipe, no redirection and no `cd`". The audit
+(`audit_subagent.py --shell-forms`) also allowed a closed set of harmless
+forms of the check command. The design was reviewed and merged before the
+first author started (`runs/2026-09-30-check-forms/preregistration.md`,
+#196, merged as `1640e01`).
+
+**Run 13 has no result.** It stopped at its pre-registered early look: 7
+of the first 10 arm B samples were audit voids, against a stop line of 6.
+Under the pre-registration the run is reported as not feasible under this
+protocol, with every sample's scores and no test. Everything below is
+descriptive.
+
+- **Build.** Both arms were built and scored in one detached worktree at
+  `1640e01` (`pinned.txt`). Both arms saw the same `AGENTS.md` and
+  `CLAUDE.md` blobs. The preflight check in the authors' own shell passed
+  before every arm B start, and no check printed toolchain text.
+- **Authors.** 20 authors, `claude-haiku-4-5-20251001`, run as Agent-tool
+  sub-agents: arm A 1 to 10 and arm B 1 to 10.
+  `instructions.py --check` finds that every author received exactly its
+  own arm's templates (`instructions.json`).
+- **Start order.** A(k) and B(k) started together, and arm A waited on arm
+  B's slots, so the arms stayed in step, unlike run 12.
+- **The early look.** It was taken once, at 05:48:49Z, when all of B1 to B10
+  had `final.md`. `analyse.py --early-look` printed:
+  `7 audit voids of the first 10 started`, B3 and B6 valid, B5 void for
+  context only (not counted by the look). The verdict was STOP. No score was
+  read for it (`driver/early-look.txt`, `driver/state.md`).
+- **Departures** (`departures.md`). After B10's round 1 audit void at 05:35Z
+  made the reading certain, no further sample started; the pre-registration
+  says authoring continues while the look waits. Three `void.md` files
+  gained causes after their `final.md`, before the look.
+- **Where everything is.** `python3 runs/2026-09-30-check-forms/describe.py`
+  prints every sample's scores, the refused calls by cause and the two
+  counterfactuals below. It computes no p-value. Each arm B sample's
+  `bash-calls.json` keeps every Bash command verbatim.
+
+### Why the arm B samples are void
+
+The audit refused 25 calls across 7 samples. Grouped by cause,
+every refused call is quoted verbatim, with `…` for
+`/home/user/firth-r13/eval/s7/runs/2026-09-30-check-forms/arm-b`:
+
+- **A shell form outside the allowlist** (8 calls in B1, B7, B8). Each is a
+  check command with a filter the forms refuse: a second pipe after `grep`,
+  `wc`, `sort`, `paste`, or a grep pattern with `$` before `)`.
+  - B1: `python3 …/harness.py check --lang firth …/haiku-firth-1/answer-1.md 2>&1 | grep "^ok$" | wc -l`
+  - B7 (5): `… answer-1.md 2>&1 | grep -E "^(## |code:|ok)" | paste - - | head -30`,
+    `… answer-1.md 2>&1 | grep -E "^(## |ok$)" `,
+    `… answer-1.md 2>&1 | grep -E "^## |^ok$" | paste - - | wc -l`, and
+    `… answer-2.md 2>&1 | grep -E "^(## |ok$)"` twice.
+  - B8 (2): `… answer-1.md 2>&1 | grep "^## " | sort | uniq -c` and
+    `… answer-1.md 2>&1 2>&1 | wc -l`.
+- **Reading a harness file** (2 calls, B7 and B10). Each Read the file where
+  the harness had saved a long tool output:
+  `/root/.claude/projects/-home-user/<session>/tool-results/bqtvys5se.txt`
+  (B7) and `…/tool-results/b1g9g8jtc.txt` with `limit 100` (B10).
+  - Both files held that author's own checker output. In each author's raw
+    log, the tool result of its exact, allowed check command (B7 at
+    05:12:29Z, 38.4 KB; B10 at 05:27:56Z, 32.1 KB) reads "Output too large
+    … Full output saved to:" that path, followed by a 2 KB preview, and the
+    Read names the same file. The harness shows the path to the author and
+    invites the Read. B9's first check was saved the same way; B9 did not
+    read the file.
+- **Other** (15 calls):
+  - Its own files read by another command (6 calls in B2, B4, B7, B9, B10):
+    `ls -la …/haiku-firth-2/ 2>&1 || echo "Directory may not exist yet"`,
+    `wc -l …/answer-3.md && echo "---" && tail -20 …/answer-3.md` (B2),
+    `grep -n "sortloop" …/answer-1.md` (B4),
+    `ls -la …/haiku-firth-7/` (B7), `grep -n "### task: sort" …/answer-3.md`
+    (B9), `grep -c "### task:" …/answer-2.md` (B10).
+  - A Read of its own directory (B7).
+  - A heredoc script in `/tmp`, then run (2 calls): B7's
+    `/tmp/fix_answers.py`, which only prints notes, and B8's
+    `/tmp/fix_all.py`, which rewrote `answer-2.md` by string replacement.
+  - `cat arm-b/prompt-firth.md | head -150` (B8).
+  - Other harness subcommands, each behind `cd /home/user/firth-r13 &&`
+    (5 calls, B10): `run` (not a subcommand) and `try` without `--task`, both usage
+    errors, `score`, `try --task prefix-sums … | head -30` and `extract … | head -50`.
+    `score` failed with a traceback and printed no results. `try --task`
+    ran the task's example and printed its input and expected output.
+    `extract` printed B10's own programs. None printed a hidden test.
+- No refused call named another sample's files or arm A's run directory.
+
+Per sample (`describe.py`):
+
+| Sample | Refused calls | Causes |
+|---|---|---|
+| B1 | 1 | shell form |
+| B2 | 2 | other (own files) |
+| B4 | 1 | other (own files) |
+| B7 | 9 | shell form 5, harness file 1, other 3 |
+| B8 | 4 | shell form 2, other 2 |
+| B9 | 1 | other (own files), in round 3 |
+| B10 | 7 | harness file 1, other 6 |
+
+Two counterfactuals, **hand-set, not scored**:
+
+- **Reads of the author's own saved tool results allowed.** All 7 audit
+  voids stand. B7 and B10, the two that read such a file, each have other
+  refused calls. The early look would still read 7.
+- **Refused calls blocked before they run, instead of voiding afterwards.**
+  No sample is an audit void, by construction. 6 of the 7 are still void
+  for context (below), as is B5, so 3 of 10 arm B samples would count.
+  This counts voids only. It cannot say what an author does after a
+  blocked call.
+
+### Context voids fell on arm B only
+
+The harness's `task_status` lines, which name another author, reached 7 of
+10 arm B authors before their last answer and no arm A author (secondary
+5). Each of those 7 is void for context: B5 for that alone, and B1, B2, B7,
+B8, B9 and B10 as well as for the audit. The pre-registration applies the
+rule to both arms alike, but in practice it only hit arm B. Arm B authors
+ran 6 to 32 minutes from first to last call and arm A's 3.5 to 6. The lines
+arrive when another author of the session changes state, so a longer run
+catches more of them (inferred from times, not documented).
+
+### Scores (descriptive only)
+
+| Passed (of 20) by answer | Arm A (no tools) | Arm B (may run the checker) |
+|---|---|---|
+| 1 | 0, 10, 13 | 0, 14, 16 (audit, context) |
+| 2 | 0, 2, 13 | 13, 15, 17 (audit, context) |
+| 3 | 0, 2, 13 | 18, 18, 18 |
+| 4 | 0, 10, 10 | 14, 18, 19 (audit) |
+| 5 | 1, 2, 8 | 13, 16, 18 (context) |
+| 6 | 0, 3, 4 | 17, 17, 19 |
+| 7 | 0, 0, 0 | 15, 16, 19 (audit, context) |
+| 8 | 0, 8, 12 | 0, 0, 13 (audit, context) |
+| 9 | 0, 0, 0 | 11, 11, 13 (audit, context) |
+| 10 | 0, 0, 10 | 11, 15, 16 (audit, context) |
+| Third answers, sum | 83 over 10 | 168 over 10 (2 valid) |
+
+- Arm A has no voids: its audits and context scans found nothing in any of
+  its 10 samples.
+- Arm B's authors ran the allowed check 6 to 46 times each (220 in all).
+- Arm B's numbers are higher at every answer. They are reported, not
+  tested, and no claim about the checker is made from them. 8 of the 10
+  arm B samples are void, the pre-registered test needs 40 counted samples
+  an arm, and arm B's first answer was written after the author had run
+  the checker, so it is not arm A's first answer.
+
+### What this leaves open
+
+Run 13's prompt did not keep Haiku to the command. Of the 7 audit voids,
+3 (B2, B4, B9) broke the rules only by reading their own answer or
+directory with `grep`, `ls`, `wc` or `tail`; 2 (B7, B10) read their own
+saved checker output where the harness pointed them. Run 14 is not
+designed here; its direction will be chosen from this breakdown.
+
 ## What the eleven runs say about the bet
 
 Explicit stack effects did not stop a strong model writing correct Firth from

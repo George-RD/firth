@@ -1,0 +1,1 @@
+rule: audit, context: 1 flagged call in round 1, a Read of a harness tool-results file holding persisted check output (audit_subagent.py --shell-forms exit 1, 2026-09-30T05:35:10Z); after round 2: 7 flagged calls, adding cd-prefixed harness.py run, try, score and extract subcommands and a grep -c of its answer; context_seen.py flagged task_status lines at 05:37:28Z (exit 1)

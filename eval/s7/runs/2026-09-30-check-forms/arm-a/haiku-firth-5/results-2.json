@@ -1,0 +1,2612 @@
+{
+  "lang": "firth",
+  "tasks": {
+    "seq-sum": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            15
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            15
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            7
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              -3,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            10
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10
+            ]
+          ],
+          "expected": [
+            55
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            55
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              -5,
+              -6
+            ]
+          ],
+          "expected": [
+            -11
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            -11
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 5,
+      "hidden_total": 5
+    },
+    "seq-max": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              9,
+              2
+            ]
+          ],
+          "expected": [
+            9
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: max-loop\nat: line 10, column 7\nmessage: `if` in `max-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: main\nat: line 18, column 11\nmessage: `prim seq-int.at` in `main` takes the sequence (Seq Int) and the index (Int), bottom to top, but here it gets, bottom to top, `xs` (Seq Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int\nactual: \u03c1 Seq Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `prim seq-int.at` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: max-loop\nat: line 10, column 7\nmessage: `if` in `max-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: main\nat: line 18, column 11\nmessage: `prim seq-int.at` in `main` takes the sequence (Seq Int) and the index (Int), bottom to top, but here it gets, bottom to top, `xs` (Seq Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int\nactual: \u03c1 Seq Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `prim seq-int.at` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -4,
+              -2,
+              -9
+            ]
+          ],
+          "expected": [
+            -2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: max-loop\nat: line 10, column 7\nmessage: `if` in `max-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: main\nat: line 18, column 11\nmessage: `prim seq-int.at` in `main` takes the sequence (Seq Int) and the index (Int), bottom to top, but here it gets, bottom to top, `xs` (Seq Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int\nactual: \u03c1 Seq Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `prim seq-int.at` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: max-loop\nat: line 10, column 7\nmessage: `if` in `max-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: main\nat: line 18, column 11\nmessage: `prim seq-int.at` in `main` takes the sequence (Seq Int) and the index (Int), bottom to top, but here it gets, bottom to top, `xs` (Seq Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int\nactual: \u03c1 Seq Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `prim seq-int.at` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              8,
+              8,
+              3
+            ]
+          ],
+          "expected": [
+            8
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: max-loop\nat: line 10, column 7\nmessage: `if` in `max-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: main\nat: line 18, column 11\nmessage: `prim seq-int.at` in `main` takes the sequence (Seq Int) and the index (Int), bottom to top, but here it gets, bottom to top, `xs` (Seq Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int\nactual: \u03c1 Seq Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `prim seq-int.at` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: max-loop\nat: line 10, column 7\nmessage: `if` in `max-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: main\nat: line 18, column 11\nmessage: `prim seq-int.at` in `main` takes the sequence (Seq Int) and the index (Int), bottom to top, but here it gets, bottom to top, `xs` (Seq Int) and `xs` (Seq Int).\nexpected: .. Seq Int Int\nactual: \u03c1 Seq Int Seq Int\nhint: The top value, `xs` (Seq Int), is not what `prim seq-int.at` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "count-below": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              5,
+              2,
+              8
+            ],
+            4
+          ],
+          "expected": [
+            2
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: count-loop\nat: line 11, column 7\nmessage: `if` in `count-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int Int [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            3
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: count-loop\nat: line 11, column 7\nmessage: `if` in `count-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int Int [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            4
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: count-loop\nat: line 11, column 7\nmessage: `if` in `count-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int Int [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              0,
+              1
+            ],
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: count-loop\nat: line 11, column 7\nmessage: `if` in `count-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int Int [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              1,
+              9,
+              1,
+              9
+            ],
+            10
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: count-loop\nat: line 11, column 7\nmessage: `if` in `count-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int Int [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              3
+            ],
+            -5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: count-loop\nat: line 11, column 7\nmessage: `if` in `count-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int Int [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "index-of": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              7,
+              3,
+              9,
+              3
+            ],
+            3
+          ],
+          "expected": [
+            1
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: search-loop\nat: line 9, column 7\nmessage: `if` in `search-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            1
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: search-loop\nat: line 9, column 7\nmessage: `if` in `search-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: search-loop\nat: line 9, column 7\nmessage: `if` in `search-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: search-loop\nat: line 9, column 7\nmessage: `if` in `search-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            2
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: search-loop\nat: line 9, column 7\nmessage: `if` in `search-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              -2,
+              -3
+            ],
+            -3
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: search-loop\nat: line 9, column 7\nmessage: `if` in `search-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "reverse": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              2,
+              1
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "trap primitive-fault\n{\"error\": \"application vm-run: status 'trap', expected 'success': {'request_id': 'application', 'status': 'trap', 'stack': [{'kind': 'literal', 'literal': {'type': 'seq-int', 'value': [1, 2, 3]}}, {'kind': 'literal', 'literal': {'type': 'int', 'value': 2}}, {'kind': 'literal', 'literal': {'type': 's",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "trap primitive-fault\n{\"error\": \"application vm-run: status 'trap', expected 'success': {'request_id': 'application', 'status': 'trap', 'stack': [{'kind': 'literal', 'literal': {'type': 'seq-int', 'value': []}}, {'kind': 'literal', 'literal': {'type': 'int', 'value': -1}}, {'kind': 'literal', 'literal': {'type': 'seq-int",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "trap primitive-fault\n{\"error\": \"application vm-run: status 'trap', expected 'success': {'request_id': 'application', 'status': 'trap', 'stack': [{'kind': 'literal', 'literal': {'type': 'seq-int', 'value': [5]}}, {'kind': 'literal', 'literal': {'type': 'int', 'value': 0}}, {'kind': 'literal', 'literal': {'type': 'seq-int",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              -4,
+              4,
+              -4,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              -4,
+              4,
+              -4,
+              4
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "trap primitive-fault\n{\"error\": \"application vm-run: status 'trap', expected 'success': {'request_id': 'application', 'status': 'trap', 'stack': [{'kind': 'literal', 'literal': {'type': 'seq-int', 'value': [4, -4, 4, -4, 0]}}, {'kind': 'literal', 'literal': {'type': 'int', 'value': 4}}, {'kind': 'literal', 'literal': {'t",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "trap primitive-fault\n{\"error\": \"application vm-run: status 'trap', expected 'success': {'request_id': 'application', 'status': 'trap', 'stack': [{'kind': 'literal', 'literal': {'type': 'seq-int', 'value': [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]}}, {'kind': 'literal', 'literal': {'type': 'int', 'value': 9}}, {'kind': 'literal', '",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "prefix-sums": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              3,
+              6
+            ]
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            [
+              0,
+              1,
+              3
+            ]
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            []
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            [
+              0
+            ]
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              -3,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              3,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            [
+              0,
+              3,
+              0,
+              3
+            ]
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              20,
+              30,
+              40,
+              50,
+              60
+            ]
+          ],
+          "expected": [
+            [
+              10,
+              30,
+              60,
+              100,
+              150,
+              210
+            ]
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            [
+              0,
+              10,
+              30,
+              60,
+              100,
+              150
+            ]
+          ],
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 1,
+      "hidden_total": 4
+    },
+    "keep-positive": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              -1,
+              0,
+              4
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              4
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: filter-loop\nat: line 11, column 7\nmessage: `if` in `filter-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int [ .. -- .. Bool ] [ .. -- .. Seq Int ] [ .. -- .. Seq Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: filter-loop\nat: line 11, column 7\nmessage: `if` in `filter-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int [ .. -- .. Bool ] [ .. -- .. Seq Int ] [ .. -- .. Seq Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              -2
+            ]
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: filter-loop\nat: line 11, column 7\nmessage: `if` in `filter-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int [ .. -- .. Bool ] [ .. -- .. Seq Int ] [ .. -- .. Seq Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: filter-loop\nat: line 11, column 7\nmessage: `if` in `filter-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int [ .. -- .. Bool ] [ .. -- .. Seq Int ] [ .. -- .. Seq Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              0,
+              5,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: filter-loop\nat: line 11, column 7\nmessage: `if` in `filter-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int [ .. -- .. Bool ] [ .. -- .. Seq Int ] [ .. -- .. Seq Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -7,
+              7,
+              -7,
+              7,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              7,
+              7,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: filter-loop\nat: line 11, column 7\nmessage: `if` in `filter-loop` needs a Bool condition under its two quotations, but the stack before it is .. Seq Int Int [ .. -- .. Bool ] [ .. -- .. Seq Int ] [ .. -- .. Seq Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "is-sorted": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              5
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: check-loop\nat: line 9, column 7\nmessage: `if` in `check-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: check-loop\nat: line 9, column 7\nmessage: `if` in `check-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: check-loop\nat: line 9, column 7\nmessage: `if` in `check-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: check-loop\nat: line 9, column 7\nmessage: `if` in `check-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: check-loop\nat: line 9, column 7\nmessage: `if` in `check-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -5,
+              -5,
+              0,
+              7
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: check-loop\nat: line 9, column 7\nmessage: `if` in `check-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: check-loop\nat: line 9, column 7\nmessage: `if` in `check-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "dot": {
+      "needs": [
+        "loop",
+        "mul",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            32
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            32
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              2
+            ],
+            [
+              -3
+            ]
+          ],
+          "expected": [
+            -6
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            -6
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              -1
+            ],
+            [
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              3,
+              3,
+              3,
+              3
+            ],
+            [
+              1,
+              2,
+              3,
+              4
+            ]
+          ],
+          "expected": [
+            30
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            30
+          ],
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "hidden_passed": 4,
+      "hidden_total": 4
+    },
+    "all-true": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              true,
+              true,
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: check-all-loop\nat: line 9, column 7\nmessage: `if` in `check-all-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: check-all-loop\nat: line 9, column 7\nmessage: `if` in `check-all-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: check-all-loop\nat: line 9, column 7\nmessage: `if` in `check-all-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: check-all-loop\nat: line 9, column 7\nmessage: `if` in `check-all-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: check-all-loop\nat: line 9, column 7\nmessage: `if` in `check-all-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              false,
+              true
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: check-all-loop\nat: line 9, column 7\nmessage: `if` in `check-all-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "longest-run": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              1,
+              2,
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: run-loop\nat: line 5, column 66\nmessage: `if` in `run-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: run-loop\nat: line 5, column 66\nmessage: `if` in `run-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: run-loop\nat: line 5, column 66\nmessage: `if` in `run-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: run-loop\nat: line 5, column 66\nmessage: `if` in `run-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: run-loop\nat: line 5, column 66\nmessage: `if` in `run-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              1,
+              1,
+              1,
+              1,
+              3
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: run-loop\nat: line 5, column 66\nmessage: `if` in `run-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int ] [ .. -- .. Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "has-pair-sum": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              6,
+              2
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: inner-loop\nat: line 9, column 7\nmessage: `if` in `inner-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            0
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: inner-loop\nat: line 9, column 7\nmessage: `if` in `inner-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ],
+            8
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: inner-loop\nat: line 9, column 7\nmessage: `if` in `inner-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: inner-loop\nat: line 9, column 7\nmessage: `if` in `inner-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            7
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: inner-loop\nat: line 9, column 7\nmessage: `if` in `inner-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              -2,
+              9,
+              0
+            ],
+            -2
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: inner-loop\nat: line 9, column 7\nmessage: `if` in `inner-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              1,
+              3
+            ],
+            2
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: inner-loop\nat: line 9, column 7\nmessage: `if` in `inner-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "count-distinct": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": true
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              1,
+              -1,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": true,
+          "stack": [
+            0
+          ],
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 1,
+      "hidden_total": 5
+    },
+    "merge-sorted": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              9
+            ],
+            [
+              2,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              9,
+              10
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.quotation-input-mismatch\nword: merge-loop\nat: line 4, column 73\nmessage: The quotation run by `dip` in `merge-loop` does not accept the stack below it (\u03c1 Seq Int Seq Int Int Int [ .. -- .. Bool ] [ .. -- .. Bool ] Seq Int [ .. Bool ?t52 ?t49 ?t46 ?t43 [ .. -- .. ] [ .. -- .. ] -- .. ?t52 ?t49 ?t46 ?t43 ]).\nexpected: .. Bool\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.quotation-input-mismatch\nword: merge-loop\nat: line 4, column 73\nmessage: The quotation run by `dip` in `merge-loop` does not accept the stack below it (\u03c1 Seq Int Seq Int Int Int [ .. -- .. Bool ] [ .. -- .. Bool ] Seq Int [ .. Bool ?t52 ?t49 ?t46 ?t43 [ .. -- .. ] [ .. -- .. ] -- .. ?t52 ?t49 ?t46 ?t43 ]).\nexpected: .. Bool\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            [
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.quotation-input-mismatch\nword: merge-loop\nat: line 4, column 73\nmessage: The quotation run by `dip` in `merge-loop` does not accept the stack below it (\u03c1 Seq Int Seq Int Int Int [ .. -- .. Bool ] [ .. -- .. Bool ] Seq Int [ .. Bool ?t52 ?t49 ?t46 ?t43 [ .. -- .. ] [ .. -- .. ] -- .. ?t52 ?t49 ?t46 ?t43 ]).\nexpected: .. Bool\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.quotation-input-mismatch\nword: merge-loop\nat: line 4, column 73\nmessage: The quotation run by `dip` in `merge-loop` does not accept the stack below it (\u03c1 Seq Int Seq Int Int Int [ .. -- .. Bool ] [ .. -- .. Bool ] Seq Int [ .. Bool ?t52 ?t49 ?t46 ?t43 [ .. -- .. ] [ .. -- .. ] -- .. ?t52 ?t49 ?t46 ?t43 ]).\nexpected: .. Bool\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.quotation-input-mismatch\nword: merge-loop\nat: line 4, column 73\nmessage: The quotation run by `dip` in `merge-loop` does not accept the stack below it (\u03c1 Seq Int Seq Int Int Int [ .. -- .. Bool ] [ .. -- .. Bool ] Seq Int [ .. Bool ?t52 ?t49 ?t46 ?t43 [ .. -- .. ] [ .. -- .. ] -- .. ?t52 ?t49 ?t46 ?t43 ]).\nexpected: .. Bool\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -3,
+              0,
+              8
+            ],
+            [
+              -4,
+              8,
+              9,
+              9
+            ]
+          ],
+          "expected": [
+            [
+              -4,
+              -3,
+              0,
+              8,
+              8,
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.quotation-input-mismatch\nword: merge-loop\nat: line 4, column 73\nmessage: The quotation run by `dip` in `merge-loop` does not accept the stack below it (\u03c1 Seq Int Seq Int Int Int [ .. -- .. Bool ] [ .. -- .. Bool ] Seq Int [ .. Bool ?t52 ?t49 ?t46 ?t43 [ .. -- .. ] [ .. -- .. ] -- .. ?t52 ?t49 ?t46 ?t43 ]).\nexpected: .. Bool\nactual: \u03c1\nhint: Check what the quotation body consumes against the values available under it.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "digits": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            305
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              5
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: digit-loop\nat: line 6, column 60\nmessage: `digit-loop` in `digit-loop` takes n:Int, digits:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digit-loop` takes, in another order. To push them in its order, write `n 10 prim div digits n 10 prim mod prim seq-int.push` in place of `digits n 10 prim mod prim seq-int.push n 10 prim div` on line 6. With that edit `digit-loop` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            [
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: digit-loop\nat: line 6, column 60\nmessage: `digit-loop` in `digit-loop` takes n:Int, digits:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digit-loop` takes, in another order. To push them in its order, write `n 10 prim div digits n 10 prim mod prim seq-int.push` in place of `digits n 10 prim mod prim seq-int.push n 10 prim div` on line 6. With that edit `digit-loop` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            [
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: digit-loop\nat: line 6, column 60\nmessage: `digit-loop` in `digit-loop` takes n:Int, digits:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digit-loop` takes, in another order. To push them in its order, write `n 10 prim div digits n 10 prim mod prim seq-int.push` in place of `digits n 10 prim mod prim seq-int.push n 10 prim div` on line 6. With that edit `digit-loop` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              1,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: digit-loop\nat: line 6, column 60\nmessage: `digit-loop` in `digit-loop` takes n:Int, digits:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digit-loop` takes, in another order. To push them in its order, write `n 10 prim div digits n 10 prim mod prim seq-int.push` in place of `digits n 10 prim mod prim seq-int.push n 10 prim div` on line 6. With that edit `digit-loop` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            99
+          ],
+          "expected": [
+            [
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: digit-loop\nat: line 6, column 60\nmessage: `digit-loop` in `digit-loop` takes n:Int, digits:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digit-loop` takes, in another order. To push them in its order, write `n 10 prim div digits n 10 prim mod prim seq-int.push` in place of `digits n 10 prim mod prim seq-int.push n 10 prim div` on line 6. With that edit `digit-loop` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            420
+          ],
+          "expected": [
+            [
+              4,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: digit-loop\nat: line 6, column 60\nmessage: `digit-loop` in `digit-loop` takes n:Int, digits:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digit-loop` takes, in another order. To push them in its order, write `n 10 prim div digits n 10 prim mod prim seq-int.push` in place of `digits n 10 prim mod prim seq-int.push n 10 prim div` on line 6. With that edit `digit-loop` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            987
+          ],
+          "expected": [
+            [
+              9,
+              8,
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: digit-loop\nat: line 6, column 60\nmessage: `digit-loop` in `digit-loop` takes n:Int, digits:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digit-loop` takes, in another order. To push them in its order, write `n 10 prim div digits n 10 prim mod prim seq-int.push` in place of `digits n 10 prim mod prim seq-int.push n 10 prim div` on line 6. With that edit `digit-loop` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            1005
+          ],
+          "expected": [
+            [
+              1,
+              0,
+              0,
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: digit-loop\nat: line 6, column 60\nmessage: `digit-loop` in `digit-loop` takes n:Int, digits:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digit-loop` takes, in another order. To push them in its order, write `n 10 prim div digits n 10 prim mod prim seq-int.push` in place of `digits n 10 prim mod prim seq-int.push n 10 prim div` on line 6. With that edit `digit-loop` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            40213
+          ],
+          "expected": [
+            [
+              4,
+              0,
+              2,
+              1,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.word-input-mismatch\nword: digit-loop\nat: line 6, column 60\nmessage: `digit-loop` in `digit-loop` takes n:Int, digits:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int) and the result of `prim div` (Int).\nexpected: .. Int Seq Int\nactual: .. Seq Int Int\nhint: These are the values `digit-loop` takes, in another order. To push them in its order, write `n 10 prim div digits n 10 prim mod prim seq-int.push` in place of `digits n 10 prim mod prim seq-int.push n 10 prim div` on line 6. With that edit `digit-loop` checks.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 8
+    },
+    "primes-up-to": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: check-prime-loop\nat: line 21, column 7\nmessage: `if` in `check-prime-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: collect-loop\nat: line 31, column 61\nmessage: `collect-loop` in `collect-loop` takes n:Int, current:Int, result:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), `n` (Int) and the result of `prim +` (Int).\nexpected: .. Int Int Seq Int\nactual: .. Seq Int ?t54 Int\nhint: These are the values `collect-loop` takes, in another order. To push them in its order, write `n current 1 prim + result current prim seq-int.push` in place of `result current prim seq-int.push n current 1 prim +` on line 31. With that edit, the next error in `collect-loop` is at line 33, column 7.",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: check-prime-loop\nat: line 21, column 7\nmessage: `if` in `check-prime-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: collect-loop\nat: line 31, column 61\nmessage: `collect-loop` in `collect-loop` takes n:Int, current:Int, result:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), `n` (Int) and the result of `prim +` (Int).\nexpected: .. Int Int Seq Int\nactual: .. Seq Int ?t54 Int\nhint: These are the values `collect-loop` takes, in another order. To push them in its order, write `n current 1 prim + result current prim seq-int.push` in place of `result current prim seq-int.push n current 1 prim +` on line 31. With that edit, the next error in `collect-loop` is at line 33, column 7.",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: check-prime-loop\nat: line 21, column 7\nmessage: `if` in `check-prime-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: collect-loop\nat: line 31, column 61\nmessage: `collect-loop` in `collect-loop` takes n:Int, current:Int, result:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), `n` (Int) and the result of `prim +` (Int).\nexpected: .. Int Int Seq Int\nactual: .. Seq Int ?t54 Int\nhint: These are the values `collect-loop` takes, in another order. To push them in its order, write `n current 1 prim + result current prim seq-int.push` in place of `result current prim seq-int.push n current 1 prim +` on line 31. With that edit, the next error in `collect-loop` is at line 33, column 7.",
+          "pass": false
+        },
+        {
+          "input": [
+            2
+          ],
+          "expected": [
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: check-prime-loop\nat: line 21, column 7\nmessage: `if` in `check-prime-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: collect-loop\nat: line 31, column 61\nmessage: `collect-loop` in `collect-loop` takes n:Int, current:Int, result:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), `n` (Int) and the result of `prim +` (Int).\nexpected: .. Int Int Seq Int\nactual: .. Seq Int ?t54 Int\nhint: These are the values `collect-loop` takes, in another order. To push them in its order, write `n current 1 prim + result current prim seq-int.push` in place of `result current prim seq-int.push n current 1 prim +` on line 31. With that edit, the next error in `collect-loop` is at line 33, column 7.",
+          "pass": false
+        },
+        {
+          "input": [
+            13
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: check-prime-loop\nat: line 21, column 7\nmessage: `if` in `check-prime-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: collect-loop\nat: line 31, column 61\nmessage: `collect-loop` in `collect-loop` takes n:Int, current:Int, result:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), `n` (Int) and the result of `prim +` (Int).\nexpected: .. Int Int Seq Int\nactual: .. Seq Int ?t54 Int\nhint: These are the values `collect-loop` takes, in another order. To push them in its order, write `n current 1 prim + result current prim seq-int.push` in place of `result current prim seq-int.push n current 1 prim +` on line 31. With that edit, the next error in `collect-loop` is at line 33, column 7.",
+          "pass": false
+        },
+        {
+          "input": [
+            30
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13,
+              17,
+              19,
+              23,
+              29
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.expected-bool\nword: check-prime-loop\nat: line 21, column 7\nmessage: `if` in `check-prime-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Bool ] [ .. -- .. Bool ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: collect-loop\nat: line 31, column 61\nmessage: `collect-loop` in `collect-loop` takes n:Int, current:Int, result:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.push` (Seq Int), `n` (Int) and the result of `prim +` (Int).\nexpected: .. Int Int Seq Int\nactual: .. Seq Int ?t54 Int\nhint: These are the values `collect-loop` takes, in another order. To push them in its order, write `n current 1 prim + result current prim seq-int.push` in place of `result current prim seq-int.push n current 1 prim +` on line 31. With that edit, the next error in `collect-loop` is at line 33, column 7.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "histogram": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              0,
+              2,
+              2,
+              1,
+              2
+            ],
+            3
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-name\nat: line 8, column 44\nmessage: Unexpected `dup`, expected `primitive name`.\nexpected: primitive name\nactual: dup\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-name\nat: line 8, column 44\nmessage: Unexpected `dup`, expected `primitive name`.\nexpected: primitive name\nactual: dup\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            1
+          ],
+          "expected": [
+            [
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-name\nat: line 8, column 44\nmessage: Unexpected `dup`, expected `primitive name`.\nexpected: primitive name\nactual: dup\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-name\nat: line 8, column 44\nmessage: Unexpected `dup`, expected `primitive name`.\nexpected: primitive name\nactual: dup\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              0,
+              3,
+              1,
+              0,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            [
+              2,
+              1,
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-name\nat: line 8, column 44\nmessage: Unexpected `dup`, expected `primitive name`.\nexpected: primitive name\nactual: dup\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              1
+            ],
+            4
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-name\nat: line 8, column 44\nmessage: Unexpected `dup`, expected `primitive name`.\nexpected: primitive name\nactual: dup\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "sort": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: insert-loop\nat: line 7, column 62\nmessage: `insert-loop` in `insert-loop` takes val:Int, sorted:Seq Int, index:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.set` (Seq Int), `val` (Int) and the result of `prim +` (Int).\nexpected: .. Int Seq Int Int\nactual: .. Seq Int Int Int\nhint: These are the values `insert-loop` takes, in another order. To push them in its order, write `val sorted index val prim seq-int.set index 1 prim +` in place of `sorted index val prim seq-int.set val index 1 prim +` on line 7. With that edit, the next error in `insert-loop` is at line 9, column 7.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: sort-loop\nat: line 18, column 71\nmessage: `sort-loop` in `sort-loop` takes xs:Seq Int, index:Int, sorted:Seq Int, bottom to top, but here it gets, bottom to top, the result of `insert-loop` (Seq Int), `xs` (Seq Int) and the result of `prim +` (Int). `sort-loop` calls `insert-loop`, which has an error of its own; this report assumes `insert-loop` keeps its stack effect.\nexpected: .. Seq Int Int Seq Int\nactual: .. Seq Int Seq Int Int\nhint: These are the values `sort-loop` takes, in another order. To push them in its order, write `xs index 1 prim + xs index prim seq-int.at sorted 0 insert-loop` in place of `xs index prim seq-int.at sorted 0 insert-loop xs index 1 prim +` on line 18. With that edit `sort-loop` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: insert-loop\nat: line 7, column 62\nmessage: `insert-loop` in `insert-loop` takes val:Int, sorted:Seq Int, index:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.set` (Seq Int), `val` (Int) and the result of `prim +` (Int).\nexpected: .. Int Seq Int Int\nactual: .. Seq Int Int Int\nhint: These are the values `insert-loop` takes, in another order. To push them in its order, write `val sorted index val prim seq-int.set index 1 prim +` in place of `sorted index val prim seq-int.set val index 1 prim +` on line 7. With that edit, the next error in `insert-loop` is at line 9, column 7.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: sort-loop\nat: line 18, column 71\nmessage: `sort-loop` in `sort-loop` takes xs:Seq Int, index:Int, sorted:Seq Int, bottom to top, but here it gets, bottom to top, the result of `insert-loop` (Seq Int), `xs` (Seq Int) and the result of `prim +` (Int). `sort-loop` calls `insert-loop`, which has an error of its own; this report assumes `insert-loop` keeps its stack effect.\nexpected: .. Seq Int Int Seq Int\nactual: .. Seq Int Seq Int Int\nhint: These are the values `sort-loop` takes, in another order. To push them in its order, write `xs index 1 prim + xs index prim seq-int.at sorted 0 insert-loop` in place of `xs index prim seq-int.at sorted 0 insert-loop xs index 1 prim +` on line 18. With that edit `sort-loop` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: insert-loop\nat: line 7, column 62\nmessage: `insert-loop` in `insert-loop` takes val:Int, sorted:Seq Int, index:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.set` (Seq Int), `val` (Int) and the result of `prim +` (Int).\nexpected: .. Int Seq Int Int\nactual: .. Seq Int Int Int\nhint: These are the values `insert-loop` takes, in another order. To push them in its order, write `val sorted index val prim seq-int.set index 1 prim +` in place of `sorted index val prim seq-int.set val index 1 prim +` on line 7. With that edit, the next error in `insert-loop` is at line 9, column 7.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: sort-loop\nat: line 18, column 71\nmessage: `sort-loop` in `sort-loop` takes xs:Seq Int, index:Int, sorted:Seq Int, bottom to top, but here it gets, bottom to top, the result of `insert-loop` (Seq Int), `xs` (Seq Int) and the result of `prim +` (Int). `sort-loop` calls `insert-loop`, which has an error of its own; this report assumes `insert-loop` keeps its stack effect.\nexpected: .. Seq Int Int Seq Int\nactual: .. Seq Int Seq Int Int\nhint: These are the values `sort-loop` takes, in another order. To push them in its order, write `xs index 1 prim + xs index prim seq-int.at sorted 0 insert-loop` in place of `xs index prim seq-int.at sorted 0 insert-loop xs index 1 prim +` on line 18. With that edit `sort-loop` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: insert-loop\nat: line 7, column 62\nmessage: `insert-loop` in `insert-loop` takes val:Int, sorted:Seq Int, index:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.set` (Seq Int), `val` (Int) and the result of `prim +` (Int).\nexpected: .. Int Seq Int Int\nactual: .. Seq Int Int Int\nhint: These are the values `insert-loop` takes, in another order. To push them in its order, write `val sorted index val prim seq-int.set index 1 prim +` in place of `sorted index val prim seq-int.set val index 1 prim +` on line 7. With that edit, the next error in `insert-loop` is at line 9, column 7.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: sort-loop\nat: line 18, column 71\nmessage: `sort-loop` in `sort-loop` takes xs:Seq Int, index:Int, sorted:Seq Int, bottom to top, but here it gets, bottom to top, the result of `insert-loop` (Seq Int), `xs` (Seq Int) and the result of `prim +` (Int). `sort-loop` calls `insert-loop`, which has an error of its own; this report assumes `insert-loop` keeps its stack effect.\nexpected: .. Seq Int Int Seq Int\nactual: .. Seq Int Seq Int Int\nhint: These are the values `sort-loop` takes, in another order. To push them in its order, write `xs index 1 prim + xs index prim seq-int.at sorted 0 insert-loop` in place of `xs index prim seq-int.at sorted 0 insert-loop xs index 1 prim +` on line 18. With that edit `sort-loop` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              -1,
+              4,
+              -1,
+              0,
+              7,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              -1,
+              -1,
+              0,
+              3,
+              4,
+              7,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: insert-loop\nat: line 7, column 62\nmessage: `insert-loop` in `insert-loop` takes val:Int, sorted:Seq Int, index:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.set` (Seq Int), `val` (Int) and the result of `prim +` (Int).\nexpected: .. Int Seq Int Int\nactual: .. Seq Int Int Int\nhint: These are the values `insert-loop` takes, in another order. To push them in its order, write `val sorted index val prim seq-int.set index 1 prim +` in place of `sorted index val prim seq-int.set val index 1 prim +` on line 7. With that edit, the next error in `insert-loop` is at line 9, column 7.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: sort-loop\nat: line 18, column 71\nmessage: `sort-loop` in `sort-loop` takes xs:Seq Int, index:Int, sorted:Seq Int, bottom to top, but here it gets, bottom to top, the result of `insert-loop` (Seq Int), `xs` (Seq Int) and the result of `prim +` (Int). `sort-loop` calls `insert-loop`, which has an error of its own; this report assumes `insert-loop` keeps its stack effect.\nexpected: .. Seq Int Int Seq Int\nactual: .. Seq Int Seq Int Int\nhint: These are the values `sort-loop` takes, in another order. To push them in its order, write `xs index 1 prim + xs index prim seq-int.at sorted 0 insert-loop` in place of `xs index prim seq-int.at sorted 0 insert-loop xs index 1 prim +` on line 18. With that edit `sort-loop` checks.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: insert-loop\nat: line 7, column 62\nmessage: `insert-loop` in `insert-loop` takes val:Int, sorted:Seq Int, index:Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.set` (Seq Int), `val` (Int) and the result of `prim +` (Int).\nexpected: .. Int Seq Int Int\nactual: .. Seq Int Int Int\nhint: These are the values `insert-loop` takes, in another order. To push them in its order, write `val sorted index val prim seq-int.set index 1 prim +` in place of `sorted index val prim seq-int.set val index 1 prim +` on line 7. With that edit, the next error in `insert-loop` is at line 9, column 7.\n\nerror 2 of 2\ncode: firth.type.word-input-mismatch\nword: sort-loop\nat: line 18, column 71\nmessage: `sort-loop` in `sort-loop` takes xs:Seq Int, index:Int, sorted:Seq Int, bottom to top, but here it gets, bottom to top, the result of `insert-loop` (Seq Int), `xs` (Seq Int) and the result of `prim +` (Int). `sort-loop` calls `insert-loop`, which has an error of its own; this report assumes `insert-loop` keeps its stack effect.\nexpected: .. Seq Int Int Seq Int\nactual: .. Seq Int Seq Int Int\nhint: These are the values `sort-loop` takes, in another order. To push them in its order, write `xs index 1 prim + xs index prim seq-int.at sorted 0 insert-loop` in place of `xs index prim seq-int.at sorted 0 insert-loop xs index 1 prim +` on line 18. With that edit `sort-loop` checks.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "ledger": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10,
+            [
+              5,
+              -20,
+              -15,
+              4
+            ]
+          ],
+          "expected": [
+            4,
+            1
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: apply-loop\nat: line 9, column 7\nmessage: `if` in `apply-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int Int ] [ .. -- .. Int Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            []
+          ],
+          "expected": [
+            0,
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: apply-loop\nat: line 9, column 7\nmessage: `if` in `apply-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int Int ] [ .. -- .. Int Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            [
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: apply-loop\nat: line 9, column 7\nmessage: `if` in `apply-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int Int ] [ .. -- .. Int Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            5,
+            [
+              -5,
+              -1,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: apply-loop\nat: line 9, column 7\nmessage: `if` in `apply-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int Int ] [ .. -- .. Int Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            100,
+            [
+              -50,
+              -60,
+              20,
+              -70
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: apply-loop\nat: line 9, column 7\nmessage: `if` in `apply-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int Int ] [ .. -- .. Int Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        },
+        {
+          "input": [
+            3,
+            [
+              -1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.expected-bool\nword: apply-loop\nat: line 9, column 7\nmessage: `if` in `apply-loop` needs a Bool condition under its two quotations, but the stack before it is .. [ .. -- .. Bool ] [ .. -- .. Int Int ] [ .. -- .. Int Int ].\nexpected: Bool\nactual: [ .. -- .. Bool ]\nhint: Write `condition [ then-branch ] [ else-branch ] if`, where the condition is Bool, for example from `prim <` or `prim =`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "allocate-batch": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              10,
+              3
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              4,
+              5,
+              7,
+              1
+            ],
+            [
+              false,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              2
+            ],
+            [
+              4,
+              0,
+              6,
+              1
+            ],
+            [
+              0,
+              3,
+              1,
+              0
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: process-order\nat: line 13, column 11\nmessage: The two branches of the `if` in `process-order` whose true branch is `[ allocated-seq 0 prim seq-int.push reasons-seq 3 prim ...` leave different numbers of values. The true branch leaves 3 values, bottom to top: the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`; the false branch leaves 4 values, bottom to top: the result of `prim seq-int.set`, the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim seq-int.set` is left below the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            [],
+            [],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ],
+            [],
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: process-order\nat: line 13, column 11\nmessage: The two branches of the `if` in `process-order` whose true branch is `[ allocated-seq 0 prim seq-int.push reasons-seq 3 prim ...` leave different numbers of values. The true branch leaves 3 values, bottom to top: the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`; the false branch leaves 4 values, bottom to top: the result of `prim seq-int.set`, the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim seq-int.set` is left below the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              3
+            ],
+            [
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: process-order\nat: line 13, column 11\nmessage: The two branches of the `if` in `process-order` whose true branch is `[ allocated-seq 0 prim seq-int.push reasons-seq 3 prim ...` leave different numbers of values. The true branch leaves 3 values, bottom to top: the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`; the false branch leaves 4 values, bottom to top: the result of `prim seq-int.set`, the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim seq-int.set` is left below the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              1,
+              1,
+              1
+            ],
+            [
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              2,
+              2,
+              0
+            ],
+            [
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: process-order\nat: line 13, column 11\nmessage: The two branches of the `if` in `process-order` whose true branch is `[ allocated-seq 0 prim seq-int.push reasons-seq 3 prim ...` leave different numbers of values. The true branch leaves 3 values, bottom to top: the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`; the false branch leaves 4 values, bottom to top: the result of `prim seq-int.set`, the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim seq-int.set` is left below the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              9
+            ],
+            [
+              1,
+              0,
+              1,
+              0
+            ],
+            [
+              9,
+              5,
+              1,
+              0
+            ],
+            [
+              true,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              4,
+              0
+            ],
+            [
+              9,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              3,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: process-order\nat: line 13, column 11\nmessage: The two branches of the `if` in `process-order` whose true branch is `[ allocated-seq 0 prim seq-int.push reasons-seq 3 prim ...` leave different numbers of values. The true branch leaves 3 values, bottom to top: the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`; the false branch leaves 4 values, bottom to top: the result of `prim seq-int.set`, the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim seq-int.set` is left below the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              2,
+              2,
+              1,
+              1
+            ],
+            [
+              false,
+              false,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.type.branch-mismatch\nword: process-order\nat: line 13, column 11\nmessage: The two branches of the `if` in `process-order` whose true branch is `[ allocated-seq 0 prim seq-int.push reasons-seq 3 prim ...` leave different numbers of values. The true branch leaves 3 values, bottom to top: the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`; the false branch leaves 4 values, bottom to top: the result of `prim seq-int.set`, the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`.\nhint: The false branch leaves 1 value more than the true branch: the result of `prim seq-int.set` is left below the output `out-stock` of `process-order`, the output `out-allocated` of `process-order` and the output `out-reasons` of `process-order`. If nothing is meant to use it, the mistake is where it is pushed: pass it to the operation that should take it, or remove it. If the true branch should leave it too, change that branch instead. Both branches run on the same stack and must leave the same values.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    }
+  },
+  "label": "run 13 arm-a firth 5 round 2",
+  "firth_commit": "1640e015deda705511272d24f9cc490fe72e933a",
+  "eval_sha256": {
+    "task.py": "f982b19a56550012ba4614e5355fbee2b5cf3e961ed0f28c5f99fdc536c7308a",
+    "tasks.py": "fff2402680c865b52ca2b661d4636430d1d62c507972d5913a1c79f99c654e17",
+    "mvp_tasks.py": "9905f4a5cdc3b64fa4cc1f4180e80106cdfbcd0b00c8105b91bf12c629c391e1",
+    "harness.py": "b638338d59add6c631df162f35d2bff754d15e3f2012ac7239618c14e1091f84",
+    "isolate.py": "8aba58cd416521b896756432546129cb43f1d53761f7373ccf6c5de43b5aa9dc"
+  },
+  "prompt_docs": [
+    "prompt --tier mvp --rounds 2 at 1640e01",
+    " arm-a"
+  ]
+}

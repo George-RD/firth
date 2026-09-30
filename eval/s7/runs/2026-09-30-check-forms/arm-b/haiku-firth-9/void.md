@@ -1,0 +1,1 @@
+rule: audit, context: 1 flagged call in round 3, grep -n of its own answer file (audit_subagent.py --shell-forms exit 1 on the complete log, 2026-09-30T05:40:01Z); context_seen.py flagged task_status lines at 05:29:43Z (exit 1)

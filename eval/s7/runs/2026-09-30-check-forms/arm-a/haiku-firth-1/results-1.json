@@ -1,0 +1,2550 @@
+{
+  "lang": "firth",
+  "tasks": {
+    "seq-sum": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            15
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: sum-helper\nat: line 9, column 5\nmessage: `acc` is not a defined word, primitive or local.\nactual: acc\nhint: `acc` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { acc xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: sum-rest\nat: line 16, column 29\nmessage: `prim seq-int.len` in `sum-rest` takes Seq Int, bottom to top, but here it gets, bottom to top, `1` (Int).\nexpected: .. Seq Int\nactual: \u03c1 Seq Int Seq Int Seq Int Int\nhint: The top value, `1` (Int), is not what `prim seq-int.len` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: sum-helper\nat: line 9, column 5\nmessage: `acc` is not a defined word, primitive or local.\nactual: acc\nhint: `acc` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { acc xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: sum-rest\nat: line 16, column 29\nmessage: `prim seq-int.len` in `sum-rest` takes Seq Int, bottom to top, but here it gets, bottom to top, `1` (Int).\nexpected: .. Seq Int\nactual: \u03c1 Seq Int Seq Int Seq Int Int\nhint: The top value, `1` (Int), is not what `prim seq-int.len` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            7
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: sum-helper\nat: line 9, column 5\nmessage: `acc` is not a defined word, primitive or local.\nactual: acc\nhint: `acc` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { acc xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: sum-rest\nat: line 16, column 29\nmessage: `prim seq-int.len` in `sum-rest` takes Seq Int, bottom to top, but here it gets, bottom to top, `1` (Int).\nexpected: .. Seq Int\nactual: \u03c1 Seq Int Seq Int Seq Int Int\nhint: The top value, `1` (Int), is not what `prim seq-int.len` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -3,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: sum-helper\nat: line 9, column 5\nmessage: `acc` is not a defined word, primitive or local.\nactual: acc\nhint: `acc` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { acc xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: sum-rest\nat: line 16, column 29\nmessage: `prim seq-int.len` in `sum-rest` takes Seq Int, bottom to top, but here it gets, bottom to top, `1` (Int).\nexpected: .. Seq Int\nactual: \u03c1 Seq Int Seq Int Seq Int Int\nhint: The top value, `1` (Int), is not what `prim seq-int.len` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10
+            ]
+          ],
+          "expected": [
+            55
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: sum-helper\nat: line 9, column 5\nmessage: `acc` is not a defined word, primitive or local.\nactual: acc\nhint: `acc` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { acc xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: sum-rest\nat: line 16, column 29\nmessage: `prim seq-int.len` in `sum-rest` takes Seq Int, bottom to top, but here it gets, bottom to top, `1` (Int).\nexpected: .. Seq Int\nactual: \u03c1 Seq Int Seq Int Seq Int Int\nhint: The top value, `1` (Int), is not what `prim seq-int.len` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -5,
+              -6
+            ]
+          ],
+          "expected": [
+            -11
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: sum-helper\nat: line 9, column 5\nmessage: `acc` is not a defined word, primitive or local.\nactual: acc\nhint: `acc` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { acc xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.type.primitive-input-mismatch\nword: sum-rest\nat: line 16, column 29\nmessage: `prim seq-int.len` in `sum-rest` takes Seq Int, bottom to top, but here it gets, bottom to top, `1` (Int).\nexpected: .. Seq Int\nactual: \u03c1 Seq Int Seq Int Seq Int Int\nhint: The top value, `1` (Int), is not what `prim seq-int.len` takes there (Seq Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "seq-max": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              9,
+              2
+            ]
+          ],
+          "expected": [
+            9
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 4, column 31\nmessage: `xs-max-helper` in `main` takes max:Int, idx:Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int), `xs` (Seq Int) and `1` (Int). `main` calls `xs-max-helper`, which has an error of its own; this report assumes `xs-max-helper` keeps its stack effect.\nexpected: .. Int Int Seq Int\nactual: \u03c1 Int Seq Int Int\nhint: These are the values `xs-max-helper` takes, in another order. By their names and types, `xs` is for `xs`. Of the values of one type, `xs 0 prim seq-int.at` and `1` are for `max` and `idx`, in the order you mean: only you can tell which is which. Push them in the order of its inputs.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: xs-max-helper\nat: line 10, column 5\nmessage: `max` is not a defined word, primitive or local.\nactual: max\nhint: `max` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { max idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 4, column 31\nmessage: `xs-max-helper` in `main` takes max:Int, idx:Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int), `xs` (Seq Int) and `1` (Int). `main` calls `xs-max-helper`, which has an error of its own; this report assumes `xs-max-helper` keeps its stack effect.\nexpected: .. Int Int Seq Int\nactual: \u03c1 Int Seq Int Int\nhint: These are the values `xs-max-helper` takes, in another order. By their names and types, `xs` is for `xs`. Of the values of one type, `xs 0 prim seq-int.at` and `1` are for `max` and `idx`, in the order you mean: only you can tell which is which. Push them in the order of its inputs.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: xs-max-helper\nat: line 10, column 5\nmessage: `max` is not a defined word, primitive or local.\nactual: max\nhint: `max` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { max idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -4,
+              -2,
+              -9
+            ]
+          ],
+          "expected": [
+            -2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 4, column 31\nmessage: `xs-max-helper` in `main` takes max:Int, idx:Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int), `xs` (Seq Int) and `1` (Int). `main` calls `xs-max-helper`, which has an error of its own; this report assumes `xs-max-helper` keeps its stack effect.\nexpected: .. Int Int Seq Int\nactual: \u03c1 Int Seq Int Int\nhint: These are the values `xs-max-helper` takes, in another order. By their names and types, `xs` is for `xs`. Of the values of one type, `xs 0 prim seq-int.at` and `1` are for `max` and `idx`, in the order you mean: only you can tell which is which. Push them in the order of its inputs.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: xs-max-helper\nat: line 10, column 5\nmessage: `max` is not a defined word, primitive or local.\nactual: max\nhint: `max` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { max idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 4, column 31\nmessage: `xs-max-helper` in `main` takes max:Int, idx:Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int), `xs` (Seq Int) and `1` (Int). `main` calls `xs-max-helper`, which has an error of its own; this report assumes `xs-max-helper` keeps its stack effect.\nexpected: .. Int Int Seq Int\nactual: \u03c1 Int Seq Int Int\nhint: These are the values `xs-max-helper` takes, in another order. By their names and types, `xs` is for `xs`. Of the values of one type, `xs 0 prim seq-int.at` and `1` are for `max` and `idx`, in the order you mean: only you can tell which is which. Push them in the order of its inputs.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: xs-max-helper\nat: line 10, column 5\nmessage: `max` is not a defined word, primitive or local.\nactual: max\nhint: `max` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { max idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              8,
+              8,
+              3
+            ]
+          ],
+          "expected": [
+            8
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 4, column 31\nmessage: `xs-max-helper` in `main` takes max:Int, idx:Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int), `xs` (Seq Int) and `1` (Int). `main` calls `xs-max-helper`, which has an error of its own; this report assumes `xs-max-helper` keeps its stack effect.\nexpected: .. Int Int Seq Int\nactual: \u03c1 Int Seq Int Int\nhint: These are the values `xs-max-helper` takes, in another order. By their names and types, `xs` is for `xs`. Of the values of one type, `xs 0 prim seq-int.at` and `1` are for `max` and `idx`, in the order you mean: only you can tell which is which. Push them in the order of its inputs.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: xs-max-helper\nat: line 10, column 5\nmessage: `max` is not a defined word, primitive or local.\nactual: max\nhint: `max` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { max idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            10
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 4, column 31\nmessage: `xs-max-helper` in `main` takes max:Int, idx:Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.at` (Int), `xs` (Seq Int) and `1` (Int). `main` calls `xs-max-helper`, which has an error of its own; this report assumes `xs-max-helper` keeps its stack effect.\nexpected: .. Int Int Seq Int\nactual: \u03c1 Int Seq Int Int\nhint: These are the values `xs-max-helper` takes, in another order. By their names and types, `xs` is for `xs`. Of the values of one type, `xs 0 prim seq-int.at` and `1` are for `max` and `idx`, in the order you mean: only you can tell which is which. Push them in the order of its inputs.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: xs-max-helper\nat: line 10, column 5\nmessage: `max` is not a defined word, primitive or local.\nactual: max\nhint: `max` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { max idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "count-below": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              5,
+              2,
+              8
+            ],
+            4
+          ],
+          "expected": [
+            2
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: count-helper\nat: line 9, column 5\nmessage: `count` is not a defined word, primitive or local.\nactual: count\nhint: `count` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { count idx xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            3
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: count-helper\nat: line 9, column 5\nmessage: `count` is not a defined word, primitive or local.\nactual: count\nhint: `count` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { count idx xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            4
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: count-helper\nat: line 9, column 5\nmessage: `count` is not a defined word, primitive or local.\nactual: count\nhint: `count` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { count idx xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              0,
+              1
+            ],
+            0
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: count-helper\nat: line 9, column 5\nmessage: `count` is not a defined word, primitive or local.\nactual: count\nhint: `count` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { count idx xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              1,
+              9,
+              1,
+              9
+            ],
+            10
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: count-helper\nat: line 9, column 5\nmessage: `count` is not a defined word, primitive or local.\nactual: count\nhint: `count` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { count idx xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              3
+            ],
+            -5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: count-helper\nat: line 9, column 5\nmessage: `count` is not a defined word, primitive or local.\nactual: count\nhint: `count` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { count idx xs k } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "index-of": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              7,
+              3,
+              9,
+              3
+            ],
+            3
+          ],
+          "expected": [
+            1
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: index-helper\nat: line 10, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx xs x } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            1
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: index-helper\nat: line 10, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx xs x } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            5
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: index-helper\nat: line 10, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx xs x } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            -1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: index-helper\nat: line 10, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx xs x } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            2
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: index-helper\nat: line 10, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx xs x } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              -1,
+              -2,
+              -3
+            ],
+            -3
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: index-helper\nat: line 10, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { idx xs x } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "reverse": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              2,
+              1
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 4, column 47\nmessage: `reverse-helper` in `main` takes result:Seq Int, idx:Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.empty` (Seq Int), `xs` (Seq Int) and the result of `prim seq-int.len` (Int). `main` calls `reverse-helper`, which has an error of its own; this report assumes `reverse-helper` keeps its stack effect.\nexpected: .. Seq Int Int Seq Int\nactual: \u03c1 Seq Int Seq Int Int\nhint: These are the values `reverse-helper` takes, in another order. To push them in its order, write `prim seq-int.empty xs prim seq-int.len xs` in place of `prim seq-int.empty xs xs prim seq-int.len` on line 4. With that edit `main` checks.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: reverse-helper\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 4, column 47\nmessage: `reverse-helper` in `main` takes result:Seq Int, idx:Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.empty` (Seq Int), `xs` (Seq Int) and the result of `prim seq-int.len` (Int). `main` calls `reverse-helper`, which has an error of its own; this report assumes `reverse-helper` keeps its stack effect.\nexpected: .. Seq Int Int Seq Int\nactual: \u03c1 Seq Int Seq Int Int\nhint: These are the values `reverse-helper` takes, in another order. To push them in its order, write `prim seq-int.empty xs prim seq-int.len xs` in place of `prim seq-int.empty xs xs prim seq-int.len` on line 4. With that edit `main` checks.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: reverse-helper\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 4, column 47\nmessage: `reverse-helper` in `main` takes result:Seq Int, idx:Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.empty` (Seq Int), `xs` (Seq Int) and the result of `prim seq-int.len` (Int). `main` calls `reverse-helper`, which has an error of its own; this report assumes `reverse-helper` keeps its stack effect.\nexpected: .. Seq Int Int Seq Int\nactual: \u03c1 Seq Int Seq Int Int\nhint: These are the values `reverse-helper` takes, in another order. To push them in its order, write `prim seq-int.empty xs prim seq-int.len xs` in place of `prim seq-int.empty xs xs prim seq-int.len` on line 4. With that edit `main` checks.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: reverse-helper\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              -4,
+              4,
+              -4,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              -4,
+              4,
+              -4,
+              4
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 4, column 47\nmessage: `reverse-helper` in `main` takes result:Seq Int, idx:Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.empty` (Seq Int), `xs` (Seq Int) and the result of `prim seq-int.len` (Int). `main` calls `reverse-helper`, which has an error of its own; this report assumes `reverse-helper` keeps its stack effect.\nexpected: .. Seq Int Int Seq Int\nactual: \u03c1 Seq Int Seq Int Int\nhint: These are the values `reverse-helper` takes, in another order. To push them in its order, write `prim seq-int.empty xs prim seq-int.len xs` in place of `prim seq-int.empty xs xs prim seq-int.len` on line 4. With that edit `main` checks.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: reverse-helper\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              8,
+              7,
+              6,
+              5,
+              4,
+              3,
+              2,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.type.word-input-mismatch\nword: main\nat: line 4, column 47\nmessage: `reverse-helper` in `main` takes result:Seq Int, idx:Int, xs:Seq Int, bottom to top, but here it gets, bottom to top, the result of `prim seq-int.empty` (Seq Int), `xs` (Seq Int) and the result of `prim seq-int.len` (Int). `main` calls `reverse-helper`, which has an error of its own; this report assumes `reverse-helper` keeps its stack effect.\nexpected: .. Seq Int Int Seq Int\nactual: \u03c1 Seq Int Seq Int Int\nhint: These are the values `reverse-helper` takes, in another order. To push them in its order, write `prim seq-int.empty xs prim seq-int.len xs` in place of `prim seq-int.empty xs xs prim seq-int.len` on line 4. With that edit `main` checks.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: reverse-helper\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "prefix-sums": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              3,
+              6
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: prefix-helper\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result sum idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: prefix-helper\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result sum idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: prefix-helper\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result sum idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              -3,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              3,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: prefix-helper\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result sum idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              10,
+              20,
+              30,
+              40,
+              50,
+              60
+            ]
+          ],
+          "expected": [
+            [
+              10,
+              30,
+              60,
+              100,
+              150,
+              210
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: prefix-helper\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result sum idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "keep-positive": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              -1,
+              0,
+              4
+            ]
+          ],
+          "expected": [
+            [
+              3,
+              4
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: filter-positive\nat: line 9, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: filter-positive\nat: line 9, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              -2
+            ]
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: filter-positive\nat: line 9, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: filter-positive\nat: line 9, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0,
+              0,
+              5,
+              0
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: filter-positive\nat: line 9, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -7,
+              7,
+              -7,
+              7,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              7,
+              7,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: filter-positive\nat: line 9, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "is-sorted": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              5
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: is-sorted-helper\nat: line 10, column 5\nmessage: `ok` is not a defined word, primitive or local.\nactual: ok\nhint: `ok` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { ok idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: is-sorted-helper\nat: line 10, column 5\nmessage: `ok` is not a defined word, primitive or local.\nactual: ok\nhint: `ok` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { ok idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: is-sorted-helper\nat: line 10, column 5\nmessage: `ok` is not a defined word, primitive or local.\nactual: ok\nhint: `ok` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { ok idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: is-sorted-helper\nat: line 10, column 5\nmessage: `ok` is not a defined word, primitive or local.\nactual: ok\nhint: `ok` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { ok idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: is-sorted-helper\nat: line 10, column 5\nmessage: `ok` is not a defined word, primitive or local.\nactual: ok\nhint: `ok` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { ok idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -5,
+              -5,
+              0,
+              7
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: is-sorted-helper\nat: line 10, column 5\nmessage: `ok` is not a defined word, primitive or local.\nactual: ok\nhint: `ok` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { ok idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              3,
+              2
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: is-sorted-helper\nat: line 10, column 5\nmessage: `ok` is not a defined word, primitive or local.\nactual: ok\nhint: `ok` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { ok idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "dot": {
+      "needs": [
+        "loop",
+        "mul",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            [
+              4,
+              5,
+              6
+            ]
+          ],
+          "expected": [
+            32
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: dot-helper\nat: line 9, column 5\nmessage: `sum` is not a defined word, primitive or local.\nactual: sum\nhint: `sum` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { sum idx xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: dot-helper\nat: line 9, column 5\nmessage: `sum` is not a defined word, primitive or local.\nactual: sum\nhint: `sum` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { sum idx xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2
+            ],
+            [
+              -3
+            ]
+          ],
+          "expected": [
+            -6
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: dot-helper\nat: line 9, column 5\nmessage: `sum` is not a defined word, primitive or local.\nactual: sum\nhint: `sum` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { sum idx xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              -1
+            ],
+            [
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: dot-helper\nat: line 9, column 5\nmessage: `sum` is not a defined word, primitive or local.\nactual: sum\nhint: `sum` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { sum idx xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              3,
+              3,
+              3
+            ],
+            [
+              1,
+              2,
+              3,
+              4
+            ]
+          ],
+          "expected": [
+            30
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: dot-helper\nat: line 9, column 5\nmessage: `sum` is not a defined word, primitive or local.\nactual: sum\nhint: `sum` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { sum idx xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 4
+    },
+    "all-true": {
+      "needs": [
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              true,
+              true,
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: all-true-helper\nat: line 10, column 5\nmessage: `ok` is not a defined word, primitive or local.\nactual: ok\nhint: `ok` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { ok idx flags } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: all-true-helper\nat: line 10, column 5\nmessage: `ok` is not a defined word, primitive or local.\nactual: ok\nhint: `ok` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { ok idx flags } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: all-true-helper\nat: line 10, column 5\nmessage: `ok` is not a defined word, primitive or local.\nactual: ok\nhint: `ok` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { ok idx flags } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              false
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: all-true-helper\nat: line 10, column 5\nmessage: `ok` is not a defined word, primitive or local.\nactual: ok\nhint: `ok` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { ok idx flags } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: all-true-helper\nat: line 10, column 5\nmessage: `ok` is not a defined word, primitive or local.\nactual: ok\nhint: `ok` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { ok idx flags } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              true,
+              false,
+              true
+            ]
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: all-true-helper\nat: line 10, column 5\nmessage: `ok` is not a defined word, primitive or local.\nactual: ok\nhint: `ok` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { ok idx flags } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "longest-run": {
+      "needs": [
+        "cmp",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              1,
+              2,
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: longest-run-helper\nat: line 10, column 5\nmessage: `maxlen` is not a defined word, primitive or local.\nactual: maxlen\nhint: `maxlen` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { maxlen runlen idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: longest-run-helper\nat: line 10, column 5\nmessage: `maxlen` is not a defined word, primitive or local.\nactual: maxlen\nhint: `maxlen` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { maxlen runlen idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: longest-run-helper\nat: line 10, column 5\nmessage: `maxlen` is not a defined word, primitive or local.\nactual: maxlen\nhint: `maxlen` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { maxlen runlen idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: longest-run-helper\nat: line 10, column 5\nmessage: `maxlen` is not a defined word, primitive or local.\nactual: maxlen\nhint: `maxlen` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { maxlen runlen idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              5,
+              5,
+              5
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: longest-run-helper\nat: line 10, column 5\nmessage: `maxlen` is not a defined word, primitive or local.\nactual: maxlen\nhint: `maxlen` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { maxlen runlen idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              2,
+              1,
+              1,
+              1,
+              1,
+              3
+            ]
+          ],
+          "expected": [
+            4
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: longest-run-helper\nat: line 10, column 5\nmessage: `maxlen` is not a defined word, primitive or local.\nactual: maxlen\nhint: `maxlen` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { maxlen runlen idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "has-pair-sum": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              6,
+              2
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: has-pair-helper\nat: line 11, column 5\nmessage: `i` is not a defined word, primitive or local.\nactual: i\nhint: `i` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: has-inner-loop\nat: line 22, column 5\nmessage: `found` is not a defined word, primitive or local.\nactual: found\nhint: `found` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { j xs target found i } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            0
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: has-pair-helper\nat: line 11, column 5\nmessage: `i` is not a defined word, primitive or local.\nactual: i\nhint: `i` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: has-inner-loop\nat: line 22, column 5\nmessage: `found` is not a defined word, primitive or local.\nactual: found\nhint: `found` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { j xs target found i } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4
+            ],
+            8
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: has-pair-helper\nat: line 11, column 5\nmessage: `i` is not a defined word, primitive or local.\nactual: i\nhint: `i` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: has-inner-loop\nat: line 22, column 5\nmessage: `found` is not a defined word, primitive or local.\nactual: found\nhint: `found` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { j xs target found i } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              4
+            ],
+            8
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: has-pair-helper\nat: line 11, column 5\nmessage: `i` is not a defined word, primitive or local.\nactual: i\nhint: `i` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: has-inner-loop\nat: line 22, column 5\nmessage: `found` is not a defined word, primitive or local.\nactual: found\nhint: `found` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { j xs target found i } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3
+            ],
+            7
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: has-pair-helper\nat: line 11, column 5\nmessage: `i` is not a defined word, primitive or local.\nactual: i\nhint: `i` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: has-inner-loop\nat: line 22, column 5\nmessage: `found` is not a defined word, primitive or local.\nactual: found\nhint: `found` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { j xs target found i } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5,
+              -2,
+              9,
+              0
+            ],
+            -2
+          ],
+          "expected": [
+            true
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: has-pair-helper\nat: line 11, column 5\nmessage: `i` is not a defined word, primitive or local.\nactual: i\nhint: `i` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: has-inner-loop\nat: line 22, column 5\nmessage: `found` is not a defined word, primitive or local.\nactual: found\nhint: `found` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { j xs target found i } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              1,
+              3
+            ],
+            2
+          ],
+          "expected": [
+            false
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: has-pair-helper\nat: line 11, column 5\nmessage: `i` is not a defined word, primitive or local.\nactual: i\nhint: `i` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { found i xs target } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: has-inner-loop\nat: line 22, column 5\nmessage: `found` is not a defined word, primitive or local.\nactual: found\nhint: `found` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { j xs target found i } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 6
+    },
+    "count-distinct": {
+      "needs": [
+        "cmp",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: count-distinct-helper\nat: line 9, column 5\nmessage: `count` is not a defined word, primitive or local.\nactual: count\nhint: `count` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { count idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: is-first-occurrence\nat: line 22, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { val start idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: count-distinct-helper\nat: line 9, column 5\nmessage: `count` is not a defined word, primitive or local.\nactual: count\nhint: `count` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { count idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: is-first-occurrence\nat: line 22, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { val start idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              7
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: count-distinct-helper\nat: line 9, column 5\nmessage: `count` is not a defined word, primitive or local.\nactual: count\nhint: `count` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { count idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: is-first-occurrence\nat: line 22, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { val start idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ]
+          ],
+          "expected": [
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: count-distinct-helper\nat: line 9, column 5\nmessage: `count` is not a defined word, primitive or local.\nactual: count\nhint: `count` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { count idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: is-first-occurrence\nat: line 22, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { val start idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          ],
+          "expected": [
+            5
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: count-distinct-helper\nat: line 9, column 5\nmessage: `count` is not a defined word, primitive or local.\nactual: count\nhint: `count` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { count idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: is-first-occurrence\nat: line 22, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { val start idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -1,
+              1,
+              -1,
+              1,
+              0
+            ]
+          ],
+          "expected": [
+            3
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: count-distinct-helper\nat: line 9, column 5\nmessage: `count` is not a defined word, primitive or local.\nactual: count\nhint: `count` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { count idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: is-first-occurrence\nat: line 22, column 5\nmessage: `xs` is not a defined word, primitive or local.\nactual: xs\nhint: `xs` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { val start idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "merge-sorted": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              1,
+              4,
+              9
+            ],
+            [
+              2,
+              3,
+              10
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              9,
+              10
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: merge-helper\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i j xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: append-rest\nat: line 25, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx seq } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: merge-helper\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i j xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: append-rest\nat: line 25, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx seq } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            [
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: merge-helper\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i j xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: append-rest\nat: line 25, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx seq } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: merge-helper\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i j xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: append-rest\nat: line 25, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx seq } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: merge-helper\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i j xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: append-rest\nat: line 25, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx seq } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              -3,
+              0,
+              8
+            ],
+            [
+              -4,
+              8,
+              9,
+              9
+            ]
+          ],
+          "expected": [
+            [
+              -4,
+              -3,
+              0,
+              8,
+              8,
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: merge-helper\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i j xs ys } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: append-rest\nat: line 25, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx seq } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "digits": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            305
+          ],
+          "expected": [
+            [
+              3,
+              0,
+              5
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: main\nat: line 6, column 24\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: extract-digits\nat: line 13, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            [
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: main\nat: line 6, column 24\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: extract-digits\nat: line 13, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            7
+          ],
+          "expected": [
+            [
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: main\nat: line 6, column 24\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: extract-digits\nat: line 13, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              1,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: main\nat: line 6, column 24\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: extract-digits\nat: line 13, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            99
+          ],
+          "expected": [
+            [
+              9,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: main\nat: line 6, column 24\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: extract-digits\nat: line 13, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            420
+          ],
+          "expected": [
+            [
+              4,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: main\nat: line 6, column 24\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: extract-digits\nat: line 13, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            987
+          ],
+          "expected": [
+            [
+              9,
+              8,
+              7
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: main\nat: line 6, column 24\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: extract-digits\nat: line 13, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            1005
+          ],
+          "expected": [
+            [
+              1,
+              0,
+              0,
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: main\nat: line 6, column 24\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: extract-digits\nat: line 13, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            40213
+          ],
+          "expected": [
+            [
+              4,
+              0,
+              2,
+              1,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: main\nat: line 6, column 24\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: extract-digits\nat: line 13, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 8
+    },
+    "primes-up-to": {
+      "needs": [
+        "cmp",
+        "divmod",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.name.unresolved\nword: check-primes\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: is-prime-num\nat: line 23, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: is-prime-loop\nat: line 37, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { i n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            0
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.name.unresolved\nword: check-primes\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: is-prime-num\nat: line 23, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: is-prime-loop\nat: line 37, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { i n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            1
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.name.unresolved\nword: check-primes\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: is-prime-num\nat: line 23, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: is-prime-loop\nat: line 37, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { i n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            2
+          ],
+          "expected": [
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.name.unresolved\nword: check-primes\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: is-prime-num\nat: line 23, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: is-prime-loop\nat: line 37, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { i n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            13
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.name.unresolved\nword: check-primes\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: is-prime-num\nat: line 23, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: is-prime-loop\nat: line 37, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { i n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            30
+          ],
+          "expected": [
+            [
+              2,
+              3,
+              5,
+              7,
+              11,
+              13,
+              17,
+              19,
+              23,
+              29
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 3 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 3\ncode: firth.name.unresolved\nword: check-primes\nat: line 10, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result i n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 3\ncode: firth.name.unresolved\nword: is-prime-num\nat: line 23, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 3 of 3\ncode: firth.name.unresolved\nword: is-prime-loop\nat: line 37, column 5\nmessage: `n` is not a defined word, primitive or local.\nactual: n\nhint: `n` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { i n } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "histogram": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              0,
+              2,
+              2,
+              1,
+              2
+            ],
+            3
+          ],
+          "expected": [
+            [
+              1,
+              1,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 10, column 5\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 10, column 5\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            1
+          ],
+          "expected": [
+            [
+              1
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 10, column 5\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1,
+              1
+            ],
+            2
+          ],
+          "expected": [
+            [
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 10, column 5\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              3,
+              0,
+              3,
+              1,
+              0,
+              3
+            ],
+            4
+          ],
+          "expected": [
+            [
+              2,
+              1,
+              0,
+              3
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 10, column 5\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              0,
+              1
+            ],
+            4
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              0,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.syntax.invalid-sequence-element\nat: line 10, column 5\nmessage: Unexpected `i`, expected `an integer or boolean literal`.\nexpected: an integer or boolean literal\nactual: i\nhint: A definition looks like `: name (forall \u03c1; \u03c1 n:Int^many -- \u03c1 r:Int^many) body;`.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "sort": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "nested-loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              3,
+              1,
+              2
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: insert-all\nat: line 13, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: insert-at-pos\nat: line 25, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { pos val result } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            []
+          ],
+          "expected": [
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: insert-all\nat: line 13, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: insert-at-pos\nat: line 25, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { pos val result } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ]
+          ],
+          "expected": [
+            [
+              5
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: insert-all\nat: line 13, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: insert-at-pos\nat: line 25, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { pos val result } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: insert-all\nat: line 13, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: insert-at-pos\nat: line 25, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { pos val result } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              9,
+              -1,
+              4,
+              -1,
+              0,
+              7,
+              3
+            ]
+          ],
+          "expected": [
+            [
+              -1,
+              -1,
+              0,
+              3,
+              4,
+              7,
+              9
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: insert-all\nat: line 13, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: insert-at-pos\nat: line 25, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { pos val result } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              6,
+              5,
+              4,
+              3,
+              2,
+              1
+            ]
+          ],
+          "expected": [
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "The checker found 2 errors, one for each word it did not accept. Fix them all before you run it again.\n\nerror 1 of 2\ncode: firth.name.unresolved\nword: insert-all\nat: line 13, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { result idx xs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.\n\nerror 2 of 2\ncode: firth.name.unresolved\nword: insert-at-pos\nat: line 25, column 5\nmessage: `result` is not a defined word, primitive or local.\nactual: result\nhint: `result` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { pos val result } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "ledger": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            10,
+            [
+              5,
+              -20,
+              -15,
+              4
+            ]
+          ],
+          "expected": [
+            4,
+            1
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: apply-transactions\nat: line 9, column 5\nmessage: `balance` is not a defined word, primitive or local.\nactual: balance\nhint: `balance` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { balance rejected idx txs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            []
+          ],
+          "expected": [
+            0,
+            0
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: apply-transactions\nat: line 9, column 5\nmessage: `balance` is not a defined word, primitive or local.\nactual: balance\nhint: `balance` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { balance rejected idx txs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            0,
+            [
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: apply-transactions\nat: line 9, column 5\nmessage: `balance` is not a defined word, primitive or local.\nactual: balance\nhint: `balance` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { balance rejected idx txs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            5,
+            [
+              -5,
+              -1,
+              3,
+              -3
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: apply-transactions\nat: line 9, column 5\nmessage: `balance` is not a defined word, primitive or local.\nactual: balance\nhint: `balance` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { balance rejected idx txs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            100,
+            [
+              -50,
+              -60,
+              20,
+              -70
+            ]
+          ],
+          "expected": [
+            0,
+            1
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: apply-transactions\nat: line 9, column 5\nmessage: `balance` is not a defined word, primitive or local.\nactual: balance\nhint: `balance` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { balance rejected idx txs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            3,
+            [
+              -1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          ],
+          "expected": [
+            0,
+            2
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: apply-transactions\nat: line 9, column 5\nmessage: `balance` is not a defined word, primitive or local.\nactual: balance\nhint: `balance` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { balance rejected idx txs } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    },
+    "allocate-batch": {
+      "needs": [
+        "cmp",
+        "heavy",
+        "loop",
+        "seq"
+      ],
+      "submitted": true,
+      "cases": [
+        {
+          "input": [
+            [
+              10,
+              3
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              4,
+              5,
+              7,
+              1
+            ],
+            [
+              false,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              2
+            ],
+            [
+              4,
+              0,
+              6,
+              1
+            ],
+            [
+              0,
+              3,
+              1,
+              0
+            ]
+          ],
+          "visible": true,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: allocate-orders\nat: line 10, column 5\nmessage: `stock` is not a defined word, primitive or local.\nactual: stock\nhint: `stock` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { stock allocated reasons order items qtys whole } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              5
+            ],
+            [],
+            [],
+            []
+          ],
+          "expected": [
+            [
+              5
+            ],
+            [],
+            []
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: allocate-orders\nat: line 10, column 5\nmessage: `stock` is not a defined word, primitive or local.\nactual: stock\nhint: `stock` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { stock allocated reasons order items qtys whole } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              3
+            ],
+            [
+              false
+            ]
+          ],
+          "expected": [
+            [
+              0
+            ],
+            [
+              0
+            ],
+            [
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: allocate-orders\nat: line 10, column 5\nmessage: `stock` is not a defined word, primitive or local.\nactual: stock\nhint: `stock` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { stock allocated reasons order items qtys whole } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              2,
+              2,
+              2
+            ],
+            [
+              1,
+              1,
+              1
+            ],
+            [
+              true,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              2,
+              2,
+              0
+            ],
+            [
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: allocate-orders\nat: line 10, column 5\nmessage: `stock` is not a defined word, primitive or local.\nactual: stock\nhint: `stock` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { stock allocated reasons order items qtys whole } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              4,
+              9
+            ],
+            [
+              1,
+              0,
+              1,
+              0
+            ],
+            [
+              9,
+              5,
+              1,
+              0
+            ],
+            [
+              true,
+              true,
+              false,
+              false
+            ]
+          ],
+          "expected": [
+            [
+              4,
+              0
+            ],
+            [
+              9,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              3,
+              2,
+              0
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: allocate-orders\nat: line 10, column 5\nmessage: `stock` is not a defined word, primitive or local.\nactual: stock\nhint: `stock` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { stock allocated reasons order items qtys whole } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        },
+        {
+          "input": [
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              2,
+              2,
+              1,
+              1
+            ],
+            [
+              false,
+              false,
+              true,
+              true
+            ]
+          ],
+          "expected": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              0,
+              0
+            ],
+            [
+              1,
+              1,
+              2,
+              2
+            ]
+          ],
+          "visible": false,
+          "ok": false,
+          "error": "code: firth.name.unresolved\nword: allocate-orders\nat: line 10, column 5\nmessage: `stock` is not a defined word, primitive or local.\nactual: stock\nhint: `stock` is a name in the word's stack effect. Stack-effect names only document the stack; they are not variables in the body. To use the inputs by name, bind them first: `locals { stock allocated reasons order items qtys whole } { ... }` takes one value from the stack for each name, the last name from the top, and they are in scope inside the second braces.",
+          "pass": false
+        }
+      ],
+      "pass": false,
+      "hidden_passed": 0,
+      "hidden_total": 5
+    }
+  },
+  "label": "run 13 arm-a firth 1 round 1",
+  "firth_commit": "1640e015deda705511272d24f9cc490fe72e933a",
+  "eval_sha256": {
+    "task.py": "f982b19a56550012ba4614e5355fbee2b5cf3e961ed0f28c5f99fdc536c7308a",
+    "tasks.py": "fff2402680c865b52ca2b661d4636430d1d62c507972d5913a1c79f99c654e17",
+    "mvp_tasks.py": "9905f4a5cdc3b64fa4cc1f4180e80106cdfbcd0b00c8105b91bf12c629c391e1",
+    "harness.py": "b638338d59add6c631df162f35d2bff754d15e3f2012ac7239618c14e1091f84",
+    "isolate.py": "8aba58cd416521b896756432546129cb43f1d53761f7373ccf6c5de43b5aa9dc"
+  },
+  "prompt_docs": [
+    "prompt --tier mvp --rounds 2 at 1640e01",
+    " arm-a"
+  ]
+}
