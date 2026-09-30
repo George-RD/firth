@@ -286,7 +286,7 @@ and `PIN` the pinned commit, both given in the session's brief.
    |---|---|---|---|
    | `audit_subagent.py` (both arms `--hook-log`; arm B also `--check-cmd <pinned harness> --run14-forms`) | clean | rule void, cause `audit` | STOP |
    | `seen_agents.py <log> <worktree> <pinned AGENTS.md and CLAUDE.md blobs>` | clean | rule void, cause `agent-files` | STOP |
-   | `context_seen.py <log> --arm-set run14 --arm <arm> --sample <dir> --label <arm><N>` | clean | rule void, cause `context`; a `cross_sample` item also writes the shared STOP file | STOP |
+   | `context_seen.py <log> --arm-set run14 --arm <arm> --sample <dir> --label <SESSION>-<arm><N>` (for example `s2-B7`, as in the author's description) | clean | rule void, cause `context`; a `cross_sample` item also writes the shared STOP file | STOP |
    | `harness.py score` | scored | toolchain void | toolchain void |
 
    A rule void writes the sample's `void.md` in the form `analyse.py`
