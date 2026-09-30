@@ -193,6 +193,13 @@ structure CallAccount where
   values : List String := []
   /-- Their types, where the walk knows them. -/
   types : List (Option String) := []
+  /-- How many of the values it takes are not on the stack as the body is
+  written: `values` is then empty, and `present` names the ones that are,
+  bottom to top, with their types in `types`. -/
+  missing : Nat := 0
+  present : List String := []
+  /-- The locals in scope where it is written. -/
+  locals : List String := []
   /-- The byte ranges of source that pushed each value, bottom to top, when
   each value was pushed by its own piece of source, one after another, just
   before the operation. -/
@@ -225,7 +232,9 @@ inductive ErasureError where
   | linearCopy (name : String) (span : Span)
   | linearUnused (name : String) (span : Span)
   | unresolvedEffect (name : String) (span : Span)
-  | effectUnderflow (name : String) (span : Span)
+  /-- `account` is filled by the pipeline where the operation, as the body is
+  written, is handed fewer values than it takes (`CallAccount.missing`). -/
+  | effectUnderflow (name : String) (span : Span) (account : Option CallAccount := none)
   | usageMismatch (name : String) (span : Span)
   | unsupportedLiteral (span : Span)
   | unsupportedAtom (name : String) (span : Span)
@@ -1321,7 +1330,7 @@ private def quotationAttemptsWithProof (seedCounts : List Nat) (env : EffectEnv)
         program := bodyRun.program
         final := bodyRun.final
         evidence := bodyRun.evidence }
-    | .error (.effectUnderflow _ _) =>
+    | .error (.effectUnderflow _ _ _) =>
         quotationAttemptsWithProof rest env body visible span run
     | .error (.missingStackValue _) =>
         quotationAttemptsWithProof rest env body visible span run

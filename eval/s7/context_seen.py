@@ -62,6 +62,11 @@ ARM_SETS = {
     "run11": {"arm-a": (None, ("arm-a/",)), "arm-b": (None, ("arm-b/", "arm-b-paragraph"))},
 }
 RUN11 = Path(__file__).resolve().parent / "runs" / "2026-09-29-locals-guide"
+# Run 12 (`runs/2026-09-30-check-tool/`) is laid out as run 11. Arm B's
+# treatment is the tool paragraph of its prompt and the check command its
+# instructions name, so every clause of that paragraph is a marker, and so is
+# the command itself.
+RUN12 = Path(__file__).resolve().parent / "runs" / "2026-09-30-check-tool"
 
 
 def squash(text: str) -> str:
@@ -70,16 +75,30 @@ def squash(text: str) -> str:
     return " ".join(text.replace("\\n", " ").split())
 
 
-def treatment_clauses() -> tuple[str, ...]:
-    """Arm B's paragraph, cut at sentence and clause punctuation into pieces of
-    at least 20 characters that never occur in arm A's prompt."""
-    text = squash((RUN11 / "arm-b-paragraph.md").read_text())
-    arm_a = squash((RUN11 / "arm-a" / "prompt-firth.md").read_text())
+def treatment_clauses(run: Path = RUN11, text: str | None = None) -> tuple[str, ...]:
+    """Arm B's treatment text (run 11's paragraph by default), cut at sentence
+    and clause punctuation into pieces of at least 20 characters that never
+    occur in arm A's prompt."""
+    text = squash(text if text is not None else (run / "arm-b-paragraph.md").read_text())
+    arm_a = squash((run / "arm-a" / "prompt-firth.md").read_text())
     pieces = {c.strip().rstrip(".") for c in re.split(r"[.,:;]\s", text)}
     return tuple(sorted(c for c in pieces if len(c) >= 20 and c not in arm_a))
 
 
 ARM_SETS["run11"]["arm-b"] = (None, ARM_SETS["run11"]["arm-b"][1] + treatment_clauses())
+
+
+def tool_paragraph(run: Path = RUN12) -> str:
+    """The paragraph of run 12's arm B prompt that arm A's does not have."""
+    a = (run / "arm-a" / "prompt-firth.md").read_text().split("\n")
+    return "\n".join(line for line in (run / "arm-b" / "prompt-firth.md").read_text().split("\n")
+                     if line not in a)
+
+
+if (RUN12 / "arm-b" / "prompt-firth.md").is_file():
+    ARM_SETS["run12"] = {"arm-a": (None, ("arm-a/",)),
+                         "arm-b": (None, ("arm-b/", "harness.py check")
+                                   + treatment_clauses(RUN12, tool_paragraph()))}
 
 
 def use_arms(name: str) -> None:
@@ -314,6 +333,21 @@ def self_test() -> None:
     # This arm's own files are not flagged.
     other["attachment"]["filename"] = "/x/runs/y/arm-a/haiku-firth-3/repair-1.md arm-a/prompt-firth.md"
     assert scan(base + log(other), "haiku-firth-3", "A3", "arm-a")["cross_sample"] == []
+    # Run 12: arm B's check tool, named or quoted, shown to arm A is flagged;
+    # arm B's own tool text is not flagged for arm B.
+    if "run12" in ARM_SETS:
+        use_arms("run12")
+        for text in ("python3 /home/user/firth-r12/eval/s7/harness.py check --lang firth x.md",
+                     "note: It does not run your programs."):
+            other["attachment"]["filename"] = text
+            got = scan(base + log(other), "haiku-firth-3", "A3", "arm-a")
+            assert got["cross_sample"] and got["cross_sample"][0]["other_arm"], (text, got)
+            assert scan(base + log(other), "haiku-firth-3", "B3", "arm-b")["cross_sample"] == []
+        prompt_b = squash((RUN12 / "arm-b" / "prompt-firth.md").read_text())
+        prompt_a = squash((RUN12 / "arm-a" / "prompt-firth.md").read_text())
+        markers = ARM_SETS["run12"]["arm-b"][1]
+        assert len(markers) >= 6 and all(m in prompt_b for m in markers[1:])
+        assert not any(m in prompt_a for m in markers)
     use_arms("run10")
     # A tool result for a call this author never made is not its own.
     planted = base + log({"type": "user", "timestamp": "t3", "message": {

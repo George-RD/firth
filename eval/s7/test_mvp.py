@@ -190,6 +190,152 @@ def rounds_prompt() -> None:
     check(outside, "feedback rounds are refused outside the MVP tier, whose step budget they promise")
 
 
+def check_tool_prompt() -> None:
+    # Run 12: arm B's prompt differs from arm A's only in the tool paragraph,
+    # which names the check command by this checkout's absolute path.
+    a = harness.prompt(list(MVP), "firth", rounds=2)
+    b = harness.prompt(list(MVP), "firth", rounds=2, check_tool=True)
+    check(harness.CHECK not in a and harness.CHECK in b and str(Path(harness.__file__).resolve()) in b,
+          "only the check-tool prompt offers the checker, by absolute path")
+    head_a, tail_a = a.split("Do not use any tool", 1)
+    head_b, tail_b = b.split("Do not use any tool", 1)
+    rest = "After you answer, you will be shown"
+    check(head_a == head_b and tail_a[tail_a.index(rest):] == tail_b[tail_b.index(rest):],
+          "the check-tool prompt changes the tool paragraph and nothing else")
+    for lang, rounds in (("python", 2), ("firth", 0)):
+        try:
+            harness.prompt(list(MVP), lang, rounds=rounds, check_tool=True)
+            refused = False
+        except ValueError:
+            refused = True
+        check(refused, f"the check tool is refused for {lang} with {rounds} rounds")
+
+
+def check_tool_checks_only() -> None:
+    # `check` must show the checker's verdict for each block and run nothing.
+    # Planted: a program that checks but traps when run (an index past the end)
+    # must read `ok`; if `check` ran programs it would show the trap.
+    traps = ("### task: sum-list\n```firth\n: main ( forall ρ; ρ xs:Seq Int -- ρ r:Int ) "
+             "locals { xs } { xs 99 prim seq-int.at } ;\n```\n")
+    bad = "### task: reverse\n```firth\n: main ( forall ρ; ρ x:Int -- ρ r:Int ) a ;\n```\n"
+    got = harness.check_answer(traps + "\n" + bad)
+    check(got.startswith("## sum-list\nok\n\n## reverse\n") and "firth.name.unresolved" in got
+          and "trap" not in got, f"check shows ok and diagnostics, in file order, and runs nothing: {got[:300]!r}")
+    check(harness.check_answer("no blocks here").startswith("No task blocks found"),
+          "check says when it finds no task block")
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        link = Path(tmp) / "answer-1.md"
+        link.symlink_to(HERE / "mvp_tasks.py")
+        cli = subprocess.run([sys.executable, str(HERE / "harness.py"), "check", "--lang", "firth", str(link)],
+                             capture_output=True, text=True)
+        check(cli.returncode != 0 and "not a plain file" in cli.stderr,
+              "check refuses an answer file that is a link (the planted case)")
+
+
+def check_tool_audit() -> None:
+    # Arm B's audit allows exactly the check command on the author's own answer
+    # files, and its reads, writes and edits of them; any other call is a void.
+    import tempfile
+    from audit_subagent import audit
+    tool = Path("/pinned/eval/s7/harness.py")
+    with tempfile.TemporaryDirectory() as tmp:
+        d = Path(tmp)
+        prompt, ans = d / "prompt-firth.md", d / "answer-1.md"
+        prompt.write_text("p")
+        final = "### task: sort\n```firth\nfixed\n```\n"
+        ans.write_text(final)
+        (d / "solutions-1.json").write_text(json.dumps(harness.extract(final)))
+
+        def call(name, **inp):
+            return {"type": "assistant", "timestamp": "t",
+                    "message": {"model": "m", "content": [{"type": "tool_use", "name": name, "input": inp}]}}
+        run = f"python3 {tool} check --lang firth {ans}"
+        ok = [call("Read", file_path=str(prompt)),
+              call("Write", file_path=str(ans), content=final.replace("fixed", "draft")),
+              call("Bash", command=run, description="check my answer"),
+              call("Read", file_path=str(ans)),
+              call("Edit", file_path=str(ans), old_string="draft", new_string="fixed"),
+              call("Bash", command=run)]
+        log, bad = audit(ok, prompt, d, d, 2, "firth", tool)
+        check(bad == [] and log["check_calls"] == 2,
+              f"arm B's audit passes check runs, reads, writes and edits of its own answer: {bad}")
+        check(len(audit(ok, prompt, d, d, 2, "firth")[1]) >= 2,
+              "without --check-cmd the same log is flagged (arm A)")
+        other = d.parent / "haiku-firth-9" / "answer-1.md"
+        for what, ev in (
+                ("a check of another sample's answer", call("Bash", command=f"python3 {tool} check --lang firth {other}")),
+                ("a check through another harness", call("Bash", command=f"python3 /home/user/firth/eval/s7/harness.py check --lang firth {ans}")),
+                ("a check with more shell after it", call("Bash", command=run + "; cat " + str(HERE / "mvp_tasks.py"))),
+                ("a check piped elsewhere", call("Bash", command=run + " | tee /tmp/x")),
+                ("a check of an answer past the round limit", call("Bash", command=run.replace("answer-1", "answer-4"))),
+                ("a check run in the background", call("Bash", command=run, run_in_background=True)),
+                ("the harness's try", call("Bash", command=f"python3 {tool} try --lang firth --task sort {ans}")),
+                ("any other command", call("Bash", command="ls")),
+                ("an edit of another file", call("Edit", file_path=str(HERE / "harness.py"), old_string="a", new_string="b"))):
+            check(len(audit(ok + [ev], prompt, d, d, 2, "firth", tool)[1]) == 1, f"arm B's audit flags {what}")
+        # The answer left by the writes and edits must be the one scored.
+        stale = ok[:5]
+        check(any("left" in b for b in audit(stale[:2] + stale[2:4], prompt, d, d, 2, "firth", tool)[1]),
+              "arm B's audit flags a kept answer that is not what the last write left (the planted case)")
+        lost = [call("Edit", file_path=str(ans), old_string="absent", new_string="x")]
+        check(any("replayed" in b for b in audit(ok + lost, prompt, d, d, 2, "firth", tool)[1]),
+              "arm B's audit flags an edit reported as done that it cannot replay (the planted case)")
+
+        # A call the tool reported as an error changed nothing, so it is not
+        # replayed (the reviewer, on #190): an author retrying a mismatched
+        # old_string, or a write the tool refused, is not a void.
+        def failing(name, cid, **inp):
+            ev = call(name, **inp)
+            ev["message"]["content"][0]["id"] = cid
+            return [ev, {"type": "user", "timestamp": "t", "message": {"role": "user", "content": [
+                {"type": "tool_result", "tool_use_id": cid, "is_error": True,
+                 "content": "String to replace not found in file."}]}}]
+        retry = ok[:4] + failing("Edit", "e1", file_path=str(ans), old_string="draft ", new_string="fixed") + ok[4:]
+        check(audit(retry, prompt, d, d, 2, "firth", tool)[1] == [],
+              "arm B's audit passes a failed edit followed by the corrected one")
+        refused = ok + failing("Write", "w1", file_path=str(ans), content="never written")
+        check(audit(refused, prompt, d, d, 2, "firth", tool)[1] == [],
+              "arm B's audit does not count a write the tool refused")
+        check(audit(refused, prompt, d, d, 2, "firth", tool)[0]["tool_calls"][-1].get("tool_error"),
+              "the kept log marks the refused write")
+        # Planted: the same failed edit without its error result is flagged.
+        bare = ok[:4] + [call("Edit", file_path=str(ans), old_string="draft ", new_string="fixed")] + ok[4:]
+        check(any("replayed" in b for b in audit(bare, prompt, d, d, 2, "firth", tool)[1]),
+              "without its error result, the same edit is flagged (the planted case)")
+        arm_a = [call("Read", file_path=str(prompt)), call("Write", file_path=str(ans), content=final)]
+        check(audit(arm_a + failing("Write", "w2", file_path=str(ans), content="never written"),
+                    prompt, d, d, 2, "firth")[1] == [],
+              "arm A's audit does not count a write the tool refused either")
+        check(len(audit(arm_a + [call("Write", file_path=str(ans), content="rewritten")],
+                        prompt, d, d, 2, "firth")[1]) == 1,
+              "arm A's audit still flags a rewrite that succeeded (the planted case)")
+        outside = failing("Edit", "e2", file_path=str(HERE / "harness.py"), old_string="a", new_string="b")
+        check(len(audit(ok + outside, prompt, d, d, 2, "firth", tool)[1]) == 1,
+              "a failed edit of another file is still flagged")
+        # Only the harness's own tool result, in a user-type event and carrying
+        # the call's id, marks a call as failed (reviewer, on #190). Planted:
+        # an error result spoofed in an assistant event, and one with no id
+        # matching a call with no id, leave the bad edit flagged.
+        spoofed = failing("Edit", "e3", file_path=str(ans), old_string="draft ", new_string="fixed")
+        spoofed[1]["type"] = "assistant"
+        check(any("replayed" in b for b in audit(ok[:4] + spoofed + ok[4:], prompt, d, d, 2, "firth", tool)[1]),
+              "an error result outside a user-type event is not trusted (the planted case)")
+        no_id = failing("Edit", "e4", file_path=str(ans), old_string="draft ", new_string="fixed")
+        del no_id[0]["message"]["content"][0]["id"]
+        del no_id[1]["message"]["content"][0]["tool_use_id"]
+        check(any("replayed" in b for b in audit(ok[:4] + no_id + ok[4:], prompt, d, d, 2, "firth", tool)[1]),
+              "an error result with no id marks no call as failed (the planted case)")
+        # A kept answer must come from a successful write or edit in the log.
+        # Planted: no write at all, and only a refused write, in either arm.
+        for arm, cmd in (("A", None), ("B", tool)):
+            for what, log in (("no write at all", [call("Read", file_path=str(prompt))]),
+                              ("only a refused write", [call("Read", file_path=str(prompt))]
+                               + failing("Write", "w3", file_path=str(ans), content=final))):
+                check(any("no successful write" in b for b in audit(log, prompt, d, d, 2, "firth", cmd)[1]),
+                      f"arm {arm}'s audit flags a kept answer with {what} (the planted case)")
+
+
 def feedback_keeps_hints() -> None:
     # The runner's error ends in the repr of the diagnostics, and Python puts a
     # string holding an apostrophe in double quotes. The authors' feedback must
@@ -633,6 +779,8 @@ def main() -> int:
     scorer_rejects_wrong_python()
     hashes_recorded()
     rounds_prompt()
+    check_tool_prompt()
+    check_tool_audit()
     feedback_keeps_hints()
     feedback_shows_location()
     feedback_shows_every_error()
@@ -644,6 +792,7 @@ def main() -> int:
     build_failure_stops_scoring()
     if "--no-firth" not in sys.argv:
         firth_references()
+        check_tool_checks_only()
     print(f"\n{len(failures)} failure(s)")
     return 1 if failures else 0
 

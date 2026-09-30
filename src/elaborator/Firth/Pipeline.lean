@@ -159,7 +159,7 @@ private def withAccount (config : PipelineConfig) (source : String)
 private def erasureSpan : ErasureError → Span
   | .duplicateLocal _ span | .unboundLocal _ span | .unsupportedCapture _ span
   | .missingStackValue span | .linearCopy _ span | .linearUnused _ span
-  | .unresolvedEffect _ span | .effectUnderflow _ span | .usageMismatch _ span
+  | .unresolvedEffect _ span | .effectUnderflow _ span _ | .usageMismatch _ span
   | .unsupportedLiteral span | .unsupportedAtom _ span | .untrackedStack _ span _
   | .branchShape span .. | .hiddenLocal _ span => span
 
@@ -210,8 +210,9 @@ private def PipelineDiagnostic.reached (word : WordDefinition) : PipelineDiagnos
 hint offers: a misordered `locals` block (`checkLocalsEdits`), whose hint
 says either that the edit fixes the word or that the body was written for the
 names as they are, a call handed its values out of order
-(`withCallAccount`), a refused `if` (`branchEdit`), or a condition written
-after its quotations (`conditionEdit`). -/
+(`withCallAccount`), a refused `if` (`branchEdit`), a condition written
+after its quotations (`conditionEdit`), or an operation handed fewer values
+than it takes (`shortEdit`). -/
 private def PipelineDiagnostic.editConsulted : PipelineDiagnostic → List String
   | .parse error => (error.localsBlocks.flatMap (·.consulted)).eraseDups
   | .stackEffect diagnostic =>
@@ -219,6 +220,7 @@ private def PipelineDiagnostic.editConsulted : PipelineDiagnostic → List Strin
         ((diagnostic.ifAccount.bind (·.edit)).map (·.consulted)).getD [] ++
         ((diagnostic.conditionEdit.map (·.consulted)).getD [])
   | .erasure _ (.branchShape _ _ _ _ (some account)) => ((account.edit.map (·.consulted)).getD [])
+  | .erasure _ (.effectUnderflow _ _ (some account)) => ((account.edit.map (·.consulted)).getD [])
   | .assumes _ _ _ inner => inner.editConsulted
   | _ => []
 
@@ -234,8 +236,10 @@ earlier word or primitive a value it does not take (`Account.firstMisfed`),
 or one inside the reported span: reported at that operation instead. The checker infers a quotation's input
 from what its body does, so there such a mistake can surface later, at an
 operation the author did not get wrong, with inferred types such as `?t27`.
-Only when the walk knows the type of every value the operation gets. It never
-changes what is accepted: the checker refused the word either way. -/
+Only when the walk knows the type of every value the operation gets, or the
+operation is handed fewer values than it takes (`Account.firstMisfed`),
+which is reported as such, with the values it gets. It never changes what
+is accepted: the checker refused the word either way. -/
 private def withFirstMisfed (config : PipelineConfig) (source : String)
     (words : List WordDefinition) (diagnostic : StackEffect.Diagnostic) : StackEffect.Diagnostic :=
   let found : Option StackEffect.Diagnostic := do
@@ -254,9 +258,23 @@ private def withFirstMisfed (config : PipelineConfig) (source : String)
       source
       target := 0 } word
     -- Earlier in the source than the reported operation, or inside it, as
-    -- in the quotation whose `compose` erasure reports.
-    if account.span.start.offset == diagnostic.primary.start.offset ||
+    -- in the quotation whose `compose` erasure reports. A `dip` or `compose`
+    -- reported where a word or primitive is written is one erasure wrote.
+    if (account.span.start.offset == diagnostic.primary.start.offset &&
+          !(diagnostic.subject == some "dip" || diagnostic.subject == some "compose")) ||
         account.span.start.offset ≥ diagnostic.primary.stop.offset then none else
+    let subject := ((account.operation.drop 1).dropEnd 1).toString
+    if account.missing > 0 then
+      pure { diagnostic with
+             code := "firth.type.stack-underflow"
+             primary := account.span
+             subject := some subject
+             expected := none
+             actual := none
+             callAccount := some account
+             branchOutputs := none
+             branchInput := none
+             ifAccount := none } else
     let primitive := account.operation.startsWith "`prim "
     -- A word's inputs are written `name:Type`, a primitive's as types.
     let takes := if primitive then account.inputs
@@ -270,7 +288,7 @@ private def withFirstMisfed (config : PipelineConfig) (source : String)
       state := stack got
       expected := some (stack wanted)
       actual := some (stack got)
-      subject := some ((account.operation.drop 1).dropEnd 1).toString
+      subject := some subject
       branchOutputs := none
       branchInput := none
       ifAccount := none }
@@ -496,6 +514,97 @@ private def withCallAccount (config : PipelineConfig) (source : String)
             else []
         | _, _ => []
       .stackEffect { diagnostic with callAccount := account.map ({ · with edit, assignment }) }
+  | other => other
+
+/-- The items written after the one at `span`, in the list of items it is
+written in, searching quotations and `locals` blocks. -/
+private partial def itemsAfter (span : Span) : List Item → Option (List Item)
+  | [] => none
+  | item :: rest =>
+      let here := match item with
+        | .word _ at_ | .primitive _ at_ => at_ == span
+        | _ => false
+      if here then some rest else
+      let inner := match item with
+        | .quotation items _ | .locals _ items _ => itemsAfter span items
+        | _ => none
+      match inner with
+      | some found => some found
+      | none => itemsAfter span rest
+
+/-- For an operation handed fewer values than it takes (`CallAccount.missing`),
+the edit that moves the values written just after it to before it, when
+there are exactly as many of those as it is missing and each is for the
+input it would fill: a local of that input's name, or a literal (of its type,
+or the check below refuses the edit).
+`0 0 sum-helper xs` becomes `0 0 xs sum-helper` when `sum-helper`'s last
+input is `xs`. A primitive's inputs have no names, so for a primitive which
+value is missing is not certain, and there is no edit. The edit is applied
+and the word checked again: it is kept only when the word then checks, or is
+refused only later in the source than the operation, and says which. -/
+private def shortEdit (config : PipelineConfig) (source : String) (word : WordDefinition)
+    (account : CallAccount) : Option CallEdit := do
+  if !config.checkEdits || account.missing == 0 || account.operation.startsWith "`prim " then none else
+  let after ← itemsAfter account.span word.body
+  let moved := after.take account.missing
+  if moved.length != account.missing then none else
+  -- They are for its top inputs, in order. A word's inputs are written
+  -- `name:Type`, a primitive's as types.
+  let primitive := account.operation.startsWith "`prim "
+  let inputs := (account.inputs.drop (account.inputs.length - account.missing)).map fun input =>
+    if primitive then ("", input)
+    else (((input.splitOn ":").head?).getD "", ":".intercalate ((input.splitOn ":").drop 1))
+  let spans ← (moved.zip inputs).mapM fun
+    -- A literal of another type than its input's is refused at the
+    -- operation itself when the edit is checked below, which drops the edit,
+    -- so the type needs no test here.
+    | (.literal _ at_, _) => some at_
+    | (.word name at_, (input, _)) => if account.locals.contains name && name == input then some at_ else none
+    | _ => none
+  let last ← spans.getLast?
+  let start := account.span.start.offset
+  let stop := last.stop.offset
+  let movedText := collapseSpace (bytesText source (← spans.head?).start.offset stop)
+  let operationText := collapseSpace (bytesText source start account.span.stop.offset)
+  let replacement := movedText ++ " " ++ operationText
+  let edited := bytesText source 0 start ++ replacement ++ bytesText source stop source.utf8ByteSize
+  let file ← match parse edited with
+    | .success file => some file
+    | .failure _ => none
+  let (resolved, _) ← (resolveEach file.declarations (fun name => (config.erasureEnv.word name).isSome)).toOption
+  let editedWords := resolved.map (·.1)
+  let editedWord ← (resolved.find? fun (candidate, error) => candidate.name == word.name && error.isNone).map (·.1)
+  let operation := start + movedText.utf8ByteSize + 1
+  let after ← match outcomeAlone config edited editedWords editedWord with
+    | none => some none
+    | some offset => if offset ≤ operation then none else some (some (lineColumn edited offset))
+  let written := collapseSpace (bytesText source start stop)
+  let (line, column) := editPlace source start stop written
+  pure { start, stop, line, column, written, replacement, after
+         consulted := consultedWords config editedWords editedWord }
+
+/-- An operation handed fewer values than it takes, with `shortEdit`: as
+the checker reports it once `withFirstMisfed` found it, or as erasure
+reports it, with the values it gets (`Account.ofShortCall`). It never
+changes what is accepted. -/
+private def withShortCall (config : PipelineConfig) (source : String)
+    (words : List WordDefinition) (word : WordDefinition) : PipelineDiagnostic → PipelineDiagnostic
+  | .stackEffect diagnostic =>
+      match diagnostic.callAccount.filter (·.missing > 0) with
+      | some account =>
+          .stackEffect { diagnostic with callAccount := some { account with edit := shortEdit config source word account } }
+      | none => .stackEffect diagnostic
+  | .erasure name (.effectUnderflow operation span none) =>
+      let account := Account.ofShortCall {
+        words
+        primitive := fun name => (config.typingEnv.primitive name).bind Account.primitiveShape
+        external := fun name => (config.erasureEnv.word name).bind fun signature =>
+          if !signature.rowPreserving then none else some
+          (signature.input.length, signature.output.length)
+        source
+        target := span.start.offset } span
+      .erasure name (.effectUnderflow operation span
+        (account.map fun account => { account with edit := shortEdit config source word account }))
   | other => other
 
 /-- Whether a refused `if` at byte `ifStart` is shown checked when, after an
@@ -909,7 +1018,8 @@ private def checkWord (config : PipelineConfig) (source : String)
   | some (callee, span), .ok _ => .skipped callee span
   | none, _ =>
   match erase env word.effect word.body with
-  | .error error => .refused [withBranchEdit config source (withAccount config source words (.erasure word.name error))]
+  | .error error => .refused [withShortCall config source words word
+      (withBranchEdit config source (withAccount config source words (.erasure word.name error)))]
   | .ok erased =>
   match schemeOfEffect word.effect with
   | .error diagnostic => .refused [.stackEffect diagnostic]
@@ -917,8 +1027,8 @@ private def checkWord (config : PipelineConfig) (source : String)
   match check typing declared erased.program word.effect.span with
   | .error diagnostic =>
       let diagnostic := withFirstMisfed config source words { diagnostic with word := some word.name }
-      .refused [withConditionEdit config source words word (withCallAccount config source words
-        (withBranchEdit config source (withAccount config source words (.stackEffect diagnostic))))]
+      .refused [withShortCall config source words word (withConditionEdit config source words word (withCallAccount config source words
+        (withBranchEdit config source (withAccount config source words (.stackEffect diagnostic)))))]
   | .ok _ =>
       let premises := config.refinementBuilder config.requestId config.sourcePath
         word erased.program declared
