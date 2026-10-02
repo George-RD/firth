@@ -42,7 +42,8 @@ reaches them is reported as `unsupported` rather than given a meaning here:
   the VM refuses by remembering its origin. The compiler never emits one: every
   quotation it lowers has no captures;
 * the `World` primitives `makeWorld` and `consumeWorld`, which no source
-  program can name (`Interpreter.surfacePrimitives`). They are unknown here.
+  program can name (`Interpreter.surfacePrimitives`). They trap `unsupported`
+  here, while any other name the registry lacks is `unknown-primitive`.
 
 Allocation failure, traces, residual frame rendering and image replacement are
 host concerns of the VM and are not modelled.
@@ -342,7 +343,10 @@ def validate (instruction : Instruction) (stack : List Value) (captures : List V
   | .callWord _ => none
   | .prim name =>
       match primitiveInputs name with
-      | none => some .unknownPrimitive
+      | none =>
+          -- The `World` primitives exist in the registry but are not modelled.
+          if name == "makeWorld" || name == "consumeWorld" then some .unsupported
+          else some .unknownPrimitive
       | some kinds =>
           if stack.length < kinds.length then some .stackFault
           else if (List.zipWith hasKind kinds (stack.take kinds.length).reverse).all id then none

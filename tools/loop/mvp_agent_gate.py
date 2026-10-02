@@ -21,9 +21,11 @@ itself a code model. What this half proves is byte-level drift detection, not
 authorship.
 
 Contract. The manifest's declared contract (language and Gamma versions, the
-four adapters with their transports and schemas, and the `[comparison]` table)
+four declared adapters with their transports and schemas, and the `[comparison]` table)
 must equal the contract this gate implements, so a manifest cannot describe a
-comparison the code does not perform.
+comparison the code does not perform. A fifth adapter, `firthTargetRun` (the
+Lean target semantics), is not part of the declared contract: it is run on
+every request the VM runs and must agree exactly (`compare_target_semantics`).
 
 Rebuild. Each manifest-listed application is then rebuilt in a scratch
 workspace that holds only that application's source. The four pinned adapters
@@ -33,8 +35,10 @@ are compared, and the two traces are compared event by event after projecting
 both onto kernel-charged steps (`compare_traces`). A trace whose intermediate
 stacks hold quotations is labelled `unsupported-quotation-values` rather than
 compared or accepted; the residual programs, words and instruction pointers
-of trace events are not compared. The portable profile refuses effectful world
-observations.
+of trace events are not compared. The VM's response is also compared with the
+Lean target semantics on the same request: status, stack, cost, word-entry
+charge, trap and subcode, with no tolerance. The portable profile refuses
+effectful world observations.
 
 The gate is deterministic: no clock, no randomness, no network, and a fixed
 fuel budget. CI runs it directly, and every failure path returns a non-zero
@@ -831,6 +835,11 @@ def compare_target_semantics(vm: dict[str, Any], semantics: dict[str, Any], name
              f"the VM reported status {vm.get('status')!r}, so there is no agreement to check")
     if semantics.get("status") not in ("success", "trap"):
         fail(f"{label}: status {semantics.get('status')!r} is neither success nor trap")
+    if vm.get("trap") == "fuel-exhausted" or semantics.get("trap") == "fuel-exhausted":
+        # `[comparison] fuel_exhaustion = "bounded-fuel-inconclusive"`, as in
+        # `compare`: an exhausted run says nothing, so it never agrees.
+        fail(f"{label}: a run exhausted its fuel (VM trap {vm.get('trap')!r}, "
+             f"Lean trap {semantics.get('trap')!r}), so the comparison is inconclusive")
     if vm.get("status") != semantics.get("status"):
         fail(f"{label}: status differs: VM {vm.get('status')!r}, Lean {semantics.get('status')!r}")
     vm_stack, lean_stack = vm.get("stack"), semantics.get("stack")
@@ -856,9 +865,13 @@ def compare_target_semantics(vm: dict[str, Any], semantics: dict[str, Any], name
     if vm_cost["total"] - vm_cost["steps"] != lean_cost.get("word_entries"):
         fail(f"{label}: cost.word_entries differs: VM implies "
              f"{vm_cost['total'] - vm_cost['steps']}, Lean {lean_cost.get('word_entries')!r}")
-    if lean_cost.get("primitives") is None or lean_cost["primitives"] > lean_cost["steps"]:
+    primitives = lean_cost.get("primitives")
+    if type(primitives) is not int or not 0 <= primitives <= lean_cost["steps"]:
         fail(f"{label}: Lean cost.primitives {lean_cost.get('primitives')!r} is not within its steps")
     for key in ("trap", "trap_subcode"):
+        if key not in vm or key not in semantics:
+            fail(f"{label}: {key} is missing: VM {'has' if key in vm else 'lacks'} it, "
+                 f"Lean {'has' if key in semantics else 'lacks'} it")
         if vm.get(key) != semantics.get(key) or type(vm.get(key)) is not type(semantics.get(key)):
             fail(f"{label}: {key} differs: VM {vm.get(key)!r}, Lean {semantics.get(key)!r}")
 

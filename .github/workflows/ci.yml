@@ -118,6 +118,10 @@ jobs:
         run: python3 tools/loop/check_compiler_admission.py --no-build 2>&1 | tee /tmp/language-compiler-admission.log
       - name: Rebuild and compare MVP applications
         run: python3 tools/loop/mvp_agent_gate.py 2>&1 | tee /tmp/language-mvp.log
+      - name: Compare the VM with the Lean target semantics on live and planted responses
+        env:
+          FIRTH_REQUIRE_LIVE_TARGET_RUN: "1"
+        run: python3 tools/loop/test_target_semantics_agreement.py 2>&1 | tee /tmp/language-target-semantics.log
       - name: Execute documented multiword programs and failure cases
         run: python3 tools/loop/check_language_examples.py 2>&1 | tee /tmp/language-examples.log
       - name: Run example programs on both hosts against expected results

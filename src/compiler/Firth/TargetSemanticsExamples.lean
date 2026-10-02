@@ -53,6 +53,11 @@ def runMain (code : List Instruction) (stack : List Value := []) (fuel : Nat := 
 #guard runMain [.pushLiteral (.int 7), .pushLiteral (.int 0), .prim "divInt"] ==
   "primitive-fault [7, 0] 3/3"
 
+-- The `World` primitives are not modelled; other unknown names are unknown.
+#guard runMain [.prim "makeWorld"] == "unsupported [] 0/0"
+#guard runMain [.prim "consumeWorld"] (stack := [.world]) == "unsupported [world] 0/0"
+#guard runMain [.prim "noSuchPrimitive"] == "unknown-primitive [] 0/0"
+
 -- An unknown word is charged as an instruction but not as an entry.
 #guard runMain [.callWord "absent"] == "unknown-word [] 1/1"
 

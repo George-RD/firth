@@ -9,12 +9,14 @@ same `firth.vm-run.v1` request (`allocate.firth` entry `allocate` on
 traps), trimmed to the compared members. It shows the pairs agree and that the
 comparison refuses each planted difference. When both binaries are built, a
 live case also runs the whole gate on a program and with a perturbed Lean
-response.
+response; CI runs those with `FIRTH_REQUIRE_LIVE_TARGET_RUN=1`, so they cannot
+skip there.
 """
 from __future__ import annotations
 
 from copy import deepcopy
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -148,14 +150,39 @@ class PlantedDifferences(unittest.TestCase):
         lean["cost"]["total"] = "73"
         self.check(VM_SUCCESS, lean, "cost.total is not an integer")
 
+    def test_dual_fuel_exhaustion_is_inconclusive(self) -> None:
+        vm, lean = deepcopy(VM_TRAP), deepcopy(LEAN_TRAP)
+        vm["trap"] = lean["trap"] = "fuel-exhausted"
+        self.check(vm, lean, "exhausted its fuel", "inconclusive")
+
+    def test_malformed_primitive_count_is_refused(self) -> None:
+        for bad in ("3", None, -1, 65, True):
+            lean = deepcopy(LEAN_SUCCESS)
+            lean["cost"]["primitives"] = bad
+            self.check(VM_SUCCESS, lean, "cost.primitives")
+
+    def test_a_missing_trap_member_is_refused(self) -> None:
+        for key in ("trap", "trap_subcode"):
+            lean = deepcopy(LEAN_SUCCESS)
+            del lean[key]
+            self.check(VM_SUCCESS, lean, f"{key} is missing")
+
 
 BINARIES = (gate.LEAN_BIN / "firthTargetRun", gate.LEAN_BIN / "firthElaborate",
             gate.LEAN_BIN / "firthCompile", gate.LEAN_BIN / "firthReferenceRun",
             gate.VM_BINARY)
 
 
-@unittest.skipUnless(all(path.is_file() for path in BINARIES),
-                     "the Lean adapters and the VM are not built")
+BUILT = all(path.is_file() for path in BINARIES)
+# CI sets this after the gate has built every binary, so the live cases run
+# there instead of skipping; a missing binary is then a failure.
+REQUIRE_LIVE = os.environ.get("FIRTH_REQUIRE_LIVE_TARGET_RUN") == "1"
+if REQUIRE_LIVE and not BUILT:
+    raise SystemExit("FIRTH_REQUIRE_LIVE_TARGET_RUN=1 but these are not built: "
+                     + ", ".join(str(path) for path in BINARIES if not path.is_file()))
+
+
+@unittest.skipUnless(BUILT, "the Lean adapters and the VM are not built")
 class LiveAgreement(unittest.TestCase):
     """The same comparison on responses from the real binaries."""
 
@@ -192,7 +219,8 @@ class LiveAgreement(unittest.TestCase):
                        "body_digest": "00" * 32, "kernel_evidence_digest": "00" * 32,
                        "refinement_evidence_digest": "00" * 32, "generation": 0}]}}
         done = subprocess.run([str(BINARIES[0])], input=json.dumps(request), text=True,
-                              capture_output=True, check=False)
+                              capture_output=True, check=False,
+                              timeout=gate.ADAPTER_TIMEOUT_SECONDS)
         self.assertEqual(done.returncode, 1)
         self.assertEqual(done.stdout, "")
         self.assertIn("body_digest", done.stderr)
