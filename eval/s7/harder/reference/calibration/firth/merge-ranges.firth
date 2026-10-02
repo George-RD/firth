@@ -50,13 +50,20 @@
       i 1 prim + sort-from ]
     [ os oe ] if };
 
+\ True when s is more than one past last (computed without last + 1, which
+\ would overflow at the largest Int).
+: gap?
+  (forall ρ; ρ s:Int^many last:Int^many -- ρ r:Bool^many)
+  locals { s last }
+  { s last prim > [ s 1 prim - last prim > ] [ false ] if };
+
 \ Extends the last merged range to e, or starts a new one at s, as needed.
 : absorb
   (forall ρ; ρ ms:Seq Int^many me:Seq Int^many s:Int^many e:Int^many -- ρ rs:Seq Int^many re:Seq Int^many)
   locals { ms me s e }
   { me prim seq-int.len 0 prim =
     [ true ]
-    [ s me me prim seq-int.len 1 prim - prim seq-int.at 1 prim + prim > ] if
+    [ s me me prim seq-int.len 1 prim - prim seq-int.at gap? ] if
     [ ms me s e push-pair ]
     [ ms
       me me prim seq-int.len 1 prim -

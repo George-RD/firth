@@ -13,6 +13,8 @@
    for every task, a planted Python mutant with one such mistake fails, and a
    planted mutant of a Firth reference fails.
 5. The prompt carries no hidden input and repair shows only the example.
+6. The audit refuses options that widen an author's tools, and scoring
+   refuses a link named as the answer directory.
 
     python3 eval/s7/harder/test_harder.py            # everything (needs the toolchain)
     python3 eval/s7/harder/test_harder.py --no-firth # 1, 2, the Python part of 4, and 5
@@ -153,8 +155,9 @@ PY_MUTANTS = {
                 (HERE / "reference/calibration/python/bowling.py").read_text().replace(
                     "bonus = rolls[pos + 2] if first + second == 10 else 0",
                     "bonus = rolls[pos + 2] if first + second == 10 and frame < 9 else 0")),
-    "lru": ("a hit does not refresh the key (FIFO)",
-            (HERE / "reference/calibration/python/lru.py").read_text().replace("cache.move_to_end(k)\n", "")),
+    "lru": ("a hit refreshes the key only when the cache is full",
+            (HERE / "reference/calibration/python/lru.py").read_text().replace(
+                "cache.move_to_end(k)\n", "if len(cache) >= cap:\n                cache.move_to_end(k)\n")),
     "rpn": ("division floors instead of truncating",
             (HERE / "reference/calibration/python/rpn.py").read_text().replace(
                 "if q < 0 and q * b != a:", "if False:")),
@@ -172,21 +175,21 @@ PY_MUTANTS = {
                           "                    hops[b] = hops[v] + 1\n                    nxt.append(b)\n"
                           "        frontier = nxt\n"
                           "    return [-1 if b is None else b[0] for b in best], hops\n")),
-    "merge-ranges": ("ranges next to each other are not merged",
+    "merge-ranges": ("covered counted from the input ranges, so overlaps count twice",
                      (HERE / "reference/calibration/python/merge-ranges.py").read_text().replace(
-                         "s - 1 <= me[-1]", "s <= me[-1]")),
+                         "sum(b - a + 1 for a, b in zip(ms, me))",
+                         "sum(b - a + 1 for a, b in zip(starts, ends))")),
     "tiny-vm": ("a halt runs even when the limit is used up",
                 (HERE / "reference/calibration/python/tiny-vm.py").read_text().replace(
                     "if executed >= limit:", "if executed >= limit and code[3 * pc] != 0:")),
-    "lis-smallest": ("the first longest subsequence found, not the smallest",
+    "lis-smallest": ("the smallest tail of each length, which need not be a subsequence",
+                     "from bisect import bisect_left\n"
                      "def main(xs):\n"
-                     "    n = len(xs)\n"
-                     "    best = [[x] for x in xs]\n"
-                     "    for i in range(n):\n"
-                     "        for j in range(i):\n"
-                     "            if xs[j] < xs[i] and len(best[j]) + 1 > len(best[i]):\n"
-                     "                best[i] = best[j] + [xs[i]]\n"
-                     "    return max(best, key=len, default=[])\n"),
+                     "    tails = []\n"
+                     "    for x in xs:\n"
+                     "        i = bisect_left(tails, x)\n"
+                     "        tails[i:i + 1] = [x]\n"
+                     "    return tails\n"),
 }
 
 
@@ -198,7 +201,10 @@ def python_mutants() -> None:
         exec(compile(src, f"{tid}-mutant.py", "exec"), ns)
         caught = [args for args in t.hidden
                   if not harness.same(json.loads(json.dumps(as_list(ns["main"](*args), t))), t.expected(args))]
-        check(bool(caught), f"Python mutant of {tid} ({what}) fails {len(caught)} hidden test(s)")
+        example = harness.same(json.loads(json.dumps(as_list(ns["main"](*t.example), t))),
+                               t.expected(t.example))
+        check(example and bool(caught), f"Python mutant of {tid} ({what}) passes the example and fails "
+              f"{len(caught)} hidden test(s)")
 
 
 def firth_mutant() -> None:
@@ -229,10 +235,40 @@ def prompt_and_repair() -> None:
     text = tier.repair({"rpn": "def main(k, v): return 0, 0\n"}, results, "python", [t])
     check("[14, 0]" in text and "[42, 0]" not in text and "[9, 9]" not in text,
           "repair shows the example's outcome and nothing from a hidden test")
+    results["tasks"]["rpn"]["cases"][0].update(stack=[14, 0], ok=True, **{"pass": True})
+    check(tier.repair({"rpn": ""}, results, "python", [t]) == "",
+          "repair is empty, so no round runs, when every answer passed its example")
+
+
+def refusals() -> None:
+    """The audit refuses any option that could widen what an author may do,
+    however it is spelt, and scoring refuses a link named as answer directory."""
+    import subprocess, tempfile
+    for opt in ("--check-cmd=/x", "--check-c=/x", "--shell-forms", "--hook=/x"):
+        p = subprocess.run([sys.executable, str(HERE / "audit.py"), "/dev/null", "--set", "calibration",
+                            "--prompt", "p", "--dir", "d", "--rounds", "1", "--lang", "firth", opt],
+                           capture_output=True, text=True)
+        check(p.returncode != 0 and "takes only" in p.stderr, f"audit refuses {opt}")
+    with tempfile.TemporaryDirectory() as d:
+        link = Path(d) / "answers"
+        link.symlink_to(HERE / "reference/calibration/firth")
+        try:
+            tier.load(link, "firth")
+            refused = False
+        except (OSError, ValueError):
+            refused = True
+        check(refused, "scoring refuses a link named as the answer directory")
+        real = Path(d) / "real"
+        real.mkdir()
+        (real / "lru.firth").write_text("x")
+        (real / "lru.py").write_text("y")
+        check(tier.load(real, "firth") == {"lru": "x"} and tier.load(real, "python") == {"lru": "y"},
+              "a directory's answers are read in the language scored only")
 
 
 def main() -> int:
     hand_values()
+    refusals()
     python_references()
     python_mutants()
     prompt_and_repair()

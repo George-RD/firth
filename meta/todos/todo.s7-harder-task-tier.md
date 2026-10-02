@@ -19,9 +19,10 @@ until the tasks get harder.
   calibration, so tasks are never swapped after a ceiling result.
 - A fixed scored task set, written before any scored trial, where the
   primary subject does not sit at the ceiling in Python or in Firth. Several
-  tasks at allocator weight. If the frozen set lands at the ceiling anyway,
-  it is kept and its result reported as it stands, not edited or replaced;
-  a further tier would be a new frozen set, reported alongside it.
+  tasks at allocator weight. If a frozen set lands at the ceiling anyway,
+  it is kept and its result reported as it stands, not edited or replaced,
+  and this criterion stays unmet until a further frozen set, reported
+  alongside it, meets it.
 - Sonnet 5.5 is the planned primary subject (roadmap, "Subject models");
   the choice is confirmed before the scored tier is frozen. Haiku 4.5 stays
   as a secondary check of how learnable the language is for a small model.
@@ -39,6 +40,8 @@ until the tasks get harder.
   pool is at the ceiling in Python (24 of 24 on the first attempt) and near
   it in Firth (21, then 22, of 24). A second, harder calibration pool comes
   before the scored tier is written.
-- DeepSeek Flash: `deepseek-v4.1-flash` is listed at ollama.com, whose key
-  is already connected to this project, so it can be reached without new
-  credentials. Whether to spend that account on it is the maintainer's call.
+- DeepSeek Flash: `curl -sS https://ollama.com/api/tags` from this
+  project's cloud environment on 2 October 2026 listed
+  `deepseek-v4.1-flash`; the environment's proxy already injects an
+  `OLLAMA_API_KEY` for ollama.com, so it can be reached without new
+  credentials. No completion request was sent. Whether to spend that account on it is the maintainer's call.

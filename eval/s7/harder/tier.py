@@ -96,7 +96,11 @@ def prompt(tasks: list[Task], lang: str, rounds: int = 1) -> str:
 def run_firth(source: str, args: tuple) -> dict:
     """`harness.run_firth`, keeping the runner's measured cost of the run: the
     kernel steps the reference interpreter counted and the VM's own count.
-    The runner measures them; the checker proves nothing about them."""
+    The runner measures them; the checker proves nothing about them.
+
+    A copy, not a call, because changing `harness.py` would change files a
+    pinned S7 run scores with; keep it in step with `harness.run_firth`
+    (`todo.s7-harder-tier-harness-merge`)."""
     with tempfile.NamedTemporaryFile("w", suffix=".firth", delete=False) as f:
         f.write(source)
         path = f.name
@@ -130,8 +134,14 @@ def load(path: Path, lang: str) -> dict[str, str]:
     if not path.is_dir():
         return harness.load_solutions(path, harness.plain_parent(path))
     ext = ".firth" if lang == "firth" else ".py"
-    return {Path(n).stem: harness.read_regular(path / n, path)
-            for n in sorted(os.listdir(path)) if Path(n).suffix == ext}
+    # Opened as harness.load_solutions opens it: no link on the way, so a link
+    # named as the answer directory cannot point the scorer at the references.
+    dfd = harness.open_under(path, harness.plain_parent(path), directory=True)
+    try:
+        return {Path(n).stem: harness._read_plain(os.open(n, harness.READ, dir_fd=dfd), path / n)
+                for n in sorted(os.listdir(dfd)) if Path(n).suffix == ext}
+    finally:
+        os.close(dfd)
 
 
 def score(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int = 4) -> dict:
@@ -181,7 +191,9 @@ def scored(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int) -
 
 def repair(solutions: dict[str, str], results: dict, lang: str, tasks: list[Task]) -> str:
     """The next round's prompt: each failed answer's outcome on its visible
-    example only (`harness.repair`), never a hidden test."""
+    example only (`harness.repair`), never a hidden test. Empty when every
+    answer passed its example: there is then nothing the author could be
+    shown, and no round is run."""
     parts = [f"Some of your {lang} answers did not work on the visible example. Fix them. "
              "Answer only the tasks listed, in the same format as before.\n"]
     for t in tasks:
@@ -196,7 +208,7 @@ def repair(solutions: dict[str, str], results: dict, lang: str, tasks: list[Task
                 f"it returned {vis['stack']} instead of {vis['expected']}")
         parts.append(f"## {t.id}\n{t.description}\n{harness.shape(t, lang)}\n\nYour answer:\n"
                      f"```\n{solutions.get(t.id, '')}\n```\nOn the example, {what}\n")
-    return "\n".join(parts)
+    return "\n".join(parts) if len(parts) > 1 else ""
 
 
 def report(paths: list[Path]) -> str:
@@ -251,6 +263,7 @@ def main() -> int:
         res["label"] = a.label
         print(json.dumps(res, indent=2))
     elif a.cmd == "repair":
+        # Prints nothing when every answer passed its example (no round).
         print(repair(json.loads(a.solutions.read_text()), json.loads(a.results.read_text()),
                      a.lang, list(SETS[a.set])).rstrip("\n"))
     elif a.cmd == "report":

@@ -24,21 +24,24 @@ has its own directory, task ids and scorer, and does not edit `harness.py`,
 
 Every task needs several cooperating words, a nested loop or a rebuilt
 sequence, and most return more than one value. The pool spans seven kinds
-of difficulty: rules with an exception (`bowling`), state over a sequence of
+of difficulty, one task each plus a second dynamic program: rules with an exception (`bowling`), state over a sequence of
 events (`lru`), an evaluator with error codes (`rpn`), a two-dimensional
 dynamic program (`edit-cost`), a graph search with a tie-break
 (`shortest-hops`), sorting then merging (`merge-ranges`), an interpreter
 (`tiny-vm`), and a reconstruction with a tie-break (`lis-smallest`).
 
-Each task has 10 to 15 hidden tests, against 4 to 8 on the MVP tier, chosen
+Each task has 10 to 16 hidden tests, against 4 to 8 on the MVP tier, chosen
 for the edge cases a careful author can still miss. `test_harder.py` shows
 that each task's hidden tests fail a planted answer with one such mistake
 (a Python mutant per task: division that floors, a cache hit that does not
 refresh the key, ranges next to each other left unmerged, and so on), so a
 pass means more than the visible example.
 
-Each description states its input bounds, so an author can tell whether a
-quadratic loop fits the step budget (1,000,000 steps per run, the MVP
+Each description is meant to state its input bounds, so an author can tell
+whether a quadratic loop fits the step budget. Two do not: `rpn` does not
+bound the number of tokens, nor `tiny-vm` the program's length (only the
+instructions executed). The pool was run as written, so this is recorded
+here rather than edited; the next pool states every bound (1,000,000 steps per run, the MVP
 tier's). Values are `Int`, `Bool`, `Seq Int` and `Seq Bool`, the only ones
 the portable runner passes in and reads back.
 
@@ -46,8 +49,9 @@ the portable runner passes in and reads back.
 
 - `calibration.py`: the pool. Each task's `ref` is its meaning, in plain
   Python written independently of any Firth code.
-- `reference/calibration/<id>.firth` and `<id>.py`: a Firth and a Python
-  reference solution per task. The Python ones are written separately from
+- `reference/calibration/firth/<id>.firth` and
+  `reference/calibration/python/<id>.py`: a Firth and a Python reference
+  solution per task. The Python ones are written separately from
   the refs, so they check them.
 - `tier.py`: `prompt`, `extract`, `score`, `repair` and `report` for this
   tier. It reuses the MVP harness's runners, comparison, sandbox and
@@ -74,7 +78,9 @@ python3 eval/s7/harder/tier.py repair --set calibration --lang firth solutions-1
 The MVP tier's sub-agent protocol, unchanged: the author is a sub-agent told
 to read only its prompt file and to write only its answer file, answers every
 task in one file, and is then shown how each answer did on its task's visible
-example (`repair`) and may fix it once. Round 1 is "correct on the first
+example (`repair`) and may fix it once. An author whose answers all passed
+their examples is shown nothing, since nothing it could see failed, and no
+round is run; its result within two attempts is its first result. Round 1 is "correct on the first
 attempt"; round 2 is "correct within two attempts", the two measures
 `todo.s7-python-baseline` names. The Firth prompt carries the MVP documents.
 Each transcript is audited with `audit.py`; a flagged author is void.
@@ -116,8 +122,9 @@ which adds only a todo file.
 | Firth, 3 authors | 21 of 24 | 22 of 24 |
 
 `tier.py report runs/2026-10-02-calibration/*/results-*.json` prints the
-table per task and author. Python answers needed no feedback round, so
-none was sent.
+table per task and author. Only Firth 1 had an answer that failed its
+example, so only Firth 1 had a feedback round; the other five authors'
+results within two rounds are their first results (see "Protocol").
 
 The three Firth failures:
 

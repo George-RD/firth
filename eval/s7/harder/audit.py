@@ -31,8 +31,14 @@ def main() -> int:
     if name not in tier.SETS:
         raise SystemExit(f"unknown set {name!r}; one of {sorted(tier.SETS)}")
     del args[i:i + 2]
-    if any(a in args for a in ("--check-cmd", "--shell-forms", "--run14-forms", "--hook-log")):
-        raise SystemExit("this tier's authors have no tools beyond reading and writing their own files")
+    # Only these options pass through. Any other, however spelt (`--check-cmd=X`,
+    # an abbreviation argparse would expand), could turn on an allowance this
+    # tier's authors do not have, so it is refused.
+    allowed = ("--prompt", "--dir", "--kept", "--rounds", "--lang")
+    for a in args:
+        if a.startswith("-") and a.split("=", 1)[0] not in allowed:
+            raise SystemExit(f"{a}: this tier's audit takes only {', '.join(allowed)}; its authors "
+                             "have no tools beyond reading and writing their own files")
     tasks = list(tier.SETS[name])
     # audit_subagent rebuilds feedback with the MVP tier's repair; this tier's
     # authors were shown tier.repair over this set.

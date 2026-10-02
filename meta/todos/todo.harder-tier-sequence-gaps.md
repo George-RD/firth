@@ -13,13 +13,12 @@ a task.
 
 - No equality on `Bool`: `prim =` takes two `Int`s
   (`firth.type.primitive-input-mismatch`), so "do the signs differ" in
-  `rpn` became nested `if`s.
+  `rpn` became nested `if`s. In calibration, Sonnet's first `rpn` answer
+  in Firth failed on exactly this (sonnet-firth-1, `eval/s7/harder/README.md`).
 - No way to shorten or splice a sequence: no pop, remove-at, insert-at or
   slice. A stack (`rpn`), a cache with removal (`lru`) and insertion into a
   sorted sequence (`merge-ranges`) each rebuild the sequence element by
   element, which is O(n) per step and several helper words each.
-  In calibration, Sonnet's first `rpn` answer in Firth failed the same way
-  (sonnet-firth-1, `eval/s7/harder/README.md`).
 - No `abs`, `min`, `max`, or quotient rounded toward zero; each program
   defines its own.
 
