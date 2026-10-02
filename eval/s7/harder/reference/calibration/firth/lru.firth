@@ -1,0 +1,56 @@
+\ LRU cache simulation. The cache is a Seq Int, least recently used first.
+
+\ Index of x in s from position i, or -1 when absent.
+: index-from
+  (forall ρ; ρ s:Seq Int^many x:Int^many i:Int^many -- ρ r:Int^many)
+  locals { s x i }
+  { i s prim seq-int.len prim <
+    [ s i prim seq-int.at x prim =
+      [ i ]
+      [ s x i 1 prim + index-from ] if ]
+    [ -1 ] if };
+
+\ Appends s[k..] to out, leaving out element index skip.
+: copy-skip
+  (forall ρ; ρ s:Seq Int^many out:Seq Int^many k:Int^many skip:Int^many -- ρ r:Seq Int^many)
+  locals { s out k skip }
+  { k s prim seq-int.len prim <
+    [ s
+      out k skip prim = [ ] [ s k prim seq-int.at prim seq-int.push ] if
+      k 1 prim + skip copy-skip ]
+    [ out ] if };
+
+\ s without the element at index i.
+: remove-at
+  (forall ρ; ρ s:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { s i }
+  { s prim seq-int.empty 0 i copy-skip };
+
+\ Cache after seeing key: a hit moves it last, a miss evicts the first when full.
+: touch
+  (forall ρ; ρ c:Seq Int^many cap:Int^many key:Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { c cap key i }
+  { i 0 prim <
+    [ c prim seq-int.len cap prim <
+      [ c key prim seq-int.push ]
+      [ c 0 remove-at key prim seq-int.push ] if ]
+    [ c i remove-at key prim seq-int.push ] if };
+
+\ Processes keys[j..] with the current cache and miss count.
+: lru-from
+  (forall ρ; ρ keys:Seq Int^many cap:Int^many c:Seq Int^many m:Int^many j:Int^many -- ρ misses:Int^many cache:Seq Int^many)
+  locals { keys cap c m j }
+  { j keys prim seq-int.len prim <
+    [ keys cap
+      c cap keys j prim seq-int.at
+      c keys j prim seq-int.at 0 index-from touch
+      m
+      c keys j prim seq-int.at 0 index-from 0 prim <
+      [ 1 prim + ] [ ] if
+      j 1 prim + lru-from ]
+    [ m c ] if };
+
+: main
+  (forall ρ; ρ cap:Int^many keys:Seq Int^many -- ρ misses:Int^many cache:Seq Int^many)
+  locals { cap keys }
+  { keys cap prim seq-int.empty 0 0 lru-from };

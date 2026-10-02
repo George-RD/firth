@@ -1,0 +1,66 @@
+\ Shortest paths by weight, then fewest edges, with Bellman-Ford.
+\ dist and hops are sequences of length n; -1 means not reached yet.
+\ Edge relaxation is repeated n times, which is enough for paths of at most
+\ n - 1 edges (weights are 0 or more, so no cycle ever improves a node).
+
+\ s with n more copies of v pushed on.
+: fill
+  (forall ρ; ρ s:Seq Int^many v:Int^many n:Int^many -- ρ r:Seq Int^many)
+  locals { s v n }
+  { n 0 prim >
+    [ s v prim seq-int.push v n 1 prim - fill ]
+    [ s ] if };
+
+\ Is the candidate (nd, nh) better than the current (bd, bh)? Unreached is bd < 0.
+: better?
+  (forall ρ; ρ nd:Int^many nh:Int^many bd:Int^many bh:Int^many -- ρ r:Bool^many)
+  locals { nd nh bd bh }
+  { bd 0 prim <
+    nd bd prim < prim or
+    nd bd prim = nh bh prim < prim and prim or };
+
+\ Offers the candidate (nd, nh) to node b, keeping it when better.
+: offer
+  (forall ρ; ρ dist:Seq Int^many hops:Seq Int^many b:Int^many nd:Int^many nh:Int^many -- ρ d:Seq Int^many h:Seq Int^many)
+  locals { dist hops b nd nh }
+  { nd nh dist b prim seq-int.at hops b prim seq-int.at better?
+    [ dist b nd prim seq-int.set hops b nh prim seq-int.set ]
+    [ dist hops ] if };
+
+\ Relaxes the edge a -> b of weight w, when a has been reached.
+: relax
+  (forall ρ; ρ dist:Seq Int^many hops:Seq Int^many a:Int^many b:Int^many w:Int^many -- ρ d:Seq Int^many h:Seq Int^many)
+  locals { dist hops a b w }
+  { dist a prim seq-int.at 0 prim >=
+    [ dist hops b
+      dist a prim seq-int.at w prim +
+      hops a prim seq-int.at 1 prim + offer ]
+    [ dist hops ] if };
+
+\ Relaxes edges k, k + 1, ... once each.
+: pass-from
+  (forall ρ; ρ dist:Seq Int^many hops:Seq Int^many froms:Seq Int^many tos:Seq Int^many ws:Seq Int^many k:Int^many -- ρ d:Seq Int^many h:Seq Int^many)
+  locals { dist hops froms tos ws k }
+  { k froms prim seq-int.len prim <
+    [ dist hops
+      froms k prim seq-int.at
+      tos k prim seq-int.at
+      ws k prim seq-int.at relax
+      froms tos ws k 1 prim + pass-from ]
+    [ dist hops ] if };
+
+\ r more passes over all the edges.
+: rounds
+  (forall ρ; ρ dist:Seq Int^many hops:Seq Int^many froms:Seq Int^many tos:Seq Int^many ws:Seq Int^many r:Int^many -- ρ d:Seq Int^many h:Seq Int^many)
+  locals { dist hops froms tos ws r }
+  { r 0 prim >
+    [ dist hops froms tos ws 0 pass-from
+      froms tos ws r 1 prim - rounds ]
+    [ dist hops ] if };
+
+: main
+  (forall ρ; ρ n:Int^many froms:Seq Int^many tos:Seq Int^many ws:Seq Int^many source:Int^many -- ρ dist:Seq Int^many hops:Seq Int^many)
+  locals { n froms tos ws source }
+  { prim seq-int.empty -1 n fill source 0 prim seq-int.set
+    prim seq-int.empty -1 n fill source 0 prim seq-int.set
+    froms tos ws n rounds };
