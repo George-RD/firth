@@ -67,7 +67,10 @@ bug the two sides share.
   kernel cost. The stated exceptions are the target's 256-frame call-depth
   bound and `seq-int.len`/`seq-bool.len` of a sequence of 2^63 or more
   elements (the interpreter returns the length, the target faults).
-  `execute_of_stuck` and `execute_trapped` relate faults the same way.
+  `execute_of_stuck`: when the interpreter gets stuck after `n` steps, the
+  target given more than `n` fuel traps, and not for want of fuel;
+  `execute_trapped` gives the converse. The kernel cost spent before a fault
+  is not related.
   Hypotheses: the interpreter's dictionary gives each word its checked body,
   and no body holds the runtime-only `push` atom. Typing is not assumed.
   `LoweringPrimitives.lean` proves the 23 surface primitives agree.

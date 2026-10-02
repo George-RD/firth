@@ -20,16 +20,17 @@ run on the target from a stack that stands for the interpreter stack `S`,
   sequence with 2^63 or more elements, which the interpreter returns and the
   target faults on (`LenOverflowAt`).
 
-`execute_of_stuck` and `execute_trapped` relate faults the same way: the
-interpreter getting stuck means the target traps, and a target trap other
-than the depth bound and fuel exhaustion means the interpreter gets stuck or
-meets the same length overflow.
+`execute_of_stuck` and `execute_trapped` relate faults: when the interpreter
+gets stuck after `n` steps, the target given more than `n` fuel traps, and not
+for want of fuel; and a target trap other than the depth bound and fuel
+exhaustion means the interpreter gets stuck or meets the same length overflow.
+The kernel cost spent before a fault is not related.
 
 The hypotheses are that the interpreter's dictionary gives each source word
 its checked body, and that no body holds the runtime-only `push` atom, which
 the elaborator never writes. Typing is not assumed.
 
-What this does not cover: the target's total cost adds a word-entry charge
+What this does not cover: the cost of a run that faults; the target's total cost adds a word-entry charge
 the interpreter has no counterpart for, so only the kernel cost is related;
 the target semantics is a Lean model of `target-spec.md` that the Rust VM is
 tested against (step 2), not proved against; and the image the VM loads is
@@ -498,6 +499,15 @@ section Runs
 variable {D : Firth.Interpreter.Dictionary}
 local notation "Reach" => Firth.Logic.Reaches Firth.Logic.int64Gamma D Firth.Interpreter.defaultCosts
 
+/-- Only the fuel check traps for want of fuel. -/
+theorem validate_ne_fuel {i : Target.Instruction} {s c : List Target.Value} {k : List Bool} :
+    validate i s c k ≠ some .fuelExhausted := by
+  unfold validate
+  split <;> (repeat' split) <;> simp <;> (repeat' split) <;> simp
+theorem exec_ne_fuel {image f callers i rest s cost} {s' fr c'} :
+    exec image f callers i rest s cost ≠ .fault .fuelExhausted s' fr c' := by
+  unfold exec
+  split <;> (repeat' split) <;> simp <;> (repeat' split) <;> simp
 /-- What one target step says about the interpreter, from the configuration
 `cfg` the machine `m` stands for. -/
 def StepOk (M : List (String × String)) (D : Firth.Interpreter.Dictionary) (cfg : Config)
@@ -513,7 +523,8 @@ def StepOk (M : List (String × String)) (D : Firth.Interpreter.Dictionary) (cfg
       (t = .fuelExhausted ∧ m.fuel = 0 ∧ ∃ cfg' n,
         Firth.Logic.Reaches Firth.Logic.int64Gamma D Firth.Interpreter.defaultCosts cfg cfg' n 0 ∧
         cfg'.program ≠ .empty) ∨
-      ∃ cfg' n k, Firth.Logic.Reaches Firth.Logic.int64Gamma D Firth.Interpreter.defaultCosts cfg cfg' n k ∧
+      t ≠ .fuelExhausted ∧ ∃ cfg' n k,
+        Firth.Logic.Reaches Firth.Logic.int64Gamma D Firth.Interpreter.defaultCosts cfg cfg' n k ∧
         (Stuck D cfg' ∨ LenOverflowAt cfg')
 
 theorem terminalStack_rel {M} : ∀ {S : List SValue} {s : List TValue}, ListRel (ValRel M) S s →
@@ -548,7 +559,7 @@ theorem step_sim {M image} (hI : ImageRel M D image) {m : Machine} {P : SProgram
             have hI2 := instr_sim (D := D) hI (f := f) (callers := callers) (c := m.cost) hcode hcons hmany
               htail he hc hs'
             cases hv : validate i s' f.captures f.consumed with
-            | some t => exact .inr (.inr ⟨_, n, 0, hr, hI2.1 t hv⟩)
+            | some t => exact .inr (.inr ⟨by rintro rfl; exact validate_ne_fuel hv, _, n, 0, hr, hI2.1 t hv⟩)
             | none =>
                 have hx := hI2.2 hv
                 simp only
@@ -563,8 +574,8 @@ theorem step_sim {M image} (hI : ImageRel M D image) {m : Machine} {P : SProgram
                     rw [hex] at hx
                     rcases hx with h | h | h
                     · exact .inl h
-                    · exact .inr (.inr ⟨_, n, 0, hr, .inl h⟩)
-                    · exact .inr (.inr ⟨_, n, 0, hr, .inr h⟩)
+                    · exact .inr (.inr ⟨by rintro rfl; exact exec_ne_fuel hex, _, n, 0, hr, .inl h⟩)
+                    · exact .inr (.inr ⟨by rintro rfl; exact exec_ne_fuel hex, _, n, 0, hr, .inr h⟩)
 /-! ## The interpreter is deterministic -/
 
 theorem reaches_split {a b c : Config} {n k n' k' : Nat} (h1 : Reach a b n k) (h2 : Reach a c n' k')
@@ -658,7 +669,8 @@ def RunOk (M : List (String × String)) (D : Firth.Interpreter.Dictionary) (cfg 
       (t = .fuelExhausted ∧ ∃ cfg' n k,
         Firth.Logic.Reaches Firth.Logic.int64Gamma D Firth.Interpreter.defaultCosts cfg cfg' n k ∧
         m.fuel ≤ n ∧ cfg'.program ≠ .empty) ∨
-      ∃ cfg' n k, Firth.Logic.Reaches Firth.Logic.int64Gamma D Firth.Interpreter.defaultCosts cfg cfg' n k ∧
+      t ≠ .fuelExhausted ∧ ∃ cfg' n k,
+        Firth.Logic.Reaches Firth.Logic.int64Gamma D Firth.Interpreter.defaultCosts cfg cfg' n k ∧
         (Stuck D cfg' ∨ LenOverflowAt cfg')
   | .outOfBound _ => True
 
@@ -670,10 +682,10 @@ theorem RunOk.prepend {M} {cfg cfg' : Config} {m m' : Machine} {n k : Nat} {o : 
       obtain ⟨S', n', k', h1, h2, h3⟩ := h
       exact ⟨S', _, _, Firth.Logic.Reaches.trans hr h1, by rw [h2, hk, Nat.add_assoc], h3⟩
   | trapped t m'' =>
-      rcases h with h | ⟨ht, c, n', k', h1, h2, h3⟩ | ⟨c, n', k', h1, h2⟩
+      rcases h with h | ⟨ht, c, n', k', h1, h2, h3⟩ | ⟨hne, c, n', k', h1, h2⟩
       · exact .inl h
       · exact .inr (.inl ⟨ht, c, _, _, Firth.Logic.Reaches.trans hr h1, by omega, h3⟩)
-      · exact .inr (.inr ⟨c, _, _, Firth.Logic.Reaches.trans hr h1, h2⟩)
+      · exact .inr (.inr ⟨hne, c, _, _, Firth.Logic.Reaches.trans hr h1, h2⟩)
   | outOfBound _ => trivial
 
 theorem run_sim {M image} (hI : ImageRel M D image) :
@@ -752,7 +764,7 @@ theorem execute_of_reaches {M image} (hI : ImageRel M D image) {entry : String} 
       exact .inl ⟨s, m', rfl, h2, hk⟩
   | trapped t m' =>
       rw [ho] at hsim
-      rcases hsim with rfl | ⟨_, c, n, k', h1, h2, h3⟩ | ⟨c, n, k', h1, h2 | h2⟩
+      rcases hsim with rfl | ⟨_, c, n, k', h1, h2, h3⟩ | ⟨_, c, n, k', h1, h2 | h2⟩
       · exact .inr (.inl ⟨m', rfl⟩)
       · exfalso
         obtain ⟨_, h, _⟩ := reaches_split hrun h1 (by simp [start] at h2; omega)
@@ -763,17 +775,31 @@ theorem execute_of_reaches {M image} (hI : ImageRel M D image) {entry : String} 
   | outOfBound last => exact absurd ho (execute_within_bound last)
 
 /-- Faults: when the interpreter gets stuck (a type or stack fault, or a
-primitive fault) on the body, the target traps. -/
+primitive fault) on the body after `n` steps, the target given more than `n`
+fuel traps, and not for want of fuel. With `execute_trapped`, the trap is the
+depth bound, the interpreter's own fault, or an earlier length overflow. The
+kernel cost spent before a fault is not related. -/
 theorem execute_of_stuck {M image} (hI : ImageRel M D image) {entry : String} {w : Target.WordEntry}
     {body : SProgram} (hentry : image.find? (·.name == entry) = some w) (hbody : CodeRel M [] w.code body)
     {S : List SValue} {stack : List TValue} (hS : ListRel (ValRel M) S stack) {c : Config} {n k : Nat}
-    (hc : Reach ⟨S, body⟩ c n k) (hstuck : Stuck D c) (fuel : Nat) :
-    ∃ t m', execute image entry stack fuel = .trapped t m' := by
+    (hc : Reach ⟨S, body⟩ c n k) (hstuck : Stuck D c) {fuel : Nat} (hfuel : n < fuel) :
+    ∃ t m', execute image entry stack fuel = .trapped t m' ∧ t ≠ .fuelExhausted := by
+  have hsim := execute_sim hI hentry hbody hS fuel
   cases ho : execute image entry stack fuel with
   | halted s m' =>
       obtain ⟨S'', n', h1, _⟩ := execute_halted hI hentry hbody hS ho
       exact (not_stuck_of_terminal h1 hc hstuck).elim
-  | trapped t m' => exact ⟨t, m', rfl⟩
+  | trapped t m' =>
+      refine ⟨t, m', rfl, ?_⟩
+      rintro rfl
+      rw [ho] at hsim
+      rcases hsim with h | ⟨_, c', n', k', h1, h2, _⟩ | ⟨hne, _⟩
+      · cases h
+      · simp only [start] at h2
+        obtain ⟨_, h, _⟩ := reaches_split hc h1 (by omega)
+        obtain ⟨h0, _⟩ := reaches_from_stuck hstuck h
+        omega
+      · exact hne rfl
   | outOfBound last => exact absurd ho (execute_within_bound last)
 
 /-- And the converse: a target trap other than the depth bound and running
@@ -791,7 +817,7 @@ theorem execute_trapped {M image} (hI : ImageRel M D image) {entry : String} {w 
   rcases this with h1 | ⟨h1, _⟩ | h1
   · exact absurd h1 hdepth
   · exact absurd h1 hfuel
-  · exact h1
+  · exact h1.2
 
 end Runs
 
