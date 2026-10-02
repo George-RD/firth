@@ -264,6 +264,39 @@ def refusals() -> None:
         (real / "lru.py").write_text("y")
         check(tier.load(real, "firth") == {"lru": "x"} and tier.load(real, "python") == {"lru": "y"},
               "a directory's answers are read in the language scored only")
+    sandbox_scan()
+
+
+def sandbox_scan() -> None:
+    """The scan run before scoring Python finds a copy of this tier's hidden
+    files where the sandbox would show it, and passes a directory without one."""
+    import shutil, subprocess, tempfile
+    git = ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "init.defaultBranch=main"]
+    with tempfile.TemporaryDirectory() as d:
+        clean = Path(d) / "clean"
+        (clean / "lib").mkdir(parents=True)
+        (clean / "lib" / "lru.py").write_text("def main(c, ops):\n    return []\n")
+        subprocess.run(git + ["init", "-q", str(clean / "repo")], check=True)
+        check(tier.tier_copies((str(clean),)) == [], "the sandbox scan passes a directory with no copy")
+        def copy(p: Path) -> None:  # a reference under another name
+            (p / "x").mkdir()
+            shutil.copy(HERE / "reference/calibration/python/lru.py", p / "x" / "cache.py")
+
+        def named(p: Path) -> None:  # an older revision's directory, content unknown
+            (p / "old/eval/s7/harder").mkdir(parents=True)
+
+        def history(p: Path) -> None:  # the tasks in a commit, gone from the checkout
+            subprocess.run(git + ["init", "-q", str(p / "r")], check=True)
+            shutil.copy(HERE / "calibration.py", p / "r" / "tasks.py")
+            subprocess.run(git + ["-C", str(p / "r"), "add", "."], check=True)
+            subprocess.run(git + ["-C", str(p / "r"), "commit", "-qm", "x"], check=True)
+            (p / "r" / "tasks.py").unlink()
+        planted = {"copy": copy, "named": named, "git": history}
+        for what, plant in planted.items():
+            p = Path(d) / what
+            p.mkdir()
+            plant(p)
+            check(bool(tier.tier_copies((str(p),))), f"the sandbox scan finds a planted copy ({what})")
 
 
 def main() -> int:

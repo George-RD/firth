@@ -26,9 +26,11 @@ harness's sandbox, which needs root; scoring Python refuses without it.
 from __future__ import annotations
 
 import argparse
+import functools
 import hashlib
 import json
 import os
+import stat
 import subprocess
 import sys
 import tempfile
@@ -45,6 +47,7 @@ HASHED = {f"harder/{n}": HERE / n for n in ("calibration.py", "tier.py")} | {
     n: S7 / n for n in ("task.py", "harness.py", "isolate.py")}
 IMPORT_HASHES = {n: hashlib.sha256(p.read_bytes()).hexdigest() for n, p in HASHED.items()}
 import harness  # noqa: E402
+import isolate  # noqa: E402
 from calibration import CALIBRATION  # noqa: E402
 from task import Task  # noqa: E402
 
@@ -144,11 +147,120 @@ def load(path: Path, lang: str) -> dict[str, str]:
         os.close(dfd)
 
 
+# This tier's hidden tests and references, as paths in the repository. The
+# sandbox's own scan (isolate.hidden_copies) knows only the MVP tier's, and
+# isolate.py is pinned by earlier runs, so this tier scans for its own.
+HIDDEN_PATHS = tuple(f"eval/s7/harder/{n}" for n in (*(f"{s}.py" for s in SETS), "reference"))
+
+
+def hidden_files() -> list[Path]:
+    root = S7.parent.parent
+    out = []
+    for rel in HIDDEN_PATHS:
+        p = root / rel
+        out += sorted(f for f in p.rglob("*") if f.is_file()) if p.is_dir() else [p]
+    return out
+
+
+@functools.lru_cache(maxsize=None)
+def hidden_blobs() -> tuple[str, ...]:
+    """The git blob id of every version of this tier's hidden files: as they
+    are now, and each revision in the repository's history."""
+    root = S7.parent.parent
+    blobs = set(isolate.git_lines(root, "hash-object", "--", *map(str, hidden_files())))
+    for line in isolate.git_lines(root, "log", "--all", "--format=", "--raw", "--no-abbrev",
+                                  "--", *HIDDEN_PATHS):
+        blobs.update(b for b in line.split()[2:4] if b.strip("0"))
+    return tuple(sorted(blobs))
+
+
+def tier_storage(top: str, bare: bool) -> str | None:
+    """Why the git storage at TOP could hand an author this tier's hidden files,
+    or None: it has one of their blobs, or any tree, reachable or not, with an
+    `eval/s7/harder` directory. Storage git cannot read is refused."""
+    git = ["git", "-c", "safe.directory=*", *(["--git-dir", top] if bare else ["-C", top])]
+    try:
+        have = subprocess.run(git + ["cat-file", "--batch-check"], input="".join(b + "\n" for b in hidden_blobs()),
+                              capture_output=True, text=True, timeout=60)
+        if have.returncode:
+            return f"git cannot read ({have.stderr.strip()[:200]})"
+        if any(not line.endswith(" missing") for line in have.stdout.splitlines()):
+            return "holds a hidden file's content"
+        listed = subprocess.run(git + ["cat-file", "--batch-all-objects", "--unordered",
+                                       "--batch-check=%(objecttype) %(objectname)"],
+                                capture_output=True, text=True, timeout=300)
+        if listed.returncode:
+            return f"git cannot read ({listed.stderr.strip()[:200]})"
+        trees = [line.split()[1] for line in listed.stdout.splitlines() if line.startswith("tree ")]
+        read = subprocess.run(git + ["cat-file", "--batch"], input="".join(t + "\n" for t in trees).encode(),
+                              capture_output=True, timeout=300)
+        if read.returncode:
+            return f"git cannot read ({read.stderr.decode(errors='replace').strip()[:200]})"
+        entries = isolate.tree_entries(read.stdout)
+    except (OSError, subprocess.SubprocessError, ValueError) as e:
+        return f"git cannot read ({e})"
+    child = {(tree, name): oid for tree, items in entries.items() for name, oid, is_tree in items if is_tree}
+    for (tree, name), oid in child.items():
+        if name == b"eval" and (oid, b"s7") in child and (child[oid, b"s7"], b"harder") in child:
+            return "has a revision of this tier"
+    return None
+
+
+@functools.lru_cache(maxsize=None)
+def tier_copies(sources: tuple[str, ...]) -> list[str]:
+    """What under SOURCES could hand an author this tier's hidden tests or
+    references, as `isolate.hidden_copies` finds the MVP tier's: a file with a
+    hidden file's content, a directory named like this tier's
+    (`eval/s7/harder`, catching older revisions), and git storage that holds
+    any revision of them. The directories the sandbox never shows are skipped.
+    A renamed and edited copy is not caught, as there."""
+    hidden: dict[int, set[str]] = {}
+    for f in hidden_files():
+        hidden.setdefault(f.stat().st_size, set()).add(hashlib.sha256(f.read_bytes()).hexdigest())
+    found = []
+
+    def check_file(path: str) -> None:
+        try:
+            st = os.lstat(path)
+            if (stat.S_ISREG(st.st_mode) and st.st_size in hidden and
+                    hashlib.sha256(Path(path).read_bytes()).hexdigest() in hidden[st.st_size]):
+                found.append(f"{path} (the content of a hidden file)")
+        except OSError:
+            pass
+    for src in sources:
+        if not os.path.isdir(src):
+            check_file(src)
+            continue
+        for top, dirs, files in os.walk(src, followlinks=False):
+            dirs[:] = [d for d in dirs if os.path.join(top, d) not in isolate.UNSHOWN]
+            if ".git" in dirs + files or {"objects", "refs"} <= set(dirs) and "HEAD" in files:
+                why = tier_storage(top, bare=".git" not in dirs + files)
+                if why:
+                    found.append(f"{top} (git storage that {why})")
+            if top.endswith("/eval/s7/harder"):
+                found.append(f"{top} (named like this tier)")
+            for n in files:
+                check_file(os.path.join(top, n))
+    return found
+
+
+def check_sandbox_sources() -> None:
+    """Refuse to score Python when what the sandbox shows (its system
+    directories and the interpreter's install) holds a copy of this tier's
+    hidden files. The repository itself is kept out by the sandbox."""
+    exe = harness.sandbox_python()
+    sources = tuple(s for s, _ in isolate.allowed_sources(harness.python_install(exe)))
+    found = tier_copies(sources)
+    if found:
+        raise SystemExit(f"the sandbox would show {found[0]}; move it or leave it out")
+
+
 def score(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int = 4) -> dict:
     if lang == "python":
         if os.geteuid() != 0:
             raise SystemExit("scoring Python answers needs the sandbox; run as root")
         harness.sandbox_preflight()
+        check_sandbox_sources()
     work = [(t, args, i == 0) for t in tasks if t.id in solutions
             for i, args in enumerate((t.example, *t.hidden))]
     if lang == "firth" and work:

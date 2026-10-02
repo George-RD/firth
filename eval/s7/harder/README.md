@@ -58,6 +58,11 @@ the portable runner passes in and reads back.
   diagnostics. Scoring records the hashes of the task set and the scorer as
   they were imported, and refuses if they or the Firth tree change while it
   runs. Python answers run in the harness's sandbox, which needs root.
+  The sandbox's own scan for copies of hidden files knows only the MVP
+  tier's, so before scoring Python `tier.py` scans what the sandbox would
+  show for copies of this tier's (a file with a hidden file's content, a
+  directory named `eval/s7/harder`, or git storage holding any revision of
+  them) and refuses if it finds one.
 - `audit.py`: the MVP tier's transcript audit (`audit_subagent.py`), with
   this tier's feedback for the check that each `repair-<n>.md` is what the
   author was shown.
