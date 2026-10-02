@@ -146,6 +146,12 @@
     {"source": "comparisons.firth", "entry": "clamp", "stack": [-3, 0, 10], "expect": [0]},
     {"source": "comparisons.firth", "entry": "clamp", "stack": [12, 0, 10], "expect": [10]},
     {"source": "comparisons.firth", "entry": "clamp", "stack": [10, 0, 10], "expect": [10]},
-    {"source": "comparisons.firth", "entry": "clamp", "stack": [0, 0, 10], "expect": [0]}
+    {"source": "comparisons.firth", "entry": "clamp", "stack": [0, 0, 10], "expect": [0]},
+    {"source": "nested-loop.firth", "entry": "count", "stack": [0, 0], "expect": [0]},
+    {"source": "nested-loop.firth", "entry": "count", "stack": [5, 0], "expect": [5]},
+    {"source": "nested-loop.firth", "entry": "count", "stack": [300, 0], "expect": [300]},
+    {"source": "nested-loop.firth", "entry": "count", "stack": [3000, 7], "expect": [3007]},
+    {"source": "nested-loop.firth", "entry": "add-twice", "stack": [2, 3], "expect": [8]},
+    {"source": "nested-loop.firth", "entry": "shadowed", "stack": [2, 3], "expect": [15]}
   ]
 }

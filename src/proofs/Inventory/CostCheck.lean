@@ -3,9 +3,9 @@ import proofs.Inventory.Allocate
 /-! Concrete runs against `allocate_batch`. The reference interpreter runs
 `allocate-batch`'s body, as the host runs the entry word. On an empty batch the
 cost is exactly `batchCost 0`, so the proved constant cannot be lowered. For
-larger batches the proved bound is not attained: one partial request costs 322
+larger batches the proved bound is not attained: one partial request costs 312
 against `batchCost 1 = 367`, and `examples/inventory/measure_cost.py` measures
-at most 341,547 at 64 requests against 341,701. -/
+at most 340,907 at 64 requests against 341,701. -/
 
 namespace Firth.Proofs.Inventory.CostCheck
 open Firth.Interpreter
@@ -32,7 +32,7 @@ def run (program : Program) (stack : Stack) : Option (Stack × Nat) :=
 -- One request for 2 with 1 in stock under the partial policy: 1 allocated,
 -- reason partial (code 1), within the bound.
 #guard run «allocate-batch».body (batchIn 1 false [0, 0, 0, 1] [2] []) ==
-  some (batchOut 0 0 [1] [1] [], 322)
-#guard 322 ≤ batchCost 1
+  some (batchOut 0 0 [1] [1] [], 312)
+#guard 312 ≤ batchCost 1
 
 end Firth.Proofs.Inventory.CostCheck
