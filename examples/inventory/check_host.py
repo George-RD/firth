@@ -12,7 +12,7 @@ cover the definitions, not the JSON glue, so this script checks the glue:
 * the executable refuses what the proofs do not cover: IDs outside the spec's
   syntax, unknown reason and error codes, and lengths that differ.
 
-Usage: python3 examples/inventory/check_host.py (after `lake build inventoryHost`)
+Usage: python3 examples/inventory/check_host.py
 """
 from __future__ import annotations
 
@@ -73,6 +73,7 @@ def problems() -> list[str]:
 
 
 def main() -> int:
+    host.build_toolchain()
     found = problems()
     for problem in found:
         print(problem, file=sys.stderr)

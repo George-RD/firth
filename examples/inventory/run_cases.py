@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -55,6 +56,18 @@ def error(code: str) -> dict[str, str]:
     return {"status": "error", "code": code}
 
 
+def build_toolchain() -> None:
+    """The gate's adapters and VM, then `inventoryHost`, rebuilt so none is stale."""
+    gate.build_toolchain()
+    lake = shutil.which("lake")
+    if lake is None:
+        raise RuntimeError("lake is not on PATH")
+    gate.run([lake, "build", "inventoryHost"], cwd=ROOT, stdin=None,
+             timeout=gate.BUILD_TIMEOUT_SECONDS)
+    if not HOST.is_file():
+        raise RuntimeError(f"{HOST} was not built")
+
+
 def lean_host(mode: str, payload: Any) -> Any:
     """Run `inventoryHost <mode>` (src/proofs/Inventory/HostMain.lean) on `payload`.
 
@@ -63,7 +76,7 @@ def lean_host(mode: str, payload: Any) -> Any:
     a Python copy of them.
     """
     if not HOST.is_file():
-        raise RuntimeError(f"{HOST} is missing; run `lake build inventoryHost`")
+        raise RuntimeError(f"{HOST} is missing; call build_toolchain() first")
     result = subprocess.run([str(HOST), mode], input=json.dumps(payload), capture_output=True,
                             text=True, check=False)
     if result.returncode != 0:
@@ -137,7 +150,7 @@ def main() -> int:
     args = parser.parse_args()
     cases = json.loads((ROOT / "specs/inventory-allocation-cases.json").read_text(encoding="utf-8"))["cases"]
     selected = [(i, c) for i, c in enumerate(cases) if not args.only or c["name"] in args.only]
-    gate.build_toolchain()
+    build_toolchain()
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
         results = list(pool.map(lambda item: run_case(*item), selected))
     for result in results:
