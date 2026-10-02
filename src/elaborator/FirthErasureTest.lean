@@ -121,7 +121,7 @@ private def expectErrorAt (word : WordDefinition) (expected : ErasureError → B
       if expected error then
         let actual := match error with
           | .duplicateLocal _ actual | .unboundLocal _ actual | .unsupportedCapture _ actual
-          | .missingStackValue actual | .linearCopy _ actual | .linearUnused _ actual
+          | .missingStackValue actual | .linearCopy _ actual _ | .linearUnused _ actual
           | .unresolvedEffect _ actual | .effectUnderflow _ actual _ | .unsupportedLiteral actual
           | .unsupportedAtom _ actual | .usageMismatch _ actual
           | .untrackedStack _ actual _ | .hiddenLocal _ actual | .branchShape actual _ _ _ _ => actual
@@ -273,8 +273,26 @@ def main : IO Unit := do
     | [.locals _ [.word _ _, .word _ span] _] => span
     | _ => panic! "linear-copy fixture changed"
   expectErrorAt linearCopy (fun error => match error with
-    | .linearCopy name _ => name == "h"
+    | .linearCopy name _ _ => name == "h"
     | _ => false) linearCopySpan
+
+  -- A linear local used in an inner block and again after it is used twice
+  -- (todo.linear-local-reused-across-blocks): the report is at the second
+  -- use and names the first. Counting only the rest of the inner block moved
+  -- `h` into it and reported the later `h` as never used.
+  let across ← parsed ": across ( h:Handle^linear -- ) locals { h } { 1 locals { k } { h } h } ;"
+  let (acrossFirst, acrossSecond) := match across.body with
+    | [.locals _ [_, .locals _ [.word _ first] _, .word _ second] _] => (first, second)
+    | _ => panic! "across fixture changed"
+  expectErrorAt across (fun error => match error with
+    | .linearCopy name _ (some first) => name == "h" && first == acrossFirst
+    | _ => false) acrossSecond
+  -- A name bound again by an enclosing block is another local: the inner
+  -- `h` is the middle block's, and the outer `h` after it is used once.
+  let rebound ← parsed ": rebound ( a:Handle^linear b:Handle^linear -- x:Handle^linear y:Handle^linear ) locals { h b } { b locals { h } { 1 locals { k } { h } } h } ;"
+  match erase arithmetic rebound.effect rebound.body with
+  | .ok _ => pure ()
+  | .error error => fail s!"rebound: expected the outer and middle `h` to be two locals: {repr error}"
 
   let linearUnused ← parsed ": unused-h ( h:Handle^linear -- ) locals { h } { } ;"
   let linearBindingSpan := match linearUnused.body with

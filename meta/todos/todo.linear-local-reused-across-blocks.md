@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.agent
-status: open
+status: done
 created: 2026-10-02
 ---
 
@@ -27,3 +27,18 @@ linear locals as they were).
   with the program still refused.
 - A test holds that report, and a planted mutant (the current counting) fails
   it.
+
+## Resolution
+
+`useCount` now counts the uses after the inner block for a linear local of
+an enclosing block too, so the case above is refused as
+`firth.linearity.copy`: "The linear local `w` is used more than once: first
+at line 2, column 35, and again here.", at the second use. The report names
+the first use for every copy found this way.
+
+Counting further out needs to know which local a name means there: a block
+that binds the name again hides the enclosing blocks' later uses of it
+(`shadowAfter`), so a linear local of a middle block and an outer local of
+the same name are still two locals. `firthErasureTest` holds both cases
+(`across`, `rebound`), and `examples/programs/nested-loop.firth` runs the
+`many` version of the second (`rebound`).

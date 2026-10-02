@@ -20,3 +20,10 @@
 : shadowed
   (forall ρ; ρ n:Int^many acc:Int^many -- ρ r:Int^many)
   locals { n acc } { n locals { m } { m acc prim + } 10 locals { acc } { acc prim + } };
+
+\ The middle block binds `n` again, so the `n` in the innermost block is
+\ the middle one (3, from `acc`), and the `n` after the middle block is the
+\ outer one (2): 3 + 1, then + 2.
+: rebound
+  (forall ρ; ρ n:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { n acc } { acc locals { n } { 1 locals { k } { n k prim + } } n prim + };

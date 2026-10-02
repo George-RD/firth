@@ -1670,6 +1670,16 @@ def runElaboratorDiagnosticTests : IO Unit := do
       else fail s!"pipeline stack-effect message was not explanatory: {emitted}"
   | _ => fail "pipeline stack-effect result was not singular"
 
+  -- A linear local used in an inner block and again after it: the report
+  -- says it is used twice and where first (todo.linear-local-reused-across-blocks).
+  match elaboratePipeline pipelineContext ": f (forall ρ; ρ w:World^linear -- ρ w:World^linear w2:World^linear)\n  locals { w } { 1 locals { k } { w } w } ;" with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      unless (emitted.splitOn "firth.linearity.copy").length > 1 &&
+          (emitted.splitOn "The linear local `w` is used more than once: first at line 2, column 35, and again here.").length > 1 do
+        fail s!"linear local across blocks: expected a copy report naming the first use: {emitted}"
+  | _ => fail "linear local across blocks: expected one diagnostic"
+
   match elaboratePipeline pipelineContext ": bad ( -- ) missing ;" with
   | .failure [envelope] =>
       if (encode envelope).contains "`missing` is not a defined word" then pure ()
