@@ -2,9 +2,11 @@
 """Run the fixed inventory corpus through the host and the Firth allocator.
 
 The host part of specs/inventory-allocation.md lives here: JSON shape, types
-and ID syntax (`invalid-input`), integers a 64-bit host cannot hold
-(`invalid-range`), the per-ID encoding, and turning the component's codes back
-into JSON. Everything else (bounds, repeated IDs and the allocation) runs in
+and ID syntax (`invalid-input`) and integers a 64-bit host cannot hold
+(`invalid-range`). The per-ID encoding and turning the component's codes back
+into an answer are Lean definitions with proofs (src/proofs/Inventory/Host.lean),
+run through `lake exe inventoryHost`; this file only moves JSON to and from it.
+Everything else (bounds, repeated IDs and the allocation) runs in
 `allocator.firth` on the VM and the reference interpreter, which must agree
 (`mvp_agent_gate.rebuild`). The result must equal the corpus's fixed expected
 output; the corpus is never rewritten from what the program produces.
@@ -16,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
@@ -29,6 +32,7 @@ sys.path.insert(0, str(ROOT / "tools" / "loop"))
 import mvp_agent_gate as gate  # noqa: E402
 
 SOURCE = HERE / "allocator.firth"
+HOST = ROOT / ".lake" / "build" / "bin" / "inventoryHost"
 ENTRY = "allocate-batch"
 FUEL = gate.MAX_FUEL
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-"
@@ -47,28 +51,28 @@ def cost_bound(n: int) -> int:
     return 165 + 202 * n + 163 * n * (n - 1) // 2
 
 
-REASONS = ["fulfilled", "partial", "out-of-stock", "insufficient-stock"]
-ERRORS = {1: "invalid-range", 2: "duplicate-id"}
-
-
 def error(code: str) -> dict[str, str]:
     return {"status": "error", "code": code}
 
 
-def encode_id(text: str) -> list[int]:
-    """Four Ints, eight characters each in base 65 (0 pads a short ID)."""
-    padded = [ALPHABET.index(ch) + 1 for ch in text] + [0] * (32 - len(text))
-    parts = []
-    for start in range(0, 32, 8):
-        value = 0
-        for digit in padded[start:start + 8]:
-            value = value * 65 + digit
-        parts.append(value)
-    return parts
+def lean_host(mode: str, payload: Any) -> Any:
+    """Run `inventoryHost <mode>` (src/proofs/Inventory/HostMain.lean) on `payload`.
+
+    The ID encoding and the answer are computed by the Lean definitions that
+    src/proofs/Inventory/Host.lean proves injective and order-preserving, not by
+    a Python copy of them.
+    """
+    if not HOST.is_file():
+        raise RuntimeError(f"{HOST} is missing; run `lake build inventoryHost`")
+    result = subprocess.run([str(HOST), mode], input=json.dumps(payload), capture_output=True,
+                            text=True, check=False)
+    if result.returncode != 0:
+        raise RuntimeError(f"inventoryHost {mode} failed: {result.stderr.strip()}")
+    return json.loads(result.stdout)
 
 
-def host_decode(value: Any) -> dict[str, str] | list[Any]:
-    """The host's checks, then the component's initial stack."""
+def host_check(value: Any) -> dict[str, str] | tuple[int, bool, list[str], list[int]]:
+    """The host's checks: an error, or the stock, policy, ID strings and quantities."""
     if not isinstance(value, dict) or set(value) != {"available", "policy", "requests"}:
         return error("invalid-input")
     available, policy, requests = value["available"], value["policy"], value["requests"]
@@ -85,19 +89,21 @@ def host_decode(value: Any) -> dict[str, str] | list[Any]:
     integers = [available] + [request["quantity"] for request in requests]
     if any(number not in INT64 for number in integers):
         return error("invalid-range")
-    ids = [encode_id(request["id"]) for request in requests]
-    return [available, policy == "all-or-nothing",
-            [part for parts in ids for part in parts],
-            [request["quantity"] for request in requests]]
+    return (available, policy == "all-or-nothing", [request["id"] for request in requests],
+            [request["quantity"] for request in requests])
+
+
+def host_decode(value: Any) -> dict[str, str] | list[Any]:
+    """The host's checks, then the component's initial stack."""
+    checked = host_check(value)
+    if isinstance(checked, dict):
+        return checked
+    available, whole, ids, quantities = checked
+    return [available, whole, lean_host("encode", ids), quantities]
 
 
 def host_encode(requests: list[dict[str, Any]], stack: list[Any]) -> dict[str, Any]:
-    code, remaining, allocated, reasons = stack
-    if code:
-        return error(ERRORS[code])
-    return {"status": "ok", "remaining": remaining,
-            "allocations": [{"id": request["id"], "quantity": quantity, "reason": REASONS[reason]}
-                            for request, quantity, reason in zip(requests, allocated, reasons, strict=True)]}
+    return lean_host("answer", {"ids": [request["id"] for request in requests], "stack": stack})
 
 
 def run_case(index: int, case: dict[str, Any]) -> dict[str, Any]:

@@ -36,7 +36,10 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "examples" / "inventory"))
 import run_cases as host  # noqa: E402  (the host's cost bound)
 
-MAX_REQUESTS = 64  # the spec's bound on the batch size
+# The spec's bound on the batch size. It is also the floor of the compared
+# range: measure_cost.py evaluates the bound at 64 requests, and the corpus
+# alone would not guarantee that size is compared.
+MAX_REQUESTS = 64
 CORPUS = ROOT / "specs" / "inventory-allocation-cases.json"
 
 

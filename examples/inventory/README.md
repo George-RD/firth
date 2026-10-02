@@ -67,7 +67,17 @@ recorded as toolchain evidence (`src/proofs/records.json`) bound to the body
 digests of `allocate-batch` and every word it calls, so all ten words are
 reported `contract_verified`, and a change to any of them withdraws it.
 Agreement of the VM with the reference interpreter rests on differential
-testing, and the Python host is tested, not proved.
+testing.
+
+The host's ID encoding and its answer are proved as well
+(`src/proofs/Inventory/Host.lean`): the encoding is injective on the spec's ID
+syntax, so the duplicate-ID result means two equal ID strings, and every
+allocation and reason is attached to its own request's ID in request order.
+`run_cases.py` runs those Lean definitions through `lake exe inventoryHost`;
+`check_host.py` checks that executable against values written by hand. Python
+keeps the JSON shape, type, ID-syntax and i64 checks the spec gives the host,
+which are tested by the corpus and by planted bugs
+(`tools/loop/test_inventory_host.py`), not proved.
 
 ## Changing the policy
 

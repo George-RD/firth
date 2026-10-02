@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.interpreter
-status: open
+status: done
 created: 2026-09-27
 ---
 
@@ -133,15 +133,21 @@ Every acceptance criterion is met on `main` except one part, listed last:
   erased type, and each must withdraw the record (#141). Editing
   `allocate-one` breaks the proof of `allocate-batch`.
 
-Still open: "IDs and order preserved". The program is proved to return one
-allocation and reason per request, in request order, but it never sees the
-IDs. The Python host attaches each result to its request's ID by position
-(`host_encode` in `examples/inventory/run_cases.py`), and that is tested, not
-proved. The same holds for "repeated IDs rejected", which the program proves
-for the four-part encoded blocks and which equals ID equality only if the
-host's encoding is injective. Both are closed by `todo.inventory-host-proof`,
-so this task stays open until that lands. The compiler and VM gap is
-`todo.compiler-vm-agreement-proof`, which this task's non-goals leave out.
+That last part, "IDs and order preserved", was open on 28 September 2026: the
+program returns one allocation and reason per request in request order, but
+the Python host attached the IDs, and repeated IDs were proved only for the
+encoded blocks.
+
+## Completion, 2 October 2026
+
+`todo.inventory-host-proof` closed it. `src/proofs/Inventory/Host.lean`
+proves the ID encoding injective on the spec's ID syntax (`encodeId_inj`), so
+`allocate_batch_host_contract` states the duplicate-ID result on ID strings,
+and proves that the answer attaches each allocation and reason to its own
+request's ID in request order (`hostEncode_ok`). Those Lean definitions are
+what the host runs (`lake exe inventoryHost`). Every acceptance criterion is
+now met. The compiler and VM gap is `todo.compiler-vm-agreement-proof`, which
+this task's non-goals leave out.
 
 ## Traceability
 

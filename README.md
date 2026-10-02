@@ -69,14 +69,15 @@ What works, and where to check it:
   The inventory allocator (`examples/inventory/`) passes all 53 cases of
   its fixed contract. 30 run on both hosts, and 23 are invalid inputs its
   host must reject (`python3 examples/inventory/run_cases.py`).
-- **Proofs about programs.** 5 contracts are proved in Lean over the
+- **Proofs about programs.** 6 contracts are proved in Lean over the
   reference interpreter. They cover 15 distinct word bodies (16 exported
   words, because the same `abs` is in two files). One of them is the whole
   allocator: conservation, no over-allocation, the fulfilment policy, i64
   range and a cost bound. That meets goal S5 in the
-  [roadmap](docs/roadmap.md), with two gaps stated there. The compiler and
-  VM agree with the reference only by differential testing, and the
-  Python host that feeds the allocator is tested, not proved.
+  [roadmap](docs/roadmap.md). The host's ID encoding and the way it attaches
+  results to IDs are proved too and run from Lean. The gaps stated there are
+  that the compiler and VM agree with the reference only by differential
+  testing, and that the Python host's JSON checks are tested, not proved.
 
 ## How well models write it
 

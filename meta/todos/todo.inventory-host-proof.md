@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.agent
-status: open
+status: done
 created: 2026-09-28
 ---
 
@@ -27,3 +27,38 @@ not proved.
 - Whatever stays in the host is listed, with the spec section that assigns
   it to the host, and is covered by the corpus and by planted-bug tests.
 - The S5 claim is updated to name the remaining trusted host code, if any.
+
+## Completion, 2 October 2026
+
+Each acceptance criterion and its evidence:
+
+- The ID encoding is proved injective on the spec's ID syntax, in Lean:
+  `encodeId_inj` in `src/proofs/Inventory/Host.lean`. `encodeIds_idParts`
+  proves every part is in `[0, 65^8)`, the old contract's precondition, and
+  `hasRepeat_encodeIds` proves a repeated four-part block is exactly a
+  repeated ID string. `allocate_batch_host_contract` restates the allocator's
+  contract on ID strings (code 2 when two requests have the same ID) and is
+  recorded in `src/proofs/records.json`. The Firth route was not taken: Firth
+  has no string or byte values (`todo.language-text-values`).
+- Attaching results to IDs by position is proved: `hostEncode_ok` shows a
+  successful answer lists the request IDs in request order, each with its own
+  quantity and reason name, and `hostEncode_error` shows an error answer is
+  only ever one of the spec's two component codes.
+- The proved definitions are the ones that run. `run_cases.py` no longer
+  encodes IDs or builds answers; it calls `lake exe inventoryHost`
+  (`HostMain.lean`), which evaluates `encodeIds` and `hostEncode` and refuses
+  any ID outside `validId` (proved equal to the syntax, `validId_iff`) and any
+  stack the spec does not allow. `examples/inventory/check_host.py` checks
+  that executable against hand-written encodings and refusals, and
+  `HostMutants.lean` plants wrong expectations that `#guard` must reject.
+  The spec corpus guards (`SpecCorpus.lean`) now evaluate `hostSpec` on the
+  corpus's ID strings.
+- What stays in the host, with the spec section ("Host and Firth split") that
+  gives it there: JSON parsing; the object shape, JSON types, policy string
+  and ID syntax checks that answer `invalid-input`; the check that answers
+  `invalid-range` for integers outside i64; and moving JSON to and from
+  `inventoryHost`. These are in `host_check` and are covered by the 23
+  host-rejected corpus cases and by `tools/loop/test_inventory_host.py`,
+  which plants a bug in each check and requires a corpus case to change.
+  They are tested, not proved, as is Lean's own JSON parser on the way in.
+- The S5 row in `docs/roadmap.md` names that remaining host code.
