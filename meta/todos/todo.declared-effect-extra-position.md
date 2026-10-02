@@ -11,15 +11,15 @@ Found by the second harder-tier calibration pool (`eval/s7/harder/README.md`,
 so its body left `ρ Seq Int Seq Int Int Int` against a declared
 `ρ Seq Int Int Int`
 (`eval/s7/harder/runs/2026-10-02-calibration2/sonnet-firth-3/results-1.json`).
-The extra value is the second `Seq Int`, under the two results. The hint
+The extra value is the first `Seq Int`, under all three results. The hint
 says
 
 ```
 hint: The body leaves 1 extra value on top (Int). Consume or `drop` it before the end of the word, ...
 ```
 
-which names the wrong value and the wrong place: the top two values are
-the declared `Int Int`. `explain` in
+which names the wrong value and the wrong place: the top three values
+are the declared `Seq Int Int Int`. `explain` in
 `src/agent/Firth/Agent/ElaboratorDiagnostics.lean` assumes the declared
 values are the bottom of what the body leaves and the surplus is on top.
 Reproduce with

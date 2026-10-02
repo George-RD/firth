@@ -298,7 +298,7 @@ The failures:
   either a dropped rule or a description that can be read two ways; the
   results cannot tell which.
 - `elevator`, Firth 3: round 1's `main` pushed `tm` twice, so it left an
-  extra `Seq Int` under its two results
+  extra `Seq Int` under its three results
   (`firth.type.declared-effect-mismatch`, shown on the example). The hint
   called it an extra `Int` on top, which is wrong
   (`todo.declared-effect-extra-position`). Round 2

@@ -44,10 +44,16 @@ until the tasks get harder.
   rule-heavy tasks with every size and value bound stated and checked
   (`test_harder.py`), independent Python and Firth references, hand values
   and mutants. Calibrated on 2 October 2026 like the first (README):
-  Python 22 of 24 and Firth 20 of 24, but seven of eight tasks were passed
-  by every author, and every Python failure is one hidden test on one
+  Python 22 of 24 and Firth 20 of 24, but six of eight tasks were passed
+  by every author in both languages, and every Python failure is one hidden test on one
   clause, so this pool is effectively at the ceiling too. The next pool
   needs much larger programs, not more rules of this size.
+- Pool 2's `order-book` and `heap-alloc` descriptions say a cancel or free
+  names an "earlier operation", but their hidden tests include the
+  operation itself and later ones (review of #214). The cases are kept as
+  calibration only and are never moved into the scored tier as written;
+  any task built from them states the target as a range without
+  "earlier".
 - DeepSeek Flash: `curl -sS https://ollama.com/api/tags` from this
   project's cloud environment on 2 October 2026 listed
   `deepseek-v4.1-flash`; the environment's proxy already injects an
