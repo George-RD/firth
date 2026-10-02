@@ -7,8 +7,8 @@ entry, in order, carries its word's mapped target name and the lowering of
 its body. The real `compileWords` passes it. Each `#guard_msgs` block plants a
 wrong image (entries out of order, a word published under its unmangled source
 name, a body lowered under a different name map) and fails the build unless
-`#guard` rejects it, so the property the theorem states is not one any image
-would meet. -/
+`#guard` rejects it, so the property the theorem states holds of the real
+image and fails for each wrong one. -/
 
 namespace Firth.Compiler.LoweringMutants
 open Firth.Compiler Firth.Compiler.Lowering
@@ -41,7 +41,7 @@ def agrees (words : List CheckedWord) (entries : List Target.WordEntry) : Bool :
 def compiled : List Target.WordEntry :=
   match compileWords dictionary with
   | .ok entries => entries
-  | .error _ => []
+  | .error e => panic! s!"compileWords dictionary failed: {e.code} in {e.word}: {e.message}"
 
 -- The real compiler: two entries, the second calling the first by its mangled name.
 #guard compiled.length == 2
