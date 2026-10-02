@@ -94,12 +94,24 @@ def unique_members(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
+def json_integer(token: str) -> int:
+    """A JSON integer token as an int. Python refuses to convert more than 4300
+    digits, but JSON has no leading zeros, so any token with more than 19 digits
+    lies outside i64 and stands for an out-of-range value of its sign."""
+    digits = token.lstrip("-")
+    if len(digits) > 19:
+        return -(2 ** 64) if token.startswith("-") else 2 ** 64
+    return int(token)
+
+
 def host_parse(text: str) -> dict[str, str] | tuple[int, bool, list[str], list[int]]:
     """The host's whole input path from JSON text: malformed JSON and repeated
     member names are `invalid-input` (the spec's two host tests), then `host_check`.
-    Python also reads NaN and Infinity, but as floats, which `host_check` refuses."""
+    Python also reads NaN and Infinity, but as floats, which `host_check` refuses.
+    An integer too long for Python to convert is still an integer outside i64,
+    so it reaches `host_check` and answers `invalid-range` after its checks."""
     try:
-        value = json.loads(text, object_pairs_hook=unique_members)
+        value = json.loads(text, object_pairs_hook=unique_members, parse_int=json_integer)
     except (ValueError, RecursionError):
         return error("invalid-input")
     return host_check(value)

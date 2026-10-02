@@ -12,7 +12,8 @@ input to come out differently: a corpus case, or one of `EXTRA`, inputs the
 corpus does not hold, with their expected results written by hand. So no host
 check can be dropped or loosened unnoticed. `host_parse`, the path from JSON
 text, is tested on the spec's two host tests (malformed JSON, repeated member
-names), with a planted parser that keeps the last member. They
+names) and on integers too long for Python's default conversion, with planted
+parsers that keep the last member or use that default. They
 need no Lean toolchain.
 """
 from __future__ import annotations
@@ -42,6 +43,15 @@ TEXTS = {
     "repeated-request-member": ('{"available": 1, "policy": "partial", "requests": '
                                 '[{"id": "a", "id": "b", "quantity": 1}]}', INVALID_INPUT),
     "not-a-number": ('{"available": NaN, "policy": "partial", "requests": []}', INVALID_INPUT),
+    # More digits than Python converts by default (4300): still an integer
+    # outside i64, so invalid-range, but only after the invalid-input checks.
+    "huge-stock": ('{"available": 1' + "0" * 4300 + ', "policy": "partial", "requests": []}',
+                   {"status": "error", "code": "invalid-range"}),
+    "huge-negative-quantity": ('{"available": 1, "policy": "partial", "requests": '
+                               '[{"id": "a", "quantity": -1' + "0" * 4300 + '}]}',
+                               {"status": "error", "code": "invalid-range"}),
+    "huge-stock-bad-policy": ('{"available": 1' + "0" * 4300 + ', "policy": "none", "requests": []}',
+                              INVALID_INPUT),
     "valid": ('{"available": 1, "policy": "partial", "requests": [{"id": "a", "quantity": 1}]}',
               (1, False, ["a"], [1])),
 }
@@ -96,14 +106,17 @@ class HostParseTests(unittest.TestCase):
             with self.subTest(case=name):
                 self.assertEqual(host.host_parse(text), expected)
 
-    def test_a_parser_keeping_the_last_member_fails(self) -> None:
+    def test_every_planted_parser_bug_changes_an_outcome(self) -> None:
         source = inspect.getsource(host.host_parse)
-        original = ", object_pairs_hook=unique_members"
-        self.assertEqual(source.count(original), 1)
-        namespace = dict(vars(host))
-        exec(source.replace(original, ""), namespace)  # noqa: S102
-        planted = {name: outcome(namespace["host_parse"], text) for name, (text, _) in TEXTS.items()}
-        self.assertNotEqual(planted, {name: expected for name, (_, expected) in TEXTS.items()})
+        expected = {name: result for name, (_, result) in TEXTS.items()}
+        for bug, original in [("keeps the last repeated member", ", object_pairs_hook=unique_members"),
+                              ("uses Python's digit limit", ", parse_int=json_integer")]:
+            with self.subTest(bug=bug):
+                self.assertEqual(source.count(original), 1)
+                namespace = dict(vars(host))
+                exec(source.replace(original, ""), namespace)  # noqa: S102
+                planted = {name: outcome(namespace["host_parse"], text) for name, (text, _) in TEXTS.items()}
+                self.assertNotEqual(planted, expected)
 
 
 class HostCheckTests(unittest.TestCase):
