@@ -1680,6 +1680,50 @@ def runElaboratorDiagnosticTests : IO Unit := do
         fail s!"linear local across blocks: expected a copy report naming the first use: {emitted}"
   | _ => fail "linear local across blocks: expected one diagnostic"
 
+  -- Where the extra values are when a body leaves more than it declares
+  -- (todo.declared-effect-extra-position). The hint says "on top" only when
+  -- the declared values are the bottom of what is left and not also the
+  -- top; "under" only the other way round; and no place when the types
+  -- allow either. A run of one type can lend its extra value from anywhere
+  -- in the run, so the second pool's elevator `main` (`tm` pushed twice,
+  -- the first case) has its extra `Seq Int` under the declared values.
+  let extraCases : List (String × String × String) := [
+    ("extra under the declared values",
+      ": main\n  (forall ρ; ρ a:Seq Int^many -- ρ r:Seq Int^many n:Int^many m:Int^many)\n  locals { a } { a a 1 2 };",
+      "The top 3 values match the declared output, and under them the body leaves 1 extra value (Seq Int), value 4 from the top. Push it only where needed, or consume it before the values the word leaves are pushed, or declare it in the signature's output, under the others."),
+    ("extra on top",
+      ": main ( -- b:Bool n:Int ) true 1 false ;",
+      "The body leaves 1 extra value on top (Bool). Consume or `drop` it before the end of the word, or declare it in the signature's output."),
+    ("two extra on top",
+      ": main ( -- n:Int b:Bool ) 1 true 2 3 ;",
+      "The body leaves 2 extra values on top (Int Int)."),
+    ("extra of the declared type",
+      ": main ( -- n:Int m:Int ) 1 2 3 ;",
+      "The body leaves 1 value more than declared (Int), and the types do not tell which one is extra. Find the value the word should not leave and consume it before the end of the word, or declare it in the signature's output."),
+    ("extra fitting more than one way",
+      ": main ( -- b:Bool n:Int ) true 1 true 1 ;",
+      "The body leaves 2 values more than declared, and the types do not tell which ones are extra."),
+    ("extra between the declared values",
+      ": main ( -- n:Int b:Bool m:Int ) 1 true false 2 ;",
+      "The body leaves 1 extra value among the values the signature declares: 1 of the 2 Bool values, values 2 to 3 from the top. Where more values of one type are in a row than declared, the types do not tell which of them is extra."),
+    ("extra runs next to each other",
+      ": main ( -- b:Bool ) 1 [ ] true 2 3 ;",
+      "The body leaves 4 extra values among the values the signature declares: values 1 to 2 from the top (Int Int) and values 4 to 5 from the top (Int [ .. -- .. ])."),
+    ("extra values whose types also differ",
+      ": main ( -- b:Bool n:Int ) 1 2 3 ;",
+      "The body leaves 1 value more than declared, and the declared values are not among them in order, so some types differ too.")]
+  for (label, source, hint) in extraCases do
+    match elaboratePipeline pipelineContext source with
+    | .failure [envelope] =>
+        let emitted := encode envelope
+        unless (emitted.splitOn "firth.type.declared-effect-mismatch").length > 1 && (emitted.splitOn hint).length > 1 do
+          fail s!"{label}: expected the hint {hint}: {emitted}"
+        -- No hint but the on-top one says "on top".
+        if !hint.startsWith "The body leaves 1 extra value on top" && !hint.startsWith "The body leaves 2 extra values on top" &&
+            (emitted.splitOn "on top").length > 1 then
+          fail s!"{label}: the hint claims the extra values are on top: {emitted}"
+    | _ => fail s!"{label}: expected one diagnostic"
+
   match elaboratePipeline pipelineContext ": bad ( -- ) missing ;" with
   | .failure [envelope] =>
       if (encode envelope).contains "`missing` is not a defined word" then pure ()

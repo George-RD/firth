@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.agent
-status: open
+status: done
 created: 2026-10-02
 ---
 
@@ -43,3 +43,23 @@ wrong value.
   does not claim one.
 - A test holds the case above and the existing extra-on-top case, and a
   planted mutant restoring the old wording fails it.
+
+## Resolution
+
+`extraValuesHint` in `src/agent/Firth/Agent/ElaboratorDiagnostics.lean`
+places the declared values among what the body leaves, in order and by type,
+counting values of one type in a row as interchangeable. It says "on top"
+only when that placement puts every extra value above the declared ones and
+no other placement puts them below; "under" only the other way round, with
+their types and depth; "among" with each group's depth when the extra values
+are between declared ones; and no place when the types allow either, or more
+than one placement. The case above now reads "The top 3 values match the
+declared output, and under them the body leaves 1 extra value (Seq Int),
+value 4 from the top."
+
+`firthAgentDiagnosticTest` holds that case, the existing on-top cases and the
+others above. Each of these fails a test: the old wording restored (always
+"on top"); "on top" given where both placements fit; the kept-value check
+for "on top" taken from the wrong placement; a unique placement treated as
+several; and adjacent wholly extra runs not merged.
+

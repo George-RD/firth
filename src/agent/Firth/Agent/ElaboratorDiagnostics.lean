@@ -712,6 +712,125 @@ private def ordinalFromTop : Nat → String
   | 2 => "the third value from the top"
   | depth => s!"value {depth + 1} from the top"
 
+/-- The values from `first` to `last` counted from the top (`first ≤ last`). -/
+private def depthsFromTop (first last : Nat) : String :=
+  if first == last then ordinalFromTop first
+  else s!"values {first + 1} to {last + 1} from the top"
+
+/-- Rendered types as runs of one type, from the bottom: the type and how
+many values in a row have it. Values of one type in a row cannot be told
+apart by type. -/
+private def typeRuns (types : List String) : List (String × Nat) :=
+  types.foldr (init := []) fun type runs => match runs with
+    | (other, count) :: rest => if other == type then (type, count + 1) :: rest else (type, 1) :: runs
+    | [] => [(type, 1)]
+
+/-- How the values a signature declares sit, in order and by type, among
+the more values a body leaves, counted per run of one type: `missing` when
+they are not there in order, `unique kept` when there is one way (`kept`
+gives, per run from the bottom, how many of its values the declared output
+takes), and `several` when the types allow more than one. -/
+private inductive Placement
+  | missing
+  | unique (kept : List Nat)
+  | several
+
+/-- How many of the declared values from position `j` on have type `type`,
+at most `count`. -/
+private def declaredFit (declared : Array String) (type : String) (count j : Nat) : Nat :=
+  ((List.range count).takeWhile fun k => declared[j + k]? == some type).length
+
+private def keptPerRun (declared : Array String) (j : Nat) :
+    List (String × Nat) → List (Array Nat) → List Nat
+  | (type, count) :: runs, next :: nexts =>
+      let k := ((List.range (declaredFit declared type count j + 1)).find? fun k =>
+        next.getD (j + k) 0 > 0).getD 0
+      k :: keptPerRun declared (j + k) runs nexts
+  | _, _ => []
+
+private def placeDeclared (declared : List String) (runs : List (String × Nat)) : Placement :=
+  let m := declared.length
+  let wanted := declared.toArray
+  -- A row per suffix of the runs: at `j`, the ways the declared values from
+  -- `j` on sit in those runs, counted up to 2.
+  let last : Array Nat := (Array.range (m + 1)).map fun j => if j == m then 1 else 0
+  let step (run : String × Nat) (next : Array Nat) : Array Nat :=
+    (Array.range (m + 1)).map fun j =>
+      min 2 (((List.range (declaredFit wanted run.1 run.2 j + 1)).map fun k => next.getD (j + k) 0).sum)
+  let rows := runs.foldr (init := [last]) fun run rows => match rows with
+    | next :: _ => step run next :: rows
+    | [] => rows
+  match rows with
+  | first :: nexts =>
+      match first.getD 0 0 with
+      | 0 => .missing
+      | 1 => .unique (keptPerRun wanted 0 runs nexts)
+      | _ => .several
+  | [] => .missing
+
+open Firth.Elaborator.StackEffect in
+/-- The hint for a body that leaves more values than its signature declares:
+where the extra values are, when the types tell it. -/
+private def extraValuesHint (declared left : List AType) : String :=
+  let extra := left.length - declared.length
+  let them := if extra == 1 then "it" else "them"
+  let onTop := s!"The body leaves {plural extra "extra value"} on top ({renderValues (left.drop declared.length)}). Consume or `drop` {them} before the end of the word, or declare {them} in the signature's output."
+  let unknown := s!"The body leaves {plural extra "value"} more than declared, and the types do not tell which {if extra == 1 then "one is" else "ones are"} extra. Find the {if extra == 1 then "value" else "values"} the word should not leave and consume {them} before the end of the word, or declare {them} in the signature's output."
+  if declared.isEmpty then onTop else
+  let runs := typeRuns (left.map renderType)
+  match placeDeclared (declared.map renderType) runs with
+  | .missing =>
+      s!"The body leaves {plural extra "value"} more than declared, and the declared values are not among them in order, so some types differ too. Compare the declared output with the body's result value by value."
+  | .several => unknown
+  | .unique kept =>
+      -- Each run from the bottom: its type, size, first index and extras.
+      let (_, spans) := (runs.zip kept).foldl (init := (0, ([] : List (String × Nat × Nat × Nat))))
+        fun (start, spans) ((type, count), keptHere) =>
+          (start + count, spans ++ [(type, count, start, count - keptHere)])
+      let extras := spans.filter fun (_, _, _, extraHere) => extraHere > 0
+      -- The extra values of a run can be taken from its bottom or from its
+      -- top: by type, either is the same stack.
+      let lowest := extras.flatMap fun (_, _, start, extraHere) => (List.range extraHere).map (start + ·)
+      let keptAboveLowest := spans.flatMap fun (_, count, start, extraHere) =>
+        (List.range (count - extraHere)).map (start + extraHere + ·)
+      let highest := extras.flatMap fun (_, count, start, extraHere) =>
+        (List.range extraHere).map (start + count - extraHere + ·)
+      let keptBelowHighest := spans.flatMap fun (_, count, start, extraHere) =>
+        (List.range (count - extraHere)).map (start + ·)
+      let under := lowest.all fun i => keptAboveLowest.all (i < ·)
+      let above := highest.all fun i => keptBelowHighest.all (· < i)
+      -- The extra values' types, bottom to top, for a hint that names no
+      -- place: one placement fixes how many of each run are extra.
+      let extraTypes := extras.flatMap fun (type, _, _, extraHere) => List.replicate extraHere type
+      if above && !under then onTop
+      else if above && under then
+        s!"The body leaves {plural extra "value"} more than declared ({" ".intercalate extraTypes}), and the types do not tell which {if extra == 1 then "one is" else "ones are"} extra. Find the {if extra == 1 then "value" else "values"} the word should not leave and consume {them} before the end of the word, or declare {them} in the signature's output."
+      else if under then
+        let depth := if extra == 1 then ordinalFromTop declared.length
+          else depthsFromTop declared.length (left.length - 1)
+        let top := if declared.length == 1 then "The top value matches the declared output, and under it"
+          else s!"The top {declared.length} values match the declared output, and under them"
+        s!"{top} the body leaves {plural extra "extra value"} ({renderValues (left.take extra)}), {depth}. Push {them} only where needed, or consume {them} before the values the word leaves are pushed, or declare {them} in the signature's output, under the others."
+      else
+        let n := left.length
+        -- From the top, runs that are wholly extra and next to each other
+        -- are one group; a run only partly extra is a group of its own.
+        let groups := extras.reverse.foldl (init := ([] : List (Bool × List String × Nat × Nat × Nat)))
+          fun groups (type, count, start, extraHere) =>
+            let whole := extraHere == count
+            match groups with
+            | (true, types, low, high, size) :: rest =>
+                if whole && low == start + count then (true, List.replicate count type ++ types, start, high, size + count) :: rest
+                else (whole, List.replicate count type, start, start + count - 1, extraHere) :: groups
+            | _ => (whole, List.replicate count type, start, start + count - 1, extraHere) :: groups
+        let described := groups.reverse.map fun (whole, types, low, high, size) =>
+          let place := depthsFromTop (n - 1 - high) (n - 1 - low)
+          if whole then s!"{place} ({" ".intercalate types})"
+          else s!"{size} of the {types.length} {(types.head?).getD "?"} values, {place}"
+        let partialRun := groups.any fun (whole, _, _, _, _) => !whole
+        let which := if partialRun then " Where more values of one type are in a row than declared, the types do not tell which of them is extra." else ""
+        s!"The body leaves {plural extra "extra value"} among the values the signature declares: {listing described}.{which} Push {them} only where needed, or consume {them} before the end of the word, or declare {them} in the signature's output at that place."
+
 private def capitalize (text : String) : String :=
   match text.toList with
   | first :: rest => String.ofList (first.toUpper :: rest)
@@ -880,8 +999,7 @@ private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Str
       let word := diagnostic.word.getD "this word"
       let base := s!"`{word}` declares that it leaves {(diagnostic.expected.map renderStack).getD "?"} but its body leaves {(diagnostic.actual.map renderStack).getD "?"}."
       if left.length > declared.length then
-        let extra := left.length - declared.length
-        (base, s!"The body leaves {plural extra "extra value"} on top ({renderValues (left.drop declared.length)}). Consume or `drop` {if extra == 1 then "it" else "them"} before the end of the word, or declare {if extra == 1 then "it" else "them"} in the signature's output." ++ rowNote)
+        (base, extraValuesHint declared left ++ rowNote)
       else if left.length < declared.length then
         let missing := declared.length - left.length
         (base, s!"The body leaves {plural missing "value"} fewer than declared. Something consumes a value it should keep: copy it first with `dup`, or fix the signature." ++ rowNote)
