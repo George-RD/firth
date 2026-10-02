@@ -54,6 +54,13 @@ until the tasks get harder.
   calibration only and are never moved into the scored tier as written;
   any task built from them states the target as a range without
   "earlier".
+- Pool 2's `spreadsheet` description puts "(such a cell's references,
+  even those inside 0 to n - 1, are then not followed at all)" right after
+  the `a` greater than `b` condition, so it can be read as covering only
+  that condition; five of six authors failed the one hidden test that
+  turns on it (review of #214). The task stays calibration only as
+  written; a scored version states the rule as its own sentence covering
+  every way a cell gets an error from its own references.
 - DeepSeek Flash: `curl -sS https://ollama.com/api/tags` from this
   project's cloud environment on 2 October 2026 listed
   `deepseek-v4.1-flash`; the environment's proxy already injects an
