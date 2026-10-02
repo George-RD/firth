@@ -325,7 +325,10 @@ def sandbox_scan() -> None:
             check(bool(found), "a committed run's results-1.json exists to plant")
             if found:
                 shutil.copy(found[0], p / "r.json")
-        planted = {"copy": copy, "named": named, "git": history, "results": results}
+
+        def tests(p: Path) -> None:  # this file, whose hand values are hidden cases
+            shutil.copy(Path(__file__), p / "checks.py")
+        planted = {"copy": copy, "named": named, "git": history, "results": results, "tests": tests}
         for what, plant in planted.items():
             p = Path(d) / what
             p.mkdir()

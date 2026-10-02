@@ -147,12 +147,13 @@ def load(path: Path, lang: str) -> dict[str, str]:
         os.close(dfd)
 
 
-# This tier's hidden tests and references, and the committed runs, whose
-# results hold every hidden input and expected stack, as paths in the
-# repository. The sandbox's own scan (isolate.hidden_copies) knows only the
-# MVP tier's, and isolate.py is pinned by earlier runs, so this tier scans for
-# its own.
-HIDDEN_PATHS = tuple(f"eval/s7/harder/{n}" for n in (*(f"{s}.py" for s in SETS), "reference", "runs"))
+# This tier's hidden tests and references, the committed runs, whose
+# results hold every hidden input and expected stack, and test_harder.py,
+# whose hand values and mutants hold some, as paths in the repository. The
+# sandbox's own scan (isolate.hidden_copies) knows only the MVP tier's, and
+# isolate.py is pinned by earlier runs, so this tier scans for its own.
+HIDDEN_PATHS = tuple(f"eval/s7/harder/{n}" for n in (*(f"{s}.py" for s in SETS), "reference", "runs",
+                                                     "test_harder.py"))
 
 
 def hidden_files() -> list[Path]:

@@ -38,15 +38,28 @@ refresh the key, ranges next to each other left unmerged, and so on), so a
 pass means more than the visible example.
 
 Each description is meant to state its input bounds, so an author can tell
-whether a quadratic loop fits the step budget. Some do not: `rpn` does not
-bound the number of tokens, nor `tiny-vm` the program's length (only the
-instructions executed), and `merge-ranges` does not bound the endpoints,
-so for one range from the smallest to the largest `Int` the covered count
-is 2^64, which no Firth answer can return (no hidden test comes near it:
-the most any covers is 31). The pool was run as written, so this is
-recorded here rather than edited; the next pool states every bound,
-values included (1,000,000 steps per run, the MVP tier's). Values are `Int`, `Bool`, `Seq Int` and `Seq Bool`, the only ones
-the portable runner passes in and reads back.
+whether a quadratic loop fits the step budget, and whether a result fits in
+an `Int`. Several do not:
+
+- Sizes: `rpn` does not bound the number of tokens, nor `tiny-vm` the
+  program's length (only the instructions executed).
+- Values: five descriptions allow inputs whose answer does not fit in a
+  64-bit `Int`, which no Firth answer can return while the Python meaning
+  can. `rpn` and `tiny-vm` do not bound operands (the largest `Int` times
+  two; `rpn` also allows the smallest `Int` divided by -1), `edit-cost`
+  does not bound the costs (`edit-cost([], [0, 0], 2^63 - 1, 1, 1)` is
+  2^64 - 2), `shortest-hops` does not bound the weights, so a path's total
+  can overflow, and `merge-ranges` does not bound the endpoints (one range
+  from the smallest to the largest `Int` covers 2^64). `bowling`, `lru`
+  and `lis-smallest` cannot overflow.
+
+No hidden test reaches any of these: every expected result fits in an
+`Int`, since both hosts' runs of the Firth references give it
+(`test_harder.py`). The pool was run as written, so this is recorded here
+rather than edited; the next pool states every bound, value bounds
+included (1,000,000 steps per run, the MVP tier's). Values are `Int`,
+`Bool`, `Seq Int` and `Seq Bool`, the only ones the portable runner passes
+in and reads back.
 
 ## Files
 
@@ -63,9 +76,10 @@ the portable runner passes in and reads back.
   runs. Python answers run in the harness's sandbox, which needs root.
   The sandbox's own scan for copies of hidden files knows only the MVP
   tier's, so before scoring Python `tier.py` scans what the sandbox would
-  show for copies of this tier's hidden files and committed runs (a file
-  with the content of one, a directory named `eval/s7/harder`, or git
-  storage holding any revision of them) and refuses if it finds one.
+  show for copies of this tier's hidden files, committed runs and
+  `test_harder.py` (a file with the content of one, a directory named
+  `eval/s7/harder`, or git storage holding any revision of them) and
+  refuses if it finds one.
 - `audit.py`: the MVP tier's transcript audit (`audit_subagent.py`), with
   this tier's feedback for the check that each `repair-<n>.md` is what the
   author was shown.
