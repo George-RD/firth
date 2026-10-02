@@ -521,7 +521,11 @@ private def shortExplanation (inWord : String) (word : Option String)
           let missing := account.inputs.filter fun input =>
             edit.pushedLocals.contains (((input.splitOn ":").head?).getD "")
           let one := edit.pushedLocals.length == 1
-          s!"Push {them} ({", ".intercalate missing}) by writing the {if one then "local" else "locals"} of {if one then "that name" else "those names"}, {listing (edit.pushedLocals.map (s!"`{·}`"))}: write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}.{outcome}"
+          let named := listing (edit.pushedLocals.map (s!"`{·}`"))
+          if edit.moved then
+            s!"Push {them} ({", ".intercalate missing}) by moving the {if one then "local" else "locals"} of {if one then "that name" else "those names"}, {named}, written after {account.operation}, into {if one then "its place" else "their places"} before it: write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}.{outcome}"
+          else
+          s!"Push {them} ({", ".intercalate missing}) by writing the {if one then "local" else "locals"} of {if one then "that name" else "those names"}, {named}: write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}.{outcome}"
         else
         s!"The values {account.operation} takes are pushed before it, and {listing ((edit.written.splitOn " ").drop ((edit.written.splitOn " ").length - account.missing) |>.map (s!"`{·}`"))} {if account.missing == 1 then "is" else "are"} written after it. Write `{edit.replacement}` in place of `{edit.written}` {editPlace edit.line edit.column}.{outcome}"
     | none =>

@@ -181,6 +181,13 @@ structure CallEdit where
   edit writes for the inputs missing, bottom to top; empty when the edit
   moves values written after the operation instead. -/
   pushedLocals : List String := []
+  /-- Whether those locals were written just after the operation and the
+  edit moves them, rather than writing them again. -/
+  moved : Bool := false
+  /-- Where in the source as written checking the edited word stopped, as
+  a byte offset (the end of the text replaced when that is inside the
+  edit), or `none` when it then checks. -/
+  reached : Option Nat := none
   deriving Repr, BEq
 
 /-- The values an operation the checker refused was handed, named by the

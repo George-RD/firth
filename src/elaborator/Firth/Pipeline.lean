@@ -546,12 +546,17 @@ private def checkCallEdit (config : PipelineConfig) (source : String) (word : Wo
   let editedWords := resolved.map (·.1)
   let editedWord ← (resolved.find? fun (candidate, error) => candidate.name == word.name && error.isNone).map (·.1)
   let operation := start + operationAt
-  let after ← match outcomeAlone config edited editedWords editedWord with
+  let outcome := outcomeAlone config edited editedWords editedWord
+  let after ← match outcome with
     | none => some none
     | some offset => if offset ≤ operation then none else some (some (lineColumn edited offset))
+  -- Where that error is in the source as written: past the edit, the same
+  -- item; inside it, the end of the text replaced.
+  let reached := outcome.map fun offset =>
+    if offset ≥ start + replacement.utf8ByteSize then offset - replacement.utf8ByteSize + stop else stop
   let written := collapseSpace (bytesText source start stop)
   let (line, column) := editPlace source start stop written
-  pure { start, stop, line, column, written, replacement, after
+  pure { start, stop, line, column, written, replacement, after, reached
          consulted := consultedWords config editedWords editedWord }
 
 /-- For an operation handed fewer values than it takes (`CallAccount.missing`),
@@ -617,6 +622,10 @@ private def unpushedEdit (config : PipelineConfig) (source : String) (word : Wor
     (((input.splitOn ":").head?).getD "", ":".intercalate ((input.splitOn ":").drop 1))
   let inputNames := inputs.map (·.1)
   if inputs.length != present + account.missing || inputNames.eraseDups.length != inputNames.length then none else
+  -- A local named like an input whose type the walk does not know could be
+  -- the one for that input, and the ways counted below would not include
+  -- it: no edit, so that one way is one way of all.
+  if inputNames.any fun name => account.locals.contains name && (account.localTypes.lookup name).isNone then none else
   -- The ways to fill the inputs, bottom to top: for each input the index
   -- of the value present for it, or `none` where the local of its name is
   -- written. Only whether there is exactly one matters, so each suffix of
@@ -659,9 +668,32 @@ private def unpushedEdit (config : PipelineConfig) (source : String) (word : Wor
         pure (((ranges.head?).map (·.1)).getD operationStart, texts)
     | none => if namesLast then some (operationStart, names) else none
   let prefix_ := " ".intercalate texts
-  let edit ← checkCallEdit config source word start account.span.stop.offset
-    (prefix_ ++ " " ++ operationText) (prefix_.utf8ByteSize + 1)
-  pure { edit with pushedLocals := names }
+  let replacement := prefix_ ++ " " ++ operationText
+  let added := (checkCallEdit config source word start account.span.stop.offset
+    replacement (prefix_.utf8ByteSize + 1)).map ({ · with pushedLocals := names })
+  -- Where those locals are written just after the operation, in that
+  -- order, as in `pos 1 prim + insert-sorted value`, the author may have
+  -- meant them for it: written once more, the ones after it are left
+  -- over. The edit that moves them into place is offered instead, unless
+  -- writing them again gets further: `5 g m prim +` may mean `m` for `+`.
+  let after := ((itemsAfter account.span word.body).getD []).take names.length
+  let spans := after.filterMap fun
+    | .word _ at_ => some at_
+    | _ => none
+  let trailing := !names.isEmpty && spans.length == names.length && (after.zip names).all fun
+    | (.word name _, wanted) => name == wanted
+    | _ => false
+  let moved := if !trailing then none else do
+    let last ← spans.getLast?
+    let edit ← checkCallEdit config source word start last.stop.offset replacement (prefix_.utf8ByteSize + 1)
+    -- Checking gets at least as far in the source as written as with the
+    -- locals written again.
+    let asFar := match edit.reached, added.bind (·.reached) with
+      | none, _ => true
+      | some _, none => added.isNone
+      | some movedTo, some addedTo => movedTo ≥ addedTo
+    if asFar then some { edit with pushedLocals := names, moved := true } else none
+  moved <|> added
 
 /-- The edit for an operation handed fewer values than it takes: the values
 written after it moved before it (`shortEdit`), or else the locals of the
