@@ -303,7 +303,12 @@ The failures:
   `call-depth-exceeded` on the 30-request case (rerun with
   `tools/loop/firth_run.py`). Its `arrive` loop calls itself inside a
   `locals` block nested in its own, the same non-tail call as the first
-  pool's `tiny-vm` failures (`todo.locals-self-call-not-tail`).
+  pool's `tiny-vm` failures (`todo.locals-self-call-not-tail`). That is a
+  defect in the toolchain, not an authoring miss: the docs say a call that
+  is a word's last action is a tail call, the checker accepts the program,
+  and erasure keeps a copy of an outer local after the call. #213 fixes it
+  (open when this was written). Whether this answer passes with the fix
+  was not checked.
 
 No author failed `order-book`, including its hidden test that cancels the
 cancel's own operation and a later one, which the description's "earlier
@@ -330,3 +335,6 @@ budget and 256-frame limit. That is a design question for the next pool,
 not a result. These results are calibration only: they are not S7
 evidence, and the Python and Firth columns are not a comparison of the
 languages.
+
+The next pool is calibrated only after #213 is on main, so the non-tail
+self-call cannot decide a Firth result there.
