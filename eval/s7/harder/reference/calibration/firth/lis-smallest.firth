@@ -1,0 +1,78 @@
+\ Longest increasing subsequence, smallest in dictionary order.
+\ rev is built right to left: rev[k] is the longest increasing run starting
+\ at xs[n-1-k]. So the run length starting at index j is rev[n-1-j].
+
+: max2
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ m:Int^many)
+  locals { a b } { a b prim > [ a ] [ b ] if };
+
+\ Run length starting at j.
+: run-at
+  (forall ρ; ρ rev:Seq Int^many n:Int^many j:Int^many -- ρ r:Int^many)
+  locals { rev n j } { rev n 1 prim - j prim - prim seq-int.at };
+
+\ Best run length among later elements j.. that are greater than xs[i].
+: best-after
+  (forall ρ; ρ xs:Seq Int^many rev:Seq Int^many i:Int^many j:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { xs rev i j acc }
+  { j xs prim seq-int.len prim <
+    [ xs rev i j 1 prim +
+      xs j prim seq-int.at xs i prim seq-int.at prim >
+      [ acc rev xs prim seq-int.len j run-at max2 ] [ acc ] if
+      best-after ]
+    [ acc ] if };
+
+\ Fills rev for i = n-1 down to 0.
+: build-runs
+  (forall ρ; ρ xs:Seq Int^many rev:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { xs rev i }
+  { i 0 prim >=
+    [ xs rev xs rev i i 1 prim + 0 best-after 1 prim + prim seq-int.push
+      i 1 prim - build-runs ]
+    [ rev ] if };
+
+: max-of
+  (forall ρ; ρ s:Seq Int^many k:Int^many acc:Int^many -- ρ m:Int^many)
+  locals { s k acc }
+  { k s prim seq-int.len prim <
+    [ s k 1 prim + acc s k prim seq-int.at max2 max-of ]
+    [ acc ] if };
+
+\ Is j a better choose than the current choose p (-1 for none)?
+: better
+  (forall ρ; ρ xs:Seq Int^many runs:Seq Int^many need:Int^many last:Int^many has:Bool^many p:Int^many j:Int^many -- ρ b:Bool^many)
+  locals { xs runs need last has p j }
+  { runs xs prim seq-int.len j run-at need prim =
+    [ has [ xs j prim seq-int.at last prim > ] [ true ] if
+      [ p 0 prim <
+        [ true ]
+        [ xs j prim seq-int.at xs p prim seq-int.at prim < ] if ]
+      [ false ] if ]
+    [ false ] if };
+
+\ Index of the pick among j.. (or -1).
+: choose
+  (forall ρ; ρ xs:Seq Int^many runs:Seq Int^many need:Int^many last:Int^many has:Bool^many p:Int^many j:Int^many -- ρ r:Int^many)
+  locals { xs runs need last has p j }
+  { j xs prim seq-int.len prim <
+    [ xs runs need last has
+      xs runs need last has p j better [ j ] [ p ] if
+      j 1 prim + choose ]
+    [ p ] if };
+
+: choose-loop
+  (forall ρ; ρ xs:Seq Int^many runs:Seq Int^many out:Seq Int^many need:Int^many last:Int^many has:Bool^many start:Int^many -- ρ r:Seq Int^many)
+  locals { xs runs out need last has start }
+  { need 0 prim >
+    [ xs runs need last has -1 start choose
+      locals { p }
+      { xs runs out xs p prim seq-int.at prim seq-int.push
+        need 1 prim - xs p prim seq-int.at true p 1 prim + choose-loop } ]
+    [ out ] if };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many -- ρ lis:Seq Int^many)
+  locals { xs }
+  { xs prim seq-int.empty xs prim seq-int.len 1 prim - build-runs
+    locals { runs }
+    { xs runs prim seq-int.empty runs 0 0 max-of 0 false 0 choose-loop } };
