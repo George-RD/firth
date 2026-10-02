@@ -3,8 +3,8 @@
 
     tier.py prompt --set calibration|calibration2 --lang firth|python [--rounds 1] > prompt.md
     tier.py extract answer.md > solutions.json
-    tier.py score  --set calibration --lang firth solutions.json > results.json
-    tier.py repair --set calibration --lang firth solutions.json results.json > repair.md
+    tier.py score  --set calibration|calibration2 --lang firth solutions.json > results.json
+    tier.py repair --set calibration|calibration2 --lang firth solutions.json results.json > repair.md
     tier.py report results-*.json
 
 The protocol is the MVP tier's sub-agent protocol (`eval/s7/harness.py`,

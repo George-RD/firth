@@ -256,3 +256,77 @@ except as stated.
   scored tier is written from these kinds of task at this size. If it is
   still at the ceiling in Python, the scored tier needs harder tasks again.
   These results are calibration only, never S7 evidence.
+
+## Second pool results: 2 October 2026
+
+Run as planned above, in the planned order. Every transcript records
+`claude-sonnet-5-5` and passed `audit.py --set calibration2` with nothing
+flagged. Everything is in `runs/2026-10-02-calibration2/`. The prompts were
+built at `f1b5537`, and every author was scored with the same task set and
+scorer hashes (`eval_sha256` in each result). Python 1 was scored at
+`81b9c52`; the others with uncommitted edits to `test_harder.py` and a todo
+only, which scoring does not read (the `-dirty` commit in their results).
+
+The context scan, as for the first pool: each raw log through
+`eval/s7/context_seen.py` (`context-seen.json`), and a search of the whole
+log for the other five authors' directory names and agent ids,
+`task_status`, task notifications, compaction and `queued_command`. None
+has any of them. Unlike the first pool's authors, none was shown a project
+message. Every author was shown the same injected items: the session's
+system prompt, tool list and reminders, and the pre-registered
+`hook_non_blocking_error` items.
+
+| | round 1 | within two rounds |
+| --- | --- | --- |
+| Python, 3 authors | 22 of 24 | 22 of 24 |
+| Firth, 3 authors | 20 of 24 | 20 of 24 |
+
+Only Firth 3 had an answer that failed its example, so only Firth 3 had a
+feedback round.
+
+The failures:
+
+- `spreadsheet`, five of six authors (Python 2 and 3, all three Firth
+  authors): each fails one hidden test, `([5, 1], [1, 1], [1, 50])`, and
+  only that one. Cell 1 refers to cell 50, outside the sheet, so it has an
+  error, and its reference to itself is not followed; cell 0 counts it and
+  has no error. Each answer follows cell 1's in-range reference, finds a
+  cycle, and gives cell 0 an error too. The description says such a cell's
+  references, "even those inside 0 to n - 1, are then not followed at
+  all", but the parenthesis comes right after the `a` greater than `b`
+  condition, so it can be read as applying to that condition only. This is
+  either a dropped rule or a description that can be read two ways; the
+  results cannot tell which.
+- `elevator`, Firth 3: round 1's `main` left one extra `Int` on the stack
+  (`firth.type.declared-effect-mismatch`, shown on the example). Round 2
+  passed the example and 14 of 15 hidden tests, and trapped with
+  `call-depth-exceeded` on the 30-request case (rerun with
+  `tools/loop/firth_run.py`). Its `arrive` loop calls itself inside a
+  `locals` block nested in its own, the same non-tail call as the first
+  pool's `tiny-vm` failures (`todo.locals-self-call-not-tail`).
+
+No author failed `order-book`, including its hidden test that cancels the
+cancel's own operation and a later one, which the description's "earlier
+operation" does not allow (review of #214).
+
+### What this says about the scored tier
+
+The pool is still effectively at the ceiling for Sonnet in Python. Seven
+of the eight tasks were passed by every author in both languages, and every
+Python failure, and three of the four Firth failures, is the same one
+hidden test on one clause. A tier whose only separation is one clause
+measures how that clause was worded, not how well a model writes the
+language, so the scored tier cannot be built from these tasks at this size
+either. In Firth, the one failure of its own is again the non-tail
+self-call that the checker accepts silently.
+
+What the two pools show is that Sonnet writes rule-heavy programs of this
+size correctly when every rule is stated plainly, in either language (the
+longest answers were about 100 lines of Python and 250 of Firth). It is
+inferred, not measured, that what would separate it is size: rules it must
+hold together across a much longer program, such as a whole interpreter or
+a scheduler with many interacting constraints, still within Firth's step
+budget and 256-frame limit. That is a design question for the next pool,
+not a result. These results are calibration only: they are not S7
+evidence, and the Python and Firth columns are not a comparison of the
+languages.

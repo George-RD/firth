@@ -43,7 +43,11 @@ until the tasks get harder.
 - Second calibration pool: `eval/s7/harder/calibration2.py`, eight larger
   rule-heavy tasks with every size and value bound stated and checked
   (`test_harder.py`), independent Python and Firth references, hand values
-  and mutants. Its calibration plan is in the README; results follow.
+  and mutants. Calibrated on 2 October 2026 like the first (README):
+  Python 22 of 24 and Firth 20 of 24, but seven of eight tasks were passed
+  by every author, and every Python failure is one hidden test on one
+  clause, so this pool is effectively at the ceiling too. The next pool
+  needs much larger programs, not more rules of this size.
 - DeepSeek Flash: `curl -sS https://ollama.com/api/tags` from this
   project's cloud environment on 2 October 2026 listed
   `deepseek-v4.1-flash`; the environment's proxy already injects an

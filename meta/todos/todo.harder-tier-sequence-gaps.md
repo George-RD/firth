@@ -33,8 +33,8 @@ as well, again written by hand in each program:
   (`elevator`), and a loop over many named values pays for each name on
   every step. The `elevator` reference went through four designs to fit
   the step budget.
-- The same `min`, `zeros`, `add-at` and `fill` helpers are written again
-  in several files.
+- The same `zeros` and `add-at` helpers are written again in several
+  files.
 
 ## Acceptance criteria
 

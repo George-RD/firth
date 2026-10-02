@@ -201,7 +201,8 @@ HAND += [
     ("date-diff", (1900, 2, 28, 1900, 3, 1), (1, 3, 60)),
     ("date-diff", (2000, 1, 1, 1999, 12, 31), (-1, 4, 365)),
     ("date-diff", (2024, 1, 1, 2024, 12, 31), (365, 1, 366)),
-    # 101 years, 25 of 366 days (2100 is not one): 36,890 days, a whole number of weeks.
+    # One day across 2100, which is not a leap year. The weekday: 1 January 2101 is 101 years
+    # after 1 January 2000, 25 of them of 366 days, so 36,890 days, a whole number of weeks.
     ("date-diff", (2100, 12, 31, 2101, 1, 1), (1, 5, 1)),
     # 0, 3 and 6 taken; freeing 3 leaves blocks of 3 at 3 and 1 at 9; 2 cells fit best at 3.
     ("heap-alloc", (10, [0, 0, 0, 1, 0], [3, 3, 3, 1, 2]), ([0, 3, 6, 0, 3], 2, 1)),
@@ -307,7 +308,7 @@ def bounds() -> None:
     check(not BOUNDS["bank-ledger"]([5], 0, [3], [0], [1], [5]),
           "the bounds check refuses an account number outside the ledger")
     for name, tasks in SETS.items():
-        big = [(t.id, a) for t in tasks for a in cases(t)
+        big = [(t.id, a) for t in tasks for a in (*cases(t), *(a for i, a, _ in HAND if i == t.id))
                if any(not -2**63 <= i < 2**63 for i in ints([a, t.expected(a)]))]
         check(not big, f"{name}: every input and expected integer fits in an Int (outside: {big[:1]})")
     check(not all(-2**63 <= i < 2**63 for i in ints([[1, 2**63]])), "the Int check refuses 2^63")
