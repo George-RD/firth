@@ -552,8 +552,9 @@ private def checkCallEdit (config : PipelineConfig) (source : String) (word : Wo
     | some offset => if offset ≤ operation then none else some (some (lineColumn edited offset))
   -- Where that error is in the source as written: past the edit, the same
   -- item; inside it, the end of the text replaced.
+  let stage := ((firstErrorAlone config editedWords editedWord).map (·.stage)).getD 0
   let reached := outcome.map fun offset =>
-    if offset ≥ start + replacement.utf8ByteSize then offset - replacement.utf8ByteSize + stop else stop
+    (stage, if offset ≥ start + replacement.utf8ByteSize then offset - (start + replacement.utf8ByteSize) + stop else stop)
   let written := collapseSpace (bytesText source start stop)
   let (line, column) := editPlace source start stop written
   pure { start, stop, line, column, written, replacement, after, reached
@@ -674,8 +675,8 @@ private def unpushedEdit (config : PipelineConfig) (source : String) (word : Wor
   -- Where those locals are written just after the operation, in that
   -- order, as in `pos 1 prim + insert-sorted value`, the author may have
   -- meant them for it: written once more, the ones after it are left
-  -- over. The edit that moves them into place is offered instead, unless
-  -- writing them again gets further: `5 g m prim +` may mean `m` for `+`.
+  -- over. The edit that moves them into place is weighed against writing
+  -- them again: `5 g m prim +` may mean `m` for `+`.
   let after := ((itemsAfter account.span word.body).getD []).take names.length
   let spans := after.filterMap fun
     | .word _ at_ => some at_
@@ -683,17 +684,29 @@ private def unpushedEdit (config : PipelineConfig) (source : String) (word : Wor
   let trailing := !names.isEmpty && spans.length == names.length && (after.zip names).all fun
     | (.word name _, wanted) => name == wanted
     | _ => false
-  let moved := if !trailing then none else do
+  if !trailing then added else
+  let moved := do
     let last ← spans.getLast?
-    let edit ← checkCallEdit config source word start last.stop.offset replacement (prefix_.utf8ByteSize + 1)
-    -- Checking gets at least as far in the source as written as with the
-    -- locals written again.
-    let asFar := match edit.reached, added.bind (·.reached) with
-      | none, _ => true
-      | some _, none => added.isNone
-      | some movedTo, some addedTo => movedTo ≥ addedTo
-    if asFar then some { edit with pushedLocals := names, moved := true } else none
-  moved <|> added
+    -- Only the locals are written there: a comment between would be lost.
+    if collapseSpace (bytesText source account.span.stop.offset last.stop.offset) != " ".intercalate names then none
+    checkCallEdit config source word start last.stop.offset replacement (prefix_.utf8ByteSize + 1)
+  -- The move is stated when checking gets further than with the locals
+  -- written again: to a later stage, or in the same stage further in the
+  -- source as written. A later stage counts first, since where one stage
+  -- stops in the source says nothing about where another would. When both
+  -- stop at the same place, nothing tells them apart, so neither is stated.
+  let move (edit : CallEdit) : Option CallEdit := some { edit with pushedLocals := names, moved := true }
+  match moved, added with
+  | none, _ => added
+  | some edit, none => move edit
+  | some edit, some again =>
+      match edit.reached, again.reached with
+      | none, _ => move edit
+      | some _, none => added
+      | some movedTo, some addedTo =>
+          if movedTo.1 != addedTo.1 then (if movedTo.1 > addedTo.1 then move edit else added)
+          else if movedTo.2 != addedTo.2 then (if movedTo.2 > addedTo.2 then move edit else added)
+          else none
 
 /-- The edit for an operation handed fewer values than it takes: the values
 written after it moved before it (`shortEdit`), or else the locals of the

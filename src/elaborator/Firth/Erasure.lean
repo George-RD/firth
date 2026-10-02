@@ -184,10 +184,11 @@ structure CallEdit where
   /-- Whether those locals were written just after the operation and the
   edit moves them, rather than writing them again. -/
   moved : Bool := false
-  /-- Where in the source as written checking the edited word stopped, as
-  a byte offset (the end of the text replaced when that is inside the
-  edit), or `none` when it then checks. -/
-  reached : Option Nat := none
+  /-- How far checking the edited word got: the stage that refused it
+  (`PipelineDiagnostic.stage`) and where in the source as written, as a byte
+  offset (the end of the text replaced when that is inside the edit), or
+  `none` when it then checks. -/
+  reached : Option (Nat × Nat) := none
   deriving Repr, BEq
 
 /-- The values an operation the checker refused was handed, named by the

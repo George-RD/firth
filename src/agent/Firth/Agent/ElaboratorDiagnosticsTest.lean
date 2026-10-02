@@ -1085,6 +1085,32 @@ private def runCallAccountTests : IO Unit := do
   unpushedCase "a local after the call meant for what follows" ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g n prim + } ;\n"
     ["by writing the local of that name, `n`: write `n true g` in place of `true g` on line 2. With that edit `f` checks."] ["by moving"]
     "f" [.int 3, .bool true] [.int 6]
+  -- Planted: here the `n` after `g` may be for the last `prim +`, and the
+  -- `prim +` of a Bool between is the author's own mistake. Moved or written
+  -- again, checking stops at that mistake, so nothing tells the two edits
+  -- apart and neither is stated (Codex on #208).
+  let _ ← callReport "a local after the call, the two edits stopped alike" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g n b 1 prim + drop prim + } ;\n"
+    ["`g` in `f` takes 2 values"]
+    ["by moving", "in place of"]
+  -- Moved, checking stops further on than with `n` written again: there
+  -- the `n` left over is the condition of the `if`, which takes a Bool.
+  let _ ← callReport "a local after the call, moved further" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Bool^many) drop drop true ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g n [ 1 ] [ 2 ] if true prim + } ;\n"
+    ["by moving the local of that name, `n`, written after `g`, into its place before it: write `n true g` in place of `true g n` on line 2. With that edit, the next error in `f` is at line 2"]
+    []
+  -- Planted: written again, checking stops further on than with `n` moved,
+  -- where the first `prim +` is short of a value.
+  let _ ← callReport "a local after the call, written again further" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g n prim + b 1 prim + drop } ;\n"
+    ["by writing the local of that name, `n`: write `n true g` in place of `true g` on line 2. With that edit, the next error in `f` is at line 2"]
+    ["by moving"]
+  -- Planted: a comment between the call and the local is not moved over,
+  -- so it is not lost; the local is written again (cubic on #208).
+  let _ ← callReport "a local after the call, past a comment" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g (* kept *) n } ;\n"
+    ["`g` in `f` takes 2 values"]
+    ["by moving", "in place of `true g (* kept *) n`"]
   -- Planted: only a local of the missing input's name is moved. `k` after
   -- `g` is another local; moving it in place of `n` would get as far, to
   -- the `prim +` of a Bool, but drop `k`.
