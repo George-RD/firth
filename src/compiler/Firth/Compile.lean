@@ -189,10 +189,9 @@ end
 a body for every quotation atom and for no other atom, at every depth. -/
 private partial def spansMatch : Firth.Interpreter.Program → List SpanTree → Bool
   | .empty, [] => true
-  | .cons (.quotation body) tail, .quotation _ spans :: rest
-  | .cons (.push (.quotation body _)) tail, .quotation _ spans :: rest =>
+  | .cons (.quotation body) tail, .quotation _ spans :: rest =>
       spansMatch body spans && spansMatch tail rest
-  | .cons (.quotation _) _, _ | .cons (.push (.quotation ..)) _, _ => false
+  | .cons (.quotation _) _, _ => false
   | .cons _ tail, .atom _ :: rest => spansMatch tail rest
   | _, _ => false
 
@@ -481,11 +480,10 @@ private partial def correspond (program : Firth.Interpreter.Program)
     (code : List Target.Instruction) (word : String) : Except String Unit :=
   match program, code with
   | .empty, [] => pure ()
-  | .cons (.quotation body) tail, .pushQuote inner _ _ :: rest
-  | .cons (.push (.quotation body _)) tail, .pushQuote inner _ _ :: rest => do
+  | .cons (.quotation body) tail, .pushQuote inner _ _ :: rest => do
       correspond body inner word
       correspond tail rest word
-  | .cons (.quotation _) _, _ | .cons (.push (.quotation ..)) _, _ =>
+  | .cons (.quotation _) _, _ =>
       err s!"internal: {word} lowered a quotation atom to something other than a quotation"
   | .cons _ _, .pushQuote .. :: _ =>
       err s!"internal: {word} lowered a plain atom to a quotation"

@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.compiler
-status: open
+status: done
 created: 2026-10-02
 ---
 
@@ -29,3 +29,14 @@ by evaluation for the allocator's words.
   goes; or the decision to keep admitting it is recorded, with the cost
   disagreement stated wherever the theorem is cited.
 - A planted request with a source-level `push` shows the chosen behaviour.
+
+## Resolution
+
+2 October 2026. `lowerAtom` refuses a `push` atom with
+`firth.compile.unsupported-value`, whatever it pushes, and the now unused
+`lowerValue` is gone. `lowerProgram_rel` no longer needs `noPushProgram`, so
+`compileWords_correct` covers every program `compileWords` accepts. The
+forged-quotation probes in `check_trust_boundaries.py` now expect the refusal
+for a pushed `many` quotation, a pushed `linear` quotation and a pushed literal,
+and a source quotation atom still compiles. With `push` lowered as before, the
+three probes fail (checked locally).

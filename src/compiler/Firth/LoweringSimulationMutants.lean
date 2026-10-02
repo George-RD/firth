@@ -52,7 +52,7 @@ theorem real_image : ImageRel names dictionary [entryOf realCode] := by
   simp only [names, List.find?_cons, List.find?_nil] at h
   cases h
   refine ⟨_, entryOf realCode, rfl, rfl, ?_⟩
-  exact lowerProgram_rel (context := { word := "inc", words := names }) rfl incProgram realCode rfl rfl []
+  exact lowerProgram_rel (context := { word := "inc", words := names }) rfl incProgram realCode rfl []
 
 /-- The interpreter runs `inc` from `5` to `6`, in two steps. -/
 theorem interpreter_run : ∃ k, Firth.Logic.Reaches Firth.Logic.int64Gamma dictionary
