@@ -190,25 +190,15 @@ def lowerProgram (context : Context) :
       let rest ← lowerProgram context tail
       pure (first ++ rest)
 
-def lowerValue (context : Context) :
-    Firth.Interpreter.Value → Except CompileError Target.Value
-  | .literal value => lowerLiteral context value
-  | .quotation _ .linear =>
-      .error (.unsupportedValue context.word
-        "linear quotation ownership has no capture-free target representation")
-  | .quotation body .many => do
-      let code ← lowerProgram context body
-      pure (.quotation code [] [])
-  | .world _ =>
-      .error (.unsupportedValue context.word "World is administrative and compiles to nothing")
-
 def lowerAtom (context : Context) :
     Atom → Except CompileError (List Target.Instruction)
   | .lit value => do pure [.pushLiteral (← lowerLiteral context value)]
-  | .push value => do
-      match ← lowerValue context value with
-      | .quotation code captures consumed => pure [.pushQuote code captures consumed]
-      | literal => pure [.pushLiteral literal]
+  -- `push` is the interpreter's own run-time step for `dip` and `quote`, at no
+  -- cost; the elaborator never writes one, and no target instruction pushes a
+  -- value for free (`todo.compiler-source-push-atoms`).
+  | .push _ =>
+      .error (.unsupportedValue context.word
+        "an administrative push atom is a run-time step of the interpreter, not source")
   | .quotation body => do pure [.pushQuote (← lowerProgram context body) [] []]
   | .dup => .ok [.dup]
   | .drop => .ok [.drop]

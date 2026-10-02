@@ -26,12 +26,10 @@ for want of fuel; and a target trap other than the depth bound and fuel
 exhaustion means the interpreter gets stuck or meets the same length overflow.
 The kernel cost spent before a fault is not related.
 
-The hypotheses are that the interpreter's dictionary gives each source word
-its checked body, and that no body holds the runtime-only `push` atom, which
-the elaborator never writes. The compiler does accept a hand-made request with
-one, and charges a unit the interpreter does not, so the theorem does not
-cover those requests (`todo.compiler-source-push-atoms`). Typing is not
-assumed.
+The one hypothesis is that the interpreter's dictionary gives each source word
+its checked body. Typing is not assumed. The compiler refuses a body holding
+the interpreter's run-time `push` atom, which costs nothing in the interpreter
+and has no free target instruction, so every program it accepts is covered.
 
 What this does not cover: the cost of a run that faults; the target's total cost adds a word-entry charge
 the interpreter has no counterpart for, so only the kernel cost is related;
@@ -863,12 +861,10 @@ theorem eq_of_snd_eq {mapping : List (String × String)} (hnodup : (mapping.map 
       · exact ih hnodup.2 hp1 hq1
 
 /-- The image `compileWords` emits stands for the dictionary `D`, when `D`
-gives each source word its checked body and no body holds a runtime-only
-`push` atom (the elaborator never writes one). -/
+gives each source word its checked body. -/
 theorem compileWords_image {words : List CheckedWord} {image : List Target.WordEntry}
     (hc : compileWords words = .ok image)
-    (hD : ∀ word ∈ words, ∃ e, D word.name = some e ∧ e.body = word.program)
-    (hnp : ∀ word ∈ words, noPushProgram word.program = true) :
+    (hD : ∀ word ∈ words, ∃ e, D word.name = some e ∧ e.body = word.program) :
     ∃ M, nameMap words = .ok M ∧ ImageRel M D image := by
   obtain ⟨M, hM, hrel⟩ := compileWords_ok hc
   obtain ⟨hnames, hnd, _⟩ := nameMapOf_ok hM
@@ -893,19 +889,18 @@ theorem compileWords_image {words : List CheckedWord} {image : List Target.WordE
   obtain ⟨e, he, hbody⟩ := hD word' hword'
   refine ⟨e, w, hsame.1 ▸ he, hw, ?_⟩
   rw [hbody]
-  exact lowerProgram_rel rfl word'.program w.code hlower' (hnp word' hword') []
+  exact lowerProgram_rel rfl word'.program w.code hlower' []
 
 /-- Each source word is published under its mangled name, as code that stands
 for its body in that image. -/
 theorem compileWords_entry {words : List CheckedWord} {image : List Target.WordEntry}
     (hc : compileWords words = .ok image)
     (hD : ∀ word ∈ words, ∃ e, D word.name = some e ∧ e.body = word.program)
-    (hnp : ∀ word ∈ words, noPushProgram word.program = true)
     {word : CheckedWord} (hword : word ∈ words) :
     ∃ M target w, nameMap words = .ok M ∧ ImageRel M D image ∧
       M.find? (fun e => e.1 == word.name) = some (word.name, target) ∧
       image.find? (·.name == target) = some w ∧ CodeRel M [] w.code word.program := by
-  obtain ⟨M, hM, hI⟩ := compileWords_image hc hD hnp
+  obtain ⟨M, hM, hI⟩ := compileWords_image hc hD
   obtain ⟨M', hM', hrel⟩ := compileWords_ok hc
   rw [hM] at hM'
   cases hM'
@@ -929,7 +924,6 @@ word's published entry on the target from a stack that stands for `S`:
 theorem compileWords_correct {words : List CheckedWord} {image : List Target.WordEntry}
     (hc : compileWords words = .ok image)
     (hD : ∀ word ∈ words, ∃ e, D word.name = some e ∧ e.body = word.program)
-    (hnp : ∀ word ∈ words, noPushProgram word.program = true)
     {word : CheckedWord} (hword : word ∈ words) :
     ∃ M target, nameMap words = .ok M ∧
       M.find? (fun e => e.1 == word.name) = some (word.name, target) ∧
@@ -942,7 +936,7 @@ theorem compileWords_correct {words : List CheckedWord} {image : List Target.Wor
             m'.cost.kernel = k) ∨
           (∃ m', execute image target stack fuel = .trapped .callDepthExceeded m') ∨
           (∃ cfg n k', Reach ⟨S, word.program⟩ cfg n k' ∧ LenOverflowAt cfg)) := by
-  obtain ⟨M, target, w, hM, hI, hfind, hw, hcode⟩ := compileWords_entry hc hD hnp hword
+  obtain ⟨M, target, w, hM, hI, hfind, hw, hcode⟩ := compileWords_entry hc hD hword
   exact ⟨M, target, hM, hfind, fun hS h => execute_halted hI hw hcode hS h,
     fun hS hrun hfuel => execute_of_reaches hI hw hcode hS hrun hfuel⟩
 

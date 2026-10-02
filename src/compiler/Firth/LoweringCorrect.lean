@@ -147,19 +147,6 @@ theorem CodeRel.rebase {M caps before} :
 
 /-! ## The lowering emits related code -/
 
-mutual
-/-- No administrative `push` atom, which only the interpreter's own `dip` and
-`quote` rules create. The elaborator never emits one. -/
-def noPushProgram : SProgram → Bool
-  | .empty => true
-  | .cons atom rest => noPushAtom atom && noPushProgram rest
-
-def noPushAtom : Firth.Interpreter.Atom → Bool
-  | .push _ => false
-  | .quotation body => noPushProgram body
-  | _ => true
-end
-
 theorem lowerLiteral_rel {M : List (String × String)} {context : Context}
     {l : Firth.Interpreter.Literal} {v : TValue}
     (h : lowerLiteral context l = .ok v) : ValRel M (.literal l) v := by
@@ -206,14 +193,13 @@ theorem targetPrimitive_rel {name target : String}
 
 mutual
 theorem lowerProgram_rel {M : List (String × String)} {context : Context} (hM : context.words = M) :
-    ∀ (p : SProgram) (c : TCode), lowerProgram context p = .ok c → noPushProgram p = true →
+    ∀ (p : SProgram) (c : TCode), lowerProgram context p = .ok c →
       ∀ caps, CodeRel M caps c p
-  | .empty, c, h, _, _ => by
+  | .empty, c, h, _ => by
       simp only [lowerProgram, Except.ok.injEq] at h
       subst h
       exact .nil
-  | .cons atom rest, c, h, hnp, caps => by
-      simp only [noPushProgram, Bool.and_eq_true] at hnp
+  | .cons atom rest, c, h, caps => by
       simp only [lowerProgram, bind, Except.bind] at h
       split at h
       · cases h
@@ -223,14 +209,13 @@ theorem lowerProgram_rel {M : List (String × String)} {context : Context} (hM :
         · rename_i tail htail
           simp only [pure, Except.pure, Except.ok.injEq] at h
           subst h
-          exact lowerAtom_rel hM atom first hfirst hnp.1 caps tail rest
-            (lowerProgram_rel hM rest tail htail hnp.2 caps)
+          exact lowerAtom_rel hM atom first hfirst caps tail rest
+            (lowerProgram_rel hM rest tail htail caps)
 
 theorem lowerAtom_rel {M : List (String × String)} {context : Context} (hM : context.words = M) :
     ∀ (atom : Firth.Interpreter.Atom) (is : TCode), lowerAtom context atom = .ok is →
-      noPushAtom atom = true →
       ∀ caps c p, CodeRel M caps c p → CodeRel M caps (is ++ c) (.cons atom p)
-  | .lit l, is, h, _, caps, c, p, hc => by
+  | .lit l, is, h, caps, c, p, hc => by
       simp only [lowerAtom, bind, Except.bind] at h
       split at h
       · cases h
@@ -238,29 +223,28 @@ theorem lowerAtom_rel {M : List (String × String)} {context : Context} (hM : co
         simp only [pure, Except.pure, Except.ok.injEq] at h
         subst h
         exact .lit (lowerLiteral_rel hv) hc
-  | .push _, _, _, hnp, _, _, _, _ => by simp [noPushAtom] at hnp
-  | .quotation body, is, h, hnp, caps, c, p, hc => by
-      simp only [noPushAtom] at hnp
+  | .push _, _, h, _, _, _, _ => by simp [lowerAtom] at h
+  | .quotation body, is, h, caps, c, p, hc => by
       simp only [lowerAtom, bind, Except.bind] at h
       split at h
       · cases h
       · rename_i qc hqc
         simp only [pure, Except.pure, Except.ok.injEq] at h
         subst h
-        exact .quotation (lowerProgram_rel hM body qc hqc hnp []) hc
-  | .dup, is, h, _, _, _, _, hc => by simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .dup hc
-  | .drop, is, h, _, _, _, _, hc => by simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .drop hc
-  | .swap, is, h, _, _, _, _, hc => by simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .swap hc
-  | .pick _, is, h, _, _, _, _, hc => by simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .pick hc
-  | .roll _, is, h, _, _, _, _, hc => by simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .roll hc
-  | .dip, is, h, _, _, _, _, hc => by simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .dip hc
-  | .call, is, h, _, _, _, _, hc => by simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .call hc
-  | .compose, is, h, _, _, _, _, hc => by
+        exact .quotation (lowerProgram_rel hM body qc hqc []) hc
+  | .dup, is, h, _, _, _, hc => by simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .dup hc
+  | .drop, is, h, _, _, _, hc => by simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .drop hc
+  | .swap, is, h, _, _, _, hc => by simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .swap hc
+  | .pick _, is, h, _, _, _, hc => by simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .pick hc
+  | .roll _, is, h, _, _, _, hc => by simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .roll hc
+  | .dip, is, h, _, _, _, hc => by simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .dip hc
+  | .call, is, h, _, _, _, hc => by simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .call hc
+  | .compose, is, h, _, _, _, hc => by
       simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .compose hc
-  | .quote, is, h, _, _, _, _, hc => by simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .quote hc
-  | .ifThenElse, is, h, _, _, _, _, hc => by
+  | .quote, is, h, _, _, _, hc => by simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .quote hc
+  | .ifThenElse, is, h, _, _, _, hc => by
       simp only [lowerAtom, Except.ok.injEq] at h; subst h; exact .ifThenElse hc
-  | .word name, is, h, _, caps, c, p, hc => by
+  | .word name, is, h, caps, c, p, hc => by
       simp only [lowerAtom, bind, Except.bind] at h
       split at h
       · cases h
@@ -270,7 +254,7 @@ theorem lowerAtom_rel {M : List (String × String)} {context : Context} (hM : co
         obtain ⟨entry, hfind, rfl⟩ := resolveWord_rel htarget
         rw [hM] at hfind
         exact .word hfind hc
-  | .prim name, is, h, _, caps, c, p, hc => by
+  | .prim name, is, h, caps, c, p, hc => by
       simp only [lowerAtom] at h
       split at h
       · cases h

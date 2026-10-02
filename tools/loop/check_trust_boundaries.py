@@ -50,27 +50,36 @@ def source_success() -> None:
     assert len(result.get("checked_words", [])) == 1, result
 
 
-def compile_request(usage: str) -> dict[str, Any]:
+def compile_request(program: list[dict[str, Any]]) -> dict[str, Any]:
     stack = {"row": None, "items": []}
     output = {"row": None, "items": [{"kind": "base", "name": "Int", "usage": "many"}]}
-    literal = {"kind": "lit", "value": {"type": "int", "value": 42}}
     return {"request_id": "trust-compile", "entry": "main", "gamma_version": "0.8",
             "target_version": "0.1", "checked_words": [{"name": "main",
-            "checking_state": "checked", "proof_state": "available", "program": [
-                {"kind": "push", "value": {"kind": "quotation", "body": [literal], "usage": usage}},
-                {"kind": "call"}]}], "erased_word_types": [{"word": "main", "type": {
-                    "row_variables": [], "input": stack, "output": output}}]}
+            "checking_state": "checked", "proof_state": "available", "program": program}],
+            "erased_word_types": [{"word": "main", "type": {
+                "row_variables": [], "input": stack, "output": output}}]}
 
 
-def quotation_ownership(usage: str) -> None:
-    rc, result = invoke([str(gate.LEAN_BIN / "firthCompile")], compile_request(usage))
+LITERAL = {"kind": "lit", "value": {"type": "int", "value": 42}}
+
+
+def source_quotation() -> None:
+    """A quotation written in source compiles."""
+    rc, result = invoke([str(gate.LEAN_BIN / "firthCompile")],
+                        compile_request([{"kind": "quotation", "body": [LITERAL]}, {"kind": "call"}]))
+    assert rc == 0 and result.get("status") == "success", result
+
+
+def forged_push(value: dict[str, Any], tail: list[dict[str, Any]]) -> None:
+    """A `push` atom is the interpreter's run-time step, never source: the
+    compiler refuses it whatever it pushes, a stored quotation of either usage
+    or a literal (todo.compiler-source-push-atoms)."""
+    rc, result = invoke([str(gate.LEAN_BIN / "firthCompile")],
+                        compile_request([{"kind": "push", "value": value}] + tail))
     assert rc == 0, result
-    if usage == "many":
-        assert result.get("status") == "success", result
-    else:
-        assert result.get("status") == "failure", result
-        assert result.get("compile_error", {}).get("code") == "firth.compile.unsupported-value", result
-        assert "target_program" not in result, result
+    assert result.get("status") == "failure", result
+    assert result.get("compile_error", {}).get("code") == "firth.compile.unsupported-value", result
+    assert "target_program" not in result, result
 
 
 def row_binder_agreement() -> None:
@@ -207,8 +216,12 @@ def main() -> int:
     checks.append(("unknown primitive", lambda: source_refusal(": main ( -- ) prim nope ;",
                                                                "firth.name.unresolved-effect")))
     checks.append(("25 row binders agree with the VM", row_binder_agreement))
+    checks.append(("source quotation compiles", source_quotation))
     for usage in ("many", "linear"):
-        checks.append((f"{usage} quotation ownership", lambda u=usage: quotation_ownership(u)))
+        checks.append((f"forged push of a {usage} quotation", lambda u=usage: forged_push(
+            {"kind": "quotation", "body": [LITERAL], "usage": u}, [{"kind": "call"}])))
+    checks.append(("forged push of a literal", lambda: forged_push(
+        {"kind": "literal", "literal": {"type": "int", "value": 42}}, [])))
     for mode in ("closed", "captured"):
         for called in (False, True):
             checks.append((f"{mode} quotation: {'called' if called else 'returned'}",
