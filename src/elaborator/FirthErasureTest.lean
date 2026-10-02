@@ -83,8 +83,8 @@ mutual
     | _ :: rest => callsWord name rest
 
   /-- Whether every call of `name` is a tail call: the last atom of its
-  sequence, or last inside a quotation after which nothing runs before a
-  final `if` (`branchesThenIf`). -/
+  sequence, or last inside the quotation that is the false branch of the
+  word's final `if` (`branchesThenIf`). -/
   partial def tailCallsOnly (name : String) : List Atom → Bool
     | [] => true
     | [.word _] => true
@@ -96,14 +96,14 @@ mutual
           tailCallsOnly name rest
     | _ :: rest => tailCallsOnly name rest
 
-  /-- A final `if`, after only atoms that build its branches (shuffles,
-  literals, quotations, `quote` and `compose`, as erasure writes to close a
-  branch over locals), none of which runs a word or primitive. -/
+  /-- What follows the quotation makes it the false branch of a final `if`:
+  only `compose`, which erasure writes to close a branch over locals and
+  which keeps the quotation on top, then the `if`. A quotation that is
+  dropped, moved below the top or never reaches an `if` is not accepted, and
+  neither is a call in the true branch, which this test does not need. -/
   partial def branchesThenIf : List Atom → Bool
     | [.ifThenElse] => true
-    | .quotation _ :: rest | .quote :: rest | .compose :: rest | .lit _ :: rest
-    | .swap :: rest | .dup :: rest | .drop :: rest | .pick _ :: rest | .roll _ :: rest =>
-        branchesThenIf rest
+    | .compose :: rest => branchesThenIf rest
     | _ => false
 end
 
@@ -332,6 +332,12 @@ def main : IO Unit := do
       if tailCallsOnly "count-kept" (result.program.map (·.atom)) then
         fail s!"a self-call followed by `n drop` was taken as a tail call: {repr (shapes result.program)}"
   | .error error => fail s!"non-tail loop erasure failed: {repr error}"
+  -- The check ties the call to the branch the `if` runs (cubic on #213): a
+  -- quotation holding the call that is dropped before the `if` is not one.
+  let dropped : List Atom :=
+    [.quotation (atomProgram [.word "count"]), .drop, .quotation .empty, .quotation .empty, .ifThenElse]
+  if tailCallsOnly "count" dropped then
+    fail "a self-call in a quotation dropped before the `if` was taken as a tail call"
 
   IO.println "erasure tests passed"
 
