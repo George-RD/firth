@@ -297,8 +297,11 @@ The failures:
   condition, so it can be read as applying to that condition only. This is
   either a dropped rule or a description that can be read two ways; the
   results cannot tell which.
-- `elevator`, Firth 3: round 1's `main` left one extra `Int` on the stack
-  (`firth.type.declared-effect-mismatch`, shown on the example). Round 2
+- `elevator`, Firth 3: round 1's `main` pushed `tm` twice, so it left an
+  extra `Seq Int` under its two results
+  (`firth.type.declared-effect-mismatch`, shown on the example). The hint
+  called it an extra `Int` on top, which is wrong
+  (`todo.declared-effect-extra-position`). Round 2
   passed the example and 14 of 15 hidden tests, and trapped with
   `call-depth-exceeded` on the 30-request case (rerun with
   `tools/loop/firth_run.py`). Its `arrive` loop calls itself inside a
@@ -318,7 +321,7 @@ states the range without "earlier".
 
 ### What this says about the scored tier
 
-The pool is still effectively at the ceiling for Sonnet in Python. Seven
+The pool is still effectively at the ceiling for Sonnet in Python. Six
 of the eight tasks were passed by every author in both languages, and every
 Python failure, and three of the four Firth failures, is the same one
 hidden test on one clause. A tier whose only separation is one clause
