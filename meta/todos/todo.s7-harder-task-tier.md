@@ -73,3 +73,7 @@ until the tasks get harder.
   context the prompt does not give. A scored run keeps the messages out
   (authors started from a session with no queued project messages) or
   lists them, and the hook text, in its pre-registration.
+- The bounds check in `test_harder.py` covers sizes and value ranges only.
+  The scored tier's check also covers order constraints (such as which
+  operation a cancel may name), since that wording broke in two pool-2
+  tasks (reviewer, #214).

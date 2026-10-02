@@ -222,7 +222,10 @@ passes the example and fails at least one of them (`test_harder.py`).
 
 Every description states every bound: each input's size and each value's
 range, so every result fits in an `Int`. `test_harder.py` checks every
-example, hidden test and hand value against those bounds. Writing the
+example, hidden test and hand value against those sizes and ranges. It
+does not check order constraints: `order-book` and `heap-alloc` say a
+cancel or free names an "earlier operation", and some of their hidden
+tests break that (see the second pool's results). Writing the
 references found two places where the spreadsheet description could be
 read two ways (whether a cell that only leads to a cycle has an error, and
 whether a cell with an out-of-range reference follows its other
@@ -310,8 +313,10 @@ The failures:
   defect in the toolchain, not an authoring miss: the docs say a call that
   is a word's last action is a tail call, the checker accepts the program,
   and erasure keeps a copy of an outer local after the call. #213 fixes it
-  (open when this was written). Whether this answer passes with the fix
-  was not checked.
+  (open when this was written). The reviewer put #213's `Erasure.lean`
+  and `Pipeline.lean` (at e88ce99) on this branch and re-scored this
+  answer: 15 of 15 hidden tests (review of #214). That is a
+  counterfactual and is not scored.
 
 No author failed `order-book` or `heap-alloc`, including their hidden
 tests whose cancel or free names the operation itself or a later one. The
@@ -330,9 +335,11 @@ language, so the scored tier cannot be built from these tasks at this size
 either. In Firth, the one failure of its own is again the non-tail
 self-call that the checker accepts silently.
 
-What the two pools show is that Sonnet writes rule-heavy programs of this
-size correctly when every rule is stated plainly, in either language (the
-longest answers were about 100 lines of Python and 250 of Firth). It is
+What the two pools measured is narrow: on these 16 tasks, with three
+Sonnet authors per language, every failure left within two rounds was
+either the one clause-level spreadsheet hidden test or the toolchain's
+nested-`locals` tail-call defect (the longest answers were about 100 lines
+of Python and 250 of Firth). It is
 inferred, not measured, that what would separate it is size: rules it must
 hold together across a much longer program, such as a whole interpreter or
 a scheduler with many interacting constraints, still within Firth's step
