@@ -923,6 +923,26 @@ private def runCallAccountTests : IO Unit := do
         unless emitted.contains needle do
           fail s!"external word: the report does not say {needle}: {emitted}"
   | _ => fail "external word: expected one diagnostic"
+  -- Planted: a local whose type is not known is not passed over. `seven`
+  -- is defined outside the file, so the local `m` it is bound to has no
+  -- type in the account. By types alone `5` would go to `m` and the local
+  -- `n` be written for `n`, but `m` may be the value meant for `g`'s `m`,
+  -- so no edit is stated.
+  let sevenConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := { Elaborate.gammaErasure with
+        word := fun name => if name == "seven" then some { input := [], output := [.many] } else none }
+      typingEnv := { Elaborate.gammaTyping with
+        word := fun name => if name == "seven" then
+          some { rowVariables := ["ρ"], input := .row (.rigid "ρ"), output := .snoc (.row (.rigid "ρ")) (.base "Int" .many) }
+          else none } }
+  match elaboratePipeline pipelineContext ": g (forall ρ; ρ n:Int^many m:Int^many -- ρ r:Int^many) prim - ;\n: f (forall ρ; ρ n:Int^many -- ρ r:Int^many) locals { n } { seven locals { m } { 5 g } } ;\n" sevenConfig with
+  | .failure [envelope] =>
+      let emitted := encode envelope
+      unless emitted.contains "firth.type.stack-underflow" && emitted.contains "`g` in `f` takes 2 values" do
+        fail s!"a local of unknown type: expected the stack-underflow at `g`: {emitted}"
+      if emitted.contains "in place of" then
+        fail s!"a local of unknown type: the report states an edit: {emitted}"
+  | _ => fail "a local of unknown type: expected one diagnostic"
   -- `prim <=`, `prim >` and `prim >=` are primitives. Answers from earlier
   -- runs that wrote them, which were refused when they were not, now check
   -- as written and give the values worked out by hand; each case includes
@@ -1055,6 +1075,65 @@ private def runCallAccountTests : IO Unit := do
   let _ ← callReport "a place open in very many ways" "firth.type.stack-underflow"
     s!": g (forall ρ; ρ {manyEffect} -- ρ r:Int^many) {" ".intercalate (List.replicate 29 "prim +")} ;\n: f (forall ρ; ρ {manyEffect} -- ρ r:Int^many) locals \{ {" ".intercalate many} } \{ {manyValues} g } ;\n"
     ["`g` in `f` takes 30 values"] ["in place of"]
+  -- A local written just after the call, named like the input missing,
+  -- is moved into place: written again, it would be left over. 4.
+  unpushedCase "a local written after the call" ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g n } ;\n"
+    ["by moving the local of that name, `n`, written after `g`, into its place before it: write `n true g` in place of `true g n` on line 2. With that edit `f` checks."] []
+    "f" [.int 4, .bool false] [.int 4]
+  -- Planted: here the `n` after `g` is for `prim +`. Moved, `prim +` would
+  -- be short of a value; written again, the word checks: 3 + 3.
+  unpushedCase "a local after the call meant for what follows" ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g n prim + } ;\n"
+    ["by writing the local of that name, `n`: write `n true g` in place of `true g` on line 2. With that edit `f` checks."] ["by moving"]
+    "f" [.int 3, .bool true] [.int 6]
+  -- Planted: here the `n` after `g` may be for the last `prim +`, and the
+  -- `prim +` of a Bool between is the author's own mistake. Moved or written
+  -- again, checking stops at that mistake, so nothing tells the two edits
+  -- apart and neither is stated (Codex on #208).
+  let _ ← callReport "a local after the call, the two edits stopped alike" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g n b 1 prim + drop prim + } ;\n"
+    ["`g` in `f` takes 2 values"]
+    ["by moving", "in place of"]
+  -- Moved, checking stops further on than with `n` written again: there
+  -- the `n` left over is the condition of the `if`, which takes a Bool.
+  let _ ← callReport "a local after the call, moved further" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Bool^many) drop drop true ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g n [ 1 ] [ 2 ] if true prim + } ;\n"
+    ["by moving the local of that name, `n`, written after `g`, into its place before it: write `n true g` in place of `true g n` on line 2. With that edit, the next error in `f` is at line 2"]
+    []
+  -- Planted: written again, checking stops further on than with `n` moved,
+  -- where the first `prim +` is short of a value.
+  let _ ← callReport "a local after the call, written again further" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g n prim + b 1 prim + drop } ;\n"
+    ["by writing the local of that name, `n`: write `n true g` in place of `true g` on line 2. With that edit, the next error in `f` is at line 2"]
+    ["by moving"]
+  -- Each local after the call is moved or written again on its own. Here
+  -- `a` is for the `prim not` after the call and `b` for `g`: moving both
+  -- gets further than writing both, to the second `prim not`, but the edit
+  -- that moves `b` alone checks (Codex on #208). not true is false.
+  unpushedCase "locals after the call, one moved and one written" ": g (forall ρ; ρ a:Bool^many p:Int^many b:Int^many -- ρ r:Bool^many) drop drop ;\n: f (forall ρ; ρ a:Bool^many b:Int^many -- ρ r:Bool^many) locals { a b } { 5 g a b prim not drop prim not } ;\n"
+    ["by writing the local `a` and moving the local `b`, written after `g`, into its place before it: write `a 5 b g a` in place of `5 g a b` on line 2. With that edit `f` checks."]
+    ["by moving the locals"]
+    "f" [.bool true, .int 3] [.bool false]
+  -- Planted: past four locals after the call, the choices are not all
+  -- checked, so no edit is stated, though moving all five would check.
+  -- They go below the value present, so they are not the values the call
+  -- is short of at its top, which `shortEdit` moves.
+  let _ ← callReport "five locals after the call" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ a:Int^many b:Int^many c:Int^many d:Int^many e:Int^many p:Bool^many -- ρ r:Int^many) drop prim + prim + prim + prim + ;\n: f (forall ρ; ρ a:Int^many b:Int^many c:Int^many d:Int^many e:Int^many -- ρ r:Int^many) locals { a b c d e } { true g a b c d e } ;\n"
+    ["`g` in `f` takes 6 values"]
+    ["in place of"]
+  -- Planted: a comment between the call and the local is not moved over,
+  -- so it is not lost; the local is written again (cubic on #208).
+  let _ ← callReport "a local after the call, past a comment" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g (* kept *) n } ;\n"
+    ["`g` in `f` takes 2 values"]
+    ["by moving", "in place of `true g (* kept *) n`"]
+  -- Planted: only a local of the missing input's name is moved. `k` after
+  -- `g` is another local; moving it in place of `n` would get as far, to
+  -- the `prim +` of a Bool, but drop `k`.
+  let _ ← callReport "another local after the call" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many b:Bool^many k:Int^many -- ρ r:Int^many) locals { n b k } { true g k drop true prim + } ;\n"
+    ["by writing the local of that name, `n`: write `n true g` in place of `true g` on line 2."]
+    ["by moving", "in place of `true g k`"]
   -- Planted: a local of another type is not written for an input. `xs`
   -- here is an Int and `g` takes a Seq Int: no edit.
   let _ ← callReport "a local of another type" "firth.type.stack-underflow"
@@ -1084,14 +1163,22 @@ private def runCallAccountTests : IO Unit := do
     ["Write `3 g` in place of `g 3` on line 2. With that edit `f` checks."] []
     "f" [.int 9] [.int 6]
   -- Planted: sort (8ea4a1d, haiku-firth-14, answer 3), verbatim. `value`,
-  -- written after `insert-sorted`, is not its last input, `pos`, so it is
-  -- not moved before it. `value` is written in its own input's place
-  -- instead, between the new `result` and the new `pos`, and the `value`
-  -- written after the call is the next error.
-  let _ ← callReport "a value for another input" "firth.type.stack-underflow" ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Seq Int^many)\n  locals { xs } { prim seq-int.empty 0 xs sort-insert-all };\n\n: sort-insert-all\n  (forall ρ; ρ result:Seq Int^many i:Int^many xs:Seq Int^many -- ρ result:Seq Int^many)\n  locals { result i xs } {\n    [ i xs prim seq-int.len prim = ] [ result ] [\n      xs i prim seq-int.at result 0 insert-sorted\n      result i 1 prim + xs sort-insert-all\n    ] if\n  };\n\n: insert-sorted\n  (forall ρ; ρ result:Seq Int^many value:Int^many pos:Int^many -- ρ result:Seq Int^many)\n  locals { result value pos } {\n    [ pos result prim seq-int.len prim = ] [ result value prim seq-int.push ] [\n      value result pos prim seq-int.at prim <\n      [ result pos value prim seq-int.set ] [ result ] if\n      pos 1 prim + insert-sorted value\n    ] if\n  };\n"
+  -- written after `insert-sorted`, is not its last input, `pos`, so the
+  -- values after the call are not moved before it as they stand. `value`
+  -- is moved into its own input's place instead, between the new `result`
+  -- and the new `pos`. Written there again, the `value` after the call
+  -- would be left over, and the `if` refused for it; moved, the `if` is
+  -- refused only for its condition, written as a quotation.
+  let insertSorted := ": main\n  (forall ρ; ρ xs:Seq Int^many -- ρ sorted:Seq Int^many)\n  locals { xs } { prim seq-int.empty 0 xs sort-insert-all };\n\n: sort-insert-all\n  (forall ρ; ρ result:Seq Int^many i:Int^many xs:Seq Int^many -- ρ result:Seq Int^many)\n  locals { result i xs } {\n    [ i xs prim seq-int.len prim = ] [ result ] [\n      xs i prim seq-int.at result 0 insert-sorted\n      result i 1 prim + xs sort-insert-all\n    ] if\n  };\n\n: insert-sorted\n  (forall ρ; ρ result:Seq Int^many value:Int^many pos:Int^many -- ρ result:Seq Int^many)\n  locals { result value pos } {\n    [ pos result prim seq-int.len prim = ] [ result value prim seq-int.push ] [\n      value result pos prim seq-int.at prim <\n      [ result pos value prim seq-int.set ] [ result ] if\n      pos 1 prim + insert-sorted value\n    ] if\n  };\n"
+  let _ ← callReport "a value for another input" "firth.type.stack-underflow" insertSorted
     ["`insert-sorted` in `insert-sorted` takes 3 values (result:Seq Int, value:Int, pos:Int), bottom to top, but only 2 values are on the stack before it",
-     "Push the missing value (value:Int) by writing the local of that name, `value`: write `value result pos prim seq-int.at prim < [ result pos value prim seq-int.set ] [ result ] if value pos 1 prim + insert-sorted` in place of `value result pos prim seq-int.at prim < [ result pos value prim seq-int.set ] [ result ] if pos 1 prim + insert-sorted` on line 18. With that edit, the next error in `insert-sorted` is at line 19, column 7."]
+     "Push the missing value (value:Int) by moving the local of that name, `value`, written after `insert-sorted`, into its place before it: write `value result pos prim seq-int.at prim < [ result pos value prim seq-int.set ] [ result ] if value pos 1 prim + insert-sorted` in place of `value result pos prim seq-int.at prim < [ result pos value prim seq-int.set ] [ result ] if pos 1 prim + insert-sorted value` on line 18. With that edit, the next error in `insert-sorted` is at line 19, column 7."]
     ["`value insert-sorted` in place of", "`value` is written after it"]
+  -- With the move made, the word's next error is the condition written as
+  -- a quotation, not a value left over.
+  let insertMoved := (s!"{insertSorted}").replace "pos 1 prim + insert-sorted value" "value pos 1 prim + insert-sorted"
+  let _ ← callReport "insert-sorted with the move made" "firth.type.expected-bool" insertMoved
+    ["`if` in `insert-sorted` needs a Bool condition"]
 
 private def stackTypes : Firth.Elaborator.StackEffect.AStack → List Firth.Elaborator.StackEffect.AType
   | .snoc rest type => stackTypes rest ++ [type]
