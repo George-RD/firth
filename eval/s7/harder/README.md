@@ -97,6 +97,57 @@ Written before any calibration author started.
   of them in both languages, easier ones. Calibration results are never
   S7 evidence and are not compared between languages as a result.
 
-## Calibration results
+## Calibration results: 2 October 2026
 
-Not run yet.
+Run as planned above: six Sonnet authors, one at a time, in the order
+Python 1, Firth 1, Python 2, Firth 2, Python 3, Firth 3. Every transcript
+records `claude-sonnet-5-5` and passed `audit.py` with nothing flagged
+(each author read its prompt, wrote its answer, and, when it had feedback,
+read it and wrote once more). Everything is kept in
+`runs/2026-10-02-calibration/`: the prompts, and for each author its
+answers, the feedback it was shown, the scored results (with the runner's
+measured `kernel_cost` and `vm_cost` for every Firth case) and the trimmed
+transcript. Authors 1 to 5 were scored at `ecfada9`; Firth 3 at `6b43d6d`,
+which adds only a todo file.
+
+| | round 1 | within two rounds |
+| --- | --- | --- |
+| Python, 3 authors | 24 of 24 | 24 of 24 |
+| Firth, 3 authors | 21 of 24 | 22 of 24 |
+
+`tier.py report runs/2026-10-02-calibration/*/results-*.json` prints the
+table per task and author. Python answers needed no feedback round, so
+none was sent.
+
+The three Firth failures:
+
+- `rpn`, Firth 1, round 1: the answer compared two `Bool`s with `prim =`,
+  which takes only `Int`s (`firth.type.primitive-input-mismatch`). The
+  feedback showed the diagnostic and round 2 passed. The Sonnet worker that
+  wrote the reference hit the same gap (`todo.harder-tier-sequence-gaps`).
+- `tiny-vm`, Firth 2 and Firth 3: both answers passed the example and 15
+  of 16 hidden tests, and trapped with `resource-fault` on the one that
+  runs 300 instructions. Each loops by a self-call placed inside a `locals`
+  block nested in the word's own `locals` block. That call is not a tail
+  call, because the outer locals are dropped after it, so each instruction
+  nests a frame and the VM traps past 256. The checker accepts the program
+  and the docs do not say this (`todo.locals-self-call-not-tail`). The
+  example runs 19 instructions, so the feedback round could not show it.
+
+### What this says about the scored tier
+
+The pool is at the ceiling for Sonnet in Python: every task passed on the
+first attempt, three times out of three. Tasks of these kinds and this size
+cannot separate the languages, so the scored tier cannot be more of the
+same. In Firth, Sonnet is close to the ceiling too, and both kinds of
+failure are Firth pitfalls (a missing operation and a call that silently
+is not a tail call), not misread specifications.
+
+The scored tier therefore needs harder kinds of task than this pool has:
+larger programs with many interacting rules, where a careful author can
+still misread or drop one, at sizes Firth's step budget and 256-frame limit
+allow. Because this pool overshot, a second calibration pool of those kinds
+is calibrated the same way before the scored tier is written, so the
+frozen tier is not a guess. These results are calibration only: they are
+not S7 evidence, and the Python and Firth columns are not a comparison of
+the languages.

@@ -35,3 +35,10 @@ until the tasks get harder.
   Python and Firth reference solutions, hidden tests and planted mutants
   (`eval/s7/harder/test_harder.py`). Protocol and calibration results in
   `eval/s7/harder/README.md`.
+- Calibration, 2 October 2026 (three Sonnet 5.5 authors per language): the
+  pool is at the ceiling in Python (24 of 24 on the first attempt) and near
+  it in Firth (21, then 22, of 24). A second, harder calibration pool comes
+  before the scored tier is written.
+- DeepSeek Flash: `deepseek-v4.1-flash` is listed at ollama.com, whose key
+  is already connected to this project, so it can be reached without new
+  credentials. Whether to spend that account on it is the maintainer's call.
