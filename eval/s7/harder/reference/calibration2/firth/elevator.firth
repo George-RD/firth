@@ -1,0 +1,184 @@
+\ Lift simulation.
+\ The requests are sorted once by arrival time, as numbers
+\ time * 1024 + id * 32 + floor (ord), so arrivals come off in order from a
+\ pointer j. Request k's state is r[k]:
+\   0           not yet arrived
+\   -2^floor    waiting (arrived, not served)
+\   -10000000 - t   served at time t
+\ The floors with a waiting request are also a bit mask (bit f is set when
+\ some request for floor f is waiting), and p is 2^(current floor), so a
+\ clock tick costs few steps. The clock is kept as rem = nt - now, where nt is
+\ the time of the next arrival (INF when there is none); slack is the time
+\ spent stopped or idle, so moved = now - slack.
+\ ticks-up and ticks-down move the lift until an arrival is due, the lift is
+\ at a waiting floor, or nothing is waiting beyond it. `handle` then deals
+\ with that event.
+
+\ 2 to the power f, for f from 0 to 21.
+: pow2
+  (forall ρ; ρ f:Int^many -- ρ r:Int^many)
+  { 1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768 65536
+    131072 262144 524288 1048576 2097152 }
+  swap prim seq-int.at;
+
+\ True when the mask has bit p (p a power of two).
+: has-bit?
+  (forall ρ; ρ mask:Int^many p:Int^many -- ρ r:Bool^many)
+  locals { mask p }
+  { mask p prim div 2 prim mod 1 prim = };
+
+\ The mask with bit p set.
+: add-bit
+  (forall ρ; ρ mask:Int^many p:Int^many -- ρ r:Int^many)
+  locals { mask p }
+  { mask p has-bit? [ mask ] [ mask p prim + ] if };
+
+\ Moves up while nothing is due and a waiting floor lies above.
+: ticks-up
+  (forall ρ; ρ rem:Int^many mask:Int^many p:Int^many -- ρ rrem:Int^many rmask:Int^many rp:Int^many)
+  locals { rem mask p }
+  { rem 0 prim <=
+    [ rem mask p ]
+    [ mask p has-bit?
+      [ rem mask p ]
+      [ mask p 2 prim * prim >=
+        [ rem 1 prim - mask p 2 prim * ticks-up ]
+        [ rem mask p ] if ] if ] if };
+
+\ Moves down while nothing is due and a waiting floor lies below.
+: ticks-down
+  (forall ρ; ρ rem:Int^many mask:Int^many p:Int^many -- ρ rrem:Int^many rmask:Int^many rp:Int^many)
+  locals { rem mask p }
+  { rem 0 prim <=
+    [ rem mask p ]
+    [ mask p has-bit?
+      [ rem mask p ]
+      [ mask p prim mod 0 prim >
+        [ rem 1 prim - mask p 2 prim div ticks-down ]
+        [ rem mask p ] if ] if ] if };
+
+\ Request e (a number of ord) arrives: r[id] becomes waiting, its floor joins the mask.
+: arrive-one
+  (forall ρ; ρ r:Seq Int^many mask:Int^many e:Int^many -- ρ rr:Seq Int^many rmask:Int^many)
+  locals { r mask e }
+  { r e 32 prim div 32 prim mod 0 e 32 prim mod pow2 prim - prim seq-int.set
+    mask e 32 prim mod pow2 add-bit };
+
+\ Arrives every request from ord[j] on that is due by now.
+: arrive-loop
+  (forall ρ; ρ ord:Seq Int^many j:Int^many now:Int^many r:Seq Int^many mask:Int^many -- ρ rord:Seq Int^many rj:Int^many rr:Seq Int^many rmask:Int^many)
+  locals { ord j now r mask }
+  { j ord prim seq-int.len prim <
+    [ ord j prim seq-int.at 1024 prim div now prim <=
+      [ ord j 1 prim + now r mask ord j prim seq-int.at arrive-one arrive-loop ]
+      [ ord j r mask ] if ]
+    [ ord j r mask ] if };
+
+\ Time of the next arrival, INF when there is none.
+: next-nt
+  (forall ρ; ρ ord:Seq Int^many j:Int^many -- ρ nt:Int^many)
+  locals { ord j }
+  { j ord prim seq-int.len prim <
+    [ ord j prim seq-int.at 1024 prim div ]
+    [ 1000000000 ] if };
+
+\ Stamps the serve time now on every request from k on waiting at floor p.
+: serve-pass
+  (forall ρ; ρ r:Seq Int^many k:Int^many p:Int^many now:Int^many -- ρ rr:Seq Int^many)
+  locals { r k p now }
+  { k r prim seq-int.len prim <
+    [ r k prim seq-int.at p prim + 0 prim =
+      [ r k -10000000 now prim - prim seq-int.set ] [ r ] if
+      k 1 prim + p now serve-pass ]
+    [ r ] if };
+
+\ Back to the ticks after an arrival pass (nt, rem: before it).
+: resume
+  (forall ρ; ρ ord:Seq Int^many j:Int^many r:Seq Int^many mask:Int^many slack:Int^many dir:Int^many nt:Int^many rem:Int^many p:Int^many -- ρ served:Seq Int^many end:Int^many mv:Int^many)
+  locals { ord j r mask slack dir nt rem p }
+  { ord j r slack dir
+    ord j next-nt
+    ord j next-nt nt rem prim - prim -
+    mask p sim };
+
+\ Deals with the event the ticks stopped at.
+: handle
+  (forall ρ; ρ ord:Seq Int^many j:Int^many r:Seq Int^many slack:Int^many dir:Int^many nt:Int^many rem:Int^many mask:Int^many p:Int^many -- ρ served:Seq Int^many end:Int^many mv:Int^many)
+  locals { ord j r slack dir nt rem mask p }
+  { rem 0 prim <=
+    [ ord j nt rem prim - r mask arrive-loop slack dir nt rem p resume ]
+    [ mask p has-bit?
+      [ ord j r 0 p nt rem prim - serve-pass
+        slack 2 prim + dir nt rem 2 prim - mask p prim - p sim ]
+      [ mask 0 prim =
+        [ nt 1000000000 prim >=
+          [ r nt rem prim - dup slack prim - ]
+          [ ord j r slack rem prim + dir nt 0 mask p sim ] if ]
+        [ ord j r slack 0 dir prim - nt rem mask p sim ] if ] if ] if };
+
+\ The ticks in the current heading, then the event.
+: sim
+  (forall ρ; ρ ord:Seq Int^many j:Int^many r:Seq Int^many slack:Int^many dir:Int^many nt:Int^many rem:Int^many mask:Int^many p:Int^many -- ρ served:Seq Int^many end:Int^many mv:Int^many)
+  locals { ord j r slack dir nt rem mask p }
+  { ord j r slack dir nt rem mask p
+    dir 1 prim = [ ticks-up ] [ ticks-down ] if
+    handle };
+
+\ A sequence of n zeros (out holds the zeros so far).
+: zeros
+  (forall ρ; ρ n:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { n out }
+  { out prim seq-int.len n prim <
+    [ n out 0 prim seq-int.push zeros ]
+    [ out ] if };
+
+\ ord from the times and floors (k on), unsorted.
+: encode
+  (forall ρ; ρ times:Seq Int^many floors:Seq Int^many k:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { times floors k out }
+  { k times prim seq-int.len prim <
+    [ times floors k 1 prim +
+      out times k prim seq-int.at 1024 prim * k 32 prim * prim + floors k prim seq-int.at prim + prim seq-int.push
+      encode ]
+    [ out ] if };
+
+\ Insertion sort in place: sinks xs[j] left past larger neighbours.
+: sink-pair
+  (forall ρ; ρ xs:Seq Int^many j:Int^many left:Int^many right:Int^many -- ρ r:Seq Int^many)
+  locals { xs j left right }
+  { right left prim <
+    [ xs j 1 prim - right prim seq-int.set j left prim seq-int.set
+      j 1 prim - sink ]
+    [ xs ] if };
+
+: sink
+  (forall ρ; ρ xs:Seq Int^many j:Int^many -- ρ r:Seq Int^many)
+  locals { xs j }
+  { 0 j prim <
+    [ xs j xs j 1 prim - prim seq-int.at xs j prim seq-int.at sink-pair ]
+    [ xs ] if };
+
+: sort-from
+  (forall ρ; ρ xs:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { xs i }
+  { i xs prim seq-int.len prim <
+    [ xs i sink i 1 prim + sort-from ]
+    [ xs ] if };
+
+\ The served times from r (k on).
+: decode
+  (forall ρ; ρ r:Seq Int^many k:Int^many out:Seq Int^many -- ρ served:Seq Int^many)
+  locals { r k out }
+  { k r prim seq-int.len prim <
+    [ r k 1 prim + out -10000000 r k prim seq-int.at prim - prim seq-int.push decode ]
+    [ out ] if };
+
+: main
+  (forall ρ; ρ times:Seq Int^many floors:Seq Int^many -- ρ served:Seq Int^many end:Int^many moved:Int^many)
+  locals { times floors }
+  { times floors 0 prim seq-int.empty encode 1 sort-from
+    0
+    times prim seq-int.len prim seq-int.empty zeros
+    0 1 0 0 0 1 sim
+    locals { r end moved }
+    { r 0 prim seq-int.empty decode end moved } };

@@ -1,0 +1,121 @@
+\ League table. Each team gets a key (points, goal difference, goals scored)
+\ packed into one integer; teams with equal keys form a tied group, and the
+\ head-to-head points come from the matches whose two teams have equal keys.
+\ The final sort key is key, then head-to-head, then lower number.
+
+: zeros-from
+  (forall ρ; ρ out:Seq Int^many n:Int^many -- ρ r:Seq Int^many)
+  locals { out n }
+  { out prim seq-int.len n prim <
+    [ out 0 prim seq-int.push n zeros-from ]
+    [ out ] if };
+
+: zeros
+  (forall ρ; ρ n:Int^many -- ρ r:Seq Int^many)
+  locals { n }
+  { prim seq-int.empty n zeros-from };
+
+\ s with d added to element i.
+: add-at
+  (forall ρ; ρ s:Seq Int^many i:Int^many d:Int^many -- ρ r:Seq Int^many)
+  locals { s i d }
+  { s i s i prim seq-int.at d prim + prim seq-int.set };
+
+\ Points for scoring g for and h against.
+: mp
+  (forall ρ; ρ g:Int^many h:Int^many -- ρ r:Int^many)
+  locals { g h }
+  { g h prim > [ 3 ] [ g h prim = [ 1 ] [ 0 ] if ] if };
+
+\ Adds matches k on to points, goals for and goals against.
+: tally
+  (forall ρ; ρ homes:Seq Int^many aways:Seq Int^many hg:Seq Int^many ag:Seq Int^many pts:Seq Int^many gf:Seq Int^many ga:Seq Int^many k:Int^many -- ρ p:Seq Int^many f:Seq Int^many a:Seq Int^many)
+  locals { homes aways hg ag pts gf ga k }
+  { k homes prim seq-int.len prim <
+    [ homes aways hg ag
+      pts homes k prim seq-int.at hg k prim seq-int.at ag k prim seq-int.at mp add-at
+      aways k prim seq-int.at ag k prim seq-int.at hg k prim seq-int.at mp add-at
+      gf homes k prim seq-int.at hg k prim seq-int.at add-at
+      aways k prim seq-int.at ag k prim seq-int.at add-at
+      ga homes k prim seq-int.at ag k prim seq-int.at add-at
+      aways k prim seq-int.at hg k prim seq-int.at add-at
+      k 1 prim + tally ]
+    [ pts gf ga ] if };
+
+\ Key of team t from the points, goals for and goals against.
+: key-of
+  (forall ρ; ρ pts:Seq Int^many gf:Seq Int^many ga:Seq Int^many t:Int^many -- ρ r:Int^many)
+  locals { pts gf ga t }
+  { pts t prim seq-int.at 2048 prim *
+    gf t prim seq-int.at ga t prim seq-int.at prim - 1024 prim + prim +
+    1024 prim *
+    gf t prim seq-int.at prim + };
+
+\ The keys of teams t on, appended to out.
+: keys-from
+  (forall ρ; ρ pts:Seq Int^many gf:Seq Int^many ga:Seq Int^many out:Seq Int^many t:Int^many -- ρ r:Seq Int^many)
+  locals { pts gf ga out t }
+  { t pts prim seq-int.len prim <
+    [ pts gf ga out pts gf ga t key-of prim seq-int.push t 1 prim + keys-from ]
+    [ out ] if };
+
+\ Adds head-to-head points from matches k on, counting only those between
+\ teams with equal keys.
+: h2h-from
+  (forall ρ; ρ homes:Seq Int^many aways:Seq Int^many hg:Seq Int^many ag:Seq Int^many keys:Seq Int^many h2h:Seq Int^many k:Int^many -- ρ r:Seq Int^many)
+  locals { homes aways hg ag keys h2h k }
+  { k homes prim seq-int.len prim <
+    [ homes aways hg ag keys
+      keys homes k prim seq-int.at prim seq-int.at keys aways k prim seq-int.at prim seq-int.at prim =
+      [ h2h homes k prim seq-int.at hg k prim seq-int.at ag k prim seq-int.at mp add-at
+        aways k prim seq-int.at ag k prim seq-int.at hg k prim seq-int.at mp add-at ]
+      [ h2h ] if
+      k 1 prim + h2h-from ]
+    [ h2h ] if };
+
+\ Composite sort key of team t: higher is better, unique per team.
+: comp
+  (forall ρ; ρ keys:Seq Int^many h2h:Seq Int^many t:Int^many -- ρ r:Int^many)
+  locals { keys h2h t }
+  { keys t prim seq-int.at 512 prim * h2h t prim seq-int.at prim +
+    16 prim * 15 t prim - prim + };
+
+\ The composites of teams t on, appended to out.
+: comps-from
+  (forall ρ; ρ keys:Seq Int^many h2h:Seq Int^many out:Seq Int^many t:Int^many -- ρ r:Seq Int^many)
+  locals { keys h2h out t }
+  { t keys prim seq-int.len prim <
+    [ keys h2h out keys h2h t comp prim seq-int.push t 1 prim + comps-from ]
+    [ out ] if };
+
+\ Number of composites among cs from u on that exceed c.
+: above-from
+  (forall ρ; ρ cs:Seq Int^many c:Int^many u:Int^many n:Int^many -- ρ r:Int^many)
+  locals { cs c u n }
+  { u cs prim seq-int.len prim <
+    [ cs c u 1 prim +
+      n cs u prim seq-int.at c prim > [ 1 ] [ 0 ] if prim +
+      above-from ]
+    [ n ] if };
+
+\ Places each team t on at its rank in order.
+: place-from
+  (forall ρ; ρ cs:Seq Int^many order:Seq Int^many t:Int^many -- ρ r:Seq Int^many)
+  locals { cs order t }
+  { t cs prim seq-int.len prim <
+    [ cs order cs cs t prim seq-int.at 0 0 above-from t prim seq-int.set t 1 prim + place-from ]
+    [ order ] if };
+
+: main
+  (forall ρ; ρ n:Int^many homes:Seq Int^many aways:Seq Int^many hg:Seq Int^many ag:Seq Int^many -- ρ order:Seq Int^many points:Seq Int^many)
+  locals { n homes aways hg ag }
+  { homes aways hg ag n zeros n zeros n zeros 0 tally
+    locals { pts gf ga }
+    { homes aways hg ag
+      pts gf ga prim seq-int.empty 0 keys-from
+      locals { keys }
+      { keys n zeros 0 h2h-from
+        locals { h2h }
+        { keys h2h prim seq-int.empty 0 comps-from
+          locals { cs }
+          { cs n zeros 0 place-from pts } } } } };

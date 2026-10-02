@@ -7,9 +7,11 @@ run can show a difference, so this tier is harder (`todo.s7-harder-task-tier`).
 
 It has two task sets, kept apart:
 
-- **The calibration pool** (`calibration.py`): eight tasks, run only to find
-  out whether the planned primary subject sits at the ceiling on tasks of
-  this kind. They are never scored as S7 evidence.
+- **The calibration pools**: `calibration.py` (eight tasks) and
+  `calibration2.py` (eight harder ones, written after the first was at the
+  ceiling), run only to find out whether the planned primary subject sits
+  at the ceiling on tasks of their kinds. They are never scored as S7
+  evidence.
 - **The scored tier**: a different set, written after calibration and frozen
   before any scored trial. No scored task is run during calibration, so no
   task is swapped out after a ceiling result. If the frozen set lands at the
@@ -60,19 +62,21 @@ an `Int`. Several do not:
 No hidden test reaches any of these: every expected result fits in an
 `Int`, since both hosts' runs of the Firth references give it
 (`test_harder.py`). The pool was run as written, so this is recorded here
-rather than edited; the next pool states every bound, value bounds
-included (1,000,000 steps per run, the MVP tier's). Values are `Int`,
+rather than edited; the second pool states every bound, value bounds
+included (see "The second calibration pool"). Both pools have 1,000,000
+steps per run, the MVP tier's. Values are `Int`,
 `Bool`, `Seq Int` and `Seq Bool`, the only ones the portable runner passes
 in and reads back.
 
 ## Files
 
-- `calibration.py`: the pool. Each task's `ref` is its meaning, in plain
-  Python written independently of any Firth code.
-- `reference/calibration/firth/<id>.firth` and
-  `reference/calibration/python/<id>.py`: a Firth and a Python reference
-  solution per task. The Python ones are written separately from
-  the refs, so they check them.
+- `calibration.py` and `calibration2.py`: the pools. Each task's `ref` is
+  its meaning, in plain Python written independently of any Firth code.
+- `reference/<pool>/firth/<id>.firth` and `reference/<pool>/python/<id>.py`:
+  a Firth and a Python reference solution per task. The Python ones are
+  written separately from the refs, so they check them. The second pool's
+  were written by Sonnet workers from the descriptions alone, without
+  seeing the refs, the hidden tests or each other's code.
 - `tier.py`: `prompt`, `extract`, `score`, `repair` and `report` for this
   tier. It reuses the MVP harness's runners, comparison, sandbox and
   diagnostics. Scoring records the hashes of the task set and the scorer as
@@ -88,8 +92,10 @@ in and reads back.
   this tier's feedback for the check that each `repair-<n>.md` is what the
   author was shown.
 - `test_harder.py`: hand-worked values for every task, both reference
-  solutions on every case, the mutants, and a check that the prompt carries
-  no hidden input and repair shows only the example. CI runs it.
+  solutions on every case, the mutants, a check that every second-pool
+  input keeps to its description's bounds and every integer fits in an
+  `Int`, and a check that the prompt carries no hidden input and repair
+  shows only the example. CI runs it.
 
 ```sh
 python3 eval/s7/harder/test_harder.py
@@ -199,3 +205,148 @@ is calibrated the same way before the scored tier is written, so the
 frozen tier is not a guess. These results are calibration only: they are
 not S7 evidence, and the Python and Firth columns are not a comparison of
 the languages.
+
+## The second calibration pool
+
+`calibration2.py`: eight tasks, each a larger program with many rules that
+interact, of the kind where a careful author still gets one corner wrong:
+comparing poker hands (`poker`), a league table with a once-only
+head-to-head tie-break (`league-table`), a bank ledger with overdraft
+limits, fees, freezing and month-end interest (`bank-ledger`), a trading
+order book with price-time priority, market orders and cancels
+(`order-book`), a spreadsheet with cycles, error propagation and a count
+that ignores errors (`spreadsheet`), a lift simulation (`elevator`),
+calendar arithmetic (`date-diff`) and a best-fit memory allocator
+(`heap-alloc`). Each has 15 to 23 hidden tests and a Python mutant that
+passes the example and fails at least one of them (`test_harder.py`).
+
+Every description states every bound: each input's size and each value's
+range, so every result fits in an `Int`. `test_harder.py` checks every
+example, hidden test and hand value against those sizes and ranges. It
+does not check order constraints: `order-book` and `heap-alloc` say a
+cancel or free names an "earlier operation", and some of their hidden
+tests break that (see the second pool's results). Writing the
+references found two places where the spreadsheet description could be
+read two ways (whether a cell that only leads to a cycle has an error, and
+whether a cell with an out-of-range reference follows its other
+references); both were reworded before any author saw the pool, and each
+reading now has a hidden test and a hand value. On the example and hidden
+tests the Firth references use at most 70,071 kernel steps on a case
+(`elevator`). The workers who wrote them also reported a figure for the
+largest inputs the descriptions allow, but kept neither those inputs nor
+the output, so it is not claimed here.
+
+### Calibration plan
+
+Written before any second-pool author started; as for the first pool,
+except as stated.
+
+- Subject: Sonnet 5.5 as an Agent-tool sub-agent; three authors per
+  language, run one at a time in the order Python 1, Firth 1, Python 2,
+  Firth 2, Python 3, Firth 3, with no other agent running in this session.
+- Protocol: the MVP tier's sub-agent protocol with one feedback round, as
+  above; each transcript audited with `audit.py --set calibration2`.
+- Context: each raw log is scanned as the first pool's were. The first
+  pool's authors were shown two project messages as queued context; the
+  workers started from this session for the second pool's references
+  were shown none (their logs have no `queued_command`), so the authors
+  are expected to see none either, and the scan checks it. The session's
+  `hook_non_blocking_error` items (a hook path on the maintainer's machine
+  that does not exist here) are known in advance and name no author.
+- Reported: per language, tasks passed in round 1 and within two rounds,
+  per author and in total, and why each failure failed.
+- What it decides: if Sonnet is below the ceiling in both languages, the
+  scored tier is written from these kinds of task at this size. If it is
+  still at the ceiling in Python, the scored tier needs harder tasks again.
+  These results are calibration only, never S7 evidence.
+
+## Second pool results: 2 October 2026
+
+Run as planned above, in the planned order. Every transcript records
+`claude-sonnet-5-5` and passed `audit.py --set calibration2` with nothing
+flagged. Everything is in `runs/2026-10-02-calibration2/`. The prompts were
+built at `f1b5537`, and every author was scored with the same task set and
+scorer hashes (`eval_sha256` in each result). Python 1 was scored at
+`81b9c52`; the others with uncommitted edits to `test_harder.py` and a todo
+only, which scoring does not read (the `-dirty` commit in their results).
+
+The context scan, as for the first pool: each raw log through
+`eval/s7/context_seen.py` (`context-seen.json`), and a search of the whole
+log for the other five authors' directory names and agent ids,
+`task_status`, task notifications, compaction and `queued_command`. None
+has any of them. Unlike the first pool's authors, none was shown a project
+message. Every author was shown the same injected items: the session's
+system prompt, tool list and reminders, and the pre-registered
+`hook_non_blocking_error` items.
+
+| | round 1 | within two rounds |
+| --- | --- | --- |
+| Python, 3 authors | 22 of 24 | 22 of 24 |
+| Firth, 3 authors | 20 of 24 | 20 of 24 |
+
+Only Firth 3 had an answer that failed its example, so only Firth 3 had a
+feedback round.
+
+The failures:
+
+- `spreadsheet`, five of six authors (Python 2 and 3, all three Firth
+  authors): each fails one hidden test, `([5, 1], [1, 1], [1, 50])`, and
+  only that one. Cell 1 refers to cell 50, outside the sheet, so it has an
+  error, and its reference to itself is not followed; cell 0 counts it and
+  has no error. Each answer follows cell 1's in-range reference, finds a
+  cycle, and gives cell 0 an error too. The description says such a cell's
+  references, "even those inside 0 to n - 1, are then not followed at
+  all", but the parenthesis comes right after the `a` greater than `b`
+  condition, so it can be read as applying to that condition only. This is
+  either a dropped rule or a description that can be read two ways; the
+  results cannot tell which.
+- `elevator`, Firth 3: round 1's `main` pushed `tm` twice, so it left an
+  extra `Seq Int` under its three results
+  (`firth.type.declared-effect-mismatch`, shown on the example). The hint
+  called it an extra `Int` on top, which is wrong
+  (`todo.declared-effect-extra-position`). Round 2
+  passed the example and 14 of 15 hidden tests, and trapped with
+  `call-depth-exceeded` on the 30-request case (rerun with
+  `tools/loop/firth_run.py`). Its `arrive` loop calls itself inside a
+  `locals` block nested in its own, the same non-tail call as the first
+  pool's `tiny-vm` failures (`todo.locals-self-call-not-tail`). That is a
+  defect in the toolchain, not an authoring miss: the docs say a call that
+  is a word's last action is a tail call, the checker accepts the program,
+  and erasure keeps a copy of an outer local after the call. #213 fixes it
+  (open when this was written). The reviewer put #213's `Erasure.lean`
+  and `Pipeline.lean` (at e88ce99) on this branch and re-scored this
+  answer: 15 of 15 hidden tests (review of #214). That is a
+  counterfactual and is not scored.
+
+No author failed `order-book` or `heap-alloc`, including their hidden
+tests whose cancel or free names the operation itself or a later one. The
+descriptions' "earlier operation" does not allow those, though their stated
+ranges and "otherwise nothing changes" do (review of #214). A later pool
+states the range without "earlier".
+
+### What this says about the scored tier
+
+The pool is still effectively at the ceiling for Sonnet in Python. Six
+of the eight tasks were passed by every author in both languages, and every
+Python failure, and three of the four Firth failures, is the same one
+hidden test on one clause. A tier whose only separation is one clause
+measures how that clause was worded, not how well a model writes the
+language, so the scored tier cannot be built from these tasks at this size
+either. In Firth, the one failure of its own is again the non-tail
+self-call that the checker accepts silently.
+
+What the two pools measured is narrow: on these 16 tasks, with three
+Sonnet authors per language, every failure left within two rounds was
+either the one clause-level spreadsheet hidden test or the toolchain's
+nested-`locals` tail-call defect (the longest answers were about 100 lines
+of Python and 250 of Firth). It is
+inferred, not measured, that what would separate it is size: rules it must
+hold together across a much longer program, such as a whole interpreter or
+a scheduler with many interacting constraints, still within Firth's step
+budget and 256-frame limit. That is a design question for the next pool,
+not a result. These results are calibration only: they are not S7
+evidence, and the Python and Firth columns are not a comparison of the
+languages.
+
+The next pool is calibrated only after #213 is on main, so the non-tail
+self-call cannot decide a Firth result there.

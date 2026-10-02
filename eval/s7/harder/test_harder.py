@@ -2,7 +2,9 @@
 """Checks for the harder S7 tier, run before any model sees a task.
 
 1. Each task's Python `ref` agrees with values worked out by hand from the
-   description, written here without running the refs.
+   description, written here without running the refs. Every input of the
+   second pool keeps to its description's stated bounds, and every input
+   and expected integer fits in an `Int`.
 2. Each task's Python reference solution (`reference/<set>/python/<id>.py`, written
    separately from the ref) passes its example and hidden tests.
 3. Each task's Firth reference solution (`reference/<set>/firth/<id>.firth`)
@@ -11,8 +13,8 @@
    reasonable program still fits. It also gives the hand values of 1,
    which include edge cases the hidden tests lack.
 4. The hidden tests catch the mistakes a careful author is likely to make:
-   for every task, a planted Python mutant with one such mistake fails, and a
-   planted mutant of a Firth reference fails.
+   for every task, a planted Python mutant with one such mistake fails, and
+   in each pool a planted mutant of a Firth reference fails.
 5. The prompt carries no hidden input and repair shows only the example.
 6. The audit refuses options that widen an author's tools, scoring refuses
    a link named as the answer directory, and the scan run before scoring
@@ -113,12 +115,203 @@ HAND = [
     ("lis-smallest", ([2, 9, 3, 8, 4],), ([2, 3, 4],)),
 ]
 
+# The second pool's, worked out the same way.
+F, T = False, True
+HAND += [
+    # Straights: the ace-low one's high card is 5, so 6-high wins.
+    ("poker", ([14, 2, 3, 4, 5], [0, 1, 2, 3, 0], [2, 3, 4, 5, 6], [2, 3, 0, 1, 2]), (2, 4, 4)),
+    # Ace-low straight flush beats four kings.
+    ("poker", ([14, 2, 3, 4, 5], [1] * 5, [13, 13, 13, 13, 12], [0, 1, 2, 3, 0]), (1, 8, 7)),
+    # Queen, king, ace, 2, 3 does not wrap: high card loses to a pair.
+    ("poker", ([12, 13, 14, 2, 3], [0, 1, 2, 3, 0], [12, 12, 4, 5, 6], [1, 2, 0, 1, 2]), (2, 0, 1)),
+    # Two pair, eights and threes, decided by the kicker.
+    ("poker", ([8, 8, 3, 3, 14], [0, 1, 0, 1, 2], [8, 8, 3, 3, 13], [2, 3, 2, 3, 3]), (1, 2, 2)),
+    ("poker", ([2, 5, 7, 9, 11], [0] * 5, [4, 5, 6, 7, 8], [0, 1, 2, 3, 0]), (1, 5, 4)),
+    ("poker", ([3, 3, 3, 2, 2], [0, 1, 2, 0, 1], [14, 13, 12, 11, 9], [3] * 5), (1, 6, 5)),
+    # Same ranks, suits do not break the tie.
+    ("poker", ([13, 10, 8, 6, 2], [0, 1, 0, 1, 0], [13, 10, 8, 6, 2], [2, 3, 2, 3, 2]), (0, 0, 0)),
+    # Pairs of sevens, king and 4 kickers; the last kicker decides.
+    ("poker", ([7, 7, 13, 4, 2], [0, 1, 0, 1, 0], [7, 7, 13, 4, 3], [2, 3, 1, 0, 1]), (2, 1, 1)),
+    ("poker", ([9, 9, 9, 2, 5], [0, 1, 2, 0, 1], [14, 14, 13, 13, 12], [0, 1, 2, 3, 3]), (1, 3, 2)),
+    # 0 draws 1 1-1, 1 beats 2 2-0, 0 wins 3-0 at 2: 0 and 1 on 4 points, 0 by goal difference.
+    ("league-table", (3, [0, 1, 2], [1, 2, 0], [1, 2, 0], [1, 0, 3]), ([0, 1, 2], [4, 4, 0])),
+    # 2 draws 0 0-0, 1 beats 0 3-0: 2 (0 goal difference) above 0 (-3).
+    ("league-table", (3, [2, 1], [0, 0], [0, 3], [0, 0]), ([1, 2, 0], [1, 3, 1])),
+    # 3 beat 1: 3 on 3 points, +1. 0 and 1 level (3 points, 0, 2 scored); 1 beat 0.
+    ("league-table", (4, [1, 0, 3], [0, 2, 1], [2, 1, 1], [1, 0, 0]), ([3, 1, 0, 2], [3, 3, 0, 3])),
+    # 2 on 6. 0, 1 and 3 level (3 points, 0, 2 scored); in that group 1 beat 0 and 0
+    # beat 3, so 0 and 1 have 3 head-to-head points each and stay in number order,
+    # though 1 beat 0: head-to-head is not worked out again for the two.
+    ("league-table", (4, [1, 1, 1, 3, 2], [2, 0, 2, 0, 3], [0, 2, 0, 0, 0], [1, 0, 1, 2, 2]),
+     ([2, 0, 1, 3], [3, 3, 6, 3])),
+    ("league-table", (2, [], [], [], []), ([0, 1], [0, 0])),
+    # 100-30=70; 20-25=-5 is allowed (limit 10) and crosses 0, so -10; month end
+    # -10 loses 1, 95 stays; 29 after the deposit; 29-50 < -10 is rejected.
+    ("bank-ledger", ([100, 20], 10, [2, 3, 4, 1, 2], [0, 1, 0, 1, 1], [0] * 5, [30, 25, 0, 40, 50]),
+     ([95, 29], 1, [F, F])),
+    # 0-3 crosses 0: -8; -8-3 = -11 is past the limit.
+    ("bank-ledger", ([0], 10, [2, 2], [0, 0], [0, 0], [3, 3]), ([-8], 1, [F])),
+    # Three self-transfers freeze 0; then a deposit to 0 and a transfer to 0 are
+    # rejected, the last counting against 1.
+    ("bank-ledger", ([10, 10], 0, [3, 3, 3, 1, 3], [0, 0, 0, 0, 1], [0] * 5, [5] * 5), ([10, 10], 5, [T, F])),
+    # -30, then month ends: -33, -37; 99 stays; 100, 101, 102; 1000, 1010, 1020.
+    ("bank-ledger", ([0, 99, 100, 1000], 50, [2, 4, 4], [0, 0, 0], [0, 0, 0], [25, 0, 0]),
+     ([-37, 99, 102, 1020], 0, [F, F, F, F])),
+    # The fee may pass the limit.
+    ("bank-ledger", ([5], 1, [2], [0], [0], [6]), ([-6], 0, [F])),
+    # 5 at 100 from the 100 sell, then 2 at 101; the market buy takes 3 left at 101.
+    ("order-book", ([0, 0, 0, 0], [1, 1, 0, 0], [101, 100, 101, 0], [5, 5, 7, 6]), ([5, 5, 7, 3], 1005, 3)),
+    ("order-book", ([0, 0], [0, 1], [0, 0], [5, 5]), ([0, 0], 0, 0)),
+    # Equal prices: the earlier sell first.
+    ("order-book", ([0, 0, 0], [1, 1, 0], [100, 100, 100], [2, 2, 3]), ([2, 1, 3], 300, 2)),
+    ("order-book", ([0, 1, 0], [1, 0, 0], [100, 0, 100], [5, 0, 5]), ([0, 0, 0], 0, 0)),
+    # The cancel removes the 3 units left; the second buy rests.
+    ("order-book", ([0, 0, 1, 0], [1, 0, 0, 0], [100, 100, 0, 100], [5, 2, 0, 5]), ([2, 2, 0, 0], 200, 1)),
+    # Cancels of itself and of a later operation do nothing.
+    ("order-book", ([1, 0, 1, 0], [0, 0, 0, 1], [0, 50, 0, 50], [0, 3, 3, 3]), ([0, 3, 0, 3], 150, 1)),
+    # 7 + -3 = 4; 4 / -3 = -1; max 7; two of 7, -3, 4, -1 above 0; 6 refers to itself.
+    ("spreadsheet", ([0, 0, 1, 3, 4, 5, 1], [7, -3, 0, 2, 0, 0, 6], [0, 0, 1, 1, 3, 3, 6]),
+     ([7, -3, 4, -1, 7, 2, 0], [F, F, F, F, F, F, T])),
+    ("spreadsheet", ([0, 0, 3], [-7, 2, 0], [0, 0, 1]), ([-7, 2, -3], [F, F, F])),
+    # 3 divides by 0; the count in 4 skips it and counts only the 6.
+    ("spreadsheet", ([1, 0, 0, 3, 5], [2, 6, 0, 1, 0], [2, 0, 0, 2, 3]), ([0, 6, 0, 0, 1], [F, F, F, T, F])),
+    ("spreadsheet", ([0, 4, 4], [1, 0, 2], [0, 0, 1]), ([1, 1, 0], [F, F, T])),
+    # 3 refers to itself, 4 to 3, and the count in 2 covers itself.
+    ("spreadsheet", ([0, 0, 5, 1, 1], [3, -1, 0, 4, 3], [0, 0, 4, 3, 0]), ([3, -1, 0, 0, 0], [F, F, T, T, T])),
+    ("spreadsheet", ([1], [0], [1]), ([0], [T])),
+    # 3 refers to itself; 2 leads to it, not on the cycle; the count in 1 covers 2.
+    ("spreadsheet", ([0, 5, 1, 1], [5, 0, 0, 3], [0, 2, 3, 0]), ([5, 0, 0, 0], [F, T, T, T])),
+    # 1 refers outside the sheet, so its reference to itself is not followed: no cycle.
+    ("spreadsheet", ([5, 1], [1, 1], [1, 50]), ([0, 0], [F, T])),
+    ("spreadsheet", ([0, 0, 3, 2], [5, 0, 0, 2], [0, 0, 1, 0]), ([5, 0, 0, 0], [F, F, T, T])),
+    # Floor 1 at 1 (stop to 3), 2 at 4 (to 6), 3 at 7 (to 9).
+    ("elevator", ([0, 0, 3], [3, 1, 2]), ([7, 1, 4], 9, 3)),
+    # The second request comes during the first stop: a second stop.
+    ("elevator", ([0, 1], [0, 0]), ([0, 2], 4, 0)),
+    ("elevator", ([0, 0], [4, 2]), ([6, 2], 8, 4)),
+    ("elevator", ([0, 1], [5, 1]), ([7, 1], 9, 5)),
+    # Up to 3 and 4, then back down to 1.
+    ("elevator", ([0, 2, 2], [3, 1, 4]), ([3, 11, 6], 13, 7)),
+    # Idle at 3 until 10, then down one.
+    ("elevator", ([10, 0], [2, 3]), ([11, 3], 13, 4)),
+    ("elevator", ([], []), ([], 0, 0)),
+    # 31 + 29 days; 1 March 2000 was a Wednesday.
+    ("date-diff", (2000, 1, 1, 2000, 3, 1), (60, 2, 61)),
+    # 1900 has no 29 February; 1 January 1900 was a Monday, and 1 March 59 days later.
+    ("date-diff", (1900, 2, 28, 1900, 3, 1), (1, 3, 60)),
+    ("date-diff", (2000, 1, 1, 1999, 12, 31), (-1, 4, 365)),
+    ("date-diff", (2024, 1, 1, 2024, 12, 31), (365, 1, 366)),
+    # One day across 2100, which is not a leap year. The weekday: 1 January 2101 is 101 years
+    # after 1 January 2000, 25 of them of 366 days, so 36,890 days, a whole number of weeks.
+    ("date-diff", (2100, 12, 31, 2101, 1, 1), (1, 5, 1)),
+    # 0, 3 and 6 taken; freeing 3 leaves blocks of 3 at 3 and 1 at 9; 2 cells fit best at 3.
+    ("heap-alloc", (10, [0, 0, 0, 1, 0], [3, 3, 3, 1, 2]), ([0, 3, 6, 0, 3], 2, 1)),
+    ("heap-alloc", (10, [0, 1, 1], [4, 5, -1]), ([0, -1, -1], 1, 6)),
+    ("heap-alloc", (10, [0, 1, 1], [4, 0, 0]), ([0, 0, -1], 1, 10)),
+    ("heap-alloc", (5, [0, 1], [6, 0]), ([-1, -1], 1, 5)),
+    # Blocks of 4 at 3 and 10 and of 3 at 17: 4 cells go to 3, then 1 cell to 17.
+    ("heap-alloc", (20, [0, 0, 0, 0, 0, 1, 1, 0, 0], [3, 4, 3, 4, 3, 1, 3, 4, 1]),
+     ([0, 3, 7, 10, 14, 0, 0, 3, 17], 2, 4)),
+    # Freeing two neighbours makes one block of 8.
+    ("heap-alloc", (12, [0, 0, 0, 1, 1, 0], [4, 4, 4, 0, 1, 8]), ([0, 4, 8, 0, 0, 0], 0, 0)),
+]
+
 
 def hand_values() -> None:
     for tid, args, want in HAND:
         check(tuple(BY_ID[tid].ref(*args)) == want, f"hand value: {tid}{args} = {want}")
     covered = {tid for tid, _, _ in HAND}
     check(covered == set(BY_ID), f"every task has hand values (missing: {sorted(set(BY_ID) - covered)})")
+
+
+
+def _same_len(*seqs):
+    return len({len(q) for q in seqs}) == 1
+
+
+def _in(x, lo, hi):
+    return lo <= x <= hi
+
+
+def _all_in(xs, lo, hi):
+    return all(lo <= x <= hi for x in xs)
+
+
+def _date_ok(y, m, d):
+    days = [31, 29 if y % 4 == 0 and (y % 100 or y % 400 == 0) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    return _in(y, 1600, 2400) and _in(m, 1, 12) and _in(d, 1, days[m - 1])
+
+
+def _bank_ok(balances, limit, kinds, accts, others, amounts):
+    n = len(balances)
+    ops = list(zip(kinds, accts, others, amounts))
+    return (_in(n, 1, 8) and _all_in(balances, 0, 10**6) and _in(limit, 0, 10**6) and len(kinds) <= 60
+            and _same_len(kinds, accts, others, amounts)
+            and all((a, b, x) == (0, 0, 0) if k == 4 else
+                    k in (1, 2, 3) and _in(a, 0, n - 1) and _in(x, 1, 10**6)
+                    and (_in(b, 0, n - 1) if k == 3 else b == 0) for k, a, b, x in ops))
+
+
+def _book_ok(kinds, sides, prices, qtys):
+    return (len(kinds) <= 40 and _same_len(kinds, sides, prices, qtys)
+            and all((s, p) == (0, 0) and _in(q, 0, 39) if k == 1 else
+                    k == 0 and s in (0, 1) and (p == 0 or _in(p, 1, 1000)) and _in(q, 1, 100)
+                    for k, s, p, q in zip(kinds, sides, prices, qtys)))
+
+
+def _sheet_ok(kinds, xs, ys):
+    return (_in(len(kinds), 1, 25) and _same_len(kinds, xs, ys)
+            and all(k in range(6) and (_in(a, -10**6, 10**6) and b == 0 if k == 0 else
+                                       _in(a, -100, 100) and _in(b, -100, 100))
+                    for k, a, b in zip(kinds, xs, ys)))
+
+
+# Each pool-2 task's stated input bounds, as a check on its own inputs.
+BOUNDS = {
+    "poker": lambda r1, s1, r2, s2: (all(len(q) == 5 for q in (r1, s1, r2, s2))
+                                     and _all_in(r1 + r2, 2, 14) and _all_in(s1 + s2, 0, 3)
+                                     and len(set(zip(r1 + r2, s1 + s2))) == 10),
+    "league-table": lambda n, h, a, hg, ag: (_in(n, 2, 10) and len(h) <= 45 and _same_len(h, a, hg, ag)
+                                             and _all_in(h + a, 0, n - 1) and all(x != y for x, y in zip(h, a))
+                                             and _all_in(hg + ag, 0, 20)),
+    "bank-ledger": _bank_ok,
+    "order-book": _book_ok,
+    "spreadsheet": _sheet_ok,
+    "elevator": lambda ts, fs: (len(ts) <= 30 and _same_len(ts, fs) and _all_in(ts, 0, 1000)
+                                and _all_in(fs, 0, 20)),
+    "date-diff": lambda y1, m1, d1, y2, m2, d2: _date_ok(y1, m1, d1) and _date_ok(y2, m2, d2),
+    "heap-alloc": lambda size, kinds, vals: (_in(size, 1, 1000) and len(kinds) <= 40 and _same_len(kinds, vals)
+                                             and all(k == 0 and _in(v, 1, 1000) or k == 1 and _in(v, -1000, 1000)
+                                                     for k, v in zip(kinds, vals))),
+}
+
+
+def ints(v):
+    if isinstance(v, bool):
+        return []
+    if isinstance(v, int):
+        return [v]
+    return [i for x in v for i in ints(x)]
+
+
+def bounds() -> None:
+    """Every pool-2 input keeps to its description's stated bounds, and every
+    input and expected integer of every task fits in an `Int`."""
+    check(set(BOUNDS) == {t.id for t in SETS["calibration2"]}, "every pool-2 task has its bounds")
+    for tid, check_args in BOUNDS.items():
+        t = BY_ID[tid]
+        every = [*cases(t), *(a for i, a, _ in HAND if i == tid)]
+        bad = [a for a in every if not check_args(*a)]
+        check(not bad, f"{tid}: all {len(every)} inputs keep to the stated bounds (outside: {bad[:1]})")
+    check(not BOUNDS["poker"]([2, 3, 4, 5, 6], [0] * 5, [2, 7, 8, 9, 10], [0, 1, 1, 1, 1]),
+          "the bounds check refuses a card dealt twice")
+    check(not BOUNDS["bank-ledger"]([5], 0, [3], [0], [1], [5]),
+          "the bounds check refuses an account number outside the ledger")
+    for name, tasks in SETS.items():
+        big = [(t.id, a) for t in tasks for a in (*cases(t), *(a for i, a, _ in HAND if i == t.id))
+               if any(not -2**63 <= i < 2**63 for i in ints([a, t.expected(a)]))]
+        check(not big, f"{name}: every input and expected integer fits in an Int (outside: {big[:1]})")
+    check(not all(-2**63 <= i < 2**63 for i in ints([[1, 2**63]])), "the Int check refuses 2^63")
 
 
 def cases(t):
@@ -157,10 +350,10 @@ def firth_references() -> None:
 
 def firth_hand_values() -> None:
     """The Firth references on the hand values, which include cases the hidden
-    tests lack (ranges at the largest Int). The merge-ranges reference with
+    tests lack (ranges at the largest Int, in the first pool). The merge-ranges reference with
     the gap test written as `last + 1 < s`, which overflows there, fails them."""
     for tid, args, want in HAND:
-        src = (HERE / "reference/calibration/firth" / f"{tid}.firth").read_text()
+        src = (HERE / "reference" / tier.SET_OF[tid] / "firth" / f"{tid}.firth").read_text()
         got = tier.run_firth(src, args)
         check(got["ok"] and harness.same(got["stack"], list(want)), f"Firth hand value: {tid}{args} = {want}")
     src = (HERE / "reference/calibration/firth/merge-ranges.firth").read_text()
@@ -222,6 +415,61 @@ PY_MUTANTS = {
 }
 
 
+
+def meaning_mutant(name: str, old: str, new: str) -> str:
+    """A whole Python answer: the second pool's meaning of a task with one
+    plausible mistake planted (OLD replaced by NEW), answering through NAME."""
+    src = (HERE / "calibration2.py").read_text()
+    assert src.count(old) == 1, f"the mutant's text is not in calibration2.py once: {old!r}"
+    future = "from __future__ import annotations\n"
+    src = src.replace(future, future + f"__file__ = {str(HERE / 'calibration2.py')!r}\n", 1)
+    return src.replace(old, new) + f"\n\ndef main(*args):\n    return {name}(*args)\n"
+
+
+PY_MUTANTS |= {
+    "poker": ("the ace-low straight given the ace as its high card",
+              meaning_mutant("_poker", "high = 5", "high = 14")),
+    "league-table": ("head-to-head worked out again for teams still level after it",
+                     "def main(n, H, A, X, Y):\n"
+                     "    pts, gf, ga = [0] * n, [0] * n, [0] * n\n"
+                     "    def res(h, a, x, y, t):\n"
+                     "        if x > y: t[h] += 3\n"
+                     "        elif x < y: t[a] += 3\n"
+                     "        else: t[h] += 1; t[a] += 1\n"
+                     "    for h, a, x, y in zip(H, A, X, Y):\n"
+                     "        res(h, a, x, y, pts); gf[h] += x; ga[h] += y; gf[a] += y; ga[a] += x\n"
+                     "    def order(group):\n"
+                     "        hp = {t: 0 for t in group}\n"
+                     "        for h, a, x, y in zip(H, A, X, Y):\n"
+                     "            if h in group and a in group: res(h, a, x, y, hp)\n"
+                     "        vals = sorted(set(hp.values()), reverse=True)\n"
+                     "        if len(vals) == 1: return sorted(group)\n"
+                     "        return [t for v in vals for t in order({u for u in group if hp[u] == v})]\n"
+                     "    key = lambda t: (pts[t], gf[t] - ga[t], gf[t])\n"
+                     "    out = []\n"
+                     "    for k in sorted({key(t) for t in range(n)}, reverse=True):\n"
+                     "        out += order({t for t in range(n) if key(t) == k})\n"
+                     "    return out, pts\n"),
+    "bank-ledger": ("month-end charges on a negative balance rounded toward zero",
+                    meaning_mutant("_bank", "(-bal[i] + 9) // 10", "-bal[i] // 10")),
+    "order-book": ("what is left of a market order rests in the book",
+                   meaning_mutant("_order_book", "        if price != 0:\n            left[i] = want",
+                                  "        left[i] = want")),
+    "spreadsheet": ("a count takes an error from a cell it counts",
+                    meaning_mutant("_sheet", "            val[i] = a\n        elif k == 5:",
+                                   "            val[i] = a\n        elif k == 5 and any(err[j] for j in edges[i]):\n"
+                                   "            err[i] = True\n        elif k == 5:")),
+    "elevator": ("requests that come during a stop served in that stop",
+                 meaning_mutant("_elevator", "here = [i for i in pending if floors[i] == floor]",
+                                "here = [i for i in range(m) if served[i] < 0 and times[i] <= t + 2 "
+                                "and floors[i] == floor] if any(floors[i] == floor for i in pending) else []")),
+    "date-diff": ("every fourth year a leap year",
+                  meaning_mutant("_date_diff", "return y % 4 == 0 and (y % 100 != 0 or y % 400 == 0)",
+                                 "return y % 4 == 0")),
+    "heap-alloc": ("the first free block that fits, not the smallest",
+                   meaning_mutant("_heap", "_, s = min(fit)", "_, s = min(fit, key=lambda f: f[1])")),
+}
+
 def python_mutants() -> None:
     check(set(PY_MUTANTS) == set(BY_ID), "every task has a Python mutant")
     for tid, (what, src) in PY_MUTANTS.items():
@@ -237,7 +485,7 @@ def python_mutants() -> None:
 
 
 def firth_mutant() -> None:
-    """A planted bug in a Firth reference: the scorer must fail it."""
+    """A planted bug in a Firth reference of each pool: the scorer must fail it."""
     src = (HERE / "reference/calibration/firth/lru.firth").read_text()
     t = BY_ID["lru"]
     mutant = src.replace("c prim seq-int.len cap prim <", "c prim seq-int.len cap 1 prim + prim <", 1)
@@ -247,6 +495,17 @@ def firth_mutant() -> None:
     check(not res["pass"], "a Firth lru reference that holds cap + 1 keys fails the hidden tests "
           f"({res['hidden_passed']}/{res['hidden_total']})")
 
+    # The second pool: month-end charges on a negative balance rounded toward zero.
+    src = (HERE / "reference/calibration2/firth/bank-ledger.firth").read_text()
+    t = BY_ID["bank-ledger"]
+    up = "[ b 0 b prim - 9 prim + 10 prim div prim - ]"
+    mutant = src.replace(up, "[ b 0 b prim - 10 prim div prim - ]", 1)
+    check(up in src and mutant != src, "the bank-ledger mutant changes the reference")
+    res = tier.score({"bank-ledger": mutant}, "firth", [t])["tasks"]["bank-ledger"]
+    check(all(c["ok"] for c in res["cases"]), "the bank-ledger mutant checks and runs on every case")
+    check(res["cases"][0]["pass"] and not res["pass"],
+          "a Firth bank-ledger reference that rounds month-end charges toward zero passes the example "
+          f"and fails the hidden tests ({res['hidden_passed']}/{res['hidden_total']})")
 
 def prompt_and_repair() -> None:
     for name, tasks in SETS.items():
@@ -356,6 +615,7 @@ def sandbox_scan() -> None:
 
 def main() -> int:
     hand_values()
+    bounds()
     refusals()
     python_references()
     python_mutants()
