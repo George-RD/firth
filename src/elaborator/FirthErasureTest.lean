@@ -70,6 +70,51 @@ private def expectKernelAtoms (word : WordDefinition) (expected : List Atom) : I
       else pure ()
   | .error error => fail s!"unexpected golden erasure error: {repr error}"
 
+private def programAtoms : Program → List Atom
+  | .empty => []
+  | .cons head tail => head :: programAtoms tail
+
+mutual
+  /-- Whether the program calls `name` anywhere, quotations included. -/
+  partial def callsWord (name : String) : List Atom → Bool
+    | [] => false
+    | .word called :: rest => called == name || callsWord name rest
+    | .quotation body :: rest => callsWord name (programAtoms body) || callsWord name rest
+    | _ :: rest => callsWord name rest
+
+  /-- Whether every call of `name` is a tail call: the last atom of its
+  sequence, or last inside the quotation that is the false branch of the
+  word's final `if` (`branchesThenIf`). -/
+  partial def tailCallsOnly (name : String) : List Atom → Bool
+    | [] => true
+    | [.word _] => true
+    | .word called :: rest => called != name && tailCallsOnly name rest
+    | .quotation body :: rest =>
+        let inner := programAtoms body
+        tailCallsOnly name inner &&
+          (!callsWord name inner || branchesThenIf rest) &&
+          tailCallsOnly name rest
+    | _ :: rest => tailCallsOnly name rest
+
+  /-- What follows the quotation makes it the false branch of a final `if`:
+  only `compose`, which erasure writes to close a branch over locals and
+  which keeps the quotation on top, then the `if`. A quotation that is
+  dropped, moved below the top or never reaches an `if` is not accepted, and
+  neither is a call in the true branch, which this test does not need. -/
+  partial def branchesThenIf : List Atom → Bool
+    | [.ifThenElse] => true
+    | .compose :: rest => branchesThenIf rest
+    | _ => false
+end
+
+private def loopEnv : EffectEnv :=
+  { primitive := fun name =>
+      if name == "+" || name == "-" || name == "=" then some { input := [.many, .many], output := [.many] }
+      else none
+    word := fun name =>
+      if name == "count" || name == "count-kept" then some { input := [.many, .many], output := [.many] }
+      else none }
+
 private def expectErrorAt (word : WordDefinition) (expected : ErasureError → Bool) (span : Span) : IO Unit :=
   match erase arithmetic word.effect word.body with
   | .error error =>
@@ -268,6 +313,31 @@ def main : IO Unit := do
       if result.warnings.any (fun warning => warning.code == "LOCAL_DEPTH") then pure ()
       else fail "missing nested LOCAL_DEPTH warning"
   | .error error => fail s!"nested depth lint unexpectedly failed: {repr error}"
+
+  -- A self-call that ends a `locals` block nested in the word's own block
+  -- is the word's last action: the outer locals are moved into the inner
+  -- block, not copied and dropped after it (todo.locals-self-call-not-tail).
+  -- `count-kept` reads `n` after the inner block, so its call is not last,
+  -- and the same check refuses it: the shape the leftover copy gave `count`.
+  let count ← parsed ": count ( n:Int^many acc:Int^many -- r:Int^many ) locals { n acc } { n 0 prim = [ acc ] [ n 1 prim - locals { m } { m acc 1 prim + count } ] if } ;"
+  match erase loopEnv count.effect count.body with
+  | .ok result =>
+      let atoms := result.program.map (·.atom)
+      unless callsWord "count" atoms && tailCallsOnly "count" atoms do
+        fail s!"the self-call ending a nested locals block is not a tail call: {repr (shapes result.program)}"
+  | .error error => fail s!"nested-loop erasure failed: {repr error}"
+  let kept ← parsed ": count-kept ( n:Int^many acc:Int^many -- r:Int^many ) locals { n acc } { n 0 prim = [ acc ] [ n 1 prim - locals { m } { m acc 1 prim + count-kept } n drop ] if } ;"
+  match erase loopEnv kept.effect kept.body with
+  | .ok result =>
+      if tailCallsOnly "count-kept" (result.program.map (·.atom)) then
+        fail s!"a self-call followed by `n drop` was taken as a tail call: {repr (shapes result.program)}"
+  | .error error => fail s!"non-tail loop erasure failed: {repr error}"
+  -- The check ties the call to the branch the `if` runs (cubic on #213): a
+  -- quotation holding the call that is dropped before the `if` is not one.
+  let dropped : List Atom :=
+    [.quotation (atomProgram [.word "count"]), .drop, .quotation .empty, .quotation .empty, .ifThenElse]
+  if tailCallsOnly "count" dropped then
+    fail "a self-call in a quotation dropped before the `if` was taken as a tail call"
 
   IO.println "erasure tests passed"
 

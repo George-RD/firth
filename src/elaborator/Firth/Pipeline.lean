@@ -260,8 +260,13 @@ private def withFirstMisfed (config : PipelineConfig) (source : String)
     -- Earlier in the source than the reported operation, or inside it, as
     -- in the quotation whose `compose` erasure reports. A `dip` or `compose`
     -- reported where a word or primitive is written is one erasure wrote.
+    -- The reported operation itself, handed fewer values than it takes, is
+    -- reported as such too: typing reports it as a mismatch against the
+    -- values the word was given, which it only has because the word's own
+    -- input stack is open.
     if (account.span.start.offset == diagnostic.primary.start.offset &&
-          !(diagnostic.subject == some "dip" || diagnostic.subject == some "compose")) ||
+          !(diagnostic.subject == some "dip" || diagnostic.subject == some "compose") &&
+          account.missing == 0) ||
         account.span.start.offset ≥ diagnostic.primary.stop.offset then none else
     let subject := ((account.operation.drop 1).dropEnd 1).toString
     if account.missing > 0 then

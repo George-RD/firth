@@ -47,11 +47,14 @@ sweeps with: part 0 shared (the slow path in `same-id`) and parts 1 to 3
 ascending (the negating branch of `distance` three times). It then measures
 n = 0 to 64 on both hosts with those IDs, one run for each allocation branch.
 For n ≥ 2 each run's cost is
-exactly `75 + b·n + 163·n(n−1)/2`, where b is 172 (out-of-stock), 194
-(fulfilled) or 201 (insufficient-stock), plus 30 once for the single partial
+exactly `75 + b·n + 163·n(n−1)/2`, where b is 162 (out-of-stock), 184
+(fulfilled) or 191 (insufficient-stock), plus 30 once for the single partial
 request a batch can have. The stated bound is deliberately looser than any one
-of those: it uses the largest per-request cost and the n = 0 entry cost, so it
-also covers mixed batches and the one partial request. An invalid input stops
+of those: it uses 202 per request and the n = 0 entry cost, so it also covers
+mixed batches and the one partial request. 202 was the costliest request
+(the partial one) when the bound was proved; since `allocate-from` became a
+tail call (#213) a request costs 10 less, and the proved bound was left as it
+is, with that much more slack. An invalid input stops
 earlier and costs less. `run_cases.py` fails any corpus run over the bound, and
 CI also runs `measure_cost.py`, because the corpus's IDs never reach the
 costliest pairs. An earlier version swept IDs sharing their first 24
@@ -124,7 +127,8 @@ toolchain produces:
   hand with stack-shuffling words (264 steps per pair). The IDs also arrive as
   one sequence (four Ints per request) instead of four. Since `pick` and `roll`
   (#125) a local costs one step per use. The per-request cost fell from 689 to
-  766 steps to 172 to 201, and the scan is back to plain locals, now cheaper
+  766 steps to 172 to 201, then to 162 to 191 once a self-call ending a nested
+  `locals` block became a tail call (#213), and the scan is back to plain locals, now cheaper
   than the hand-written version: 163 steps per pair at most.
 - **There is no Boolean `and` or absolute difference.** Both are written with
   nested `if`.
