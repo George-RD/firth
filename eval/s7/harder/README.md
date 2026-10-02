@@ -256,4 +256,3 @@ except as stated.
   scored tier is written from these kinds of task at this size. If it is
   still at the ceiling in Python, the scored tier needs harder tasks again.
   These results are calibration only, never S7 evidence.
-
