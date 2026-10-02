@@ -11,7 +11,8 @@ cover the definitions, not the JSON glue, so this script checks the glue:
   by name, and an error stack by its error name;
 * the executable refuses what the proofs do not cover: IDs outside the spec's
   syntax (in both modes), unknown reason and error codes, error codes with
-  anything beside them, and lengths that differ, each with its own message.
+  anything beside them, and lengths that differ. A refusal counts only when
+  it carries the executable's own `inventoryHost: ` message, not a crash.
 
 Usage: python3 examples/inventory/check_host.py
 """

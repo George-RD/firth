@@ -62,7 +62,10 @@ Each acceptance criterion and its evidence:
   which plants a bug in each check and requires an outcome to change. JSON
   parsing is `host_parse`, which answers `invalid-input` for malformed JSON
   and repeated member names (the spec's two host tests, in the same test
-  file, with a planted parser that keeps the last member). The transport is
+  file, with a planted parser that keeps the last member), and reads an
+  integer token over 19 digits as out of i64, so `host_check` answers
+  `invalid-range` for it after its own checks (tested on 4301-digit tokens,
+  with a planted parser that keeps Python's digit limit). The transport is
   in `lean_host`, `host_decode` and `host_encode`, and the JSON glue in `HostMain.lean` (`strings`, `ints`,
   `answerJson`) with Lean's JSON parser and printer, covered by the corpus
   runs and `check_host.py`. Lean's compilation of the proved definitions into

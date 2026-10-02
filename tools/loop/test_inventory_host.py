@@ -108,7 +108,8 @@ class HostParseTests(unittest.TestCase):
 
     def test_every_planted_parser_bug_changes_an_outcome(self) -> None:
         source = inspect.getsource(host.host_parse)
-        expected = {name: result for name, (_, result) in TEXTS.items()}
+        # Compared as outcomes, so a passing document is "component" on both sides.
+        expected = {name: outcome(host.host_parse, text) for name, (text, _) in TEXTS.items()}
         for bug, original in [("keeps the last repeated member", ", object_pairs_hook=unique_members"),
                               ("uses Python's digit limit", ", parse_int=json_integer")]:
             with self.subTest(bug=bug):
