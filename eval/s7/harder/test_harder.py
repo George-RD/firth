@@ -319,7 +319,9 @@ def sandbox_scan() -> None:
             subprocess.run(git + ["-C", str(p / "r"), "add", "."], check=True)
             subprocess.run(git + ["-C", str(p / "r"), "commit", "-qm", "x"], check=True)
             (p / "r" / "tasks.py").unlink()
-        planted = {"copy": copy, "named": named, "git": history}
+        def results(p: Path) -> None:  # a scored run's results, which hold the hidden tests
+            shutil.copy(next((HERE / "runs").rglob("results-1.json")), p / "r.json")
+        planted = {"copy": copy, "named": named, "git": history, "results": results}
         for what, plant in planted.items():
             p = Path(d) / what
             p.mkdir()
