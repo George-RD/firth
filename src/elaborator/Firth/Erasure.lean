@@ -181,6 +181,14 @@ structure CallEdit where
   edit writes for the inputs missing, bottom to top; empty when the edit
   moves values written after the operation instead. -/
   pushedLocals : List String := []
+  /-- Those of `pushedLocals` written just after the operation that the edit
+  moves into place, rather than writing them again. -/
+  movedLocals : List String := []
+  /-- How far checking the edited word got: the stage that refused it
+  (`PipelineDiagnostic.stage`) and where in the source as written, as a byte
+  offset (the end of the text replaced when that is inside the edit), or
+  `none` when it then checks. -/
+  reached : Option (Nat × Nat) := none
   deriving Repr, BEq
 
 /-- The values an operation the checker refused was handed, named by the

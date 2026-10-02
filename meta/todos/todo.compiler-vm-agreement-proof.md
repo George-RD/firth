@@ -30,3 +30,30 @@ bug the two sides share.
   reference result. Until then every S5 claim keeps stating this gap.
 - A planted miscompile (for example a swapped operand order in one lowering
   rule) breaks the theorem's build.
+
+## Progress
+
+- 2 October 2026, step 1 of 4 (plan agreed with the coordinator: lowering,
+  target semantics, simulation theorem, allocator record with a planted
+  miscompile). `lowerProgram`, `lowerValue`, `lowerAtom`, `nameMapOf` and
+  the target bound and well-formedness checks are now total functions that
+  proofs can unfold. `src/compiler/Firth/LoweringFacts.lean` proves
+  `compileWords_ok`: every emitted entry is, in order, its source word lowered
+  by `lowerProgram` under the dictionary's name map, published under the
+  mangled name that map gives it, and the mangled names are distinct
+  (`nameMapOf_ok`). Nothing about target execution is proved yet.
+- 2 October 2026, step 2 of 4. `src/compiler/Firth/TargetSemantics.lean`
+  states the target machine of `target-spec.md` §4 and §5 as a Lean step
+  function (frames, tail transfers, the 256-frame bound, fuel, total and
+  kernel cost, traps), with examples worked out by hand in
+  `TargetSemanticsExamples.lean`. `lake exe firthTargetRun` runs it on a
+  `firth.vm-run.v1` request, and `mvp_agent_gate.rebuild` now requires the
+  Rust VM to agree with it on status, stack, cost and trap for every compiled
+  program it runs (146/146 programs and the inventory cases agree). That is
+  tested agreement, not a proof about the VM. The semantics leaves out image
+  admission, `PUSH_QUOTE` of a quotation owning a linear capture and the
+  `World` primitives, and reports `unsupported` for them; the compiler emits
+  none of them. The VM's response has no primitive count, so that field is
+  not compared. Still to do: the simulation theorem (step 3) and the
+  allocator record, planted miscompile and named trusted list (step 4), which
+  must also name the JSON emitter, the Rust decoder and `canonicalCode`.

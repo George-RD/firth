@@ -546,12 +546,18 @@ private def checkCallEdit (config : PipelineConfig) (source : String) (word : Wo
   let editedWords := resolved.map (·.1)
   let editedWord ← (resolved.find? fun (candidate, error) => candidate.name == word.name && error.isNone).map (·.1)
   let operation := start + operationAt
-  let after ← match outcomeAlone config edited editedWords editedWord with
+  let outcome := outcomeAlone config edited editedWords editedWord
+  let after ← match outcome with
     | none => some none
     | some offset => if offset ≤ operation then none else some (some (lineColumn edited offset))
+  -- Where that error is in the source as written: past the edit, the same
+  -- item; inside it, the end of the text replaced.
+  let stage := ((firstErrorAlone config editedWords editedWord).map (·.stage)).getD 0
+  let reached := outcome.map fun offset =>
+    (stage, if offset ≥ start + replacement.utf8ByteSize then offset - (start + replacement.utf8ByteSize) + stop else stop)
   let written := collapseSpace (bytesText source start stop)
   let (line, column) := editPlace source start stop written
-  pure { start, stop, line, column, written, replacement, after
+  pure { start, stop, line, column, written, replacement, after, reached
          consulted := consultedWords config editedWords editedWord }
 
 /-- For an operation handed fewer values than it takes (`CallAccount.missing`),
@@ -617,6 +623,10 @@ private def unpushedEdit (config : PipelineConfig) (source : String) (word : Wor
     (((input.splitOn ":").head?).getD "", ":".intercalate ((input.splitOn ":").drop 1))
   let inputNames := inputs.map (·.1)
   if inputs.length != present + account.missing || inputNames.eraseDups.length != inputNames.length then none else
+  -- A local named like an input whose type the walk does not know could be
+  -- the one for that input, and the ways counted below would not include
+  -- it: no edit, so that one way is one way of all.
+  if inputNames.any fun name => account.locals.contains name && (account.localTypes.lookup name).isNone then none else
   -- The ways to fill the inputs, bottom to top: for each input the index
   -- of the value present for it, or `none` where the local of its name is
   -- written. Only whether there is exactly one matters, so each suffix of
@@ -659,9 +669,46 @@ private def unpushedEdit (config : PipelineConfig) (source : String) (word : Wor
         pure (((ranges.head?).map (·.1)).getD operationStart, texts)
     | none => if namesLast then some (operationStart, names) else none
   let prefix_ := " ".intercalate texts
-  let edit ← checkCallEdit config source word start account.span.stop.offset
-    (prefix_ ++ " " ++ operationText) (prefix_.utf8ByteSize + 1)
-  pure { edit with pushedLocals := names }
+  let replacement := prefix_ ++ " " ++ operationText
+  let added := (checkCallEdit config source word start account.span.stop.offset
+    replacement (prefix_.utf8ByteSize + 1)).map ({ · with pushedLocals := names })
+  -- Where those locals are written just after the operation, in that
+  -- order, as in `pos 1 prim + insert-sorted value`, the author may have
+  -- meant them for it: written once more, the ones after it are left over.
+  -- Or one may be meant for what follows: `5 g m prim +` may mean `m` for
+  -- `+`. So each of them is either moved into place or written again.
+  let after := ((itemsAfter account.span word.body).getD []).take names.length
+  let spans := after.filterMap fun
+    | .word _ at_ => some at_
+    | _ => none
+  if names.isEmpty || spans.length != names.length then added else
+  let stop := ((spans.getLast?).map (·.stop.offset)).getD account.span.stop.offset
+  -- Only those locals are written there, in that order: another word would
+  -- be dropped, and so would a comment between.
+  if collapseSpace (bytesText source account.span.stop.offset stop) != " ".intercalate names then added else
+  -- Every choice is checked, for up to four locals, and one is stated only
+  -- when checking gets further with it than with every other: to a later
+  -- stage, or in the same stage further in the source as written. A later
+  -- stage counts first, since where one stage stops in the source says
+  -- nothing about where another would. When the furthest is shared, nothing
+  -- tells the choices apart, so none is stated.
+  if names.length > 4 then none else
+  let moves := (List.range (2 ^ names.length - 1)).filterMap fun index =>
+    let mask := index + 1
+    let movedLocals := (names.zipIdx.filter fun (_, at_) => (mask >>> at_) % 2 == 1).map (·.1)
+    let kept := (names.zipIdx.filter fun (_, at_) => (mask >>> at_) % 2 == 0).map (·.1)
+    (checkCallEdit config source word start stop (replacement ++ String.join (kept.map (" " ++ ·)))
+      (prefix_.utf8ByteSize + 1)).map ({ · with pushedLocals := names, movedLocals })
+  let choices := added.toList ++ moves
+  let rank (edit : CallEdit) : Nat × Nat := match edit.reached with
+    | none => (100, 0)
+    | some reached => reached
+  let further (x y : Nat × Nat) : Bool := x.1 > y.1 || x.1 == y.1 && x.2 > y.2
+  let best := choices.foldl (fun best edit => match best with
+    | none => some edit
+    | some other => if further (rank edit) (rank other) then some edit else best) none
+  best.bind fun edit =>
+    if (choices.filter fun other => rank other == rank edit).length == 1 then some edit else none
 
 /-- The edit for an operation handed fewer values than it takes: the values
 written after it moved before it (`shortEdit`), or else the locals of the
