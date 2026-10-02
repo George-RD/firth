@@ -30,3 +30,15 @@ bug the two sides share.
   reference result. Until then every S5 claim keeps stating this gap.
 - A planted miscompile (for example a swapped operand order in one lowering
   rule) breaks the theorem's build.
+
+## Progress
+
+- 2 October 2026, step 1 of 4 (plan agreed with the coordinator: lowering,
+  target semantics, simulation theorem, allocator record with a planted
+  miscompile). `lowerProgram`, `lowerValue`, `lowerAtom`, `nameMapOf` and
+  the target bound and well-formedness checks are now total functions that
+  proofs can unfold. `src/compiler/Firth/LoweringFacts.lean` proves
+  `compileWords_ok`: every emitted entry is, in order, its source word lowered
+  by `lowerProgram` under the dictionary's name map, published under the
+  mangled name that map gives it, and the mangled names are distinct
+  (`nameMapOf_ok`). Nothing about target execution is proved yet.

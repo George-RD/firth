@@ -153,12 +153,12 @@ structure Context where
   words : List (String × String)
   deriving Repr
 
-private def resolveWord (context : Context) (name : String) : Except CompileError String :=
+def resolveWord (context : Context) (name : String) : Except CompileError String :=
   match context.words.find? (fun entry => entry.1 == name) with
   | some entry => .ok entry.2
   | none => .error (.unknownWord context.word name)
 
-private def lowerLiteral (context : Context) : Literal → Except CompileError Target.Value
+def lowerLiteral (context : Context) : Literal → Except CompileError Target.Value
   | .int value =>
       -- The target integer is a signed 64-bit value (§2).
       if Target.isInt64 value then .ok (.int value)
@@ -179,7 +179,7 @@ mutual
 /-- Unchecked representation helper for `lower(p)`, per the §3 table.
 This does not authenticate typing, source origin or proofs. Call `compileWords`
 for dictionary-wide type and ownership admission before emitting an image. -/
-partial def lowerProgram (context : Context) :
+def lowerProgram (context : Context) :
     Firth.Interpreter.Program → Except CompileError (List Target.Instruction)
   | .empty => .ok []
   | .cons head tail => do
@@ -187,7 +187,7 @@ partial def lowerProgram (context : Context) :
       let rest ← lowerProgram context tail
       pure (first ++ rest)
 
-private partial def lowerValue (context : Context) :
+def lowerValue (context : Context) :
     Firth.Interpreter.Value → Except CompileError Target.Value
   | .literal value => lowerLiteral context value
   | .quotation _ .linear =>
@@ -199,9 +199,8 @@ private partial def lowerValue (context : Context) :
   | .world _ =>
       .error (.unsupportedValue context.word "World is administrative and compiles to nothing")
 
-private partial def lowerAtom (context : Context) :
-    Atom → Except CompileError (List Target.Instruction) := fun atom =>
-  match atom with
+def lowerAtom (context : Context) :
+    Atom → Except CompileError (List Target.Instruction)
   | .lit value => do pure [.pushLiteral (← lowerLiteral context value)]
   | .push value => do
       match ← lowerValue context value with
@@ -235,18 +234,23 @@ structure CheckedWord where
   program : Firth.Interpreter.Program
   deriving BEq
 
+/-- `nameMapOf` after the names in `mapping` have been mapped: each further
+name is mangled and appended, unless another name already took its target. -/
+def nameMapFrom (mapping : List (String × String)) :
+    List String → Except CompileError (List (String × String))
+  | [] => .ok mapping
+  | name :: rest =>
+      match mangle name with
+      | .error detail => .error (.invalidName name detail)
+      | .ok mangled =>
+          if mapping.any (fun entry => entry.2 == mangled) then
+            .error (.collidingName name mangled)
+          else nameMapFrom (mapping ++ [(name, mangled)]) rest
+
 /-- Builds the source-to-target name map from source word names, refusing an
 unmanglable or colliding name before any lowering happens. -/
-def nameMapOf (names : List String) : Except CompileError (List (String × String)) := do
-  let mut mapping : List (String × String) := []
-  for name in names do
-    match mangle name with
-    | .error detail => throw (.invalidName name detail)
-    | .ok mangled =>
-        if mapping.any (fun entry => entry.2 == mangled) then
-          throw (.collidingName name mangled)
-        mapping := mapping ++ [(name, mangled)]
-  pure mapping
+def nameMapOf (names : List String) : Except CompileError (List (String × String)) :=
+  nameMapFrom [] names
 
 /-- `nameMapOf` over a dictionary's words, in declaration order. -/
 def nameMap (words : List CheckedWord) : Except CompileError (List (String × String)) :=
@@ -307,6 +311,37 @@ def bodyDigest (names : List String) (word : String) (program : Firth.Interprete
   let code ← lowerProgram { word, words := ← nameMapOf names } program
   pure (Target.bodyDigest code)
 
+/-- One word lowered and its type rendered, refusing what the VM would not
+load. `compileWords` prepares every word before rechecking any. -/
+def prepareWord (mapping : List (String × String)) (word : CheckedWord) :
+    Except CompileError (CheckedWord × String × List Target.Instruction) := do
+  let code ← lowerProgram { word := word.name, words := mapping } word.program
+  if !Target.wellFormedCode code then
+    throw (.unsupportedValue word.name "quotation capture and consumed lists differ in length")
+  if let some detail := Target.boundViolation code then
+    throw (.targetBoundExceeded word.name detail)
+  let erased ←
+    match WordType.render word.scheme with
+    | .error detail => throw (.invalidWordType word.name detail)
+    | .ok rendered => pure rendered
+  pure (word, erased, code)
+
+/-- The published entry of one prepared word, under its mangled name. -/
+def wordEntry (mapping : List (String × String)) :
+    CheckedWord × String × List Target.Instruction → Except CompileError Target.WordEntry
+  | (word, erased, code) => do
+      let target ←
+        match mapping.find? (fun entry => entry.1 == word.name) with
+        | some entry => pure entry.2
+        | none => throw (.invalidName word.name "name was not mapped")
+      pure {
+        name := target
+        erasedWordType := erased
+        code
+        kernelEvidenceDigest := Digest.sha256 (Target.canonicalCode code)
+        refinementEvidenceDigest := Digest.sha256 erased.toUTF8
+        generation := 0 }
+
 /-- Admits a dictionary by actual type/ownership checking, then emits entries.
 
 Representation checks keep their existing stable errors. No partially lowered
@@ -320,33 +355,8 @@ limitation separately; target-image/patch authentication remains a different
 boundary. No compiler-correctness theorem is claimed by this function. -/
 def compileWords (words : List CheckedWord) : Except CompileError (List Target.WordEntry) := do
   let mapping ← nameMap words
-  let mut prepared : List (CheckedWord × String × List Target.Instruction) := []
-  for word in words do
-    let context : Context := { word := word.name, words := mapping }
-    let code ← lowerProgram context word.program
-    if !Target.wellFormedCode code then
-      throw (.unsupportedValue word.name "quotation capture and consumed lists differ in length")
-    if let some detail := Target.boundViolation code then
-      throw (.targetBoundExceeded word.name detail)
-    let erased ←
-      match WordType.render word.scheme with
-      | .error detail => throw (.invalidWordType word.name detail)
-      | .ok rendered => pure rendered
-    prepared := prepared ++ [(word, erased, code)]
+  let prepared ← words.mapM (prepareWord mapping)
   recheckWords words
-  let mut entries : List Target.WordEntry := []
-  for (word, erased, code) in prepared do
-    let target ←
-      match mapping.find? (fun entry => entry.1 == word.name) with
-      | some entry => pure entry.2
-      | none => throw (.invalidName word.name "name was not mapped")
-    entries := entries ++ [{
-      name := target
-      erasedWordType := erased
-      code
-      kernelEvidenceDigest := Digest.sha256 (Target.canonicalCode code)
-      refinementEvidenceDigest := Digest.sha256 erased.toUTF8
-      generation := 0 }]
-  pure entries
+  prepared.mapM (wordEntry mapping)
 
 end Firth.Compiler.Lowering
