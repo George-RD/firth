@@ -87,24 +87,58 @@ from harness import extract, repair, select  # noqa: E402
 # before `|`, so nothing is expanded.
 _PATTERN = (r"""(?:'(?!-)[^'\n]*'"""
             r"""|"(?!-)(?:[^"\\`$\n]|\\[|().^$\[\]]|\$(?=["|]))*")""")
+# S7 run 14 also lets `$` come before `)`, as in `grep -E "^(## |ok$)"`: the
+# shell does not expand `$)` either (run 13's B7 used it three times).
+_PATTERN14 = _PATTERN.replace(r'\$(?=["|])', r'\$(?=["|)])')
 _ENDS = r"(?:head|tail) (?:-n [0-9]+|-[0-9]+)"
-_FILTER = (r"(?: \| (?:" + _ENDS + r"|grep(?: (?:-[nivcE]|-[ABC] [0-9]+))* " + _PATTERN
-           + r"(?: \| " + _ENDS + r")?))?")
 
 
-def check_command(check_cmd: Path, run_dir: Path, shell_forms: bool = False) -> re.Pattern:
-    """The Bash command arm B may run; group 1 is the answer file's number."""
+def _filter(pattern: str) -> str:
+    return (r"(?: \| (?:" + _ENDS + r"|grep(?: (?:-[nivcE]|-[ABC] [0-9]+))* " + pattern
+            + r"(?: \| " + _ENDS + r")?))?")
+
+
+_FILTER = _filter(_PATTERN)
+
+
+def check_command(check_cmd: Path, run_dir: Path, shell_forms: bool | str = False) -> re.Pattern:
+    """The Bash command arm B may run; group 1 is the answer file's number.
+    `shell_forms` is False (run 12), True (run 13's forms) or "run14" (run
+    13's forms with `$` also allowed before `)` in a grep pattern)."""
     core = (r"python3 " + re.escape(str(check_cmd)) + r" check --lang firth "
             + re.escape(str(run_dir)) + r"/answer-([1-9][0-9]*)\.md")
     if not shell_forms:
         return re.compile(core)
     root = re.escape(str(check_cmd.parents[2]))
-    return re.compile(r"(?:cd " + root + r" && )?" + core + r"(?: 2>&1)?" + _FILTER + r" *")
+    filt = _filter(_PATTERN14) if shell_forms == "run14" else _FILTER
+    return re.compile(r"(?:cd " + root + r" && )?" + core + r"(?: 2>&1)?" + filt + r" *")
+
+
+def allowed(name: str, inp: dict, prompt: Path, run_dir: Path, rounds: int,
+            checking: re.Pattern | None) -> bool:
+    """Whether one tool call is on the author's list, from the call alone.
+    `audit` refuses exactly the calls this refuses, and S7 run 14's author
+    hook (`author_hook.py`) asks the same function before a call runs, so the
+    two cannot disagree about what is allowed."""
+    path = str(inp.get("file_path", ""))
+    r = re.fullmatch(re.escape(str(run_dir)) + r"/repair-([1-9][0-9]*)\.md", path)
+    w = re.fullmatch(re.escape(str(run_dir)) + r"/answer-([1-9][0-9]*)\.md", path)
+    own = bool(w and int(w[1]) <= rounds + 1)
+    if checking and name == "Bash":
+        c = checking.fullmatch(str(inp.get("command", "")))
+        return bool(c and int(c[1]) <= rounds + 1 and set(inp) <= {"command", "description", "timeout"})
+    if checking and own and name in ("Read", "Write", "Edit"):
+        return True
+    if name == "Read" and (path == str(prompt) or (r and int(r[1]) <= rounds)):
+        return True
+    if name == "Write" and own:
+        return True
+    return name == "SubagentHandback"
 
 
 def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: int,
           lang: str, check_cmd: Path | None = None,
-          shell_forms: bool = False) -> tuple[dict, list[str]]:
+          shell_forms: bool | str = False, hook_log: Path | None = None) -> tuple[dict, list[str]]:
     reads = {str(prompt)}
     answer = re.compile(re.escape(str(run_dir)) + r"/answer-([1-9][0-9]*)\.md")
     repair = re.compile(re.escape(str(run_dir)) + r"/repair-([1-9][0-9]*)\.md")
@@ -113,6 +147,9 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
     produced = set()  # answer files a successful Write or Edit of the author's made
     calls, models, times, bad = [], set(), [], []
     failed = errored(events)
+    denied, hook_bad = hook_denials(hook_log, events) if hook_log else (set(), [])
+    bad += hook_bad
+    blocked = 0
     for ev in events:
         msg = ev.get("message") or {}
         if ev.get("type") != "assistant":
@@ -132,6 +169,23 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
             rec = {"at": ev.get("timestamp"), "tool": name}
             r, w = repair.fullmatch(path), answer.fullmatch(path)
             own = bool(w and int(w[1]) <= rounds + 1)
+            ok = allowed(name, inp, prompt, run_dir, rounds, checking)
+            if b.get("id") in denied:
+                # S7 run 14: the author hook stopped this call before it ran.
+                # It changed nothing and is kept in the log, not flagged; a
+                # call on the list that the hook stopped means the hook is
+                # wrong, and that is flagged.
+                rec.update(input=inp, blocked=True)
+                blocked += 1
+                if ok:
+                    bad.append(f"{name}: the hook stopped a call on the list: {json.dumps(inp)[:200]}")
+                calls.append(rec)
+                continue
+            if not ok:
+                rec["input"] = inp
+                bad.append(f"{name}: {json.dumps(inp)[:200]}")
+                calls.append(rec)
+                continue
             if checking and name == "Bash":
                 c = checking.fullmatch(str(inp.get("command", "")))
                 if c and int(c[1]) <= rounds + 1 and set(inp) <= {"command", "description", "timeout"}:
@@ -196,10 +250,41 @@ def audit(events: list[dict], prompt: Path, run_dir: Path, kept: Path, rounds: i
             for p in sorted(kept.iterdir()) if beyond(p.name, rounds)]
     log = {"note": "Trimmed log of the author sub-agent: every tool call it made, with written "
                    "content reduced to a hash. The full answers are the answer-*.md files next to this one.",
-           "check_calls": sum("check" in c for c in calls),
+           "check_calls": sum("check" in c for c in calls), "blocked_calls": blocked,
            "models": sorted(models), "started": min(times, default=None),
            "finished": max(times, default=None), "tool_calls": calls, "flagged": bad}
     return log, bad
+
+
+HOOK_MARK = "[s7-author-hook]"
+
+
+def hook_denials(hook_log: Path, events: list[dict]) -> tuple[set[str], list[str]]:
+    """The ids of the calls S7 run 14's author hook stopped. A call counts as
+    stopped only when the hook's own log denied it and the author's log holds
+    a tool result for that id carrying the hook's mark, so the call did not
+    run. A denial the author's log does not show that way is flagged."""
+    denials = set()
+    for line in hook_log.read_text().splitlines() if hook_log.is_file() else []:
+        d = json.loads(line)
+        if d.get("decision") == "deny" and d.get("tool_use_id"):
+            denials.add(d["tool_use_id"])
+    shown = set()
+    for ev in events:
+        if ev.get("type") != "user":
+            continue
+        c = (ev.get("message") or {}).get("content")
+        for b in c if isinstance(c, list) else []:
+            if isinstance(b, dict) and b.get("type") == "tool_result" and HOOK_MARK in json.dumps(b.get("content")):
+                shown.add(b.get("tool_use_id"))
+    ids = {b.get("id") for ev in events if ev.get("type") == "assistant"
+           for b in (ev.get("message") or {}).get("content") or []
+           if isinstance(b, dict) and b.get("type") == "tool_use"}
+    bad = [f"hook log: denied {i} but the author's log shows no result with the hook's mark"
+           for i in sorted(denials & ids - shown)]
+    bad += [f"author's log: {i} has the hook's mark but the hook log did not deny it"
+            for i in sorted(shown - denials)]
+    return denials & ids & shown, bad
 
 
 def errored(events: list[dict]) -> set[str]:
@@ -297,14 +382,18 @@ def main() -> int:
     cli.add_argument("--shell-forms", action="store_true",
                      help="arm B of S7 run 13: also allow the closed set of additions to the check "
                           "command listed above")
+    cli.add_argument("--run14-forms", action="store_true",
+                     help="arm B of S7 run 14: run 13's forms, with `$` also allowed before `)`")
+    cli.add_argument("--hook-log", type=Path,
+                     help="S7 run 14: the author hook's decision log; calls it stopped are kept, not flagged")
     cli.add_argument("--lang", required=True, choices=["firth", "python"],
                      help="the language the author wrote, which decides how its feedback is rebuilt")
     a = cli.parse_args()
-    if a.shell_forms and not a.check_cmd:
-        cli.error("--shell-forms needs --check-cmd")
+    if (a.shell_forms or a.run14_forms) and not a.check_cmd:
+        cli.error("--shell-forms and --run14-forms need --check-cmd")
     events = [json.loads(l) for l in a.log.read_text().splitlines() if l.strip()]
     log, bad = audit(events, a.prompt, a.dir, a.kept or a.dir, a.rounds, a.lang, a.check_cmd,
-                     a.shell_forms)
+                     "run14" if a.run14_forms else a.shell_forms, a.hook_log)
     print(json.dumps(log, indent=2))
     for b in bad:
         print("FLAGGED", b, file=sys.stderr)

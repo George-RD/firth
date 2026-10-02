@@ -43,7 +43,8 @@ SAMPLE = re.compile(r"haiku-(?:firth|python)-([0-9]+)")
 TASKS = re.compile(r"/tasks/([0-9a-f]{8,})")
 # How the eval session labels its authors when it starts them ("Control author
 # B10"); the harness can repeat another task's label with no path (Codex, on #181).
-LABEL = re.compile(r"\bauthor ([AB][0-9]+)\b")
+# Runs 10 to 13 label an author `B7`; run 14 adds its session, `s2-B7`.
+LABEL = re.compile(r"\bauthor ((?:s[1-5]-)?[AB][0-9]+)\b")
 # Run 10's two arms: commit and the worktree it was checked out in. The same
 # sample number exists in both, so a sample is named by arm and number
 # (reviewer, on #181).
@@ -68,6 +69,8 @@ RUN11 = Path(__file__).resolve().parent / "runs" / "2026-09-29-locals-guide"
 # the command itself.
 RUN12 = Path(__file__).resolve().parent / "runs" / "2026-09-30-check-tool"
 RUN13 = Path(__file__).resolve().parent / "runs" / "2026-09-30-check-forms"
+# Run 14 is laid out as run 13; its arm set exists once its prompts are built.
+RUN14 = Path(__file__).resolve().parent / "runs" / "2026-09-30-blocked-serial"
 
 
 def squash(text: str) -> str:
@@ -104,6 +107,10 @@ if (RUN13 / "arm-b" / "prompt-firth.md").is_file():
     ARM_SETS["run13"] = {"arm-a": (None, ("arm-a/",)),
                          "arm-b": (None, ("arm-b/", "harness.py check")
                                    + treatment_clauses(RUN13, tool_paragraph(RUN13)))}
+if (RUN14 / "arm-b" / "prompt-firth.md").is_file():
+    ARM_SETS["run14"] = {"arm-a": (None, ("arm-a/",)),
+                         "arm-b": (None, ("arm-b/", "harness.py check")
+                                   + treatment_clauses(RUN14, tool_paragraph(RUN14)))}
 
 
 def use_arms(name: str) -> None:
@@ -230,9 +237,25 @@ def scan(events: list[dict], sample: str | None, label: str | None = None,
                     "every result is also scanned. cross_sample marks an item naming another "
                     "sample (by number, or by arm and number), the other arm's commit or "
                     "worktree, another author's label, or another task's files.",
-            "sample": sample, "arm": arm, "injected": items, "cross_sample": cross,
+            "sample": sample, "arm": arm, "compactions": compactions(events),
+            "injected": items, "cross_sample": cross,
             "other_arm_worktree_named": sorted({i["kind"] for i in items
                                                 if i.get("other_arm_worktree_named")})}
+
+
+COMPACTED = "This session is being continued from a previous conversation"
+
+
+def compactions(events: list[dict]) -> list[str]:
+    """When the harness compacted this author's context (S7 run 14 reports the
+    count per arm): the times of the user-type events that open with its
+    continuation summary."""
+    out = []
+    for ev in events:
+        c = (ev.get("message") or {}).get("content")
+        if ev.get("type") == "user" and isinstance(c, str) and c.startswith(COMPACTED):
+            out.append(ev.get("timestamp"))
+    return out
 
 
 def self_test() -> None:
@@ -249,7 +272,17 @@ def self_test() -> None:
          "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "x1"}]}},
     )
     clean = scan(base, "haiku-firth-3")
+    # Run 14's task_status line names another author as `s2-B7`; the
+    # author's own label is not a crossing.
+    r14 = 'Run 14 author s2-B7 is running'
+    assert crossing(r14, "haiku-firth-12", "s1-A11", "arm-a")["labels"] == ["s2-B7"]
+    assert "labels" not in crossing(r14, "haiku-firth-7", "s2-B7", "arm-b")
+    assert crossing("Run 13 author B2", "haiku-firth-1", "B1", "arm-b")["labels"] == ["B2"]
     assert clean["injected"] == [] and clean["cross_sample"] == [], clean
+    assert clean["compactions"] == [], clean
+    squeezed = base + [{"type": "user", "timestamp": "t3",
+                        "message": {"role": "user", "content": COMPACTED + " that ran out of context."}}]
+    assert scan(squeezed, "haiku-firth-3")["compactions"] == ["t3"]
     # Planted: the harness hands this author another sample's task, as it did
     # to B8. The scan must report it even though the author called nothing.
     planted = base + log({"type": "attachment", "timestamp": "t3", "attachment": {
