@@ -8,16 +8,18 @@
 3. Each task's Firth reference solution (`reference/<set>/firth/<id>.firth`)
    passes its example and hidden tests on both hosts, using at most a
    quarter of the step budget on every case, so an author's slower but
-   reasonable program still fits.
+   reasonable program still fits. It also gives the hand values of 1,
+   which include edge cases the hidden tests lack.
 4. The hidden tests catch the mistakes a careful author is likely to make:
    for every task, a planted Python mutant with one such mistake fails, and a
    planted mutant of a Firth reference fails.
 5. The prompt carries no hidden input and repair shows only the example.
-6. The audit refuses options that widen an author's tools, and scoring
-   refuses a link named as the answer directory.
+6. The audit refuses options that widen an author's tools, scoring refuses
+   a link named as the answer directory, and the scan run before scoring
+   Python finds planted copies of this tier's hidden files.
 
     python3 eval/s7/harder/test_harder.py            # everything (needs the toolchain)
-    python3 eval/s7/harder/test_harder.py --no-firth # 1, 2, the Python part of 4, and 5
+    python3 eval/s7/harder/test_harder.py --no-firth # 1, 2, the Python part of 4, 5 and 6
 """
 from __future__ import annotations
 
@@ -38,6 +40,8 @@ def check(ok: bool, what: str) -> None:
     if not ok:
         FAILED.append(what)
 
+
+MAX = 2**63 - 1  # the largest Int
 
 # (task id, inputs, outputs), worked out by hand from the descriptions.
 HAND = [
@@ -81,6 +85,11 @@ HAND = [
     ("merge-ranges", ([1, 3], [2, 4]), ([1], [4], 4)),
     ("merge-ranges", ([1, 1], [10, 3]), ([1], [10], 10)),
     ("merge-ranges", ([], []), ([], [], 0)),
+    # At the largest Int: a range ending there absorbs the next, touching
+    # ranges merge, and ranges a gap apart do not.
+    ("merge-ranges", ([1, 5], [MAX, 7]), ([1], [MAX], MAX)),
+    ("merge-ranges", ([MAX - 1, MAX], [MAX - 1, MAX]), ([MAX - 1], [MAX], 2)),
+    ("merge-ranges", ([MAX, MAX - 3], [MAX, MAX - 2]), ([MAX - 3, MAX], [MAX - 2, MAX], 3)),
     # r0=5, r1=1, r2=1; loop r1*=r0, r0-=r2 five times; halt: 3 + 15 + 1.
     ("tiny-vm", ([1, 0, 5, 1, 1, 1, 1, 2, 1, 4, 1, 0, 3, 0, 2, 6, 0, 3, 0, 0, 0], [0, 0, 0, 0], 100),
      ([0, 120, 1, 0], 19, 0)),
@@ -142,6 +151,25 @@ def firth_references() -> None:
             most = max((c.get("kernel_cost") or 0) for c in r["cases"])
             check(0 < most <= tier.FUEL // 4,
                   f"Firth reference {name}/{t.id}: most kernel steps on a case {most:,} (budget {tier.FUEL:,})")
+    firth_hand_values()
+
+
+def firth_hand_values() -> None:
+    """The Firth references on the hand values, which include cases the hidden
+    tests lack (ranges at the largest Int). The merge-ranges reference with
+    the gap test written as `last + 1 < s`, which overflows there, fails them."""
+    for tid, args, want in HAND:
+        src = (HERE / "reference/calibration/firth" / f"{tid}.firth").read_text()
+        got = tier.run_firth(src, args)
+        check(got["ok"] and harness.same(got["stack"], list(want)), f"Firth hand value: {tid}{args} = {want}")
+    src = (HERE / "reference/calibration/firth/merge-ranges.firth").read_text()
+    gap = "{ s last prim > [ s 1 prim - last prim > ] [ false ] if }"
+    check(gap in src, "the merge-ranges reference has the overflow-free gap test")
+    bad = src.replace(gap, "{ last 1 prim + s prim < }")
+    edge = [(a, w) for tid, a, w in HAND if tid == "merge-ranges" and MAX in a[1]]
+    failed = [a for a, w in edge
+              if not ((g := tier.run_firth(bad, a))["ok"] and harness.same(g["stack"], list(w)))]
+    check(bool(failed), f"the merge-ranges reference with an overflowing gap test fails {len(failed)} hand value(s)")
 
 
 # One plausible mistake per task, each a whole Python answer. Every one must
