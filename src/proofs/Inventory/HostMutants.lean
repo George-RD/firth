@@ -41,6 +41,9 @@ def badDigits (s : String) : List Nat :=
 #guard hostEncode ["x"] 0 0 [1] [4] == none
 #guard hostEncode ["x"] 3 0 [] [] == none
 #guard hostEncode ["x", "y"] 0 0 [1] [0] == none
+-- Refused: an error code with a stock, allocations or reasons beside it.
+#guard hostEncode ["x"] 2 5 [] [] == none
+#guard hostEncode ["x"] 1 0 [1] [0] == none
 
 -- The IDs swapped in the answer.
 /--

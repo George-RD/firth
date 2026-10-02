@@ -53,10 +53,12 @@ Two gaps remain and must be stated wherever the result is claimed:
 - The proofs are about the reference interpreter. That the compiler's
   lowering and the VM compute the same result rests on differential testing
   (S2), not on a proof.
-- The host is Python and is tested, not proved: JSON decoding and encoding,
-  and the four-Int ID encoding the spec requires to give distinct IDs
-  distinct encodings. The properties about IDs (order preserved, repeated IDs
-  rejected) rely on it.
+- The host is tested, not proved: JSON decoding and encoding, and (until
+  2 October 2026) the four-Int ID encoding the spec requires to give distinct
+  IDs distinct encodings, on which the properties about IDs (order preserved,
+  repeated IDs rejected) rely. Since then the encoding and the attaching of
+  results to IDs are proved and run from Lean (see Completion); JSON handling
+  and the host's input checks remain tested, not proved.
 
 ## Acceptance criteria
 

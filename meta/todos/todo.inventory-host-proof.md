@@ -57,8 +57,14 @@ Each acceptance criterion and its evidence:
   gives it there: JSON parsing; the object shape, JSON types, policy string
   and ID syntax checks that answer `invalid-input`; the check that answers
   `invalid-range` for integers outside i64; and moving JSON to and from
-  `inventoryHost`. These are in `host_check` and are covered by the 23
-  host-rejected corpus cases and by `tools/loop/test_inventory_host.py`,
-  which plants a bug in each check and requires a corpus case to change.
-  They are tested, not proved, as is Lean's own JSON parser on the way in.
+  `inventoryHost`. The checks are in `run_cases.host_check`, covered by the
+  23 host-rejected corpus cases and by `tools/loop/test_inventory_host.py`,
+  which plants a bug in each check and requires an outcome to change. JSON
+  parsing is `host_parse`, which answers `invalid-input` for malformed JSON
+  and repeated member names (the spec's two host tests, in the same test
+  file, with a planted parser that keeps the last member). The transport is
+  in `lean_host`, `host_decode` and `host_encode`, and the JSON glue in `HostMain.lean` (`strings`, `ints`,
+  `answerJson`) with Lean's JSON parser and printer, covered by the corpus
+  runs and `check_host.py`. Lean's compilation of the proved definitions into
+  `inventoryHost` is trusted as `#guard` evaluation is. None of it is proved.
 - The S5 row in `docs/roadmap.md` names that remaining host code.

@@ -25,9 +25,10 @@ The words it calls are proved first: `allocate-one` (one request),
 Every fact is proved under `int64Gamma`, where arithmetic faults outside i64 as
 the VM's does, so no value overflows on such input; `allocate_batch_reference`
 states the result under the reference registry. The stated gaps remain: VM
-agreement with the reference interpreter rests on differential testing. The ID
-encoding, whose injectivity the repeated-ID result relies on, is proved in
-`Host.lean`, which restates this contract on ID strings. `allocate_batch_contract` is the recorded
+agreement with the reference interpreter rests on differential testing, and the
+host's JSON handling and input checks are tested, not proved. The ID encoding,
+whose injectivity the repeated-ID result relies on, is proved in `Host.lean`,
+which restates this contract on ID strings. `allocate_batch_contract` is the recorded
 form: `src/proofs/records.json` binds it to the digests of `allocate-batch` and
 every word it calls, the registry and the cost table, and reports those words
 `contract_verified`.

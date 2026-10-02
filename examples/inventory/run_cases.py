@@ -84,6 +84,27 @@ def lean_host(mode: str, payload: Any) -> Any:
     return json.loads(result.stdout)
 
 
+def unique_members(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """A JSON object, refusing a repeated member name rather than keeping the last."""
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"repeated JSON member {key!r}")
+        result[key] = value
+    return result
+
+
+def host_parse(text: str) -> dict[str, str] | tuple[int, bool, list[str], list[int]]:
+    """The host's whole input path from JSON text: malformed JSON and repeated
+    member names are `invalid-input` (the spec's two host tests), then `host_check`.
+    Python also reads NaN and Infinity, but as floats, which `host_check` refuses."""
+    try:
+        value = json.loads(text, object_pairs_hook=unique_members)
+    except (ValueError, RecursionError):
+        return error("invalid-input")
+    return host_check(value)
+
+
 def host_check(value: Any) -> dict[str, str] | tuple[int, bool, list[str], list[int]]:
     """The host's checks: an error, or the stock, policy, ID strings and quantities."""
     if not isinstance(value, dict) or set(value) != {"available", "policy", "requests"}:

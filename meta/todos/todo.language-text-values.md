@@ -20,8 +20,11 @@ component could take the ID strings themselves and the encoding would go.
 
 - A text type (or a byte sequence with the operations text needs: length,
   indexing, equality) in the kernel's value set and the surface language,
-  with its typing rules, reference semantics, VM support and costs, under the
-  kernel-change rule (`AGENTS.md` rule 7).
+  with its typing rules, reference semantics, compiler lowering, VM support
+  and costs, under the kernel-change rule (`AGENTS.md` rule 7).
+- A sequence of text values (as `Seq Int` and `Seq Bool` are sequences of
+  their scalars), or another representation that keeps the boundaries between
+  IDs, since the allocator takes up to 64 IDs of varying length in one call.
 - The inventory allocator takes ID strings, with the duplicate-ID proof
   stated on them, and the host's encoding removed.
 

@@ -430,11 +430,13 @@ def attach : List String → List Int → List Int → Option (List Allocation)
   | _, _, _ => none
 
 /-- The component's answer, turned into the host's. `none` when the component
-returned something the spec does not allow. -/
+returned something the spec does not allow: an unknown code or reason, lengths
+that differ, or an error code with anything but `0, [], []` beside it. -/
 def hostEncode (ids : List String) (code remaining : Int) (allocated reasons : List Int) :
     Option Answer :=
   if code = 0 then (attach ids allocated reasons).map (Answer.ok remaining)
-  else (errorName code).map Answer.error
+  else if remaining = 0 ∧ allocated = [] ∧ reasons = [] then (errorName code).map Answer.error
+  else none
 
 theorem attach_ok : ∀ {ids : List String} {qs rs : List Int} {lines : List Allocation},
     attach ids qs rs = some lines →
@@ -471,18 +473,22 @@ theorem hostEncode_ok {ids : List String} {remaining : Int} {allocated reasons :
     obtain ⟨rfl, rfl⟩ := h
     exact ⟨rfl, attach_ok ha⟩
 
-/-- An answer is never invented: a failing component code is reported by its
-name, and only the spec's two codes are. -/
+/-- An answer is never invented: an error is reported only for one of the
+spec's two codes, by its name, and only when the component left nothing else. -/
 theorem hostEncode_error {ids : List String} {code remaining : Int} {allocated reasons : List Int}
     {name : String} (h : hostEncode ids code remaining allocated reasons = some (.error name)) :
-    code ≠ 0 ∧ errorName code = some name := by
+    code ≠ 0 ∧ errorName code = some name ∧ remaining = 0 ∧ allocated = [] ∧ reasons = [] := by
   unfold hostEncode at h
   by_cases hc : code = 0
   · rw [if_pos hc] at h
     cases (attach ids allocated reasons) <;> simp at h
   · rw [if_neg hc] at h
-    refine ⟨hc, ?_⟩
-    cases hn : errorName code <;> simp [hn] at h
-    subst h; rfl
+    by_cases he : remaining = 0 ∧ allocated = [] ∧ reasons = []
+    · rw [if_pos he] at h
+      refine ⟨hc, ?_, he⟩
+      cases hn : errorName code <;> simp [hn] at h
+      subst h; rfl
+    · rw [if_neg he] at h
+      cases h
 
 end Firth.Proofs.Inventory.Host

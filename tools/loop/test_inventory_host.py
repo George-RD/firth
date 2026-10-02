@@ -8,8 +8,12 @@ Lean does not model: the JSON shape and type checks and the ID syntax
 The ID encoding and the answer are Lean's (`src/proofs/Inventory/Host.lean`).
 
 These tests plant one bug at a time in `host_check`'s source and require some
-corpus case to come out differently, so no host check can be dropped or
-loosened without the corpus noticing. They need no Lean toolchain.
+input to come out differently: a corpus case, or one of `EXTRA`, inputs the
+corpus does not hold, with their expected results written by hand. So no host
+check can be dropped or loosened unnoticed. `host_parse`, the path from JSON
+text, is tested on the spec's two host tests (malformed JSON, repeated member
+names), with a planted parser that keeps the last member. They
+need no Lean toolchain.
 """
 from __future__ import annotations
 
@@ -25,9 +29,32 @@ import run_cases as host  # noqa: E402
 
 CASES = json.loads((ROOT / "specs" / "inventory-allocation-cases.json").read_text())["cases"]
 SOURCE = inspect.getsource(host.host_check)
+INVALID_INPUT = {"status": "error", "code": "invalid-input"}
+
+# The spec's two host tests, which the corpus cannot hold because it stores
+# decoded inputs: malformed JSON and repeated member names. With a valid
+# document beside each, so a parser that refused everything would fail too.
+TEXTS = {
+    "malformed": ('{"available": 1, "policy": "partial", "requests": [}', INVALID_INPUT),
+    "truncated": ('{"available": 1', INVALID_INPUT),
+    "repeated-top-member": ('{"available": 1, "available": 2, "policy": "partial", "requests": []}',
+                            INVALID_INPUT),
+    "repeated-request-member": ('{"available": 1, "policy": "partial", "requests": '
+                                '[{"id": "a", "id": "b", "quantity": 1}]}', INVALID_INPUT),
+    "not-a-number": ('{"available": NaN, "policy": "partial", "requests": []}', INVALID_INPUT),
+    "valid": ('{"available": 1, "policy": "partial", "requests": [{"id": "a", "quantity": 1}]}',
+              (1, False, ["a"], [1])),
+}
+
+# Inputs the corpus does not hold, with the result the spec gives them.
+EXTRA = {
+    # A list naming the three members: only the object test rejects it.
+    "list-of-member-names": (["available", "policy", "requests"], {"status": "error", "code": "invalid-input"}),
+}
 
 # (what the bug does, text in host_check, replacement)
 MUTANTS = [
+    ("accepts a non-object input", "not isinstance(value, dict) or ", ""),
     ("accepts unknown top-level members", 'set(value) != {"available", "policy", "requests"}',
      'not {"available", "policy", "requests"} <= set(value)'),
     ("accepts a boolean stock", "type(available) is not int", "not isinstance(available, int)"),
@@ -41,10 +68,19 @@ MUTANTS = [
 ]
 
 
+def outcome(check, value) -> object:
+    """The host's result: the error, "component" when it passes, or the crash."""
+    try:
+        result = check(value)
+    except Exception as crash:  # noqa: BLE001  (a crash is an outcome too)
+        return f"crash: {type(crash).__name__}"
+    return result if isinstance(result, dict) else "component"
+
+
 def outcomes(check) -> dict[str, object]:
-    """Each corpus case's host result: the error, or "component" when it passes."""
-    return {case["name"]: (result if isinstance(result := check(case["input"]), dict) else "component")
-            for case in CASES}
+    inputs = {case["name"]: case["input"] for case in CASES}
+    inputs.update({name: value for name, (value, _) in EXTRA.items()})
+    return {name: outcome(check, value) for name, value in inputs.items()}
 
 
 def mutant(original: str, replacement: str):
@@ -52,6 +88,22 @@ def mutant(original: str, replacement: str):
     namespace = dict(vars(host))
     exec(SOURCE.replace(original, replacement), namespace)  # noqa: S102
     return namespace["host_check"]
+
+
+class HostParseTests(unittest.TestCase):
+    def test_the_spec_host_tests(self) -> None:
+        for name, (text, expected) in TEXTS.items():
+            with self.subTest(case=name):
+                self.assertEqual(host.host_parse(text), expected)
+
+    def test_a_parser_keeping_the_last_member_fails(self) -> None:
+        source = inspect.getsource(host.host_parse)
+        original = ", object_pairs_hook=unique_members"
+        self.assertEqual(source.count(original), 1)
+        namespace = dict(vars(host))
+        exec(source.replace(original, ""), namespace)  # noqa: S102
+        planted = {name: outcome(namespace["host_parse"], text) for name, (text, _) in TEXTS.items()}
+        self.assertNotEqual(planted, {name: expected for name, (_, expected) in TEXTS.items()})
 
 
 class HostCheckTests(unittest.TestCase):
@@ -64,7 +116,12 @@ class HostCheckTests(unittest.TestCase):
                 else:
                     self.assertNotIn(case["expected"].get("code"), ("invalid-input",))
 
-    def test_every_planted_host_bug_changes_a_corpus_case(self) -> None:
+    def test_the_host_answers_the_extra_inputs_as_the_spec_says(self) -> None:
+        for name, (value, expected) in EXTRA.items():
+            with self.subTest(case=name):
+                self.assertEqual(outcome(host.host_check, value), expected)
+
+    def test_every_planted_host_bug_changes_an_outcome(self) -> None:
         baseline = outcomes(host.host_check)
         for name, original, replacement in MUTANTS:
             with self.subTest(bug=name):

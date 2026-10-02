@@ -77,7 +77,8 @@ What works, and where to check it:
   [roadmap](docs/roadmap.md). The host's ID encoding and the way it attaches
   results to IDs are proved too and run from Lean. The gaps stated there are
   that the compiler and VM agree with the reference only by differential
-  testing, and that the Python host's JSON checks are tested, not proved.
+  testing, and that the host's JSON handling (the Python checks and
+  transport, and the Lean executable's JSON glue) is tested, not proved.
 
 ## How well models write it
 

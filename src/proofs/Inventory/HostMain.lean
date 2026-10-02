@@ -12,8 +12,8 @@ calls it on JSON over stdin and stdout.
   precondition is encoded.
 * `inventoryHost answer` reads `{"ids": [...], "stack": [code, remaining,
   allocated, reasons]}`, the request IDs and the component's final stack, and
-  writes the host's JSON answer (`hostEncode`). It refuses (exit 1) when the
-  stack is not one the spec allows.
+  writes the host's JSON answer (`hostEncode`). It refuses (exit 1) when an ID
+  fails `validId` or the stack is not one the spec allows.
 -/
 
 open Lean (Json)
@@ -43,6 +43,8 @@ def answerJson : Answer → Json
 
 def answer (input : Json) : Except String Json := do
   let ids ← strings (← input.getObjVal? "ids")
+  if let some bad := ids.find? (fun s => !validId s) then
+    throw s!"not an ID the spec allows: {bad.quote}"
   let stack ← (← input.getObjVal? "stack").getArr?
   match stack.toList with
   | [code, remaining, allocated, reasons] =>
