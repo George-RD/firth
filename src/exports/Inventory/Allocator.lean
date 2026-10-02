@@ -475,29 +475,19 @@ def body : Program :=
     .cons (.prim "seq-int.at") <|
     .cons (.pick 4) <|
     .cons (.word "allocate-one") <|
-    .cons (.pick 7) <|
-    .cons (.pick 6) <|
+    .cons (.roll 7) <|
+    .cons (.roll 6) <|
     .cons (.roll 4) <|
-    .cons (.pick 8) <|
+    .cons (.roll 7) <|
     .cons (.lit (.int 1)) <|
     .cons (.prim "+") <|
-    .cons (.pick 7) <|
+    .cons (.roll 7) <|
     .cons (.roll 6) <|
     .cons (.prim "seq-int.push") <|
-    .cons (.pick 6) <|
+    .cons (.roll 6) <|
     .cons (.roll 6) <|
     .cons (.prim "seq-int.push") <|
     .cons (.word "allocate-from") <|
-    .cons (.roll 3) <|
-    .cons .drop <|
-    .cons (.roll 3) <|
-    .cons .drop <|
-    .cons (.roll 3) <|
-    .cons .drop <|
-    .cons (.roll 3) <|
-    .cons .drop <|
-    .cons (.roll 3) <|
-    .cons .drop <|
     .empty)) <|
   .cons .compose <|
   .cons (.roll 4) <|
@@ -519,7 +509,7 @@ def body : Program :=
 
 /-- The image's `body_digest` for `allocate-from`: SHA-256 of `body` lowered to
 target code, hex encoded. -/
-def bodyDigest : String := "8b791d929fa24456d4c5ce0a1e004f585b59fccf3827b09e3d5943b977292bd9"
+def bodyDigest : String := "569096fbfefc648cdd5417078e6228659431ccf35e4fdb5d8e1ac6e37d6e0322"
 
 /-- The erased word type the image records for `allocate-from`. -/
 def erasedType : String := "(forallρ;ρ,v0:SeqInt^many,v1:Bool^many,v2:Int^many,v3:Int^many,v4:SeqInt^many,v5:SeqInt^many--ρ,v0:Int^many,v1:SeqInt^many,v2:SeqInt^many)"

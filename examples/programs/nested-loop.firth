@@ -1,0 +1,22 @@
+\ A loop whose call is the last action of a `locals` block nested in the
+\ word's own block. The outer locals are not used after the inner block, so
+\ they are off the stack by then and the call runs in the caller's frame.
+: count
+  (forall ρ; ρ n:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { n acc } {
+    n 0 prim =
+    [ acc ]
+    [ n 1 prim - locals { m } { m acc 1 prim + count } ]
+    if };
+
+\ An outer local used inside the inner block and again after it is kept
+\ for that later use: n + acc, then + acc again.
+: add-twice
+  (forall ρ; ρ n:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { n acc } { n locals { m } { m acc prim + } acc prim + };
+
+\ The later `acc` is bound again by its own block, so it is not the outer
+\ one: 2 + 3, then 5 + 10.
+: shadowed
+  (forall ρ; ρ n:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { n acc } { n locals { m } { m acc prim + } 10 locals { acc } { acc prim + } };

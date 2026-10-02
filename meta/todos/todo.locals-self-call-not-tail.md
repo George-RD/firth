@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.elaborator
-status: open
+status: done
 created: 2026-10-02
 ---
 
@@ -40,3 +40,16 @@ The same word without the inner block runs at 300.
   taking the harder option if it avoids later pain (`AGENTS.md` rule 4).
 - The minimal case above is a test, with its expected result written
   independently, on both hosts.
+
+## Resolution
+
+The call now runs in the caller's frame. Erasure counts a `many` local of an
+enclosing block as used by what follows the inner block only when that
+block's body really uses it after (`useCount` in
+`src/elaborator/Firth/Erasure.lean`), so an outer local the rest of the word
+never reads is moved into the inner block, not copied and dropped after it.
+The minimal case is `count` in `examples/programs/nested-loop.firth`, with
+expected results in `examples/programs/cases.json` (300 and 3000 iterations)
+that `check_programs.py` runs on the reference interpreter and the VM. The
+erasure is still tested against direct locals semantics by
+`src/diffharness/check_locals_erasure.py`, which generates nested blocks.
