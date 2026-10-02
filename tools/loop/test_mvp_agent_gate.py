@@ -38,6 +38,13 @@ def sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def lean_semantics(target: dict[str, object]) -> dict[str, object]:
+    """What `firthTargetRun` answers when it agrees with the VM response `target`."""
+    cost = dict(target["cost"])
+    return {**target, "cost": {**cost, "instructions": cost["steps"],
+                               "word_entries": cost["total"] - cost["steps"], "primitives": 0}}
+
+
 def contract_tables() -> dict[str, object]:
     """The manifest tables `verify_contract` binds, as the real manifest states them."""
     adapters = {
@@ -333,7 +340,8 @@ class ExecutionWiringTests(unittest.TestCase):
     def observations(self):
         shared = {"status": "success", "trap": None, "stack": [], "trace": []}
         reference = {**shared, "cost": {"total": 2, "steps": 0}, "world_observation": {"ids": []}}
-        target = {**shared, "cost": {"total": 3, "kernel": 2, "steps": 0}, "world_observation": {"bytes": [0]}}
+        target = {**shared, "trap_subcode": None, "cost": {"total": 3, "kernel": 2, "steps": 0},
+                  "world_observation": {"bytes": [0]}}
         return reference, target
 
     def test_word_entry_overhead_is_not_a_kernel_mismatch(self) -> None:
@@ -468,6 +476,8 @@ class ExecutionWiringTests(unittest.TestCase):
                 return elaboration
             if label.endswith("compile"):
                 return {"status": "success", "target_program": {"entry": "main", "words": [main, helper]}}
+            if label.endswith("target-run"):
+                return lean_semantics(target)
             return reference if label.endswith("reference-run") else target
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -512,7 +522,9 @@ class ExecutionWiringTests(unittest.TestCase):
                 with self.assertRaisesRegex(self.gate.GateError, needle):
                     self.gate.compare(*self.observations(), "contract", contract=mutated)
 
-    def test_rebuild_reports_the_trace_comparison_label(self) -> None:
+    def rebuild_answer_42(self, semantics_of=lean_semantics) -> dict[str, object]:
+        """Rebuilds `: main ( -- n:Int ) 42;` with mocked adapters, the Lean
+        target semantics answering `semantics_of(target)` for the VM's `target`."""
         main = {"name": "main", "checking_state": "checked", "proof_state": "available",
                 "program": [{"kind": "lit", "value": {"type": "int", "value": 42}}]}
         elaboration = {
@@ -524,7 +536,7 @@ class ExecutionWiringTests(unittest.TestCase):
         reference = {"status": "success", "trap": None, "stack": [literal],
                      "trace": [{"index": 0, "stack": [], "program": main["program"], "cost": 1}],
                      "cost": {"total": 1, "steps": 1}, "world_observation": {"ids": []}}
-        target = {"status": "success", "trap": None, "stack": [literal],
+        target = {"status": "success", "trap": None, "trap_subcode": None, "stack": [literal],
                   "trace": [{"index": 0, "word": "main", "pc": 0, "stack": [], "cost": 1,
                              "kernel_cost": 1, "image_version": 1, "frames": []}],
                   "cost": {"total": 1, "kernel": 1, "steps": 1}, "world_observation": {"bytes": [0]}}
@@ -533,14 +545,30 @@ class ExecutionWiringTests(unittest.TestCase):
                 return elaboration
             if label.endswith("compile"):
                 return {"status": "success", "target_program": {"entry": "main", "words": [main]}}
+            if label.endswith("target-run"):
+                return semantics_of(target)
             return reference if label.endswith("reference-run") else target
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             source = root / "source.firth"
             source.write_text(": main ( -- n:Int ) 42;", encoding="utf-8")
             with patch.object(self.gate, "adapter", adapter):
-                result = self.gate.rebuild({"name": "test", "entry": "main", "source": str(source),
-                                           "source_path": "source.firth"}, root)
+                return self.gate.rebuild({"name": "test", "entry": "main", "source": str(source),
+                                         "source_path": "source.firth"}, root)
+
+    def test_rebuild_fails_when_the_lean_target_semantics_disagrees(self) -> None:
+        # Deleting the `compare_target_semantics` call from `rebuild` must turn
+        # this red; the live suite that also covers it is skipped without binaries.
+        def off_by_one(target: dict[str, object]) -> dict[str, object]:
+            semantics = lean_semantics(target)
+            semantics["cost"]["total"] += 1
+            semantics["cost"]["word_entries"] += 1
+            return semantics
+        with self.assertRaisesRegex(self.gate.GateError, "target semantics: cost.total differs"):
+            self.rebuild_answer_42(off_by_one)
+
+    def test_rebuild_reports_the_trace_comparison_label(self) -> None:
+        result = self.rebuild_answer_42()
         self.assertEqual(result["trace_comparison"], self.gate.TRACE_AGREED)
         for fuel in (self.gate.MAX_FUEL + 1, -1, True):
             with self.subTest(fuel=fuel), self.assertRaisesRegex(self.gate.GateError, "fuel"):

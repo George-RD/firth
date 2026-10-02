@@ -153,6 +153,9 @@ structure Context where
   words : List (String × String)
   deriving Repr
 
+/- `resolveWord`, `lowerLiteral` and the lowering functions below are public
+so that `LoweringFacts.lean` and the compiler simulation proof can unfold
+them. Keep them public. -/
 def resolveWord (context : Context) (name : String) : Except CompileError String :=
   match context.words.find? (fun entry => entry.1 == name) with
   | some entry => .ok entry.2
