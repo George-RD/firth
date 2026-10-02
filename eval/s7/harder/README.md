@@ -42,7 +42,11 @@ whether a quadratic loop fits the step budget, and whether a result fits in
 an `Int`. Several do not:
 
 - Sizes: `rpn` does not bound the number of tokens, nor `tiny-vm` the
-  program's length (only the instructions executed).
+  program's length (only the instructions executed). `tiny-vm` gives
+  `limit` no lower bound either, and a negative one has two readings: the
+  task's meaning and the Firth reference stop only when the count equals
+  it (so never), the Python reference as soon as the count reaches it (at
+  once). No hidden test has a negative `limit` (the least is 0).
 - Values: five descriptions allow inputs whose answer does not fit in a
   64-bit `Int`, which no Firth answer can return while the Python meaning
   can. `rpn` and `tiny-vm` do not bound operands (the largest `Int` times
