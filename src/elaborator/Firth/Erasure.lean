@@ -740,16 +740,17 @@ private def demandCount (name : String) (items : List Item) : Nat :=
 
 /-- How many uses of a local remain, counting this one. The rest of the
 block that bound it shows every later use. A local of an enclosing block may
-also be used after the inner block ends, in `after`, so those uses are counted
+also be used after the inner block ends, in `after` (one list per enclosing
+block), so those uses are counted
 too. A use there of the same name bound again counts as well, so the count is
 never below the uses that remain: a `many` local is moved at its last use,
 and otherwise copied, with the copy left over dropped when its own block
 ends. -/
-private def useCount (slots : List Slot) (slot : Slot) (name : String) (rest after : List Item) :
-    Nat :=
+private def useCount (slots : List Slot) (slot : Slot) (name : String) (rest : List Item)
+    (after : List (List Item)) : Nat :=
   if slots.any (fun declared => declared.family == slot.family) || slot.usage == .linear then
     1 + demandCount name rest
-  else 1 + demandCount name rest + demandCount name after
+  else 1 + demandCount name rest + (after.map (demandCount name)).sum
 
 private def demandSpansWithFuel (fuel : Nat) (name : String) (items : List Item) : List Span :=
   match fuel with
@@ -1090,41 +1091,42 @@ abbrev SurfaceItem := Item
 
 /-- What is erased: a list of items, one item, or the rest of a `locals`
 block's body. `after` is what follows it in the enclosing blocks, up to the
-end of the word or of the quotation it is in. An enclosing block's local used
+end of the word or of the quotation it is in, innermost first and one list
+per block, so that no item copies what follows it. An enclosing block's local used
 here may be used again only there, so it is moved at its last use in
 `items`, not copied and dropped later: a call written last in an inner block
 is then the word's last action. -/
 inductive ErasureSubject where
-  | items (items : List SurfaceItem) (visible : List String) (after : List SurfaceItem)
-  | item (item : SurfaceItem) (visible : List String) (after : List SurfaceItem)
+  | items (items : List SurfaceItem) (visible : List String) (after : List (List SurfaceItem))
+  | item (item : SurfaceItem) (visible : List String) (after : List (List SurfaceItem))
   | localBody (items : List SurfaceItem) (slots : List Slot) (visible : List String)
-      (after : List SurfaceItem)
+      (after : List (List SurfaceItem))
 
 inductive ErasureRel (env : EffectEnv) :
     ErasureSubject → ScopeState → KernelProgram → ScopeState → Prop where
-  | nil {state : ScopeState} {visible : List String} {after : List Item} :
+  | nil {state : ScopeState} {visible : List String} {after : List (List Item)} :
       ErasureRel env (.items [] visible after) state [] state
   | cons {item : Item} {rest : List Item} {state next final : State}
-      {visible : List String} {after : List Item} {head tail : KernelProgram}
-      (itemRun : ErasureRel env (.item item visible (rest ++ after)) state head next)
+      {visible : List String} {after : List (List Item)} {head tail : KernelProgram}
+      (itemRun : ErasureRel env (.item item visible (rest :: after)) state head next)
       (restRun : ErasureRel env (.items rest visible after) next tail final) :
       ErasureRel env (.items (item :: rest) visible after) state (head ++ tail) final
   | literal {literal : Located Literal} {span : Span} {value : Firth.Interpreter.Literal}
-      {state : State} {visible : List String} {after : List Item}
+      {state : State} {visible : List String} {after : List (List Item)}
       (translated : literalAtom literal.value = some value) :
       ErasureRel env (.item (.literal literal span) visible after) state (atomList (.lit value) span)
         { state with stack := { usage := .many } :: state.stack }
   | word {name : String} {span : Span} {signature : Signature} {state next : State}
-      {visible : List String} {after : List Item}
+      {visible : List String} {after : List (List Item)}
       (resolved : env.word name = some signature)
       (applied : AppliesSignature signature state next) :
       ErasureRel env (.item (.word name span) visible after) state (atomList (.word name) span) next
   | primitive {name : String} {span : Span} {signature : Signature} {state next : State}
-      {visible : List String} {after : List Item}
+      {visible : List String} {after : List (List Item)}
       (resolved : env.primitive name = some signature)
       (applied : AppliesSignature signature state next) :
       ErasureRel env (.item (.primitive name span) visible after) state (atomList (.prim name) span) next
-  | atom {name : String} {span : Span} {state next : State} {visible : List String} {after : List Item}
+  | atom {name : String} {span : Span} {state next : State} {visible : List String} {after : List (List Item)}
       {program : KernelProgram}
       (clear : hiddenIn (atomReach name state.stack) state.stack = none)
       (step : ErasesAtomTo name span state program next) :
@@ -1132,7 +1134,7 @@ inductive ErasureRel (env : EffectEnv) :
   /-- An unused local lying among the values the item takes is moved to the
   top first, where the item then runs beneath it. Only a name moves; the
   values keep their order. -/
-  | raise {item : Item} {span : Span} {state next : State} {visible : List String} {after : List Item}
+  | raise {item : Item} {span : Span} {state next : State} {visible : List String} {after : List (List Item)}
       {id : Nat} {focusDepth : Nat} {program : KernelProgram} {focused : List StackEntry}
       (named : state.stack.any (fun entry => hiddenEntry entry && isFocusTarget id entry) = true)
       (focusedBy : FocusRel id state.stack focusDepth focused)
@@ -1140,7 +1142,7 @@ inductive ErasureRel (env : EffectEnv) :
       ErasureRel env (.item item visible after) state (focusProgram span focusDepth ++ program) next
   /-- Unused locals on top are names, not values the item can see: the item
   runs beneath them, and they stay on top. -/
-  | beneath {item : Item} {span : Span} {state next : State} {visible : List String} {after : List Item}
+  | beneath {item : Item} {span : Span} {state next : State} {visible : List String} {after : List (List Item)}
       {count : Nat} {program : KernelProgram}
       (leading : count ≤ (state.stack.takeWhile hiddenEntry).length)
       (itemRun : ErasureRel env (.item item visible after)
@@ -1148,7 +1150,7 @@ inductive ErasureRel (env : EffectEnv) :
       ErasureRel env (.item item visible after) state (dipWrap span count program)
         { next with stack := state.stack.take count ++ next.stack }
   | quotation {body : List Item} {span : Span} {state bodyFinal : State}
-      {visible : List String} {after : List Item} {program : KernelProgram} {seedCount : Nat}
+      {visible : List String} {after : List (List Item)} {program : KernelProgram} {seedCount : Nat}
       (closed : captureIn visible body = none)
       (bodyRun : ErasureRel env (.items body visible [])
         { stack := List.replicate seedCount { usage := .many } } program bodyFinal) :
@@ -1157,7 +1159,7 @@ inductive ErasureRel (env : EffectEnv) :
                                 exact := !bodyFinal.inexact, lost := bodyLost bodyFinal } ::
           state.stack }
   | locals {names : List LocatedName} {body : List Item} {span : Span}
-      {state entered final : State} {visible : List String} {after : List Item} {slots : List Slot}
+      {state entered final : State} {visible : List String} {after : List (List Item)} {slots : List Slot}
       {program : KernelProgram}
       (unique : duplicateName names = none)
       (binding : BindsLocals names state entered slots)
@@ -1165,14 +1167,14 @@ inductive ErasureRel (env : EffectEnv) :
         (.localBody (liftCaptures (names.map (·.name) ++ visible) body) slots
           (names.map (·.name) ++ visible) after) entered program final) :
       ErasureRel env (.item (.locals names body span) visible after) state program final
-  | localDone {state cleaned : State} {slots : List Slot} {visible : List String} {after : List Item}
+  | localDone {state cleaned : State} {slots : List Slot} {visible : List String} {after : List (List Item)}
       {program : KernelProgram}
       (tracked : (!state.untracked || !state.stack.any (cleanupCandidate slots)) = true)
       (cleanup : CleansLocals slots state program cleaned) :
       ErasureRel env (.localBody [] slots visible after) state program
         { cleaned with stack := restoreParents slots cleaned.stack }
   | select {name : String} {span : Span} {rest : List Item} {state next final : State}
-      {slots : List Slot} {visible : List String} {after : List Item} {slot : Slot}
+      {slots : List Slot} {visible : List String} {after : List (List Item)} {slot : Slot}
       {head tail : KernelProgram}
       (active : (slots.any (fun declared => declared.name == name) || visible.contains name) = true)
       (tracked : state.untracked = false)
@@ -1184,16 +1186,16 @@ inductive ErasureRel (env : EffectEnv) :
       ErasureRel env (.localBody (.word name span :: rest) slots visible after)
         state (head ++ tail) final
   | globalWord {name : String} {span : Span} {rest : List Item} {state next final : State}
-      {slots : List Slot} {visible : List String} {after : List Item} {head tail : KernelProgram}
+      {slots : List Slot} {visible : List String} {after : List (List Item)} {head tail : KernelProgram}
       (inactive : (slots.any (fun declared => declared.name == name) || visible.contains name) = false)
-      (itemRun : ErasureRel env (.item (.word name span) visible (rest ++ after)) state head next)
+      (itemRun : ErasureRel env (.item (.word name span) visible (rest :: after)) state head next)
       (restRun : ErasureRel env (.localBody rest slots visible after) next tail final) :
       ErasureRel env (.localBody (.word name span :: rest) slots visible after)
         state (head ++ tail) final
   | ordinary {item : Item} {rest : List Item} {state next final : State}
-      {slots : List Slot} {visible : List String} {after : List Item} {head tail : KernelProgram}
+      {slots : List Slot} {visible : List String} {after : List (List Item)} {head tail : KernelProgram}
       (nonWord : NonWord item)
-      (itemRun : ErasureRel env (.item item visible (rest ++ after)) state head next)
+      (itemRun : ErasureRel env (.item item visible (rest :: after)) state head next)
       (restRun : ErasureRel env (.localBody rest slots visible after) next tail final) :
       ErasureRel env (.localBody (item :: rest) slots visible after) state (head ++ tail) final
 
@@ -1202,12 +1204,12 @@ abbrev ErasesToState (env : EffectEnv) (items : List SurfaceItem) (state : Scope
   ErasureRel env (.items items visible []) state program final
 
 abbrev ErasesItemTo (env : EffectEnv) (item : SurfaceItem) (state : ScopeState)
-    (visible : List String) (after : List SurfaceItem) (program : KernelProgram)
+    (visible : List String) (after : List (List SurfaceItem)) (program : KernelProgram)
     (final : ScopeState) : Prop :=
   ErasureRel env (.item item visible after) state program final
 
 abbrev ErasesLocalBodyTo (env : EffectEnv) (items : List SurfaceItem) (state : ScopeState)
-    (slots : List Slot) (visible : List String) (after : List SurfaceItem)
+    (slots : List Slot) (visible : List String) (after : List (List SurfaceItem))
     (program : KernelProgram) (final : ScopeState) : Prop :=
   ErasureRel env (.localBody items slots visible after) state program final
 
@@ -1230,10 +1232,10 @@ private abbrev ItemsRun (env : EffectEnv) (items : List Item) (initial : State)
     (visible : List String) := ErasureRun env (.items items visible []) initial
 
 private abbrev ItemRun (env : EffectEnv) (item : Item) (initial : State)
-    (visible : List String) (after : List Item) := ErasureRun env (.item item visible after) initial
+    (visible : List String) (after : List (List Item)) := ErasureRun env (.item item visible after) initial
 
 private abbrev LocalRun (env : EffectEnv) (items : List Item) (initial : State)
-    (slots : List Slot) (visible : List String) (after : List Item) :=
+    (slots : List Slot) (visible : List String) (after : List (List Item)) :=
   ErasureRun env (.localBody items slots visible after) initial
 
 private structure CleanupRun (slots : List Slot) (initial : State) where
@@ -1384,7 +1386,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
   | depth + 1 => match subject with
     | .items items visible after => match items with
       | [] => .ok { program := [], final := state, evidence := .nil }
-      | item :: rest => match eraseSubjectWithProof depth env (.item item visible (rest ++ after)) state with
+      | item :: rest => match eraseSubjectWithProof depth env (.item item visible (rest :: after)) state with
         | .error error => .error error
         | .ok head => match eraseSubjectWithProof depth env (.items rest visible after) head.final with
           | .error error => .error error
@@ -1613,7 +1615,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                   exact Nat.le_antisymm (Nat.le_of_not_gt copied) positive)
           else match resolvedEq : env.word name with
             | none => .error (.unboundLocal name localSpan)
-            | some _ => match eraseSubjectWithProof depth env (.item (.word name localSpan) visible (rest ++ after))
+            | some _ => match eraseSubjectWithProof depth env (.item (.word name localSpan) visible (rest :: after))
                 state with
               | .error error => .error error
               | .ok head => match eraseSubjectWithProof depth env (.localBody rest slots visible after)
@@ -1630,7 +1632,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                         | true => exact False.elim (activeEq value)
                       exact inactive) head.evidence tail.evidence }
         | .literal literal span =>
-          match eraseSubjectWithProof depth env (.item (.literal literal span) visible (rest ++ after)) state with
+          match eraseSubjectWithProof depth env (.item (.literal literal span) visible (rest :: after)) state with
           | .error error => .error error
           | .ok head => match eraseSubjectWithProof depth env (.localBody rest slots visible after)
               head.final with
@@ -1640,7 +1642,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                 final := tail.final
                 evidence := .ordinary trivial head.evidence tail.evidence }
         | .atom name span =>
-          match eraseSubjectWithProof depth env (.item (.atom name span) visible (rest ++ after)) state with
+          match eraseSubjectWithProof depth env (.item (.atom name span) visible (rest :: after)) state with
           | .error error => .error error
           | .ok head => match eraseSubjectWithProof depth env (.localBody rest slots visible after)
               head.final with
@@ -1650,7 +1652,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                 final := tail.final
                 evidence := .ordinary trivial head.evidence tail.evidence }
         | .primitive name span =>
-          match eraseSubjectWithProof depth env (.item (.primitive name span) visible (rest ++ after)) state with
+          match eraseSubjectWithProof depth env (.item (.primitive name span) visible (rest :: after)) state with
           | .error error => .error error
           | .ok head => match eraseSubjectWithProof depth env (.localBody rest slots visible after)
               head.final with
@@ -1660,7 +1662,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                 final := tail.final
                 evidence := .ordinary trivial head.evidence tail.evidence }
         | .quotation body span =>
-          match eraseSubjectWithProof depth env (.item (.quotation body span) visible (rest ++ after)) state with
+          match eraseSubjectWithProof depth env (.item (.quotation body span) visible (rest :: after)) state with
           | .error error => .error error
           | .ok head => match eraseSubjectWithProof depth env (.localBody rest slots visible after)
               head.final with
@@ -1670,7 +1672,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                 final := tail.final
                 evidence := .ordinary trivial head.evidence tail.evidence }
         | .locals names body span =>
-          match eraseSubjectWithProof depth env (.item (.locals names body span) visible (rest ++ after)) state with
+          match eraseSubjectWithProof depth env (.item (.locals names body span) visible (rest :: after)) state with
           | .error error => .error error
           | .ok head => match eraseSubjectWithProof depth env (.localBody rest slots visible after)
               head.final with
@@ -1686,12 +1688,12 @@ private def eraseItemsWithProof (depth : Nat) (env : EffectEnv) (items : List It
   eraseSubjectWithProof depth env (.items items visible []) state
 
 private def eraseItemWithProof (depth : Nat) (env : EffectEnv) (item : Item)
-    (state : State) (visible : List String) (after : List Item) :
+    (state : State) (visible : List String) (after : List (List Item)) :
     Except ErasureError (ItemRun env item state visible after) :=
   eraseSubjectWithProof depth env (.item item visible after) state
 
 private def eraseLocalBodyWithProof (depth : Nat) (env : EffectEnv) (items : List Item)
-    (state : State) (slots : List Slot) (visible : List String) (after : List Item) :
+    (state : State) (slots : List Slot) (visible : List String) (after : List (List Item)) :
     Except ErasureError (LocalRun env items state slots visible after) :=
   eraseSubjectWithProof depth env (.localBody items slots visible after) state
 
