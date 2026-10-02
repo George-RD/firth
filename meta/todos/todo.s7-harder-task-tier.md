@@ -45,3 +45,17 @@ until the tasks get harder.
   `deepseek-v4.1-flash`; the environment's proxy already injects an
   `OLLAMA_API_KEY` for ollama.com, so it can be reached without new
   credentials. No completion request was sent. Whether to spend that account on it is the maintainer's call.
+
+## Before any scored run (reviewer, #209)
+
+- `eval/s7/context_seen.py` knows only Haiku sample names (`SAMPLE`) and
+  `author [AB]N` labels (`LABEL`), so calibration's cross-author check was
+  a hand search. Extend both to the scored run's names and labels, with a
+  planted Sonnet-named item in its self-test. This is an edit to a run 14
+  file, so it waits until run 14 is done.
+- Calibration authors were shown two project messages as spawn background
+  (George's of 30 September and 2 October), and a session hook's
+  `hook_non_blocking_error` text. Neither names an author, but both are
+  context the prompt does not give. A scored run keeps the messages out
+  (authors started from a session with no queued project messages) or
+  lists them, and the hook text, in its pre-registration.
