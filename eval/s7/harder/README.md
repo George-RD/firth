@@ -38,11 +38,14 @@ refresh the key, ranges next to each other left unmerged, and so on), so a
 pass means more than the visible example.
 
 Each description is meant to state its input bounds, so an author can tell
-whether a quadratic loop fits the step budget. Two do not: `rpn` does not
+whether a quadratic loop fits the step budget. Some do not: `rpn` does not
 bound the number of tokens, nor `tiny-vm` the program's length (only the
-instructions executed). The pool was run as written, so this is recorded
-here rather than edited; the next pool states every bound (1,000,000 steps per run, the MVP
-tier's). Values are `Int`, `Bool`, `Seq Int` and `Seq Bool`, the only ones
+instructions executed), and `merge-ranges` does not bound the endpoints,
+so for one range from the smallest to the largest `Int` the covered count
+is 2^64, which no Firth answer can return (no hidden test comes near it:
+the most any covers is 31). The pool was run as written, so this is
+recorded here rather than edited; the next pool states every bound,
+values included (1,000,000 steps per run, the MVP tier's). Values are `Int`, `Bool`, `Seq Int` and `Seq Bool`, the only ones
 the portable runner passes in and reads back.
 
 ## Files
