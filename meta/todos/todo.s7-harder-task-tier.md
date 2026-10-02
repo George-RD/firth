@@ -17,12 +17,21 @@ until the tasks get harder.
   the planned primary subject is not at the ceiling. The scored tier is
   frozen before any scored trial, and no scored task is run during
   calibration, so tasks are never swapped after a ceiling result.
-- A fixed scored task set, written before any scored trial, where Sonnet
-  does not sit at the ceiling in Python or in Firth. Several tasks at
-  allocator weight.
+- A fixed scored task set, written before any scored trial, where the
+  primary subject does not sit at the ceiling in Python or in Firth. Several
+  tasks at allocator weight. If the frozen set lands at the ceiling anyway,
+  it is kept and its result reported as it stands, not edited or replaced;
+  a further tier would be a new frozen set, reported alongside it.
 - Sonnet 5.5 is the planned primary subject (roadmap, "Subject models");
   the choice is confirmed before the scored tier is frozen. Haiku 4.5 stays
   as a secondary check of how learnable the language is for a small model.
 - A cheap non-Anthropic subject (DeepSeek Flash) is added only if it can be
   reached without new credentials. If it cannot, say so here and leave it
   out.
+
+## Progress
+
+- Calibration pool: `eval/s7/harder/calibration.py`, eight tasks with
+  Python and Firth reference solutions, hidden tests and planted mutants
+  (`eval/s7/harder/test_harder.py`). Protocol and calibration results in
+  `eval/s7/harder/README.md`.

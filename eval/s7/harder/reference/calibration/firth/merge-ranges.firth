@@ -1,0 +1,101 @@
+\ Merge ranges: insertion-sort the ranges by start, then fold them left to
+\ right, extending the last merged range when the next one overlaps or touches.
+\ Sequences are values, so each step builds a new one.
+
+\ The first index from k on whose start in os is greater than s (len if none).
+: count-le
+  (forall ρ; ρ os:Seq Int^many s:Int^many k:Int^many -- ρ r:Int^many)
+  locals { os s k }
+  { k os prim seq-int.len prim <
+    [ os k prim seq-int.at s prim <=
+      [ os s k 1 prim + count-le ]
+      [ k ] if ]
+    [ k ] if };
+
+\ The pair (s, e) appended to the two sequences.
+: push-pair
+  (forall ρ; ρ a:Seq Int^many b:Seq Int^many s:Int^many e:Int^many -- ρ ra:Seq Int^many rb:Seq Int^many)
+  locals { a b s e }
+  { a s prim seq-int.push b e prim seq-int.push };
+
+\ The two sequences, with the pair (s, e) appended when k = p.
+: maybe-new
+  (forall ρ; ρ ns:Seq Int^many ne:Seq Int^many s:Int^many e:Int^many k:Int^many p:Int^many -- ρ rs:Seq Int^many re:Seq Int^many)
+  locals { ns ne s e k p }
+  { k p prim =
+    [ ns ne s e push-pair ]
+    [ ns ne ] if };
+
+\ Copies the sorted pairs from index k on into ns, ne, putting (s, e) in at index p.
+: build-from
+  (forall ρ; ρ os:Seq Int^many oe:Seq Int^many s:Int^many e:Int^many ns:Seq Int^many ne:Seq Int^many k:Int^many p:Int^many -- ρ rs:Seq Int^many re:Seq Int^many)
+  locals { os oe s e ns ne k p }
+  { k os prim seq-int.len prim <
+    [ os oe s e
+      ns ne s e k p maybe-new
+      os k prim seq-int.at oe k prim seq-int.at push-pair
+      k 1 prim + p build-from ]
+    [ ns ne s e k p maybe-new ] if };
+
+\ Insertion-sorts the pairs (starts[i], ends[i]) for i from i on into os, oe.
+: sort-from
+  (forall ρ; ρ starts:Seq Int^many ends:Seq Int^many os:Seq Int^many oe:Seq Int^many i:Int^many -- ρ rs:Seq Int^many re:Seq Int^many)
+  locals { starts ends os oe i }
+  { i starts prim seq-int.len prim <
+    [ starts ends
+      os oe starts i prim seq-int.at ends i prim seq-int.at
+      prim seq-int.empty prim seq-int.empty 0
+      os starts i prim seq-int.at 0 count-le
+      build-from
+      i 1 prim + sort-from ]
+    [ os oe ] if };
+
+\ Extends the last merged range to e, or starts a new one at s, as needed.
+: absorb
+  (forall ρ; ρ ms:Seq Int^many me:Seq Int^many s:Int^many e:Int^many -- ρ rs:Seq Int^many re:Seq Int^many)
+  locals { ms me s e }
+  { me prim seq-int.len 0 prim =
+    [ true ]
+    [ s me me prim seq-int.len 1 prim - prim seq-int.at 1 prim + prim > ] if
+    [ ms me s e push-pair ]
+    [ ms
+      me me prim seq-int.len 1 prim -
+      me me prim seq-int.len 1 prim - prim seq-int.at e max
+      prim seq-int.set ] if };
+
+: max
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b }
+  { a b prim > [ a ] [ b ] if };
+
+\ Folds the sorted pairs from index k on into the merged ranges ms, me.
+: merge-from
+  (forall ρ; ρ ss:Seq Int^many es:Seq Int^many ms:Seq Int^many me:Seq Int^many k:Int^many -- ρ rs:Seq Int^many re:Seq Int^many)
+  locals { ss es ms me k }
+  { k ss prim seq-int.len prim <
+    [ ss es
+      ms me ss k prim seq-int.at es k prim seq-int.at absorb
+      k 1 prim + merge-from ]
+    [ ms me ] if };
+
+\ Total number of whole numbers covered by ranges k on of ms, me.
+: covered-from
+  (forall ρ; ρ ms:Seq Int^many me:Seq Int^many k:Int^many -- ρ r:Int^many)
+  locals { ms me k }
+  { k ms prim seq-int.len prim <
+    [ me k prim seq-int.at ms k prim seq-int.at prim - 1 prim +
+      ms me k 1 prim + covered-from prim + ]
+    [ 0 ] if };
+
+\ The merged ranges with their total coverage.
+: finish
+  (forall ρ; ρ ms:Seq Int^many me:Seq Int^many -- ρ rs:Seq Int^many re:Seq Int^many c:Int^many)
+  locals { ms me }
+  { ms me ms me 0 covered-from };
+
+: main
+  (forall ρ; ρ starts:Seq Int^many ends:Seq Int^many -- ρ merged-starts:Seq Int^many merged-ends:Seq Int^many covered:Int^many)
+  locals { starts ends }
+  { starts ends prim seq-int.empty prim seq-int.empty 0 sort-from
+    prim seq-int.empty prim seq-int.empty 0 merge-from
+    finish };

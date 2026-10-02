@@ -1,0 +1,55 @@
+\ Edit cost by dynamic programming, one row of the table at a time.
+\ prev[j] is the cost of turning xs[0..i) into ys[0..j).
+
+: min2
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ m:Int^many)
+  locals { a b } { a b prim < [ a ] [ b ] if };
+
+\ out gets k*step for k = j .. n.
+: ramp
+  (forall ρ; ρ out:Seq Int^many step:Int^many j:Int^many n:Int^many -- ρ r:Seq Int^many)
+  locals { out step j n }
+  { j n prim <=
+    [ out j step prim * prim seq-int.push step j 1 prim + n ramp ]
+    [ out ] if };
+
+\ Cost of the cell (i, j): cur holds this row so far, prev the row above.
+: cell
+  (forall ρ; ρ prev:Seq Int^many cur:Seq Int^many x:Int^many ys:Seq Int^many ins:Int^many del:Int^many rep:Int^many j:Int^many -- ρ c:Int^many)
+  locals { prev cur x ys ins del rep j }
+  { prev j prim seq-int.at del prim +
+    cur j 1 prim - prim seq-int.at ins prim +
+    min2
+    prev j 1 prim - prim seq-int.at
+    x ys j 1 prim - prim seq-int.at prim = [ 0 ] [ rep ] if prim +
+    min2 };
+
+\ Appends cells j .. len(ys) of the current row.
+: fill-row
+  (forall ρ; ρ prev:Seq Int^many cur:Seq Int^many x:Int^many ys:Seq Int^many ins:Int^many del:Int^many rep:Int^many j:Int^many -- ρ r:Seq Int^many)
+  locals { prev cur x ys ins del rep j }
+  { j ys prim seq-int.len prim <=
+    [ prev
+      cur prev cur x ys ins del rep j cell prim seq-int.push
+      x ys ins del rep j 1 prim + fill-row ]
+    [ cur ] if };
+
+\ Processes xs[i..], returning the last row.
+: rows
+  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many prev:Seq Int^many ins:Int^many del:Int^many rep:Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { xs ys prev ins del rep i }
+  { i xs prim seq-int.len prim <
+    [ xs ys
+      prev
+      prim seq-int.empty i 1 prim + del prim * prim seq-int.push
+      xs i prim seq-int.at ys ins del rep 1 fill-row
+      ins del rep i 1 prim + rows ]
+    [ prev ] if };
+
+: main
+  (forall ρ; ρ xs:Seq Int^many ys:Seq Int^many insert:Int^many delete:Int^many replace:Int^many -- ρ cost:Int^many)
+  locals { xs ys insert delete replace }
+  { xs ys
+    prim seq-int.empty insert 0 ys prim seq-int.len ramp
+    insert delete replace 0 rows
+    ys prim seq-int.len prim seq-int.at };

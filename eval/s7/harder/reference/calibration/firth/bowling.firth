@@ -1,0 +1,31 @@
+\ Ten-pin bowling: running total after each frame.
+
+\ rolls[i + k]
+: at
+  (forall ρ; ρ rolls:Seq Int^many i:Int^many k:Int^many -- ρ r:Int^many)
+  prim + prim seq-int.at;
+
+\ Records the frame's new total t, moves i on by adv, then scores frame n + 1.
+: next
+  (forall ρ; ρ rolls:Seq Int^many i:Int^many out:Seq Int^many n:Int^many t:Int^many adv:Int^many -- ρ r:Seq Int^many)
+  locals { rolls i out n t adv }
+  { rolls i adv prim + out t prim seq-int.push n 1 prim + t score };
+
+\ Scores frame n (0-based) starting at roll i; total is the running total before it.
+: score
+  (forall ρ; ρ rolls:Seq Int^many i:Int^many out:Seq Int^many n:Int^many total:Int^many -- ρ r:Seq Int^many)
+  locals { rolls i out n total }
+  { n 10 prim <
+    [ rolls i 0 at 10 prim =
+      [ rolls i out n
+        total 10 prim + rolls i 1 at prim + rolls i 2 at prim + 1 next ]
+      [ rolls i 0 at rolls i 1 at prim + 10 prim =
+        [ rolls i out n
+          total 10 prim + rolls i 2 at prim + 2 next ]
+        [ rolls i out n
+          total rolls i 0 at prim + rolls i 1 at prim + 2 next ] if ] if ]
+    [ out ] if };
+
+: main
+  (forall ρ; ρ rolls:Seq Int^many -- ρ totals:Seq Int^many)
+  0 prim seq-int.empty 0 0 score;
