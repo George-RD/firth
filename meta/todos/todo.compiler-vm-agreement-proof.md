@@ -82,3 +82,7 @@ bug the two sides share.
   (tested against the semantics in step 2, not proved), and the JSON image
   `Compile.lean` emits. Still to do (step 4): the allocator's record naming
   the VM result, a planted miscompile through the gate, and the trusted list.
+- 2 October 2026, between steps 3 and 4. The compiler now refuses a
+  source-level `push` atom (`todo.compiler-source-push-atoms`), so the
+  `noPushProgram` hypothesis is gone and `compileWords_correct` covers every
+  program `compileWords` accepts.
