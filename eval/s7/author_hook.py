@@ -1,10 +1,22 @@
 #!/usr/bin/env python3
 """S7 run 14's author hook: stop an author's call that is not on its list, before it runs.
 
-A PreToolUse hook in the frontmatter of the S7 author agent definition runs
-this for every tool call an author makes, and for no other agent's:
+The skill `.claude/skills/s7-author-hook` registers a PreToolUse hook that
+runs this for every tool call in the session, the runner's own included:
 
-    python3 eval/s7/author_hook.py --state STATE < hook-input.json
+    python3 eval/s7/author_hook.py --state STATE --only s7-author < hook-input.json
+
+With `--only TYPE` it decides only for calls whose hook input carries
+`agent_type` TYPE (a sub-agent of that type; Claude Code adds `agent_id`
+and `agent_type` to a sub-agent's hook input). Every other call passes
+untouched (exit 0, no output) and is recorded in `seen.jsonl` beside STATE,
+which is how `session.py` checks that the hook is registered before it
+starts an author. A project sub-agent's own frontmatter hooks would be the
+natural place, but Claude Code does not run them in a session that never
+accepts workspace trust, which a cloud session never does
+(`code.claude.com/docs/en/permissions`, "What runs before you trust a
+folder"); a project skill's hooks do run there. Without `--only`, every
+call is decided, as in the self-test's first half.
 
 STATE is a JSON file the driver writes before it starts an author (authors
 run one at a time in a session, so there is one current author):
@@ -27,7 +39,7 @@ mark whatever the cause. Any failure the script can catch, including one
 importing the audit (which imports the harness), denies the same way: the
 hook fails closed. A crash or timeout it cannot catch lets the call run;
 the audit then flags it, so it voids the sample and is reported as a hook
-failure. The agent definition gives the hook an explicit timeout.
+failure. The skill gives the hook an explicit timeout.
 """
 import json
 import sys
@@ -56,13 +68,32 @@ def decide(state: dict, call: dict) -> bool:
                    Path(state["prompt"]), run_dir, int(state["rounds"]), checking)
 
 
+def passed(state_path: Path, call: dict) -> tuple[int, str]:
+    """A call that is not an author's: let it run, and record that the hook saw it."""
+    try:
+        inp = call.get("tool_input") or {}
+        entry = {"at": datetime.now(timezone.utc).isoformat(), "tool_name": call.get("tool_name"),
+                 "agent_type": call.get("agent_type"),
+                 "command": str(inp.get("command"))[:300] if "command" in inp else None}
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(state_path.parent / "seen.jsonl", "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except BaseException:
+        pass  # unrecorded: `session.py` then finds the hook unregistered and stops
+    return 0, ""
+
+
 def main(argv: list[str], stdin: str) -> tuple[int, str]:
     """Returns the exit code and what to print on stderr: (0, "") allows the
     call, (2, REASON) stops it."""
     state, call, ok, why = None, {}, False, None
     try:
-        if argv[:1] != ["--state"] or len(argv) != 2:
-            raise ValueError("usage: author_hook.py --state STATE")
+        if argv[:1] != ["--state"] or len(argv) not in (2, 4) or (len(argv) == 4 and argv[2] != "--only"):
+            raise ValueError("usage: author_hook.py --state STATE [--only AGENT_TYPE]")
+        if len(argv) == 4:
+            call = json.loads(stdin)
+            if call.get("agent_type") != argv[3]:
+                return passed(Path(argv[1]), call)
         state = json.loads(Path(argv[1]).read_text())
         call = json.loads(stdin)
         ok = decide(state, call)
@@ -161,6 +192,51 @@ def self_test() -> None:
         last = json.loads((t / "log.jsonl").read_text().splitlines()[-1])
         assert last["tool_use_id"] == "toolu_p3" and last["decision"] == "deny"
         assert "planted" in last["error"], last
+        # --only s7-author, as the skill runs it: the runner's own calls and
+        # other sub-agents' pass untouched and are recorded in seen.jsonl;
+        # an author's call is decided as above.
+        only = ["--state", str(sf), "--only", "s7-author"]
+        seen = t / "seen.jsonl"
+        for tool, inp, agent, want in [("Glob", {"pattern": "**/*"}, None, (0, "")),
+                                       ("Bash", {"command": "ls /tmp"}, None, (0, "")),
+                                       ("Glob", {"pattern": "*"}, "Explore", (0, "")),
+                                       ("Glob", {"pattern": "*"}, "s7-author", (2, REASON)),
+                                       ("Bash", {"command": check}, "s7-author", (0, ""))]:
+            call = {"tool_name": tool, "tool_input": inp, "tool_use_id": "toolu_o"}
+            if agent:
+                call["agent_type"] = agent
+            assert main(only, json.dumps(call)) == want, ("--only", tool, agent)
+        rows = [json.loads(l) for l in seen.read_text().splitlines()]
+        assert [(r["tool_name"], r["agent_type"], r["command"]) for r in rows] == [
+            ("Glob", None, None), ("Bash", None, "ls /tmp"), ("Glob", "Explore", None)], rows
+        # With no state file, a runner's call still passes; an author's is denied.
+        gone = ["--state", str(t / "later" / "state.json"), "--only", "s7-author"]
+        assert main(gone, json.dumps({"tool_name": "Bash", "tool_input": {"command": "x"}})) == (0, "")
+        assert (t / "later" / "seen.jsonl").is_file()
+        assert main(gone, json.dumps({"tool_name": "Bash", "tool_input": {"command": check},
+                                      "agent_type": "s7-author"})) == (2, REASON)
+        # Planted: a bad option list, and input that cannot be read, deny.
+        assert main(["--state", str(sf), "--only"], json.dumps({"tool_name": "Glob"})) == (2, REASON)
+        assert main(only, "not json") == (2, REASON)
+        # The skill's own command, run by a shell as Claude Code runs it, with
+        # its two paths pointed here: exit 0 for the runner, 2 with the mark
+        # for an author's off-list call, and 1 (a non-blocking error, which
+        # `session.py` catches as an unregistered hook) with no script.
+        import re
+        skill = (HERE.parents[1] / ".claude" / "skills" / "s7-author-hook" / "SKILL.md").read_text()
+        cmd = json.loads(re.search(r'^ +command: (".*")$', skill, re.M).group(1))
+        assert "--only s7-author" in cmd and cmd.count("/home/user/firth-r14/eval/s7/author_hook.py") == 2
+        live = cmd.replace("/home/user/firth-r14/eval/s7/author_hook.py", str(Path(__file__))) \
+                  .replace("/home/user/r14-hook/state.json", str(sf))
+        def shell(c: str, call: dict):
+            return subprocess.run(["sh", "-c", c], input=json.dumps(call), capture_output=True,
+                                  text=True, timeout=60)
+        p = shell(live, {"tool_name": "Bash", "tool_input": {"command": "ls"}})
+        assert (p.returncode, p.stderr) == (0, ""), p
+        p = shell(live, {"tool_name": "Glob", "tool_input": {"pattern": "*"}, "agent_type": "s7-author"})
+        assert (p.returncode, p.stderr.strip()) == (2, REASON), p
+        p = shell(live.replace(str(Path(__file__)), str(t / "missing.py")), {"tool_name": "Glob"})
+        assert p.returncode == 1, p
         from audit_subagent import HOOK_MARK
         assert HOOK_MARK == MARK
         # Exit 2 is the only code that blocks: the expectations above are the
