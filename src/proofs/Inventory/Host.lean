@@ -307,7 +307,7 @@ theorem blockMatch_encodeIds {ids : List String} (h : ∀ s ∈ ids, ValidId s) 
   constructor
   · intro hm
     apply encodeId_inj hsi hsj
-    apply List.ext_getElem? 
+    apply List.ext_getElem?
     intro k
     by_cases hk : k < 4
     · have := hm k hk
