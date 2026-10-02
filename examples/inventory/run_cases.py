@@ -40,9 +40,10 @@ ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-"
 ID_PATTERN = re.compile(r"[A-Za-z0-9_-]{1,32}")
 INT64 = range(-(2**63), 2**63)
 # Worst-case kernel cost for a batch of n requests: 165 to enter and validate
-# an empty batch, at most 202 per request (the partial branch;
-# insufficient-stock is 201), and 163 per pair of requests for the repeated-ID
-# scan (its costliest pair shape). At n = 64 that is 341,701, inside the VM's
+# an empty batch, 202 per request, and 163 per pair of requests for the
+# repeated-ID scan (its costliest pair shape). 202 was the costliest request
+# (the partial branch) when the bound was proved; since #213 the partial
+# branch costs 192 and insufficient-stock 191, so it holds with that slack. At n = 64 that is 341,701, inside the VM's
 # 1,000,000-step fuel cap. It is proved for the reference interpreter
 # (`batchCost` and `allocate_batch_reference` in
 # src/proofs/Inventory/Allocate.lean) and measured by measure_cost.py. Every
