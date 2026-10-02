@@ -115,7 +115,7 @@ TRACE_PREFIX_AGREED = "agreed-prefix"
 BUILD_TIMEOUT_SECONDS = 900
 ADAPTER_TIMEOUT_SECONDS = 60
 
-LEAN_ADAPTERS = ("firthElaborate", "firthCompile", "firthReferenceRun")
+LEAN_ADAPTERS = ("firthElaborate", "firthCompile", "firthReferenceRun", "firthTargetRun")
 # The primitives the portable elaborator, compiler and VM all execute
 # (`surfacePrimitives` in src/interpreter/Firth/Interpreter.lean).
 PORTABLE_PRIMITIVES = ("+", "-", "*", "<", "=", "<=", ">", ">=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-int.set", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "seq-bool.set")
@@ -388,7 +388,7 @@ def run(command: list[str], *, cwd: Path, stdin: str | None, timeout: int) -> st
 
 
 def build_toolchain() -> None:
-    """Builds the four pinned adapters.
+    """Builds the pinned adapters and the Lean target runner.
 
     The gate refuses to run against a stale binary, so this is not optional.
     Both builds are incremental; a warm tree costs seconds.
@@ -807,6 +807,62 @@ def validate_initial_stack(elaboration: dict[str, Any], entry: str,
             fail(f"entry {entry}: initial stack type mismatch; expected {expected}, got {actual}")
 
 
+def _canonical(value: Any) -> str:
+    """Type-exact text of a JSON value, so `False` never equals `0`."""
+    return json.dumps(value, sort_keys=True, separators=(",", ":"))
+
+
+def compare_target_semantics(vm: dict[str, Any], semantics: dict[str, Any], name: str) -> None:
+    """Require the VM and the Lean target semantics to agree exactly.
+
+    `semantics` is the `firthTargetRun` response to the request the VM ran.
+    Compared, in this order, with the first difference named: the status, the
+    stack (bottom to top, value by value), the cost the VM reports (`steps`,
+    `total`, `kernel`), the word-entry charge the VM's report implies
+    (`total - steps`, since every charge is one unit) and the trap code and
+    subcode. The VM's response has no primitive count, so that field of the
+    semantics' split is checked only against its own total. A semantics run
+    that ended `unsupported` never agrees: the semantics gave the program no
+    meaning, which is a gap to report rather than a pass.
+    """
+    label = f"{name} target semantics"
+    if semantics.get("status") == "unsupported":
+        fail(f"{label}: unsupported by the Lean semantics (trap {semantics.get('trap')!r}); "
+             f"the VM reported status {vm.get('status')!r}, so there is no agreement to check")
+    if semantics.get("status") not in ("success", "trap"):
+        fail(f"{label}: status {semantics.get('status')!r} is neither success nor trap")
+    if vm.get("status") != semantics.get("status"):
+        fail(f"{label}: status differs: VM {vm.get('status')!r}, Lean {semantics.get('status')!r}")
+    vm_stack, lean_stack = vm.get("stack"), semantics.get("stack")
+    if not isinstance(vm_stack, list) or not isinstance(lean_stack, list):
+        fail(f"{label}: stack is not an array on both sides")
+    for index in range(max(len(vm_stack), len(lean_stack))):
+        left = _canonical(vm_stack[index]) if index < len(vm_stack) else "<absent>"
+        right = _canonical(lean_stack[index]) if index < len(lean_stack) else "<absent>"
+        if left != right:
+            fail(f"{label}: stack[{index}] (bottom is 0) differs: VM {left}, Lean {right}")
+    vm_cost, lean_cost = vm.get("cost"), semantics.get("cost")
+    if not isinstance(vm_cost, dict) or not isinstance(lean_cost, dict):
+        fail(f"{label}: cost is not an object on both sides")
+    for key in ("steps", "total", "kernel"):
+        left, right = vm_cost.get(key), lean_cost.get(key)
+        if type(left) is not int or type(right) is not int:
+            fail(f"{label}: cost.{key} is not an integer on both sides: VM {left!r}, Lean {right!r}")
+        if left != right:
+            fail(f"{label}: cost.{key} differs: VM {left}, Lean {right}")
+    if lean_cost.get("instructions") != lean_cost["steps"]:
+        fail(f"{label}: Lean cost.instructions {lean_cost.get('instructions')!r} "
+             f"is not its cost.steps {lean_cost['steps']}")
+    if vm_cost["total"] - vm_cost["steps"] != lean_cost.get("word_entries"):
+        fail(f"{label}: cost.word_entries differs: VM implies "
+             f"{vm_cost['total'] - vm_cost['steps']}, Lean {lean_cost.get('word_entries')!r}")
+    if lean_cost.get("primitives") is None or lean_cost["primitives"] > lean_cost["steps"]:
+        fail(f"{label}: Lean cost.primitives {lean_cost.get('primitives')!r} is not within its steps")
+    for key in ("trap", "trap_subcode"):
+        if vm.get(key) != semantics.get(key) or type(vm.get(key)) is not type(semantics.get(key)):
+            fail(f"{label}: {key} differs: VM {vm.get(key)!r}, Lean {semantics.get(key)!r}")
+
+
 def rebuild(entry: dict[str, Any], workspace: Path, *,
             stack: list[Any] | None = None, fuel: int = FUEL,
             expected_trap: str | None = None) -> dict[str, Any]:
@@ -869,24 +925,33 @@ def rebuild(entry: dict[str, Any], workspace: Path, *,
     )
     expect_status(target_program, "success", f"{name} compile")
 
+    vm_request = {
+        "request_id": name,
+        "target_program": target_program["target_program"],
+        "initial_stack": initial_stack,
+        "image": {
+            "image_version": 1,
+            "gamma_version": TARGET_GAMMA_VERSION,
+        },
+        "gamma_version": GAMMA_VERSION,
+        "fuel": fuel,
+    }
     vm = adapter(
         [str(VM_BINARY), "vm-run"],
-        {
-            "request_id": name,
-            "target_program": target_program["target_program"],
-            "initial_stack": initial_stack,
-            "image": {
-                "image_version": 1,
-                "gamma_version": TARGET_GAMMA_VERSION,
-            },
-            "gamma_version": GAMMA_VERSION,
-            "fuel": fuel,
-        },
+        vm_request,
         scratch,
         f"{name} vm-run",
     )
     run_status = "success" if expected_trap is None else "trap"
     expect_status(vm, run_status, f"{name} vm-run")
+
+    semantics = adapter(
+        [str(LEAN_BIN / "firthTargetRun")],
+        vm_request,
+        scratch,
+        f"{name} target-run",
+    )
+    compare_target_semantics(vm, semantics, name)
 
     reference = adapter(
         [str(LEAN_BIN / "firthReferenceRun")],

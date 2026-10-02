@@ -38,6 +38,13 @@ def sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def lean_semantics(target: dict[str, object]) -> dict[str, object]:
+    """What `firthTargetRun` answers when it agrees with the VM response `target`."""
+    cost = dict(target["cost"])
+    return {**target, "cost": {**cost, "instructions": cost["steps"],
+                               "word_entries": cost["total"] - cost["steps"], "primitives": 0}}
+
+
 def contract_tables() -> dict[str, object]:
     """The manifest tables `verify_contract` binds, as the real manifest states them."""
     adapters = {
@@ -468,6 +475,8 @@ class ExecutionWiringTests(unittest.TestCase):
                 return elaboration
             if label.endswith("compile"):
                 return {"status": "success", "target_program": {"entry": "main", "words": [main, helper]}}
+            if label.endswith("target-run"):
+                return lean_semantics(target)
             return reference if label.endswith("reference-run") else target
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -533,6 +542,8 @@ class ExecutionWiringTests(unittest.TestCase):
                 return elaboration
             if label.endswith("compile"):
                 return {"status": "success", "target_program": {"entry": "main", "words": [main]}}
+            if label.endswith("target-run"):
+                return lean_semantics(target)
             return reference if label.endswith("reference-run") else target
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
