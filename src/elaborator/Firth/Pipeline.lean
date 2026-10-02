@@ -674,39 +674,41 @@ private def unpushedEdit (config : PipelineConfig) (source : String) (word : Wor
     replacement (prefix_.utf8ByteSize + 1)).map ({ · with pushedLocals := names })
   -- Where those locals are written just after the operation, in that
   -- order, as in `pos 1 prim + insert-sorted value`, the author may have
-  -- meant them for it: written once more, the ones after it are left
-  -- over. The edit that moves them into place is weighed against writing
-  -- them again: `5 g m prim +` may mean `m` for `+`.
+  -- meant them for it: written once more, the ones after it are left over.
+  -- Or one may be meant for what follows: `5 g m prim +` may mean `m` for
+  -- `+`. So each of them is either moved into place or written again.
   let after := ((itemsAfter account.span word.body).getD []).take names.length
   let spans := after.filterMap fun
     | .word _ at_ => some at_
     | _ => none
-  let trailing := !names.isEmpty && spans.length == names.length && (after.zip names).all fun
-    | (.word name _, wanted) => name == wanted
-    | _ => false
-  if !trailing then added else
-  let moved := do
-    let last ← spans.getLast?
-    -- Only the locals are written there: a comment between would be lost.
-    if collapseSpace (bytesText source account.span.stop.offset last.stop.offset) != " ".intercalate names then none
-    checkCallEdit config source word start last.stop.offset replacement (prefix_.utf8ByteSize + 1)
-  -- The move is stated when checking gets further than with the locals
-  -- written again: to a later stage, or in the same stage further in the
-  -- source as written. A later stage counts first, since where one stage
-  -- stops in the source says nothing about where another would. When both
-  -- stop at the same place, nothing tells them apart, so neither is stated.
-  let move (edit : CallEdit) : Option CallEdit := some { edit with pushedLocals := names, moved := true }
-  match moved, added with
-  | none, _ => added
-  | some edit, none => move edit
-  | some edit, some again =>
-      match edit.reached, again.reached with
-      | none, _ => move edit
-      | some _, none => added
-      | some movedTo, some addedTo =>
-          if movedTo.1 != addedTo.1 then (if movedTo.1 > addedTo.1 then move edit else added)
-          else if movedTo.2 != addedTo.2 then (if movedTo.2 > addedTo.2 then move edit else added)
-          else none
+  if names.isEmpty || spans.length != names.length then added else
+  let stop := ((spans.getLast?).map (·.stop.offset)).getD account.span.stop.offset
+  -- Only those locals are written there, in that order: another word would
+  -- be dropped, and so would a comment between.
+  if collapseSpace (bytesText source account.span.stop.offset stop) != " ".intercalate names then added else
+  -- Every choice is checked, for up to four locals, and one is stated only
+  -- when checking gets further with it than with every other: to a later
+  -- stage, or in the same stage further in the source as written. A later
+  -- stage counts first, since where one stage stops in the source says
+  -- nothing about where another would. When the furthest is shared, nothing
+  -- tells the choices apart, so none is stated.
+  if names.length > 4 then none else
+  let moves := (List.range (2 ^ names.length - 1)).filterMap fun index =>
+    let mask := index + 1
+    let movedLocals := (names.zipIdx.filter fun (_, at_) => (mask >>> at_) % 2 == 1).map (·.1)
+    let kept := (names.zipIdx.filter fun (_, at_) => (mask >>> at_) % 2 == 0).map (·.1)
+    (checkCallEdit config source word start stop (replacement ++ String.join (kept.map (" " ++ ·)))
+      (prefix_.utf8ByteSize + 1)).map ({ · with pushedLocals := names, movedLocals })
+  let choices := added.toList ++ moves
+  let rank (edit : CallEdit) : Nat × Nat := match edit.reached with
+    | none => (100, 0)
+    | some reached => reached
+  let further (x y : Nat × Nat) : Bool := x.1 > y.1 || x.1 == y.1 && x.2 > y.2
+  let best := choices.foldl (fun best edit => match best with
+    | none => some edit
+    | some other => if further (rank edit) (rank other) then some edit else best) none
+  best.bind fun edit =>
+    if (choices.filter fun other => rank other == rank edit).length == 1 then some edit else none
 
 /-- The edit for an operation handed fewer values than it takes: the values
 written after it moved before it (`shortEdit`), or else the locals of the

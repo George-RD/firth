@@ -1105,6 +1105,22 @@ private def runCallAccountTests : IO Unit := do
     ": g (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) drop ;\n: f (forall ρ; ρ n:Int^many b:Bool^many -- ρ r:Int^many) locals { n b } { true g n prim + b 1 prim + drop } ;\n"
     ["by writing the local of that name, `n`: write `n true g` in place of `true g` on line 2. With that edit, the next error in `f` is at line 2"]
     ["by moving"]
+  -- Each local after the call is moved or written again on its own. Here
+  -- `a` is for the `prim not` after the call and `b` for `g`: moving both
+  -- gets further than writing both, to the second `prim not`, but the edit
+  -- that moves `b` alone checks (Codex on #208). not true is false.
+  unpushedCase "locals after the call, one moved and one written" ": g (forall ρ; ρ a:Bool^many p:Int^many b:Int^many -- ρ r:Bool^many) drop drop ;\n: f (forall ρ; ρ a:Bool^many b:Int^many -- ρ r:Bool^many) locals { a b } { 5 g a b prim not drop prim not } ;\n"
+    ["by writing the local `a` and moving the local `b`, written after `g`, into its place before it: write `a 5 b g a` in place of `5 g a b` on line 2. With that edit `f` checks."]
+    ["by moving the locals"]
+    "f" [.bool true, .int 3] [.bool false]
+  -- Planted: past four locals after the call, the choices are not all
+  -- checked, so no edit is stated, though moving all five would check.
+  -- They go below the value present, so they are not the values the call
+  -- is short of at its top, which `shortEdit` moves.
+  let _ ← callReport "five locals after the call" "firth.type.stack-underflow"
+    ": g (forall ρ; ρ a:Int^many b:Int^many c:Int^many d:Int^many e:Int^many p:Bool^many -- ρ r:Int^many) drop prim + prim + prim + prim + ;\n: f (forall ρ; ρ a:Int^many b:Int^many c:Int^many d:Int^many e:Int^many -- ρ r:Int^many) locals { a b c d e } { true g a b c d e } ;\n"
+    ["`g` in `f` takes 6 values"]
+    ["in place of"]
   -- Planted: a comment between the call and the local is not moved over,
   -- so it is not lost; the local is written again (cubic on #208).
   let _ ← callReport "a local after the call, past a comment" "firth.type.stack-underflow"
