@@ -4,8 +4,9 @@
 in Firth: the value and count bounds, repeated IDs, and the ordered
 partial or all-or-nothing allocation with its reasons. `run_cases.py` is the
 host. It does only what the spec's host/Firth split gives the host: JSON
-shape, types, ID syntax, integers a 64-bit host cannot hold, encoding each ID
-as four Ints, and turning the result codes back into JSON.
+shape, types, ID syntax and integers a 64-bit host cannot hold. Encoding each
+ID as four Ints and turning the result codes back into an answer are proved
+Lean definitions that it runs through `lake exe inventoryHost` (see below).
 
 ```sh
 python3 examples/inventory/run_cases.py          # the 53 fixed cases
@@ -67,7 +68,19 @@ recorded as toolchain evidence (`src/proofs/records.json`) bound to the body
 digests of `allocate-batch` and every word it calls, so all ten words are
 reported `contract_verified`, and a change to any of them withdraws it.
 Agreement of the VM with the reference interpreter rests on differential
-testing, and the Python host is tested, not proved.
+testing.
+
+The host's ID encoding and its answer are proved as well
+(`src/proofs/Inventory/Host.lean`): the encoding is injective on the spec's ID
+syntax, so the duplicate-ID result means two equal ID strings, and every
+allocation and reason is attached to its own request's ID in request order.
+`run_cases.py` runs those Lean definitions through `lake exe inventoryHost`;
+`check_host.py` checks that executable against values written by hand. Python
+keeps the JSON shape, type, ID-syntax and i64 checks the spec gives the host,
+which are tested by the corpus and by planted bugs
+(`tools/loop/test_inventory_host.py`), not proved. JSON parsing and printing
+(Python's on the way in, Lean's inside `inventoryHost`) and the transport
+between them are tested, not proved, too.
 
 ## Changing the policy
 

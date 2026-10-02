@@ -20,7 +20,8 @@ Every fact is proved under `int64Gamma`, where `+`, `-` and `*` fault outside
 i64 as the VM's do, so the scan never overflows on such input; `Runs.of_int64`
 gives the same facts under the reference registry. The remaining gaps are the
 ones every such proof states: VM agreement with the reference interpreter rests
-on differential testing, and the host's ID encoding is tested, not proved.
+on differential testing. `Host.lean` proves the host's ID encoding injective, so
+equal blocks there are equal ID strings.
 -/
 
 namespace Firth.Proofs.Inventory.DupScan
