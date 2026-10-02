@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -327,6 +328,24 @@ def sandbox_scan() -> None:
             p.mkdir()
             plant(p)
             check(bool(tier.tier_copies((str(p),))), f"the sandbox scan finds a planted copy ({what})")
+
+    # The scan is wired in: scoring Python calls it before running any answer
+    # (the planted copies above test the scan itself, not that score uses it).
+    class Scanned(Exception):
+        pass
+
+    def scanned() -> None:
+        raise Scanned
+    saved = (os.geteuid, harness.sandbox_preflight, tier.check_sandbox_sources)
+    os.geteuid, harness.sandbox_preflight, tier.check_sandbox_sources = (lambda: 0), (lambda: None), scanned
+    try:
+        tier.score({}, "python", [])
+        wired = False
+    except Scanned:
+        wired = True
+    finally:
+        os.geteuid, harness.sandbox_preflight, tier.check_sandbox_sources = saved
+    check(wired, "scoring Python runs the sandbox scan before any answer")
 
 
 def main() -> int:

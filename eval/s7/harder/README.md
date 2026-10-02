@@ -98,7 +98,8 @@ Written before any calibration author started.
   sub-agent. The model id each transcript records is reported.
 - Three authors per language (Firth, Python), each answering all eight
   tasks, run one at a time with no other agent running in this session, so
-  no author's context can name another.
+  no author's context can name another. (Serial order alone does not
+  ensure that; the scan reported under the results checks it.)
 - Reported per language: tasks passed in round 1 and in round 2, per author
   and in total, and which tasks failed and why.
 - What it is for: deciding how hard the scored tier must be. The scored tier
@@ -120,6 +121,20 @@ answers, the feedback it was shown, the scored results (with the runner's
 measured `kernel_cost` and `vm_cost` for every Firth case) and the trimmed
 transcript. Authors 1 to 5 were scored at `ecfada9`; Firth 3 at `6b43d6d`,
 which adds only a todo file.
+
+Serial order alone does not keep authors apart: run 13's void came from
+context the harness put into an author's log (compaction summaries,
+`task_status` naming another author), not from authors overlapping. So
+each author's raw log was scanned for what it was shown without asking:
+`eval/s7/context_seen.py LOG` (each author's `context-seen.json`, run
+without `--sample`, whose pattern knows only Haiku sample names), and a
+search of the whole raw log for the other five authors' directory names
+and agent ids, `task_status`, task notifications and compaction. No log
+has a compaction, a `task_status` or a notification, and none names
+another author. Every author was shown the same injected items: the
+session's system prompt, tool list and reminders, and George's two
+project messages that the thread was started with (on Sonnet as the
+subject and on idle threads), which name no author.
 
 | | round 1 | within two rounds |
 | --- | --- | --- |
