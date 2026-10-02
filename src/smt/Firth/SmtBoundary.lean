@@ -204,17 +204,17 @@ structure SmtProofBindings where
 
 def defaultSmtProofBindings : SmtProofBindings :=
   { translationRuleHashes :=
-      ["sha256:cedc42b5a03ea80f9a392233d914ee49fb0f16db6128b3d82d18dbc1f4adedc0",
-       "sha256:044f88984c04850de61f152d7a2cea583d44198323c7209d94b9ff0e71856b47",
-       "sha256:e1a94da952de85b9ff54ab9d15d09ba549c28df3eb296de5d9aeaf8ed2d643dc",
-       "sha256:adc0f7113f0298568fbac3a3792b8fbdf2498c47ac4a2ced683a1f88c4e3fdcd"]
+      ["sha256:bc87a5f69eea7afcbcd1c4f5d7ffbf92d3f7ba35b4a689010e45e4850fd944ab",
+       "sha256:c09447ba58d29a3329cbaeff5083be898ddb150e6b9dc9c666724d0a1710d761",
+       "sha256:90f5713a0c82654072023894ce323ec57efda8ba82ae085f2b8338d23d26049e",
+       "sha256:bbdc66dc95f5d6a97cd9855e2b50930c99912698215a1e1e17460f7b511f4ed7"]
     translationSoundnessProofHashes :=
-      ["sha256:3f9eb0912d187fb042f1a46d70b77a561c12db7af08a64a13aa688e0b7e06689",
-       "sha256:8a16d7ca93aaa1bfaff4f218b1c7d9c34f9a486f13007631d38365ba741fe365",
-       "sha256:dd9336ad69cc957dd0b52991e8c2b6cbb32fa638054b6b8846ca463f6f4228d3",
-       "sha256:82d38319d29a0a985dd4320662f2c19fb5a4b2aa6002c25e212981d50d9a75ef",
-       "sha256:61f889a89df267b78e19f896ac47e9008dfcf0aeab4985b2aaf231b47aad0eae",
-       "sha256:a3d8483c5961e5397221f137fc9e86a0d8bc5e9624b18493272e447b4d102704"] }
+      ["sha256:5d7ecf299a5b97a3acd01211c81d6dc730a15cf3494b07b66e3404f053e7cc6b",
+       "sha256:5593a5121311132d203ce4ed8fff319774b7c333131067a8223b4be1a384ec22",
+       "sha256:2cde11f49e952cbdd81775c2b77a9ec6dc6716e8e99894dd5ce61116a4848feb",
+       "sha256:ab506f1cef3470ed9475e4ebf02ae20d9efb607469740772ce5be8e5d09d2c77",
+       "sha256:164bd455fe823c2e8ab291f7d692f856f310f416b41564a1c86a151d08165131",
+       "sha256:143597bd32d2a13c08ec0e55c310140e22e0c0c8f454e0b4de216c90604e3eaa"] }
 
 def validSmtProofBindings (bindings : SmtProofBindings) : Bool :=
   bindings == defaultSmtProofBindings
