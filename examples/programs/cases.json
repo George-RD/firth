@@ -152,6 +152,7 @@
     {"source": "nested-loop.firth", "entry": "count", "stack": [300, 0], "expect": [300]},
     {"source": "nested-loop.firth", "entry": "count", "stack": [3000, 7], "expect": [3007]},
     {"source": "nested-loop.firth", "entry": "add-twice", "stack": [2, 3], "expect": [8]},
-    {"source": "nested-loop.firth", "entry": "shadowed", "stack": [2, 3], "expect": [15]}
+    {"source": "nested-loop.firth", "entry": "shadowed", "stack": [2, 3], "expect": [15]},
+    {"source": "nested-loop.firth", "entry": "rebound", "stack": [2, 3], "expect": [6]}
   ]
 }

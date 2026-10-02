@@ -550,8 +550,12 @@ private def erasureDiagnostic (word : String) : Firth.Elaborator.ErasureError â†
       { code := "firth.elaboration.unsupported-capture", cause := "elaboration", params := namedParams name, span }
   | .missingStackValue span =>
       { code := "firth.type.stack-underflow", cause := "type-checking", params := .mkObj [], span }
-  | .linearCopy name span =>
-      { code := "firth.linearity.copy", cause := "linearity", params := namedParams name, span }
+  | .linearCopy name span first =>
+      let params := match first with
+        | some first => .mkObj [("name", .str name), ("first_line", .num first.start.line),
+            ("first_column", .num first.start.column)]
+        | none => namedParams name
+      { code := "firth.linearity.copy", cause := "linearity", params, span }
   | .linearUnused name span =>
       { code := "firth.linearity.unconsumed-resource", cause := "linearity", params := namedParams name, span }
   | .unresolvedEffect name span =>
@@ -621,7 +625,11 @@ private def erasureExplanation (code name : String) (params : Json) : String Ã— 
   | "firth.name.unresolved-effect" =>
       (s!"`prim {name}` is not a primitive.", availablePrimitives)
   | "firth.linearity.copy" =>
-      (s!"The linear local `{name}` is used more than once.", "A linear value must be used exactly once.")
+      let first := match (params.getObjValAs? Nat "first_line").toOption,
+          (params.getObjValAs? Nat "first_column").toOption with
+        | some line, some column => s!": first at line {line}, column {column}, and again here"
+        | _, _ => ""
+      (s!"The linear local `{name}` is used more than once{first}.", "A linear value must be used exactly once.")
   | "firth.linearity.unconsumed-resource" =>
       (s!"The linear local `{name}` is never used.", "A linear value must be used exactly once.")
   | _ => ("", "")
