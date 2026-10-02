@@ -28,7 +28,10 @@ The kernel cost spent before a fault is not related.
 
 The hypotheses are that the interpreter's dictionary gives each source word
 its checked body, and that no body holds the runtime-only `push` atom, which
-the elaborator never writes. Typing is not assumed.
+the elaborator never writes. The compiler does accept a hand-made request with
+one, and charges a unit the interpreter does not, so the theorem does not
+cover those requests (`todo.compiler-source-push-atoms`). Typing is not
+assumed.
 
 What this does not cover: the cost of a run that faults; the target's total cost adds a word-entry charge
 the interpreter has no counterpart for, so only the kernel cost is related;
