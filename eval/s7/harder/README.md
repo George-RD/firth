@@ -310,9 +310,11 @@ The failures:
   (open when this was written). Whether this answer passes with the fix
   was not checked.
 
-No author failed `order-book`, including its hidden test that cancels the
-cancel's own operation and a later one, which the description's "earlier
-operation" does not allow (review of #214).
+No author failed `order-book` or `heap-alloc`, including their hidden
+tests whose cancel or free names the operation itself or a later one. The
+descriptions' "earlier operation" does not allow those, though their stated
+ranges and "otherwise nothing changes" do (review of #214). A later pool
+states the range without "earlier".
 
 ### What this says about the scored tier
 
