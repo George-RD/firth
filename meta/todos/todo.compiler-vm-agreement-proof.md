@@ -57,3 +57,25 @@ bug the two sides share.
   not compared. Still to do: the simulation theorem (step 3) and the
   allocator record, planted miscompile and named trusted list (step 4), which
   must also name the JSON emitter, the Rust decoder and `canonicalCode`.
+- 2 October 2026, step 3 of 4. `src/compiler/Firth/LoweringSimulation.lean`
+  proves that the target semantics simulates the reference interpreter on
+  lowered code. `compileWords_correct`: for each word `compileWords` compiles,
+  a target run that halts matches an interpreter run of the word's body from
+  the related stack to a related stack, with the target's kernel cost equal
+  to the interpreter's cost; and an interpreter run that ends in `N` steps
+  makes the target, given `N` fuel, halt with a related stack and the same
+  kernel cost. The stated exceptions are the target's 256-frame call-depth
+  bound and `seq-int.len`/`seq-bool.len` of a sequence of 2^63 or more
+  elements (the interpreter returns the length, the target faults).
+  `execute_of_stuck` and `execute_trapped` relate faults the same way.
+  Hypotheses: the interpreter's dictionary gives each word its checked body,
+  and no body holds the runtime-only `push` atom. Typing is not assumed.
+  `LoweringPrimitives.lean` proves the 23 surface primitives agree.
+  `LoweringSimulationMutants.lean` plants two miscompiled images of `1 +`
+  (`1 -` and `2 +`) and proves each fails `ImageRel` because of the theorem;
+  changing a lowering rule in `Lowering.lean` (tried locally: `swap` lowered
+  to three `SWAP`s) breaks `lowerProgram_rel`'s build. Not covered: the
+  target's word-entry charge (only kernel cost is related), the VM itself
+  (tested against the semantics in step 2, not proved), and the JSON image
+  `Compile.lean` emits. Still to do (step 4): the allocator's record naming
+  the VM result, a planted miscompile through the gate, and the trusted list.

@@ -149,43 +149,80 @@ def elementAt {α : Type} (values : List α) (index : Int) : Option α :=
 def replaceAt {α : Type} (values : List α) (index : Int) (value : α) : Option (List α) :=
   if index < 0 || values.length ≤ index.toNat then none else some (values.set index.toNat value)
 
+/-! Each primitive reads its operands, top first, with one of these shapes;
+anything else is a primitive fault. -/
+
+def intOp (f : Int → Int → List Value → Option (List Value)) : List Value → Option (List Value)
+  | .int right :: .int left :: rest => f left right rest
+  | _ => none
+
+def boolOp (f : Bool → Bool → List Value → Option (List Value)) : List Value → Option (List Value)
+  | .bool right :: .bool left :: rest => f left right rest
+  | _ => none
+
+def boolOp1 (f : Bool → List Value → Option (List Value)) : List Value → Option (List Value)
+  | .bool value :: rest => f value rest
+  | _ => none
+
+def seqOp (f : ByteArray → List Value → Option (List Value)) : List Value → Option (List Value)
+  | .primitiveValue _ bytes :: rest => f bytes rest
+  | _ => none
+
+def seqIntOp (f : ByteArray → Int → List Value → Option (List Value)) :
+    List Value → Option (List Value)
+  | .int value :: .primitiveValue _ bytes :: rest => f bytes value rest
+  | _ => none
+
+def seqBoolOp (f : ByteArray → Bool → List Value → Option (List Value)) :
+    List Value → Option (List Value)
+  | .bool value :: .primitiveValue _ bytes :: rest => f bytes value rest
+  | _ => none
+
+def seqSetIntOp (f : ByteArray → Int → Int → List Value → Option (List Value)) :
+    List Value → Option (List Value)
+  | .int value :: .int index :: .primitiveValue _ bytes :: rest => f bytes index value rest
+  | _ => none
+
+def seqSetBoolOp (f : ByteArray → Int → Bool → List Value → Option (List Value)) :
+    List Value → Option (List Value)
+  | .bool value :: .int index :: .primitiveValue _ bytes :: rest => f bytes index value rest
+  | _ => none
+
 /-- One primitive's transition on an already validated stack, or `none` for a
 primitive fault. -/
 def primitiveDelta : String → List Value → Option (List Value)
-  | "addInt", .int right :: .int left :: rest => int64Result (left + right) rest
-  | "subInt", .int right :: .int left :: rest => int64Result (left - right) rest
-  | "mulInt", .int right :: .int left :: rest => int64Result (left * right) rest
-  | "divInt", .int right :: .int left :: rest =>
+  | "addInt" => intOp fun left right rest => int64Result (left + right) rest
+  | "subInt" => intOp fun left right rest => int64Result (left - right) rest
+  | "mulInt" => intOp fun left right rest => int64Result (left * right) rest
+  | "divInt" => intOp fun left right rest =>
       if right = 0 then none else int64Result (left / right) rest
-  | "modInt", .int right :: .int left :: rest =>
+  | "modInt" => intOp fun left right rest =>
       if right = 0 then none else int64Result (left % right) rest
-  | "ltInt", .int right :: .int left :: rest => some (.bool (decide (left < right)) :: rest)
-  | "eqInt", .int right :: .int left :: rest => some (.bool (decide (left = right)) :: rest)
-  | "leInt", .int right :: .int left :: rest => some (.bool (decide (left ≤ right)) :: rest)
-  | "gtInt", .int right :: .int left :: rest => some (.bool (decide (right < left)) :: rest)
-  | "geInt", .int right :: .int left :: rest => some (.bool (decide (right ≤ left)) :: rest)
-  | "andBool", .bool right :: .bool left :: rest => some (.bool (left && right) :: rest)
-  | "orBool", .bool right :: .bool left :: rest => some (.bool (left || right) :: rest)
-  | "notBool", .bool value :: rest => some (.bool (!value) :: rest)
-  | "intSeqEmpty", rest => some (intSeqValue [] :: rest)
-  | "intSeqLen", .primitiveValue _ bytes :: rest =>
-      int64Result (decodeSeqInt bytes).length rest
-  | "intSeqAt", .int index :: .primitiveValue _ bytes :: rest =>
+  | "ltInt" => intOp fun left right rest => some (.bool (decide (left < right)) :: rest)
+  | "eqInt" => intOp fun left right rest => some (.bool (decide (left = right)) :: rest)
+  | "leInt" => intOp fun left right rest => some (.bool (decide (left ≤ right)) :: rest)
+  | "gtInt" => intOp fun left right rest => some (.bool (decide (right < left)) :: rest)
+  | "geInt" => intOp fun left right rest => some (.bool (decide (right ≤ left)) :: rest)
+  | "andBool" => boolOp fun left right rest => some (.bool (left && right) :: rest)
+  | "orBool" => boolOp fun left right rest => some (.bool (left || right) :: rest)
+  | "notBool" => boolOp1 fun value rest => some (.bool (!value) :: rest)
+  | "intSeqEmpty" => fun rest => some (intSeqValue [] :: rest)
+  | "intSeqLen" => seqOp fun bytes rest => int64Result (decodeSeqInt bytes).length rest
+  | "intSeqAt" => seqIntOp fun bytes index rest =>
       (elementAt (decodeSeqInt bytes) index).map fun value => .int value :: rest
-  | "intSeqPush", .int value :: .primitiveValue _ bytes :: rest =>
+  | "intSeqPush" => seqIntOp fun bytes value rest =>
       some (intSeqValue (decodeSeqInt bytes ++ [value]) :: rest)
-  | "intSeqSet", .int value :: .int index :: .primitiveValue _ bytes :: rest =>
+  | "intSeqSet" => seqSetIntOp fun bytes index value rest =>
       (replaceAt (decodeSeqInt bytes) index value).map fun values => intSeqValue values :: rest
-  | "boolSeqEmpty", rest => some (boolSeqValue [] :: rest)
-  | "boolSeqLen", .primitiveValue _ bytes :: rest =>
-      int64Result (decodeSeqBool bytes).length rest
-  | "boolSeqAt", .int index :: .primitiveValue _ bytes :: rest =>
+  | "boolSeqEmpty" => fun rest => some (boolSeqValue [] :: rest)
+  | "boolSeqLen" => seqOp fun bytes rest => int64Result (decodeSeqBool bytes).length rest
+  | "boolSeqAt" => seqIntOp fun bytes index rest =>
       (elementAt (decodeSeqBool bytes) index).map fun value => .bool value :: rest
-  | "boolSeqPush", .bool value :: .primitiveValue _ bytes :: rest =>
+  | "boolSeqPush" => seqBoolOp fun bytes value rest =>
       some (boolSeqValue (decodeSeqBool bytes ++ [value]) :: rest)
-  | "boolSeqSet", .bool value :: .int index :: .primitiveValue _ bytes :: rest =>
+  | "boolSeqSet" => seqSetBoolOp fun bytes index value rest =>
       (replaceAt (decodeSeqBool bytes) index value).map fun values => boolSeqValue values :: rest
-  | _, _ => none
+  | _ => fun _ => none
 
 /-- The operand kinds of each registry primitive, bottom-first. -/
 def primitiveInputs : String → Option (List Kind)
