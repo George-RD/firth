@@ -232,9 +232,9 @@ whether a cell with an out-of-range reference follows its other
 references); both were reworded before any author saw the pool, and each
 reading now has a hidden test and a hand value. On the example and hidden
 tests the Firth references use at most 70,071 kernel steps on a case
-(`elevator`); on the largest inputs the descriptions allow, the workers
-who wrote them measured at most 156,505 (`elevator` again), within a
-quarter of the budget.
+(`elevator`). The workers who wrote them also reported a figure for the
+largest inputs the descriptions allow, but kept neither those inputs nor
+the output, so it is not claimed here.
 
 ### Calibration plan
 
