@@ -1,0 +1,194 @@
+\ Spreadsheet. Every cell is evaluated once, depth first, with a status per
+\ cell: 0 not yet reached, 4 being evaluated, 1 ok, 2 error, 3 error because
+\ the cell is on a cycle or leads to one. A cell that refers to a cell still
+\ being evaluated has found a cycle (that cell is on it), and every cell
+\ above it on the depth-first path leads to one, so a child status of 3 or 4
+\ means "leads to a cycle", and so does a cell on a cycle itself. Only that
+\ spreads through kind 5 cells; other errors do not.
+
+: max2
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b } { a b prim > [ a ] [ b ] if };
+
+: min2
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b } { a b prim < [ a ] [ b ] if };
+
+\ True when 0 <= t < n.
+: inr
+  (forall ρ; ρ t:Int^many n:Int^many -- ρ r:Bool^many)
+  locals { t n } { t 0 prim >= t n prim < prim and };
+
+\ A sequence of n zeros (out holds the zeros so far).
+: zeros
+  (forall ρ; ρ n:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { n out }
+  { out prim seq-int.len n prim <
+    [ n out 0 prim seq-int.push zeros ]
+    [ out ] if };
+
+\ Cell u's references as the range lo..hi, clipped to 0..n-1 (empty is 1 0).
+\ w = 0 is the first range, w = 1 the second (only kinds 1 to 3 have two).
+: rng-raw
+  (forall ρ; ρ kinds:Seq Int^many xs:Seq Int^many ys:Seq Int^many n:Int^many u:Int^many w:Int^many -- ρ lo:Int^many hi:Int^many)
+  locals { kinds xs ys n u w }
+  { kinds u prim seq-int.at
+    locals { k }
+    { k 0 prim =
+      [ 1 0 ]
+      [ k 3 prim <=
+        [ w 0 prim = [ xs u prim seq-int.at ] [ ys u prim seq-int.at ] if
+          locals { t }
+          { t n inr [ t t ] [ 1 0 ] if } ]
+        [ w 0 prim =
+          [ xs u prim seq-int.at 0 max2  ys u prim seq-int.at n 1 prim - min2 ]
+          [ 1 0 ] if ] if ] if } };
+
+\ As rng-raw, but a bad cell follows none of its references.
+: rng
+  (forall ρ; ρ kinds:Seq Int^many xs:Seq Int^many ys:Seq Int^many n:Int^many u:Int^many w:Int^many -- ρ lo:Int^many hi:Int^many)
+  locals { kinds xs ys n u w }
+  { kinds xs ys n u bad? [ 1 0 ] [ kinds xs ys n u w rng-raw ] if };
+
+\ True when cell u refers outside the sheet, or (kinds 4, 5) has a > b.
+: bad?
+  (forall ρ; ρ kinds:Seq Int^many xs:Seq Int^many ys:Seq Int^many n:Int^many u:Int^many -- ρ r:Bool^many)
+  locals { kinds xs ys n u }
+  { kinds u prim seq-int.at
+    locals { k }
+    { k 0 prim =
+      [ false ]
+      [ k 3 prim <=
+        [ xs u prim seq-int.at n inr prim not
+          ys u prim seq-int.at n inr prim not prim or ]
+        [ xs u prim seq-int.at ys u prim seq-int.at prim >
+          xs u prim seq-int.at 0 prim < prim or
+          ys u prim seq-int.at n prim >= prim or ] if ] if } };
+
+\ Rounds toward zero (b is not 0).
+: tdiv
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b }
+  { a 0 prim < [ 0 a prim - ] [ a ] if
+    b 0 prim < [ 0 b prim - ] [ b ] if prim div
+    locals { q }
+    { a 0 prim < b 0 prim < prim not prim and
+      a 0 prim < prim not b 0 prim < prim and prim or
+      [ 0 q prim - ] [ q ] if } };
+
+\ The largest status among cells lo..hi, at least w.
+: worst
+  (forall ρ; ρ stat:Seq Int^many lo:Int^many hi:Int^many w:Int^many -- ρ r:Int^many)
+  locals { stat lo hi w }
+  { lo hi prim >
+    [ w ]
+    [ stat lo 1 prim + hi stat lo prim seq-int.at w max2 worst ] if };
+
+\ Largest of vals[lo..hi] and cur.
+: range-max
+  (forall ρ; ρ vals:Seq Int^many lo:Int^many hi:Int^many cur:Int^many -- ρ r:Int^many)
+  locals { vals lo hi cur }
+  { lo hi prim >
+    [ cur ]
+    [ vals lo 1 prim + hi cur vals lo prim seq-int.at max2 range-max ] if };
+
+\ Adds the number of cells in lo..hi with status 1 and a value above 0.
+: range-count
+  (forall ρ; ρ vals:Seq Int^many stat:Seq Int^many lo:Int^many hi:Int^many cnt:Int^many -- ρ r:Int^many)
+  locals { vals stat lo hi cnt }
+  { lo hi prim >
+    [ cnt ]
+    [ vals stat lo 1 prim + hi
+      cnt
+      stat lo prim seq-int.at 1 prim = vals lo prim seq-int.at 0 prim > prim and
+      [ 1 prim + ] [ ] if
+      range-count ] if };
+
+\ Value and error flag of a cell that is not bad and does not lead to a
+\ cycle; w is the largest status among the cells it refers to.
+: calc
+  (forall ρ; ρ kinds:Seq Int^many xs:Seq Int^many ys:Seq Int^many vals:Seq Int^many stat:Seq Int^many i:Int^many w:Int^many -- ρ v:Int^many err:Bool^many)
+  locals { kinds xs ys vals stat i w }
+  { kinds i prim seq-int.at xs i prim seq-int.at ys i prim seq-int.at
+    locals { k a b }
+    { k 0 prim =
+      [ a false ]
+      [ k 1 prim =
+        [ vals a prim seq-int.at vals b prim seq-int.at prim + w 2 prim >= ]
+        [ k 2 prim =
+          [ vals a prim seq-int.at vals b prim seq-int.at prim - w 2 prim >= ]
+          [ k 3 prim =
+            [ vals b prim seq-int.at 0 prim =
+              [ 0 ]
+              [ vals a prim seq-int.at vals b prim seq-int.at tdiv ] if
+              w 2 prim >= vals b prim seq-int.at 0 prim = prim or ]
+            [ k 4 prim =
+              [ vals a 1 prim + b vals a prim seq-int.at range-max w 2 prim >= ]
+              [ vals stat a b 0 range-count false ] if ] if ] if ] if ] if } };
+
+: store
+  (forall ρ; ρ vals:Seq Int^many stat:Seq Int^many i:Int^many v:Int^many err:Bool^many -- ρ rv:Seq Int^many rs:Seq Int^many)
+  locals { vals stat i v err }
+  { err
+    [ vals stat i 2 prim seq-int.set ]
+    [ vals i v prim seq-int.set stat i 1 prim seq-int.set ] if };
+
+\ Sets cell i's value and status once its references are done.
+: settle
+  (forall ρ; ρ vals:Seq Int^many stat:Seq Int^many kinds:Seq Int^many xs:Seq Int^many ys:Seq Int^many n:Int^many i:Int^many -- ρ rv:Seq Int^many rs:Seq Int^many)
+  locals { vals stat kinds xs ys n i }
+  { stat kinds xs ys n i 0 rng 0 worst
+    stat kinds xs ys n i 1 rng 0 worst max2
+    locals { w }
+    { w 3 prim >=
+      [ vals stat i 3 prim seq-int.set ]
+      [ kinds xs ys n i bad?
+        [ vals stat i 2 prim seq-int.set ]
+        [ vals stat i kinds xs ys vals stat i w calc store ] if ] if } };
+
+\ Evaluates cells lo..hi.
+: eval-range
+  (forall ρ; ρ kinds:Seq Int^many xs:Seq Int^many ys:Seq Int^many n:Int^many vals:Seq Int^many stat:Seq Int^many lo:Int^many hi:Int^many -- ρ rv:Seq Int^many rs:Seq Int^many)
+  locals { kinds xs ys n vals stat lo hi }
+  { lo hi prim >
+    [ vals stat ]
+    [ kinds xs ys n
+      kinds xs ys n vals stat lo eval
+      lo 1 prim + hi eval-range ] if };
+
+\ Evaluates cell i (and, first, the cells it refers to) unless already reached.
+: eval
+  (forall ρ; ρ kinds:Seq Int^many xs:Seq Int^many ys:Seq Int^many n:Int^many vals:Seq Int^many stat:Seq Int^many i:Int^many -- ρ rv:Seq Int^many rs:Seq Int^many)
+  locals { kinds xs ys n vals stat i }
+  { stat i prim seq-int.at 0 prim =
+    [ kinds xs ys n
+      kinds xs ys n vals stat i 4 prim seq-int.set kinds xs ys n i 0 rng eval-range
+      kinds xs ys n i 1 rng eval-range
+      kinds xs ys n i settle ]
+    [ vals stat ] if };
+
+: eval-all
+  (forall ρ; ρ kinds:Seq Int^many xs:Seq Int^many ys:Seq Int^many n:Int^many vals:Seq Int^many stat:Seq Int^many i:Int^many -- ρ rv:Seq Int^many rs:Seq Int^many)
+  locals { kinds xs ys n vals stat i }
+  { i n prim <
+    [ kinds xs ys n
+      kinds xs ys n vals stat i eval
+      i 1 prim + eval-all ]
+    [ vals stat ] if };
+
+: errs-from
+  (forall ρ; ρ stat:Seq Int^many k:Int^many out:Seq Bool^many -- ρ r:Seq Bool^many)
+  locals { stat k out }
+  { k stat prim seq-int.len prim <
+    [ stat k 1 prim + out stat k prim seq-int.at 2 prim >= prim seq-bool.push errs-from ]
+    [ out ] if };
+
+: main
+  (forall ρ; ρ kinds:Seq Int^many xs:Seq Int^many ys:Seq Int^many -- ρ values:Seq Int^many errors:Seq Bool^many)
+  locals { kinds xs ys }
+  { kinds prim seq-int.len
+    locals { n }
+    { kinds xs ys n
+      n prim seq-int.empty zeros n prim seq-int.empty zeros 0 eval-all
+      locals { vals stat }
+      { vals stat 0 prim seq-bool.empty errs-from } } };

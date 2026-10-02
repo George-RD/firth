@@ -1,0 +1,135 @@
+\ Order book. Resting orders are kept in one key sequence ks of length 2n:
+\ slot j holds the key of buy j (while it rests) and slot n + j the key of sell
+\ j; an empty slot holds 1000000. A key is price * 64 + j for a sell and
+\ (2000 - price) * 64 + j for a buy, so the lowest key in a side's range is
+\ the order that trades first (best price, then earliest). rem[j] is what
+\ order j still has, filled[j] the units it has filled in all.
+
+\ out with v appended until it has n elements.
+: fill-from
+  (forall ρ; ρ out:Seq Int^many n:Int^many v:Int^many -- ρ r:Seq Int^many)
+  locals { out n v }
+  { out prim seq-int.len n prim <
+    [ out v prim seq-int.push n v fill-from ]
+    [ out ] if };
+
+\ A sequence of n copies of v.
+: fill
+  (forall ρ; ρ n:Int^many v:Int^many -- ρ r:Seq Int^many)
+  locals { n v }
+  { prim seq-int.empty n v fill-from };
+
+\ s with d added to element i.
+: add-at
+  (forall ρ; ρ s:Seq Int^many i:Int^many d:Int^many -- ρ r:Seq Int^many)
+  locals { s i d }
+  { s i s i prim seq-int.at d prim + prim seq-int.set };
+
+: min
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)
+  locals { a b }
+  { a b prim < [ a ] [ b ] if };
+
+\ The lowest of best and ks[j .. end-1].
+: find
+  (forall ρ; ρ ks:Seq Int^many j:Int^many end:Int^many best:Int^many -- ρ r:Int^many)
+  locals { ks j end best }
+  { j end prim <
+    [ ks j 1 prim + end ks j prim seq-int.at best min find ]
+    [ best ] if };
+
+\ True when the resting order in key kk can trade with an incoming order of
+\ side s and limit p (0 for a market order).
+: ok?
+  (forall ρ; ρ prices:Seq Int^many kk:Int^many s:Int^many p:Int^many -- ρ r:Bool^many)
+  locals { prices kk s p }
+  { p 0 prim =
+    [ true ]
+    [ s 0 prim =
+      [ prices kk 64 prim mod prim seq-int.at p prim <= ]
+      [ prices kk 64 prim mod prim seq-int.at p prim >= ] if ] if };
+
+\ Trade of t units between incoming i and resting m (in key slot slot) at price px.
+: trade-t
+  (forall ρ; ρ rem:Seq Int^many filled:Seq Int^many value:Int^many trades:Int^many ks:Seq Int^many slot:Int^many m:Int^many i:Int^many px:Int^many t:Int^many -- ρ r:Seq Int^many f:Seq Int^many v:Int^many n:Int^many k:Seq Int^many)
+  locals { rem filled value trades ks slot m i px t }
+  { rem m 0 t prim - add-at i 0 t prim - add-at
+    filled m t add-at i t add-at
+    value t px prim * prim +
+    trades 1 prim +
+    ks rem m prim seq-int.at t prim =
+    [ slot 1000000 prim seq-int.set ] [ ] if };
+
+\ Matches incoming order i (side s, limit p) against the book while it has units left.
+: match
+  (forall ρ; ρ sides:Seq Int^many prices:Seq Int^many rem:Seq Int^many filled:Seq Int^many value:Int^many trades:Int^many ks:Seq Int^many i:Int^many s:Int^many p:Int^many -- ρ r:Seq Int^many f:Seq Int^many v:Int^many n:Int^many k:Seq Int^many)
+  locals { sides prices rem filled value trades ks i s p }
+  { rem i prim seq-int.at 0 prim >
+    [ sides prices rem filled value trades ks i s p
+      ks 1 s prim - ks prim seq-int.len 2 prim div prim * dup i prim + 1000000 find
+      match2 ]
+    [ rem filled value trades ks ] if };
+
+\ match with the key kk of the best resting order known (1000000 when none).
+: match2
+  (forall ρ; ρ sides:Seq Int^many prices:Seq Int^many rem:Seq Int^many filled:Seq Int^many value:Int^many trades:Int^many ks:Seq Int^many i:Int^many s:Int^many p:Int^many kk:Int^many -- ρ r:Seq Int^many f:Seq Int^many v:Int^many n:Int^many k:Seq Int^many)
+  locals { sides prices rem filled value trades ks i s p kk }
+  { kk 1000000 prim < [ prices kk s p ok? ] [ false ] if
+    [ sides prices
+      rem filled value trades ks
+      1 s prim - ks prim seq-int.len 2 prim div prim * kk 64 prim mod prim +
+      kk 64 prim mod i prices kk 64 prim mod prim seq-int.at
+      rem i prim seq-int.at rem kk 64 prim mod prim seq-int.at min
+      trade-t
+      i s p match ]
+    [ rem filled value trades ks ] if };
+
+\ Rests what is left of a limit order i.
+: rest
+  (forall ρ; ρ rem:Seq Int^many filled:Seq Int^many value:Int^many trades:Int^many ks:Seq Int^many i:Int^many s:Int^many p:Int^many -- ρ r:Seq Int^many f:Seq Int^many v:Int^many n:Int^many k:Seq Int^many)
+  locals { rem filled value trades ks i s p }
+  { rem filled value trades
+    p 0 prim > rem i prim seq-int.at 0 prim > prim and
+    [ ks i s ks prim seq-int.len 2 prim div prim * prim +
+      s 0 prim = [ 2000 p prim - ] [ p ] if 64 prim * i prim +
+      prim seq-int.set ]
+    [ ks ] if };
+
+\ Processes operation i.
+: proc
+  (forall ρ; ρ kinds:Seq Int^many sides:Seq Int^many prices:Seq Int^many qtys:Seq Int^many rem:Seq Int^many filled:Seq Int^many value:Int^many trades:Int^many ks:Seq Int^many i:Int^many -- ρ r:Seq Int^many f:Seq Int^many v:Int^many n:Int^many k:Seq Int^many)
+  locals { kinds sides prices qtys rem filled value trades ks i }
+  { kinds i prim seq-int.at 0 prim =
+    [ sides prices
+      rem i qtys i prim seq-int.at prim seq-int.set filled value trades ks
+      i sides i prim seq-int.at prices i prim seq-int.at match
+      i sides i prim seq-int.at prices i prim seq-int.at rest ]
+    [ rem filled value trades
+      qtys i prim seq-int.at i prim <
+      [ ks qtys i prim seq-int.at
+        sides qtys i prim seq-int.at prim seq-int.at ks prim seq-int.len 2 prim div prim * prim +
+        1000000 prim seq-int.set ]
+      [ ks ] if ] if };
+
+\ Processes operations i on.
+: book-loop
+  (forall ρ; ρ kinds:Seq Int^many sides:Seq Int^many prices:Seq Int^many qtys:Seq Int^many rem:Seq Int^many filled:Seq Int^many value:Int^many trades:Int^many ks:Seq Int^many i:Int^many -- ρ r:Seq Int^many f:Seq Int^many v:Int^many n:Int^many k:Seq Int^many)
+  locals { kinds sides prices qtys rem filled value trades ks i }
+  { i kinds prim seq-int.len prim <
+    [ kinds sides prices qtys
+      kinds sides prices qtys rem filled value trades ks i proc
+      i 1 prim + book-loop ]
+    [ rem filled value trades ks ] if };
+
+: finish
+  (forall ρ; ρ rem:Seq Int^many filled:Seq Int^many value:Int^many trades:Int^many ks:Seq Int^many -- ρ f:Seq Int^many v:Int^many n:Int^many)
+  locals { rem filled value trades ks }
+  { filled value trades };
+
+: main
+  (forall ρ; ρ kinds:Seq Int^many sides:Seq Int^many prices:Seq Int^many qtys:Seq Int^many -- ρ filled:Seq Int^many value:Int^many trades:Int^many)
+  locals { kinds sides prices qtys }
+  { kinds sides prices qtys
+    kinds prim seq-int.len 0 fill kinds prim seq-int.len 0 fill 0 0
+    kinds prim seq-int.len 2 prim * 1000000 fill
+    0 book-loop finish };

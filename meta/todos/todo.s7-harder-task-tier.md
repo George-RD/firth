@@ -40,6 +40,27 @@ until the tasks get harder.
   pool is at the ceiling in Python (24 of 24 on the first attempt) and near
   it in Firth (21, then 22, of 24). A second, harder calibration pool comes
   before the scored tier is written.
+- Second calibration pool: `eval/s7/harder/calibration2.py`, eight larger
+  rule-heavy tasks with every size and value bound stated and checked
+  (`test_harder.py`), independent Python and Firth references, hand values
+  and mutants. Calibrated on 2 October 2026 like the first (README):
+  Python 22 of 24 and Firth 20 of 24, but six of eight tasks were passed
+  by every author in both languages, and every Python failure is one hidden test on one
+  clause, so this pool is effectively at the ceiling too. The next pool
+  needs much larger programs, not more rules of this size.
+- Pool 2's `order-book` and `heap-alloc` descriptions say a cancel or free
+  names an "earlier operation", but their hidden tests include the
+  operation itself and later ones (review of #214). The cases are kept as
+  calibration only and are never moved into the scored tier as written;
+  any task built from them states the target as a range without
+  "earlier".
+- Pool 2's `spreadsheet` description puts "(such a cell's references,
+  even those inside 0 to n - 1, are then not followed at all)" right after
+  the `a` greater than `b` condition, so it can be read as covering only
+  that condition; five of six authors failed the one hidden test that
+  turns on it (review of #214). The task stays calibration only as
+  written; a scored version states the rule as its own sentence covering
+  every way a cell gets an error from its own references.
 - DeepSeek Flash: `curl -sS https://ollama.com/api/tags` from this
   project's cloud environment on 2 October 2026 listed
   `deepseek-v4.1-flash`; the environment's proxy already injects an
@@ -59,3 +80,7 @@ until the tasks get harder.
   context the prompt does not give. A scored run keeps the messages out
   (authors started from a session with no queued project messages) or
   lists them, and the hook text, in its pre-registration.
+- The bounds check in `test_harder.py` covers sizes and value ranges only.
+  The scored tier's check also covers order constraints (such as which
+  operation a cancel may name), since that wording broke in two pool-2
+  tasks (reviewer, #214).

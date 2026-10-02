@@ -1,0 +1,133 @@
+\ Poker. A hand is scored as one integer: category * 16^5 plus a tie-break
+\ number (base 16 digits: the group ranks, largest group then highest rank
+\ first; for straights just the high card). Hands are compared by score.
+
+: zeros-from
+  (forall ρ; ρ out:Seq Int^many n:Int^many -- ρ r:Seq Int^many)
+  locals { out n }
+  { out prim seq-int.len n prim <
+    [ out 0 prim seq-int.push n zeros-from ]
+    [ out ] if };
+
+: zeros
+  (forall ρ; ρ n:Int^many -- ρ r:Seq Int^many)
+  locals { n }
+  { prim seq-int.empty n zeros-from };
+
+\ cnt with the count of each rank in ranks[i..] added.
+: tally
+  (forall ρ; ρ ranks:Seq Int^many i:Int^many cnt:Seq Int^many -- ρ r:Seq Int^many)
+  locals { ranks i cnt }
+  { i ranks prim seq-int.len prim <
+    [ ranks i 1 prim +
+      cnt ranks i prim seq-int.at cnt ranks i prim seq-int.at prim seq-int.at 1 prim + prim seq-int.set
+      tally ]
+    [ cnt ] if };
+
+\ True when suits[i..] all equal suits[0].
+: flush-from
+  (forall ρ; ρ suits:Seq Int^many i:Int^many -- ρ r:Bool^many)
+  locals { suits i }
+  { i suits prim seq-int.len prim <
+    [ suits i prim seq-int.at suits 0 prim seq-int.at prim =
+      [ suits i 1 prim + flush-from ]
+      [ false ] if ]
+    [ true ] if };
+
+\ How many ranks from r to 14 have exactly s cards, added to n.
+: count-eq
+  (forall ρ; ρ cnt:Seq Int^many s:Int^many r:Int^many n:Int^many -- ρ k:Int^many)
+  locals { cnt s r n }
+  { r 15 prim <
+    [ cnt s r 1 prim + n cnt r prim seq-int.at s prim = [ 1 ] [ 0 ] if prim + count-eq ]
+    [ n ] if };
+
+\ Product of cnt[hi-4] .. cnt[hi].
+: run5
+  (forall ρ; ρ cnt:Seq Int^many hi:Int^many -- ρ r:Int^many)
+  locals { cnt hi }
+  { cnt hi prim seq-int.at
+    cnt hi 1 prim - prim seq-int.at prim *
+    cnt hi 2 prim - prim seq-int.at prim *
+    cnt hi 3 prim - prim seq-int.at prim *
+    cnt hi 4 prim - prim seq-int.at prim * };
+
+\ High card of a straight (ace low gives 5), or 0 when there is none; hi counts down.
+: shigh
+  (forall ρ; ρ cnt:Seq Int^many hi:Int^many -- ρ r:Int^many)
+  locals { cnt hi }
+  { hi 6 prim >=
+    [ cnt hi run5 1 prim =
+      [ hi ]
+      [ cnt hi 1 prim - shigh ] if ]
+    [ cnt 14 prim seq-int.at cnt 2 prim seq-int.at prim *
+      cnt 3 prim seq-int.at prim * cnt 4 prim seq-int.at prim * cnt 5 prim seq-int.at prim *
+      1 prim =
+      [ 5 ] [ 0 ] if ] if };
+
+\ Tie-break digits: idx 0 to 51 covers sizes 4, 3, 2, 1 and ranks 14 down to 2.
+: tie-from
+  (forall ρ; ρ cnt:Seq Int^many idx:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { cnt idx acc }
+  { idx 52 prim <
+    [ cnt idx 1 prim +
+      cnt 14 idx 13 prim mod prim - prim seq-int.at 4 idx 13 prim div prim - prim =
+      [ acc 16 prim * 14 idx 13 prim mod prim - prim + ] [ acc ] if
+      tie-from ]
+    [ acc ] if };
+
+\ Category from the counts: n4 fours, n3 threes, n2 pairs, flush, straight high.
+: category
+  (forall ρ; ρ n4:Int^many n3:Int^many n2:Int^many fl:Bool^many sh:Int^many -- ρ r:Int^many)
+  locals { n4 n3 n2 fl sh }
+  { sh 0 prim > fl prim and
+    [ 8 ]
+    [ n4 0 prim >
+      [ 7 ]
+      [ n3 0 prim > n2 0 prim > prim and
+        [ 6 ]
+        [ fl
+          [ 5 ]
+          [ sh 0 prim >
+            [ 4 ]
+            [ n3 0 prim >
+              [ 3 ]
+              [ n2 2 prim =
+                [ 2 ]
+                [ n2 1 prim = [ 1 ] [ 0 ] if ] if ] if ] if ] if ] if ] if ] if };
+
+\ Score from the category, the straight high card and the tie digits.
+: score
+  (forall ρ; ρ cat:Int^many sh:Int^many tie:Int^many -- ρ r:Int^many)
+  locals { cat sh tie }
+  { cat 1048576 prim *
+    cat 4 prim = cat 8 prim = prim or [ sh ] [ tie ] if
+    prim + };
+
+\ Score of a hand.
+: hand
+  (forall ρ; ρ ranks:Seq Int^many suits:Seq Int^many -- ρ r:Int^many)
+  locals { ranks suits }
+  { ranks 0 15 zeros tally
+    locals { cnt }
+    { cnt 4 2 0 count-eq
+      cnt 3 2 0 count-eq
+      cnt 2 2 0 count-eq
+      suits 1 flush-from
+      cnt 14 shigh
+      category
+      cnt 14 shigh
+      cnt 0 0 tie-from
+      score } };
+
+\ Winner from the two scores.
+: decide
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ w:Int^many c1:Int^many c2:Int^many)
+  locals { a b }
+  { a b prim > [ 1 ] [ a b prim < [ 2 ] [ 0 ] if ] if
+    a 1048576 prim div b 1048576 prim div };
+
+: main
+  (forall ρ; ρ ranks1:Seq Int^many suits1:Seq Int^many ranks2:Seq Int^many suits2:Seq Int^many -- ρ winner:Int^many cat1:Int^many cat2:Int^many)
+  locals { r1 s1 r2 s2 }
+  { r1 s1 hand r2 s2 hand decide };
