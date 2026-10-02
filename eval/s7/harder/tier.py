@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prompt, score and repair for the harder S7 tier (`todo.s7-harder-task-tier`).
 
-    tier.py prompt --set calibration --lang firth|python [--rounds 1] > prompt.md
+    tier.py prompt --set calibration|calibration2 --lang firth|python [--rounds 1] > prompt.md
     tier.py extract answer.md > solutions.json
     tier.py score  --set calibration --lang firth solutions.json > results.json
     tier.py repair --set calibration --lang firth solutions.json results.json > repair.md
@@ -43,16 +43,18 @@ sys.path.insert(0, str(S7))
 sys.path.insert(0, str(HERE))
 # What scoring reads, hashed before any of it is imported, so a result names
 # the task definitions and scorer it was produced with.
-HASHED = {f"harder/{n}": HERE / n for n in ("calibration.py", "tier.py")} | {
+HASHED = {f"harder/{n}": HERE / n for n in ("calibration.py", "calibration2.py", "tier.py")} | {
     n: S7 / n for n in ("task.py", "harness.py", "isolate.py")}
 IMPORT_HASHES = {n: hashlib.sha256(p.read_bytes()).hexdigest() for n, p in HASHED.items()}
 import harness  # noqa: E402
 import isolate  # noqa: E402
 from calibration import CALIBRATION  # noqa: E402
+from calibration2 import CALIBRATION2  # noqa: E402
 from task import Task  # noqa: E402
 
-SETS: dict[str, tuple[Task, ...]] = {"calibration": CALIBRATION}
+SETS: dict[str, tuple[Task, ...]] = {"calibration": CALIBRATION, "calibration2": CALIBRATION2}
 BY_ID = {t.id: t for ts in SETS.values() for t in ts}
+SET_OF = {t.id: name for name, ts in SETS.items() for t in ts}
 assert len(BY_ID) == sum(len(ts) for ts in SETS.values()), "task ids must be unique across sets"
 assert not set(BY_ID) & {t.id for t in harness.TASKS + harness.HARD + harness.MVP}, \
     "a harder-tier id must not reuse an earlier tier's"

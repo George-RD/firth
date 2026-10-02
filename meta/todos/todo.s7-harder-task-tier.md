@@ -40,6 +40,10 @@ until the tasks get harder.
   pool is at the ceiling in Python (24 of 24 on the first attempt) and near
   it in Firth (21, then 22, of 24). A second, harder calibration pool comes
   before the scored tier is written.
+- Second calibration pool: `eval/s7/harder/calibration2.py`, eight larger
+  rule-heavy tasks with every size and value bound stated and checked
+  (`test_harder.py`), independent Python and Firth references, hand values
+  and mutants. Its calibration plan is in the README; results follow.
 - DeepSeek Flash: `curl -sS https://ollama.com/api/tags` from this
   project's cloud environment on 2 October 2026 listed
   `deepseek-v4.1-flash`; the environment's proxy already injects an

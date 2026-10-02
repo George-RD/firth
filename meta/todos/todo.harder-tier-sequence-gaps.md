@@ -22,6 +22,20 @@ a task.
 - No `abs`, `min`, `max`, or quotient rounded toward zero; each program
   defines its own.
 
+Writing the second calibration pool's references
+(`eval/s7/harder/reference/calibration2/firth/`, 2 October 2026) hit these
+as well, again written by hand in each program:
+
+- No bitwise operations: the `elevator` reference keeps a set of floors as
+  an `Int` mask through `div` and `mod` by a table of powers of two.
+- No records, tuples or sequences of sequences, so state with several
+  fields travels as separate stack arguments or is packed into one `Int`
+  (`elevator`), and a loop over many named values pays for each name on
+  every step. The `elevator` reference went through four designs to fit
+  the step budget.
+- The same `min`, `zeros`, `add-at` and `fill` helpers are written again
+  in several files.
+
 ## Acceptance criteria
 
 - For each gap, either a primitive or library word with a stated stack

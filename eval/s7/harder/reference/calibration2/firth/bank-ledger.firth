@@ -1,0 +1,121 @@
+\ Bank ledger. bal is the balances, rej the per-account rejection counts.
+\ An account is frozen once its count reaches 3.
+
+\ out with zeros appended until it has n elements.
+: zeros-from
+  (forall ρ; ρ out:Seq Int^many n:Int^many -- ρ r:Seq Int^many)
+  locals { out n }
+  { out prim seq-int.len n prim <
+    [ out 0 prim seq-int.push n zeros-from ]
+    [ out ] if };
+
+\ A sequence of n zeros.
+: zeros
+  (forall ρ; ρ n:Int^many -- ρ r:Seq Int^many)
+  locals { n }
+  { prim seq-int.empty n zeros-from };
+
+\ s with d added to element i.
+: add-at
+  (forall ρ; ρ s:Seq Int^many i:Int^many d:Int^many -- ρ r:Seq Int^many)
+  locals { s i d }
+  { s i s i prim seq-int.at d prim + prim seq-int.set };
+
+\ One month end applied to a balance.
+: adjust
+  (forall ρ; ρ b:Int^many -- ρ r:Int^many)
+  locals { b }
+  { b 0 prim <
+    [ b 0 b prim - 9 prim + 10 prim div prim - ]
+    [ b 100 prim >=
+      [ b b 100 prim div prim + ]
+      [ b ] if ] if };
+
+\ Month end for accounts i on.
+: month-from
+  (forall ρ; ρ bal:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { bal i }
+  { i bal prim seq-int.len prim <
+    [ bal i bal i prim seq-int.at adjust prim seq-int.set i 1 prim + month-from ]
+    [ bal ] if };
+
+\ New balance after a deposit (kind 1) or withdrawal/transfer debit, with the fee.
+: newbal
+  (forall ρ; ρ old:Int^many kind:Int^many amt:Int^many -- ρ r:Int^many)
+  locals { old kind amt }
+  { kind 1 prim =
+    [ old amt prim + ]
+    [ old amt prim - dup 0 prim < old 0 prim >= prim and
+      [ 5 prim - ] [ ] if ] if };
+
+\ Applies an accepted operation of kind 1 to 3.
+: carry-out
+  (forall ρ; ρ bal:Seq Int^many kind:Int^many a:Int^many b:Int^many amt:Int^many -- ρ r:Seq Int^many)
+  locals { bal kind a b amt }
+  { bal a bal a prim seq-int.at kind amt newbal prim seq-int.set
+    kind 3 prim =
+    [ b amt add-at ] [ ] if };
+
+\ True when the account's rejection count has reached 3.
+: frozen?
+  (forall ρ; ρ rej:Seq Int^many a:Int^many -- ρ r:Bool^many)
+  locals { rej a }
+  { rej a prim seq-int.at 3 prim >= };
+
+\ True when the operation of kind 1 to 3 is rejected.
+: reject?
+  (forall ρ; ρ bal:Seq Int^many rej:Seq Int^many kind:Int^many a:Int^many b:Int^many amt:Int^many limit:Int^many -- ρ r:Bool^many)
+  locals { bal rej kind a b amt limit }
+  { rej a frozen?
+    kind 3 prim =
+    [ rej b frozen? a b prim = prim or ] [ false ] if
+    prim or
+    kind 2 prim >= bal a prim seq-int.at amt prim - limit prim + 0 prim < prim and
+    prim or };
+
+\ rej with account a's count increased.
+: bump
+  (forall ρ; ρ rej:Seq Int^many a:Int^many -- ρ r:Seq Int^many)
+  locals { rej a }
+  { rej a 1 add-at };
+
+\ Runs one operation.
+: step-op
+  (forall ρ; ρ bal:Seq Int^many rej:Seq Int^many kind:Int^many a:Int^many b:Int^many amt:Int^many limit:Int^many -- ρ nb:Seq Int^many nr:Seq Int^many)
+  locals { bal rej kind a b amt limit }
+  { kind 4 prim =
+    [ bal 0 month-from rej ]
+    [ bal rej kind a b amt limit reject?
+      [ bal rej a bump ]
+      [ bal kind a b amt carry-out rej ] if ] if };
+
+\ Runs operations k on.
+: ledger-loop
+  (forall ρ; ρ bal:Seq Int^many rej:Seq Int^many kinds:Seq Int^many accts:Seq Int^many others:Seq Int^many amts:Seq Int^many limit:Int^many k:Int^many -- ρ nb:Seq Int^many nr:Seq Int^many)
+  locals { bal rej kinds accts others amts limit k }
+  { k kinds prim seq-int.len prim <
+    [ bal rej
+      kinds k prim seq-int.at accts k prim seq-int.at others k prim seq-int.at amts k prim seq-int.at
+      limit step-op
+      kinds accts others amts limit k 1 prim + ledger-loop ]
+    [ bal rej ] if };
+
+\ Total of the counts and the frozen flags, from account i on.
+: scan
+  (forall ρ; ρ rej:Seq Int^many i:Int^many total:Int^many fr:Seq Bool^many -- ρ t:Int^many f:Seq Bool^many)
+  locals { rej i total fr }
+  { i rej prim seq-int.len prim <
+    [ rej i 1 prim + total rej i prim seq-int.at prim +
+      fr rej i frozen? prim seq-bool.push scan ]
+    [ total fr ] if };
+
+: summarise
+  (forall ρ; ρ bal:Seq Int^many rej:Seq Int^many -- ρ b:Seq Int^many t:Int^many f:Seq Bool^many)
+  locals { bal rej }
+  { bal rej 0 0 prim seq-bool.empty scan };
+
+: main
+  (forall ρ; ρ balances:Seq Int^many limit:Int^many kinds:Seq Int^many accts:Seq Int^many others:Seq Int^many amts:Seq Int^many -- ρ final:Seq Int^many rejected:Int^many frozen:Seq Bool^many)
+  locals { bal limit kinds accts others amts }
+  { bal bal prim seq-int.len zeros kinds accts others amts limit 0 ledger-loop
+    summarise };

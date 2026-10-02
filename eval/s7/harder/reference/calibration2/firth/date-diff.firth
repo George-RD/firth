@@ -1,0 +1,41 @@
+\ Date difference: days from the first date to the second, the weekday and
+\ the day of the year of the second. A date becomes a day number (days since
+\ 1 January of year 1, counted in the proleptic Gregorian calendar).
+
+\ True when y is a leap year.
+: leap?
+  (forall ρ; ρ y:Int^many -- ρ r:Bool^many)
+  locals { y }
+  { y 4 prim mod 0 prim =
+    y 100 prim mod 0 prim = prim not
+    y 400 prim mod 0 prim = prim or
+    prim and };
+
+\ Day of the year (1 January is 1).
+: day-of-year
+  (forall ρ; ρ y:Int^many m:Int^many d:Int^many -- ρ r:Int^many)
+  locals { y m d }
+  { { 0 31 59 90 120 151 181 212 243 273 304 334 } m 1 prim - prim seq-int.at
+    d prim +
+    y leap? m 2 prim > prim and
+    [ 1 prim + ] [ ] if };
+
+\ Days in the years before year y (the years 1 to y - 1).
+: days-before-year
+  (forall ρ; ρ y:Int^many -- ρ r:Int^many)
+  locals { y }
+  { y 1 prim - locals { p }
+    { p 365 prim *  p 4 prim div prim +  p 100 prim div prim -  p 400 prim div prim + } };
+
+\ Day number of a date.
+: day-number
+  (forall ρ; ρ y:Int^many m:Int^many d:Int^many -- ρ r:Int^many)
+  locals { y m d }
+  { y days-before-year y m d day-of-year prim + };
+
+: main
+  (forall ρ; ρ y1:Int^many m1:Int^many d1:Int^many y2:Int^many m2:Int^many d2:Int^many -- ρ days:Int^many weekday:Int^many doy:Int^many)
+  locals { y1 m1 d1 y2 m2 d2 }
+  { y2 m2 d2 day-number y1 m1 d1 day-number prim -
+    y2 m2 d2 day-number 2000 1 1 day-number prim - 5 prim + 7 prim mod
+    y2 m2 d2 day-of-year };
