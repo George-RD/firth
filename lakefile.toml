@@ -1,6 +1,6 @@
 name = "firth"
 version = "0.1.0"
-defaultTargets = ["Firth", "FirthProofs", "FirthProofTests", "firthProofRecords", "firthAxiomAudit", "firthTest", "firthParserTest", "firthCompilerTest", "firthElaborateTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthRecordIntegrityTest", "firthAdapterIntegrationTest", "firthAgentDiagnosticTest", "firthPipelineTest", "firthNamesTest", "smtBoundaryTest", "smtSolverTest", "firthReferenceRunTest", "firthExportsTest", "firthExportLean", "firthAllTest"]
+defaultTargets = ["Firth", "FirthProofs", "FirthProofTests", "firthProofRecords", "firthAxiomAudit", "firthTest", "firthParserTest", "firthCompilerTest", "firthElaborateTest", "firthErasureTest", "firthStackEffectTest", "firthRefinementTest", "firthRecordIntegrityTest", "firthAdapterIntegrationTest", "firthAgentDiagnosticTest", "firthPipelineTest", "firthNamesTest", "smtBoundaryTest", "smtSolverTest", "firthReferenceRunTest", "firthExportsTest", "firthExportLean", "inventoryHost", "firthAllTest"]
 testDriver = "firthAllTest"
 
 [[lean_lib]]
@@ -42,6 +42,11 @@ roots = ["agent.Firth.Agent.DiagnosticEnvelope", "agent.Firth.Agent.JsonMembers"
 name = "FirthAgentTests"
 srcDir = "src"
 roots = ["agent.Firth.Agent.DiagnosticEnvelopeTest", "agent.Firth.Agent.ValidationTest", "agent.Firth.Agent.ElaboratorDiagnosticsTest"]
+
+[[lean_exe]]
+name = "inventoryHost"
+root = "proofs.Inventory.HostMain"
+srcDir = "src"
 
 [[lean_exe]]
 name = "firthTest"

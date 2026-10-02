@@ -91,7 +91,7 @@ def fit(points: dict[int, int]) -> tuple[Fraction, Fraction, Fraction]:
 
 
 def main() -> int:
-    host.gate.build_toolchain()
+    host.build_toolchain()
     jobs = [(p, n) for p in PATTERNS for n in SIZES]
     with ThreadPoolExecutor(max_workers=6) as pool:
         shapes = dict(zip(SHAPES, pool.map(shape_cost, SHAPES)))

@@ -126,6 +126,8 @@ jobs:
         run: python3 eval/s7/test_mvp.py 2>&1 | tee /tmp/language-s7-mvp.log
       - name: Check the harder S7 tier's tasks, references and planted mutants
         run: python3 eval/s7/harder/test_harder.py 2>&1 | tee /tmp/language-s7-harder.log
+      - name: Check the inventory host executable against hand-written encodings and refusals
+        run: python3 examples/inventory/check_host.py 2>&1 | tee /tmp/language-inventory-host.log
       - name: Run the inventory allocator against the fixed acceptance corpus
         run: python3 examples/inventory/run_cases.py 2>&1 | tee /tmp/language-inventory.log
       - name: Check the inventory allocator's worst-case cost bound

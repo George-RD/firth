@@ -50,7 +50,7 @@ def cases() -> list[dict[str, Any]]:
 
 
 def main() -> int:
-    host.gate.build_toolchain()
+    host.build_toolchain()
     selected = cases()
     if {case["expected"]["status"] for case in selected} != {"ok", "error"}:
         raise SystemExit("check_scan: the cases must include both distinct and repeated IDs")

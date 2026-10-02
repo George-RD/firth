@@ -191,7 +191,7 @@ def main() -> int:
     parser.add_argument("--jobs", type=int, default=4)
     parser.add_argument("--json", type=Path, help="write the full report here")
     args = parser.parse_args()
-    gate.build_toolchain()
+    host.build_toolchain()
     cases = json.loads((host.ROOT / "specs/inventory-allocation-cases.json").read_text(encoding="utf-8"))["cases"]
     failed = False
     with tempfile.TemporaryDirectory(prefix="firth-policy-change-") as directory:
