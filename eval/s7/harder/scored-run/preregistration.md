@@ -344,19 +344,44 @@ way still fails. The steps are fixed:
 for Firth ("S7 baseline and eval subjects"), and for each says whether
 the run showed it catching a real error:
 - checked types, stack effects, linear ownership and declared effects:
-  each refusal by the checker on the visible example in round 1, named by
-  which of these it was, from the visible case's error in
-  `results-1.json`;
+  each refusal by the checker on the visible example in round 1, sorted
+  by the table below, from the visible case's error in `results-1.json`;
 - the step budget: each run that used it up, on a visible or a hidden
   input, per task, from each case's error in `results-N.json`;
-- runtime refusals on hidden inputs (a fault the runner reported), per
-  task, from each hidden case's error in `results-N.json`;
+- runtime refusals on hidden inputs, per task, from each hidden case's
+  error in `results-N.json`;
 - the measured cost of each run: the kernel steps the reference
   interpreter counted for every passed case, per task, from `kernel_cost`
   in each case of `results-N.json`. It is measured, never a bound;
 - a proved cost bound: none of the six tasks has a Lean cost contract, so
   the report says no proved bound applies. No guarantee is called proved
   in the report unless a Lean contract exists for it.
+
+**Sorting a case's error.** A checker refusal's error begins
+`code: firth.<family>.<kind>`, and is sorted by that code, never by its
+message:
+
+| Code | Row |
+| --- | --- |
+| `firth.type.stack-underflow`, `firth.type.stack-mismatch`, `firth.type.branch-mismatch`, `firth.type.declared-effect-mismatch` | stack effects |
+| every other `firth.type.*` | checked types |
+| `firth.linearity.*` | linear ownership |
+| `firth.syntax.*`, `firth.name.*`, `firth.elaboration.*`, `firth.compile.*`, `firth.protocol.*`, `firth.refinement.*`, `firth.smt.*` | other refusal |
+| any code not listed, or an error with no code | other refusal |
+
+`firth.type.declared-effect-mismatch` is a word's declared stack effect
+not matching its body, so it is a stack effect, not a declared effect.
+Declared effects in the roadmap's sense are capability effects (the
+hidden linear `World` token and `Handle`). No diagnostic code is specific
+to them, and none of the six tasks uses an effectful primitive, so that
+row is reported as not exercised by this run; no refusal is moved into
+it from another row. An other refusal is reported per task and is never
+counted as a guarantee catch.
+
+A runtime error begins `trap <kind>`. `trap fuel-exhausted` is out of
+steps, the 1,000,000-step budget. Every other trap kind (for example
+`resource-fault`) is a runtime refusal, never out of steps. An error
+`timeout` is a timeout.
 
 A refusal on the visible example counts as catching a real error only
 when the author's corrected answer behaves differently on some hidden
