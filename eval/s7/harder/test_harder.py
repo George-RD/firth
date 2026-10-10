@@ -471,6 +471,10 @@ def bounds() -> None:
           and not BOUNDS["formula-sheet"](*five), "the bounds check refuses a fifth edit")
     check(BOUNDS["stacker"](4, 10, [0], [0] * 100) and not BOUNDS["stacker"](4, 10, [0], [0] * 101)
           and not BOUNDS["stacker"](4, 11, [0], [0]), "the bounds check refuses 101 moves and an 11-row well")
+    bj = BOUNDS["blackjack"]
+    check(bj([1] * 120, [0], [1], 20) and not bj([1] * 121, [0], [1], 20) and not bj([1] * 120, [0], [1], 21)
+          and not bj([14], [0], [1], 1) and not bj([1], [0], [0], 1),
+          "the bounds check refuses a 121-card shoe, a 21st round, a card of 14 and a bet of 0")
     for name, tasks in SETS.items():
         big = [(t.id, a) for t in tasks for a in (*cases(t), *(a for i, a, _ in HAND if i == t.id))
                if any(not -2**63 <= i < 2**63 for i in ints([a, t.expected(a)]))]
