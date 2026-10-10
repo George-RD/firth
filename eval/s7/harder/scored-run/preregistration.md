@@ -357,9 +357,15 @@ the run showed it catching a real error:
   the report says no proved bound applies. No guarantee is called proved
   in the report unless a Lean contract exists for it.
 
-**Sorting a case's error.** A checker refusal's error begins
-`code: firth.<family>.<kind>`, and is sorted by that code, never by its
-message:
+**Sorting a case's error.** A checker refusal's error holds one or more
+diagnostics, each with a line `code: firth.<family>.<kind>`. When the
+checker refuses several words, the error opens with "The checker found N
+errors" and gives one `error i of N` block per diagnostic. Every `code:`
+line in the error is one diagnostic, and each is sorted by its code,
+never by its message. The report counts diagnostics per row, and counts
+the refusal once under every row that at least one of its diagnostics
+falls in; a refusal whose diagnostics are all other refusal is an other
+refusal. The table:
 
 | Code | Row |
 | --- | --- |
