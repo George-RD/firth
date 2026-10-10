@@ -1,0 +1,258 @@
+sokoban	_random_sokoban(100, 12, 12, 6, 200)	131450	True
+sokoban	_random_sokoban(101, 12, 12, 6, 200)	132996	True
+sokoban	_random_sokoban(102, 12, 12, 6, 200)	131396	True
+sokoban	_random_sokoban(103, 12, 12, 6, 200)	133081	True
+sokoban	_random_sokoban(104, 12, 12, 6, 200)	130260	True
+sokoban	_random_sokoban(105, 12, 12, 6, 200)	128791	True
+sokoban	_random_sokoban(106, 12, 12, 6, 200)	130279	True
+sokoban	_random_sokoban(107, 12, 12, 6, 200)	120818	True
+sokoban	_random_sokoban(108, 12, 12, 6, 200)	135868	True
+sokoban	_random_sokoban(109, 12, 12, 6, 200)	117704	True
+sokoban	_random_sokoban(110, 12, 12, 6, 200)	131867	True
+sokoban	_random_sokoban(111, 12, 12, 6, 200)	141869	True
+sokoban	_random_sokoban(112, 12, 12, 6, 200)	144953	True
+sokoban	_random_sokoban(113, 12, 12, 6, 200)	134367	True
+sokoban	_random_sokoban(114, 12, 12, 6, 200)	136797	True
+sokoban	_random_sokoban(115, 12, 12, 6, 200)	124643	True
+sokoban	_random_sokoban(116, 12, 12, 6, 200)	131205	True
+sokoban	_random_sokoban(117, 12, 12, 6, 200)	130482	True
+sokoban	_random_sokoban(118, 12, 12, 6, 200)	136911	True
+sokoban	_random_sokoban(119, 12, 12, 6, 200)	128761	True
+sokoban	_random_sokoban(120, 12, 12, 6, 200)	130956	True
+sokoban	_random_sokoban(121, 12, 12, 6, 200)	121795	True
+sokoban	_random_sokoban(122, 12, 12, 6, 200)	126966	True
+sokoban	_random_sokoban(123, 12, 12, 6, 200)	134768	True
+sokoban	_random_sokoban(124, 12, 12, 6, 200)	133316	True
+sokoban	_random_sokoban(125, 12, 12, 6, 200)	140011	True
+sokoban	_random_sokoban(126, 12, 12, 6, 200)	142510	True
+sokoban	_random_sokoban(127, 12, 12, 6, 200)	132993	True
+sokoban	_random_sokoban(128, 12, 12, 6, 200)	132346	True
+sokoban	_random_sokoban(129, 12, 12, 6, 200)	139331	True
+sokoban	_random_sokoban(130, 12, 12, 6, 200)	137894	True
+sokoban	_random_sokoban(131, 12, 12, 6, 200)	122874	True
+sokoban	_random_sokoban(132, 12, 12, 6, 200)	120417	True
+sokoban	_random_sokoban(133, 12, 12, 6, 200)	123363	True
+sokoban	_random_sokoban(134, 12, 12, 6, 200)	134042	True
+sokoban	_random_sokoban(135, 12, 12, 6, 200)	130964	True
+sokoban	_random_sokoban(136, 12, 12, 6, 200)	125173	True
+sokoban	_random_sokoban(137, 12, 12, 6, 200)	128901	True
+sokoban	_random_sokoban(138, 12, 12, 6, 200)	119406	True
+sokoban	_random_sokoban(139, 12, 12, 6, 200)	120804	True
+checkers	_largest_checkers(100)	179629	True
+checkers	_largest_checkers(101)	184808	True
+checkers	_largest_checkers(102)	175824	True
+checkers	_largest_checkers(103)	189847	True
+checkers	_largest_checkers(104)	175326	True
+checkers	_largest_checkers(105)	162348	True
+checkers	_largest_checkers(106)	196730	True
+checkers	_largest_checkers(107)	112462	True
+checkers	_largest_checkers(108)	185761	True
+checkers	_largest_checkers(109)	185229	True
+checkers	_largest_checkers(110)	209279	True
+checkers	_largest_checkers(111)	176146	True
+checkers	_largest_checkers(112)	114807	True
+checkers	_largest_checkers(113)	185455	True
+checkers	_largest_checkers(114)	184582	True
+checkers	_largest_checkers(115)	175673	True
+checkers	_largest_checkers(116)	198763	True
+checkers	_largest_checkers(117)	187265	True
+checkers	_largest_checkers(118)	181218	True
+checkers	_largest_checkers(119)	126779	True
+checkers	_largest_checkers(120)	188902	True
+checkers	_largest_checkers(121)	167967	True
+checkers	_largest_checkers(122)	177024	True
+checkers	_largest_checkers(123)	173071	True
+checkers	_largest_checkers(124)	191427	True
+checkers	_largest_checkers(125)	181104	True
+checkers	_largest_checkers(126)	162246	True
+checkers	_largest_checkers(127)	182758	True
+checkers	_largest_checkers(128)	179113	True
+checkers	_largest_checkers(129)	176281	True
+checkers	_largest_checkers(130)	183185	True
+checkers	_largest_checkers(131)	187789	True
+checkers	_largest_checkers(132)	157407	True
+checkers	_largest_checkers(133)	194293	True
+checkers	_largest_checkers(134)	190153	True
+checkers	_largest_checkers(135)	191563	True
+checkers	_largest_checkers(136)	194715	True
+checkers	_largest_checkers(137)	192338	True
+checkers	_largest_checkers(138)	183106	True
+checkers	_largest_checkers(139)	176036	True
+checkers	opening, turn 0, 40 plies	174966	True
+checkers	opening, turn 1, 40 plies	175713	True
+regex	a*x10 on a	98097	True
+regex	a*x10 on ab	49561	True
+regex	a*x10 on abc	45648	True
+regex	.*x10 on a	98047	True
+regex	.*x10 on ab	98047	True
+regex	.*x10 on abc	98047	True
+regex	(a*)*x4 on a	42815	True
+regex	(a*)*x4 on ab	20327	True
+regex	(a*)*x4 on abc	18486	True
+regex	(a|b)*x5 on a	73693	True
+regex	(a|b)*x5 on ab	73693	True
+regex	(a|b)*x5 on abc	34092	True
+regex	(.*)+x4 on a	42795	True
+regex	(.*)+x4 on ab	42795	True
+regex	(.*)+x4 on abc	42795	True
+regex	a?x10 on a	75883	True
+regex	a?x10 on ab	43195	True
+regex	a?x10 on abc	39282	True
+regex	(a*b*)* on a	49139	True
+regex	(a*b*)* on ab	49139	True
+regex	(a*b*)* on abc	28492	True
+regex	a+x10 on a	72295	True
+regex	a+x10 on ab	36703	True
+regex	a+x10 on abc	34862	True
+regex	(a|.)*x3 on a	73673	True
+regex	(a|.)*x3 on ab	73673	True
+regex	(a|.)*x3 on abc	73673	True
+regex	((a*)*)* on a	68184	True
+regex	((a*)*)* on ab	59912	True
+regex	((a*)*)* on abc	57678	True
+regex	(.?)*x4 on a	41565	True
+regex	(.?)*x4 on ab	41565	True
+regex	(.?)*x4 on abc	41565	True
+regex	(a|b|c)* on a	76097	True
+regex	(a|b|c)* on ab	76097	True
+regex	(a|b|c)* on abc	76097	True
+swiss	_random_swiss(100, 12, 7)	106524	True
+swiss	_random_swiss(101, 12, 7)	108057	True
+swiss	_random_swiss(102, 12, 7)	105757	True
+swiss	_random_swiss(103, 12, 7)	106975	True
+swiss	_random_swiss(104, 12, 7)	107558	True
+swiss	_random_swiss(105, 12, 7)	107238	True
+swiss	_random_swiss(106, 12, 7)	107169	True
+swiss	_random_swiss(107, 12, 7)	107641	True
+swiss	_random_swiss(108, 12, 7)	106720	True
+swiss	_random_swiss(109, 12, 7)	106663	True
+swiss	_random_swiss(110, 12, 7)	105929	True
+swiss	_random_swiss(111, 12, 7)	106176	True
+swiss	_random_swiss(112, 12, 7)	106520	True
+swiss	_random_swiss(113, 12, 7)	106682	True
+swiss	_random_swiss(114, 12, 7)	107212	True
+swiss	_random_swiss(115, 12, 7)	106120	True
+swiss	_random_swiss(116, 12, 7)	106260	True
+swiss	_random_swiss(117, 12, 7)	106101	True
+swiss	_random_swiss(118, 12, 7)	106741	True
+swiss	_random_swiss(119, 12, 7)	107224	True
+swiss	_random_swiss(120, 12, 7)	106029	True
+swiss	_random_swiss(121, 12, 7)	107827	True
+swiss	_random_swiss(122, 12, 7)	106533	True
+swiss	_random_swiss(123, 12, 7)	106382	True
+swiss	_random_swiss(124, 12, 7)	106845	True
+swiss	_random_swiss(125, 12, 7)	107098	True
+swiss	_random_swiss(126, 12, 7)	107585	True
+swiss	_random_swiss(127, 12, 7)	106324	True
+swiss	_random_swiss(128, 12, 7)	106008	True
+swiss	_random_swiss(129, 12, 7)	106931	True
+swiss	_random_swiss(130, 12, 7)	106736	True
+swiss	_random_swiss(131, 12, 7)	105334	True
+swiss	_random_swiss(132, 12, 7)	106893	True
+swiss	_random_swiss(133, 12, 7)	106959	True
+swiss	_random_swiss(134, 12, 7)	106860	True
+swiss	_random_swiss(135, 12, 7)	106206	True
+swiss	_random_swiss(136, 12, 7)	106588	True
+swiss	_random_swiss(137, 12, 7)	106877	True
+swiss	_random_swiss(138, 12, 7)	106323	True
+swiss	_random_swiss(139, 12, 7)	106292	True
+swiss	_random_swiss(100, 11, 7)	94999	True
+swiss	_random_swiss(101, 11, 7)	93966	True
+swiss	_random_swiss(102, 11, 7)	94643	True
+swiss	_random_swiss(103, 11, 7)	95094	True
+swiss	_random_swiss(104, 11, 7)	94169	True
+swiss	_random_swiss(105, 11, 7)	94606	True
+swiss	_random_swiss(106, 11, 7)	94263	True
+swiss	_random_swiss(107, 11, 7)	93984	True
+swiss	_random_swiss(108, 11, 7)	94062	True
+swiss	_random_swiss(109, 11, 7)	94677	True
+warehouse	_random_warehouse(100, 5, 60, 80)	141217	True
+warehouse	_random_warehouse(101, 5, 60, 80)	135700	True
+warehouse	_random_warehouse(102, 5, 60, 80)	138535	True
+warehouse	_random_warehouse(103, 5, 60, 80)	149824	True
+warehouse	_random_warehouse(104, 5, 60, 80)	163363	True
+warehouse	_random_warehouse(105, 5, 60, 80)	127374	True
+warehouse	_random_warehouse(106, 5, 60, 80)	125222	True
+warehouse	_random_warehouse(107, 5, 60, 80)	129547	True
+warehouse	_random_warehouse(108, 5, 60, 80)	139596	True
+warehouse	_random_warehouse(109, 5, 60, 80)	112365	True
+warehouse	_random_warehouse(110, 5, 60, 80)	162423	True
+warehouse	_random_warehouse(111, 5, 60, 80)	119357	True
+warehouse	_random_warehouse(112, 5, 60, 80)	112677	True
+warehouse	_random_warehouse(113, 5, 60, 80)	139077	True
+warehouse	_random_warehouse(114, 5, 60, 80)	144167	True
+warehouse	_random_warehouse(115, 5, 60, 80)	139888	True
+warehouse	_random_warehouse(116, 5, 60, 80)	132699	True
+warehouse	_random_warehouse(117, 5, 60, 80)	130085	True
+warehouse	_random_warehouse(118, 5, 60, 80)	113200	True
+warehouse	_random_warehouse(119, 5, 60, 80)	144078	True
+warehouse	_random_warehouse(120, 5, 60, 80)	141042	True
+warehouse	_random_warehouse(121, 5, 60, 80)	155737	True
+warehouse	_random_warehouse(122, 5, 60, 80)	123693	True
+warehouse	_random_warehouse(123, 5, 60, 80)	143474	True
+warehouse	_random_warehouse(124, 5, 60, 80)	126251	True
+warehouse	_random_warehouse(125, 5, 60, 80)	160835	True
+warehouse	_random_warehouse(126, 5, 60, 80)	159847	True
+warehouse	_random_warehouse(127, 5, 60, 80)	133289	True
+warehouse	_random_warehouse(128, 5, 60, 80)	148697	True
+warehouse	_random_warehouse(129, 5, 60, 80)	133677	True
+warehouse	_random_warehouse(130, 5, 60, 80)	133299	True
+warehouse	_random_warehouse(131, 5, 60, 80)	130357	True
+warehouse	_random_warehouse(132, 5, 60, 80)	109947	True
+warehouse	_random_warehouse(133, 5, 60, 80)	147745	True
+warehouse	_random_warehouse(134, 5, 60, 80)	143793	True
+warehouse	_random_warehouse(135, 5, 60, 80)	119574	True
+warehouse	_random_warehouse(136, 5, 60, 80)	179655	True
+warehouse	_random_warehouse(137, 5, 60, 80)	143897	True
+warehouse	_random_warehouse(138, 5, 60, 80)	140234	True
+warehouse	_random_warehouse(139, 5, 60, 80)	121860	True
+cache-sim	_largest_cache(100)	156793	True
+cache-sim	_largest_cache(101)	79069	True
+cache-sim	_largest_cache(102)	156667	True
+cache-sim	_largest_cache(103)	157936	True
+cache-sim	_largest_cache(104)	122251	True
+cache-sim	_largest_cache(105)	128489	True
+cache-sim	_largest_cache(106)	124005	True
+cache-sim	_largest_cache(107)	80525	True
+cache-sim	_largest_cache(108)	159467	True
+cache-sim	_largest_cache(109)	82509	True
+cache-sim	_largest_cache(110)	129315	True
+cache-sim	_largest_cache(111)	155881	True
+cache-sim	_largest_cache(112)	80105	True
+cache-sim	_largest_cache(113)	124570	True
+cache-sim	_largest_cache(114)	82089	True
+cache-sim	_largest_cache(115)	128642	True
+cache-sim	_largest_cache(116)	159893	True
+cache-sim	_largest_cache(117)	161365	True
+cache-sim	_largest_cache(118)	128112	True
+cache-sim	_largest_cache(119)	82285	True
+cache-sim	_largest_cache(120)	130900	True
+cache-sim	_largest_cache(121)	79013	True
+cache-sim	_largest_cache(122)	79181	True
+cache-sim	_largest_cache(123)	132873	True
+cache-sim	_largest_cache(124)	158621	True
+cache-sim	_largest_cache(125)	136856	True
+cache-sim	_largest_cache(126)	161232	True
+cache-sim	_largest_cache(127)	127875	True
+cache-sim	_largest_cache(128)	159544	True
+cache-sim	_largest_cache(129)	124337	True
+cache-sim	_largest_cache(130)	82397	True
+cache-sim	_largest_cache(131)	130597	True
+cache-sim	_largest_cache(132)	78789	True
+cache-sim	_largest_cache(133)	127070	True
+cache-sim	_largest_cache(134)	160243	True
+cache-sim	_largest_cache(135)	82369	True
+cache-sim	_largest_cache(136)	79965	True
+cache-sim	_largest_cache(137)	81337	True
+cache-sim	_largest_cache(138)	79629	True
+cache-sim	_largest_cache(139)	137867	True
+cache-sim	_largest_cache(140)	82621	True
+cache-sim	_largest_cache(141)	82089	True
+cache-sim	_largest_cache(142)	130590	True
+cache-sim	_largest_cache(143)	79713	True
+cache-sim	_largest_cache(144)	79657	True
+cache-sim	_largest_cache(145)	128427	True
+cache-sim	_largest_cache(146)	80049	True
+cache-sim	_largest_cache(147)	79461	True
+cache-sim	_largest_cache(148)	127604	True
+cache-sim	_largest_cache(149)	79909	True
