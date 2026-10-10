@@ -160,12 +160,18 @@ jobs:
           if-no-files-found: ignore
 
   s7-harder:
-    # Its own job: the Firth references alone run about 490 cases through the
+    # Its own jobs: the Firth references alone run about 490 cases through the
     # reference interpreter and the VM (about 14 minutes on a 4-core runner),
-    # which pushed the language job past its limit.
-    name: S7 harder tier tasks, references and planted mutants
+    # which pushed the language job to its limit.
+    name: S7 harder tier (${{ matrix.part }})
     runs-on: ubuntu-24.04
     timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        # One job per set's Firth references, and one for everything else;
+        # `--only rest` fails if this list misses a part.
+        part: [calibration, calibration2, calibration3, scored, rest]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -181,12 +187,12 @@ jobs:
       - name: Build Lean targets
         run: lake build 2>&1 | tee /tmp/s7-harder-build.log
       - name: Check the harder S7 tier's tasks, references and planted mutants
-        run: python3 eval/s7/harder/test_harder.py 2>&1 | tee /tmp/s7-harder.log
+        run: python3 eval/s7/harder/test_harder.py --only ${{ matrix.part }} 2>&1 | tee /tmp/s7-harder.log
       - name: Retain S7 harder-tier diagnostics
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: s7-harder-diagnostics
+          name: s7-harder-diagnostics-${{ matrix.part }}
           path: /tmp/s7-harder*.log
           retention-days: 7
           if-no-files-found: ignore

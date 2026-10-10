@@ -23,6 +23,13 @@
 
     python3 eval/s7/harder/test_harder.py            # everything (needs the toolchain)
     python3 eval/s7/harder/test_harder.py --no-firth # 1, 2, the Python part of 4, 5 and 6
+    python3 eval/s7/harder/test_harder.py --only SET # the Firth references of one set (3)
+    python3 eval/s7/harder/test_harder.py --only rest # everything else
+
+CI runs one job per `--only` part (`.github/workflows/ci.yml`, job
+`s7-harder`): the parts together are everything, and the `rest` part checks
+that the job's matrix names every set and `rest`, so a part dropped from CI
+fails it.
 """
 from __future__ import annotations
 
@@ -739,8 +746,9 @@ def as_list(r, t):
     return list(r) if len(t.outputs) > 1 else [r]
 
 
-def firth_references() -> None:
-    for name, tasks in SETS.items():
+def firth_references(names=tuple(SETS)) -> None:
+    for name in names:
+        tasks = SETS[name]
         sols = {t.id: (HERE / "reference" / name / "firth" / f"{t.id}.firth").read_text() for t in tasks}
         res = tier.score(sols, "firth", list(tasks))
         for t in tasks:
@@ -751,7 +759,6 @@ def firth_references() -> None:
             most = max((c.get("kernel_cost") or 0) for c in r["cases"])
             check(0 < most <= tier.FUEL // 4,
                   f"Firth reference {name}/{t.id}: most kernel steps on a case {most:,} (budget {tier.FUEL:,})")
-    firth_hand_values()
 
 
 def firth_hand_values() -> None:
@@ -1639,7 +1646,57 @@ def sandbox_scan() -> None:
     check(wired, "scoring Python runs the sandbox scan before any answer")
 
 
+CI = HERE.parent.parent.parent / ".github" / "workflows" / "ci.yml"
+PARTS = (*SETS, "rest")
+
+
+def matrix_problems(ci: str) -> list[str]:
+    """What is wrong with the `s7-harder` job's matrix in CI_TEXT: it must list
+    exactly every `--only` part, and run each with `--only`."""
+    import re
+    job = ci.split("\n  s7-harder:\n", 1)
+    if len(job) != 2:
+        return ["ci.yml has no s7-harder job"]
+    body = re.split(r"\n  [a-z][\w-]*:\n", job[1], maxsplit=1)[0]
+    m = re.search(r"^\s+part: \[([^\]]*)\]\s*$", body, re.M)
+    if not m:
+        return ["the s7-harder job has no `part: [...]` matrix"]
+    listed = [x.strip() for x in m.group(1).split(",") if x.strip()]
+    out = []
+    if sorted(listed) != sorted(PARTS):
+        out.append(f"the s7-harder matrix lists {listed}, not every part {list(PARTS)}")
+    if "test_harder.py --only ${{ matrix.part }}" not in body:
+        out.append("the s7-harder job does not run test_harder.py --only ${{ matrix.part }}")
+    return out
+
+
+def ci_matrix() -> None:
+    """Every part of this suite runs in CI: the job's matrix names each set and
+    `rest`. Planted: a matrix missing a set, and a job that does not pass the
+    part, are each caught."""
+    text = CI.read_text()
+    problems = matrix_problems(text)
+    check(problems == [], f"CI runs every part of test_harder.py ({problems or 'all listed'})")
+    dropped = text.replace("part: [calibration, ", "part: [", 1)
+    check(dropped != text and any("not every part" in p for p in matrix_problems(dropped)),
+          "planted: a CI matrix that drops the calibration set is caught")
+    unpassed = text.replace("test_harder.py --only ${{ matrix.part }}", "test_harder.py", 1)
+    check(unpassed != text and any("does not run" in p for p in matrix_problems(unpassed)),
+          "planted: a CI job that does not pass its part is caught")
+
+
 def main() -> int:
+    if "--only" in sys.argv:
+        i = sys.argv.index("--only")
+        part = sys.argv[i + 1] if i + 1 < len(sys.argv) else ""
+        if part not in PARTS:
+            raise SystemExit(f"--only takes one of {', '.join(PARTS)}")
+        if part != "rest":
+            firth_references((part,))
+            print(f"\n{len(FAILED)} failed" if FAILED else "\nall passed")
+            return 1 if FAILED else 0
+    else:
+        part = None
     hand_values()
     bounds()
     refusals()
@@ -1653,8 +1710,12 @@ def main() -> int:
     deepseek_sample_driver()
     take_rule()
     prompt_and_repair()
+    if part == "rest":
+        ci_matrix()
     if "--no-firth" not in sys.argv:
-        firth_references()
+        if part is None:
+            firth_references()
+        firth_hand_values()
         firth_mutant()
         regex_drafted_rerun()
         deepseek_sample_scored()
