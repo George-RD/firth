@@ -480,13 +480,9 @@ private def runAssumesTests : IO Unit := do
         (envelopes.map fun envelope => let (word, assumes, _) := summary envelope; (word, assumes))
         [("merge-loop", ([], ["append-rest"])), ("append-rest", ([], []))]
 
-/-- A word whose effect has no row takes the whole stack, so a call to it
-with more on the stack is refused. The report names the word, says its effect
-has no row, and writes the effect with a row; the test writes that effect in
-place of the declared one and the program then checks. Typing names the word
-only when giving it a row, and only it, removes the refusal
-(`closedCallFor`), so a call with a row, or a closed call given values of the
-wrong types, is not told this. -/
+/-- An underflow where the values missing can only have come from the word's
+caller says how many inputs the word declares and how many its body takes;
+one where a local, or a quotation, may be what is missing does not. -/
 private def runDeclaredInputsTests : IO Unit := do
   let pipelineContext := contextWithSource "pipeline-declared-inputs" "main.fth"
   let agentConfig : Firth.Elaborator.PipelineConfig :=
@@ -545,6 +541,52 @@ private def runDeclaredInputsTests : IO Unit := do
   declaredCase "an operation" ": f ( -- r:Int^many ) 1 prim + ;\n"
     ["`prim +` in `f` takes 2 values", "`f` declares no inputs, but its body takes 1 input."]
     ": f ( a:Int^many -- r:Int^many ) 1 prim + ;\n"
+  -- A call to a word whose effect has a row, short of one value, and of both.
+  let rowCallee := ": g (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) prim + ;\n"
+  declaredCase "a call to a word with a row" (rowCallee ++ ": f ( -- r:Int^many ) 1 g ;\n")
+    ["`g` in `f` takes 2 values", "`f` declares no inputs, but its body takes 1 input."]
+    (rowCallee ++ ": f ( a:Int^many -- r:Int^many ) 1 g ;\n")
+  declaredCase "a call to a word with a row, given nothing" (rowCallee ++ ": f ( -- r:Int^many ) g ;\n")
+    ["`f` declares no inputs, but its body takes 2 inputs."]
+    (rowCallee ++ ": f ( a:Int^many b:Int^many -- r:Int^many ) g ;\n")
+  -- A call to a word whose effect has no row: the pipeline has no account of
+  -- the values it gets, so erasure says how many it needs.
+  let closedCallee := ": g ( a:Int^many b:Int^many -- r:Int^many ) prim + ;\n"
+  declaredCase "a call to a word with no row" (closedCallee ++ ": f ( -- r:Int^many ) 1 g ;\n")
+    ["`g` in `f` needs 2 values, but only 1 value is on the stack before it. `f` declares no inputs, but its body takes 1 input.",
+      "declare 1 more input in its stack effect. Otherwise push them before `g`."]
+    (closedCallee ++ ": f ( a:Int^many -- r:Int^many ) 1 g ;\n")
+  -- Kernel atoms.
+  declaredCase "swap" ": f ( -- x:Int^many y:Int^many ) swap ;\n"
+    ["`swap` in `f` needs 2 values, but no value is on the stack before it. `f` declares no inputs, but its body takes 2 inputs.",
+      "declare 2 more inputs in its stack effect. Otherwise push them before `swap`."]
+    ": f ( a:Int^many b:Int^many -- x:Int^many y:Int^many ) swap ;\n"
+  declaredCase "dup" ": f ( -- r:Int^many ) dup prim + ;\n"
+    ["`dup` in `f` needs 1 value, but no value is on the stack before it. `f` declares no inputs, but its body takes 1 input."]
+    ": f ( a:Int^many -- r:Int^many ) dup prim + ;\n"
+  declaredCase "drop" ": f ( a:Int^many -- r:Bool^many ) drop drop true ;\n"
+    ["`drop` in `f` needs 1 value, but no value is on the stack before it. `f` declares 1 input, but its body takes 2 inputs."]
+    ": f ( a:Int^many b:Int^many -- r:Bool^many ) drop drop true ;\n"
+  declaredCase "quote" ": f ( -- r:Int^many ) quote call ;\n"
+    ["`quote` in `f` needs 1 value, but no value is on the stack before it. `f` declares no inputs, but its body takes 1 input."]
+    ": f ( a:Int^many -- r:Int^many ) quote call ;\n"
+  -- `call` and `dip` count the values the quotation they run takes.
+  declaredCase "call" ": f ( a:Int^many -- r:Int^many ) [ prim + ] call ;\n"
+    ["`call` in `f` needs 3 values, but only 2 values are on the stack before it. `f` declares 1 input, but its body takes 2 inputs."]
+    ": f ( a:Int^many b:Int^many -- r:Int^many ) [ prim + ] call ;\n"
+  declaredCase "dip" ": f ( -- r:Int^many ) [ 1 ] dip prim + ;\n"
+    ["`dip` in `f` needs 2 values, but only 1 value is on the stack before it. `f` declares no inputs, but its body takes 1 input."]
+    ": f ( a:Int^many -- r:Int^many ) [ 1 ] dip prim + ;\n"
+  -- `if` counts its condition and the values its branches take.
+  declaredCase "if" ": f ( -- r:Int^many ) true [ prim + ] [ prim - ] if ;\n"
+    ["`if` in `f` needs 5 values, but only 3 values are on the stack before it. `f` declares no inputs, but its body takes 2 inputs."]
+    ": f ( a:Int^many b:Int^many -- r:Int^many ) true [ prim + ] [ prim - ] if ;\n"
+  -- The body takes one input and leaves nothing: the comparison with the
+  -- declared result is made at the signature, before the `drop`, but after
+  -- the body is checked, so it does not stop the count.
+  declaredCase "a result missing too" ": f ( -- r:Int^many ) drop ;\n"
+    ["`f` declares no inputs, but its body takes 1 input."]
+    ": f ( a:Int^many -- r:Int^many ) drop ;\n"
   -- With one input declared, the inner block is short while `x` is an
   -- unused local, which is not blamed on the inputs: the body takes at
   -- least one.
@@ -567,7 +609,39 @@ private def runDeclaredInputsTests : IO Unit := do
   notDeclared "an effect with a row"
     ": f (forall ρ; ρ a:Int^many -- ρ r:Int^many) locals { a } { a drop locals { b c } { b c prim + } } ;\n"
     ["A `locals` block or an operation here needs more values than the stack holds."]
+  -- An operation inside a `locals` block: a local may have been meant.
+  notDeclared "an atom under locals" ": f ( a:Int^many -- r:Int^many ) locals { a } { a swap prim - } ;\n"
+    ["`swap` needs more values than the stack holds here."]
+  -- A quotation is what is missing.
+  notDeclared "call with no quotation" ": f ( -- r:Int^many ) call ;\n"
+    ["`call` needs more values than the stack holds here."]
+  notDeclared "dip with no quotation" ": f ( a:Int^many -- r:Int^many ) dip ;\n"
+    ["`dip` needs more values than the stack holds here."]
+  notDeclared "if with one branch" ": f ( a:Bool^many -- r:Int^many ) [ 1 ] if ;\n"
+    ["`if` needs more values than the stack holds here."]
+  notDeclared "compose" ": f ( -- r:Int^many ) [ 1 ] compose call ;\n"
+    ["`compose` needs more values than the stack holds here."]
+  -- A word whose effect has no row takes the whole stack, so with inputs
+  -- declared the call to `g`, before the underflow, is refused: declaring
+  -- them is not the fix.
+  let closedPush := ": g ( -- x:Int^many ) 1 ;\n"
+  notDeclared "an operation after a call to a word with no row" (closedPush ++ ": f ( -- r:Int^many ) g prim + ;\n")
+  notDeclared "a block after a call to a word with no row"
+    (closedPush ++ ": main ( -- r:Int^many ) g locals { a b } { a b prim + } ;\n")
+    ["A `locals` block or an operation here needs more values than the stack holds."]
+  -- The stack is not tracked after a quotation of unknown effect ran:
+  -- erasure counts the quotations `call` ran as still there, so the third
+  -- `drop` looks short of one value where the body takes two.
+  notDeclared "an untracked stack" ": f ( -- r:Int^many ) [ 2 ] [ call ] call drop drop drop 5 ;\n"
+    ["`drop` needs more values than the stack holds here."]
 
+/-- A word whose effect has no row takes the whole stack, so a call to it
+with more on the stack is refused. The report names the word, says its effect
+has no row, and writes the effect with a row; the test writes that effect in
+place of the declared one and the program then checks. Typing names the word
+only when giving it a row, and only it, removes the refusal
+(`closedCallFor`), so a call with a row, or a closed call given values of the
+wrong types, is not told this. -/
 private def runClosedCalleeTests : IO Unit := do
   let pipelineContext := contextWithSource "pipeline-closed" "main.fth"
   let agentConfig : Firth.Elaborator.PipelineConfig :=

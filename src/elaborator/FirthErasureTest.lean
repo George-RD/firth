@@ -122,7 +122,7 @@ private def expectErrorAt (word : WordDefinition) (expected : ErasureError → B
         let actual := match error with
           | .duplicateLocal _ actual | .unboundLocal _ actual | .unsupportedCapture _ actual
           | .missingStackValue actual _ | .linearCopy _ actual _ | .linearUnused _ actual
-          | .unresolvedEffect _ actual | .effectUnderflow _ actual _ | .unsupportedLiteral actual
+          | .unresolvedEffect _ actual | .effectUnderflow _ actual _ _ | .unsupportedLiteral actual
           | .unsupportedAtom _ actual | .usageMismatch _ actual
           | .untrackedStack _ actual _ | .hiddenLocal _ actual | .branchShape actual _ _ _ _ => actual
         if actual == span then pure () else fail s!"span mismatch for {repr error}: {repr actual} != {repr span}"

@@ -264,17 +264,24 @@ structure BranchLocals where
   missing : Nat := 0
   deriving Repr, BEq
 
-/-- What a `locals` block that names more values than the body can see was
-short of: the names it binds, how many values the body could see for them,
-and how many unused locals are on the stack (a block's unused locals are
-names, not values the body can see). `tracked` is false once a quotation of
-unknown stack effect has run, when the stack as tracked may not be the real
-one. Diagnostics only. -/
+/-- What a `locals` block that names more values than the body can see, or
+an operation handed fewer values than it takes, was short of: the names the
+block binds (none for an operation), how many values it needed, how many the
+body could see for them, and how many unused locals are on the stack (a
+block's unused locals are names, not values the body can see; an operation's
+are those below the ones set aside on top for it). `tracked` is
+false once a quotation of unknown stack effect has run, when the stack as
+tracked may not be the real one. `inBlock` is true where an operation is
+inside a `locals` block, so a local may have been meant. Diagnostics only. -/
 structure Shortfall where
   names : List String
+  needed : Nat
   present : Nat
   hidden : Nat
   tracked : Bool
+  inBlock : Bool := false
+  /-- How an operation is written (`swap`, `prim +`); empty for a block. -/
+  operation : String := ""
   /-- Filled by the agent's diagnostics (`DeclaredInputs`). -/
   inputs : Option DeclaredInputs := none
   deriving Repr, BEq
@@ -292,8 +299,13 @@ inductive ErasureError where
   | linearUnused (name : String) (span : Span)
   | unresolvedEffect (name : String) (span : Span)
   /-- `account` is filled by the pipeline where the operation, as the body is
-  written, is handed fewer values than it takes (`CallAccount.missing`). -/
+  written, is handed fewer values than it takes (`CallAccount.missing`).
+  `short` is filled where a kernel atom, word or primitive is handed fewer
+  values than it takes and each value missing is one it could have been
+  given by the word's caller: for `call`, `dip` and `if`, only once the
+  quotations they run are on the stack with known effects. -/
   | effectUnderflow (name : String) (span : Span) (account : Option CallAccount := none)
+      (short : Option Shortfall := none)
   | usageMismatch (name : String) (span : Span)
   | unsupportedLiteral (span : Span)
   | unsupportedAtom (name : String) (span : Span)
@@ -681,8 +693,15 @@ def nameInPlace : List StackEntry → List StackEntry → List StackEntry
 
 /-- What a `locals` block naming `names` is short of on `state`. -/
 private def shortfall (names : List LocatedName) (state : State) : Shortfall :=
-  { names := names.map (·.name), present := (bindable names.length state.stack).length
+  { names := names.map (·.name), needed := names.length
+    present := (bindable names.length state.stack).length
     hidden := (state.stack.filter hiddenEntry).length, tracked := !state.untracked }
+
+/-- What an operation that needs `needed` values is short of on `state`. -/
+private def operationShortfall (operation : String) (needed : Nat) (state : State) (inBlock : Bool) :
+    Shortfall :=
+  { names := [], needed, present := state.stack.length
+    hidden := (state.stack.filter hiddenEntry).length, tracked := !state.untracked, inBlock, operation }
 
 private def boundSlots (names : List LocatedName) (state : State) : List Slot :=
   let top := bindable names.length state.stack
@@ -939,6 +958,23 @@ def atomReach (name : String) (stack : List StackEntry) : Nat :=
   | "compose", _ | "swap", _ => 2
   | "dup", _ | "drop", _ | "quote", _ => 1
   | _, _ => 0
+
+/-- What the atom `name` is short of on `state`, where each value missing is
+one the word's caller could have given: not for `compose`, which takes two
+quotations, nor for `call`, `dip` or `if` until the quotations they run are
+on the stack with known effects (a branch effect, for `if`), since until then
+a quotation may be what is missing. `call` runs short only of the values a
+quotation of known effect on top takes: one of unknown effect runs whatever
+is below it. -/
+private def atomShortfall (name : String) (state : State) (inBlock : Bool) : Option Shortfall :=
+  let short := some (operationShortfall name (atomReach name state.stack) state inBlock)
+  match name, state.stack with
+  | "call", _ :: _ => short
+  | "dip", quotation :: _ => if quotation.effect.isSome then short else none
+  | "if", falseBranch :: trueBranch :: _ =>
+      if (branchEffect trueBranch.effect falseBranch.effect).isSome then short else none
+  | "swap", _ | "dup", _ | "drop", _ | "quote", _ => short
+  | _, _ => none
 
 inductive AppliesSignature (signature : Signature) (state : State) : State → Prop where
   | apply
@@ -1347,8 +1383,11 @@ private theorem demandState_correct (slot : Slot) (state : State)
   exact .advance
 
 private def applySignatureWithProof (name : String) (span : Span) (signature : Signature)
-    (state : State) : Except ErasureError { next : State // AppliesSignature signature state next } :=
-  if short : state.stack.length < signature.input.length then .error (.effectUnderflow name span)
+    (state : State) (written : String) (inBlock : Bool) :
+    Except ErasureError { next : State // AppliesSignature signature state next } :=
+  if short : state.stack.length < signature.input.length then
+    .error (.effectUnderflow name span none
+      (some (operationShortfall written signature.input.length state inBlock)))
   else match clearEq : hiddenIn signature.input.length state.stack with
   | some slot => .error (.hiddenLocal slot.name span)
   | none =>
@@ -1420,7 +1459,7 @@ private def quotationAttemptsWithProof (seedCounts : List Nat) (env : EffectEnv)
         program := bodyRun.program
         final := bodyRun.final
         evidence := bodyRun.evidence }
-    | .error (.effectUnderflow _ _ _) =>
+    | .error (.effectUnderflow _ _ _ _) =>
         quotationAttemptsWithProof rest env body visible span run
     | .error (.missingStackValue _ _) =>
         quotationAttemptsWithProof rest env body visible span run
@@ -1489,7 +1528,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
             evidence := .literal translatedEq }
       | .word name span => match resolvedEq : env.word name with
         | none => .error (.unresolvedEffect name span)
-        | some signature => match applySignatureWithProof name span signature state with
+        | some signature => match applySignatureWithProof name span signature state name !visible.isEmpty with
           | .error error => .error error
           | .ok applied => .ok {
               program := atomList (.word name) span
@@ -1497,7 +1536,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
               evidence := .word resolvedEq applied.property }
       | .primitive name span => match resolvedEq : env.primitive name with
         | none => .error (.unresolvedEffect name span)
-        | some signature => match applySignatureWithProof name span signature state with
+        | some signature => match applySignatureWithProof name span signature state s!"prim {name}" !visible.isEmpty with
           | .error error => .error error
           | .ok applied => .ok {
               program := atomList (.prim name) span
@@ -1511,7 +1550,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
               program := atomList .swap span
               final := { state with stack := b :: a :: rest }
               evidence := .atom clearEq (.swap stackEq) }
-          | _ => .error (.effectUnderflow name span)
+          | _ => .error (.effectUnderflow name span none (atomShortfall name state !visible.isEmpty))
         | "dup" => match stackEq : state.stack with
           | a :: rest => match usageEq : a.usage with
             | .many => .ok {
@@ -1519,7 +1558,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                 final := { state with stack := a :: a :: rest }
                 evidence := .atom clearEq (.dup stackEq usageEq) }
             | .linear => .error (.linearCopy name span none)
-          | _ => .error (.effectUnderflow name span)
+          | _ => .error (.effectUnderflow name span none (atomShortfall name state !visible.isEmpty))
         | "drop" => match stackEq : state.stack with
           | a :: rest => match usageEq : a.usage with
             | .many => .ok {
@@ -1529,13 +1568,13 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
             | .linear => match a.slot with
               | some slot => .error (.linearUnused slot.name span)
               | none => .error (.linearCopy name span none)
-          | _ => .error (.effectUnderflow name span)
+          | _ => .error (.effectUnderflow name span none (atomShortfall name state !visible.isEmpty))
         | "quote" => match stackEq : state.stack with
           | a :: rest => .ok {
               program := atomList .quote span
               final := { state with stack := { usage := a.usage, effect := some (0, 1), exact := true } :: rest }
               evidence := .atom clearEq (.quote stackEq) }
-          | _ => .error (.effectUnderflow name span)
+          | _ => .error (.effectUnderflow name span none (atomShortfall name state !visible.isEmpty))
         | "dip" => match movedEq : dipMove state.stack with
           | some (next, exact) => .ok {
               program := atomList .dip span
@@ -1545,7 +1584,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                          lostAt := lostAfter state exact "dip" span
                          inexact := state.inexact || runInexact "dip" state.stack }
               evidence := .atom clearEq (.dip movedEq) }
-          | none => .error (.effectUnderflow name span)
+          | none => .error (.effectUnderflow name span none (atomShortfall name state !visible.isEmpty))
         | "call" => match movedEq : callMove state.stack with
           | some (next, exact) => .ok {
               program := atomList .call span
@@ -1555,7 +1594,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                          lostAt := lostAfter state exact "call" span
                          inexact := state.inexact || runInexact "call" state.stack }
               evidence := .atom clearEq (.call movedEq) }
-          | none => .error (.effectUnderflow name span)
+          | none => .error (.effectUnderflow name span none (atomShortfall name state !visible.isEmpty))
         | "compose" => match movedEq : composeMove state.stack with
           | some (next, exact) => .ok {
               program := atomList .compose span
@@ -1564,7 +1603,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                          untracked := state.untracked || !exact
                          lostAt := lostAfter state exact "compose" span }
               evidence := .atom clearEq (.compose movedEq) }
-          | none => .error (.effectUnderflow name span)
+          | none => .error (.effectUnderflow name span none (atomShortfall name state !visible.isEmpty))
         | "if" => match ifMismatch state.stack with
           | some (onTrue, onFalse) => .error (.branchShape span onTrue onFalse (branchLocals state.stack onTrue onFalse))
           | none => match movedEq : ifMove state.stack with
@@ -1576,7 +1615,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                            lostAt := lostAfter state exact "if" span
                            inexact := state.inexact || runInexact "if" state.stack }
                 evidence := .atom clearEq (.ifThenElse movedEq) }
-            | none => .error (.effectUnderflow name span)
+            | none => .error (.effectUnderflow name span none (atomShortfall name state !visible.isEmpty))
         | _ => .error (.unsupportedAtom name span)))
       | .quotation body quotationSpan => match closedEq : captureIn visible body with
         | some (name, localSpan) => .error (.unsupportedCapture name localSpan)
