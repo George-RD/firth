@@ -33,7 +33,7 @@ case-sensitive.
 
 Implementations may accept Unicode aliases in tooling, but canonical source uses
 the grammar above. `true` and `false` are reserved Boolean literals;
-`many`, `linear`, `forall`, `vocab`, `use`, `export`, `locals`,
+`many`, `linear`, `forall`, `vocab`, `use`, `import`, `export`, `locals`,
 `prim`, and kernel atom names are reserved in their syntactic positions. A
 word name may not be a keyword or kernel atom, `pick` and `roll` included,
 although source does not spell those two directly: named locals erase to them.
@@ -62,7 +62,10 @@ errors.
 
 ## 2. Source files and vocabularies
 
-    file            = { vocabulary | use-declaration | word-definition } ;
+    file              = { import-declaration } ,
+                        { vocabulary | use-declaration | export-declaration | word-definition } ;
+    import-declaration = "import" , string , ";" ;
+    export-declaration = "export" , name , { name } , ";" ;
     vocabulary      = "vocab" , word-name , "{" ,
                       { vocabulary | use-declaration | word-definition } , "}" ;
     use-declaration = "use" , name , [ "as" , word-name ] , ";" ;
@@ -93,10 +96,10 @@ exported words become unqualified lookup candidates from the declaration
 through the end of its containing scope. `as` binds an alias for that
 vocabulary, so `alias.w` is qualified lookup for the canonical word `v.w`. An
 alias cannot equal another alias or a visible canonical vocabulary prefix in the
-same scope; either collision is a duplicate-alias error. A word is exported by
-default from its defining vocabulary; private words and user-selectable export
-modifiers are outside v0.1. A word defined in the current vocabulary is
-directly available there without a `use`.
+same scope; either collision is a duplicate-alias error. Inside one file every
+word stays visible as described here, whether or not it is exported. Across
+files only exported words are visible (section 2.0). A word defined in the
+current vocabulary is directly available there without a `use`.
 
 Name resolution constructs its candidate set before checking a body. Qualified
 lookup first expands a leading alias to its canonical vocabulary prefix, then
@@ -110,10 +113,19 @@ below.
 
 | Code | Condition |
 | --- | --- |
-| `firth.name.duplicate-canonical` | two declarations produce one canonical key |
+| `firth.name.duplicate-canonical` | two declarations produce one canonical key, in one file or in two files of one program |
 | `firth.name.duplicate-alias` | an alias repeats or collides with a visible canonical vocabulary prefix |
 | `firth.name.ambiguous-use` | an unqualified reference has multiple candidates |
-| `firth.name.unresolved` | a use target or qualified or unqualified reference has no candidate |
+| `firth.name.unresolved` | a use target, qualified or unqualified reference, or `export` name has no candidate (an `export` name must be a word the file defines) |
+| `firth.name.not-exported` | a reference names a word that a directly imported file defines but does not export; the message names the file |
+| `firth.name.duplicate-export` | an `export` lists one name twice |
+| `firth.name.import-path` | an import path is absolute, has an empty segment or a character outside the allowed set, does not end in `.firth`, or climbs above the source root |
+| `firth.name.import-not-found` | an import names a file that was not supplied |
+| `firth.name.duplicate-import` | two imports in one file name one normalised path |
+| `firth.name.import-cycle` | an import reaches a file still being loaded; the message lists the files around the cycle |
+| `firth.name.import-failed` | an imported file was refused, so the importer is not checked |
+| `firth.syntax.misplaced-import` | an `import` follows another declaration or appears inside a vocabulary |
+| `firth.syntax.misplaced-export` | an `export` appears inside a vocabulary |
 | `firth.name.locals-order` | a `locals` block that opens a word's body binds a name the stack effect gives one input to another input (section 5) |
 
 Name diagnostics identify the declaration or reference span that caused the
@@ -124,7 +136,8 @@ code, then payload ID. Candidate lists and related spans are sorted by canonical
 key, then source range start and end, then payload ID. Resolution therefore has
 no implementation-defined choice and does not depend on hash-map iteration.
 
-Vocabulary declarations, `use`, aliases, and export status erase completely.
+Vocabulary declarations, `use`, aliases, imports and exports erase completely
+before kernel construction.
 The dictionary key is the canonical qualified name, and the dictionary value is
 the word's erased prenex stack effect and elaborated kernel body. Vocabularies
 organise names but introduce no runtime operations.
@@ -135,6 +148,47 @@ before their textual definition, so mutually recursive dictionary words are
 possible. A body is checked against its declared effect while all declared
 signatures are in the dictionary. A public contract may retain refinements, but
 the kernel dictionary stores only the erased `WordType`.
+
+### 2.0 Imports and exports
+
+Every `import` comes before the file's other declarations. Neither `import` nor
+`export` may appear inside a vocabulary.
+
+An import path is `/`-separated segments of ASCII letters, digits, `.`, `_` and
+`-`, ending in `.firth`. It is relative to the directory of the importing file.
+`.` segments are dropped and `..` goes up one directory. The resolved path must
+stay inside the source root, the directory of the root file unless the caller
+names another. Two imports of one normalised path in one file are refused.
+
+The program is the root file and every file it imports, transitively. Each file
+is loaded once, however many paths reach it. The load order is the post-order of
+a depth-first walk from the root that follows imports in the order written: a
+file comes after everything it imports, and the root comes last. An import that
+reaches a file still being loaded is a cycle and is refused.
+
+A word's canonical key is the key it has in its own file, whoever imports it.
+Importing adds no prefix. The whole program is one dictionary, so two files
+that define one key cannot be in one program, even when neither exports it. A
+library avoids collisions by putting its words in a vocabulary.
+
+`export a b.c;` lists words the file offers to its importers, by canonical key.
+A file may have several `export` declarations. Each name must be a word the
+file defines, and may be listed once. Exports matter only to importers: a file
+with no `export` is still a complete program.
+
+An importing file sees the exported words of the files it imports directly, and
+nothing else from them. They join its own words as resolution candidates under
+the rules above: a qualified reference names a key exactly, and an unqualified
+reference considers the current vocabulary and active `use` declarations. A
+`use` may name a vocabulary of a directly imported file only if that vocabulary
+exports at least one word. Imports are not transitive: to use a word of a file
+that an imported file imports, import that file too.
+
+Each file is checked once, in load order, against the declared stack effects of
+the words it imports. Diagnostics carry the path of the file they belong to.
+When a file is refused, each file that imports it is not checked and gets
+`firth.name.import-failed` at the import. Files that do not depend on the
+refused one are still checked.
 
 ## 2.1 Vocabulary layers
 

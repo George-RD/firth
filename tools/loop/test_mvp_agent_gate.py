@@ -247,6 +247,25 @@ class MvpAgentGateTests(unittest.TestCase):
         self.manifest([self.entry(0, source_sha256="NOTAHASH"), self.entry(1), self.entry(2)])
         self.assert_refused("expected a lowercase SHA-256")
 
+    def test_a_source_root_outside_the_repository_or_the_source_is_refused(self) -> None:
+        (self.root / "docs" / "other").mkdir()
+        for root in ("..", "/tmp", "docs/other", "examples/mvp/app0.firth"):
+            with self.subTest(root=root):
+                self.manifest([self.entry(0, source_root=root), self.entry(1), self.entry(2)])
+                self.assert_refused("source_root")
+
+    def test_a_source_root_is_kept_for_the_rebuild(self) -> None:
+        # Deleting the source root from the verified entry must turn this red:
+        # `rebuild` would then resolve imports against the source's directory.
+        self.manifest([self.entry(0, source_root="examples"), self.entry(1), self.entry(2)])
+        spec = importlib.util.spec_from_file_location(
+            "synthetic_gate", self.root / "tools/loop/mvp_agent_gate.py")
+        gate = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(gate)
+        verified = gate.verify_provenance(gate.load_manifest())
+        self.assertEqual(verified[0]["source_root"], str((self.root / "examples").resolve()))
+        self.assertNotIn("source_root", verified[1])
+
     def test_provenance_is_verified_before_anything_is_executed(self) -> None:
         """A manifest whose provenance is sound reaches the toolchain stage.
 
@@ -472,6 +491,8 @@ class ExecutionWiringTests(unittest.TestCase):
         reference, target = self.observations()
         def adapter(command, request, workspace, label):
             calls[label] = request
+            if label.endswith("sources"):
+                return sources_response(request)
             if label.endswith("elaborate"):
                 return elaboration
             if label.endswith("compile"):
@@ -523,7 +544,9 @@ class ExecutionWiringTests(unittest.TestCase):
                 with self.assertRaisesRegex(self.gate.GateError, needle):
                     self.gate.compare(*self.observations(), "contract", contract=mutated)
 
-    def rebuild_answer_42(self, semantics_of=lean_semantics) -> dict[str, object]:
+    def rebuild_answer_42(self, semantics_of=lean_semantics, *, entry: dict | None = None,
+                          root: Path | None = None, calls: dict | None = None,
+                          held: list | None = None, imported: list | None = None) -> dict[str, object]:
         """Rebuilds `: main ( -- n:Int ) 42;` with mocked adapters, the Lean
         target semantics answering `semantics_of(target)` for the VM's `target`."""
         main = {"name": "main", "checking_state": "checked", "proof_state": "available",
@@ -542,7 +565,14 @@ class ExecutionWiringTests(unittest.TestCase):
                              "kernel_cost": 1, "image_version": 1, "frames": []}],
                   "cost": {"total": 1, "kernel": 1, "steps": 1}, "world_observation": {"bytes": [0]}}
         def adapter(command, request, workspace, label):
+            if calls is not None:
+                calls[label] = request
+            if label.endswith("sources"):
+                return {**sources_response(request), "files": imported or []}
             if label.endswith("elaborate"):
+                if held is not None:
+                    held.extend(sorted(item.relative_to(workspace).as_posix()
+                                       for item in workspace.rglob("*") if item.is_file()))
                 return elaboration
             if label.endswith("compile"):
                 return {"status": "success", "target_program": {"entry": "main", "words": [
@@ -550,6 +580,9 @@ class ExecutionWiringTests(unittest.TestCase):
             if label.endswith("target-run"):
                 return semantics_of(target)
             return reference if label.endswith("reference-run") else target
+        if entry is not None:
+            with patch.object(self.gate, "adapter", adapter):
+                return self.gate.rebuild(entry, root)
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             source = root / "source.firth"
@@ -557,6 +590,46 @@ class ExecutionWiringTests(unittest.TestCase):
             with patch.object(self.gate, "adapter", adapter):
                 return self.gate.rebuild({"name": "test", "entry": "main", "source": str(source),
                                          "source_path": "source.firth"}, root)
+
+    def test_rebuild_passes_imported_files_to_elaborate_and_compile(self) -> None:
+        # A program with imports: its files reach the scratch workspace, the
+        # elaborate request and the compiler's source binding, under their
+        # paths relative to the source root.
+        lib = {"source_path": "lib/one.firth", "source_text": "export one; : one ( -- n:Int ) 1;"}
+        calls: dict[str, dict] = {}
+        held: list[str] = []
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "app").mkdir()
+            source = root / "app" / "main.firth"
+            source.write_text('import "../lib/one.firth"; : main ( -- n:Int ) 42;', encoding="utf-8")
+            entry = {"name": "test", "entry": "main", "source": str(source),
+                     "source_path": "main.firth", "source_root": str(root)}
+            self.rebuild_answer_42(entry=entry, root=root, calls=calls, held=held,
+                                   imported=[lib])
+        self.assertEqual(calls["test sources"]["source_path"], "app/main.firth")
+        request = calls["test elaborate"]
+        self.assertEqual(request["source_path"], "app/main.firth")
+        self.assertEqual(request["files"], [lib])
+        self.assertEqual(held, ["app/main.firth", "lib/one.firth"])
+        bound = calls["test compile"]["source"]
+        self.assertEqual(bound["source_path"], "app/main.firth")
+        self.assertEqual(bound["files"], [lib])
+
+    def test_rebuild_names_a_nested_source_by_its_root_path_without_imported_files(self) -> None:
+        # A source below its root keeps its root-relative path even when none
+        # of its imports was found, so the elaborator resolves them from there.
+        calls: dict[str, dict] = {}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "app").mkdir()
+            source = root / "app" / "main.firth"
+            source.write_text(": main ( -- n:Int ) 42;", encoding="utf-8")
+            entry = {"name": "test", "entry": "main", "source": str(source),
+                     "source_path": "main.firth", "source_root": str(root)}
+            self.rebuild_answer_42(entry=entry, root=root, calls=calls)
+        self.assertEqual(calls["test elaborate"]["source_path"], "app/main.firth")
+        self.assertNotIn("files", calls["test elaborate"])
 
     def test_rebuild_fails_when_the_lean_target_semantics_disagrees(self) -> None:
         # Deleting the `compare_target_semantics` call from `rebuild` must turn
@@ -576,6 +649,13 @@ class ExecutionWiringTests(unittest.TestCase):
             with self.subTest(fuel=fuel), self.assertRaisesRegex(self.gate.GateError, "fuel"):
                 self.gate.rebuild({"name": "test", "entry": "main", "source": "x", "source_path": "x"},
                                   Path("/nonexistent"), fuel=fuel)
+
+
+def sources_response(request: dict[str, object]) -> dict[str, object]:
+    """What `firthSources` answers for a program without imports."""
+    path = Path(str(request["source_root"])) / str(request["source_path"])
+    return {"status": "success", "source_path": request["source_path"],
+            "source_text": path.read_text(encoding="utf-8"), "files": []}
 
 
 def render_toml(data: dict[str, object]) -> str:

@@ -74,6 +74,13 @@ structure ParseError where
   span of the bracket that closes the outermost one, and how to fix the
   `;`. -/
   closedBy : Option (String × Span × EarlyEndFix) := none
+  /-- For the errors of a program of several files (`dec.multi-file-imports`):
+  the other files the error is about, as source paths. The file that
+  defines a name for `firth.name.not-exported` and
+  `firth.name.duplicate-canonical`, the refused file for
+  `firth.name.import-failed`, and the files around the cycle, starting and
+  ending with this one, for `firth.name.import-cycle`. Empty otherwise. -/
+  files : List String := []
   deriving Repr, BEq
 
 structure Located (α : Type) where
@@ -149,6 +156,13 @@ structure UseDecl where
   span : Span
   deriving Repr, BEq
 
+/-- `import "path";`: another source file of the program, by a path relative
+to the importing file's directory (`dec.multi-file-imports`). -/
+structure ImportDecl where
+  path : String
+  span : Span
+  deriving Repr, BEq
+
 structure WordDefinition where
   name : String
   effect : StackEffect
@@ -157,6 +171,9 @@ structure WordDefinition where
   deriving Repr, BEq
 
 inductive Declaration where
+  | «import» (decl : ImportDecl)
+  /-- `export a b;`: words this file offers to the files that import it. -/
+  | «export» (names : List LocatedName) (span : Span)
   | use (decl : UseDecl)
   | word (decl : WordDefinition)
   | vocabulary (name : String) (declarations : List Declaration) (span : Span)
@@ -219,7 +236,7 @@ private def isRowName (s : String) : Bool :=
   | 'ρ' :: rest => rest.all (fun c => isAsciiLetter c || isDigit c || c = '-')
   | _ => false
 private def reserved (s : String) : Bool :=
-  ["true", "false", "many", "linear", "forall", "vocab", "use", "as", "export", "locals", "prim",
+  ["true", "false", "many", "linear", "forall", "vocab", "use", "as", "import", "export", "locals", "prim",
    "dup", "drop", "swap", "pick", "roll", "dip", "call", "compose", "quote", "if"].contains s
 private def validWordName (s : String) : Bool := isWordName s && !reserved s
 
@@ -547,11 +564,12 @@ private def closesAll (tokens : Array Token) (start : Nat) (pending : List Strin
     | none => true
     -- A `}` here closes the enclosing vocabulary.
     | some t => t.kind == .symbol ":" || t.kind == .symbol "}" || t.kind == .identifier "use"
-        || t.kind == .identifier "vocab"
+        || t.kind == .identifier "vocab" || t.kind == .identifier "import" || t.kind == .identifier "export"
   -- A `;` ends the word only outside every bracket opened after the closer.
   let ended (i : Nat) : Bool :=
     let rest := (tokens.toList.drop i).takeWhile fun t =>
       t.kind != .symbol ":" && t.kind != .identifier "use" && t.kind != .identifier "vocab"
+        && t.kind != .identifier "import" && t.kind != .identifier "export"
     -- A closer at depth 0 leaves the word's scope (a vocabulary's `}`), so no
     -- `;` after it can end the word.
     let step (state : Nat × Bool × Bool) (t : Token) : Nat × Bool × Bool :=
@@ -659,11 +677,34 @@ private partial def parseLocals (p : Parser) (start : Token) (outer : List Strin
         parseItems bodyOpen "}" outer |>.map (fun (xs, after, close) => (.locals ns xs (mkSpan start.span.start close.stop), after))
 end
 
-private partial def parseDeclarations (p : Parser) (closing : Option String) : Except ParseError (List Declaration × Parser × Option Span) :=
+/-- The names of an `export` declaration, up to its `;`. -/
+private partial def parseExportNames (p : Parser) (acc : List LocatedName) :
+    Except ParseError (List LocatedName × Parser) :=
+  match current p with
+  | some t => if isSymbol ";" t then
+        if acc.isEmpty then expected p "a word name" else .ok (acc.reverse, bump p)
+      else parseName p true >>= fun (n, s, after) => parseExportNames after ({ name := n, span := s } :: acc)
+  | none => expected p ";"
+
+/-- `importsOpen` is whether an `import` may still come here: only at the top
+level, before any other declaration. -/
+private partial def parseDeclarations (p : Parser) (closing : Option String) (importsOpen : Bool := false) :
+    Except ParseError (List Declaration × Parser × Option Span) :=
   match current p with
   | none => match closing with | some c => expected p c | none => .ok ([], p, none)
   | some t => if closing.any (fun c => isSymbol c t) then .ok ([], bump p, some t.span) else
     match t.kind with
+    | .identifier "import" =>
+        if !importsOpen then .error (err "firth.syntax.misplaced-import" t.span .validation) else
+        match current (bump p) with
+        | some { kind := .string path, span := pathSpan } =>
+            takeSymbol (bump (bump p)) ";" >>= fun p1 => parseDeclarations p1 closing true |>.map
+              (fun (ds, r, close) => (.import { path, span := mkSpan t.span.start pathSpan.stop } :: ds, r, close))
+        | _ => expected (bump p) "a quoted file path"
+    | .identifier "export" =>
+        if closing.isSome then .error (err "firth.syntax.misplaced-export" t.span .validation) else
+        parseExportNames (bump p) [] >>= fun (names, p1) => parseDeclarations p1 closing |>.map
+          (fun (ds, r, close) => (.export names (mkSpan t.span.start (lastStop p1 t.span.stop)) :: ds, r, close))
     | .identifier "use" => parseName (bump p) true >>= fun (n, ns, p1) =>
         (match current p1 with | some a => if a.kind == .identifier "as" then parseName (bump p1) false |>.map (fun (x, _, r) => (some x, r)) else .ok (none, p1) | none => .ok (none, p1)) >>= fun (alias, p2) =>
           takeSymbol p2 ";" >>= fun p3 => parseDeclarations p3 closing |>.map (fun (ds, r, close) => (.use { name := n, alias, span := mkSpan t.span.start (lastStop p3 ns.stop) } :: ds, r, close))
@@ -678,7 +719,7 @@ def parse (source : String) : ParseOutput :=
   | .error e => .failure [e]
   | .ok result =>
       let p : Parser := { tokens := result.tokens.toArray, index := 0, eofPosition := result.endPosition }
-      match parseDeclarations p none with
+      match parseDeclarations p none true with
       | .error e => .failure [e]
       | .ok (declarations, rest, _) => if current rest |>.isSome then .failure [err "firth.syntax.trailing-input" (current rest |>.get!).span .grammar]
         else

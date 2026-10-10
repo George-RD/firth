@@ -9,5 +9,6 @@
   {"source": "examples/programs/sequences.firth", "module": "Programs.Sequences"},
   {"source": "examples/programs/signed.firth", "module": "Programs.Signed"},
   {"source": "examples/programs/sum-to.firth", "module": "Programs.SumTo"},
-  {"source": "examples/inventory/allocator.firth", "module": "Inventory.Allocator"}
+  {"source": "examples/inventory/allocator.firth", "module": "Inventory.Allocator"},
+  {"source": "examples/inventory/policy-change/all-or-nothing.firth", "module": "Inventory.AllOrNothing"}
 ]

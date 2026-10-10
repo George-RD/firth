@@ -93,7 +93,11 @@ in and reads back.
   refuses if it finds one.
 - `audit.py`: the MVP tier's transcript audit (`audit_subagent.py`), with
   this tier's feedback for the check that each `repair-<n>.md` is what the
-  author was shown.
+  author was shown, and this tier's `take` for the check that each
+  `solutions-<n>.json` holds the answers the round may take.
+- `deepseek.py`: the DeepSeek author's driver (below, "DeepSeek").
+- `deepseek_sample.py`: one DeepSeek sample through both rounds, scored
+  (below, "DeepSeek").
 - `test_harder.py`: hand-worked values for every task, both reference
   solutions on every case, the mutants, a check that every second- and
   third-pool input keeps to its description's bounds and every integer fits in an
@@ -103,15 +107,18 @@ in and reads back.
 ```sh
 python3 eval/s7/harder/test_harder.py
 python3 eval/s7/harder/tier.py prompt --set calibration --lang firth > prompt.md
-python3 eval/s7/harder/tier.py extract answer-1.md > solutions-1.json
+python3 eval/s7/harder/tier.py take --set calibration answer-1.md > solutions-1.json
 python3 eval/s7/harder/tier.py score --set calibration --lang firth solutions-1.json > results-1.json
 python3 eval/s7/harder/tier.py repair --set calibration --lang firth solutions-1.json results-1.json > repair-1.md
+python3 eval/s7/harder/tier.py take --set calibration answer-2.md \
+    --after solutions-1.json results-1.json > solutions-2.json
 ```
 
 ## Protocol
 
-The MVP tier's sub-agent protocol, unchanged: the author is a sub-agent told
-to read only its prompt file and to write only its answer file, answers every
+The MVP tier's sub-agent protocol, with one step changed (below): the
+author is a sub-agent told to read only its prompt file and to write only
+its answer file, answers every
 task in one file, and is then shown how each answer did on its task's visible
 example (`repair`) and may fix it once. An author whose answers all passed
 their examples is shown nothing, since nothing it could see failed, and no
@@ -119,6 +126,18 @@ round is run; its result within two attempts is its first result. Round 1 is "co
 attempt"; round 2 is "correct within two attempts", the two measures
 `todo.s7-python-baseline` names. The Firth prompt carries the MVP documents.
 Each transcript is audited with `audit.py`; a flagged author is void.
+
+One step differs from the MVP tier: how a round's answers become its
+solutions (`tier.py take`, the same step for a Sonnet and a DeepSeek
+sample). Round 1 takes the set's tasks from the answer. Round 2 starts
+from round 1's solutions and takes only the tasks the feedback listed; an
+answer to any other task is not taken (decided on 10 October 2026 for the
+scored run, `todo.s7-harder-task-tier`), and `take` names it. The MVP tier,
+and this tier's calibration pools as run, took every task in the round-2
+answer. The three calibration samples with a round 2 answered only listed
+tasks, so their kept solutions are the same under both rules
+(`test_harder.py`, `take_rule`). `audit.py` rebuilds each kept
+`solutions-<n>.json` by this tier's rule.
 
 ## Calibration plan
 
@@ -615,11 +634,20 @@ hidden test is the record's costliest candidate. The most kernel steps on such a
 (`sokoban`), 209,279 (`checkers`), 98,097 (`regex`, `a*` ten times against
 strings of twelve `a`s), 108,057 (`swiss`), 179,655 (`warehouse`) and
 161,365 (`cache-sim`), all within a quarter of the 1,000,000-step budget.
-That is a measured figure over these inputs, not a bound. The first
+That is a measured figure over these inputs, not a bound. On a fresh
+build, a first run of `costliest.py` or `measure.py`, with several
+`firth_run.py` processes starting at once, has recorded `None False` or
+`exit 1` for inputs that finish when run again alone (reviewer, #229 and
+#231), so any such row is re-run on its own before it is trusted. The first
 Firth reference for `regex`, which kept sets of positions as `Seq Bool`,
-ran out of the budget at the drafted bounds (30 tokens, 10 strings of 20
-letters); the bounds were cut to 20 tokens and 8 strings of 12 letters and
-the reference rewritten as a position automaton with sets held as bits
+ran out of the budget on inputs within the drafted bounds (30 tokens, 10
+strings of 20 letters): `(a|b|c)*` three times then `.*` three times,
+against strings of `a` or of `a`, `b` and `c`, ends with the VM's
+`fuel-exhausted` trap after 1,000,000 steps, while `a*` fifteen times
+finishes in up to 395,604 (`measure.py --drafted`, recorded in
+`drafted.tsv`; `test_harder.py` checks the record and runs one of the
+traps again). The bounds were cut to 20 tokens and 8 strings of 12 letters
+and the reference rewritten as a position automaton with sets held as bits
 in one `Int` (Firth has no bitwise operations, so it ORs through a
 literal table). The first version is kept, with its measurement, in
 `runs/2026-10-10-regex-seq-bool/` (`measure.py`, `output.tsv`). At the new
@@ -644,3 +672,73 @@ order from another. In `checkers`, taking a jumped piece off at once
 cannot be told apart from taking it off at the end of the capture, since
 a jump never lands on a square a jumped piece stood on; the rule that the
 moving piece's own square is empty during the capture is tested.
+
+## DeepSeek
+
+DeepSeek v4.1 Flash joins the scored tier only, not calibration, through
+ollama.com's chat API, billed to the project's ollama.com account
+(`todo.s7-harder-task-tier`). The environment's proxy adds the key, so no
+key is in the repository, the driver or what it records.
+
+DeepSeek has no tools, so `deepseek.py PROMPT DIR ROUND` is its hands. It
+sends the prompt file's text as the user turn and keeps the reply's text,
+byte for byte, as `answer-ROUND.md`. In a feedback round it sends the
+conversation so far again, with `repair-<n>.md` as the next user turn: the
+same files a Sonnet author reads and writes, scored by the same `tier.py`.
+A round is asked once: `request-ROUND.json` is created before the request
+is sent, and a round whose request file exists is refused. Only a complete
+reply is kept as an answer. A reply cut off at the length limit
+(`done_reason` `length`, exit 2) is the model's answer running too long, so
+the round is a failed answer, not replaced (decided on 10 October 2026,
+`todo.s7-harder-task-tier`): nothing in it is scored, so in round 1 every
+task counts as unanswered. Its text is kept as `cut-ROUND.md`. Everything
+else that is not a complete answer voids the sample (exit 3): a request
+that failed (a network error, which may come after the server answered, a
+body cut short or not UTF-8, or any HTTP status but 200), a reply that is
+not a chat reply, a message not in the `assistant` role, text that cannot
+be written as UTF-8, another model's name, `done` not `true`, or any other
+`done_reason`. A failed request is never sent again, so no answer is ever
+asked for twice. The whole reply, the model's `thinking` included, is kept
+in `response-ROUND.json` and is never scored. `deepseek.py
+--self-test` checks this against planted replies with no network, and
+`test_harder.py` runs it.
+
+`deepseek_sample.py --set scored --lang LANG PROMPT DIR` runs one DeepSeek
+sample through both rounds with `tier.py`'s steps, as a Sonnet sample is run
+by hand: round 1 is asked, extracted and scored; `tier.py repair`'s feedback
+(nothing from a hidden test) is sent as round 2 when any task has no answer
+or an answer failed its example; round 2's answers replace round 1's for
+the tasks the feedback listed, and the whole set is scored again. Round 2's
+answer to a task the feedback did not list is not taken, and `outcome.json`
+names it. Nothing in a cut-off reply is taken, whatever it holds: a round-1
+cut-off scores every task as unanswered, and a round-2 cut-off keeps round
+1's results without scoring again. After a round-1 cut-off the feedback
+says the reply was cut off and lists every task, and round 2 resends the
+cut text as the model's turn. A void round voids the sample: its reply is
+not scored and the sample has no score (round 1's results, when round 2 is
+the void one, stay on disk), and `outcome.json` records the round and why. A run that stops part
+way leaves `outcome.json` with status `crashed` and the error, never read
+as a finished sample. `outcome.json` also records each round's verdict
+and which tasks passed in round 1 and within two rounds. `test_harder.py`
+runs it against planted replies with a stand-in
+scorer, and once end to end with `tier.py`'s scorer on the first
+calibration pool's Firth references.
+
+A Sonnet author differs in what else it sees: it is a sub-agent, so its
+context also holds the session's system prompt and the repository's
+`AGENTS.md` (through `CLAUDE.md`), and it reads the prompt with a tool.
+DeepSeek sees only the prompt and, in round 2, its own answer and the
+feedback. The scored run's pre-registration states this difference.
+
+A long prompt is read whole: `runs/2026-10-10-deepseek-probe/probe.py` puts
+a codeword first, then the three MVP documents twice (91,647 characters,
+against 63,949 for the third pool's Firth prompt,
+`runs/2026-10-10-calibration3/prompt-firth.md`), and asks for the codeword last.
+On 10 October 2026 the reply was the codeword, with `done_reason` `stop`
+and 22,632 prompt tokens (`probe.out`). The probe exits 1 unless the
+reply is the codeword, complete, from the scored model; `test_harder.py`
+plants a wrong reply, a cut-off, another model, `done` false, `done` 1, a
+502, a non-JSON body and a network error, and each fails it. That is one probe, not a bound on
+the prompt length the server keeps; each scored round's
+`prompt_eval_count` is in its `response-ROUND.json`. No task has been sent
+to DeepSeek.

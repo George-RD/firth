@@ -23,6 +23,14 @@
 
     python3 eval/s7/harder/test_harder.py            # everything (needs the toolchain)
     python3 eval/s7/harder/test_harder.py --no-firth # 1, 2, the Python part of 4, 5 and 6
+    python3 eval/s7/harder/test_harder.py --only SET # the Firth references of one set (3)
+    python3 eval/s7/harder/test_harder.py --only rest # everything else
+
+CI runs one job per `--only` part (`.github/workflows/ci.yml`, job
+`s7-harder`): the parts together are everything. Every part first checks
+that the job's matrix names every set and `rest`, and stops there if it does
+not, so a part dropped from CI fails each part that is left. `--ci PATH`
+reads another copy of ci.yml, for the plant that shows this.
 """
 from __future__ import annotations
 
@@ -739,8 +747,9 @@ def as_list(r, t):
     return list(r) if len(t.outputs) > 1 else [r]
 
 
-def firth_references() -> None:
-    for name, tasks in SETS.items():
+def firth_references(names=tuple(SETS)) -> None:
+    for name in names:
+        tasks = SETS[name]
         sols = {t.id: (HERE / "reference" / name / "firth" / f"{t.id}.firth").read_text() for t in tasks}
         res = tier.score(sols, "firth", list(tasks))
         for t in tasks:
@@ -751,7 +760,6 @@ def firth_references() -> None:
             most = max((c.get("kernel_cost") or 0) for c in r["cases"])
             check(0 < most <= tier.FUEL // 4,
                   f"Firth reference {name}/{t.id}: most kernel steps on a case {most:,} (budget {tier.FUEL:,})")
-    firth_hand_values()
 
 
 def firth_hand_values() -> None:
@@ -1066,6 +1074,426 @@ def scored_costliest() -> None:
           "a run that did not finish does not agree, whatever it left")
 
 
+SEQ_BOOL_RUN = HERE / "runs/2026-10-10-regex-seq-bool"
+
+
+def _seq_bool_measure():
+    sys.path.insert(0, str(SEQ_BOOL_RUN))
+    import measure
+    return measure
+
+
+# The bounds first drafted for `regex` (README, "The scored set": "30 tokens,
+# 10 strings of 20 letters") and the inputs the README names, with the
+# outcome it reports for each, written here rather than taken from
+# `measure.py`, which produced the record.
+DRAFTED_BOUNDS = {"tokens": 30, "strings": 10, "letters": 20}
+DRAFTED_EXPECTED = {
+    # `a*` fifteen times finishes; `(a|b|c)*` three times then `.*` three
+    # times runs out of steps; each against 10 strings of 20 `a`s, and of
+    # `a`, `b` and `c`.
+    # The README gives the finished runs' kernel steps (up to 395,604);
+    # a run that ran out has no count.
+    "a*x15 on a": ([0, 27] * 15, "a", "success", "395604"),
+    "a*x15 on abc": ([0, 27] * 15, "abc", "success", "286716"),
+    "(a|b|c)*x3 .*x3 on a": ([31, 0, 30, 1, 30, 2, 32, 27] * 3 + [26, 27] * 3, "a", "fuel-exhausted", "None"),
+    "(a|b|c)*x3 .*x3 on abc": ([31, 0, 30, 1, 30, 2, 32, 27] * 3 + [26, 27] * 3, "abc", "fuel-exhausted", "None"),
+}
+
+
+def _letters(alphabet: str) -> list[int]:
+    import random
+    return [0 if alphabet == "a" else random.Random(i).randint(0, 2) for i in range(200)]
+
+
+def drafted_problems(record: str, drafted: list[tuple[str, tuple]]) -> list[str]:
+    """What is wrong with the README's claim about the `Seq Bool` regex
+    reference at the drafted bounds, given a recorded output of
+    `measure.py --drafted` (RECORD) and its inputs (DRAFTED): the inputs
+    must be the ones the README names, each a valid pattern within the
+    drafted bounds and outside the scored ones; the record must hold one row
+    for each; and each row must show the outcome the README reports, a
+    finished run agreeing with the meaning."""
+    b = DRAFTED_BOUNDS
+    t = BY_ID["regex"]
+    problems = []
+    if [name for name, _ in drafted] != list(DRAFTED_EXPECTED):
+        problems.append("the drafted inputs are not the ones the README names")
+    for name, (pattern, lens, chars) in drafted:
+        if name in DRAFTED_EXPECTED:
+            pat, alphabet, _, _ = DRAFTED_EXPECTED[name]
+            if json.dumps([pattern, lens, chars]) != json.dumps([pat, [20] * 10, _letters(alphabet)]):
+                problems.append(f"{name}: not the input the README names")
+        if not (len(pattern) <= b["tokens"] and _all_in(pattern, 0, 32) and _in(len(lens), 1, b["strings"])
+                and _all_in(lens, 0, b["letters"]) and sum(lens) == len(chars) and _all_in(chars, 0, 25)):
+            problems.append(f"{name}: not within the drafted bounds")
+        elif BOUNDS["regex"](pattern, lens, chars):
+            problems.append(f"{name}: within the scored bounds, so it says nothing about the drafted ones")
+        elif not t.expected((pattern, lens, chars))[3]:
+            problems.append(f"{name}: not a valid pattern")
+    rows = {}
+    for line in record.splitlines():
+        name, cost, status, ok = line.split("\t")
+        if name in rows:
+            problems.append(f"{name}: recorded twice")
+        rows[name] = (cost, status, ok == "True")
+    if set(rows) != {name for name, _ in drafted}:
+        return problems + ["the record does not cover exactly the drafted inputs"]
+    for name, (cost, status, ok) in rows.items():
+        _, _, want, want_cost = DRAFTED_EXPECTED.get(name, (None, None, None, None))
+        if status != want:
+            problems.append(f"{name}: recorded {status}, where the README reports {want}")
+        elif cost != want_cost:
+            problems.append(f"{name}: recorded {cost} steps, where the README reports {want_cost}")
+        elif status == "success" and not ok:
+            problems.append(f"{name}: finished but disagreed")
+        elif status != "success" and ok:
+            problems.append(f"{name}: recorded as agreeing without finishing")
+    return problems
+
+
+def regex_drafted_bounds() -> None:
+    measure = _seq_bool_measure()
+    record = (SEQ_BOOL_RUN / "drafted.tsv").read_text()
+    check(drafted_problems(record, measure.DRAFTED) == [],
+          "the Seq Bool regex reference ran out of steps on the inputs within the drafted bounds that the "
+          "README names, and finished on the others (drafted.tsv)")
+    # Planted: records where a run that ran out finished, where one of the
+    # two that ran out finished, where a row is recorded twice, and where a
+    # finished run disagreed; inputs over the drafted bounds, inside the
+    # scored bounds, invalid, or not the ones the README names.
+    lines = record.splitlines()
+    k = next(i for i, line in enumerate(lines) if "\tfuel-exhausted\t" in line)
+    one = lines[:k] + [lines[k].replace("None\tfuel-exhausted\tFalse", "900000\tsuccess\tTrue")] + lines[k + 1:]
+    for bad, what in (("\n".join(one), "one of the inputs that ran out of steps recorded as finished"),
+                      (record + lines[0] + "\n", "a row recorded twice"),
+                      (record.replace("\tsuccess\tTrue", "\tsuccess\tFalse", 1), "a finished run that disagreed"),
+                      (record.replace("\tfuel-exhausted\tFalse", "\tfuel-exhausted\tTrue", 1),
+                       "a run that ran out of steps recorded as agreeing"),
+                      (record.replace("395604", "395605", 1), "a finished run's steps changed"),
+                      (record.replace("None\tfuel-exhausted", "999999\tfuel-exhausted", 1),
+                       "a step count on a run that ran out")):
+        check(bad != record and drafted_problems(bad, measure.DRAFTED) != [], f"a drafted record with {what} is refused")
+    (name, (pattern, lens, chars)), *rest = measure.DRAFTED
+    for bad, why in (([*pattern, 0], "not within the drafted bounds"),
+                     ([0, 27], "within the scored bounds"),
+                     ([32, *pattern[1:]], "not a valid pattern"),
+                     ([0, 27] * 14 + [1, 27], "not the input the README names")):
+        args = (bad, lens, chars) if why != "within the scored bounds" else (bad, [12] * 8, chars[:96])
+        check(any(why in q for q in drafted_problems(record, [(name, args), *rest])),
+              f"a drafted input that is {why} is refused")
+    check("the drafted inputs are not the ones the README names" in drafted_problems(record, rest),
+          "a drafted list missing an input the README names is refused")
+    # The run's outcome is read from firth_run.py's error report: only the
+    # fuel-exhausted trap after the whole budget counts as running out.
+    trap = "application vm-run: status 'trap', expected 'success': {{'trap': '{}', 'steps': {}}}"
+    for kind, steps, want in (("fuel-exhausted", 1000000, "fuel-exhausted"),
+                              ("stack-underflow", 1000000, "exit 1"), ("fuel-exhausted", 999999, "exit 1")):
+        got = measure.outcome("", json.dumps({"status": "error", "error": trap.format(kind, steps)}), 1)[1]
+        check(got == want, f"a {kind} trap after {steps:,} steps reads as {want}")
+
+
+def rerun_problems(source: Path) -> list[str]:
+    """Runs SOURCE on the toolchain on the first drafted input the README
+    reports as running out of steps, which must run out again, and on the
+    regex example, which must finish and agree with the meaning."""
+    measure = _seq_bool_measure()
+    name = next(n for n, (_, _, want, _) in DRAFTED_EXPECTED.items() if want == "fuel-exhausted")
+    problems = []
+    got = measure.run(name, dict(measure.DRAFTED)[name], source)
+    if got[2] != "fuel-exhausted":
+        problems.append(f"{name}: {got[2]}, not fuel-exhausted")
+    got = measure.run("example", SCORED_EX["regex"], source)
+    if got[2:] != ("success", True):
+        problems.append(f"the example: {got[2]}, agrees {got[3]}")
+    return problems
+
+
+def regex_drafted_rerun() -> None:
+    source = SEQ_BOOL_RUN / "regex-seq-bool.firth"
+    check(rerun_problems(source) == [], "the Seq Bool regex reference runs out of steps on a drafted input "
+          "again and finishes the regex example, agreeing")
+    # Planted: the bitset reference, which finishes where the Seq Bool one
+    # ran out, and a Seq Bool reference that counts each whole match twice.
+    import tempfile
+    bitset = HERE / "reference/scored/firth/regex.firth"
+    check(any("not fuel-exhausted" in q for q in rerun_problems(bitset)),
+          "a reference that does not run out of steps on the drafted input is refused")
+    src = source.read_text()
+    mutant = src.replace("count whole [ 1 prim + ] [ ] if", "count whole [ 2 prim + ] [ ] if", 1)
+    with tempfile.TemporaryDirectory() as d:
+        (Path(d) / "regex-seq-bool.firth").write_text(mutant)
+        check(mutant != src and any(q.startswith("the example") for q in rerun_problems(Path(d) / "regex-seq-bool.firth")),
+              "a Seq Bool reference that counts each whole match twice is refused on the example")
+
+
+def deepseek_driver() -> None:
+    """The DeepSeek driver's self-test, against planted replies with no
+    network: a complete reply is kept byte for byte, a round is asked once,
+    a cut-off reply is a failed answer (exit 2), and another model's reply, a
+    malformed reply or a failed request voids the round (exit 3); none is kept
+    or sent again. "self-test ok" is printed only after every assertion, so a
+    self-test that checks nothing fails here. Then the long-prompt probe, with
+    its one request planted: it passes only on the codeword, whole, from the
+    scored model."""
+    import contextlib
+    import importlib.util
+    import io
+    import subprocess
+    p = subprocess.run([sys.executable, str(HERE / "deepseek.py"), "--self-test"],
+                       capture_output=True, text=True, timeout=120)
+    ok = p.returncode == 0 and p.stdout.strip().splitlines()[-1:] == ["self-test ok"]
+    check(ok, "deepseek.py's self-test passes" + ("" if ok else f": {(p.stdout + p.stderr).strip()[-300:]}"))
+    spec = importlib.util.spec_from_file_location(
+        "deepseek_probe", HERE / "runs" / "2026-10-10-deepseek-probe" / "probe.py")
+    probe = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(probe)
+    def answer(content, model="deepseek-v4.1-flash", reason="stop", done=True):
+        return 200, json.dumps({"model": model, "message": {"content": content},
+                                "done": done, "done_reason": reason})
+    def probed(outcome):
+        def post(body):
+            if isinstance(outcome, Exception):
+                raise outcome
+            return outcome
+        saved, probe.deepseek.post = probe.deepseek.post, post
+        try:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                return probe.main()
+        finally:
+            probe.deepseek.post = saved
+    check(probed(answer("HELIOTROPE-47")) == 0, "the probe passes on the codeword")
+    # Planted: a probe that passes any of these would vouch for a cut prompt.
+    for planted in (answer("I don't know."), answer("HELIOTROPE-47", reason="length"),
+                    answer("HELIOTROPE-47", model="deepseek-v4-pro"),
+                    answer("HELIOTROPE-47", done=False), answer("HELIOTROPE-47", done=1),
+                    (502, "bad gateway"),
+                    (502, answer("HELIOTROPE-47")[1]),  # the codeword, but not a 200
+                    (200, "<html></html>"), OSError("reset")):
+        check(probed(planted) == 1, f"planted: the probe fails on {planted!r}")
+
+
+
+def deepseek_sample_driver() -> None:
+    """`deepseek_sample.py` runs a DeepSeek sample through both rounds against
+    planted replies, with no network, and a stand-in scorer: an answer passes
+    exactly when its text is `good <task id>`. Its scoring rules are checked
+    against values written here, not taken from the driver: a cut-off scores
+    nothing whatever it holds, round 2 takes only the tasks its feedback
+    listed, and a void round voids the sample with nothing scored."""
+    import contextlib
+    import io
+    import tempfile
+    import deepseek_sample as ds
+    tasks = [t.id for t in SETS["calibration"]]
+    first, second = tasks[0], tasks[1]
+
+    scored_calls: list = []
+
+    def fake_score(sols: dict) -> dict:
+        scored_calls.append(dict(sols))
+        per = {}
+        for tid in tasks:
+            ok = sols.get(tid) == f"good {tid}\n"
+            per[tid] = {"submitted": tid in sols, "pass": ok, "hidden_passed": int(ok), "hidden_total": 1,
+                        "cases": [{"visible": True, "ok": True, "pass": ok, "stack": [int(ok)], "expected": [1]},
+                                  {"visible": False, "ok": True, "pass": ok, "stack": [int(ok)], "expected": [1]}]}
+        return {"lang": "firth", "tasks": per}
+
+    def answer(sols: dict) -> str:
+        return "".join(f"### task: {k}\n```firth\n{v}\n```\n\n" for k, v in sols.items())
+
+    def reply(content: str, reason: str = "stop") -> tuple:
+        return 200, json.dumps({"model": ds.deepseek.MODEL, "done": True, "done_reason": reason,
+                                "message": {"role": "assistant", "content": content}})
+
+    good = {t: f"good {t}" for t in tasks}
+    base = tempfile.TemporaryDirectory()
+
+    def go(*outcomes) -> tuple[dict, Path, list]:
+        sent = []
+
+        def send(body):
+            sent.append(body)
+            o = outcomes[len(sent) - 1]
+            if isinstance(o, Exception):
+                raise o
+            return o
+        d = Path(tempfile.mkdtemp(dir=base.name))
+        scored_calls.clear()
+        (d / "prompt.md").write_text("Answer the tasks.")
+        with contextlib.redirect_stderr(io.StringIO()):
+            out = ds.sample(d / "prompt.md", d, "calibration", "firth", send, fake_score)
+        return out, d, sent
+
+    n = len(tasks)
+    # Every answer passes its example: no feedback, no round 2.
+    out, d, sent = go(reply(answer(good)))
+    check(out["status"] == "scored" and out["passed"] == {"round1": n, "within_two": n} and len(sent) == 1
+          and not (d / "repair-1.md").exists(), "a sample whose answers all pass has no round 2")
+    # One answer fails; round 2 fixes it and also answers a task that passed.
+    out, d, sent = go(reply(answer({**good, first: "bad"})),
+                      reply(answer({first: f"good {first}", second: "bad"})))
+    check(out["passed"] == {"round1": n - 1, "within_two": n} and out["rounds"][1]["not_taken"] == [second],
+          "round 2 takes only the tasks its feedback listed")
+    check([m["role"] for m in sent[1]["messages"]] == ["user", "assistant", "user"]
+          and f"## {first}\n" in sent[1]["messages"][2]["content"]
+          and f"## {second}\n" not in sent[1]["messages"][2]["content"],
+          "the feedback round shows only the failed task")
+    # Round 1 is cut off: nothing in it is scored, even complete answers.
+    cut = answer(good)
+    out, d, sent = go(reply(cut, "length"), reply(answer(good)))
+    check(out["passed"] == {"round1": 0, "within_two": n} and out["rounds"][0]["result"] == "cut-off",
+          "a cut-off round scores nothing, whatever it holds")
+    fb = sent[1]["messages"][2]["content"]
+    check(sent[1]["messages"][1]["content"] == cut and fb.startswith("Your reply was cut off at the length limit")
+          and all(f"## {t}\n" in fb for t in tasks),
+          "after a cut-off, round 2 resends the cut text and its feedback says so and lists every task")
+    # Round 2 is cut off: the sample keeps round 1's answers.
+    out, d, sent = go(reply(answer({**good, first: "bad"})), reply(answer(good), "length"))
+    check(out["status"] == "scored" and out["passed"] == {"round1": n - 1, "within_two": n - 1},
+          "a cut-off round 2 adds nothing")
+    check(len(scored_calls) == 1 and (d / "results-2.json").read_text() == (d / "results-1.json").read_text(),
+          "a cut-off round 2 is not scored again; round 1's results stand")
+    # A void round voids the sample, and nothing is scored after it.
+    out, d, sent = go((502, "bad gateway"))
+    check(out["status"] == "void" and out["void"]["round"] == 1 and not (d / "results-1.json").exists()
+          and "passed" not in out and scored_calls == [], "a void round 1 voids the sample with nothing scored")
+    out, d, sent = go(reply(answer({**good, first: "bad"})), OSError("reset"))
+    check(out["status"] == "void" and out["void"]["round"] == 2 and "passed" not in out
+          and len(scored_calls) == 1 and not (d / "results-2.json").exists(),
+          "a void round 2 voids the sample, with only round 1 scored")
+    check(json.loads((d / "outcome.json").read_text())["status"] == "void", "outcome.json records the void")
+    try:
+        with contextlib.redirect_stderr(io.StringIO()):
+            ds.sample(d / "prompt.md", d, "calibration", "firth", lambda b: reply("x"), fake_score)
+        again = True
+    except FileExistsError:
+        again = False
+    check(not again, "a second sample in the same directory is refused")
+    # A run that stops part way says so in outcome.json, and the error is not swallowed.
+    d = Path(tempfile.mkdtemp(dir=base.name))
+    (d / "prompt.md").write_text("Answer the tasks.")
+
+    def refusing_score(sols: dict) -> dict:
+        raise SystemExit("the Firth tree changed while scoring")
+    try:
+        with contextlib.redirect_stderr(io.StringIO()):
+            ds.sample(d / "prompt.md", d, "calibration", "firth", lambda b: reply(answer(good)), refusing_score)
+        stopped = False
+    except SystemExit:
+        stopped = True
+    crashed = json.loads((d / "outcome.json").read_text())
+    check(stopped and crashed["status"] == "crashed" and "tree changed" in crashed["error"]
+          and "passed" not in crashed, "a run that stops part way is recorded as crashed, not finished")
+    base.cleanup()
+
+
+def take_rule() -> None:
+    """`tier.take` builds every round's solutions, for a Sonnet sample (`tier.py
+    take`) and a DeepSeek one alike: round 1 takes the set's tasks, and a later
+    round takes only the tasks the feedback listed. `audit.py` rebuilds kept
+    solutions by the same rule, where the MVP audit takes every answered task.
+    Expected values are written here, not taken from `tier`."""
+    import contextlib
+    import io
+    import tempfile
+    import audit
+    import audit_subagent
+    tasks = list(SETS["calibration"])
+    a, b, c = (t.id for t in tasks[:3])
+
+    def results(passing: set[str], answered: set[str]) -> dict:
+        per = {}
+        for t in tasks:
+            ok = t.id in passing
+            per[t.id] = {"submitted": t.id in answered, "pass": ok, "hidden_passed": int(ok), "hidden_total": 1,
+                         "cases": [{"visible": True, "ok": True, "pass": ok, "stack": [], "expected": []}]}
+        return {"lang": "firth", "tasks": per}
+
+    def answer(sols: dict) -> str:  # each answer ends in a newline, which extract keeps
+        return "".join(f"### task: {k}\n```firth\n{v}```\n\n" for k, v in sols.items())
+
+    others = {t.id: "ok\n" for t in tasks[3:]}
+    one = {a: "A1\n", b: "B1\n", **others}
+    # Round 1: the set's tasks are taken; a task from no set is not.
+    sols, not_taken = tier.take(answer({**one, "no_such_task": "x\n"}), tasks)
+    check(sols == one and not_taken == ["no_such_task"], "round 1 takes the set's tasks only")
+    # a failed its example and c has no answer; b and the rest passed.
+    res1 = results(passing={b, *others}, answered={a, b, *others})
+    check(tier.listed(res1, tasks) == [a, c], "the feedback lists the failed and the unanswered tasks")
+    shown = tier.repair(one, res1, "firth", tasks)
+    check(f"## {a}\n" in shown and f"## {c}\n" in shown and f"## {b}\n" not in shown,
+          "repair shows exactly the listed tasks")
+    sols2, not_taken2 = tier.take(answer({a: "A2\n", b: "B2\n", c: "C2\n"}), tasks, (one, res1))
+    check(sols2 == {**one, a: "A2\n", c: "C2\n"} and not_taken2 == [b],
+          "a later round takes only the listed tasks and names the rest")
+    # The audit rebuilds by the same rule, wired in by audit.main.
+    with tempfile.TemporaryDirectory() as t:
+        kept = Path(t)
+        (kept / "answer-1.md").write_text(answer(one))
+        (kept / "solutions-1.json").write_text(json.dumps(one))
+        (kept / "results-1.json").write_text(json.dumps(res1))
+        (kept / "answer-2.md").write_text(answer({a: "A2\n", b: "B2\n", c: "C2\n"}))
+        (kept / "solutions-2.json").write_text(json.dumps(sols2))
+        check(audit.solutions_mismatch(kept, tasks) == [], "the audit accepts solutions taken by the rule")
+        mvp = {**one, a: "A2\n", b: "B2\n", c: "C2\n"}  # every answered task, as the MVP audit rebuilds
+        (kept / "solutions-2.json").write_text(json.dumps(mvp))
+        flagged = audit.solutions_mismatch(kept, tasks)
+        check(len(flagged) == 1 and f"tasks {b}" in flagged[0], "the audit flags an unlisted answer taken")
+        seen = []
+        real = audit_subagent.main, audit_subagent.solutions_mismatch, audit_subagent.repair, sys.argv
+        audit_subagent.main = lambda: seen.append(audit_subagent.solutions_mismatch(kept)) or 0
+        try:
+            sys.argv = ["audit.py", "/dev/null", "--set", "calibration", "--lang", "firth"]
+            with contextlib.redirect_stderr(io.StringIO()):
+                audit.main()
+        finally:
+            audit_subagent.main, audit_subagent.solutions_mismatch, audit_subagent.repair, sys.argv = real
+        check(len(seen) == 1 and len(seen[0]) == 1 and f"tasks {b}" in seen[0][0],
+              "audit.main audits kept solutions by this tier's rule")
+        (kept / "results-1.json").unlink()
+        check(any("results-1.json: missing" in m for m in audit.solutions_mismatch(kept, tasks)),
+              "the audit flags round 2 when round 1's results are not kept")
+    # The calibration pools' round-2 records took no unlisted answer, so the
+    # rule leaves them as they were scored.
+    for run, name in (("2026-10-02-calibration/sonnet-firth-1", "calibration"),
+                      ("2026-10-02-calibration2/sonnet-firth-3", "calibration2"),
+                      ("2026-10-10-calibration3/sonnet-firth-3", "calibration3")):
+        check(audit.solutions_mismatch(HERE / "runs" / run, list(SETS[name])) == [],
+              f"{run}'s kept solutions are what the rule takes")
+
+
+def deepseek_sample_scored() -> None:
+    """End to end with the real scorer: a planted DeepSeek sample answers the
+    first calibration pool with its Firth references, one of them broken, and
+    fixes it in round 2."""
+    import contextlib
+    import io
+    import tempfile
+    import deepseek_sample as ds
+    tasks = [t.id for t in SETS["calibration"]]
+    refs = {t: (HERE / "reference" / "calibration" / "firth" / f"{t}.firth").read_text() for t in tasks}
+    broken = {**refs, tasks[0]: ": main ( -- ) ;\n"}
+
+    def answer(sols: dict) -> str:
+        return "".join(f"### task: {k}\n```firth\n{v}```\n\n" for k, v in sols.items())
+    replies = iter([answer(broken), answer({tasks[0]: refs[tasks[0]]})])
+
+    def send(body):
+        return 200, json.dumps({"model": ds.deepseek.MODEL, "done": True, "done_reason": "stop",
+                                "message": {"role": "assistant", "content": next(replies)}})
+    with tempfile.TemporaryDirectory() as t:
+        d = Path(t)
+        (d / "prompt.md").write_text("Answer the tasks.")
+        with contextlib.redirect_stderr(io.StringIO()):
+            out = ds.sample(d / "prompt.md", d, "calibration", "firth", send)
+        res = json.loads((d / "results-2.json").read_text())
+    n = len(tasks)
+    check(out["status"] == "scored" and out["passed"] == {"round1": n - 1, "within_two": n}
+          and not out["round1"][tasks[0]] and "eval_sha256" in res,
+          f"a DeepSeek sample scored by tier.py: {n - 1} of {n} in round 1, {n} within two rounds")
+
 def firth_mutant() -> None:
     """A planted bug in a Firth reference of each pool: the scorer must fail it."""
     src = (HERE / "reference/calibration/firth/lru.firth").read_text()
@@ -1219,7 +1647,96 @@ def sandbox_scan() -> None:
     check(wired, "scoring Python runs the sandbox scan before any answer")
 
 
+CI = HERE.parent.parent.parent / ".github" / "workflows" / "ci.yml"
+PARTS = (*SETS, "rest")
+# The job's last check: the part's log shows the matrix check ran and passed,
+# so a part that stops calling it fails in CI.
+CONFIRM = "grep -qxF 'ok   CI runs every part of test_harder.py (all listed)' /tmp/s7-harder.log"
+
+
+def matrix_problems(ci: str) -> list[str]:
+    """What is wrong with the `s7-harder` job in CI_TEXT: its matrix must list
+    exactly every `--only` part, run each with `--only`, and confirm from the
+    log that the part ran this check."""
+    import re
+    job = ci.split("\n  s7-harder:\n", 1)
+    if len(job) != 2:
+        return ["ci.yml has no s7-harder job"]
+    body = re.split(r"\n  [a-z][\w-]*:\n", job[1], maxsplit=1)[0]
+    m = re.search(r"^\s+part: \[([^\]]*)\]\s*$", body, re.M)
+    if not m:
+        return ["the s7-harder job has no `part: [...]` matrix"]
+    listed = [x.strip() for x in m.group(1).split(",") if x.strip()]
+    out = []
+    if sorted(listed) != sorted(PARTS):
+        out.append(f"the s7-harder matrix lists {listed}, not every part {list(PARTS)}")
+    if "test_harder.py --only ${{ matrix.part }}" not in body:
+        out.append("the s7-harder job does not run test_harder.py --only ${{ matrix.part }}")
+    if CONFIRM not in body:
+        out.append("the s7-harder job does not confirm from its log that the part checked the matrix")
+    return out
+
+
+def ci_path() -> Path:
+    if "--ci" in sys.argv:
+        i = sys.argv.index("--ci")
+        if i + 1 < len(sys.argv):
+            return Path(sys.argv[i + 1])
+        raise SystemExit("--ci takes a path")
+    return CI
+
+
+def ci_matrix(path: Path) -> None:
+    """Every part of this suite runs in CI: the job's matrix names each set and
+    `rest`. Planted: a matrix missing a set, a matrix missing `rest`, and a job
+    that does not pass the part, are each caught; and a real run of one part
+    against a ci.yml without `rest` fails, so the call site is pinned too."""
+    text = path.read_text()
+    problems = matrix_problems(text)
+    check(problems == [], f"CI runs every part of test_harder.py ({problems or 'all listed'})")
+    if problems:
+        return
+    dropped = text.replace("part: [calibration, ", "part: [", 1)
+    check(dropped != text and any("not every part" in p for p in matrix_problems(dropped)),
+          "planted: a CI matrix that drops the calibration set is caught")
+    no_rest = text.replace(", rest]", "]", 1)
+    check(no_rest != text and any("not every part" in p for p in matrix_problems(no_rest)),
+          "planted: a CI matrix that drops the rest part is caught")
+    unpassed = text.replace("test_harder.py --only ${{ matrix.part }}", "test_harder.py", 1)
+    check(unpassed != text and any("does not run" in p for p in matrix_problems(unpassed)),
+          "planted: a CI job that does not pass its part is caught")
+    unconfirmed = text.replace(CONFIRM, "true", 1)
+    check(unconfirmed != text and any("does not confirm" in p for p in matrix_problems(unconfirmed)),
+          "planted: a CI job that does not confirm the matrix check from its log is caught")
+    import subprocess
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        copy = Path(d) / "ci.yml"
+        copy.write_text(no_rest)
+        p = subprocess.run([sys.executable, __file__, "--only", "calibration", "--ci", str(copy)],
+                           capture_output=True, text=True, timeout=120)
+    check(p.returncode == 1 and "not every part" in p.stdout and "1 failed" in p.stdout,
+          "planted: --only calibration against a ci.yml without rest fails")
+
+
 def main() -> int:
+    if "--only" in sys.argv:
+        i = sys.argv.index("--only")
+        part = sys.argv[i + 1] if i + 1 < len(sys.argv) else ""
+        if part not in PARTS:
+            raise SystemExit(f"--only takes one of {', '.join(PARTS)}")
+        if part != "rest" and "--no-firth" in sys.argv:
+            raise SystemExit(f"--only {part} runs only Firth references; --no-firth would leave nothing")
+        ci_matrix(ci_path())
+        if FAILED:
+            print(f"\n{len(FAILED)} failed")
+            return 1
+        if part != "rest":
+            firth_references((part,))
+            print(f"\n{len(FAILED)} failed" if FAILED else "\nall passed")
+            return 1 if FAILED else 0
+    else:
+        part = None
     hand_values()
     bounds()
     refusals()
@@ -1228,10 +1745,18 @@ def main() -> int:
     python_mutants()
     scored_readings()
     scored_costliest()
+    regex_drafted_bounds()
+    deepseek_driver()
+    deepseek_sample_driver()
+    take_rule()
     prompt_and_repair()
     if "--no-firth" not in sys.argv:
-        firth_references()
+        if part is None:
+            firth_references()
+        firth_hand_values()
         firth_mutant()
+        regex_drafted_rerun()
+        deepseek_sample_scored()
     print(f"\n{len(FAILED)} failed" if FAILED else "\nall passed")
     return 1 if FAILED else 0
 

@@ -71,8 +71,10 @@ the above again (no records, no bitwise operations, no fill or slice, no
   of range, and every guarded `seq.at` becomes a nested `if` (`regex`,
   `checkers`, `warehouse`, `cache-sim`).
 - No bitwise operations cost most in `regex`: its first reference kept
-  position sets as `Seq Bool` and ran past the 1,000,000-step budget at
-  the drafted bounds; the kept one holds a set as bits of one `Int` and ORs
+  position sets as `Seq Bool` and ran past the 1,000,000-step budget on
+  inputs within the drafted bounds
+  (`eval/s7/harder/runs/2026-10-10-regex-seq-bool/drafted.tsv`); the kept one
+  holds a set as bits of one `Int` and ORs
   through a 1,024-entry literal table five bits at a time.
 - No pop or shrink: `sokoban`'s undo history keeps a separate depth and
   overwrites stale slots.

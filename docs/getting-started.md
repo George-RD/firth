@@ -55,6 +55,10 @@ python3 tools/loop/firth_run.py check add.firth
 python3 tools/loop/firth_run.py run add.firth --entry main
 ```
 
+A program with imports is loaded from the source file's directory. `--root DIR`
+(accepted by `check`, `run` and `test`) names another source root, for imports
+that use `..` to reach files above it.
+
 The run result is a JSON object containing:
 
 ```json
@@ -267,7 +271,8 @@ execution-trace equivalence.
 | `send`, file/network I/O, external resources | Not implemented by this portable execution path | `refused/send.firth` |
 | Source refinement annotations `{...}` | Rejected with `firth.refinement.unsupported-source` until source predicates and bodies are translated and checked, even when the annotation happens to be true | `check_trust_boundaries.py` (`firth.refinement.unsupported-source`) |
 | Linear effects and pushed linear quotation values | Not supported by the portable compiler; unsupported ownership is rejected rather than erased | `check_compiler_admission.py` (linear kernel cases and a forged linear quotation push) |
-| Core vocabulary | `stdlib/core.firth` contains identity, duplication, discard and exchange examples; it is not automatically imported | `FirthPipelineTest.lean` (elaborates `stdlib/core.firth` and checks each word's lowered body); `refused/core-not-imported.firth` |
+| Multi-file programs | `import "path.firth";` first in a file, then `export name ...;` to offer words; paths are relative to the importing file and stay inside the source root; an importer sees the exported words of its direct imports only; one program is one dictionary, so two files defining one name are refused; files load imports first, the root last, and cycles are refused | `FirthImportsTest.lean` (load order, a known-bad program for each import refusal, the loader's source-root refusals, the compiler's binding of imported files); `examples/inventory/policy_change.py` (both clients import `allocator.firth`); `test_firth_run.py` (`test_a_suite_source_resolves_its_imports_under_the_given_root`); `test_mvp_agent_gate.py` (`test_rebuild_passes_imported_files_to_elaborate_and_compile`) |
+| Core vocabulary | `stdlib/core.firth` exports its words (`export core.identity ...`); a program imports it by a relative path and then writes `use core;`. It is not automatically imported | `FirthPipelineTest.lean` (elaborates `stdlib/core.firth` and checks each word's lowered body); `refused/core-not-imported.firth`; the `use` and `use as` cases in `FirthImportsTest.lean` import a vocabulary of the same shape, not `stdlib/core.firth` itself |
 | General-purpose standard library, package manager, editor language server | Future work | Not applicable: nothing is offered |
 
 In the "Checked by" column, a `.firth` name, unless another check is named
