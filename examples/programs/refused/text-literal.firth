@@ -1,0 +1,6 @@
+\ Text has no runtime representation yet (`todo.language-text-values`), so a
+\ string literal is refused when the word is elaborated rather than dropped
+\ or turned into something else.
+: greeting-length
+  ( -- n:Int^many )
+  "hello" drop 5 ;

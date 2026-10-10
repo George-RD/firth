@@ -1,0 +1,6 @@
+\ `Int` is signed 64-bit on the compiled path, so a literal one past its
+\ largest value has no target representation. The compiler must refuse it
+\ instead of wrapping it to the smallest value.
+: one-past-largest
+  ( -- n:Int^many )
+  9223372036854775808 ;
