@@ -260,22 +260,23 @@ execution-trace equivalence.
 | Source type name for integers | `Int`, signed; literals may be negative (`-3`) | `signed.firth` and `division.firth` cases |
 | Primitive operations | `prim +`, `prim -`, `prim *`, `prim div`, `prim mod` : `Int Int -- Int` (`div` and `mod` trap on a zero divisor); `prim <`, `prim <=`, `prim >`, `prim >=`, `prim =` : `Int Int -- Bool`; `prim and`, `prim or` : `Bool Bool -- Bool`; `prim not` : `Bool -- Bool`; `prim seq-int.empty`, `.len`, `.at`, `.push`, `.set` and the same for `seq-bool` (see `examples/programs/README.md`) | `division.firth`, `comparisons.firth`, `booleans.firth`, `sequences.firth`, `sort.firth` (`seq-int.set`) and `sieve.firth` (`seq-bool.empty`, `seq-bool.set`) cases, with `refused/bool-plus.firth`; `tail_calls.rs` (`a_zero_divisor_faults` for `div` and `mod`, `comparisons_order_every_pair_of_edge_integers`, `boolean_primitives_match_the_reference_definitions`); overflow cases in `check_language_examples.py` |
 | Sequences | `Seq Int` and `Seq Bool`, written `{ 1 2 3 }` or `{ true false }`; a negative or out-of-range `at` or `set` index traps with `primitive-fault` on both hosts | `sequences.firth` trap cases (`element` and `third` for `Seq Int`, `flag` and `clear-flag` for `Seq Bool`), `signed.firth` trap cases, `sort.firth` `replace` trap cases; `tests_fixtures.rs` (`sequence_indexes_past_the_end_fault_at_every_magnitude`, `set_outside_the_sequence_faults_at_every_magnitude`) |
-| Definitions | Explicit stack effects, multiple words, qualified vocabulary names, recursion with finite fuel | `factorial.firth` and `fib.firth` cases, `examples/mvp/qualified-call.firth`; `refused/if-branch-shape.firth`, `refused/reserved-type-name.firth`; the `fuel-exhausted` case in `check_language_examples.py` |
+| Definitions | Explicit stack effects, multiple words, qualified vocabulary names, recursion with finite fuel | `factorial.firth` and `fib.firth` cases; `qualified-call.firth` in `check_language_examples.py`; `refused/if-branch-shape.firth`, `refused/reserved-type-name.firth`; the `fuel-exhausted` case in `check_language_examples.py` |
 | Composition | Core stack operations, quotations, `call`, `if`, named locals (a block takes its values off the stack; a local may be used any number of times, inside `if` branches, inside quotations and inside nested blocks. A local can't be used after running a quotation whose stack effect is unknown there, such as one passed in as a value; that is refused with `firth.elaboration.untracked-local`); matching checked effects are required | `locals.firth`, `quotations.firth` and `nested-loop.firth` cases; `refused/call-unknown-effect.firth`, `refused/dip-unknown-effect.firth`, `refused/nested-quotation-result.firth` |
 | Quotations as external inputs/results | Explicitly rejected; returned bodies and captures do not yet have a shared comparison format | `test_portable_observations.py` (`test_quotation_results_are_explicitly_unsupported`); a quotation-shaped input in `test_firth_run.py` |
 | Text and character execution | Not implemented by the portable compiler/adapters | `refused/text-literal.firth`, `refused/char-literal.firth` |
 | `send`, file/network I/O, external resources | Not implemented by this portable execution path | `refused/send.firth` |
 | Source refinement annotations `{...}` | Rejected with `firth.refinement.unsupported-source` until source predicates and bodies are translated and checked, even when the annotation happens to be true | `check_trust_boundaries.py` (`firth.refinement.unsupported-source`) |
 | Linear effects and pushed linear quotation values | Not supported by the portable compiler; unsupported ownership is rejected rather than erased | `check_compiler_admission.py` (linear kernel cases and a forged linear quotation push) |
-| Core vocabulary | `stdlib/core.firth` contains identity, duplication, discard and exchange examples; it is not automatically imported | `refused/core-not-imported.firth` |
+| Core vocabulary | `stdlib/core.firth` contains identity, duplication, discard and exchange examples; it is not automatically imported | `FirthPipelineTest.lean` (elaborates `stdlib/core.firth` and checks each word's lowered body); `refused/core-not-imported.firth` |
 | General-purpose standard library, package manager, editor language server | Future work | Not applicable: nothing is offered |
 
-In the "Checked by" column, a `.firth` name is a program whose cases are in
-`examples/programs/cases.json` and are run on both hosts by
-`examples/programs/check_programs.py`; those under `refused/` must be refused
-with the diagnostic code in their case's `expect_error` field. The Python checks are in
-`tools/loop/`, and the Rust tests in `src/runtime/vm/`. A row's checks cover
-what the row promises or refuses; they are tests, not proofs.
+In the "Checked by" column, a `.firth` name, unless another check is named
+with it, is a program whose cases are in `examples/programs/cases.json` and
+are run on both hosts by `examples/programs/check_programs.py`; those under
+`refused/` must be refused with the diagnostic code in their case's
+`expect_error` field. The Python checks are in `tools/loop/`, the Lean tests
+in `src/`, and the Rust tests in `src/runtime/vm/`. A row's checks cover what
+the row promises or refuses; they are tests, not proofs.
 
 In particular, the `send-once` example in the frozen agent guide describes the
 intended linear-effect surface, not an executable network operation available
