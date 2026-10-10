@@ -43,7 +43,9 @@ SAMPLE = re.compile(r"haiku-(?:firth|python)-([0-9]+)")
 # The harder tier's scored run names a sample by subject, language and number
 # (`sonnet-python-2`, `deepseek-firth-5`), so the same number in another
 # subject or language is another author: compare whole names, not numbers.
-SAMPLE_NAME = re.compile(r"(?<![\w-])((?:haiku|sonnet|deepseek)-(?:firth|python)-[0-9]+)(?![\w-])")
+# Haiku names stay with SAMPLE's number rule, so a Haiku run's results are
+# what they were before (run 14's `session.py`).
+SAMPLE_NAME = re.compile(r"(?<![\w-])((?:sonnet|deepseek)-(?:firth|python)-[0-9]+)(?![\w-])")
 TASKS = re.compile(r"/tasks/([0-9a-f]{8,})")
 # How the eval session labels its authors when it starts them ("Control author
 # B10"); the harness can repeat another task's label with no path (Codex, on #181).
@@ -292,6 +294,9 @@ def self_test() -> None:
         == ["deepseek-firth-2"]
     assert "sample_names" not in crossing("wrote sonnet-firth-2/answer-1.md", "sonnet-firth-2", None, None)
     assert "sample_names" not in crossing("xsonnet-firth-2x", "sonnet-firth-1", None, None)
+    # A Haiku name is still judged by its number alone, as before.
+    assert "sample_names" not in crossing("haiku-python-4/answer-1.md", "haiku-firth-4", None, None)
+    assert crossing("haiku-firth-3/answer-1.md", "sonnet-firth-3", None, None)["names"] == ["3"]
     assert clean["injected"] == [] and clean["cross_sample"] == [], clean
     assert clean["compactions"] == [], clean
     squeezed = base + [{"type": "user", "timestamp": "t3",
