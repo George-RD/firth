@@ -15,7 +15,8 @@ no hands, so this runs the same steps around `deepseek.py`:
 3. Round 2 answers only the tasks the feedback listed. Those answers replace
    round 1's (`solutions-2.json`) and the whole set is scored again
    (`results-2.json`). An answer in round 2 to a task the feedback did not
-   list is not taken, and is named in `outcome.json`.
+   list is not taken, and is named in `outcome.json`. Both rounds' solutions
+   are built by `tier.take`, the step a Sonnet sample's are built with.
 
 A reply cut off at the length limit (`deepseek.py` exit 2) is a failed answer:
 nothing in it is scored, whatever it holds, and a round-2 cut-off keeps round
@@ -44,23 +45,10 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import deepseek  # noqa: E402
 import tier  # noqa: E402
-from tier import harness  # noqa: E402
 
 CUT_OFF = ("Your reply was cut off at the length limit before it was complete, so none "
            "of it was scored. Every task counts as unanswered; answer each one again, "
            "more briefly if you can.\n\n")
-
-
-def listed(solutions: dict[str, str], results: dict, tasks: list) -> set[str]:
-    """The tasks `tier.repair` shows: every one not submitted or failing its
-    visible example."""
-    out = set()
-    for t in tasks:
-        r = results["tasks"][t.id]
-        vis = next((c for c in r["cases"] if c["visible"]), None)
-        if not (r["submitted"] and vis and vis["pass"]):
-            out.add(t.id)
-    return out
 
 
 def sample(prompt: Path, d: Path, set_name: str, lang: str, send=deepseek.post, score=None) -> dict:
@@ -85,7 +73,7 @@ def sample(prompt: Path, d: Path, set_name: str, lang: str, send=deepseek.post, 
 
 def rounds(prompt, d, tasks, lang, send, score, out, finish) -> dict:
     solutions: dict[str, str] = {}
-    open_tasks = {t.id for t in tasks}
+    res: dict = {}
     for rnd in (1, 2):
         code = deepseek.run(prompt, d, rnd, send)
         verdict = json.loads(deepseek.text(d / f"request-{rnd}.json"))["outcome"]
@@ -94,10 +82,10 @@ def rounds(prompt, d, tasks, lang, send, score, out, finish) -> dict:
         if code == 3:
             out["void"] = {"round": rnd, "why": verdict["why"]}
             return finish("void")
-        got = harness.extract(deepseek.text(d / f"answer-{rnd}.md")) if code == 0 else {}
-        taken = {k: v for k, v in got.items() if k in open_tasks}
-        entry["not_taken"] = sorted(set(got) - set(taken))
-        solutions = {**solutions, **taken}
+        entry["not_taken"] = []
+        if code == 0:  # the same step a Sonnet sample's solutions are built with (`tier.py take`)
+            solutions, entry["not_taken"] = tier.take(deepseek.text(d / f"answer-{rnd}.md"), tasks,
+                                                      None if rnd == 1 else (solutions, res))
         deepseek.write(d / f"solutions-{rnd}.json", json.dumps(solutions, indent=2) + "\n")
         if rnd == 2 and code == 2:
             res = json.loads(deepseek.text(d / "results-1.json"))  # nothing new: round 1's results stand
@@ -114,7 +102,6 @@ def rounds(prompt, d, tasks, lang, send, score, out, finish) -> dict:
         if not feedback:
             out["within_two"] = passed  # nothing could be shown, so no round 2
             break
-        open_tasks = listed(solutions, res, tasks)
         deepseek.write(d / "repair-1.md", feedback)
     out["passed"] = {k: sum(out[k].values()) for k in ("round1", "within_two")}
     out["tasks"] = len(tasks)

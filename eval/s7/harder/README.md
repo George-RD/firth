@@ -93,7 +93,8 @@ in and reads back.
   refuses if it finds one.
 - `audit.py`: the MVP tier's transcript audit (`audit_subagent.py`), with
   this tier's feedback for the check that each `repair-<n>.md` is what the
-  author was shown.
+  author was shown, and this tier's `take` for the check that each
+  `solutions-<n>.json` holds the answers the round may take.
 - `deepseek.py`: the DeepSeek author's driver (below, "DeepSeek").
 - `deepseek_sample.py`: one DeepSeek sample through both rounds, scored
   (below, "DeepSeek").
@@ -106,15 +107,18 @@ in and reads back.
 ```sh
 python3 eval/s7/harder/test_harder.py
 python3 eval/s7/harder/tier.py prompt --set calibration --lang firth > prompt.md
-python3 eval/s7/harder/tier.py extract answer-1.md > solutions-1.json
+python3 eval/s7/harder/tier.py take --set calibration answer-1.md > solutions-1.json
 python3 eval/s7/harder/tier.py score --set calibration --lang firth solutions-1.json > results-1.json
 python3 eval/s7/harder/tier.py repair --set calibration --lang firth solutions-1.json results-1.json > repair-1.md
+python3 eval/s7/harder/tier.py take --set calibration answer-2.md \
+    --after solutions-1.json results-1.json > solutions-2.json
 ```
 
 ## Protocol
 
-The MVP tier's sub-agent protocol, unchanged: the author is a sub-agent told
-to read only its prompt file and to write only its answer file, answers every
+The MVP tier's sub-agent protocol, with one step changed (below): the
+author is a sub-agent told to read only its prompt file and to write only
+its answer file, answers every
 task in one file, and is then shown how each answer did on its task's visible
 example (`repair`) and may fix it once. An author whose answers all passed
 their examples is shown nothing, since nothing it could see failed, and no
@@ -122,6 +126,18 @@ round is run; its result within two attempts is its first result. Round 1 is "co
 attempt"; round 2 is "correct within two attempts", the two measures
 `todo.s7-python-baseline` names. The Firth prompt carries the MVP documents.
 Each transcript is audited with `audit.py`; a flagged author is void.
+
+One step differs from the MVP tier: how a round's answers become its
+solutions (`tier.py take`, the same step for a Sonnet and a DeepSeek
+sample). Round 1 takes the set's tasks from the answer. Round 2 starts
+from round 1's solutions and takes only the tasks the feedback listed; an
+answer to any other task is not taken (decided on 10 October 2026 for the
+scored run, `todo.s7-harder-task-tier`), and `take` names it. The MVP tier,
+and this tier's calibration pools as run, took every task in the round-2
+answer. The three calibration samples with a round 2 answered only listed
+tasks, so their kept solutions are the same under both rules
+(`test_harder.py`, `take_rule`). `audit.py` rebuilds each kept
+`solutions-<n>.json` by this tier's rule.
 
 ## Calibration plan
 
