@@ -43,9 +43,9 @@ programs, hit these as well, again written by hand in each program:
 - No multi-way branch: `mini-cpu` dispatches 25 opcodes through a tree of
   nested `if`s.
 - No early exit or error result: `blackjack` voids a round when the shoe
-  runs out by having the draw word return a sentinel card and every
-  drawing loop test for it, and both arms of every `if` on the way return
-  the same shape with dummy values.
+  runs out by having the draw word set the position past the end of the
+  shoe, every drawing loop test that position, and both arms of every `if`
+  on the way return the same shape with dummy values.
 - No records still costs most here: `mini-cpu` packs its whole machine
   (registers, memory, two stacks, flags, status, program, output) into one
   `Seq Int` with named slot offsets; `bank-days` and `blackjack` pack
