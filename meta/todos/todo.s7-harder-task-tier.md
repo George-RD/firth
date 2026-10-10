@@ -78,7 +78,11 @@ until the tasks get harder.
   and structural constraints, and a mutant per task. Its references' most
   costly hidden test is 98,097 to 209,279 kernel steps. No scored trial has
   run; the pre-registration (subjects, authors per arm, voids, analysis)
-  comes before any.
+  comes before any. Written in `eval/s7/harder/scored-run/preregistration.md`
+  with the run order in `run-plan.md`: Sonnet 5.5 (primary), DeepSeek v4.1
+  Flash and Haiku 5.5, five authors per language each. It is pinned with
+  the prompts only after the maintainer chooses the scored run and the S7
+  inputs are frozen.
 - The audit flags each successful write that differs from the kept copy
   (Firth 3, pool 3). Before a scored run, either pre-register that rule
   as it stands or change the audit to compare only the last write, with
