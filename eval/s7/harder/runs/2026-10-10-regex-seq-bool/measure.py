@@ -49,11 +49,6 @@ FIVE = {
     "star20": [31, 0, 27, 1, 27, 30, 2, 27, 26, 32, 27, 31, 26, 27, 32, 27, 26, 27, 0, 28],
 }
 
-# The bounds first drafted for `regex`, cut to 20 tokens and 8 strings of 12
-# letters before the scored set was frozen.
-DRAFTED_BOUNDS = {"tokens": 30, "strings": 10, "letters": 20}
-
-
 def _drafted(pattern: list[int], alphabet: str) -> tuple:
     letter = costliest.ALPHABETS[alphabet]
     return pattern, [20] * 10, [letter(i) for i in range(200)]
@@ -96,10 +91,10 @@ def outcome(stdout: str, stderr: str, returncode: int) -> tuple[str, str]:
     return "None", f"exit {returncode}"
 
 
-def run(name: str, args: tuple) -> tuple[str, str, str, bool]:
+def run(name: str, args: tuple, source: Path = HERE / "regex-seq-bool.firth") -> tuple[str, str, str, bool]:
     args = json.loads(json.dumps(list(args)))
     try:
-        p = subprocess.run([sys.executable, "tools/loop/firth_run.py", "run", str(HERE / "regex-seq-bool.firth"),
+        p = subprocess.run([sys.executable, "tools/loop/firth_run.py", "run", str(source),
                             "--entry", "main", "--stack", json.dumps(args), "--fuel", "1000000"],
                            cwd=ROOT, capture_output=True, text=True, timeout=3600)
     except subprocess.TimeoutExpired:

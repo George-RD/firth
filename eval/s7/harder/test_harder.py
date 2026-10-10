@@ -1075,17 +1075,45 @@ def _seq_bool_measure():
     return measure
 
 
+# The bounds first drafted for `regex` (README, "The scored set": "30 tokens,
+# 10 strings of 20 letters") and the inputs the README names, with the
+# outcome it reports for each, written here rather than taken from
+# `measure.py`, which produced the record.
+DRAFTED_BOUNDS = {"tokens": 30, "strings": 10, "letters": 20}
+DRAFTED_EXPECTED = {
+    # `a*` fifteen times finishes; `(a|b|c)*` three times then `.*` three
+    # times runs out of steps; each against 10 strings of 20 `a`s, and of
+    # `a`, `b` and `c`.
+    "a*x15 on a": ([0, 27] * 15, "a", "success"),
+    "a*x15 on abc": ([0, 27] * 15, "abc", "success"),
+    "(a|b|c)*x3 .*x3 on a": ([31, 0, 30, 1, 30, 2, 32, 27] * 3 + [26, 27] * 3, "a", "fuel-exhausted"),
+    "(a|b|c)*x3 .*x3 on abc": ([31, 0, 30, 1, 30, 2, 32, 27] * 3 + [26, 27] * 3, "abc", "fuel-exhausted"),
+}
+
+
+def _letters(alphabet: str) -> list[int]:
+    import random
+    return [0 if alphabet == "a" else random.Random(i).randint(0, 2) for i in range(200)]
+
+
 def drafted_problems(record: str, drafted: list[tuple[str, tuple]]) -> list[str]:
-    """What is wrong with the README's claim that the `Seq Bool` regex
-    reference ran out of steps at the drafted bounds, given a recorded output
-    of `measure.py --drafted` (RECORD) and its inputs (DRAFTED): each input
-    must be a valid pattern within the drafted bounds and outside the scored
-    ones, the record must cover exactly those inputs, every run that finished
-    must agree with the meaning, and at least one must have run out of steps."""
-    b = _seq_bool_measure().DRAFTED_BOUNDS
+    """What is wrong with the README's claim about the `Seq Bool` regex
+    reference at the drafted bounds, given a recorded output of
+    `measure.py --drafted` (RECORD) and its inputs (DRAFTED): the inputs
+    must be the ones the README names, each a valid pattern within the
+    drafted bounds and outside the scored ones; the record must hold one row
+    for each; and each row must show the outcome the README reports, a
+    finished run agreeing with the meaning."""
+    b = DRAFTED_BOUNDS
     t = BY_ID["regex"]
     problems = []
+    if [name for name, _ in drafted] != list(DRAFTED_EXPECTED):
+        problems.append("the drafted inputs are not the ones the README names")
     for name, (pattern, lens, chars) in drafted:
+        if name in DRAFTED_EXPECTED:
+            pat, alphabet, _ = DRAFTED_EXPECTED[name]
+            if json.dumps([pattern, lens, chars]) != json.dumps([pat, [20] * 10, _letters(alphabet)]):
+                problems.append(f"{name}: not the input the README names")
         if not (len(pattern) <= b["tokens"] and _all_in(pattern, 0, 32) and _in(len(lens), 1, b["strings"])
                 and _all_in(lens, 0, b["letters"]) and sum(lens) == len(chars) and _all_in(chars, 0, 25)):
             problems.append(f"{name}: not within the drafted bounds")
@@ -1095,16 +1123,18 @@ def drafted_problems(record: str, drafted: list[tuple[str, tuple]]) -> list[str]
             problems.append(f"{name}: not a valid pattern")
     rows = {}
     for line in record.splitlines():
-        name, cost, status, ok = line.split("\t")
+        name, _, status, ok = line.split("\t")
+        if name in rows:
+            problems.append(f"{name}: recorded twice")
         rows[name] = (status, ok == "True")
     if set(rows) != {name for name, _ in drafted}:
         return problems + ["the record does not cover exactly the drafted inputs"]
-    problems += [f"{name}: finished but disagreed" for name, (status, ok) in rows.items()
-                 if status == "success" and not ok]
-    problems += [f"{name}: neither finished nor ran out of steps ({status})" for name, (status, _) in rows.items()
-                 if status not in ("success", "fuel-exhausted")]
-    if not any(status == "fuel-exhausted" for status, _ in rows.values()):
-        problems.append("no drafted input ran out of steps")
+    for name, (status, ok) in rows.items():
+        want = DRAFTED_EXPECTED.get(name, (None, None, None))[2]
+        if status != want:
+            problems.append(f"{name}: recorded {status}, where the README reports {want}")
+        elif status == "success" and not ok:
+            problems.append(f"{name}: finished but disagreed")
     return problems
 
 
@@ -1112,20 +1142,29 @@ def regex_drafted_bounds() -> None:
     measure = _seq_bool_measure()
     record = (SEQ_BOOL_RUN / "drafted.tsv").read_text()
     check(drafted_problems(record, measure.DRAFTED) == [],
-          "the Seq Bool regex reference ran out of steps on an input within the drafted bounds (drafted.tsv)")
-    # Planted: the same record with every run finished, an input over the
-    # drafted bounds, an input the scored bounds already allow, and a broken
-    # pattern.
-    finished = record.replace("None\tfuel-exhausted\tFalse", "900000\tsuccess\tTrue")
-    check(finished != record and "no drafted input ran out of steps" in drafted_problems(finished, measure.DRAFTED),
-          "a drafted record where every run finished is refused")
+          "the Seq Bool regex reference ran out of steps on the inputs within the drafted bounds that the "
+          "README names, and finished on the others (drafted.tsv)")
+    # Planted: records where a run that ran out finished, where one of the
+    # two that ran out finished, where a row is recorded twice, and where a
+    # finished run disagreed; inputs over the drafted bounds, inside the
+    # scored bounds, invalid, or not the ones the README names.
+    lines = record.splitlines()
+    k = next(i for i, line in enumerate(lines) if "\tfuel-exhausted\t" in line)
+    one = lines[:k] + [lines[k].replace("None\tfuel-exhausted\tFalse", "900000\tsuccess\tTrue")] + lines[k + 1:]
+    for bad, what in (("\n".join(one), "one of the inputs that ran out of steps recorded as finished"),
+                      (record + lines[0] + "\n", "a row recorded twice"),
+                      (record.replace("\tsuccess\tTrue", "\tsuccess\tFalse", 1), "a finished run that disagreed")):
+        check(bad != record and drafted_problems(bad, measure.DRAFTED) != [], f"a drafted record with {what} is refused")
     (name, (pattern, lens, chars)), *rest = measure.DRAFTED
     for bad, why in (([*pattern, 0], "not within the drafted bounds"),
                      ([0, 27], "within the scored bounds"),
-                     ([32, *pattern[1:]], "not a valid pattern")):
+                     ([32, *pattern[1:]], "not a valid pattern"),
+                     ([0, 27] * 14 + [1, 27], "not the input the README names")):
         args = (bad, lens, chars) if why != "within the scored bounds" else (bad, [12] * 8, chars[:96])
         check(any(why in q for q in drafted_problems(record, [(name, args), *rest])),
               f"a drafted input that is {why} is refused")
+    check("the drafted inputs are not the ones the README names" in drafted_problems(record, rest),
+          "a drafted list missing an input the README names is refused")
     # The run's outcome is read from firth_run.py's error report: only the
     # fuel-exhausted trap after the whole budget counts as running out.
     trap = "application vm-run: status 'trap', expected 'success': {{'trap': '{}', 'steps': {}}}"
@@ -1135,16 +1174,38 @@ def regex_drafted_bounds() -> None:
         check(got == want, f"a {kind} trap after {steps:,} steps reads as {want}")
 
 
-def regex_drafted_rerun() -> None:
-    """Runs the first out-of-steps drafted input again on the toolchain, and
-    the hand-worked example, which finishes."""
+def rerun_problems(source: Path) -> list[str]:
+    """Runs SOURCE on the toolchain on the first drafted input the README
+    reports as running out of steps, which must run out again, and on the
+    regex example, which must finish and agree with the meaning."""
     measure = _seq_bool_measure()
-    statuses = dict(line.split("\t")[::2] for line in (SEQ_BOOL_RUN / "drafted.tsv").read_text().splitlines())
-    name, args = next((n, a) for n, a in measure.DRAFTED if statuses.get(n) == "fuel-exhausted")
-    got = measure.run(name, args)
-    check(got[2] == "fuel-exhausted", f"the Seq Bool regex reference runs out of steps on {name} again ({got[2]})")
-    got = measure.run("example", SCORED_EX["regex"])
-    check(got[2:] == ("success", True), f"the Seq Bool regex reference finishes the regex example and agrees ({got})")
+    name = next(n for n, (_, _, want) in DRAFTED_EXPECTED.items() if want == "fuel-exhausted")
+    problems = []
+    got = measure.run(name, dict(measure.DRAFTED)[name], source)
+    if got[2] != "fuel-exhausted":
+        problems.append(f"{name}: {got[2]}, not fuel-exhausted")
+    got = measure.run("example", SCORED_EX["regex"], source)
+    if got[2:] != ("success", True):
+        problems.append(f"the example: {got[2]}, agrees {got[3]}")
+    return problems
+
+
+def regex_drafted_rerun() -> None:
+    source = SEQ_BOOL_RUN / "regex-seq-bool.firth"
+    check(rerun_problems(source) == [], "the Seq Bool regex reference runs out of steps on a drafted input "
+          "again and finishes the regex example, agreeing")
+    # Planted: the bitset reference, which finishes where the Seq Bool one
+    # ran out, and a Seq Bool reference that counts each whole match twice.
+    import tempfile
+    bitset = HERE / "reference/scored/firth/regex.firth"
+    check(any("not fuel-exhausted" in q for q in rerun_problems(bitset)),
+          "a reference that does not run out of steps on the drafted input is refused")
+    src = source.read_text()
+    mutant = src.replace("count whole [ 1 prim + ] [ ] if", "count whole [ 2 prim + ] [ ] if", 1)
+    with tempfile.TemporaryDirectory() as d:
+        (Path(d) / "regex-seq-bool.firth").write_text(mutant)
+        check(mutant != src and any(q.startswith("the example") for q in rerun_problems(Path(d) / "regex-seq-bool.firth")),
+              "a Seq Bool reference that counts each whole match twice is refused on the example")
 
 
 def firth_mutant() -> None:
