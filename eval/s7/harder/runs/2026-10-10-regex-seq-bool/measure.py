@@ -28,8 +28,6 @@ ROOT = HARDER.parents[2]
 sys.path.insert(0, str(HARDER))
 
 import costliest  # noqa: E402
-import scored  # noqa: E402
-from tier import harness  # noqa: E402
 
 FIVE = {
     "nest20": [31] * 6 + [26, 27] + [32, 27] * 6,
@@ -48,7 +46,6 @@ def inputs() -> list[tuple[str, tuple]]:
 
 
 def run(name: str, args: tuple) -> tuple[str, str, str, bool]:
-    t = {t.id: t for t in scored.SCORED}["regex"]
     args = json.loads(json.dumps(list(args)))
     try:
         p = subprocess.run([sys.executable, "tools/loop/firth_run.py", "run", str(HERE / "regex-seq-bool.firth"),
@@ -60,8 +57,7 @@ def run(name: str, args: tuple) -> tuple[str, str, str, bool]:
         out = json.loads(p.stdout)
     except json.JSONDecodeError:
         return name, "None", f"exit {p.returncode}", False
-    ok = out.get("status") == "success" and harness.same(out["stack"], t.expected(args))
-    return name, str(out.get("kernel_cost")), str(out.get("status")), ok
+    return name, str(out.get("kernel_cost")), str(out.get("status")), costliest.agrees("regex", args, out)
 
 
 def main() -> int:

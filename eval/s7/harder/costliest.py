@@ -77,8 +77,15 @@ def candidates() -> dict[str, list[tuple[str, tuple]]]:
     }
 
 
-def run(tid: str, name: str, args: tuple) -> tuple[str, str, int | None, bool]:
+def agrees(tid: str, args, out: dict) -> bool:
+    """Whether a `firth_run.py run` result OUT on ARGS ran to the end and left
+    what the meaning says (`test_harder.py`, `scored_costliest`, plants a
+    wrong stack and a run that did not finish)."""
     t = {t.id: t for t in scored.SCORED}[tid]
+    return out.get("status") == "success" and harness.same(out.get("stack"), t.expected(args))
+
+
+def run(tid: str, name: str, args: tuple) -> tuple[str, str, int | None, bool]:
     args = json.loads(json.dumps(list(args)))
     try:
         p = subprocess.run([sys.executable, "tools/loop/firth_run.py", "run",
@@ -91,8 +98,7 @@ def run(tid: str, name: str, args: tuple) -> tuple[str, str, int | None, bool]:
         detail = e if isinstance(e, subprocess.TimeoutExpired) else (p.stderr or p.stdout)[-300:]
         print(f"{tid} {name}: {detail}", file=sys.stderr)
         return tid, name, None, False
-    ok = out.get("status") == "success" and harness.same(out["stack"], t.expected(args))
-    return tid, name, out.get("kernel_cost"), ok
+    return tid, name, out.get("kernel_cost"), agrees(tid, args, out)
 
 
 def main(argv: list[str]) -> int:

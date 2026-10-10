@@ -1052,6 +1052,18 @@ def scored_costliest() -> None:
     lines[k] = f"{tid}\t{name}\t999999\t{ok}"
     check(any(p.startswith("warehouse: the last hidden test is not") for p in costliest_problems("\n".join(lines))),
           "a record with a costlier warehouse candidate than the last hidden test is refused")
+    # The agreement column of costliest.tsv and of the kept Seq Bool regex
+    # measurement comes from costliest.agrees: a run that left the hand-worked
+    # result agrees; a wrong stack, or a run that did not finish, does not.
+    import costliest
+    ex = SCORED_EX["regex"]
+    good = [[True, True, True, False, False, True, False], [3, 2, 4, -1, 2, 1, 2], 4, True]
+    check(costliest.agrees("regex", ex, {"status": "success", "stack": good}),
+          "a regex run that leaves the hand-worked example result agrees")
+    check(not costliest.agrees("regex", ex, {"status": "success", "stack": good[:2] + [3, True]}),
+          "a regex run that counts one whole match too few does not agree")
+    check(not costliest.agrees("regex", ex, {"status": "out-of-fuel", "stack": good}),
+          "a run that did not finish does not agree, whatever it left")
 
 
 def firth_mutant() -> None:
