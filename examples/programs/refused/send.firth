@@ -1,0 +1,8 @@
+\ `prim send` type-checks, but the portable compiler has no target
+\ implementation for it, so a program that defines a word using it is
+\ refused at compilation even when the entry word never calls it.
+: deliver
+  ( w:World^linear h:Handle^linear b:Bytes^linear -- w:World^linear )
+  prim send ;
+
+: main ( -- n:Int^many ) 1 ;
