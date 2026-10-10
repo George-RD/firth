@@ -40,6 +40,9 @@ def main() -> int:
         print(f"probe failed: no reply ({e!r})", file=sys.stderr)
         return 1
     print(f"HTTP status\t{status}")
+    if status != 200:
+        print(f"probe failed: the request failed: {reply[:300]}", file=sys.stderr)
+        return 1
     try:
         r = json.loads(reply)
         content = r["message"]["content"]

@@ -110,14 +110,24 @@ until the tasks get harder.
   credentials. No completion request was sent. Whether to spend that account on it is the maintainer's call.
 - DeepSeek driver: `eval/s7/harder/deepseek.py` sends a prompt and keeps the
   reply as the answer file and asks each round once; a reply cut off at the
-  length limit is a failed answer, and a failed request, malformed reply or
-  other-model reply voids the sample; its self-test runs in
+  length limit is a failed answer; failed requests and other incomplete,
+  malformed or unexpected replies void the sample; its self-test runs in
   `test_harder.py` (README, "DeepSeek"). A probe on 10 October 2026
   (`runs/2026-10-10-deepseek-probe/`) showed a 91,647-character prompt read
   whole; no task has been sent. The pre-registration must state that a
   DeepSeek author sees the prompt and, on feedback rounds, its prior reply
   and the feedback, while a Sonnet author also sees its session's system
   prompt and `AGENTS.md`.
+- Decided on 10 October 2026 by the project's coordinator, under the
+  maintainer's delegation, for the scored run: a DeepSeek reply cut off at
+  the length limit is scored as a failed answer, not replaced; a void round
+  (a failed request, or any other reply that is not a complete answer; a
+  length cut-off is not void) voids the whole sample, and only void samples
+  are replaced. A round-1 cut-off gets a feedback round like any other
+  failed answer, saying the reply was cut off, on both language arms.
+  `eval/s7/harder/deepseek_sample.py` runs a DeepSeek sample by these rules
+  (README, "DeepSeek"). The pre-registration, not yet written, must state
+  them.
 
 ## Before any scored run (reviewer, #209)
 
