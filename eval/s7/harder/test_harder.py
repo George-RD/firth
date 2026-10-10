@@ -1222,8 +1222,8 @@ def regex_drafted_rerun() -> None:
 def deepseek_driver() -> None:
     """The DeepSeek driver's self-test, against planted replies with no
     network: a complete reply is kept byte for byte, a round is asked once,
-    a cut-off reply or another model's reply is not kept, and only a request
-    that got no reply is sent again. "self-test ok" is printed only after
+    and a cut-off reply, another model's reply or a failed request is not
+    kept, not sent again, and voids the round. "self-test ok" is printed only after
     every assertion, so a self-test that checks nothing fails here."""
     import subprocess
     p = subprocess.run([sys.executable, str(HERE / "deepseek.py"), "--self-test"],

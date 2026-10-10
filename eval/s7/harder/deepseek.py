@@ -12,20 +12,23 @@ text a Sonnet author reads.
 
     deepseek.py PROMPT DIR ROUND
 
-writes into DIR (which must not already hold `answer-ROUND.md`):
+writes into DIR (which must not already hold `request-ROUND.json`):
 
 - `answer-ROUND.md`, the reply's `message.content`, byte for byte;
 - `response-ROUND.json`, the whole API reply, `thinking` included (kept, never
   scored or shown to the scorer);
 - `request-ROUND.json`, what was sent (the proxy adds the key; no key is ever
-  in it), and each attempt's outcome.
+  in it), and the request's outcome.
 
-A reply that is not a complete answer is never kept as one. If `done_reason`
-is not `stop` (for example `length`, a cut-off), the round writes no answer,
-records the reply, and exits 2: the sample is void as the pre-registration
-says. Only a request that failed before any reply (a network error or an HTTP
-5xx) is sent again, at most `TRIES` times in all, and every attempt is
-recorded, so no complete answer is ever asked for twice.
+A round is asked exactly once. `request-ROUND.json` is created before the
+request is sent, and a round whose request file exists is refused, whatever
+happened to it. A reply that is not a complete answer is never kept as one:
+if `done_reason` is not `stop` (for example `length`, a cut-off) or the reply
+names another model, the round writes no answer, records the reply, and exits
+2. A request that failed (a network error, which may come after the server
+answered, or any HTTP status other than 200) is never sent again; the round
+records it and exits 3. Either way the sample is void as the
+pre-registration says, so no answer is ever asked for twice.
 
 `deepseek.py --self-test` runs the driver against planted replies, with no
 network.
@@ -34,14 +37,12 @@ from __future__ import annotations
 
 import json
 import sys
-import time
 import urllib.error
 import urllib.request
 from pathlib import Path
 
 URL = "https://ollama.com/api/chat"
 MODEL = "deepseek-v4.1-flash"
-TRIES = 3
 TIMEOUT = 3600
 
 
@@ -63,32 +64,27 @@ def messages(prompt: Path, d: Path, rnd: int) -> list[dict]:
     return out
 
 
-def run(prompt: Path, d: Path, rnd: int, send=post, sleep=time.sleep) -> int:
-    if (d / f"answer-{rnd}.md").exists():
-        raise SystemExit(f"{d}/answer-{rnd}.md already exists; a round is asked once")
+def run(prompt: Path, d: Path, rnd: int, send=post) -> int:
     body = {"model": MODEL, "messages": messages(prompt, d, rnd), "stream": False}
-    attempts = []
-    reply = None
-    for i in range(TRIES):
-        try:
-            status, text = send(body)
-        except OSError as e:  # no reply at all: safe to send again
-            attempts.append({"error": repr(e)})
-            sleep(2 ** (i + 1))
-            continue
-        attempts.append({"status": status})
-        if status >= 500:
-            sleep(2 ** (i + 1))
-            continue
-        reply = text
-        break
-    (d / f"request-{rnd}.json").write_text(json.dumps({"body": body, "attempts": attempts}, indent=1))
-    if reply is None:
-        print(f"no reply after {len(attempts)} attempts", file=sys.stderr)
-        return 3
-    (d / f"response-{rnd}.json").write_text(reply)
-    if attempts[-1]["status"] != 200:
-        print(f"HTTP {attempts[-1]['status']}: {reply[:300]}", file=sys.stderr)
+    record = {"body": body}
+    try:
+        # Created before the request is sent: a round is asked once, whatever happened to it.
+        with open(d / f"request-{rnd}.json", "x") as f:
+            f.write(json.dumps(record, indent=1))
+    except FileExistsError:
+        raise SystemExit(f"{d}/request-{rnd}.json already exists; a round is asked once")
+    try:
+        status, reply = send(body)
+    except OSError as e:  # the server may have answered: never sent again
+        record["outcome"] = {"error": repr(e)}
+        status, reply = None, None
+    else:
+        record["outcome"] = {"status": status}
+    (d / f"request-{rnd}.json").write_text(json.dumps(record, indent=1))
+    if reply is not None:
+        (d / f"response-{rnd}.json").write_text(reply)
+    if status != 200:
+        print(f"request failed ({record['outcome']}); the round is void", file=sys.stderr)
         return 3
     r = json.loads(reply)
     if r.get("model") != MODEL or not r.get("done") or r.get("done_reason") != "stop":
@@ -114,44 +110,47 @@ def self_test() -> None:
                 raise o
             return o
         return send, sent
+    def refused(p, d, rnd):
+        send, sent = scripted((200, reply("again")))
+        try:
+            run(p, d, rnd, send)
+        except SystemExit:
+            return sent == []
+        return False
     with tempfile.TemporaryDirectory() as t:
         d = Path(t)
         p = d / "prompt.md"
         p.write_text("Write `main`.")
         # A complete reply is kept byte for byte; thinking is not in the answer.
         send, sent = scripted((200, reply("```firth\nmain\n```\n")))
-        assert run(p, d, 1, send, lambda s: None) == 0
+        assert run(p, d, 1, send) == 0
         assert (d / "answer-1.md").read_text() == "```firth\nmain\n```\n"
         assert sent[0]["messages"] == [{"role": "user", "content": "Write `main`."}]
+        assert json.loads((d / "request-1.json").read_text())["outcome"] == {"status": 200}
         # A round is asked once.
-        try:
-            run(p, d, 1, send, lambda s: None)
-            raise AssertionError("asked a round twice")
-        except SystemExit:
-            pass
+        assert refused(p, d, 1)
         # Round 2 resends the conversation with the repair file as the next turn.
         (d / "repair-1.md").write_text("Feedback round 1 of 1: fix it.")
-        send, sent = scripted(OSError("reset"), (502, "bad gateway"), (200, reply("fixed")))
-        assert run(p, d, 2, send, lambda s: None) == 0
-        assert [m["role"] for m in sent[2]["messages"]] == ["user", "assistant", "user"]
-        assert sent[2]["messages"][2]["content"] == "Feedback round 1 of 1: fix it."
-        req = json.loads((d / "request-2.json").read_text())
-        assert [list(a) for a in req["attempts"]] == [["error"], ["status"], ["status"]], req
-        # Planted: a cut-off reply (done_reason "length") is not kept as an answer.
-        (d / "repair-2.md").write_text("again")
-        send, _ = scripted((200, reply("half an answ", reason="length")))
-        assert run(p, d, 3, send, lambda s: None) == 2
-        assert not (d / "answer-3.md").exists() and (d / "response-3.json").exists()
-        # Planted: another model's reply is not kept either.
-        send, _ = scripted((200, reply("x", model="deepseek-v4-pro:0813")))
-        assert run(p, d, 3, send, lambda s: None) == 2 and not (d / "answer-3.md").exists()
-        # A 4xx is an answer from the server, not a lost request: not resent.
-        send, sent = scripted((400, "bad request"), (200, reply("never")))
-        assert run(p, d, 3, send, lambda s: None) == 3 and len(sent) == 1
-        # Three failed sends end the round with no answer.
-        send, sent = scripted(OSError("a"), OSError("b"), OSError("c"))
-        assert run(p, d, 3, send, lambda s: None) == 3 and len(sent) == TRIES
-        assert not (d / "answer-3.md").exists()
+        send, sent = scripted((200, reply("fixed")))
+        assert run(p, d, 2, send) == 0 and len(sent) == 1
+        assert [m["role"] for m in sent[0]["messages"]] == ["user", "assistant", "user"]
+        assert sent[0]["messages"][2]["content"] == "Feedback round 1 of 1: fix it."
+    for planted, code in (((200, reply("half an answ", reason="length")), 2),   # a cut-off reply
+                          ((200, reply("x", model="deepseek-v4-pro:0813")), 2),  # another model
+                          (OSError("reset"), 3),                                 # no reply seen
+                          ((502, "bad gateway"), 3),                             # a 5xx
+                          ((400, "bad request"), 3)):                            # a 4xx
+        with tempfile.TemporaryDirectory() as t:
+            d = Path(t)
+            p = d / "prompt.md"
+            p.write_text("Write `main`.")
+            send, sent = scripted(planted, (200, reply("never")))
+            # Planted: none of these is kept as an answer or sent again, and
+            # the void round cannot be asked again.
+            assert run(p, d, 1, send) == code and len(sent) == 1, planted
+            assert not (d / "answer-1.md").exists(), planted
+            assert "outcome" in json.loads((d / "request-1.json").read_text()), planted
+            assert refused(p, d, 1), planted
     print("self-test ok")
 
 

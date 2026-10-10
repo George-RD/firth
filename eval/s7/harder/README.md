@@ -667,12 +667,14 @@ sends the prompt file's text as the user turn and keeps the reply's text,
 byte for byte, as `answer-ROUND.md`. In a feedback round it sends the
 conversation so far again, with `repair-<n>.md` as the next user turn: the
 same files a Sonnet author reads and writes, scored by the same `tier.py`.
-A reply that is not complete (a `done_reason` other than `stop`, or another
-model's name) is never kept as an answer; the round exits 2 and the sample
-is void as the pre-registration will say. Only a request that got no reply
-(a network error or an HTTP 5xx) is sent again, at most three times, and
-every attempt is recorded in `request-ROUND.json`, so no complete answer is
-ever asked for twice. The whole reply, the model's `thinking` included, is
+A round is asked once: `request-ROUND.json` is created before the request
+is sent, and a round whose request file exists is refused. A reply that is
+not complete (a `done_reason` other than `stop`, or another model's name)
+is never kept as an answer, and a request that failed (a network error,
+which may come after the server answered, or any HTTP status but 200) is
+never sent again; either way the round writes no answer, and the sample is
+void as the pre-registration will say. So no answer is ever asked for
+twice. The whole reply, the model's `thinking` included, is
 kept in `response-ROUND.json` and is never scored. `deepseek.py
 --self-test` checks this against planted replies with no network, and
 `test_harder.py` runs it.
