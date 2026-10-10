@@ -114,10 +114,10 @@ def run(prompt: Path, d: Path, rnd: int, send=post) -> int:
 
 def self_test() -> None:
     import tempfile
-    def reply(content, reason="stop", model=MODEL):
+    def reply(content, reason="stop", model=MODEL, done=True):
         return json.dumps({"model": model, "message": {"role": "assistant", "content": content,
                                                         "thinking": "t"},
-                           "done": True, "done_reason": reason, "eval_count": 3})
+                           "done": done, "done_reason": reason, "eval_count": 3})
     def scripted(*outcomes):
         sent = []
         def send(body):
@@ -157,6 +157,8 @@ def self_test() -> None:
     for planted, code in (((200, reply("half an answ", reason="length")), 2),   # a cut-off reply
                           ((200, reply("x", model="deepseek-v4-pro:0813")), 3),  # another model
                           ((200, reply("x", reason="load")), 3),                 # not stop or length
+                          ((200, reply("x", done=False)), 3),                    # not done
+                          ((200, reply("x", done=1)), 3),                        # done, not true
                           ((200, "<html>bad gateway</html>"), 3),                # not JSON
                           ((200, json.dumps({"model": MODEL, "done": True,       # no message
                                              "done_reason": "stop"})), 3),
