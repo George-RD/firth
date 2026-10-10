@@ -5,9 +5,13 @@ any scored task has been sent to a model. This file and `run-plan.md`
 next to it fix the run. Neither is changed after the pin below; anything
 learnt during the run is reported, not folded back in.
 
-**Not yet pinned.** The run starts only after all of the following:
-- the maintainer chooses the scored run on the open decision card;
-- the project's coordinator freezes the S7 inputs (`docs/getting-started.md`,
+**Not yet pinned.** The run is option (a) on the maintainer's open
+decision card, the scored head-to-head, which the card recommends. Under
+the maintainer's standing instruction to proceed on the recommended option,
+it goes ahead unless the maintainer answers otherwise. It starts only after
+all of the following:
+- the project's coordinator confirms that the S7 inputs are settled and
+  freezes them (`docs/getting-started.md`,
   `docs/firth-agent-guide.md`, `examples/programs/README.md`, `AGENTS.md`);
 - the prompts are built at one main commit and committed, with that
   commit, in the run directory `eval/s7/harder/runs/<date>-scored/`
@@ -55,9 +59,12 @@ stands and the set is not edited or replaced
 
 - That is 30 valid samples in all, and every sample answers all six tasks.
 - Samples are named `<subject>-<lang>-<n>`, for example `sonnet-firth-3`.
-- The roadmap names Haiku 4.5. The current small Anthropic model, which
-  the Agent tool's `haiku` runs, is Haiku 5.5. Each transcript's recorded
-  model id is reported.
+- The roadmap and `todo.s7-harder-task-tier` name Haiku 4.5. The Agent
+  tool offers only `haiku`, which runs Haiku 5.5, so Haiku 4.5 cannot be
+  run as a sub-agent here. The Haiku 5.5 row therefore does not meet the
+  criterion "Haiku 4.5 stays as a secondary check"; that line stays open
+  for this reason, and the criterion is not changed. Each transcript's
+  recorded model id is reported.
 - The sub-agent type and model are those calibration used for Sonnet. The
   repository's `s7-author` agent belongs to run 14 and is not used.
 - They run one at a time, with no other author or worker running in the
@@ -267,6 +274,14 @@ way still fails. The steps are fixed:
   interval excluding 0 and p below 0.05. Only that counts as materially
   higher in Firth. A difference that is material the other way is
   reported as Python higher.
+- **Unpaired, and why.** The test treats the authors as exchangeable
+  across arms, so time effects during the run are assumed small next to
+  the arm effect. The run plan's same-number pairs are a scheduling
+  convenience, not matched units: each author is independent, and a
+  replacement breaks the pair. A within-pair permutation over 5 pairs has
+  only 32 assignments, so its smallest two-sided p is 0.0625, and no
+  result could reach p below 0.05. As a check on time effects, the report
+  gives each arm's results in run order.
 - **Sample size.** With 5 authors per arm only large differences can
   show. A difference that is not material is reported with its interval,
   and is not evidence of parity beyond that interval.
@@ -285,14 +300,17 @@ answer behaves differently on some hidden test. The rest are reported as
 refusals.
 
 These numbers are computed by a script committed with the results, which
-reads only the kept `results-N.json` and `outcome.json` files. Its
+reads only the run directory's kept files: `results-N.json`,
+`outcome.json`, `answer-N.md` (for answer lengths) and, for DeepSeek,
+`response-N.json` (for `prompt_eval_count` and `done_reason`). Its
 permutation test and bootstrap are checked against a hand-worked example
 in its own test.
 
 ## Before the pin
 
-- [ ] Maintainer's answer to the decision card: run the scored head-to-head.
-- [ ] Coordinator freezes the S7 inputs; told before the prompts are built.
+- [ ] No answer from the maintainer choosing otherwise than option (a).
+- [ ] Coordinator confirms the S7 inputs are settled and freezes them;
+  asked before the prompts are built.
 - [x] `scored.py` merged with references, hidden tests, hand values,
   mutants and bounds checks covering order constraints (#229, #231).
 - [x] `context_seen.py` compares Sonnet and DeepSeek sample names whole

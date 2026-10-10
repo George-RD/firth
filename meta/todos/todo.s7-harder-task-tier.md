@@ -81,8 +81,11 @@ until the tasks get harder.
   comes before any. Written in `eval/s7/harder/scored-run/preregistration.md`
   with the run order in `run-plan.md`: Sonnet 5.5 (primary), DeepSeek v4.1
   Flash and Haiku 5.5, five authors per language each. It is pinned with
-  the prompts only after the maintainer chooses the scored run and the S7
-  inputs are frozen.
+  the prompts once the coordinator confirms the S7 inputs are settled; the
+  run is the decision card's recommended option (a), unless the maintainer
+  answers otherwise. The Agent tool offers only `haiku` (Haiku 5.5), so
+  Haiku 4.5 cannot be run as a sub-agent here: the Haiku 5.5 row does not
+  meet "Haiku 4.5 stays as a secondary check", which stays open.
 - The audit flags each successful write that differs from the kept copy
   (Firth 3, pool 3). Before a scored run, either pre-register that rule
   as it stands or change the audit to compare only the last write, with

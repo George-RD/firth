@@ -1,8 +1,8 @@
 # Harder tier, scored run: run plan
 
 The order the scored run's samples run in, fixed before any of them starts
-(`preregistration.md`). It is committed and pinned with the prompts, and
-not changed after that.
+(`preregistration.md`). It will be pinned with the prompts, and is not
+changed after that.
 
 - One sample runs at a time, with no other author or worker running in the
   session.
@@ -10,8 +10,10 @@ not changed after that.
   the other, and the subjects take turns.
 - The arm that goes first alternates: Python first for odd numbers, Firth
   first for even ones. So each arm goes first for each subject in two or
-  three of the five rounds, and a slow period or an outage falls on both
-  arms.
+  three of the five rounds, which balances which arm runs first. The two
+  arms of a subject also run back to back, so a long slow period touches
+  both, though a brief outage can still void a single sample; voids are
+  counted per arm (`preregistration.md`).
 - A void or crashed sample's replacement takes the next unused number for
   its subject and language, and runs after sample 30, in the order the
   voids happened (`preregistration.md`, "Voids, crashes and
