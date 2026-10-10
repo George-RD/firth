@@ -11,7 +11,7 @@ gate_path = "tools/loop/mvp_agent_gate.py"
 [inputs]
 model_only = true
 guide_path = "docs/firth-agent-guide.md"
-guide_sha256 = "efb4925a2913d238057a27ed0aa055f97b7bb5f151f3dd48199070f34df63f7e"
+guide_sha256 = "596c867a39b18876f287bc537f47d538c0cbe9f919c98fbbc74fb049223d744f"
 interface_paths = [
   "src/agent/Firth/Agent/DiagnosticEnvelope.lean",
   "src/agent/Firth/Agent/Validation.lean",
@@ -30,7 +30,7 @@ role = "envelope-validation"
 
 [[inputs.interface]]
 path = "src/agent/Firth/Agent/ElaboratorDiagnostics.lean"
-sha256 = "cf4115879d7938d83c33473e9ea82488204959d7d358627692a9c0272e36961a"
+sha256 = "843f3bfcf7fab1159b4066ba537ffbd9dee1e63157a215a1e1bf46444050f930"
 role = "elaborator-to-envelope-adapters"
 
 [gamma]

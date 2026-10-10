@@ -78,14 +78,14 @@ structure Request where
 
 /-- Decodes the optional `files` member of a source envelope: an array of
 `{source_path, source_text}`, each path normalised relative to the source
-root, none repeated and none the root file's own `rootPath`. When it is
-present, `rootPath` must be normalised too, since imports resolve against it. -/
+root, none repeated and none the root file's own `rootPath`. When it names
+any file, `rootPath` must be normalised too, since imports resolve against it. -/
 def decodeFiles (context rootPath : String) (values : List (String × Json)) :
     Except String (List Source) := do
   match field "files" values with
   | none => pure []
   | some (.arr items) =>
-      if !normalisedPath rootPath then
+      if !items.isEmpty && !normalisedPath rootPath then
         err s!"{context}.source_path: {rootPath} is not a normalised relative .firth path"
       let mut files : List Source := []
       for item in items.toList do
