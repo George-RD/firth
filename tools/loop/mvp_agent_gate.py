@@ -358,12 +358,23 @@ def verify_provenance(data: dict[str, Any]) -> list[dict[str, str]]:
                 f"that is not the checked-in {entry['source_path']}"
             )
         verify_transcript(transcript, entry, inputs)
+        # The directory the source's imports resolve under, when not its own.
+        source_root: dict[str, str] = {}
+        if "source_root" in entry:
+            value = entry["source_root"]
+            if not isinstance(value, str) or not value or Path(value).is_absolute():
+                fail(f"{field}.source_root: expected a non-empty relative path")
+            root = (ROOT / value).resolve()
+            if not root.is_relative_to(ROOT) or not root.is_dir() or not source.is_relative_to(root):
+                fail(f"{field}.source_root: expected a repository directory holding the source")
+            source_root["source_root"] = str(root)
         verified.append(
             {
                 "name": name,
                 "entry": entry.get("entry", name),
                 "source_path": entry["source_path"],
                 "source": str(source),
+                **source_root,
             }
         )
     return verified
@@ -923,10 +934,11 @@ def rebuild(entry: dict[str, Any], workspace: Path, *,
     source = Path(entry["source"])
     loaded = load_sources(name, source, Path(entry.get("source_root") or source.parent), workspace)
     files = loaded["files"]
-    # A program without imports keeps the name its entry gives it; one with
-    # imports is named by its path under the source root, which they resolve
-    # against.
-    source_name = loaded["source_path"] if files else Path(entry["source_path"]).name
+    # A source directly in its root keeps the name its entry gives it; one
+    # below it is named by its path under the root, which its imports resolve
+    # against, whether or not any imported file was found.
+    nested = files or "/" in loaded["source_path"]
+    source_name = loaded["source_path"] if nested else Path(entry["source_path"]).name
     source_text = loaded["source_text"]
     written = [source_name] + [file["source_path"] for file in files]
     for path, text in zip(written, [source_text] + [file["source_text"] for file in files]):

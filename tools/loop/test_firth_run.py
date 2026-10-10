@@ -264,6 +264,37 @@ class SavedCaseTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(frozen, [("double.firth", ": twice ( -- ) ;\n")])
 
+    def test_a_suite_source_resolves_its_imports_under_the_given_root(self) -> None:
+        # Without `--root` the suite's directory is the root; with it, the
+        # source is named and frozen by its path under that root.
+        seen = []
+
+        def run_case(entry, workspace, **_):
+            seen.append(Path(entry["source"]).relative_to(Path(entry["source_root"])).as_posix())
+            return self.observation([42])
+
+        with patch.object(gate, "build_toolchain"), patch.object(gate, "rebuild", side_effect=run_case):
+            code, _, _ = self.invoke("--root", str(self.root.parent))
+        self.assertEqual(code, 0)
+        self.assertEqual(seen, [f"{self.root.name}/double.firth"])
+
+    def test_check_names_a_nested_source_by_its_root_path_without_imported_files(self) -> None:
+        # The elaborator resolves imports against `source_path`, so it must be
+        # the path under the root even when no imported file was found.
+        requests = []
+
+        def adapter(command, request, workspace, label):
+            requests.append(request)
+            return {"status": "success", "checked_words": [], "warnings": []}
+
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with patch.object(gate, "build_toolchain"), patch.object(gate, "adapter", side_effect=adapter), \
+                redirect_stdout(stdout), redirect_stderr(stderr):
+            code = runner.main(["check", str(self.source), "--root", str(self.root.parent)])
+        self.assertEqual(code, 0, stderr.getvalue())
+        self.assertEqual(requests[0]["source_path"], f"{self.root.name}/double.firth")
+        self.assertNotIn("files", requests[0])
+
     def test_display_names_never_become_scratch_paths(self) -> None:
         self.write({**self.suite, "cases": [{**self.case, "name": "../human readable label"}]})
         with patch.object(gate, "build_toolchain"), \

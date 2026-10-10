@@ -184,7 +184,8 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
         (s!"{actual} is not an import path.",
           "An import path is relative to the directory of the file that imports it, as in `import \"lib/core.firth\";`. It separates directories with `/`, uses only letters, digits, `.`, `_` and `-` in each part, ends in a `.firth` file name, and stays inside the source root: `..` cannot climb above it.")
     | "firth.name.duplicate-import" =>
-        (s!"This file imports {actual} twice.", "Delete one of the two imports.")
+        let target := (error.files.head?.map (s!"`{·}`")).getD actual
+        (s!"This file imports {target} more than once, here as {actual}.", "Delete all but one of the imports of that file.")
     | "firth.name.import-cycle" =>
         let around := " imports ".intercalate (error.files.map (s!"`{·}`"))
         (s!"This import closes a cycle: {around}.",

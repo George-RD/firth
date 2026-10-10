@@ -116,7 +116,7 @@ below.
 | `firth.name.duplicate-canonical` | two declarations produce one canonical key, in one file or in two files of one program |
 | `firth.name.duplicate-alias` | an alias repeats or collides with a visible canonical vocabulary prefix |
 | `firth.name.ambiguous-use` | an unqualified reference has multiple candidates |
-| `firth.name.unresolved` | a use target or qualified or unqualified reference has no candidate |
+| `firth.name.unresolved` | a use target, qualified or unqualified reference, or `export` name has no candidate (an `export` name must be a word the file defines) |
 | `firth.name.not-exported` | a reference names a word that a directly imported file defines but does not export; the message names the file |
 | `firth.name.duplicate-export` | an `export` lists one name twice |
 | `firth.name.import-path` | an import path is absolute, has an empty segment or a character outside the allowed set, does not end in `.firth`, or climbs above the source root |

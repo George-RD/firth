@@ -59,10 +59,11 @@ use <vocabulary> [as <alias>];
 : <word-name> <stack-effect> <body>;
 ```
 
-The outer file is an implicit vocabulary. A word is exported by default. A
-qualified reference is resolved by its canonical name. An unqualified
-reference is accepted only when exactly one visible candidate exists. Ambiguous
-or missing names are errors. Definitions in one vocabulary are visible
+The outer file is an implicit vocabulary. Within its file a word is visible
+from every vocabulary by its qualified name; other files see it only if it is
+exported (below). A qualified reference is resolved by its canonical name.
+An unqualified reference is accepted only when exactly one visible candidate
+exists. Ambiguous or missing names are errors. Definitions in one vocabulary are visible
 throughout that vocabulary, so recursive words may be declared without textual
 forward declarations.
 

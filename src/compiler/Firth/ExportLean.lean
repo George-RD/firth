@@ -242,13 +242,13 @@ end {namespaceName}
 def main (args : List String) : IO UInt32 := do
   match args with
   | [sourcePath, moduleName] =>
-      -- The source and the files it imports. A relative path is read from
-      -- the working directory as the source root; an absolute one from its
-      -- own directory.
+      -- The source and the files it imports. A relative path, normalised
+      -- (`./a/b.firth` is `a/b.firth`), is read from the working directory
+      -- as the source root; an absolute one from its own directory.
       let path : System.FilePath := sourcePath
       let (root, relative) := if path.isAbsolute
         then ((path.parent.getD ".").toString, path.fileName.getD sourcePath)
-        else (".", sourcePath)
+        else (".", (Firth.Elaborator.resolveImportPath "" sourcePath).getD sourcePath)
       let (main, files) ← Firth.Agent.Sources.load root relative
       match exportModule sourcePath main.text moduleName files main.path with
       | .ok text =>

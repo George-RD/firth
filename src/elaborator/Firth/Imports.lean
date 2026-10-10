@@ -83,22 +83,27 @@ private partial def load (files : List Source) (source : Source) (state : LoadSt
       { state with loaded := state.loaded ++ [{ source, declarations := none }] }
   | .success file =>
       let state := { state with active := state.active ++ [source.path] }
-      let (state, imports, errors) := (importsOf file.declarations).foldl
-        (init := (state, ([] : List (ImportDecl × String)), ([] : List ParseError)))
-        fun (state, imports, errors) decl =>
+      -- `named` holds every file an import of this one has named so far,
+      -- whether or not it could be loaded, so a repeat is reported as one.
+      let (state, imports, errors, _) := (importsOf file.declarations).foldl
+        (init := (state, ([] : List (ImportDecl × String)), ([] : List ParseError), ([] : List String)))
+        fun (state, imports, errors, named) decl =>
           match resolveImportPath source.path decl.path with
-          | none => (state, imports, errors ++ [importError "firth.name.import-path" decl])
+          | none => (state, imports, errors ++ [importError "firth.name.import-path" decl], named)
           | some target =>
-              if imports.any (·.2 == target) then
-                (state, imports, errors ++ [importError "firth.name.duplicate-import" decl [target]])
-              else if state.active.contains target then
-                let cycle := state.active.drop (state.active.idxOf target) ++ [target]
-                (state, imports, errors ++ [importError "firth.name.import-cycle" decl cycle])
-              else if state.loaded.any (·.source.path == target) then
-                (state, imports ++ [(decl, target)], errors)
-              else match files.find? (·.path == target) with
-                | none => (state, imports, errors ++ [importError "firth.name.import-not-found" decl [target]])
-                | some imported => (load files imported state, imports ++ [(decl, target)], errors)
+              if named.contains target then
+                (state, imports, errors ++ [importError "firth.name.duplicate-import" decl [target]], named)
+              else
+                let named := named ++ [target]
+                if state.active.contains target then
+                  let cycle := state.active.drop (state.active.idxOf target) ++ [target]
+                  (state, imports, errors ++ [importError "firth.name.import-cycle" decl cycle], named)
+                else if state.loaded.any (·.source.path == target) then
+                  (state, imports ++ [(decl, target)], errors, named)
+                else match files.find? (·.path == target) with
+                  | none => (state, imports, errors ++ [importError "firth.name.import-not-found" decl [target]],
+                      named)
+                  | some imported => (load files imported state, imports ++ [(decl, target)], errors, named)
       { active := state.active.dropLast
         loaded := state.loaded ++ [{ source, declarations := some file.declarations, imports, errors }] }
 
@@ -114,7 +119,9 @@ the file defining it: its own words and, before them, everything its imports
 bring in. Two files defining one key are reported as
 `firth.name.duplicate-canonical` in the first file whose program holds both:
 at the import that brings the second in, or at the word when the file
-defines it itself. -/
+defines it itself. A file's set keeps the first file for each key, so a
+collision is reported once, and a file that imports one where it was
+reported gets `firth.name.import-failed` instead. -/
 private def collisions (loaded : List LoadedFile) : List (String × List ParseError) :=
   let step (done : List (String × List (String × String)) × List (String × List ParseError))
       (file : LoadedFile) :=
@@ -136,7 +143,8 @@ private def collisions (loaded : List LoadedFile) : List (String × List ParseEr
       (brought.find? (·.1 == word.name)).map fun (_, other) =>
         { code := "firth.name.duplicate-canonical", primary := word.span, actual := some word.name
           cause := .validation, files := [other] }
-    (closures ++ [(file.source.path, brought ++ own.map (·.name, file.source.path))],
+    let fresh := own.filter fun word => !brought.any (·.1 == word.name)
+    (closures ++ [(file.source.path, brought ++ fresh.map (·.name, file.source.path))],
       errors ++ [(file.source.path, found)])
   (loaded.foldl step ([], [])).2
 

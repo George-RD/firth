@@ -147,6 +147,14 @@ def main : IO Unit := do
     [("firth.name.import-path", "main.firth", [])]
   reject "duplicate import" (src "main.firth" "import \"lib.firth\"; import \"./lib.firth\"; : main ( -- ) ;") [lib]
     [("firth.name.duplicate-import", "main.firth", ["lib.firth"])]
+  -- A repeat is a duplicate even when the first import named a missing file
+  -- or closed a cycle.
+  reject "duplicate missing import" (src "main.firth" "import \"gone.firth\"; import \"./gone.firth\"; : main ( -- ) ;") []
+    [("firth.name.import-not-found", "main.firth", ["gone.firth"]),
+     ("firth.name.duplicate-import", "main.firth", ["gone.firth"])]
+  reject "duplicate self import" (src "main.firth" "import \"main.firth\"; import \"main.firth\"; : main ( -- ) ;") []
+    [("firth.name.import-cycle", "main.firth", ["main.firth", "main.firth"]),
+     ("firth.name.duplicate-import", "main.firth", ["main.firth"])]
   reject "self import" (src "main.firth" "import \"main.firth\"; : main ( -- ) ;") []
     [("firth.name.import-cycle", "main.firth", ["main.firth", "main.firth"])]
   let a := src "a.firth" "import \"b.firth\"; export a; : a ( -- ) ;"
@@ -182,6 +190,18 @@ def main : IO Unit := do
   let other := src "other.firth" "export w; : w ( -- ) ; : helper ( -- ) ;"
   reject "imports collide" (src "main.firth" "import \"lib.firth\"; import \"other.firth\"; : main ( -- ) ;")
     [lib, other] [("firth.name.duplicate-canonical", "main.firth", ["lib.firth", "other.firth"])]
+
+  -- A collision is reported once, where it happens; a file that imports that
+  -- one gets the failed import, not the collision again.
+  let mid := src "mid.firth" "import \"lib.firth\"; export m; : m ( -- ) ; : helper ( -- ) ;"
+  reject "collision reported once" (src "top.firth" "import \"mid.firth\"; : top ( -- ) m;") [lib, mid]
+    [("firth.name.duplicate-canonical", "mid.firth", ["lib.firth"]),
+     ("firth.name.import-failed", "top.firth", ["mid.firth"])]
+  let pair := src "pair.firth" "import \"lib.firth\"; import \"other.firth\"; export p; : p ( -- ) ;"
+  reject "import collision reported once" (src "top.firth" "import \"pair.firth\"; : top ( -- ) p;")
+    [lib, other, pair]
+    [("firth.name.duplicate-canonical", "pair.firth", ["lib.firth", "other.firth"]),
+     ("firth.name.import-failed", "top.firth", ["pair.firth"])]
 
   -- A vocabulary of an imported file is a `use` target, with or without an alias.
   let core := src "core.firth" "vocab core { : id ( forall ρ; ρ -- ρ ) ; : hidden ( forall ρ; ρ -- ρ ) ; }\nexport core.id;"
@@ -227,6 +247,10 @@ def main : IO Unit := do
   for files in [[lib, lib], [{ lib with path := "../lib.firth" }], [{ lib with path := "main.firth" }]] do
     if (Firth.Agent.Elaborate.runRequest (elaborateRequest (main₀ "2 double") files)) matches .ok _ then
       fail s!"adapter: accepted files {repr (files.map (·.path))}"
+  -- Imports resolve against the root's path, so with files it is normalised.
+  let dotted := { main₀ "2 double" with path := "app/./main.firth" }
+  if (Firth.Agent.Elaborate.runRequest (elaborateRequest dotted [{ lib with path := "app/lib.firth" }])) matches .ok _ then
+    fail "adapter: accepted files beside a root path that is not normalised"
 
   -- The compiler binds every file: debug locations name each word's file,
   -- the imported file's digest is recorded, and an imported file other than

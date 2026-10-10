@@ -40,10 +40,11 @@ private def str (values : List (String × Json)) (name : String) : Except String
 /-- Reads the file at `path`, relative to the source root whose real path is
 `root`, or `none` when there is no such file. -/
 private def readSource (root path : String) : IO (Option String) := do
-  let full : System.FilePath := root ++ "/" ++ path
+  let rootPrefix := if root.endsWith "/" then root else root ++ "/"
+  let full : System.FilePath := rootPrefix ++ path
   if !(← full.pathExists) then return none
   let real ← IO.FS.realPath full
-  if !real.toString.startsWith (root ++ "/") then
+  if !real.toString.startsWith rootPrefix then
     throw <| IO.userError s!"{path} is outside the source root"
   if (← real.isDir) then return none
   match String.fromUTF8? (← IO.FS.readBinFile real) with

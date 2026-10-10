@@ -31,6 +31,7 @@ def parser() -> argparse.ArgumentParser:
                      help=f"finite step budget, 0 to {gate.MAX_FUEL}")
     test = commands.add_parser("test", help="compare saved input/output cases on both hosts")
     test.add_argument("suite", type=Path)
+    test.add_argument("--root", type=Path, help="source root for imports (default: the source's directory)")
     test.add_argument("--fuel", type=int, default=gate.FUEL,
                       help=f"finite per-case step budget, 0 to {gate.MAX_FUEL}")
     return cli
@@ -122,10 +123,11 @@ def snapshot_source(source: Path) -> bytes:
     return raw
 
 
-def test_suite(path: Path, fuel: int) -> dict:
+def test_suite(path: Path, fuel: int, root: Path | None = None) -> dict:
     if type(fuel) is not int or not 0 <= fuel <= gate.MAX_FUEL:
         gate.fail(f"fuel: expected an integer from 0 to {gate.MAX_FUEL}")
     source, cases = load_suite(path)
+    root = (root or source.parent).resolve(strict=True)
     snapshot = snapshot_source(source)
     gate.build_toolchain()
     results = []
@@ -133,7 +135,7 @@ def test_suite(path: Path, fuel: int) -> dict:
         workspace = Path(directory)
         # The source, as read before the build, and the files it imports are
         # read once, so every case runs the same text.
-        loaded = gate.load_sources("suite", source, source.parent, workspace)
+        loaded = gate.load_sources("suite", source, root, workspace)
         loaded["source_text"] = snapshot.decode("utf-8")
         frozen_root = workspace / "source"
         for file in [loaded] + loaded["files"]:
@@ -175,7 +177,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
         if args.command == "test":
-            result = test_suite(args.suite, args.fuel)
+            result = test_suite(args.suite, args.fuel, args.root)
             print(json.dumps(result, sort_keys=True))
             return 1 if result["failed"] else 0
         source = args.source.resolve(strict=True)
@@ -192,8 +194,9 @@ def main(argv: list[str] | None = None) -> int:
             workspace = Path(directory)
             if args.command == "check":
                 loaded = gate.load_sources("check", source, root, workspace)
-                envelope = {"source_path": loaded["source_path"] if loaded["files"] else source.name,
-                            "source_text": loaded["source_text"]}
+                # The path under the root, which the source's imports resolve
+                # against, whether or not any imported file was found.
+                envelope = {"source_path": loaded["source_path"], "source_text": loaded["source_text"]}
                 if loaded["files"]:
                     envelope["files"] = loaded["files"]
                 response = gate.adapter(
