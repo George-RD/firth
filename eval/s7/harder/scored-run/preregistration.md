@@ -54,13 +54,14 @@ stands and the set is not edited or replaced
 | Subject | Role | How it runs | Python | Firth |
 | --- | --- | --- | --- | --- |
 | Sonnet 5.5 | primary | Agent-tool sub-agent, type `general-purpose`, model `sonnet` | 8 | 8 |
-| DeepSeek v4.1 Flash | secondary | `deepseek_sample.py`, ollama.com chat API, the connected key | 5 | 5 |
+| DeepSeek v4.1 Flash | secondary | `deepseek_sample.py`, ollama.com chat API, the connected key | 8 | 8 |
 | Haiku 5.5 | secondary, how learnable for a small model | Agent-tool sub-agent, type `general-purpose`, model `haiku` | 5 | 5 |
 
-- That is 36 valid samples in all, and every sample answers all six tasks.
-- Sonnet, the primary subject, runs 8 per arm for power ("Analysis",
-  "Sample size"). DeepSeek and Haiku run 5 per arm; every comparison is
-  within one subject, so their smaller rows cost samples and dilute nothing.
+- That is 42 valid samples in all, and every sample answers all six tasks.
+- Sonnet, the primary subject, and DeepSeek, the non-Anthropic check, run
+  8 per arm for power ("Analysis", "Sample size"). Haiku runs 5 per arm;
+  every comparison is within one subject, so its smaller row costs samples
+  and dilutes nothing.
 - Samples are named `<subject>-<lang>-<n>`, for example `sonnet-firth-3`.
 - The roadmap and `todo.s7-harder-task-tier` name Haiku 4.5. The Agent
   tool offers only `haiku`, which runs Haiku 5.5, so Haiku 4.5 cannot be
@@ -281,7 +282,7 @@ way still fails. The steps are fixed:
   within two rounds, Firth minus Python. Round 1 is the secondary measure.
 - **Tests.** A two-sided exact permutation test over the authors' labels
   (every way to split the subject's authors between the arms: 12,870 for
-  Sonnet's 8 and 8, 252 for 5 and 5), and a 95% percentile
+  8 and 8, 252 for Haiku's 5 and 5), and a 95% percentile
   bootstrap interval for the difference (10,000 resamples within each
   arm, seed 0).
 - **Material.** A difference of at least 1 task of 6 per author, with the
@@ -294,7 +295,7 @@ way still fails. The steps are fixed:
   convenience, not matched units: each author is independent, and a
   replacement breaks the pair. A within-pair permutation over 5 pairs has
   only 32 assignments, so its smallest two-sided p is 0.0625, and no
-  result could reach p below 0.05 for DeepSeek or Haiku. As a check on time effects, the report
+  result could reach p below 0.05 for Haiku. As a check on time effects, the report
   gives each arm's results in run order.
 - **Sample size.** The chance that this rule finds a material difference,
   simulated by `power.py` next to this file (binomial tasks, 2,000
@@ -307,10 +308,10 @@ way still fails. The steps are fixed:
   | 1.5 tasks (4.0) | 0.42 | 0.74 |
   | 2 tasks (3.5) | 0.67 | 0.93 |
 
-  So Sonnet's row has about 0.75 power only for a true difference near 1.5
-  tasks, and DeepSeek's and Haiku's about 0.67 only near 2 tasks. For a
-  true difference of 1 task, the smallest material one, power is 0.40 for
-  Sonnet and 0.20 for the others; because the observed difference must
+  So Sonnet's and DeepSeek's rows (8 per arm) have about 0.75 power only
+  for a true difference near 1.5 tasks, and Haiku's (5 per arm) about 0.67
+  only near 2 tasks. For a true difference of 1 task, the smallest material
+  one, power is 0.40 for Sonnet and DeepSeek and 0.20 for Haiku; because the observed difference must
   itself reach 1, it stays near 0.5 or below at any size this run could
   afford. Calibration put Sonnet's Python answers at or near the ceiling
   (pools 1 and 3: every author passed every task), so the ceiling rule may

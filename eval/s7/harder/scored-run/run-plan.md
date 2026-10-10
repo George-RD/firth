@@ -7,18 +7,18 @@ changed after that.
 - One sample runs at a time, with no other author or worker running in the
   session.
 - In rounds 1 to 5, every subject runs both language arms one after the
-  other, and the subjects take turns. Sonnet, the primary subject, runs 8
-  per arm (`preregistration.md`, "Sample size"), so rounds 6 to 8 run
-  Sonnet only.
+  other, and the subjects take turns. Sonnet and DeepSeek run 8 per arm
+  (`preregistration.md`, "Sample size"), so rounds 6 to 8 run those two
+  only.
 - The arm that goes first alternates: Python first for odd numbers, Firth
   first for even ones. So each arm goes first for each subject in about
-  half its rounds (four of eight for Sonnet, two or three of five for
-  DeepSeek and Haiku), which balances which arm runs first. The two
+  half its rounds (four of eight for Sonnet and DeepSeek, two or three
+  of five for Haiku), which balances which arm runs first. The two
   arms of a subject also run back to back, so a long slow period touches
   both, though a brief outage can still void a single sample; voids are
   counted per arm (`preregistration.md`).
 - A void or crashed sample's replacement takes the next unused number for
-  its subject and language, and runs after sample 36, in the order the
+  its subject and language, and runs after sample 42, in the order the
   voids happened (`preregistration.md`, "Voids, crashes and
   replacement").
 
@@ -54,7 +54,13 @@ changed after that.
 30. `haiku-firth-5`
 31. `sonnet-firth-6`
 32. `sonnet-python-6`
-33. `sonnet-python-7`
-34. `sonnet-firth-7`
-35. `sonnet-firth-8`
-36. `sonnet-python-8`
+33. `deepseek-firth-6`
+34. `deepseek-python-6`
+35. `sonnet-python-7`
+36. `sonnet-firth-7`
+37. `deepseek-python-7`
+38. `deepseek-firth-7`
+39. `sonnet-firth-8`
+40. `sonnet-python-8`
+41. `deepseek-firth-8`
+42. `deepseek-python-8`
