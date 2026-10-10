@@ -351,8 +351,12 @@ the run showed it catching a real error:
 - runtime refusals on hidden inputs, per task, from each hidden case's
   error in `results-N.json`;
 - the measured cost of each run: the kernel steps the reference
-  interpreter counted for every passed case, per task, from `kernel_cost`
-  in each case of `results-N.json`. It is measured, never a bound;
+  interpreter counted for every case that ran to completion, passed or
+  with a wrong result, per task, from `kernel_cost` in each case of
+  `results-N.json`. Passed cases and wrong-result cases are reported
+  separately, with their total, so a cheap wrong answer cannot make an arm
+  look efficient. A refusal, a trap or a timeout has no measured cost,
+  and the report says so for those cases. It is measured, never a bound;
 - a proved cost bound: none of the six tasks has a Lean cost contract, so
   the report says no proved bound applies. No guarantee is called proved
   in the report unless a Lean contract exists for it.
@@ -403,8 +407,8 @@ outputs that need it:
   difference and its tests, the ceiling and floor rules, and the
   guarantees (a refusal on the visible example in round 1 and whether
   round 2's answer behaves differently on a hidden test, out of steps and
-  runtime refusals on hidden inputs, and the kernel steps of each passed
-  case);
+  runtime refusals on hidden inputs, and the kernel steps of each case
+  that ran to completion);
 - `answer-N.md`: answer lengths;
 - `outcome.json` (DeepSeek): each round's verdict, length cut-offs, void
   and crash status with its cause, and answers not taken in round 2;
