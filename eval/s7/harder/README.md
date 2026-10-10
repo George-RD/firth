@@ -714,8 +714,9 @@ names it. Nothing in a cut-off reply is taken, whatever it holds: a round-1
 cut-off scores every task as unanswered, and a round-2 cut-off keeps round
 1's results without scoring again. After a round-1 cut-off the feedback
 says the reply was cut off and lists every task, and round 2 resends the
-cut text as the model's turn. A void round voids the sample: nothing is
-scored, and `outcome.json` records the round and why. A run that stops part
+cut text as the model's turn. A void round voids the sample: its reply is
+not scored and the sample has no score (round 1's results, when round 2 is
+the void one, stay on disk), and `outcome.json` records the round and why. A run that stops part
 way leaves `outcome.json` with status `crashed` and the error, never read
 as a finished sample. `outcome.json` also records each round's verdict
 and which tasks passed in round 1 and within two rounds. `test_harder.py`
