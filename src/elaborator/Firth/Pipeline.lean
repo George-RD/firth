@@ -99,7 +99,8 @@ private def signatureOfEffect (effect : StackEffect) : Signature :=
   -- Surface effects are bottom-to-top; erasure states and signatures are top-first.
   { input := signatureUsages effect.input.reverse
     output := signatureUsages effect.output.reverse
-    rowPreserving := signatureRows effect.input == signatureRows effect.output }
+    rowPreserving := signatureRows effect.input == signatureRows effect.output
+    closed := (signatureRows effect.input).isEmpty }
 
 private def lookupSignature (name : String) : List (String × Signature) → Option Signature
   | [] => none
