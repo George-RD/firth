@@ -1,6 +1,7 @@
 import elaborator.Firth.Imports
 import compiler.Firth.Compile
 import agent.Firth.Agent.Sources
+import compiler.Firth.ExportLean
 
 /-!
 Programs of several files (`dec.multi-file-imports`): load order, name
@@ -326,6 +327,17 @@ def main : IO Unit := do
       fail "loader: read a file through a linked directory out of the source root"
     if !(← refuses "elsewhere/secret.firth") then
       fail "loader: read a root file through a link out of the source root"
+    -- A source root of `/` reads the same files as their own directory.
+    let absolute := (← IO.FS.realPath scratch).toString
+    let (_, fromSlash) ← Firth.Agent.Sources.load "/" ((absolute.drop 1).toString ++ "/app/main.firth")
+    if fromSlash.map (·.text) != [lib.text] then
+      fail s!"loader: a source root of / read {repr fromSlash}"
+    -- The exporter reads `./app/main.firth` as `app/main.firth` under the working directory.
+    let (exportRoot, exportPath) := Firth.Compiler.ExportLean.sourceLocation "./app/main.firth"
+    if (exportRoot, exportPath) != (".", "app/main.firth") then
+      fail s!"exporter: ./app/main.firth is read as {exportPath} under {exportRoot}"
+    let (_, exported) ← Firth.Agent.Sources.load scratch.toString exportPath
+    if exported != [lib] then fail s!"exporter: ./app/main.firth loaded {repr exported}"
     -- A file that is not UTF-8 is refused rather than decoded.
     IO.FS.writeBinFile (scratch / "latin.firth") (ByteArray.mk #[0x3a, 0x20, 0xe9, 0x20, 0x3b])
     IO.FS.writeFile (scratch / "reads-latin.firth") "import \"latin.firth\"; : r ( -- ) ;"
