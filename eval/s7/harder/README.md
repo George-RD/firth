@@ -592,7 +592,9 @@ is not assumed here.
 Before the set was frozen, each description was checked for sentences a
 careful reader could take two ways that the hidden tests tell apart (each
 other reading was run as a mutant of the meaning). Twelve were made
-explicit: the solved check before the first `sokoban` move, its dead-box
+explicit, and each of their other readings is kept as a mutant that at
+least one hidden test tells apart (`test_harder.py`, `scored_readings`,
+with the unchanged meaning as a planted case that none does): the solved check before the first `sokoban` move, its dead-box
 rule, the `checkers` landing-square tie-break, its starting square during
 a capture, losing with no move at the ply limit, which men count as
 crowned, what a `regex` postfix operator applies to, a `swiss` player with

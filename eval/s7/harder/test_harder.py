@@ -927,6 +927,92 @@ def python_mutants() -> None:
               f"{len(caught)} hidden test(s)")
 
 
+def reading(name: str, *edits: tuple[str, str]) -> str:
+    """The scored meaning of a task as another reading of its description
+    would have it: each OLD replaced by NEW, answering through NAME."""
+    src = (HERE / "scored.py").read_text()
+    for old, new in edits:
+        assert src.count(old) == 1, f"the reading's text is not in scored.py once: {old!r}"
+        src = src.replace(old, new)
+    future = "from __future__ import annotations\n"
+    src = src.replace(future, future + f"__file__ = {str(HERE / 'scored.py')!r}\n", 1)
+    return src + f"\n\ndef main(*args):\n    return {name}(*args)\n"
+
+
+# The twelve sentences made explicit before the scored set was frozen (README,
+# "The scored set"): each other reading, which the hidden tests must tell apart.
+READINGS = [
+    ("sokoban", "the solved check made only after a move, never before the first",
+     reading("_sokoban", ("    for m in moves:\n        if solved():",
+                          "    for i, m in enumerate(moves):\n        if i and solved():"))),
+    ("sokoban", "a pushed box dead whenever any two of its sides are walls",
+     reading("_sokoban", ("return (up or down) and (left or right)", "return up + down + left + right >= 2"))),
+    ("checkers", "captures of equal length broken by their last landing square",
+     reading("_checkers", ("key=lambda m: (m[0], m[1]))", "key=lambda m: (m[0], m[1][-1]))"))),
+    ("checkers", "the capturing piece's starting square still occupied during the capture",
+     reading("_checkers",
+             ("        for ls, cs in _jumps(board, i, v):",
+              "        global _START\n        _START = i\n        for ls, cs in _jumps(board, i, v):"),
+             ("if over < 0 or land < 0 or board[land] != 0 ",
+              "if over < 0 or land < 0 or board[land] != 0 or land == _START "))),
+    ("checkers", "no loss for a side with no move once the ply limit is reached",
+     reading("_checkers",
+             ("        moves = _legal(board, side)\n        if not moves:\n"
+              "            result = 2 if side == 1 else 1  # the side to move has lost\n            break\n"
+              "        if played == plies:\n            break\n",
+              "        if played == plies:\n            break\n        moves = _legal(board, side)\n"
+              "        if not moves:\n            result = 2 if side == 1 else 1\n            break\n"))),
+    ("checkers", "only men crowned by a step counted as crowned",
+     reading("_checkers", ("            crowned += 1", "            crowned += 0 if cs else 1"))),
+    ("regex", "each postfix operator applied to the bare atom, so a*? is a?",
+     reading("_regex", ("        node = atom()\n", "        node = base = atom()\n"),
+             ('[peek()], node)', '[peek()], base)'))),
+    ("swiss", "a player who has played no game taken to have had black last",
+     reading("_swiss", ("last = [None] * n", 'last = ["b"] * n'))),
+    ("swiss", "the bye given after pairing, to the player left over",
+     reading("_swiss",
+             ("        if n % 2 == 1:\n            bye = next(p for p in reversed(order) if not had_bye[p])\n"
+              "            unpaired.remove(bye)\n            had_bye[bye] = True\n            score[bye] += 2\n",
+              ""),
+             ("        while unpaired:\n            a = unpaired.pop(0)",
+              "        while len(unpaired) > 1:\n            a = unpaired.pop(0)"),
+             ("            games.append((a, b))\n",
+              "            games.append((a, b))\n        if unpaired:\n            score[unpaired[0]] += 2\n"))),
+    ("warehouse", "a cancelled order counting all the units it asked for",
+     reading("_warehouse", ("back[p].append([q - got, d])", "back[p].append([q - got, d, q])"),
+             ("cancelled += sum(b[0] for b in back[p] if d - b[1] >= 7)",
+              "cancelled += sum(b[2] for b in back[p] if d - b[1] >= 7)"))),
+    ("warehouse", "no reorder on the day a supply arrives",
+     reading("_warehouse", ("                supply[p] = None\n", "                supply[p] = -1\n"),
+             ("            if supply[p] is None and stock(p) <= rp[p]:",
+              "            if supply[p] == -1:\n                supply[p] = None\n                continue\n"
+              "            if supply[p] is None and stock(p) <= rp[p]:"))),
+    ("cache-sim", "a block dirty in both levels counted once",
+     reading("_cache_sim", ("dirty = sum(e[1] for s in l1 for e in s) + sum(e[1] for s in l2 for e in s)",
+                            "dirty = len({e[0] for s in l1 for e in s if e[1]} | "
+                            "{e[0] for s in l2 for e in s if e[1]})"))),
+]
+
+
+def told_apart(tid: str, src: str) -> int:
+    """How many of TID's hidden tests the reading SRC answers differently."""
+    t = BY_ID[tid]
+    ns: dict = {}
+    exec(compile(src, f"{tid}-reading.py", "exec"), ns)
+    return sum(not harness.same(json.loads(json.dumps(as_list(ns["main"](*args), t))), t.expected(args))
+               for args in t.hidden)
+
+
+def scored_readings() -> None:
+    check(len(READINGS) == 12, "the scored set keeps all twelve other readings")
+    # Planted: the meaning itself, unchanged, is told apart by no hidden test.
+    check(told_apart("warehouse", reading("_warehouse")) == 0,
+          "a reading that is the meaning itself is told apart by no hidden test")
+    for tid, what, src in READINGS:
+        n = told_apart(tid, src)
+        check(n > 0, f"{tid}, {what}: told apart by {n} hidden test(s)")
+
+
 def firth_mutant() -> None:
     """A planted bug in a Firth reference of each pool: the scorer must fail it."""
     src = (HERE / "reference/calibration/firth/lru.firth").read_text()
@@ -1087,6 +1173,7 @@ def main() -> int:
     python_references()
     scored_random_agreement()
     python_mutants()
+    scored_readings()
     prompt_and_repair()
     if "--no-firth" not in sys.argv:
         firth_references()
