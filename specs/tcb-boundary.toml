@@ -57,7 +57,7 @@ role = "instructionJson, codeJson and wordJson write the image as JSON. Each wor
 [[trusted_components.parts]]
 id = "canonical-code"
 paths = ["src/compiler/Firth/Target.lean", "src/runtime/vm/src/encoding.rs"]
-role = "Target.canonicalCode in Lean and canonical_code in Rust, with SHA-256, are assumed to agree and to be injective, so an equal body_digest means equal code."
+role = "Trusted assumptions, not proved: Target.canonicalCode in Lean and canonical_code in Rust agree and are injective on code, and SHA-256 is collision resistant. Only under them does an equal body_digest stand for equal code; the image match rests on them, the target theorem does not."
 
 [[trusted_components.parts]]
 id = "rust-decoder"
