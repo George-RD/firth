@@ -1212,6 +1212,19 @@ def regex_drafted_rerun() -> None:
               "a Seq Bool reference that counts each whole match twice is refused on the example")
 
 
+def deepseek_driver() -> None:
+    """The DeepSeek driver's self-test, against planted replies with no
+    network: a complete reply is kept byte for byte, a round is asked once,
+    a cut-off reply or another model's reply is not kept, and only a request
+    that got no reply is sent again. "self-test ok" is printed only after
+    every assertion, so a self-test that checks nothing fails here."""
+    import subprocess
+    p = subprocess.run([sys.executable, str(HERE / "deepseek.py"), "--self-test"],
+                       capture_output=True, text=True, timeout=120)
+    ok = p.returncode == 0 and p.stdout.strip().splitlines()[-1:] == ["self-test ok"]
+    check(ok, "deepseek.py's self-test passes" + ("" if ok else f": {(p.stdout + p.stderr).strip()[-300:]}"))
+
+
 def firth_mutant() -> None:
     """A planted bug in a Firth reference of each pool: the scorer must fail it."""
     src = (HERE / "reference/calibration/firth/lru.firth").read_text()
@@ -1375,6 +1388,7 @@ def main() -> int:
     scored_readings()
     scored_costliest()
     regex_drafted_bounds()
+    deepseek_driver()
     prompt_and_repair()
     if "--no-firth" not in sys.argv:
         firth_references()
