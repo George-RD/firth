@@ -21,6 +21,9 @@ structure Signature where
   does. One that does not, like `ρ -- ρ2`, can leave a stack of any depth,
   so its input and output counts do not give the depth it leaves. -/
   rowPreserving : Bool := true
+  /-- Whether the effect's input has no row, as `( a b -- r )`: the word
+  then takes the whole stack, so no unused local may lie below its inputs. -/
+  closed : Bool := false
   deriving Repr, BEq
 
 structure EffectEnv where
@@ -1088,11 +1091,16 @@ def takesValues : Item → Bool
   | .atom .. | .word .. | .primitive .. => true
   | _ => false
 
-/-- How many top values an item takes. -/
+/-- How many top values a call with this signature reaches: its inputs, or
+the whole stack when its effect is closed. -/
+def signatureReach (stack : List StackEntry) (signature : Signature) : Nat :=
+  if signature.closed then stack.length else signature.input.length
+
+/-- How many top values an item reaches. -/
 def itemReach (env : EffectEnv) (stack : List StackEntry) : Item → Nat
   | .atom name _ => atomReach name stack
-  | .word name _ => ((env.word name).map (·.input.length)).getD 0
-  | .primitive name _ => ((env.primitive name).map (·.input.length)).getD 0
+  | .word name _ => ((env.word name).map (signatureReach stack)).getD 0
+  | .primitive name _ => ((env.primitive name).map (signatureReach stack)).getD 0
   | _ => 0
 
 abbrev ScopeState := State

@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.elaborator
-status: open
+status: done
 created: 2026-09-29
 ---
 
@@ -35,3 +35,26 @@ on the program as written.
   below its inputs. The first changes what is accepted, so it needs its own
   decision record.
 - Either way, add the three programs above as tests, with a planted failure.
+
+## Resolution
+
+Decided in `dec.closed-effect-under-locals`: a call whose effect has no row
+reaches the whole stack, so erasure lifts every local still to be used from
+below its inputs and runs it under `dip` (`signatureReach` in
+`src/elaborator/Firth/Erasure.lean`; `Signature.closed`, set from the effect
+in `signatureOfEffect`). The second program above is now accepted; the first
+already was. The third was also already accepted on main: `n`'s last use is a
+move since #213, so nothing is left below the call.
+
+`firthErasureTest` checks that a closed call with a later local, at the top
+level of the block and in an inner block, runs under `dip`, that the same call
+with a row runs where it is written, and that a closed call with nothing below
+its inputs, including the third program, is not moved. Restoring the old reach
+fails the first of these. `examples/programs/locals.firth` runs two such
+calls on the VM and the reference interpreter (`add-then-keep`,
+`add-in-block`, with hand-written results), and
+`examples/programs/refused/closed-effect-value-below.firth` keeps a value the
+body pushed under a closed call refused.
+
+The message for a closed call refused because of what is below its inputs
+still does not say the effect is closed (`todo.closed-callee-diagnostic`).
