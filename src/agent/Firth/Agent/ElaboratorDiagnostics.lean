@@ -994,6 +994,35 @@ private def callExplanation (inWord : String) (word : Option String) (wanted pre
       | none => none
 
 open Firth.Elaborator.StackEffect in
+/-- A call refused because the word's effect has no row, at the call or at an
+`if` whose branch makes it (`closedCall`). Typing found that giving that word
+a row removes the refusal. Moving the call to where nothing is below its
+inputs, or giving the calling word no row either, can too, so the hint names
+both ways. -/
+private def closedCallExplanation (inWord : String) (diagnostic : Firth.Elaborator.StackEffect.Diagnostic)
+    (closed : ClosedCall) : String × String :=
+  let word := closed.word
+  let because := s!"`{word}` takes the whole stack: its effect has no row"
+  let message := match diagnostic.branchInput with
+    | some (onTrueBranch, takes) =>
+        let name := if onTrueBranch then "true" else "false"
+        let runsOn := if takes == .empty then "can run only on an empty stack"
+          else s!"takes {renderStack takes}"
+        s!"The {name} branch of `if`{inWord} cannot run on the stack it is given, because of its call to `{word}`. {capitalize because}, so the {name} branch {runsOn}, but below the condition and the two quotations the stack is {renderStack diagnostic.state}."
+    | none =>
+        s!"{capitalize because}, but here{inWord} the stack before it is {renderStack diagnostic.state}, more than its inputs."
+  -- A word in a vocabulary is declared by its own name, not the one that
+  -- qualifies it.
+  let declared := (word.splitOn ".").getLastD word
+  let declare := match closed.withRow with
+    | some effect => s!"declare it `: {declared} {effect}`: {closed.rowName} stands for the values below its inputs, which it leaves untouched"
+    | none => "give its effect a row: a row variable bound with `forall`, below its inputs and below its outputs, stands for the values below its inputs, which it leaves untouched"
+  let body := if closed.rowRefusesBody then
+      s!" With only that change, `{word}`'s own body is refused, so its body has to change as well."
+    else ""
+  (message, s!"A word whose effect has no row can be called only where its inputs are all that is on the stack. To call `{word}` with other values below its inputs, {declare}.{body} Otherwise, call it only where nothing is below its inputs.")
+
+open Firth.Elaborator.StackEffect in
 /-- A plain-language sentence and a repair hint for a checker diagnostic,
 written for an author who sees only this message and the source. -/
 private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : String × String :=
@@ -1005,6 +1034,8 @@ private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Str
   let expected := diagnostic.expected.map stackValues
   let actual := diagnostic.actual.map stackValues
   let rowNote := " Here ρ stands for the caller's values that this word must leave untouched."
+  if let some closed := diagnostic.closedCall.filter (·.reported == diagnostic.primary) then
+    closedCallExplanation inWord diagnostic closed else
   match diagnostic.code, expected, actual with
   | "firth.type.declared-effect-mismatch", some (declared, _), some (left, _) =>
       let word := diagnostic.word.getD "this word"
@@ -1400,6 +1431,53 @@ private def renumberVariables (text : String) : String :=
             (pieces ++ [s!"{seen.idxOf digits}" ++ String.ofList (part.toList.drop digits.length)], seen)
           (pre.intercalate pieces, seen)).1
 
+/-- The bytes of `source` from `start` to `stop`. -/
+private def sourceBytes (source : String) (start stop : Nat) : String :=
+  (String.fromUTF8? (source.toUTF8.extract start stop)).getD ""
+
+/-- A report of a call to a word whose effect has no row, with that word's
+effect written with a row, when the word is declared in the source, and
+whether the source with only that effect changed is refused in the word's own
+body (a word it calls with no row, say) where `reports`, the source's own
+reports other than this one, have nothing there. -/
+private partial def withClosedEffect (context : EmissionContext)
+    (config : Firth.Elaborator.PipelineConfig) (source : String)
+    (declared : List Firth.Elaborator.WordDefinition) (reports : List Firth.Elaborator.PipelineDiagnostic) :
+    Firth.Elaborator.PipelineDiagnostic → Firth.Elaborator.PipelineDiagnostic
+  | .stackEffect diagnostic => .stackEffect { diagnostic with
+      closedCall := diagnostic.closedCall.map fun closed =>
+        if closed.withRow.isSome then closed else
+        match declared.find? (·.name == closed.word) with
+        | none => closed
+        | some word =>
+        match Firth.Elaborator.StackEffect.withRowText word.effect with
+        | none => closed
+        | some (withRow, rowName) =>
+        let span := word.effect.span
+        let edited := sourceBytes source 0 span.start.offset ++ withRow ++
+          sourceBytes source span.stop.offset source.utf8ByteSize
+        let editedWord := match Firth.Elaborator.parse edited with
+          | .success file => (Firth.Elaborator.collectWords file.declarations).find? (fun (found : Firth.Elaborator.WordDefinition) => found.name == closed.word)
+          | .failure _ => none
+        let within (span : Firth.Elaborator.Span) (found : List Firth.Elaborator.PipelineDiagnostic) :=
+          found.any fun report =>
+            match (pipelineDiagnosticEnvelope context report).body with
+            | .diagnostic body => positionWithin span body.location.range.start
+            | _ => false
+        -- This report itself does not count: the callee may be the word it
+        -- is in, calling itself.
+        let refusedBefore := within word.span
+          (reports.filter (· != Firth.Elaborator.PipelineDiagnostic.stackEffect diagnostic))
+        let rowRefusesBody := !refusedBefore &&
+          match Firth.Elaborator.elaborateWith config edited, editedWord with
+          | .success _, _ => false
+          | .failure _, none => true
+          | .failure again, some editedWord => within editedWord.span again
+        { closed with withRow, rowName, rowRefusesBody } }
+  | .assumes word callees edits inner =>
+      .assumes word callees edits (withClosedEffect context config source declared reports inner)
+  | other => other
+
 def elaboratePipeline (context : EmissionContext) (source : String)
     (config : Firth.Elaborator.PipelineConfig := {}) : StructuredElaborationResult :=
   let config := { config with
@@ -1411,10 +1489,12 @@ def elaboratePipeline (context : EmissionContext) (source : String)
   match Firth.Elaborator.elaborateWith config source with
   | .success program => .success program
   | .failure diagnostics =>
-      let words := match Firth.Elaborator.parse source with
-        | .success file => (Firth.Elaborator.collectWords file.declarations).map fun word => (word.name, word.span)
+      let declared := match Firth.Elaborator.parse source with
+        | .success file => Firth.Elaborator.collectWords file.declarations
         | .failure _ => []
+      let words := declared.map fun word => (word.name, word.span)
       .failure (uniquePayloadIds (sortDiagnosticEnvelopes
-        (diagnostics.map (withWord words ∘ pipelineDiagnosticEnvelope context))))
+        (diagnostics.map (withWord words ∘ pipelineDiagnosticEnvelope context ∘
+          withClosedEffect context config source declared diagnostics))))
 
 end Firth.Agent
