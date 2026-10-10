@@ -480,6 +480,77 @@ private def runAssumesTests : IO Unit := do
         (envelopes.map fun envelope => let (word, assumes, _) := summary envelope; (word, assumes))
         [("merge-loop", ([], ["append-rest"])), ("append-rest", ([], []))]
 
+/-- A word whose effect has no row takes the whole stack, so a call to it
+with more on the stack is refused. The report names the word, says its effect
+has no row, and writes the effect with a row; the test writes that effect in
+place of the declared one and the program then checks. Typing names the word
+only when giving it a row, and only it, removes the refusal
+(`closedCallFor`), so a call with a row, or a closed call given values of the
+wrong types, is not told this. -/
+private def runClosedCalleeTests : IO Unit := do
+  let pipelineContext := contextWithSource "pipeline-closed" "main.fth"
+  let agentConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := Elaborate.gammaErasure, typingEnv := Elaborate.gammaTyping }
+  let hintOf (envelope : Envelope) : String :=
+    match Lean.Json.parse (encode envelope) with
+    | .ok json => (((json.getObjValD "body").getObjValD "message_params").getObjValD "hint").getStr?.toOption.getD ""
+    | .error _ => ""
+  let closedText := "takes the whole stack: its effect has no row"
+  -- The report, the effect its hint writes for `word`, and the program
+  -- with that effect in place of `declared` checks.
+  let closedCase (label code source word declared : String) (needles : List String) : IO Unit := do
+    match reportsWithCode (elaboratePipeline pipelineContext source agentConfig) code with
+    | [envelope] =>
+        let emitted := encode envelope
+        expectValidCode label code emitted
+        for needle in (closedText :: needles) do
+          unless emitted.contains needle do
+            fail s!"{label}: the report does not say {needle}: {emitted}"
+        let marker := s!"declare it `: {word} "
+        let written := (((hintOf envelope).splitOn marker)[1]?.map fun rest => (rest.splitOn "`")[0]!).getD ""
+        unless written.startsWith "(forall ρ; ρ " do
+          fail s!"{label}: the hint does not write `{word}` with a row: {hintOf envelope}"
+        unless (source.splitOn declared).length == 2 do
+          fail s!"{label}: the declared effect is not in the source once"
+        match elaboratePipeline pipelineContext (source.replace declared written) agentConfig with
+        | .success _ => pure ()
+        | .failure envelopes =>
+            fail s!"{label}: with `{word}` declared {written}, the program is refused: {envelopes.map encode}"
+    | envelopes => fail s!"{label}: expected one {code} diagnostic, got {envelopes.length}"
+  let notClosed (label code source : String) : IO Unit := do
+    match reportsWithCode (elaboratePipeline pipelineContext source agentConfig) code with
+    | [envelope] =>
+        let emitted := encode envelope
+        if emitted.contains closedText || emitted.contains "declare it `:" then
+          fail s!"{label}: the report says the callee takes the whole stack: {emitted}"
+    | envelopes => fail s!"{label}: expected one {code} diagnostic, got {envelopes.length}"
+  -- Copied verbatim from primes-up-to in
+  -- eval/s7/runs/2026-09-29-locals-guide/arm-b/haiku-firth-1/answer-3.md.
+  -- `is-prime` is called in a branch of `prime-loop`, whose row is below
+  -- it. The report used to be "the false branch takes (empty)", with no
+  -- word named.
+  closedCase "closed callee in a branch" "firth.type.branch-mismatch"
+    ": main\n  (n:Int^many -- primes:Seq Int^many)\n  locals { n } { prim seq-int.empty 2 n prime-loop };\n\n: prime-loop\n  (forall ρ; ρ result:Seq Int^many candidate:Int^many n:Int^many -- ρ res:Seq Int^many)\n  locals { result candidate n } {\n    candidate n prim < prim not\n    [ result ]\n    [\n      candidate locals { num } {\n        num is-prime\n        [ result num prim seq-int.push ]\n        [ result ]\n        if\n      }\n      candidate 1 prim + n prime-loop\n    ]\n    if\n  };\n\n: is-prime\n  (num:Int^many -- result:Bool^many)\n  locals { num } {\n    num 2 prim <\n    [ false ]\n    [ 2 num check-prime ]\n    if\n  };\n\n: check-prime\n  (forall ρ; ρ divisor:Int^many num:Int^many -- ρ result:Bool^many)\n  locals { divisor num } {\n    divisor divisor prim * num prim < prim not\n    [ true ]\n    [\n      num divisor prim mod 0 prim =\n      [ false ]\n      [ divisor 1 prim + num check-prime ]\n      if\n    ]\n    if\n  };\n" "is-prime" "(num:Int^many -- result:Bool^many)"
+    ["The false branch of `if` in `prime-loop` cannot run on the stack it is given, because of its call to `is-prime`",
+      "can run only on an empty stack",
+      "declare it `: is-prime (forall ρ; ρ num:Int^many -- ρ result:Bool^many)`"]
+  -- A value the body pushed is below the call
+  -- (examples/programs/refused/closed-effect-value-below.firth).
+  closedCase "closed callee at the call" "firth.type.word-input-mismatch"
+    ": add2 ( a:Int^many b:Int^many -- r:Int^many ) prim + ;\n\n: value-below\n  ( x:Int^many n:Int^many -- r:Int^many s:Int^many )\n  locals { x n } { n x 1 add2 };\n"
+    "add2" "( a:Int^many b:Int^many -- r:Int^many )"
+    ["`add2` takes the whole stack: its effect has no row, but here in `value-below` the stack before it is Int Int Int, more than its inputs.",
+      "declare it `: add2 (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)`"]
+  -- The same calls with a row, given values of the wrong types.
+  notClosed "a callee with a row" "firth.type.word-input-mismatch"
+    ": add2 (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) prim + ;\n: w (forall ρ; ρ x:Int^many -- ρ r:Int^many) locals { x } { true x add2 } ;\n"
+  -- No row, but the values on top are of the wrong types: a row would not
+  -- help.
+  notClosed "a closed callee given the wrong types" "firth.type.word-input-mismatch"
+    ": add2 ( a:Int^many b:Int^many -- r:Int^many ) prim + ;\n: w (forall ρ; ρ x:Int^many -- ρ r:Int^many) locals { x } { true x add2 } ;\n"
+  notClosed "a closed callee in a branch given the wrong types" "firth.type.branch-mismatch"
+    ": add2 ( a:Int^many b:Int^many -- r:Int^many ) prim + ;\n: w (forall ρ; ρ x:Int^many -- ρ r:Int^many) locals { x } { true x x 0 prim < [ add2 ] [ swap drop ] if } ;\n"
+
 /-- Reports of a word or primitive handed values it does not take. -/
 private def runCallAccountTests : IO Unit := do
   let pipelineContext := contextWithSource "pipeline-call" "main.fth"
@@ -2052,15 +2123,15 @@ def runElaboratorDiagnosticTests : IO Unit := do
   unless needlesMissing "code: firth.type.branch-mismatch\nmessage: The two branches of `if` in `main` leave different numbers of values: the true branch takes 2 values from the stack below the `if` and leaves 1 value, and the false branch takes 2 values from the stack below the `if` and leaves 2 values. The `if` takes 1 value from below the `if` that this code does not have: everything it was given is bound to locals or already used, so that value belongs to the caller.\nhint: Push what the branch needs inside the branch, by writing a local's name or computing the value there, or remove the operation that takes it if it should not be there. If the branch means to use a value computed before the `if`, keep a copy of it before the condition (for example with `dup`). Adding a `drop` or pushing values to even out the branches would only move the mistake." allTrueNeedles do
     fail "all-true (answer 1): the report the eval recorded already says what the new one does"
   -- A word whose effect has no row constrains the whole stack, not only
-  -- its inputs, which the account does not model: the report keeps the
-  -- checker's own account instead of naming what `h` gets.
+  -- its inputs, which the account does not model: the report says so
+  -- instead of naming what `h` gets.
   match elaboratePipeline pipelineContext ": h ( x:Int^many -- y:Int^many ) ;\n\n: g (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) true [ h ] [ ] if prim + ;" agentConfig with
   | .failure [envelope] =>
       let emitted := encode envelope
       expectValidCode "closed word" "firth.type.branch-mismatch" emitted
-      unless emitted.contains "The true branch of `if` in `g` cannot run on the stack it is given." do
-        fail s!"closed word: the report does not keep the checker's account: {emitted}"
-      if emitted.contains "`h` takes" || emitted.contains "`h` needs" then
+      unless emitted.contains "The true branch of `if` in `g` cannot run on the stack it is given, because of its call to `h`. `h` takes the whole stack: its effect has no row" do
+        fail s!"closed word: the report does not say that `h` takes the whole stack: {emitted}"
+      if emitted.contains "`h` in `g` takes" || emitted.contains "`h` in `g` needs" then
         fail s!"closed word: the report accounts for `h` as if it kept the stack below: {emitted}"
   | _ => fail "closed word: expected one diagnostic"
   -- A branch that reaches below the `if` with `dup`, which takes a value of
@@ -2521,6 +2592,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
     (encodeStackEffectDiagnostic (context "unknown-primitive") unknownPrimitive)
   if languagePrimitives.length != everyPrimitive.length then
     fail s!"the language has {languagePrimitives.length} primitives but this test lists {everyPrimitive.length}; add the new ones above"
+  runClosedCalleeTests
   runCallAccountTests
   runPrimitiveRolesTests
   runEveryErrorTests

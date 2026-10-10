@@ -994,6 +994,29 @@ private def callExplanation (inWord : String) (word : Option String) (wanted pre
       | none => none
 
 open Firth.Elaborator.StackEffect in
+/-- A call refused because the word's effect has no row, at the call or at an
+`if` whose branch makes it (`closedCall`). Typing found that giving that word
+a row removes the refusal. Moving the call to where nothing is below its
+inputs, or giving the calling word no row either, can too, so the hint names
+both ways. -/
+private def closedCallExplanation (inWord : String) (diagnostic : Firth.Elaborator.StackEffect.Diagnostic)
+    (closed : ClosedCall) : String × String :=
+  let word := closed.word
+  let because := s!"`{word}` takes the whole stack: its effect has no row"
+  let message := match diagnostic.branchInput with
+    | some (onTrueBranch, takes) =>
+        let name := if onTrueBranch then "true" else "false"
+        let runsOn := if takes == .empty then "can run only on an empty stack"
+          else s!"takes {renderStack takes}"
+        s!"The {name} branch of `if`{inWord} cannot run on the stack it is given, because of its call to `{word}`. {capitalize because}, so the {name} branch {runsOn}, but below the condition and the two quotations the stack is {renderStack diagnostic.state}."
+    | none =>
+        s!"{capitalize because}, but here{inWord} the stack before it is {renderStack diagnostic.state}, more than its inputs."
+  let declare := match closed.withRow with
+    | some effect => s!"declare it `: {word} {effect}`"
+    | none => "add `forall ρ;` to its effect, with `ρ` below its inputs and below its outputs"
+  (message, s!"A word whose effect has no row can be called only where its inputs are all that is on the stack. To call `{word}` with other values below its inputs, {declare}: ρ stands for the values below its inputs, which it leaves untouched. Otherwise, call it only where nothing is below its inputs.")
+
+open Firth.Elaborator.StackEffect in
 /-- A plain-language sentence and a repair hint for a checker diagnostic,
 written for an author who sees only this message and the source. -/
 private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : String × String :=
@@ -1005,6 +1028,8 @@ private def explain (diagnostic : Firth.Elaborator.StackEffect.Diagnostic) : Str
   let expected := diagnostic.expected.map stackValues
   let actual := diagnostic.actual.map stackValues
   let rowNote := " Here ρ stands for the caller's values that this word must leave untouched."
+  if let some closed := diagnostic.closedCall.filter (·.reported == diagnostic.primary) then
+    closedCallExplanation inWord diagnostic closed else
   match diagnostic.code, expected, actual with
   | "firth.type.declared-effect-mismatch", some (declared, _), some (left, _) =>
       let word := diagnostic.word.getD "this word"
@@ -1400,6 +1425,19 @@ private def renumberVariables (text : String) : String :=
             (pieces ++ [s!"{seen.idxOf digits}" ++ String.ofList (part.toList.drop digits.length)], seen)
           (pre.intercalate pieces, seen)).1
 
+/-- A report of a call to a word whose effect has no row, with that word's
+effect written with a row when the word is declared in `effects`, the
+source's words. -/
+private def withClosedEffect (effects : List (String × Firth.Elaborator.StackEffect)) :
+    Firth.Elaborator.PipelineDiagnostic → Firth.Elaborator.PipelineDiagnostic
+  | .stackEffect diagnostic => .stackEffect { diagnostic with
+      closedCall := diagnostic.closedCall.map fun closed =>
+        if closed.withRow.isSome then closed else
+        let withRow := (effects.lookup closed.word).bind Firth.Elaborator.StackEffect.withRowText
+        { closed with withRow } }
+  | .assumes word callees edits inner => .assumes word callees edits (withClosedEffect effects inner)
+  | other => other
+
 def elaboratePipeline (context : EmissionContext) (source : String)
     (config : Firth.Elaborator.PipelineConfig := {}) : StructuredElaborationResult :=
   let config := { config with
@@ -1411,10 +1449,12 @@ def elaboratePipeline (context : EmissionContext) (source : String)
   match Firth.Elaborator.elaborateWith config source with
   | .success program => .success program
   | .failure diagnostics =>
-      let words := match Firth.Elaborator.parse source with
-        | .success file => (Firth.Elaborator.collectWords file.declarations).map fun word => (word.name, word.span)
+      let declared := match Firth.Elaborator.parse source with
+        | .success file => Firth.Elaborator.collectWords file.declarations
         | .failure _ => []
+      let words := declared.map fun word => (word.name, word.span)
+      let effects := declared.map fun word => (word.name, word.effect)
       .failure (uniquePayloadIds (sortDiagnosticEnvelopes
-        (diagnostics.map (withWord words ∘ pipelineDiagnosticEnvelope context))))
+        (diagnostics.map (withWord words ∘ pipelineDiagnosticEnvelope context ∘ withClosedEffect effects))))
 
 end Firth.Agent
