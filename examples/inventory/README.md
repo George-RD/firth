@@ -70,8 +70,22 @@ kernel cost of at most this bound, with every value in i64. The proof is
 recorded as toolchain evidence (`src/proofs/records.json`) bound to the body
 digests of `allocate-batch` and every word it calls, so all ten words are
 reported `contract_verified`, and a change to any of them withdraws it.
-Agreement of the VM with the reference interpreter rests on differential
-testing.
+
+The record also names a target theorem (`src/proofs/Inventory/Target.lean`):
+on the target semantics, a Lean model of the VM's contract, the compiled image
+run from the same input with at least the proved step bound as fuel halts with
+the same output at a kernel cost within the same bound, unless it exceeds the
+256-frame call-depth bound or takes the length of a sequence of 2^63 or more
+elements. The contract does not cap the number of requests (the host enforces
+the spec's 64); up to 64 the step bound is at most 361,269, so the 1,000,000
+fuel the cases run with is enough on the target semantics outside those two
+exceptions
+(that the length overflow cannot happen on admitted input is inferred, not
+proved). `run_cases.py` requires the
+image the VM runs to be the one the record names, word by word, by target name
+and body digest (`check_image`). The Rust VM is tested against the target
+semantics on every run, not proved against it; `specs/tcb-boundary.toml` lists
+the parts between the theorem and a VM run that stay trusted.
 
 The host's ID encoding and its answer are proved as well
 (`src/proofs/Inventory/Host.lean`): the encoding is injective on the spec's ID
