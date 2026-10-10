@@ -250,7 +250,9 @@ inductive ErasureError where
   | unboundLocal (name : String) (span : Span)
   | unsupportedCapture (name : String) (span : Span)
   | missingStackValue (span : Span)
-  | linearCopy (name : String) (span : Span)
+  /-- A linear local used again at `span`; `first` is its use before, when
+  there was one. -/
+  | linearCopy (name : String) (span : Span) (first : Option Span)
   | linearUnused (name : String) (span : Span)
   | unresolvedEffect (name : String) (span : Span)
   /-- `account` is filled by the pipeline where the operation, as the body is
@@ -738,17 +740,24 @@ private def demandCountWithFuel (fuel : Nat) (name : String) (items : List Item)
 private def demandCount (name : String) (items : List Item) : Nat :=
   demandCountWithFuel (itemsFuel items) name items
 
+/-- What follows a block, seen from inside it. A name the block binds names
+its own local inside it, so a use of that name in the enclosing blocks'
+remaining items is of another local: each list is wrapped in a block binding
+the same names, which `demandCount` does not look into for them. -/
+private def shadowAfter (names : List LocatedName) (span : Span) (after : List (List Item)) :
+    List (List Item) :=
+  after.map fun items => [.locals names items span]
+
 /-- How many uses of a local remain, counting this one. The rest of the
 block that bound it shows every later use. A local of an enclosing block may
 also be used after the inner block ends, in `after` (one list per enclosing
-block), so those uses are counted
-too. A use there of the same name bound again counts as well, so the count is
-never below the uses that remain: a `many` local is moved at its last use,
-and otherwise copied, with the copy left over dropped when its own block
-ends. -/
+block, with the names bound in between hidden by `shadowAfter`), so those
+uses are counted too. A `many` local is moved at its last use, and otherwise
+copied, with the copy left over dropped when its own block ends. A linear
+local with more than one use is refused as copied, wherever the uses are. -/
 private def useCount (slots : List Slot) (slot : Slot) (name : String) (rest : List Item)
     (after : List (List Item)) : Nat :=
-  if slots.any (fun declared => declared.family == slot.family) || slot.usage == .linear then
+  if slots.any (fun declared => declared.family == slot.family) then
     1 + demandCount name rest
   else 1 + demandCount name rest + (after.map (demandCount name)).sum
 
@@ -1165,7 +1174,7 @@ inductive ErasureRel (env : EffectEnv) :
       (binding : BindsLocals names state entered slots)
       (bodyRun : ErasureRel env
         (.localBody (liftCaptures (names.map (·.name) ++ visible) body) slots
-          (names.map (·.name) ++ visible) after) entered program final) :
+          (names.map (·.name) ++ visible) (shadowAfter names span after)) entered program final) :
       ErasureRel env (.item (.locals names body span) visible after) state program final
   | localDone {state cleaned : State} {slots : List Slot} {visible : List String} {after : List (List Item)}
       {program : KernelProgram}
@@ -1462,7 +1471,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                 program := atomList .dup span
                 final := { state with stack := a :: a :: rest }
                 evidence := .atom clearEq (.dup stackEq usageEq) }
-            | .linear => .error (.linearCopy name span)
+            | .linear => .error (.linearCopy name span none)
           | _ => .error (.effectUnderflow name span)
         | "drop" => match stackEq : state.stack with
           | a :: rest => match usageEq : a.usage with
@@ -1472,7 +1481,7 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                 evidence := .atom clearEq (.drop stackEq usageEq) }
             | .linear => match a.slot with
               | some slot => .error (.linearUnused slot.name span)
-              | none => .error (.linearCopy name span)
+              | none => .error (.linearCopy name span none)
           | _ => .error (.effectUnderflow name span)
         | "quote" => match stackEq : state.stack with
           | a :: rest => .ok {
@@ -1536,14 +1545,15 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                   exact := !bodyRun.final.inexact, lost := bodyLost bodyRun.final } ::
                   state.stack }
               evidence := .quotation closedEq bodyRun.evidence }
-      | .locals names body _ => match uniqueEq : duplicateName names with
+      | .locals names body span => match uniqueEq : duplicateName names with
         | some duplicate => .error (.duplicateLocal duplicate.name duplicate.span)
         | none => match bindLocalsWithProof names state with
           | .error error => .error error
           | .ok binding =>
             let nestedVisible := names.map (·.name) ++ visible
             match eraseSubjectWithProof depth env
-                (.localBody (liftCaptures nestedVisible body) binding.slots nestedVisible after)
+                (.localBody (liftCaptures nestedVisible body) binding.slots nestedVisible
+                  (shadowAfter names span after))
                 binding.entered with
             | .error error => .error error
             | .ok bodyRun => .ok {
@@ -1603,10 +1613,10 @@ private def eraseSubjectWithProof (depth : Nat) (env : EffectEnv)
                   cases impossible)
               | .linear =>
                 if copied : count > 1 then
-                  let useSpan := match demandSpans name rest with
+                  let useSpan := match demandSpans name (rest ++ after.flatten) with
                     | span :: _ => span
                     | [] => localSpan
-                  .error (.linearCopy name useSpan)
+                  .error (.linearCopy name useSpan (some localSpan))
                 else proceed (by
                   intro _
                   have positive : 0 < count := by
