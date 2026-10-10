@@ -114,7 +114,11 @@ until the tasks get harder.
   `hook_non_blocking_error` text. Neither names an author, but both are
   context the prompt does not give. A scored run keeps the messages out
   (authors started from a session with no queued project messages) or
-  lists them, and the hook text, in its pre-registration.
+  lists them, and the hook text, in its pre-registration. It also lists
+  the harness's continuation items seen in pool 3 (Firth 1 and Firth 3,
+  `runs/2026-10-10-calibration3/scan-output.txt`): "Output token limit
+  hit. Resume directly ..." and "[Request interrupted by user]" after an
+  API cut-off, and says whether a sample shown one still counts.
 - The bounds check in `test_harder.py` covers sizes and value ranges only.
   The scored tier's check also covers order constraints (such as which
   operation a cancel may name), since that wording broke in two pool-2
