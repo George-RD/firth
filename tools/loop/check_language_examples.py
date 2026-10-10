@@ -71,6 +71,7 @@ def main() -> int:
                 (": main ( -- n:Int ) 9223372036854775807 1 prim +;", "primitive-fault"),
                 (": main ( -- n:Int ) -9223372036854775808 1 prim -;", "primitive-fault"),
                 (": main ( -- n:Int ) -9223372036854775808 -1 prim *;", "primitive-fault"),
+                (": main ( -- n:Int ) -9223372036854775808 -1 prim div;", "primitive-fault"),
             )):
                 source = workspace / f"rejected-{index}.firth"
                 source.write_text(text, encoding="utf-8")

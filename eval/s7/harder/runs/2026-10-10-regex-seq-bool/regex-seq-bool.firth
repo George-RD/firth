@@ -1,0 +1,306 @@
+\ Regular-expression matcher over letter tokens.
+\
+\ The pattern is parsed by recursive descent into a tree held in three
+\ parallel sequences (node type, first child or letter, second child), then
+\ every string is run through the tree as a set of reachable positions.
+\
+\ Node types (types[i], with arguments as[i] and bs[i]):
+\   0 letter as[i]      1 any letter      2 star of child as[i]
+\   3 plus of as[i]     4 optional of as[i]
+\   5 sequence of as[i] then bs[i]        6 alternation of as[i] or bs[i]
+\   7 empty
+\
+\ A position set is a Seq Bool of length (string length + 1): entry p says
+\ "the pattern so far can have consumed exactly the first p letters".
+\
+\ A failed parse sets the position to 1000, past the end of any pattern; that
+\ stops every parse loop and fails the final "all tokens used" test.
+
+\ ---------------------------------------------------------------- tree store
+
+\ Appends a node and returns its index.
+: add-node
+  (forall ρ; ρ t:Seq Int^many a:Seq Int^many b:Seq Int^many ty:Int^many x:Int^many y:Int^many -- ρ t2:Seq Int^many a2:Seq Int^many b2:Seq Int^many id:Int^many)
+  locals { t a b ty x y }
+  { t prim seq-int.len
+    locals { id }
+    { t ty prim seq-int.push  a x prim seq-int.push  b y prim seq-int.push  id } };
+
+\ ------------------------------------------------------------------- parser
+
+\ alternation := sequence ('|' sequence)*
+: parse-alt
+  (forall ρ; ρ pat:Seq Int^many t:Seq Int^many a:Seq Int^many b:Seq Int^many p:Int^many -- ρ t2:Seq Int^many a2:Seq Int^many b2:Seq Int^many p2:Int^many node:Int^many)
+  locals { pat t a b p }
+  { pat t a b p parse-seq
+    locals { t1 a1 b1 p1 nd }
+    { pat t1 a1 b1 p1 nd alt-rest } };
+
+\ Takes further '|' branches while the next token is '|'.
+: alt-rest
+  (forall ρ; ρ pat:Seq Int^many t:Seq Int^many a:Seq Int^many b:Seq Int^many p:Int^many nd:Int^many -- ρ t2:Seq Int^many a2:Seq Int^many b2:Seq Int^many p2:Int^many node:Int^many)
+  locals { pat t a b p nd }
+  { p pat prim seq-int.len prim <
+    [ pat p prim seq-int.at 30 prim =
+      [ pat t a b p 1 prim + parse-seq
+        locals { t2 a2 b2 p2 nd2 }
+        { t2 a2 b2 6 nd nd2 add-node
+          locals { t3 a3 b3 id }
+          { pat t3 a3 b3 p2 id alt-rest } } ]
+      [ t a b p nd ] if ]
+    [ t a b p nd ] if };
+
+\ sequence := item*   (stops at '|', ')' or the end)
+: parse-seq
+  (forall ρ; ρ pat:Seq Int^many t:Seq Int^many a:Seq Int^many b:Seq Int^many p:Int^many -- ρ t2:Seq Int^many a2:Seq Int^many b2:Seq Int^many p2:Int^many node:Int^many)
+  locals { pat t a b p }
+  { t a b 7 0 0 add-node
+    locals { t1 a1 b1 acc }
+    { pat t1 a1 b1 p acc seq-loop } };
+
+: seq-loop
+  (forall ρ; ρ pat:Seq Int^many t:Seq Int^many a:Seq Int^many b:Seq Int^many p:Int^many acc:Int^many -- ρ t2:Seq Int^many a2:Seq Int^many b2:Seq Int^many p2:Int^many node:Int^many)
+  locals { pat t a b p acc }
+  { p pat prim seq-int.len prim <
+    [ pat p prim seq-int.at
+      locals { tok }
+      { tok 30 prim =  tok 32 prim =  prim or
+        [ t a b p acc ]
+        [ pat t a b p parse-item
+          locals { t2 a2 b2 p2 it }
+          { t2 a2 b2 5 acc it add-node
+            locals { t3 a3 b3 id }
+            { pat t3 a3 b3 p2 id seq-loop } } ] if } ]
+    [ t a b p acc ] if };
+
+\ item := atom postfix*
+: parse-item
+  (forall ρ; ρ pat:Seq Int^many t:Seq Int^many a:Seq Int^many b:Seq Int^many p:Int^many -- ρ t2:Seq Int^many a2:Seq Int^many b2:Seq Int^many p2:Int^many node:Int^many)
+  locals { pat t a b p }
+  { pat t a b p parse-atom
+    locals { t1 a1 b1 p1 nd }
+    { pat t1 a1 b1 p1 nd postfix-loop } };
+
+\ Wraps the node in one node per '*' (2), '+' (3) or '?' (4) token.
+: postfix-loop
+  (forall ρ; ρ pat:Seq Int^many t:Seq Int^many a:Seq Int^many b:Seq Int^many p:Int^many nd:Int^many -- ρ t2:Seq Int^many a2:Seq Int^many b2:Seq Int^many p2:Int^many node:Int^many)
+  locals { pat t a b p nd }
+  { p pat prim seq-int.len prim <
+    [ pat p prim seq-int.at
+      locals { tok }
+      { tok 27 prim >=  tok 29 prim <=  prim and
+        [ t a b tok 25 prim - nd 0 add-node
+          locals { t2 a2 b2 id }
+          { pat t2 a2 b2 p 1 prim + id postfix-loop } ]
+        [ t a b p nd ] if } ]
+    [ t a b p nd ] if };
+
+\ atom := letter | '.' | '(' alternation ')'
+: parse-atom
+  (forall ρ; ρ pat:Seq Int^many t:Seq Int^many a:Seq Int^many b:Seq Int^many p:Int^many -- ρ t2:Seq Int^many a2:Seq Int^many b2:Seq Int^many p2:Int^many node:Int^many)
+  locals { pat t a b p }
+  { p pat prim seq-int.len prim <
+    [ pat p prim seq-int.at
+      locals { tok }
+      { tok 25 prim <=
+        [ t a b 0 tok 0 add-node
+          locals { t2 a2 b2 id }
+          { t2 a2 b2 p 1 prim + id } ]
+        [ tok 26 prim =
+          [ t a b 1 0 0 add-node
+            locals { t2 a2 b2 id }
+            { t2 a2 b2 p 1 prim + id } ]
+          [ tok 31 prim =
+            [ pat t a b p 1 prim + parse-alt
+              locals { t2 a2 b2 p2 nd }
+              { p2 pat prim seq-int.len prim <
+                [ pat p2 prim seq-int.at 32 prim =
+                  [ t2 a2 b2 p2 1 prim + nd ]
+                  [ t2 a2 b2 1000 nd ] if ]
+                [ t2 a2 b2 1000 nd ] if } ]
+            [ t a b 1000 0 ] if ] if ] if } ]
+    [ t a b 1000 0 ] if };
+
+\ --------------------------------------------------------------- set helpers
+
+\ Adds to acc every position of add that acc lacks, from index i on, and says
+\ whether any was missing: ch is true if changed already was or one was added.
+: merge-loop
+  (forall ρ; ρ acc:Seq Bool^many add:Seq Bool^many i:Int^many changed:Bool^many -- ρ r:Seq Bool^many ch:Bool^many)
+  locals { acc add i changed }
+  { i add prim seq-bool.len prim <
+    [ add i prim seq-bool.at
+      [ acc i prim seq-bool.at
+        [ acc add i 1 prim + changed merge-loop ]
+        [ acc i true prim seq-bool.set add i 1 prim + true merge-loop ] if ]
+      [ acc add i 1 prim + changed merge-loop ] if ]
+    [ acc changed ] if };
+
+\ The union of two equal-length sets.
+: union
+  (forall ρ; ρ x:Seq Bool^many y:Seq Bool^many -- ρ r:Seq Bool^many)
+  0 false merge-loop drop;
+
+\ Letter step: out[0] is false and out[p+1] = in[p] and (c < 0 or s[p] = c);
+\ a negative c stands for "any letter".
+: lit-loop
+  (forall ρ; ρ s:Seq Int^many c:Int^many inset:Seq Bool^many out:Seq Bool^many -- ρ r:Seq Bool^many)
+  locals { s c inset out }
+  { out prim seq-bool.len 1 prim - s prim seq-int.len prim <
+    [ out prim seq-bool.len 1 prim -
+      locals { p }
+      { s c inset
+        out inset p prim seq-bool.at
+        c 0 prim < s p prim seq-int.at c prim = prim or prim and
+        prim seq-bool.push
+        lit-loop } ]
+    [ out ] if };
+
+\ Closure of a single-letter child: sweeping left to right, a position that
+\ is reached and followed by a matching letter reaches the next position.
+: sweep
+  (forall ρ; ρ s:Seq Int^many c:Int^many out:Seq Bool^many p:Int^many -- ρ r:Seq Bool^many)
+  locals { s c out p }
+  { p s prim seq-int.len prim <
+    [ out p prim seq-bool.at
+      [ c 0 prim < s p prim seq-int.at c prim = prim or
+        [ s c out p 1 prim + true prim seq-bool.set p 1 prim + sweep ]
+        [ s c out p 1 prim + sweep ] if ]
+      [ s c out p 1 prim + sweep ] if ]
+    [ out ] if };
+
+\ The letter a node consumes (negative for "any"), when it is a single letter
+\ or "." node; otherwise -2.
+: leaf-letter
+  (forall ρ; ρ t:Seq Int^many a:Seq Int^many node:Int^many -- ρ c:Int^many)
+  locals { t a node }
+  { t node prim seq-int.at 0 prim =
+    [ a node prim seq-int.at ]
+    [ t node prim seq-int.at 1 prim = [ -1 ] [ -2 ] if ] if };
+
+\ ----------------------------------------------------------------- matching
+
+\ Positions reachable by running the node on string s from each start in inset.
+: step
+  (forall ρ; ρ t:Seq Int^many a:Seq Int^many b:Seq Int^many s:Seq Int^many node:Int^many inset:Seq Bool^many -- ρ out:Seq Bool^many)
+  locals { t a b s node inset }
+  { t node prim seq-int.at
+    locals { ty }
+    { ty 0 prim =
+      [ s a node prim seq-int.at inset { false } lit-loop ]
+      [ ty 1 prim =
+        [ s -1 inset { false } lit-loop ]
+        [ ty 2 prim =
+          [ t a b s a node prim seq-int.at inset closure ]
+          [ ty 3 prim =
+            [ t a b s a node prim seq-int.at inset step
+              locals { first }
+              { t a b s a node prim seq-int.at first closure } ]
+            [ ty 4 prim =
+              [ inset t a b s a node prim seq-int.at inset step union ]
+              [ ty 5 prim =
+                [ t a b s a node prim seq-int.at inset step
+                  locals { mid }
+                  { t a b s b node prim seq-int.at mid step } ]
+                [ ty 6 prim =
+                  [ t a b s a node prim seq-int.at inset step
+                    t a b s b node prim seq-int.at inset step union ]
+                  [ inset ] if ] if ] if ] if ] if ] if ] if } };
+
+\ The smallest set that contains start and is closed under running the child.
+: closure
+  (forall ρ; ρ t:Seq Int^many a:Seq Int^many b:Seq Int^many s:Seq Int^many child:Int^many start:Seq Bool^many -- ρ out:Seq Bool^many)
+  locals { t a b s child start }
+  { t a child leaf-letter
+    locals { c }
+    { c -2 prim =
+      [ t a b s child start start expand ]
+      [ s c start 0 sweep ] if } };
+
+\ General closure: acc is the set so far, frontier the positions not yet
+\ expanded. Stops when expanding the frontier adds nothing.
+: expand
+  (forall ρ; ρ t:Seq Int^many a:Seq Int^many b:Seq Int^many s:Seq Int^many child:Int^many acc:Seq Bool^many frontier:Seq Bool^many -- ρ out:Seq Bool^many)
+  locals { t a b s child acc frontier }
+  { t a b s child frontier step
+    locals { new }
+    { acc new 0 false merge-loop
+      locals { merged changed }
+      { changed
+        [ t a b s child merged new expand ]
+        [ acc ] if } } };
+
+\ ---------------------------------------------------------------- the driver
+
+\ Copies chars[off .. off+len-1] into out.
+: slice
+  (forall ρ; ρ chars:Seq Int^many off:Int^many len:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { chars off len out }
+  { out prim seq-int.len len prim <
+    [ chars off len
+      out chars off out prim seq-int.len prim + prim seq-int.at prim seq-int.push
+      slice ]
+    [ out ] if };
+
+\ {true, false, ..., false} with len falses.
+: start-set
+  (forall ρ; ρ len:Int^many out:Seq Bool^many -- ρ r:Seq Bool^many)
+  locals { len out }
+  { out prim seq-bool.len len prim <=
+    [ len out false prim seq-bool.push start-set ]
+    [ out ] if };
+
+\ Largest index i' <= i with set[i'] true, or -1.
+: last-true
+  (forall ρ; ρ set:Seq Bool^many i:Int^many -- ρ r:Int^many)
+  locals { set i }
+  { i 0 prim <
+    [ -1 ]
+    [ set i prim seq-bool.at
+      [ i ]
+      [ set i 1 prim - last-true ] if ] if };
+
+\ Runs every string j from lens against the tree rooted at root.
+: run-strings
+  (forall ρ; ρ t:Seq Int^many a:Seq Int^many b:Seq Int^many root:Int^many lens:Seq Int^many chars:Seq Int^many j:Int^many off:Int^many full:Seq Bool^many longest:Seq Int^many count:Int^many -- ρ full2:Seq Bool^many longest2:Seq Int^many count2:Int^many)
+  locals { t a b root lens chars j off full longest count }
+  { j lens prim seq-int.len prim <
+    [ lens j prim seq-int.at
+      locals { len }
+      { t a b chars off len prim seq-int.empty slice root
+        len { true } start-set
+        step
+        locals { out }
+        { out len prim seq-bool.at
+          locals { whole }
+          { t a b root lens chars j 1 prim + off len prim +
+            full whole prim seq-bool.push
+            longest out len last-true prim seq-int.push
+            count whole [ 1 prim + ] [ ] if
+            run-strings } } } ]
+    [ full longest count ] if };
+
+: fill-bool
+  (forall ρ; ρ n:Int^many out:Seq Bool^many -- ρ r:Seq Bool^many)
+  locals { n out }
+  { out prim seq-bool.len n prim <
+    [ n out false prim seq-bool.push fill-bool ]
+    [ out ] if };
+
+: fill-int
+  (forall ρ; ρ n:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { n out }
+  { out prim seq-int.len n prim <
+    [ n out -1 prim seq-int.push fill-int ]
+    [ out ] if };
+
+: main
+  (forall ρ; ρ pat:Seq Int^many lens:Seq Int^many chars:Seq Int^many -- ρ full:Seq Bool^many longest:Seq Int^many count:Int^many valid:Bool^many)
+  locals { pat lens chars }
+  { pat prim seq-int.empty prim seq-int.empty prim seq-int.empty 0 parse-alt
+    locals { t a b p root }
+    { p pat prim seq-int.len prim =
+      [ t a b root lens chars 0 0 prim seq-bool.empty prim seq-int.empty 0 run-strings true ]
+      [ lens prim seq-int.len prim seq-bool.empty fill-bool
+        lens prim seq-int.len prim seq-int.empty fill-int
+        0 false ] if } };

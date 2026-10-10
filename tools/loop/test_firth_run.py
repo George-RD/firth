@@ -166,7 +166,7 @@ class SavedCaseTests(unittest.TestCase):
     def test_only_exact_portable_values_are_allowed_in_both_stacks(self) -> None:
         for field in ("stack", "expected_stack"):
             for value in (-2**63 - 1, 2**63, 1.0, 0.0, "1", None, {}, [-2**63 - 1], [2**63], [1.0],
-                          [1, True], [[1]], ["1"]):
+                          [1, True], [[1]], ["1"], {"kind": "quotation", "body": []}):
                 with self.subTest(field=field, value=value):
                     self.write({**self.suite, "cases": [{**self.case, field: [value]}]})
                     self.refuse_before_build(field)

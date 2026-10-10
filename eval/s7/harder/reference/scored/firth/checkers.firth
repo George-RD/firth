@@ -1,0 +1,327 @@
+\ Draughts (checkers) on the 32 dark squares, both sides moving by a fixed rule.
+\
+\ Representation. The board is held in a padded 10 by 10 grid: board row r,
+\ column c is cell (r + 1) * 10 + c + 1, and the border cells hold 9 (neither
+\ empty nor a piece). Then the four diagonal neighbours of a cell are at the
+\ fixed offsets -11 -9 9 11, a jump lands at twice the offset, and the order
+\ of cell numbers is the order of square numbers. Pieces: 0 empty, 1 white man,
+\ 2 white king, 3 black man, 4 black king; the side of a piece is (v - 1) / 2
+\ (0 white, 1 black). White men move up (offsets < 0), black men down.
+\
+\ A capture is searched depth first. The moving piece is lifted off the board
+\ and each jumped piece is removed at once. A finished capture is scored as
+\ (count, code): code reads the landing squares as base 32 digits and ends
+\ with a bit saying whether the capture crowned the piece, doubled so that all
+\ finished captures are on the same scale. More captured wins; among equals
+\ the smaller code (first lower landing square) wins. Pieces are scanned from
+\ the lowest square up and a later piece replaces the best only with a
+\ strictly larger count, which gives "lowest starting square" on ties.
+
+\ ---------------------------------------------------------------- helpers
+
+\ True when a man of this piece's side standing on cell p is on its far row
+\ (row 0 is cells 11 to 18, row 7 is cells 81 to 88).
+: crowns?
+  (forall ρ; ρ p:Int^many piece:Int^many -- ρ r:Bool^many)
+  locals { p piece }
+  { piece 2 prim mod 1 prim =
+    p 10 prim div  1 piece 1 prim - 2 prim div 7 prim * prim +  prim =
+    prim and };
+
+\ Square number (0 to 31) of padded cell p.
+: sq-of
+  (forall ρ; ρ p:Int^many -- ρ s:Int^many)
+  locals { p }
+  { p 10 prim div 1 prim - 4 prim *
+    p 10 prim mod 1 prim - 2 prim div prim + };
+
+\ Padded cell of square number i: the dark cells in increasing order. (Row r
+\ has its dark cells at columns 2k + 1 - r mod 2, so cell 10 r + 12 - r mod 2
+\ + 2k.)
+: cell-of
+  (forall ρ; ρ i:Int^many -- ρ p:Int^many)
+  { 12 14 16 18 21 23 25 27 32 34 36 38 41 43 45 47
+    52 54 56 58 61 63 65 67 72 74 76 78 81 83 85 87 }
+  swap prim seq-int.at;
+
+\ ------------------------------------------------------- padding the board
+
+\ n nines appended to out.
+: nines
+  (forall ρ; ρ n:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { n out }
+  { out prim seq-int.len n prim <
+    [ n out 9 prim seq-int.push nines ]
+    [ out ] if };
+
+\ Copies src[i] and later squares into the padded board out.
+: pad-from
+  (forall ρ; ρ src:Seq Int^many i:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { src i out }
+  { i 32 prim <
+    [ src i 1 prim +  out i cell-of src i prim seq-int.at prim seq-int.set
+      pad-from ]
+    [ out ] if };
+
+: pad
+  (forall ρ; ρ src:Seq Int^many -- ρ r:Seq Int^many)
+  locals { src }
+  { src 0  100 prim seq-int.empty nines  pad-from };
+
+\ Reads squares i and later of the padded board into out.
+: unpad-from
+  (forall ρ; ρ board:Seq Int^many i:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { board i out }
+  { i 32 prim <
+    [ board i 1 prim +  out board i cell-of prim seq-int.at prim seq-int.push
+      unpad-from ]
+    [ out ] if };
+
+: unpad
+  (forall ρ; ρ board:Seq Int^many -- ρ r:Seq Int^many)
+  locals { board }
+  { board 0 prim seq-int.empty unpad-from };
+
+\ ---------------------------------------------------------------- captures
+
+\ The first square at or after i holding a piece with value lo or lo + 1 (the
+\ men and kings of one side: lo is 1 for white, 3 for black); 32 if none.
+: find-own
+  (forall ρ; ρ board:Seq Int^many lo:Int^many i:Int^many -- ρ j:Int^many)
+  locals { board lo i }
+  { i 31 prim >
+    [ i ]
+    [ board i cell-of prim seq-int.at lo prim - 2 prim div 0 prim =
+      [ i ]
+      [ board lo i 1 prim + find-own ] if ] if };
+
+\ True when the piece on pos can jump in direction off: the next cell holds
+\ a piece with value elo or elo + 1 (an enemy; elo is 4 minus the mover's lo)
+\ and the cell beyond is empty. (The cell beyond is read only after an enemy
+\ was found there, so it is always on the grid.)
+: jump-ok?
+  (forall ρ; ρ board:Seq Int^many pos:Int^many off:Int^many elo:Int^many -- ρ r:Bool^many)
+  locals { board pos off elo }
+  { board pos off prim + prim seq-int.at elo prim - 2 prim div 0 prim =
+    [ board pos off 2 prim * prim + prim seq-int.at 0 prim = ]
+    [ false ] if };
+
+\ True when the capture (c1, k1) beats (c2, k2): more taken, or equal and a
+\ smaller code.
+: better?
+  (forall ρ; ρ c1:Int^many k1:Int^many c2:Int^many k2:Int^many -- ρ r:Bool^many)
+  locals { c1 k1 c2 k2 }
+  { c1 c2 prim >
+    c1 c2 prim =  k1 k2 prim <  prim and  prim or };
+
+\ The better of two finished captures (count, code, board).
+: pick-best
+  (forall ρ; ρ c:Int^many k:Int^many b:Seq Int^many bc:Int^many bk:Int^many bb:Seq Int^many -- ρ rc:Int^many rk:Int^many rb:Seq Int^many)
+  locals { c k b bc bk bb }
+  { c k bc bk better?
+    [ c k b ]
+    [ bc bk bb ] if };
+
+\ Having jumped to cell l (cap is the board with the jumped piece removed),
+\ finishes the capture if the piece is crowned there, else continues it, and
+\ keeps the better of that and the best so far (bc, bk, bb).
+: after-jump
+  (forall ρ; ρ bc:Int^many bk:Int^many bb:Seq Int^many cap:Seq Int^many l:Int^many piece:Int^many count:Int^many code:Int^many -- ρ rc:Int^many rk:Int^many rb:Seq Int^many)
+  locals { bc bk bb cap l piece count code }
+  { l piece crowns?
+    [ count 1 prim +
+      code 32 prim * l sq-of prim + 2 prim * 1 prim +
+      cap l piece 1 prim + prim seq-int.set ]
+    [ cap l piece count 1 prim + code 32 prim * l sq-of prim + jump-from ] if
+    bc bk bb pick-best };
+
+\ Tries the jump in direction off (against enemies elo, elo + 1), folding it
+\ into the best (bc, bk, bb) when it is possible.
+: probe
+  (forall ρ; ρ bc:Int^many bk:Int^many bb:Seq Int^many board:Seq Int^many pos:Int^many piece:Int^many count:Int^many code:Int^many off:Int^many elo:Int^many -- ρ rc:Int^many rk:Int^many rb:Seq Int^many)
+  locals { bc bk bb board pos piece count code off elo }
+  { board pos off elo jump-ok?
+    [ bc bk bb
+      board pos off prim + 0 prim seq-int.set
+      pos off 2 prim * prim +
+      piece count code after-jump ]
+    [ bc bk bb ] if };
+
+\ The best way to continue a capture of count pieces (code so far) with the
+\ lifted piece standing on pos: (count, code, final board). If no jump is
+\ possible that is the capture as it stands, code doubled with a 0 crown bit.
+\ A white man looks up (-11, -9), a black man down (9, 11), a king both ways.
+: jump-from
+  (forall ρ; ρ board:Seq Int^many pos:Int^many piece:Int^many count:Int^many code:Int^many -- ρ rc:Int^many rk:Int^many rb:Seq Int^many)
+  locals { board pos piece count code }
+  { count code 2 prim *  board pos piece prim seq-int.set
+    piece 1 prim =
+    [ board pos piece count code -11 3 probe
+      board pos piece count code -9 3 probe ]
+    [ piece 3 prim =
+      [ board pos piece count code 9 1 probe
+        board pos piece count code 11 1 probe ]
+      [ board pos piece count code -11 piece 2 prim = [ 3 ] [ 1 ] if probe
+        board pos piece count code -9 piece 2 prim = [ 3 ] [ 1 ] if probe
+        board pos piece count code 9 piece 2 prim = [ 3 ] [ 1 ] if probe
+        board pos piece count code 11 piece 2 prim = [ 3 ] [ 1 ] if probe ] if ] if };
+
+\ True when a king on pos has a jump over a piece with value elo or elo + 1.
+: king-jump?
+  (forall ρ; ρ board:Seq Int^many pos:Int^many elo:Int^many -- ρ r:Bool^many)
+  locals { board pos elo }
+  { board pos -11 elo jump-ok? [ true ]
+    [ board pos -9 elo jump-ok? [ true ]
+      [ board pos 9 elo jump-ok? [ true ]
+        [ board pos 11 elo jump-ok? ] if ] if ] if };
+
+\ True when the piece on pos has any jump (a cheap test made before the
+\ capture search proper): a white man looks up, a black man down, a king both.
+: any-jump?
+  (forall ρ; ρ board:Seq Int^many pos:Int^many piece:Int^many -- ρ r:Bool^many)
+  locals { board pos piece }
+  { piece 1 prim =
+    [ board pos -11 3 jump-ok? [ true ] [ board pos -9 3 jump-ok? ] if ]
+    [ piece 3 prim =
+      [ board pos 9 1 jump-ok? [ true ] [ board pos 11 1 jump-ok? ] if ]
+      [ piece 2 prim =
+        [ board pos 3 king-jump? ]
+        [ board pos 1 king-jump? ] if ] if ] if };
+
+\ Keeps the best capture so far (gk, gb) unless the new capture (c, k, b)
+\ takes strictly more. A capture is summarised as the key 2 * count + crowned
+\ (so key 0 means none) with its board.
+: consider
+  (forall ρ; ρ gk:Int^many gb:Seq Int^many c:Int^many k:Int^many b:Seq Int^many -- ρ rk:Int^many rb:Seq Int^many)
+  locals { gk gb c k b }
+  { c gk 2 prim div prim >
+    [ c 2 prim * k 2 prim mod prim +  b ]
+    [ gk gb ] if };
+
+\ Adds to the best capture (gk, gb) the captures of every piece with value lo
+\ or lo + 1 on squares i and later.
+: capture-scan
+  (forall ρ; ρ gk:Int^many gb:Seq Int^many board:Seq Int^many i:Int^many lo:Int^many -- ρ rk:Int^many rb:Seq Int^many)
+  locals { board i lo }
+  { board lo i find-own  board lo capture-at };
+
+\ Captures from the piece on square j (if j is a square), then goes on after j.
+: capture-at
+  (forall ρ; ρ gk:Int^many gb:Seq Int^many j:Int^many board:Seq Int^many lo:Int^many -- ρ rk:Int^many rb:Seq Int^many)
+  locals { j board lo }
+  { j 31 prim >
+    [ ]
+    [ board j cell-of  board j cell-of prim seq-int.at  any-jump?
+      [ board j cell-of 0 prim seq-int.set
+        j cell-of  board j cell-of prim seq-int.at  0 0 jump-from
+        consider ]
+      [ ] if
+      board j 1 prim + lo capture-scan ] if };
+
+\ ------------------------------------------------------------------- steps
+
+\ True when cell p + off is empty.
+: empty-at?
+  (forall ρ; ρ board:Seq Int^many p:Int^many off:Int^many -- ρ r:Bool^many)
+  locals { board p off }
+  { board p off prim + prim seq-int.at 0 prim = };
+
+\ The target cell of the piece's first step (offsets in increasing order,
+\ which is increasing square number), or -1 if it has none. A white man steps
+\ up (-11, -9), a black man down (9, 11), a king either way.
+: first-step
+  (forall ρ; ρ board:Seq Int^many p:Int^many piece:Int^many -- ρ t:Int^many)
+  locals { board p piece }
+  { piece 1 prim =
+    [ board p -11 empty-at? [ p -11 prim + ]
+      [ board p -9 empty-at? [ p -9 prim + ] [ -1 ] if ] if ]
+    [ piece 3 prim =
+      [ board p 9 empty-at? [ p 9 prim + ]
+        [ board p 11 empty-at? [ p 11 prim + ] [ -1 ] if ] if ]
+      [ board p -11 empty-at? [ p -11 prim + ]
+        [ board p -9 empty-at? [ p -9 prim + ]
+          [ board p 9 empty-at? [ p 9 prim + ]
+            [ board p 11 empty-at? [ p 11 prim + ] [ -1 ] if ] if ] if ] if ] if ] if };
+
+\ Puts piece on cell to of b, crowning a man on its far row: (crowned, board).
+: place
+  (forall ρ; ρ b:Seq Int^many to:Int^many piece:Int^many -- ρ cr:Int^many nb:Seq Int^many)
+  locals { b to piece }
+  { to piece crowns?
+    [ 1 b to piece 1 prim + prim seq-int.set ]
+    [ 0 b to piece prim seq-int.set ] if };
+
+\ Moves the piece on from to cell to: (found 1, taken 0, crowned, board).
+: apply-step
+  (forall ρ; ρ board:Seq Int^many from:Int^many to:Int^many -- ρ found:Int^many taken:Int^many cr:Int^many nb:Seq Int^many)
+  locals { board from to }
+  { 1 0  board from 0 prim seq-int.set  to  board from prim seq-int.at  place };
+
+\ The step of the lowest piece (then lowest target) with value lo or lo + 1
+\ from square i up: (found, taken 0, crowned, board). Found 0 gives the board
+\ unchanged.
+: step-scan
+  (forall ρ; ρ board:Seq Int^many i:Int^many lo:Int^many -- ρ found:Int^many taken:Int^many cr:Int^many nb:Seq Int^many)
+  locals { board i lo }
+  { board lo i find-own  board lo step-at };
+
+\ Steps the piece on square j if it can, else goes on after j.
+: step-at
+  (forall ρ; ρ j:Int^many board:Seq Int^many lo:Int^many -- ρ found:Int^many taken:Int^many cr:Int^many nb:Seq Int^many)
+  locals { j board lo }
+  { j 31 prim >
+    [ 0 0 0 board ]
+    [ board j cell-of  board j cell-of prim seq-int.at  first-step
+      board j lo step-after ] if };
+
+\ After first-step gave t for the piece on square j: take that step, or go on.
+: step-after
+  (forall ρ; ρ t:Int^many board:Seq Int^many j:Int^many lo:Int^many -- ρ found:Int^many taken:Int^many cr:Int^many nb:Seq Int^many)
+  locals { t board j lo }
+  { t 0 prim <
+    [ board j 1 prim + lo step-scan ]
+    [ board j cell-of t apply-step ] if };
+
+\ ------------------------------------------------------------------ playing
+
+\ Chooses between the best capture (key, board) and, if none, the best step.
+: chosen
+  (forall ρ; ρ gk:Int^many gb:Seq Int^many board:Seq Int^many lo:Int^many -- ρ found:Int^many taken:Int^many ncr:Int^many nb:Seq Int^many)
+  locals { gk gb board lo }
+  { gk 0 prim >
+    [ 1 gk 2 prim div gk 2 prim mod gb ]
+    [ board 0 lo step-scan ] if };
+
+\ The move the side must make: (found, pieces taken, crowned, new board).
+: find-move
+  (forall ρ; ρ board:Seq Int^many side:Int^many -- ρ found:Int^many taken:Int^many cr:Int^many nb:Seq Int^many)
+  locals { board side }
+  { 0 board  board 0 side 2 prim * 1 prim + capture-scan
+    board side 2 prim * 1 prim + chosen };
+
+\ Applies the move found, or ends the game: no move means the side to move
+\ lost (result 2 - side); a spent move limit gives result 0.
+: play-move
+  (forall ρ; ρ found:Int^many taken:Int^many cr:Int^many nb:Seq Int^many board:Seq Int^many side:Int^many left:Int^many played:Int^many wt:Int^many bt:Int^many crowned:Int^many -- ρ fb:Seq Int^many rplayed:Int^many rwt:Int^many rbt:Int^many rcrowned:Int^many result:Int^many)
+  locals { found taken cr nb board side left played wt bt crowned }
+  { found 0 prim =
+    [ board unpad played wt bt crowned 2 side prim - ]
+    [ left 0 prim =
+      [ board unpad played wt bt crowned 0 ]
+      [ nb 1 side prim - left 1 prim - played 1 prim +
+        wt side 0 prim = [ taken ] [ 0 ] if prim +
+        bt side 1 prim = [ taken ] [ 0 ] if prim +
+        crowned cr prim +
+        play ] if ] if };
+
+\ One move of the game; left is how many more moves may be played.
+: play
+  (forall ρ; ρ board:Seq Int^many side:Int^many left:Int^many played:Int^many wt:Int^many bt:Int^many crowned:Int^many -- ρ fb:Seq Int^many rplayed:Int^many rwt:Int^many rbt:Int^many rcrowned:Int^many result:Int^many)
+  locals { board side left played wt bt crowned }
+  { board side find-move
+    board side left played wt bt crowned play-move };
+
+: main
+  (forall ρ; ρ board:Seq Int^many turn:Int^many plies:Int^many -- ρ fb:Seq Int^many played:Int^many wt:Int^many bt:Int^many crowned:Int^many result:Int^many)
+  locals { board turn plies }
+  { board pad turn plies 0 0 0 0 play };

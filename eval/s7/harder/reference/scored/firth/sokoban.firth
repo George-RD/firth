@@ -1,0 +1,139 @@
+\ Sokoban move simulator.
+\
+\ The grid is a flat sequence `cells` (0 floor, 1 wall, 2 goal) of width w.
+\ Boxes are a sequence of cell numbers, box k at boxes[k]. A move is a
+\ direction 0 up, 1 right, 2 down, 3 left, or 4 undo. The history is a
+\ sequence `hist` with a separate depth h (there is no pop, so an undo just
+\ lowers h and a later move overwrites the stale slot). Entry = dir * 2 +
+\ pushed (1 when the move pushed a box). An undo needs nothing else: the
+\ worker steps back by the direction's delta, and a pushed box is the one now
+\ at worker + delta, which goes back to the worker's current cell.
+\
+\ The main loop `run` carries the whole state:
+\   w cells boxes player moves i hist h pushes blocked undos dead
+\ where i is the number of moves read so far.
+
+\ Cell offset of a direction: up -w, right 1, down w, left -1.
+: delta
+  (forall ρ; ρ w:Int^many d:Int^many -- ρ r:Int^many)
+  locals { w d }
+  { d 2 prim mod 0 prim =
+    [ d 1 prim - w prim * ]
+    [ 2 d prim - ] if };
+
+\ Index of the box standing on `cell`, searching from k; -1 when none.
+: find-box
+  (forall ρ; ρ boxes:Seq Int^many cell:Int^many k:Int^many -- ρ idx:Int^many)
+  locals { boxes cell k }
+  { k boxes prim seq-int.len prim >=
+    [ -1 ]
+    [ boxes k prim seq-int.at cell prim =
+      [ k ]
+      [ boxes cell k 1 prim + find-box ] if ] if };
+
+\ True when the cell holds a wall.
+: wall?
+  (forall ρ; ρ cells:Seq Int^many c:Int^many -- ρ r:Bool^many)
+  prim seq-int.at 1 prim =;
+
+\ True when every box from index k on stands on a goal cell.
+: all-goal?
+  (forall ρ; ρ cells:Seq Int^many boxes:Seq Int^many k:Int^many -- ρ r:Bool^many)
+  locals { cells boxes k }
+  { k boxes prim seq-int.len prim >=
+    [ true ]
+    [ cells boxes k prim seq-int.at prim seq-int.at 2 prim =
+      [ cells boxes k 1 prim + all-goal? ]
+      [ false ] if ] if };
+
+\ A box just pushed onto u is dead: not on a goal, a wall above or below
+\ it, and a wall left or right of it.
+: dead?
+  (forall ρ; ρ cells:Seq Int^many w:Int^many u:Int^many -- ρ r:Bool^many)
+  locals { cells w u }
+  { cells u prim seq-int.at 2 prim = prim not
+    cells u w prim - wall? cells u w prim + wall? prim or prim and
+    cells u 1 prim - wall? cells u 1 prim + wall? prim or prim and };
+
+\ 1 when dead? holds, else 0.
+: dead-count
+  (forall ρ; ρ cells:Seq Int^many w:Int^many u:Int^many -- ρ r:Int^many)
+  dead? [ 1 ] [ 0 ] if;
+
+\ Records history entry e at depth h: overwrite a stale slot or append.
+: record
+  (forall ρ; ρ hist:Seq Int^many h:Int^many e:Int^many -- ρ r:Seq Int^many)
+  locals { hist h e }
+  { h hist prim seq-int.len prim <
+    [ hist h e prim seq-int.set ]
+    [ hist e prim seq-int.push ] if };
+
+\ Final result once the moves are used up or every box is on a goal.
+: finish
+  (forall ρ; ρ cells:Seq Int^many player:Int^many boxes:Seq Int^many i:Int^many h:Int^many pushes:Int^many blocked:Int^many undos:Int^many dead:Int^many
+     -- ρ player:Int^many boxes:Seq Int^many read:Int^many history:Int^many pushes:Int^many blocked:Int^many undos:Int^many dead:Int^many solved:Bool^many)
+  locals { cells player boxes i h pushes blocked undos dead }
+  { player boxes i h pushes blocked undos dead cells boxes 0 all-goal? };
+
+\ Undo (move number i has been read): take back the latest history entry.
+: undo-step
+  (forall ρ; ρ w:Int^many cells:Seq Int^many boxes:Seq Int^many player:Int^many moves:Seq Int^many i:Int^many hist:Seq Int^many h:Int^many pushes:Int^many blocked:Int^many undos:Int^many dead:Int^many
+     -- ρ player:Int^many boxes:Seq Int^many read:Int^many history:Int^many pushes:Int^many blocked:Int^many undos:Int^many dead:Int^many solved:Bool^many)
+  locals { w cells boxes player moves i hist h pushes blocked undos dead }
+  { h 0 prim =
+    [ w cells boxes player moves i hist h pushes blocked undos dead run ]
+    [ hist h 1 prim - prim seq-int.at
+      locals { e }
+      { w e 2 prim div delta
+        locals { dl }
+        { e 2 prim mod 1 prim =
+          [ boxes boxes player dl prim + 0 find-box player prim seq-int.set ]
+          [ boxes ] if
+          locals { boxes2 }
+          { w cells boxes2 player dl prim - moves i hist h 1 prim - pushes blocked undos 1 prim + dead run } } } ] if };
+
+\ Moves are tried here (the move is m, already counted in i): block, step or push.
+: move-step
+  (forall ρ; ρ w:Int^many cells:Seq Int^many boxes:Seq Int^many player:Int^many moves:Seq Int^many i:Int^many hist:Seq Int^many h:Int^many pushes:Int^many blocked:Int^many undos:Int^many dead:Int^many m:Int^many
+     -- ρ player:Int^many boxes:Seq Int^many read:Int^many history:Int^many pushes:Int^many blocked:Int^many undos:Int^many dead:Int^many solved:Bool^many)
+  locals { w cells boxes player moves i hist h pushes blocked undos dead m }
+  { w m delta
+    locals { dl }
+    { player dl prim +
+      locals { t }
+      { cells t wall?
+        [ w cells boxes player moves i hist h pushes blocked 1 prim + undos dead run ]
+        [ boxes t 0 find-box
+          locals { k }
+          { k 0 prim <
+            [ w cells boxes t moves i hist h m 2 prim * record h 1 prim + pushes blocked undos dead run ]
+            [ t dl prim +
+              locals { u }
+              { cells u wall? boxes u 0 find-box 0 prim >= prim or
+                [ w cells boxes player moves i hist h pushes blocked 1 prim + undos dead run ]
+                [ w cells boxes k u prim seq-int.set t moves i
+                  hist h m 2 prim * 1 prim + record h 1 prim +
+                  pushes 1 prim + blocked undos
+                  dead cells w u dead-count prim + run ] if } ] if } ] if } } };
+
+\ Main loop: stop when the moves are used up or every box is on a goal;
+\ otherwise read the next move.
+: run
+  (forall ρ; ρ w:Int^many cells:Seq Int^many boxes:Seq Int^many player:Int^many moves:Seq Int^many i:Int^many hist:Seq Int^many h:Int^many pushes:Int^many blocked:Int^many undos:Int^many dead:Int^many
+     -- ρ player:Int^many boxes:Seq Int^many read:Int^many history:Int^many pushes:Int^many blocked:Int^many undos:Int^many dead:Int^many solved:Bool^many)
+  locals { w cells boxes player moves i hist h pushes blocked undos dead }
+  { i moves prim seq-int.len prim >=
+    cells boxes 0 all-goal? prim or
+    [ cells player boxes i h pushes blocked undos dead finish ]
+    [ moves i prim seq-int.at
+      locals { m }
+      { m 4 prim =
+        [ w cells boxes player moves i 1 prim + hist h pushes blocked undos dead undo-step ]
+        [ w cells boxes player moves i 1 prim + hist h pushes blocked undos dead m move-step ] if } ] if };
+
+\ Entry: width height cells player boxes moves -- results.
+: main
+  (forall ρ; ρ w:Int^many height:Int^many cells:Seq Int^many player:Int^many boxes:Seq Int^many moves:Seq Int^many
+     -- ρ player:Int^many boxes:Seq Int^many read:Int^many history:Int^many pushes:Int^many blocked:Int^many undos:Int^many dead:Int^many solved:Bool^many)
+  locals { w height cells player boxes moves }
+  { w cells boxes player moves 0 prim seq-int.empty 0 0 0 0 0 run };
