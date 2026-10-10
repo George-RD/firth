@@ -175,7 +175,7 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
     | "firth.name.not-exported" =>
         let file := error.files.head?.getD "the imported file"
         (s!"{actual} is defined in `{file}`, which does not export it.",
-          s!"A file offers only the words its `export` declarations list to the files that import it. Add the word to one in `{file}`, as in `export {error.actual.getD "name"};`, or use a word it exports.")
+          s!"A file offers only the words its `export` declarations list to the files that import it. Add the word to one in `{file}`, as in `export {error.expected.getD (error.actual.getD "name")};`, or use a word it exports.")
     | "firth.name.import-not-found" =>
         let resolved := error.files.head?.map (s!" It names `{·}` from the source root, and") |>.getD ""
         (s!"No file of the program is at the import path {actual}.{resolved} no such file was found.",

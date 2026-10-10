@@ -52,12 +52,14 @@ structure ImportedName where
 
 /-- A reference with no candidate: `firth.name.not-exported` when it would
 name a word an imported file defines but does not export, so the author
-learns where the word is and why it is not visible, and
+learns where the word is and why it is not visible (`expected` is the
+word's canonical key, the name an `export` of it must give), and
 `firth.name.unresolved` otherwise. -/
 private def missingName (hidden : List ImportedName) (keys : List String) (name : String)
     (span : Span) : ParseError :=
   match keys.findSome? fun key => hidden.find? (·.name == key) with
-  | some word => { nameError "firth.name.not-exported" name span with files := [word.source] }
+  | some word =>
+      { nameError "firth.name.not-exported" name span with files := [word.source], expected := some word.name }
   | none => nameError "firth.name.unresolved" name span
 
 /-- Resolves one word reference to its canonical dictionary key.

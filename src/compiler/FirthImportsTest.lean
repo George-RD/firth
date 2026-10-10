@@ -239,6 +239,14 @@ def main : IO Unit := do
       if !(output.contains "firth.name.not-exported" && output.contains "\"path\":\"main.firth\"") then
         fail s!"adapter: not-exported report {output}"
   | .error error => fail s!"adapter: {error}"
+  -- The hint names the export by the word's canonical key, whatever the reference's spelling.
+  let core := src "core.firth" "vocab core { : id ( forall ρ; ρ -- ρ ) ; : hidden ( forall ρ; ρ -- ρ ) ; }\nexport core.id;"
+  match Firth.Agent.Elaborate.runRequest
+      (elaborateRequest (src "main.firth" "import \"core.firth\"; use core; : main ( -- ) hidden;") [core]) with
+  | .ok output =>
+      if !(output.contains "firth.name.not-exported" && output.contains "export core.hidden;") then
+        fail s!"adapter: not-exported hint {output}"
+  | .error error => fail s!"adapter: {error}"
   match Firth.Agent.Elaborate.runRequest (elaborateRequest (main₀ "1") [badExport]) with
   | .ok output =>
       if !(output.contains "\"path\":\"lib.firth\"" && output.contains "firth.name.import-failed") then
