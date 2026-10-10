@@ -487,6 +487,87 @@ place of the declared one and the program then checks. Typing names the word
 only when giving it a row, and only it, removes the refusal
 (`closedCallFor`), so a call with a row, or a closed call given values of the
 wrong types, is not told this. -/
+private def runDeclaredInputsTests : IO Unit := do
+  let pipelineContext := contextWithSource "pipeline-declared-inputs" "main.fth"
+  let agentConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := Elaborate.gammaErasure, typingEnv := Elaborate.gammaTyping }
+  let underflow := "firth.type.stack-underflow"
+  -- The report says each of `needles`, and with the inputs it says the word
+  -- takes declared, written here by hand as `fixed`, the source has no
+  -- underflow left.
+  let declaredCase (label source : String) (needles : List String) (fixed : String) : IO Unit := do
+    match reportsWithCode (elaboratePipeline pipelineContext source agentConfig) underflow with
+    | [envelope] =>
+        let emitted := encode envelope
+        expectValidCode label underflow emitted
+        for needle in needles do
+          unless emitted.contains needle do
+            fail s!"{label}: the report does not say {needle}: {emitted}"
+        match elaboratePipeline pipelineContext fixed agentConfig with
+        | .success _ => pure ()
+        | .failure envelopes =>
+            unless (envelopes.filter fun envelope => (encode envelope).contains underflow).isEmpty do
+              fail s!"{label}: with the inputs declared, the body still runs short: {envelopes.map encode}"
+    | envelopes => fail s!"{label}: expected one {underflow} diagnostic, got {envelopes.length}"
+  let notDeclared (label source : String) (needles : List String := []) : IO Unit := do
+    match reportsWithCode (elaboratePipeline pipelineContext source agentConfig) underflow with
+    | [envelope] =>
+        let emitted := encode envelope
+        if emitted.contains " declares " then
+          fail s!"{label}: the report blames the declared inputs: {emitted}"
+        for needle in needles do
+          unless emitted.contains needle do
+            fail s!"{label}: the report does not say {needle}: {emitted}"
+    | envelopes => fail s!"{label}: expected one {underflow} diagnostic, got {envelopes.length}"
+  -- Copied verbatim from seq-sum in round 1 of S7 run 8, sample 2
+  -- (eval/s7/runs/2026-09-29-haiku-4c379e0/haiku-firth-2/solutions-2.json).
+  -- The report used to be "A `locals` block or an operation here needs
+  -- more values than the stack holds."
+  let seqSum := ": sum-acc\n  (forall ρ; ρ xs:Seq Int^many i:Int^many acc:Int^many -- ρ result:Int^many)\n  locals { xs i acc } {\n    i xs prim seq-int.len prim < [\n      xs\n      i 1 prim +\n      xs i prim seq-int.at acc prim +\n      sum-acc\n    ] [\n      acc\n    ] if\n  };\n\n: main\n  ( -- result:Int^many)\n  locals { xs } {\n    xs 0 0\n    sum-acc\n  };\n"
+  declaredCase "no inputs declared" seqSum
+    ["`locals { xs }` in `main` names 1 value, but no value is on the stack before it. `main` declares no inputs, but its body takes 1 input.",
+      "declare 1 more input in its stack effect. Otherwise push them before `locals { xs }`."]
+    (seqSum.replace "( -- result:Int^many)" "( xs:Seq Int^many -- result:Int^many)")
+  -- The block names the declared input and one more.
+  declaredCase "one more than declared" ": f ( a:Int^many -- r:Int^many ) locals { a b } { a b prim + } ;\n"
+    ["`locals { a b }` in `f` names 2 values, but only 1 value is on the stack before it. `f` declares 1 input, but its body takes 2 inputs."]
+    ": f ( a:Int^many b:Int^many -- r:Int^many ) locals { a b } { a b prim + } ;\n"
+  -- The declared input is used up before a later block.
+  declaredCase "inputs used up" ": f ( a:Int^many -- r:Int^many ) locals { a } { a drop locals { b c } { b c prim + } } ;\n"
+    ["`f` declares 1 input, but its body takes 3 inputs.", "declare 2 more inputs in its stack effect."]
+    ": f ( b:Int^many c:Int^many a:Int^many -- r:Int^many ) locals { a } { a drop locals { b c } { b c prim + } } ;\n"
+  -- With one input declared the body runs short again, at the second block:
+  -- it takes two.
+  declaredCase "short twice" ": f ( -- r:Int^many ) locals { xs } { xs 1 prim + locals { y z } { y z prim + } } ;\n"
+    ["`f` declares no inputs, but its body takes 2 inputs."]
+    ": f ( p:Int^many xs:Int^many -- r:Int^many ) locals { xs } { xs 1 prim + locals { y z } { y z prim + } } ;\n"
+  -- An operation, not a block.
+  declaredCase "an operation" ": f ( -- r:Int^many ) 1 prim + ;\n"
+    ["`prim +` in `f` takes 2 values", "`f` declares no inputs, but its body takes 1 input."]
+    ": f ( a:Int^many -- r:Int^many ) 1 prim + ;\n"
+  -- With one input declared, the inner block is short while `x` is an
+  -- unused local, which is not blamed on the inputs: the body takes at
+  -- least one.
+  match reportsWithCode (elaboratePipeline pipelineContext
+      ": f ( -- r:Int^many ) locals { x } { locals { y } { x y prim + } } ;\n" agentConfig) underflow with
+  | [envelope] =>
+      let emitted := encode envelope
+      for needle in ["`f` declares no inputs, but its body takes at least 1 input.", "declare 1 more input in its stack effect, or more."] do
+        unless emitted.contains needle do
+          fail s!"short with a local unused: the report does not say {needle}: {emitted}"
+  | envelopes => fail s!"short with a local unused: expected one {underflow} diagnostic, got {envelopes.length}"
+  -- The local `a` is not used yet: the inner block was meant to name a
+  -- value, not a new input.
+  notDeclared "a local unused" ": f ( a:Int^many -- r:Int^many ) locals { a } { locals { b } { a b prim + } } ;\n"
+    ["A `locals` block or an operation here needs more values than the stack holds."]
+  -- Both inputs are locals, which are not values on the stack.
+  notDeclared "an operation under locals" ": f ( a:Int^many b:Int^many -- r:Int^many ) locals { a b } { prim + } ;\n"
+    ["The locals here, `a` and `b`, are not values on the stack"]
+  -- A word with a row takes the values below its inputs from its caller.
+  notDeclared "an effect with a row"
+    ": f (forall ρ; ρ a:Int^many -- ρ r:Int^many) locals { a } { a drop locals { b c } { b c prim + } } ;\n"
+    ["A `locals` block or an operation here needs more values than the stack holds."]
+
 private def runClosedCalleeTests : IO Unit := do
   let pipelineContext := contextWithSource "pipeline-closed" "main.fth"
   let agentConfig : Firth.Elaborator.PipelineConfig :=
@@ -2634,6 +2715,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
   if languagePrimitives.length != everyPrimitive.length then
     fail s!"the language has {languagePrimitives.length} primitives but this test lists {everyPrimitive.length}; add the new ones above"
   runClosedCalleeTests
+  runDeclaredInputsTests
   runCallAccountTests
   runPrimitiveRolesTests
   runEveryErrorTests

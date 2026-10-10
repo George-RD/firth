@@ -1397,6 +1397,7 @@ def take_rule() -> None:
     Expected values are written here, not taken from `tier`."""
     import contextlib
     import io
+    import shutil
     import tempfile
     import audit
     import audit_subagent
@@ -1455,13 +1456,49 @@ def take_rule() -> None:
         (kept / "results-1.json").unlink()
         check(any("results-1.json: missing" in m for m in audit.solutions_mismatch(kept, tasks)),
               "the audit flags round 2 when round 1's results are not kept")
-    # The calibration pools' round-2 records took no unlisted answer, so the
-    # rule leaves them as they were scored.
-    for run, name in (("2026-10-02-calibration/sonnet-firth-1", "calibration"),
-                      ("2026-10-02-calibration2/sonnet-firth-3", "calibration2"),
-                      ("2026-10-10-calibration3/sonnet-firth-3", "calibration3")):
-        check(audit.solutions_mismatch(HERE / "runs" / run, list(SETS[name])) == [],
-              f"{run}'s kept solutions are what the rule takes")
+    # Every calibration sample, both languages and both rounds, kept the
+    # solutions the rule takes: the round-2 records took no unlisted answer, so
+    # the rule leaves all 18 as they were scored. The count guards against a
+    # glob that finds nothing. The plants go through the same walk with one
+    # sample swapped: a changed round-1 Python solution, and an emptied
+    # directory, must each flag exactly that sample.
+    pools = (("2026-10-02-calibration", "calibration"), ("2026-10-02-calibration2", "calibration2"),
+             ("2026-10-10-calibration3", "calibration3"))
+    samples = [(d, name) for run, name in pools for d in sorted((HERE / "runs" / run).glob("sonnet-*"))]
+    check(len(samples) == 18, f"18 calibration samples are kept ({len(samples)} found)")
+    problems = calibration_mismatches(samples)
+    check(problems == {}, f"every calibration sample's kept solutions are what the rule takes ({problems or 'all 18'})")
+    src = HERE / "runs" / "2026-10-02-calibration" / "sonnet-python-1"
+    with tempfile.TemporaryDirectory() as tmp:
+        changed = Path(tmp) / "changed" / src.parent.name / src.name
+        shutil.copytree(src, changed)
+        sols = json.loads((changed / "solutions-1.json").read_text())
+        first = sorted(sols)[0]
+        sols[first] += "# planted\n"
+        (changed / "solutions-1.json").write_text(json.dumps(sols))
+        emptied = Path(tmp) / "emptied" / src.parent.name / src.name
+        emptied.mkdir(parents=True)
+        for copy, what, mark in ((changed, "a changed round-1 Python solution", f"tasks {first}"),
+                                 (emptied, "an emptied sample directory", "answer-1.md: missing")):
+            swapped = [(copy if d == src else d, name) for d, name in samples]
+            got = calibration_mismatches(swapped)
+            check(list(got) == [f"{src.parent.name}/{src.name}"]
+                  and any(mark in m for m in got[f"{src.parent.name}/{src.name}"]),
+                  f"planted: the walk over the 18 flags {what}, and only that sample")
+
+
+def calibration_mismatches(samples: list) -> dict[str, list[str]]:
+    """What is wrong with each kept calibration sample, by `<pool>/<sample>`:
+    a missing round-1 answer or solutions file, or kept solutions that are not
+    what `tier.take` builds (`audit.solutions_mismatch`)."""
+    import audit
+    out = {}
+    for d, name in samples:
+        flagged = [f"{d / f}: missing" for f in ("answer-1.md", "solutions-1.json") if not (d / f).is_file()]
+        flagged += audit.solutions_mismatch(d, list(SETS[name]))
+        if flagged:
+            out[f"{d.parent.name}/{d.name}"] = flagged
+    return out
 
 
 def deepseek_sample_scored() -> None:

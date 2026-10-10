@@ -135,8 +135,9 @@ answer to any other task is not taken (decided on 10 October 2026 for the
 scored run, `todo.s7-harder-task-tier`), and `take` names it. The MVP tier,
 and this tier's calibration pools as run, took every task in the round-2
 answer. The three calibration samples with a round 2 answered only listed
-tasks, so their kept solutions are the same under both rules
-(`test_harder.py`, `take_rule`). `audit.py` rebuilds each kept
+tasks, so their kept solutions are the same under both rules, and all 18
+calibration samples, Firth and Python, keep the solutions this tier's rule
+takes (`test_harder.py`, `take_rule`). `audit.py` rebuilds each kept
 `solutions-<n>.json` by this tier's rule.
 
 ## Calibration plan
@@ -604,7 +605,9 @@ These are not longer programs than the third pool's (its Python references
 were 94 to 144 lines): that pool showed size alone does not separate
 Sonnet. They are rule-dense instead, each with several interacting rules,
 tie-breaks and edge cases a reader must hold together. Who is run on them,
-and how, is pre-registered separately before any trial. Whether any
+and how, is pre-registered before any trial in
+`scored-run/preregistration.md`, with the sample order in
+`scored-run/run-plan.md`. Whether any
 subject is below the ceiling on them is what the scored run measures; it
 is not assumed here.
 
