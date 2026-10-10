@@ -450,6 +450,15 @@ def author_hook_decides() -> None:
           f"run 14's analysis self-test passes: {cli.stdout[-300:]}{cli.stderr[-300:]}")
 
 
+def context_seen_names() -> None:
+    # context_seen.py judges which injected items name another author. Its
+    # self-test plants Haiku numbers, scored-tier names (`sonnet-python-2`
+    # beside `sonnet-firth-2`) and the author's own name.
+    cli = subprocess.run([sys.executable, str(HERE / "context_seen.py"), "--self-test"],
+                         capture_output=True, text=True)
+    check(cli.returncode == 0 and "self-test ok" in cli.stdout,
+          f"context_seen's self-test passes: {cli.stdout[-300:]}{cli.stderr[-300:]}")
+
 def feedback_keeps_hints() -> None:
     # The runner's error ends in the repr of the diagnostics, and Python puts a
     # string holding an apostrophe in double quotes. The authors' feedback must
@@ -896,6 +905,7 @@ def main() -> int:
     check_tool_prompt()
     check_tool_audit()
     author_hook_decides()
+    context_seen_names()
     feedback_keeps_hints()
     feedback_shows_location()
     feedback_shows_every_error()
