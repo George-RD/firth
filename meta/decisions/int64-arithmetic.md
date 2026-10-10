@@ -45,8 +45,12 @@ one change. The change is not made here.
   index faults are shared.
 - **The checked registry.** `int64Gamma` (`interpreter/Firth/ProgramLogic.lean`)
   is `adapterGamma` with `+`, `-`, `*` and `div` faulting outside the range,
-  as the VM's do. Every proof record's contract is stated under it, so a
-  proved fact about a program also says that no value leaves the range. The
+  as the VM's do. Every proof record's contract is stated under it (all six in `src/proofs/contracts.json`), so a
+  proved run under it has no checked `+`, `-`, `*` or `div` result outside
+  the range. It does not range-check literals or the starting stack, so a
+  value from the input stays in range only where the contract's
+  precondition says so (the allocator's contract does; a contract that
+  admits an out-of-range input can return it unchanged). The
   kernel's progress theorem is not yet proved for this registry.
 - **How the gap is tested.** The differential harness classifies a run where
   the reference succeeds and the VM faults at the first primitive that leaves
@@ -91,6 +95,11 @@ hosts may disagree.
      or returns the same `Int` (inferred, not yet proved);
    - the runner switched to it, with a Gamma version bump so an old request
      is refused rather than run differently;
+   - the reference runner refusing integer literals and starting-stack
+     values outside the range, as the target boundary does
+     (`TargetRun.lean`, the compiler's literal check). `int64Gamma` inherits
+     `adapterGamma`'s literal typing, so without this a request starting
+     from 2^63 still succeeds on the reference and is refused by the target;
    - the harness's `expected-portable-overflow` category retired or folded
      into `expected-trap`, with its planted-bug tests kept;
    - the S7-input wording in `docs/getting-started.md` changed (an S7 input,
