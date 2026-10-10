@@ -1013,6 +1013,47 @@ def scored_readings() -> None:
         check(n > 0, f"{tid}, {what}: told apart by {n} hidden test(s)")
 
 
+def costliest_problems(record: str) -> list[str]:
+    """What is wrong with the scored set's last hidden tests, given a recorded
+    output of `costliest.py`: each must be the costliest candidate it ran."""
+    import costliest
+    every = costliest.candidates()
+    rows: dict[str, dict[str, tuple[int | None, bool]]] = {}
+    for line in record.splitlines():
+        tid, name, cost, ok = line.split("\t")
+        rows.setdefault(tid, {})[name] = (None if cost == "None" else int(cost), ok == "True")
+    problems = []
+    for t in SETS["scored"]:
+        got = rows.get(t.id, {})
+        if set(got) != {name for name, _ in every[t.id]}:
+            problems.append(f"{t.id}: the record does not cover exactly the candidates")
+            continue
+        bad = [name for name, (cost, ok) in got.items() if cost is None or not ok]
+        if bad:
+            problems.append(f"{t.id}: the reference failed or disagreed on {bad}")
+            continue
+        top = max(got, key=lambda name: got[name][0])
+        args = dict(every[t.id])[top]
+        if json.dumps(list(t.hidden[-1])) != json.dumps(list(args)):
+            problems.append(f"{t.id}: the last hidden test is not the costliest candidate, {top}")
+    return problems
+
+
+def scored_costliest() -> None:
+    record = (HERE / "costliest.tsv").read_text()
+    check(costliest_problems(record) == [], "each scored task's last hidden test is the costliest candidate "
+          "in the recorded search (costliest.tsv)")
+    # Planted: another candidate recorded as costlier than the one kept.
+    lines = record.splitlines()
+    k = next(i for i, line in enumerate(lines) if line.startswith("warehouse\t")
+             and json.dumps(list(dict(__import__("costliest").candidates()["warehouse"])[line.split("\t")[1]]))
+             != json.dumps(list(BY_ID["warehouse"].hidden[-1])))
+    tid, name, _, ok = lines[k].split("\t")
+    lines[k] = f"{tid}\t{name}\t999999\t{ok}"
+    check(any(p.startswith("warehouse: the last hidden test is not") for p in costliest_problems("\n".join(lines))),
+          "a record with a costlier warehouse candidate than the last hidden test is refused")
+
+
 def firth_mutant() -> None:
     """A planted bug in a Firth reference of each pool: the scorer must fail it."""
     src = (HERE / "reference/calibration/firth/lru.firth").read_text()
@@ -1174,6 +1215,7 @@ def main() -> int:
     scored_random_agreement()
     python_mutants()
     scored_readings()
+    scored_costliest()
     prompt_and_repair()
     if "--no-firth" not in sys.argv:
         firth_references()

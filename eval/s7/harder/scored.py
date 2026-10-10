@@ -1107,13 +1107,9 @@ _SWISS_EX = ([1500, 1600, 1400, 1700], 2, [0, 1, 2, 0])
 _WAREHOUSE_EX = (12, [3], [0], [1], [10], [1], [0, 0, 3, 4], [1, 2, 2, 2], [0, 0, 0, 0], [5, 2, 4, 1], [1, 0, 0, 0])
 _CACHE_EX = (1, 2, 1, 2, [1, 2, 1, 3, 2, 4, 5], [False, True, False, False, False, True, False])
 
-# The costliest input for each Firth reference, of at least 40 at the largest sizes
-# allowed: kernel steps 144,953 (40 random sokoban inputs, 12 by 12, 6 boxes, 200 moves),
-# 209,279 (40 random checkers boards of 12 pieces a side and the opening with each side
-# first, 40 plies), 98,097 (108 regex inputs: 36 patterns of up to 20 tokens built to be slow,
-# each against 8 strings of 12 letters from three alphabets), 108,057 (40 swiss
-# inputs of 12 players and 10 of 11, 7 rounds), 179,655 (40 random warehouse inputs, 5
-# products, 60 days, 80 events) and 161,365 (50 random cache-sim inputs of 200 accesses).
+# The costliest input for each Firth reference among the candidates `costliest.py` runs
+# (its record is costliest.tsv): kernel steps 144,953 (sokoban), 209,279 (checkers), 98,097
+# (regex), 108,057 (swiss), 179,655 (warehouse) and 161,365 (cache-sim).
 _SOKOBAN_MAX = _random_sokoban(112, 12, 12, 6, 200)
 _CHECKERS_MAX = _largest_checkers(110)
 _REGEX_MAX = ([0, 27] * 10, [12] * 8, [0] * 96)
@@ -1121,8 +1117,8 @@ _SWISS_MAX = _random_swiss(101, 12, 7)
 _WAREHOUSE_MAX = _random_warehouse(136, 5, 60, 80)
 _CACHE_MAX = _largest_cache(117)
 
-# The last hidden test of each task is the costliest, for its Firth reference, of at
-# least 40 inputs at the largest sizes the description allows (README, "The scored tier").
+# The last hidden test of each task is the costliest candidate, for its Firth reference,
+# at the largest sizes the description allows (README, "The scored set"; costliest.py).
 SCORED: tuple[Task, ...] = (
     _t("sokoban", _SOKOBAN,
        [("width", I), ("height", I), ("cells", SI), ("player", I), ("boxes", SI), ("moves", SI)],

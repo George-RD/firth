@@ -604,8 +604,14 @@ how `cache-sim` counts dirty blocks.
 
 Each task has 15 to 25 hidden tests: hand-picked cases aimed at each rule
 its description states, a few random inputs and, last, the costliest input
-for its Firth reference among at least 40 at the largest sizes the
-description allows. The most kernel steps on such an input are 144,953
+for its Firth reference among a fixed list of candidates at the largest
+sizes the description allows: 40 to 50 seeded random inputs per task (and
+for `checkers` the opening with each side first), and for `regex` 12
+patterns built to be slow, each against 8 strings of 12 letters in three
+alphabets. `costliest.py` is that search; its recorded output is
+`costliest.tsv`, where every candidate's result also agreed with the
+meaning, and `test_harder.py` (`scored_costliest`) checks that each last
+hidden test is the record's costliest candidate. The most kernel steps on such an input are 144,953
 (`sokoban`), 209,279 (`checkers`), 98,097 (`regex`, `a*` ten times against
 strings of twelve `a`s), 108,057 (`swiss`), 179,655 (`warehouse`) and
 161,365 (`cache-sim`), all within a quarter of the 1,000,000-step budget.
