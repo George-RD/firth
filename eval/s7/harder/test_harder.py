@@ -3,8 +3,8 @@
 
 1. Each task's Python `ref` agrees with values worked out by hand from the
    description, written here without running the refs. Every input of the
-   second pool keeps to its description's stated bounds, and every input
-   and expected integer fits in an `Int`.
+   second and third pools keeps to its description's stated bounds, and
+   every input and expected integer fits in an `Int`.
 2. Each task's Python reference solution (`reference/<set>/python/<id>.py`, written
    separately from the ref) passes its example and hidden tests.
 3. Each task's Firth reference solution (`reference/<set>/firth/<id>.firth`)
@@ -214,6 +214,78 @@ HAND += [
      ([0, 3, 7, 10, 14, 0, 0, 3, 17], 2, 4)),
     # Freeing two neighbours makes one block of 8.
     ("heap-alloc", (12, [0, 0, 0, 1, 1, 0], [4, 4, 4, 0, 1, 8]), ([0, 4, 8, 0, 0, 0], 0, 0)),
+    # The third pool. Recursive factorial of 8: main runs in, load, call (3), then out and
+    # halt (2); fact(n) for n > 1 runs compare, jump, push, subtract, call, pop, multiply,
+    # return (8) around fact(n - 1), and fact(1) runs compare, jump, load, return (4), so
+    # 3 + 7 * 8 + 4 + 2 = 65. The multiply last set the flags, from 40,320.
+    ("mini-cpu", ([23, 1, 21, 24, 0, 11, 17, 1, 22, 19, 4, 21, 20, 5, 22],
+                  [0, 1, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0],
+                  [0, 1, 5, 0, 0, 1, 9, 1, 0, 0, 0, 5, 0, 2, 0],
+                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], [0] * 8, [0] * 64, [8]),
+     ([40320], 0, 65, 4, [8, 1, 40320, 0, 0, 0, 0, 0], [0] * 64, [False, False, False])),
+    # Counting 149 down by 1 takes the load, 149 subtract-and-jumps and the halt: 300, the
+    # limit, so the halt runs. From 150 the 300th is the last subtract, and pc is the jump.
+    ("mini-cpu", ([1, 4, 16, 0], [1, 0, 0, 0], [1, 0, 1, 0], [0, 1, 0, 0], [149] + [0] * 7, [0] * 64, []),
+     ([], 0, 300, 3, [0, 1, 0, 0, 0, 0, 0, 0], [0] * 64, [True, False, False])),
+    ("mini-cpu", ([1, 4, 16, 0], [1, 0, 0, 0], [1, 0, 1, 0], [0, 1, 0, 0], [150] + [0] * 7, [0] * 64, []),
+     ([], 1, 300, 2, [0, 1, 0, 0, 0, 0, 0, 0], [0] * 64, [True, False, False])),
+    # -2^31 - 1 = -2,147,483,649 wraps to 2,147,483,647: N false, V true, so less is taken.
+    ("mini-cpu", ([11, 17, 24, 0, 24, 0], [0, 0, 2, 0, 3, 0], [0, 4, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0],
+                  [-2**31, 1, 0, 1, 0, 0, 0, 0], [0] * 64, []),
+     ([1], 0, 4, 5, [-2**31, 1, 0, 1, 0, 0, 0, 0], [0] * 64, [False, False, True])),
+    # Twelve flat I pieces on a well 4 wide each clear a row, in a run: combos 0 to 9 at
+    # level 1 make 10 * 100 + 50 * 45 = 3,250; then level 2: (100 + 500) * 2 + (100 + 550) * 2.
+    ("stacker", (4, 8, [0] * 12, [0] * 12), ([0, 0, 0, 0], 5750, 12, 12, 0, -1)),
+    # Sixteen upright I pieces, four to a column set, clear four rows every fourth lock; the
+    # three locks between break the combo. 800, then back-to-back 1,200 twice, then 1,200 at
+    # level 2 (12 rows removed before it).
+    ("stacker", (4, 8, [0] * 16, [3, 1, 1, 0, 3, 1, 0, 3, 0, 3, 2, 0] * 4), ([0, 0, 0, 0], 5600, 16, 16, 0, -1)),
+    # Holding the only piece leaves the queue empty.
+    ("stacker", (6, 8, [2], [6]), ([0, 0, 0, 0, 0, 0], 0, 0, 0, 0, 2)),
+    # 999,999 overdrawn for one day at 1,000 ppm accrues -999,999,000: 999 taken at the
+    # month end (31 May), then the fee.
+    ("bank-days", (2023, 5, 31, 1, [0], [1_000_000], 0, 1000, [0], [2], [0], [0], [999_999], [], [], [], []),
+     ([-1_001_998], 0, [], 0, 999, 1000)),
+    # 1900 is not a leap year: February has 28 days, so both orders pay on the 28th, and
+    # 27 days at 1,000,000 plus one at 999,997, at 1,000 ppm, post 27,999 (the 3 in
+    # account 1 accrues 3,000, which posts 0). 1 March accrues but posts nothing.
+    ("bank-days", (1900, 2, 1, 29, [1_000_000, 0], [0, 0], 1000, 0, [], [], [], [], [], [30, 29], [0, 0], [1, 1], [1, 2]),
+     ([1_027_996, 3], 0, [False, False], 27_999, 0, 0)),
+    # 2000 is: a 29th day at 1,000,000, so 28,999.
+    ("bank-days", (2000, 2, 1, 29, [1_000_000, 0], [0, 0], 1000, 0, [], [], [], [], [], [30, 29], [0, 0], [1, 1], [1, 2]),
+     ([1_028_996, 3], 0, [False, False], 28_999, 0, 0)),
+    # From 1 April for 61 days: the 31st and 30th orders both pay on 30 April, then on
+    # 31 and 30 May; the 29th on 29 April and 29 May.
+    ("bank-days", (2023, 4, 1, 61, [10_000, 0, 0], [0, 0, 0], 0, 0, [], [], [], [], [], [31, 30, 29], [0, 0, 0],
+                   [1, 2, 1], [10, 20, 40]), ([9860, 100, 40], 0, [False, False, False], 0, 0, 0)),
+    # Cells 4, 1 (refers to itself), count of 0..0 = 1, count of 0..1 (reaches the cycle),
+    # and an if whose untaken branch still refers to the cycle.
+    ("formula-sheet", ([1, 1, 1, 1, 4], [0, 1, 3, 3, 0, 0, 1, 2], [4, 1, 4, 4, 1, 2, 1, 7], [0, 0, 0, 0, 0, 0, 0, 0],
+                       [0, 0, 0, 1, 0, 0, 0, 0], [], [], [], [], [], []),
+     ([4, 0, 1, 0, 0], [False, True, False, True, True], [])),
+    # -7 / 2, 7 / -2 and -7 / -2 round toward zero; 5 / 0 is an error; 0 / 5 is 0.
+    ("formula-sheet", ([3] * 5, [0, 0, 2] * 5, [-7, 2, 4, 7, -2, 4, -7, -2, 4, 5, 0, 4, 0, 5, 4], [0] * 15, [0] * 15,
+                       [], [], [], [], [], []),
+     ([-3, -3, 3, 0, 0], [False, False, False, True, False], [])),
+    # Cells 1, 0 + 1, 1 * 0, sum of 0..2 (1, 2, 2, 5). Cell 0 := 2 changes all four (2, 3,
+    # 6, 11); again, none; := cell 3 makes the cycle 0, 3, 1 or 2, so all four; cell 3 :=
+    # sum of 1..2 and cell 2 := nothing leave every cell an error; cell 0 := 5 gives 5, 6.
+    ("formula-sheet", ([1, 3, 3, 1], [0, 1, 0, 2, 1, 1, 2, 3], [1, 0, 1, 1, 1, 0, 3, 1], [0] * 7 + [0],
+                       [0] * 7 + [2], [0, 0, 0, 3, 2, 0], [1, 1, 1, 1, 0, 1], [0, 0, 1, 3, 0], [2, 2, 3, 1, 5],
+                       [0, 0, 0, 1, 0], [0, 0, 0, 2, 0]),
+     ([5, 6, 0, 0], [False, False, True, True], [4, 0, 4, 0, 0, 2])),
+    # Eights against a 6, dealer 16: split; the hands get 3 and 10. 8 + 3 = 11 doubles
+    # (100 covers 30) and gets 2: 13 for 20. 18 stands. The dealer draws 5: 21. Both lose.
+    ("blackjack", ([8, 6, 8, 10, 3, 10, 2, 5, 9, 10], [100], [10], 1), ([70], 1, 0, 0)),
+    # With 20 the split is covered but not the double: 8 + 3 hits to 13 and stands on it.
+    ("blackjack", ([8, 6, 8, 10, 3, 10, 2, 5, 9, 10], [20], [10], 1), ([0], 1, 0, 0)),
+    # Aces split against a 6: 21 (not a natural) and 20; the dealer's 16 draws 10. Both win.
+    ("blackjack", ([1, 6, 1, 10, 12, 9, 10], [100], [10], 1), ([120], 1, 1, 0)),
+    # A king up and an ace in the hole: player 1's natural keeps its bet, player 0's 17 loses.
+    ("blackjack", ([10, 1, 13, 7, 10, 1], [100, 100], [10, 10], 1), ([90, 100], 1, 0, 1)),
+    # Round 2 deals player 0 a natural, then player 1's 12 against a 7 needs a card the
+    # shoe lacks: the round, natural included, counts for nothing.
+    ("blackjack", ([10, 10, 9, 10, 9, 8, 1, 10, 7, 10, 2, 10], [100, 100], [10, 10], 2), ([110, 110], 1, 0, 0)),
 ]
 
 
@@ -266,7 +338,70 @@ def _sheet_ok(kinds, xs, ys):
                     for k, a, b in zip(kinds, xs, ys)))
 
 
-# Each pool-2 task's stated input bounds, as a check on its own inputs.
+_W32 = (-2**31, 2**31 - 1)
+_CPU_A = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 19, 20, 23, 24}   # opcodes whose a is a register
+
+
+def _cpu_field_ok(op, a, b, c):
+    """Each field as the mini-cpu description bounds it for its opcode; unused ones are 0."""
+    a_ok = _in(a, 0, 7) if op in _CPU_A else a == 0
+    if op == 1:
+        b_ok = _in(b, *_W32)
+    elif 2 <= op <= 13:
+        b_ok = _in(b, 0, 7)
+    elif op in (14, 15, 16, 17, 18, 21):
+        b_ok = _in(b, -2, 66)
+    else:
+        b_ok = b == 0
+    if op in (3, 4, 5, 6, 7, 11):
+        c_ok = _in(c, 0, 7)
+    elif op in (9, 10):
+        c_ok = _in(c, 0, 31)
+    elif op in (12, 13):
+        c_ok = _in(c, -64, 64)
+    else:
+        c_ok = c == 0
+    return _in(op, 0, 24) and a_ok and b_ok and c_ok
+
+
+def _cpu_ok(ops, fa, fb, fc, regs, memory, inputs):
+    return (_in(len(ops), 1, 64) and _same_len(ops, fa, fb, fc) and len(regs) == 8 and len(memory) == 64
+            and len(inputs) <= 40 and _all_in(regs + memory + inputs, *_W32)
+            and all(_cpu_field_ok(*f) for f in zip(ops, fa, fb, fc)))
+
+
+def _bank3_ok(year, month, day, days, balances, limits, credit, debit,
+              tx_day, tx_kind, tx_acct, tx_other, tx_amount, so_dom, so_from, so_to, so_amount):
+    n = len(balances)
+    return (_in(n, 1, 6) and _same_len(balances, limits) and _all_in(balances + limits, 0, 10**6)
+            and _in(year, 1900, 2100) and _date_ok(year, month, day) and _in(days, 1, 400)
+            and _in(credit, 0, 1000) and _in(debit, 0, 1000)
+            and len(tx_day) <= 60 and _same_len(tx_day, tx_kind, tx_acct, tx_other, tx_amount)
+            and all(_in(d, 0, days - 1) and k in (1, 2, 3) and _in(a, 0, n - 1)
+                    and (_in(b, 0, n - 1) if k == 3 else b == 0) and _in(x, 1, 10**6)
+                    for d, k, a, b, x in zip(tx_day, tx_kind, tx_acct, tx_other, tx_amount))
+            and len(so_dom) <= 6 and _same_len(so_dom, so_from, so_to, so_amount)
+            and _all_in(so_dom, 1, 31) and _all_in(so_from + so_to, 0, n - 1) and _all_in(so_amount, 1, 10**6))
+
+
+def _tokens_ok(lens, kinds, xs, ys, zs):
+    """formula-sheet tokens: lengths 0 to 12 that add up to the token count, and each
+    token's fields as its kind bounds them."""
+    return (_all_in(lens, 0, 12) and sum(lens) == len(kinds) and _same_len(kinds, xs, ys, zs)
+            and all(k == 0 and _in(x, -10**6, 10**6) and y == z == 0
+                    or k == 1 and _in(x, -5, 35) and y == z == 0
+                    or k == 2 and _in(x, 1, 8) and y == z == 0
+                    or k == 3 and _in(x, 1, 4) and _in(y, -5, 35) and _in(z, -5, 35)
+                    for k, x, y, z in zip(kinds, xs, ys, zs)))
+
+
+def _sheet3_ok(lens, kinds, xs, ys, zs, cells, elens, ekinds, exs, eys, ezs):
+    return (_in(len(lens), 1, 30) and _tokens_ok(lens, kinds, xs, ys, zs)
+            and len(cells) <= 10 and _same_len(cells, elens) and _all_in(cells, 0, len(lens) - 1)
+            and _tokens_ok(elens, ekinds, exs, eys, ezs))
+
+
+# Each pool-2 and pool-3 task's stated input bounds, as a check on its own inputs.
 BOUNDS = {
     "poker": lambda r1, s1, r2, s2: (all(len(q) == 5 for q in (r1, s1, r2, s2))
                                      and _all_in(r1 + r2, 2, 14) and _all_in(s1 + s2, 0, 3)
@@ -283,6 +418,16 @@ BOUNDS = {
     "heap-alloc": lambda size, kinds, vals: (_in(size, 1, 1000) and len(kinds) <= 40 and _same_len(kinds, vals)
                                              and all(k == 0 and _in(v, 1, 1000) or k == 1 and _in(v, -1000, 1000)
                                                      for k, v in zip(kinds, vals))),
+    # The third pool.
+    "mini-cpu": _cpu_ok,
+    "stacker": lambda w, h, queue, moves: (_in(w, 4, 10) and _in(h, 4, 20) and len(queue) <= 60
+                                           and _all_in(queue, 0, 6) and len(moves) <= 400 and _all_in(moves, 0, 6)),
+    "bank-days": _bank3_ok,
+    "formula-sheet": _sheet3_ok,
+    "blackjack": lambda shoe, banks, bets, rounds: (_in(len(banks), 1, 5) and _same_len(banks, bets)
+                                                    and _all_in(banks, 0, 10**5) and _all_in(bets, 1, 1000)
+                                                    and _in(rounds, 1, 50) and len(shoe) <= 312
+                                                    and _all_in(shoe, 1, 13)),
 }
 
 
@@ -297,7 +442,8 @@ def ints(v):
 def bounds() -> None:
     """Every pool-2 input keeps to its description's stated bounds, and every
     input and expected integer of every task fits in an `Int`."""
-    check(set(BOUNDS) == {t.id for t in SETS["calibration2"]}, "every pool-2 task has its bounds")
+    check(set(BOUNDS) == {t.id for t in SETS["calibration2"] + SETS["calibration3"]},
+          "every pool-2 and pool-3 task has its bounds")
     for tid, check_args in BOUNDS.items():
         t = BY_ID[tid]
         every = [*cases(t), *(a for i, a, _ in HAND if i == tid)]
@@ -307,6 +453,19 @@ def bounds() -> None:
           "the bounds check refuses a card dealt twice")
     check(not BOUNDS["bank-ledger"]([5], 0, [3], [0], [1], [5]),
           "the bounds check refuses an account number outside the ledger")
+    ok_cpu = ([9, 0], [1, 0], [2, 0], [31, 0], [0] * 8, [0] * 64, [])
+    check(BOUNDS["mini-cpu"](*ok_cpu) and not BOUNDS["mini-cpu"]([9, 0], [1, 0], [2, 0], [32, 0], [0] * 8, [0] * 64, [])
+          and not BOUNDS["mini-cpu"]([24, 0], [1, 0], [0, 0], [3, 0], [0] * 8, [0] * 64, []),
+          "the bounds check refuses a shift by 32 and a field an opcode does not use")
+    ok_bank = (2023, 2, 28, 3, [5], [0], 0, 0, [2], [1], [0], [0], [1], [], [], [], [])
+    check(BOUNDS["bank-days"](*ok_bank)
+          and not BOUNDS["bank-days"](*ok_bank[:8], [3], *ok_bank[9:])
+          and not BOUNDS["bank-days"](2023, 2, 29, *ok_bank[3:]),
+          "the bounds check refuses a transaction after the last day and 29 February 2023")
+    ok_sheet = ([1, 0], [1], [1], [0], [0], [1], [1], [0], [7], [0], [0])
+    check(BOUNDS["formula-sheet"](*ok_sheet) and not BOUNDS["formula-sheet"]([2, 0], *ok_sheet[1:])
+          and not BOUNDS["formula-sheet"](*ok_sheet[:5], [2], *ok_sheet[6:]),
+          "the bounds check refuses lengths that do not match the tokens and an edit outside the sheet")
     for name, tasks in SETS.items():
         big = [(t.id, a) for t in tasks for a in (*cases(t), *(a for i, a, _ in HAND if i == t.id))
                if any(not -2**63 <= i < 2**63 for i in ints([a, t.expected(a)]))]
@@ -416,13 +575,13 @@ PY_MUTANTS = {
 
 
 
-def meaning_mutant(name: str, old: str, new: str) -> str:
-    """A whole Python answer: the second pool's meaning of a task with one
-    plausible mistake planted (OLD replaced by NEW), answering through NAME."""
-    src = (HERE / "calibration2.py").read_text()
-    assert src.count(old) == 1, f"the mutant's text is not in calibration2.py once: {old!r}"
+def meaning_mutant(name: str, old: str, new: str, pool: str = "calibration2.py") -> str:
+    """A whole Python answer: a pool's meaning of a task with one plausible
+    mistake planted (OLD replaced by NEW), answering through NAME."""
+    src = (HERE / pool).read_text()
+    assert src.count(old) == 1, f"the mutant's text is not in {pool} once: {old!r}"
     future = "from __future__ import annotations\n"
-    src = src.replace(future, future + f"__file__ = {str(HERE / 'calibration2.py')!r}\n", 1)
+    src = src.replace(future, future + f"__file__ = {str(HERE / pool)!r}\n", 1)
     return src.replace(old, new) + f"\n\ndef main(*args):\n    return {name}(*args)\n"
 
 
@@ -470,6 +629,23 @@ PY_MUTANTS |= {
                    meaning_mutant("_heap", "_, s = min(fit)", "_, s = min(fit, key=lambda f: f[1])")),
 }
 
+PY_MUTANTS |= {
+    "mini-cpu": ("jump if less reads N alone, missing signed overflow",
+                 meaning_mutant("_cpu", "17: neg != v", "17: neg", "calibration3.py")),
+    "stacker": ("no back-to-back bonus for a second four-row clear",
+                meaning_mutant("_stacker", "if len(full) == 4 and last_clear_tetris:", "if False:",
+                               "calibration3.py")),
+    "bank-days": ("a standing order cancelled after two rejections, in a row or not",
+                  meaning_mutant("_bank_days", "so_fails[k] = 0", "pass", "calibration3.py")),
+    "formula-sheet": ("only cells on a cycle are errors, not cells that lead to one",
+                      meaning_mutant("_formula_sheet",
+                                     "cyclic = [any(j in reaches[j] for j in reaches[i]) for i in range(n)]",
+                                     "cyclic = [i in reaches[i] for i in range(n)]", "calibration3.py")),
+    "blackjack": ("a player stands on a soft 17",
+                  meaning_mutant("_blackjack_table", "    if soft:\n        return t <= 17",
+                                 "    if soft:\n        return t <= 16", "calibration3.py")),
+}
+
 def python_mutants() -> None:
     check(set(PY_MUTANTS) == set(BY_ID), "every task has a Python mutant")
     for tid, (what, src) in PY_MUTANTS.items():
@@ -505,6 +681,18 @@ def firth_mutant() -> None:
     check(all(c["ok"] for c in res["cases"]), "the bank-ledger mutant checks and runs on every case")
     check(res["cases"][0]["pass"] and not res["pass"],
           "a Firth bank-ledger reference that rounds month-end charges toward zero passes the example "
+          f"and fails the hidden tests ({res['hidden_passed']}/{res['hidden_total']})")
+
+    # The third pool: no back-to-back bonus for a second four-row clear.
+    src = (HERE / "reference/calibration3/firth/stacker.firth").read_text()
+    t = BY_ID["stacker"]
+    b2b = "[ 1200 ] [ { 0 100 300 500 800 } k prim seq-int.at ] if"
+    mutant = src.replace(b2b, "[ 800 ] [ { 0 100 300 500 800 } k prim seq-int.at ] if", 1)
+    check(b2b in src and mutant != src, "the stacker mutant changes the reference")
+    res = tier.score({"stacker": mutant}, "firth", [t])["tasks"]["stacker"]
+    check(all(c["ok"] for c in res["cases"]), "the stacker mutant checks and runs on every case")
+    check(res["cases"][0]["pass"] and not res["pass"],
+          "a Firth stacker reference with no back-to-back bonus passes the example "
           f"and fails the hidden tests ({res['hidden_passed']}/{res['hidden_total']})")
 
 def prompt_and_repair() -> None:

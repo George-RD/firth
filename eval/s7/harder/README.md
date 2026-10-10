@@ -7,9 +7,10 @@ run can show a difference, so this tier is harder (`todo.s7-harder-task-tier`).
 
 It has two task sets, kept apart:
 
-- **The calibration pools**: `calibration.py` (eight tasks) and
+- **The calibration pools**: `calibration.py` (eight tasks),
   `calibration2.py` (eight harder ones, written after the first was at the
-  ceiling), run only to find out whether the planned primary subject sits
+  ceiling) and `calibration3.py` (five much larger programs, written after
+  the second was at the ceiling too), run only to find out whether the planned primary subject sits
   at the ceiling on tasks of their kinds. They are never scored as S7
   evidence.
 - **The scored tier**: a different set, written after calibration and frozen
@@ -70,13 +71,13 @@ in and reads back.
 
 ## Files
 
-- `calibration.py` and `calibration2.py`: the pools. Each task's `ref` is
+- `calibration.py`, `calibration2.py` and `calibration3.py`: the pools. Each task's `ref` is
   its meaning, in plain Python written independently of any Firth code.
 - `reference/<pool>/firth/<id>.firth` and `reference/<pool>/python/<id>.py`:
   a Firth and a Python reference solution per task. The Python ones are
-  written separately from the refs, so they check them. The second pool's
-  were written by Sonnet workers from the descriptions alone, without
-  seeing the refs, the hidden tests or each other's code.
+  written separately from the refs, so they check them. The second and
+  third pools' were written by Sonnet workers from the descriptions alone,
+  without seeing the refs, the hidden tests or each other's code.
 - `tier.py`: `prompt`, `extract`, `score`, `repair` and `report` for this
   tier. It reuses the MVP harness's runners, comparison, sandbox and
   diagnostics. Scoring records the hashes of the task set and the scorer as
@@ -92,8 +93,8 @@ in and reads back.
   this tier's feedback for the check that each `repair-<n>.md` is what the
   author was shown.
 - `test_harder.py`: hand-worked values for every task, both reference
-  solutions on every case, the mutants, a check that every second-pool
-  input keeps to its description's bounds and every integer fits in an
+  solutions on every case, the mutants, a check that every second- and
+  third-pool input keeps to its description's bounds and every integer fits in an
   `Int`, and a check that the prompt carries no hidden input and repair
   shows only the example. CI runs it.
 
@@ -350,3 +351,107 @@ languages.
 
 The next pool is calibrated only after #213 is on main, so the non-tail
 self-call cannot decide a Firth result there.
+
+## The third calibration pool
+
+`calibration3.py`: five tasks, each a whole program rather than a
+function: a 32-bit processor with 25 opcodes, flags set from the exact
+result, 64 words of memory, a data stack, a call stack and six ways to
+fault (`mini-cpu`); a falling-blocks game with seven pieces in four
+rotations, wall kicks, hold, row clears, combos, back-to-back bonuses and
+levels (`stacker`); a bank simulated day by day over the Gregorian
+calendar, with one-off transactions, standing orders that move to the
+month's last day and cancel after two rejections in a row, daily interest
+posted at month end, and overdraft fees (`bank-days`); a sheet of formulas
+in reverse Polish notation with eight operators, four range functions,
+cycles, error propagation and re-evaluation after edits
+(`formula-sheet`); and blackjack played by fixed rules from a known shoe,
+with a dealer peek, naturals, splits, doubles and a round voided when the
+shoe runs out (`blackjack`). Each has 20 to 31 hidden tests, hand values
+and a Python mutant that passes the example and fails at least one hidden
+test; the `stacker` reference has a Firth mutant (`test_harder.py`).
+
+Size, measured with `wc -l`: the Python references are 94 to 144 lines
+(638 in all) against 31 to 77 (358) for the second pool's eight, and the
+Firth references 320 to 348 (1,668) against 41 to 194 (1,095). A first
+draft of this pool (eight tasks of the second pool's kinds, built and
+checked in full) was dropped before any author saw it because its Python
+references were 17 to 59 lines, no larger than the second pool's.
+Calibrating that draft was the easier option; it would have spent a
+calibration run on a pool that could not answer whether size separates
+Sonnet from the ceiling. So each task's reference size was measured
+before its hidden tests were written.
+
+Independence: a Sonnet worker wrote the Python references from the task
+descriptions alone. Before any hidden test existed, they were compared
+with the refs on seeded random inputs (400 per task, 2,000 for
+`mini-cpu`, and 60 more `stacker` inputs placed to clear rows). They
+agreed on every input except that the worker's `mini-cpu` read a shift's
+`c` as a register number rather than a count; the committed reference is
+fixed and says so in a comment, and its step limit was moved with the
+description's (below). The descriptions came through that comparison with
+no reading found that differs from the refs. The Firth references were
+written the same way by three more Sonnet workers (`mini-cpu`,
+`bank-days`, `blackjack`) and two whose sessions ended on an access error
+(`stacker`, `formula-sheet`), whose programs were checked after they
+stopped; all five pass every case below on both hosts.
+
+Bounds: every description states each input's size and each value's
+range, which fields an opcode or token kind uses (the rest are 0), and so
+the largest result. `test_harder.py` checks every example, hidden test and
+hand value against them, including the constraints between inputs: each
+opcode's fields, formula lengths that add up to the token count, edits
+that name a cell of the sheet, transaction days within the days
+simulated, and a valid start date. No task names an "earlier operation".
+Planted inputs that break each kind of constraint are refused.
+
+Step budget: the first descriptions allowed 600 instructions, a 20-row
+well and 400 moves, 400 days, 30 cells with 10 edits, and a 312-card shoe
+over 50 rounds. At those sizes the `stacker` and `formula-sheet`
+references needed 519,840 and 439,985 kernel steps on a case, over the
+quarter of the budget a reference may use so that an author's slower but
+reasonable program still fits, and the `mini-cpu`, `bank-days` and
+`blackjack` references needed 239,938, 193,100 and 204,031 (`bank-days`
+only after it was rewritten to skip quiet days). Before any author saw the
+pool the sizes were cut to 300 instructions, a 10-row well with 30 pieces
+and 100 moves, 120 days, 20 cells of up to 8 tokens with 4 edits, and a
+120-card shoe over 20 rounds. That shrinks the inputs, not the programs.
+Each Firth reference was then run on seeded inputs at the new largest
+sizes (40 per task; for `mini-cpu`, the 19 of 400 random 64-instruction
+programs that run all 300 instructions; `stacker` both random and placed
+to clear rows), and the costliest of each is kept as the task's last
+hidden test. The most kernel steps on any case are 127,746 (`mini-cpu`),
+207,659 (`stacker`), 135,382 (`bank-days`, a hand-built 120-day case with
+six accounts), 168,852 (`formula-sheet`) and 57,420 (`blackjack`), so a
+reference's costliest case is about a fifth to a seventeenth of the
+1,000,000-step budget. That is a
+measured figure over these inputs, not a bound. A Firth answer that runs
+out of steps is recorded as such in the results.
+
+### Calibration plan
+
+Written before any third-pool author started; as for the second pool,
+except as stated.
+
+- Subject: Sonnet 5.5 as an Agent-tool sub-agent (confirmed as the
+  primary subject on 10 October 2026); three authors per language, run
+  one at a time in the order Python 1, Firth 1, Python 2, Firth 2,
+  Python 3, Firth 3, with no other agent running in this session.
+- Protocol: the MVP tier's sub-agent protocol with one feedback round;
+  each transcript audited with `audit.py --set calibration3`.
+- Context: each raw log is scanned as the second pool's were
+  (`eval/s7/context_seen.py`, plus a search for the other authors'
+  directory names and agent ids, `task_status`, task notifications,
+  compaction and `queued_command`). No project message is expected in an
+  author's context; the session's `hook_non_blocking_error` items are
+  pre-registered as known and name no author.
+- Toolchain: main at the time the prompts are built, which carries #213,
+  so the nested-`locals` tail-call defect cannot decide a Firth result.
+- Reported: per language, tasks passed in round 1 and within two rounds,
+  per author and in total, why each failure failed, and the length of
+  each answer.
+- What it decides: if Sonnet is below the ceiling in both languages, the
+  scored tier is written from tasks of these kinds at this size. If it is
+  still at the ceiling in Python, size alone does not separate it, and
+  that is reported as it stands. These results are calibration only,
+  never S7 evidence.

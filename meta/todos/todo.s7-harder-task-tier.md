@@ -61,6 +61,18 @@ until the tasks get harder.
   turns on it (review of #214). The task stays calibration only as
   written; a scored version states the rule as its own sentence covering
   every way a cell gets an error from its own references.
+- Third calibration pool: `eval/s7/harder/calibration3.py`, five whole
+  programs (a processor, a falling-blocks game, a day-by-day bank, a
+  formula sheet with edits, blackjack) whose references are 94 to 144
+  lines of Python and 320 to 348 of Firth, against 31 to 77 and 41 to 194
+  for the second pool. Every bound stated and checked, constraints between
+  inputs included; input sizes cut so each Firth reference's costliest
+  measured case is at most 207,659 kernel steps. Calibration plan in the
+  README; not yet run.
+- Subject models (maintainer's decision cards, answered 10 October 2026):
+  Sonnet 5.5 is confirmed as the primary subject, and DeepSeek v4.1 Flash
+  joins the scored tier only (not calibration), through the connected
+  ollama.com key.
 - DeepSeek Flash: `curl -sS https://ollama.com/api/tags` from this
   project's cloud environment on 2 October 2026 listed
   `deepseek-v4.1-flash`; the environment's proxy already injects an

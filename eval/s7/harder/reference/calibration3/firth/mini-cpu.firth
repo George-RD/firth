@@ -1,0 +1,344 @@
+\ Mini processor.
+\ The whole machine lives in one Seq Int, m, so a step is m -- m:
+\   0..7     registers r0..r7          8..71    memory (64 words)
+\   72..87   data stack (16 slots)     88..95   call stack (8 slots)
+\   96 pc, 97 executed, 98 Z, 99 N, 100 V (flags as 0/1), 101 data stack depth,
+\   102 call stack depth, 103 inputs read, 104 status (-1 while running),
+\   105 outputs written, 106 number of inputs, 107 number of instructions
+\   108.. ops (64 slots), 172.. a, 236.. b, 300.. c (each padded to 64)
+\   364.. inputs (40 slots), 404.. output (300 slots)
+\ Registers and memory hold wrapped 32-bit values; the exact result of an
+\ operation fits easily in a 64-bit Int, and wrap brings it back to 32 bits.
+
+: slot-pc   (forall ρ; ρ -- ρ r:Int^many) 96;
+: slot-exe  (forall ρ; ρ -- ρ r:Int^many) 97;
+: slot-z    (forall ρ; ρ -- ρ r:Int^many) 98;
+: slot-n    (forall ρ; ρ -- ρ r:Int^many) 99;
+: slot-v    (forall ρ; ρ -- ρ r:Int^many) 100;
+: slot-dsp  (forall ρ; ρ -- ρ r:Int^many) 101;
+: slot-csp  (forall ρ; ρ -- ρ r:Int^many) 102;
+: slot-in   (forall ρ; ρ -- ρ r:Int^many) 103;
+: slot-st   (forall ρ; ρ -- ρ r:Int^many) 104;
+: slot-outn (forall ρ; ρ -- ρ r:Int^many) 105;
+: slot-nin  (forall ρ; ρ -- ρ r:Int^many) 106;
+: slot-nops (forall ρ; ρ -- ρ r:Int^many) 107;
+: base-mem  (forall ρ; ρ -- ρ r:Int^many) 8;
+: base-ds   (forall ρ; ρ -- ρ r:Int^many) 72;
+: base-cs   (forall ρ; ρ -- ρ r:Int^many) 88;
+: base-ops  (forall ρ; ρ -- ρ r:Int^many) 108;
+: base-fa   (forall ρ; ρ -- ρ r:Int^many) 172;
+: base-fb   (forall ρ; ρ -- ρ r:Int^many) 236;
+: base-fc   (forall ρ; ρ -- ρ r:Int^many) 300;
+: base-inp  (forall ρ; ρ -- ρ r:Int^many) 364;
+: base-out  (forall ρ; ρ -- ρ r:Int^many) 404;
+
+\ ---- small arithmetic helpers ----
+
+\ Wraps a whole number to 32 bits (Euclidean mod is never negative).
+: wrap
+  (forall ρ; ρ t:Int^many -- ρ w:Int^many)
+  2147483648 prim + 4294967296 prim mod 2147483648 prim -;
+
+: b2i
+  (forall ρ; ρ p:Bool^many -- ρ r:Int^many)
+  [ 1 ] [ 0 ] if;
+
+: abs-val
+  (forall ρ; ρ x:Int^many -- ρ r:Int^many)
+  locals { x }
+  { x 0 prim < [ 0 x prim - ] [ x ] if };
+
+\ Quotient rounded toward zero (div is Euclidean, so divide the magnitudes
+\ and fix the sign).
+: tdiv
+  (forall ρ; ρ a:Int^many b:Int^many -- ρ q:Int^many)
+  locals { a b }
+  { a abs-val b abs-val prim div
+    locals { q }
+    { a 0 prim <
+      [ b 0 prim < [ q ] [ 0 q prim - ] if ]
+      [ b 0 prim < [ 0 q prim - ] [ q ] if ] if } };
+
+\ 2 to the power c, c from 0 to 31.
+: pow2
+  (forall ρ; ρ c:Int^many -- ρ r:Int^many)
+  { 1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768 65536
+    131072 262144 524288 1048576 2097152 4194304 8388608 16777216 33554432
+    67108864 134217728 268435456 536870912 1073741824 2147483648 }
+  swap prim seq-int.at;
+
+\ ---- machine state updates ----
+
+\ m[i] += d
+: bump
+  (forall ρ; ρ m:Seq Int^many i:Int^many d:Int^many -- ρ r:Seq Int^many)
+  locals { m i d }
+  { m i m i prim seq-int.at d prim + prim seq-int.set };
+
+\ An executed instruction that falls through to pc + 1.
+: advance
+  (forall ρ; ρ m:Seq Int^many -- ρ r:Seq Int^many)
+  locals { m }
+  { m slot-exe 1 bump slot-pc 1 bump };
+
+\ An executed instruction that sets pc to t.
+: goto
+  (forall ρ; ρ m:Seq Int^many t:Int^many -- ρ r:Seq Int^many)
+  locals { m t }
+  { m slot-exe 1 bump slot-pc t prim seq-int.set };
+
+\ Stops with a fault: not counted, pc unchanged.
+: fault
+  (forall ρ; ρ m:Seq Int^many s:Int^many -- ρ r:Seq Int^many)
+  locals { m s }
+  { m slot-st s prim seq-int.set };
+
+: halt
+  (forall ρ; ρ m:Seq Int^many -- ρ r:Seq Int^many)
+  locals { m }
+  { m slot-st 0 prim seq-int.set slot-exe 1 bump };
+
+\ rA = v, then fall through.
+: set-reg-adv
+  (forall ρ; ρ m:Seq Int^many a:Int^many v:Int^many -- ρ r:Seq Int^many)
+  locals { m a v }
+  { m a v prim seq-int.set advance };
+
+\ Sets Z, N, V from the exact result t.
+: set-flags
+  (forall ρ; ρ m:Seq Int^many t:Int^many -- ρ r:Seq Int^many)
+  locals { m t }
+  { t wrap
+    locals { w }
+    { m slot-z w 0 prim = b2i prim seq-int.set
+        slot-n w 0 prim < b2i prim seq-int.set
+        slot-v w t prim = prim not b2i prim seq-int.set } };
+
+\ Stores wrapped t in rA, sets the flags, falls through.
+: arith-finish
+  (forall ρ; ρ m:Seq Int^many a:Int^many t:Int^many -- ρ r:Seq Int^many)
+  locals { m a t }
+  { m t set-flags a t wrap prim seq-int.set advance };
+
+\ Compare: flags only.
+: cmp-finish
+  (forall ρ; ρ m:Seq Int^many t:Int^many -- ρ r:Seq Int^many)
+  locals { m t }
+  { m t set-flags advance };
+
+\ ---- instructions ----
+
+\ The exact result of opcodes 3, 4, 5, 8, 9, 10, 11; vc is rC, or 2^c for shifts.
+: calc
+  (forall ρ; ρ op:Int^many vb:Int^many vc:Int^many -- ρ t:Int^many)
+  locals { op vb vc }
+  { op 3 prim = [ vb vc prim + ]
+    [ op 10 prim = [ vb vc prim div ]
+      [ op 5 prim = op 9 prim = prim or [ vb vc prim * ]
+        [ op 8 prim = [ 0 vb prim - ] [ vb vc prim - ] if ] if ] if ] if };
+
+\ Opcodes 3, 4, 5, 8, 9, 10, 11.
+: alu
+  (forall ρ; ρ m:Seq Int^many op:Int^many a:Int^many b:Int^many c:Int^many -- ρ r:Seq Int^many)
+  locals { m op a b c }
+  { m b prim seq-int.at
+    op 9 prim = op 10 prim = prim or
+    [ c pow2 ] [ m c prim seq-int.at ] if
+    locals { vb vc }
+    { m op 11 prim =
+      [ op vb vc calc cmp-finish ]
+      [ a op vb vc calc arith-finish ] if } };
+
+\ Opcodes 6 and 7: divide and remainder, status 3 when rC is 0.
+: divrem
+  (forall ρ; ρ m:Seq Int^many op:Int^many a:Int^many b:Int^many c:Int^many -- ρ r:Seq Int^many)
+  locals { m op a b c }
+  { m b prim seq-int.at m c prim seq-int.at
+    locals { vb vc }
+    { m vc 0 prim =
+      [ 3 fault ]
+      [ a op 6 prim =
+        [ vb vc tdiv ]
+        [ vb vb vc tdiv vc prim * prim - ] if
+        arith-finish ] if } };
+
+\ Opcodes 12 and 13: memory[rB + c].
+: memop
+  (forall ρ; ρ m:Seq Int^many op:Int^many a:Int^many b:Int^many c:Int^many -- ρ r:Seq Int^many)
+  locals { m op a b c }
+  { m b prim seq-int.at c prim +
+    locals { ad }
+    { m ad 0 prim < ad 63 prim > prim or
+      [ 6 fault ]
+      [ op 12 prim =
+        [ a m base-mem ad prim + prim seq-int.at set-reg-adv ]
+        [ base-mem ad prim + m a prim seq-int.at prim seq-int.set advance ] if ] if } };
+
+\ Opcodes 15 to 18: conditional jumps.
+: jcc
+  (forall ρ; ρ m:Seq Int^many op:Int^many b:Int^many -- ρ r:Seq Int^many)
+  locals { m op b }
+  { m slot-z prim seq-int.at m slot-n prim seq-int.at m slot-v prim seq-int.at
+    locals { z n v }
+    { op 15 prim = [ z 1 prim = ]
+      [ op 16 prim = [ z 0 prim = ]
+        [ op 17 prim = [ n v prim = prim not ] [ n v prim = ] if ] if ] if
+      [ m b goto ] [ m advance ] if } };
+
+: push
+  (forall ρ; ρ m:Seq Int^many a:Int^many -- ρ r:Seq Int^many)
+  locals { m a }
+  { m slot-dsp prim seq-int.at
+    locals { sp }
+    { sp 16 prim >=
+      [ m 4 fault ]
+      [ m base-ds sp prim + m a prim seq-int.at prim seq-int.set
+        slot-dsp sp 1 prim + prim seq-int.set advance ] if } };
+
+: pop
+  (forall ρ; ρ m:Seq Int^many a:Int^many -- ρ r:Seq Int^many)
+  locals { m a }
+  { m slot-dsp prim seq-int.at
+    locals { sp }
+    { sp 0 prim =
+      [ m 5 fault ]
+      [ m slot-dsp sp 1 prim - prim seq-int.set
+        a m base-ds sp 1 prim - prim + prim seq-int.at set-reg-adv ] if } };
+
+: call-op
+  (forall ρ; ρ m:Seq Int^many b:Int^many -- ρ r:Seq Int^many)
+  locals { m b }
+  { m slot-csp prim seq-int.at
+    locals { sp }
+    { sp 8 prim >=
+      [ m 4 fault ]
+      [ m base-cs sp prim + m slot-pc prim seq-int.at 1 prim + prim seq-int.set
+        slot-csp sp 1 prim + prim seq-int.set b goto ] if } };
+
+: ret-op
+  (forall ρ; ρ m:Seq Int^many -- ρ r:Seq Int^many)
+  locals { m }
+  { m slot-csp prim seq-int.at
+    locals { sp }
+    { sp 0 prim =
+      [ m 5 fault ]
+      [ m slot-csp sp 1 prim - prim seq-int.set
+        m base-cs sp 1 prim - prim + prim seq-int.at goto ] if } };
+
+: input-op
+  (forall ρ; ρ m:Seq Int^many a:Int^many -- ρ r:Seq Int^many)
+  locals { m a }
+  { m slot-in prim seq-int.at
+    locals { k }
+    { k m slot-nin prim seq-int.at prim >=
+      [ m 7 fault ]
+      [ m slot-in k 1 prim + prim seq-int.set
+        a m base-inp k prim + prim seq-int.at set-reg-adv ] if } };
+
+: output-op
+  (forall ρ; ρ m:Seq Int^many a:Int^many -- ρ r:Seq Int^many)
+  locals { m a }
+  { m slot-outn prim seq-int.at
+    locals { k }
+    { m base-out k prim + m a prim seq-int.at prim seq-int.set
+      slot-outn k 1 prim + prim seq-int.set advance } };
+
+\ Dispatches on the opcode (a balanced tree of tests).
+: exec
+  (forall ρ; ρ m:Seq Int^many op:Int^many a:Int^many b:Int^many c:Int^many -- ρ r:Seq Int^many)
+  locals { m op a b c }
+  { op 12 prim <
+    [ op 3 prim <
+      [ op 0 prim = [ m halt ]
+        [ op 1 prim = [ m a b set-reg-adv ]
+          [ m a m b prim seq-int.at set-reg-adv ] if ] if ]
+      [ op 6 prim = op 7 prim = prim or
+        [ m op a b c divrem ] [ m op a b c alu ] if ] if ]
+    [ op 15 prim <
+      [ op 14 prim = [ m b goto ] [ m op a b c memop ] if ]
+      [ op 19 prim <
+        [ m op b jcc ]
+        [ op 21 prim <
+          [ op 19 prim = [ m a push ] [ m a pop ] if ]
+          [ op 21 prim = [ m b call-op ]
+            [ op 22 prim = [ m ret-op ]
+              [ op 23 prim = [ m a input-op ] [ m a output-op ] if ] if ] if ] if ] if ] if ] if };
+
+\ One step: stop by limit or by pc range, else fetch and execute.
+: step
+  (forall ρ; ρ m:Seq Int^many -- ρ r:Seq Int^many)
+  locals { m }
+  { m slot-exe prim seq-int.at 300 prim >=
+    [ m 1 fault ]
+    [ m slot-pc prim seq-int.at
+      locals { pc }
+      { pc 0 prim < pc m slot-nops prim seq-int.at prim >= prim or
+        [ m 2 fault ]
+        [ m m base-ops pc prim + prim seq-int.at
+            m base-fa pc prim + prim seq-int.at
+            m base-fb pc prim + prim seq-int.at
+            m base-fc pc prim + prim seq-int.at exec ] if } ] if };
+
+: run
+  (forall ρ; ρ m:Seq Int^many -- ρ r:Seq Int^many)
+  locals { m }
+  { m slot-st prim seq-int.at -1 prim =
+    [ m step run ]
+    [ m ] if };
+
+\ ---- building the state and reading the result ----
+
+: append-from
+  (forall ρ; ρ m:Seq Int^many xs:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { m xs i }
+  { i xs prim seq-int.len prim <
+    [ m xs i prim seq-int.at prim seq-int.push xs i 1 prim + append-from ]
+    [ m ] if };
+
+: pad
+  (forall ρ; ρ m:Seq Int^many k:Int^many -- ρ r:Seq Int^many)
+  locals { m k }
+  { 0 k prim <
+    [ m 0 prim seq-int.push k 1 prim - pad ]
+    [ m ] if };
+
+\ Appends xs, then zeros up to size slots.
+: load-block
+  (forall ρ; ρ m:Seq Int^many xs:Seq Int^many size:Int^many -- ρ r:Seq Int^many)
+  locals { m xs size }
+  { m xs 0 append-from size xs prim seq-int.len prim - pad };
+
+\ Copies m[i] to m[end - 1] onto out.
+: slice
+  (forall ρ; ρ m:Seq Int^many i:Int^many end:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { m i end out }
+  { i end prim <
+    [ m i 1 prim + end out m i prim seq-int.at prim seq-int.push slice ]
+    [ out ] if };
+
+\ The flag in slot s as a Bool.
+: flag-at
+  (forall ρ; ρ out:Seq Bool^many m:Seq Int^many s:Int^many -- ρ r:Seq Bool^many)
+  prim seq-int.at 1 prim = prim seq-bool.push;
+
+: main
+  (forall ρ; ρ ops:Seq Int^many fa:Seq Int^many fb:Seq Int^many fc:Seq Int^many regs:Seq Int^many memory:Seq Int^many inputs:Seq Int^many -- ρ output:Seq Int^many status:Int^many executed:Int^many pc:Int^many registers:Seq Int^many final-memory:Seq Int^many flags:Seq Bool^many)
+  locals { ops fa fb fc regs memory inputs }
+  { regs memory 0 append-from
+    32 pad                                \ stacks and pc, executed, flags, depths, inputs read
+    -1 prim seq-int.push                  \ status: running
+    0 prim seq-int.push                   \ outputs written
+    inputs prim seq-int.len prim seq-int.push
+    ops prim seq-int.len prim seq-int.push
+    ops 64 load-block fa 64 load-block fb 64 load-block fc 64 load-block
+    inputs 40 load-block
+    300 pad
+    run
+    locals { m }
+    { m base-out base-out m slot-outn prim seq-int.at prim + prim seq-int.empty slice
+      m slot-st prim seq-int.at
+      m slot-exe prim seq-int.at
+      m slot-pc prim seq-int.at
+      m 0 8 prim seq-int.empty slice
+      m 8 72 prim seq-int.empty slice
+      prim seq-bool.empty m slot-z flag-at m slot-n flag-at m slot-v flag-at } };
