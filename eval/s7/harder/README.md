@@ -616,7 +616,11 @@ hidden test is the record's costliest candidate. The most kernel steps on such a
 (`sokoban`), 209,279 (`checkers`), 98,097 (`regex`, `a*` ten times against
 strings of twelve `a`s), 108,057 (`swiss`), 179,655 (`warehouse`) and
 161,365 (`cache-sim`), all within a quarter of the 1,000,000-step budget.
-That is a measured figure over these inputs, not a bound. The first
+That is a measured figure over these inputs, not a bound. On a fresh
+build, a first run of `costliest.py` or `measure.py`, with several
+`firth_run.py` processes starting at once, has recorded `None False` or
+`exit 1` for inputs that finish when run again alone (reviewer, #229 and
+#231), so any such row is re-run on its own before it is trusted. The first
 Firth reference for `regex`, which kept sets of positions as `Seq Bool`,
 ran out of the budget on inputs within the drafted bounds (30 tokens, 10
 strings of 20 letters): `(a|b|c)*` three times then `.*` three times,
