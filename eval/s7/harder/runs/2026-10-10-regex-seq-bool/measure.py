@@ -105,7 +105,9 @@ def run(name: str, args: tuple, source: Path = HERE / "regex-seq-bool.firth") ->
 
 
 def main(argv: list[str]) -> int:
-    jobs = DRAFTED if argv == ["--drafted"] else inputs()
+    if argv not in ([], ["--drafted"]):
+        raise SystemExit(__doc__)
+    jobs = DRAFTED if argv else inputs()
     with cf.ThreadPoolExecutor(os.cpu_count() or 4) as ex:
         for name, cost, status, ok in ex.map(lambda j: run(*j), jobs):
             print(f"{name}\t{cost}\t{status}\t{ok}", flush=True)

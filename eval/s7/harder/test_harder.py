@@ -1135,6 +1135,8 @@ def drafted_problems(record: str, drafted: list[tuple[str, tuple]]) -> list[str]
             problems.append(f"{name}: recorded {status}, where the README reports {want}")
         elif status == "success" and not ok:
             problems.append(f"{name}: finished but disagreed")
+        elif status != "success" and ok:
+            problems.append(f"{name}: recorded as agreeing without finishing")
     return problems
 
 
@@ -1153,7 +1155,9 @@ def regex_drafted_bounds() -> None:
     one = lines[:k] + [lines[k].replace("None\tfuel-exhausted\tFalse", "900000\tsuccess\tTrue")] + lines[k + 1:]
     for bad, what in (("\n".join(one), "one of the inputs that ran out of steps recorded as finished"),
                       (record + lines[0] + "\n", "a row recorded twice"),
-                      (record.replace("\tsuccess\tTrue", "\tsuccess\tFalse", 1), "a finished run that disagreed")):
+                      (record.replace("\tsuccess\tTrue", "\tsuccess\tFalse", 1), "a finished run that disagreed"),
+                      (record.replace("\tfuel-exhausted\tFalse", "\tfuel-exhausted\tTrue", 1),
+                       "a run that ran out of steps recorded as agreeing")):
         check(bad != record and drafted_problems(bad, measure.DRAFTED) != [], f"a drafted record with {what} is refused")
     (name, (pattern, lens, chars)), *rest = measure.DRAFTED
     for bad, why in (([*pattern, 0], "not within the drafted bounds"),
