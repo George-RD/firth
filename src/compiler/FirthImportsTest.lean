@@ -346,6 +346,15 @@ def main : IO Unit := do
       fail s!"exporter: ./app/main.firth is read as {exportPath} under {exportRoot}"
     let (_, exported) ← Firth.Agent.Sources.load scratch.toString exportPath
     if exported != [lib] then fail s!"exporter: ./app/main.firth loaded {repr exported}"
+    -- A root that imports nothing may have a name outside the import-path
+    -- grammar; one that imports a file may not.
+    IO.FS.writeFile (scratch / "my program.firth") ": alone ( -- ) ;"
+    let (spaced, rest) ← Firth.Agent.Sources.load scratch.toString "my program.firth"
+    if spaced.text != ": alone ( -- ) ;" || !rest.isEmpty then
+      fail s!"loader: a standalone root with a space in its name read {repr spaced} {repr rest}"
+    IO.FS.writeFile (scratch / "my main.firth") "import \"lib.firth\"; : m ( -- ) ;"
+    if !(← refuses "my main.firth") then
+      fail "loader: read imports for a root path outside the import-path grammar"
     -- A file that is not UTF-8 is refused rather than decoded.
     IO.FS.writeBinFile (scratch / "latin.firth") (ByteArray.mk #[0x3a, 0x20, 0xe9, 0x20, 0x3b])
     IO.FS.writeFile (scratch / "reads-latin.firth") "import \"latin.firth\"; : r ( -- ) ;"

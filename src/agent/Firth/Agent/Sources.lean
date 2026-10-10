@@ -51,15 +51,23 @@ private def readSource (root path : String) : IO (Option String) := do
   | some text => return some text
   | none => throw <| IO.userError s!"{path} is not UTF-8"
 
-/-- The root file and the files it imports, in load order without the root. -/
+/-- The root file and the files it imports, in load order without the root.
+Imports resolve against the root's path, so a root that imports a file must
+have a normalised relative path; one that imports nothing may have any name
+inside the source root, such as `my program.firth`. -/
 def load (sourceRoot sourcePath : String) : IO (Source × List Source) := do
-  if !normalisedPath sourcePath then
-    throw <| IO.userError s!"source_path {sourcePath} is not a normalised relative .firth path"
   let root := (← IO.FS.realPath sourceRoot).toString
   if !(← System.FilePath.isDir root) then throw <| IO.userError "source_root is not a directory"
   let some text ← readSource root sourcePath
     | throw <| IO.userError s!"{sourcePath} does not exist"
   let main : Source := { path := sourcePath, text }
+  if !normalisedPath sourcePath then
+    let imports := (loadProgram main []).any fun file =>
+      file.source.path == sourcePath &&
+        (file.declarations.getD []).any (· matches .import _)
+    if imports then
+      throw <| IO.userError s!"source_path {sourcePath} imports files, so it must be a normalised relative .firth path"
+    return (main, [])
   -- Load what is known, read every import that was not found, and repeat
   -- until a round finds no new file.
   let mut files : List Source := []
