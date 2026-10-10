@@ -104,8 +104,10 @@ between them are tested, not proved, too.
 The spec's maintenance task changes a partial-fulfilment client to
 all-or-nothing while preserving conservation, order, input validation and
 later fulfilment. `policy-change/partial.firth` is that client before the
-change and `policy-change/all-or-nothing.firth` after it. Each defines one word,
-`reserve`, which supplies the policy and calls `allocate-batch`. The change is
+change and `policy-change/all-or-nothing.firth` after it. Each imports
+`allocator.firth` (`import "../allocator.firth";`), whose one export is
+`allocate-batch`, and defines one word, `reserve`, which supplies the policy and
+calls it. The change is
 one token, `false` to `true`, because the spec makes the policy an input to the
 component; nothing in `allocator.firth` changes.
 
@@ -122,6 +124,11 @@ toolchain produces:
   is not vacuous, the script also compiles a mutant whose `allocate-one` gains
   a no-op, and fails unless it reports `allocate-one` changed with
   `allocate-from` and `allocate-batch` as dependents.
+- **The allocator alone.** It compiles `allocator.firth` on its own and fails
+  unless every allocator word has the same body digest and type in both
+  clients' images, so the clients run the words `run_cases.py`, the cost
+  bound and the Lean proofs are about. The mutant must fail this too, with
+  `allocate-one` the one word that differs.
 - **Regression.** Each of the 30 cases that reach Firth runs through both
   clients on the VM and the reference interpreter, 60 runs in all. Where the
   case's policy is the client's, the result must equal the corpus's fixed
@@ -146,8 +153,5 @@ toolchain produces:
   than the hand-written version: 163 steps per pair at most.
 - **There is no Boolean `and` or absolute difference.** Both are written with
   nested `if`.
-- **There are no imports.** `vocab` groups words inside one file, but a
-  client cannot name `allocator.firth` from another file, so `policy_change.py` builds each program by putting the allocator's
-  source before the client's.
 - **Integers were naturals** when this was first written. Since signed `Int`
   landed, the stock's lower bound is an ordinary `-1 available prim <` check.

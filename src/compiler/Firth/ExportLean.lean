@@ -1,5 +1,6 @@
 import Lean.Data.Json
 import compiler.Firth.Compile
+import agent.Firth.Agent.Sources
 
 /-!
 Exporting a Firth source's erased kernel programs as a Lean module.
@@ -120,13 +121,18 @@ structure ExportedWord where
   erasedType : String
   bodyDigest : String
 
-/-- Elaborates `sourceText` and accepts its dictionary exactly as the compile
-adapter's source binding does, returning every word in declaration order. -/
-def exportedWords (sourcePath sourceText : String) : Except String (List ExportedWord) := do
-  let request := Json.mkObj [("request_id", "kernel-export"), ("source_path", sourcePath),
-    ("source_text", sourceText),
-    ("language_version", Firth.Agent.Elaborate.languageVersion),
-    ("gamma_version", Compile.gammaVersion)]
+/-- Elaborates `sourceText`, with `files` the files it imports
+(`dec.multi-file-imports`), and accepts its dictionary exactly as the compile
+adapter's source binding does, returning every word in load order: each
+imported file's words, then the source's own, in declaration order. -/
+def exportedWords (sourcePath sourceText : String) (files : List Firth.Elaborator.Source := []) :
+    Except String (List ExportedWord) := do
+  let request := Json.mkObj ([("request_id", Json.str "kernel-export"), ("source_path", Json.str sourcePath),
+    ("source_text", Json.str sourceText),
+    ("language_version", Json.str Firth.Agent.Elaborate.languageVersion),
+    ("gamma_version", Json.str Compile.gammaVersion)] ++
+    if files.isEmpty then [] else [("files", Json.arr (files.map fun file =>
+      Json.mkObj [("source_path", Json.str file.path), ("source_text", Json.str file.text)]).toArray)])
   let response ← Json.parse (← Firth.Agent.Elaborate.runRequest request.compress)
   if response.getObjValD "status" != "success" then
     err s!"{sourcePath}: elaboration failed; nothing is exported\n{response.compress}"
@@ -149,10 +155,23 @@ def exportedWords (sourcePath sourceText : String) : Except String (List Exporte
         { name := word.name, program := word.program, erasedType := entry.erasedWordType,
           bodyDigest := Digest.toHex (Target.bodyDigest entry.code) })
 
-/-- The generated module for `sourcePath`, whose contents are `sourceText`. -/
-def exportModule (sourcePath sourceText moduleName : String) : Except String String := do
+/-- The generated module for `sourcePath`, whose contents are `sourceText`.
+`files` are the files it imports, with `rootPath` its own path relative to
+the same source root; a source without imports needs neither. -/
+def exportModule (sourcePath sourceText moduleName : String)
+    (files : List Firth.Elaborator.Source := []) (rootPath : String := sourcePath) :
+    Except String String := do
   if !validModule moduleName then err s!"invalid export module name: {moduleName}"
-  let words ← exportedWords sourcePath sourceText
+  let words ← exportedWords (if files.isEmpty then sourcePath else rootPath) sourceText files
+  let imported := if files.isEmpty then "" else
+    let rows := files.map fun file =>
+      s!"  ({quote file.path}, {quote (Digest.hexOfString file.text)})"
+    s!"
+/-- The files `{sourcePath}` imports, in load order, each with the SHA-256 of
+its text. Their words come first in `words` and `dictionary`. -/
+def importedSources : List (String × String) := [
+{",\n".intercalate rows}]
+"
   let mut sections : List String := []
   let mut dictionary : List String := []
   let mut listed : List String := []
@@ -201,7 +220,7 @@ open Firth.ReferenceRun
 
 /-- SHA-256 of the source text these definitions were generated from. -/
 def sourceDigest : String := {quote (Digest.hexOfString sourceText)}
-
+{imported}
 {"\n".intercalate sections}
 /-- Every word, in declaration order: its name, body, body digest and erased
 type. -/
@@ -223,8 +242,15 @@ end {namespaceName}
 def main (args : List String) : IO UInt32 := do
   match args with
   | [sourcePath, moduleName] =>
-      let sourceText ← IO.FS.readFile sourcePath
-      match exportModule sourcePath sourceText moduleName with
+      -- The source and the files it imports. A relative path is read from
+      -- the working directory as the source root; an absolute one from its
+      -- own directory.
+      let path : System.FilePath := sourcePath
+      let (root, relative) := if path.isAbsolute
+        then ((path.parent.getD ".").toString, path.fileName.getD sourcePath)
+        else (".", sourcePath)
+      let (main, files) ← Firth.Agent.Sources.load root relative
+      match exportModule sourcePath main.text moduleName files main.path with
       | .ok text =>
           IO.print text
           pure 0

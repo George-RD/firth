@@ -120,8 +120,10 @@ eval README.
 
 ## Known gaps
 
-- No cross-file imports: a program is one file, and `stdlib/core.firth` is
-  not loaded automatically (`todo.language-12-data-and-modules`).
+- No typed records or results yet (`todo.language-12-data-and-modules`).
+  Programs of several files work through `import` and `export`
+  (`dec.multi-file-imports`), and `stdlib/core.firth` is not loaded
+  automatically.
 - No text, characters, file or network I/O, or `send` on the executable
   path. Source refinement annotations are rejected rather than checked.
 - Non-tail recursion deeper than 256 frames traps on the VM.

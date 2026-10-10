@@ -1,6 +1,7 @@
 import Lean.Data.Json
 import agent.Firth.Agent.ElaboratorDiagnostics
 import agent.Firth.Agent.JsonMembers
+import compiler.Firth.Digest
 
 /-!
 The `firth.elaborate.v1` adapter: one `firth.source.v1` request in, one
@@ -67,23 +68,51 @@ private def reqStr (context name : String) (values : List (String × Json)) :
 private def nonempty (context value : String) : Except String String :=
   if value.isEmpty then err s!"{context}: empty string" else pure value
 
-/-- One decoded `firth.source.v1` request. -/
+/-- One decoded `firth.source.v1` request. `files` are the program's other
+files, which the root file imports (`dec.multi-file-imports`). -/
 structure Request where
   requestId : String
   sourcePath : String
   sourceText : String
+  files : List Source := []
+
+/-- Decodes the optional `files` member of a source envelope: an array of
+`{source_path, source_text}`, each path normalised relative to the source
+root, none repeated and none the root file's own `rootPath`. -/
+def decodeFiles (context rootPath : String) (values : List (String × Json)) :
+    Except String (List Source) := do
+  match field "files" values with
+  | none => pure []
+  | some (.arr items) =>
+      let mut files : List Source := []
+      for item in items.toList do
+        let members ← object s!"{context}.files" item ["source_path", "source_text"]
+        let path ← reqStr s!"{context}.files" "source_path" members
+        if !normalisedPath path then
+          err s!"{context}.files: {path} is not a normalised relative .firth path"
+        if path == rootPath || files.any (·.path == path) then
+          err s!"{context}.files: duplicate source path {path}"
+        files := files ++ [{ path, text := ← reqStr s!"{context}.files" "source_text" members }]
+      pure files
+  | some _ => err s!"{context}.files: expected array"
 
 /-- Decodes a `firth.source.v1` request. -/
 def decodeRequest (value : Json) : Except String Request := do
-  let values ← object "request" value
-    ["request_id", "source_path", "source_text", "language_version", "gamma_version"]
+  let values ← fields "request" value
+  let required := ["request_id", "source_path", "source_text", "language_version", "gamma_version"]
+  if values.any (fun (key, _) => !(required ++ ["files"]).contains key) then
+    err "request: unknown member"
+  if required.any (fun key => (field key values).isNone) then
+    err "request: missing member"
   if (← reqStr "request" "language_version" values) != languageVersion then
     err "request: unsupported language version"
   if (← reqStr "request" "gamma_version" values) != gammaVersion then
     err "request: unsupported gamma version"
+  let sourcePath ← nonempty "request.source_path" =<< reqStr "request" "source_path" values
   pure { requestId := ← nonempty "request.request_id" =<< reqStr "request" "request_id" values
-         sourcePath := ← nonempty "request.source_path" =<< reqStr "request" "source_path" values
-         sourceText := ← reqStr "request" "source_text" values }
+         sourcePath
+         sourceText := ← reqStr "request" "source_text" values
+         files := ← decodeFiles "request" sourcePath values }
 
 private def surfaceUsage : Firth.Interpreter.Usage → AUsage
   | .many => .many
@@ -373,12 +402,13 @@ The compiler independently rechecks them; source-backed callers also pass the
 original source envelope to bind these entries by fresh re-elaboration. Each
 entry also carries `spans`, the source span of every atom, so the compiler can
 attribute its debug metadata to source positions. -/
-def successJson (request : Request) (program : CheckedProgram) : Except String String := do
+def successJson (request : Request) (programs : List (Source × CheckedProgram)) :
+    Except String String := do
   let mut checked : List String := []
   let mut erased : List String := []
   let mut kernels : List String := []
   let mut warnings : List String := []
-  for word in program.words do
+  for word in programs.flatMap (·.2.words) do
     let body := kernelProgram word.program
     checked := checked ++ [obj [("name", quote word.name),
       ("checking_state", quote "checked"), ("proof_state", quote "available"),
@@ -386,9 +416,16 @@ def successJson (request : Request) (program : CheckedProgram) : Except String S
     erased := erased ++ [obj [("word", quote word.name), ("type", ← schemeJson word.scheme)]]
     kernels := kernels ++ [obj [("word", quote word.name), ("program", programJson body)]]
     warnings := warnings ++ warningsJson word
+  -- Each file of the program in load order, the root last, with the words
+  -- it defines: the compile adapter attributes debug locations to them.
+  let sources := programs.map fun (source, program) =>
+    obj [("source_path", quote source.path),
+         ("source_sha256", quote (Firth.Compiler.Digest.hexOfString source.text)),
+         ("words", arr (program.words.map (quote ·.name)))]
   pure (obj [("request_id", quote request.requestId), ("status", quote "success"),
              ("checked_words", arr checked), ("erased_word_types", arr erased),
-             ("kernel_programs", arr kernels), ("warnings", arr warnings)])
+             ("kernel_programs", arr kernels), ("warnings", arr warnings),
+             ("sources", arr sources)])
 
 private def failureJson (request : Request) (diagnostics : List Envelope) : String :=
   obj [("request_id", quote request.requestId), ("status", quote "failure"),
@@ -416,9 +453,10 @@ def runRequest (input : String) : Except String String := do
       typingEnv := gammaTyping
       requestId := request.requestId
       sourcePath := request.sourcePath }
-  match elaboratePipeline context request.sourceText config with
-  | .success program => successJson request program
-  | .failure diagnostics => pure (failureJson request diagnostics)
+  match elaborateSources context { path := request.sourcePath, text := request.sourceText }
+      request.files config with
+  | .ok programs => successJson request programs
+  | .error diagnostics => pure (failureJson request diagnostics)
 
 /-- Renders a refusal in the same shape the other adapters use. -/
 def errorJson (message : String) : String :=

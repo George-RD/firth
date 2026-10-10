@@ -66,6 +66,15 @@ inductive PipelineDiagnostic where
   | assumes (word : String) (callees edits : List String) (inner : PipelineDiagnostic)
   deriving Repr, BEq
 
+/-- A word of a directly imported file: its canonical key, its declared
+effect, whether that file exports it, and that file's path. The file was
+checked, so the word's body has that effect. -/
+structure ImportedWord where
+  name : String
+  effect : StackEffect
+  exported : Bool
+  source : String
+
 structure PipelineConfig where
   erasureEnv : EffectEnv := {}
   typingEnv : Env := { literal := defaultLiteralType }
@@ -79,6 +88,11 @@ structure PipelineConfig where
   /-- Whether a hint's edit is applied and checked before it is offered
   (`withCallAccount`, `checkLocalsEdits`). -/
   checkEdits : Bool := true
+  /-- The words of the files this file imports directly
+  (`dec.multi-file-imports`). Their declared effects join the environments
+  for the exported ones; the rest only let a reference to one be reported
+  as not exported. -/
+  imported : List ImportedWord := []
 
 inductive ElaborationResult where
   | success (program : CheckedProgram)
@@ -115,6 +129,32 @@ private def makeErasureEnv (config : PipelineConfig)
       match lookupSignature name localSignatures with
       | some signature => some signature
       | none => config.erasureEnv.word name }
+
+/-- Name resolution for a file of this program: the words the environments
+define outside the program stay external, and the imported words are
+candidates as `resolveEach` says, so a word an import does not export is
+never resolved through the environment. -/
+private def resolveFile (config : PipelineConfig) (declarations : List Declaration) :
+    Except ParseError (List (WordDefinition × Option ParseError) × Option ParseError) :=
+  resolveEach declarations
+    (fun name => (config.erasureEnv.word name).isSome && !config.imported.any (·.name == name))
+    (config.imported.map fun word => { name := word.name, exported := word.exported, source := word.source })
+
+/-- `config` with the declared effects of the words its imports export in
+its environments, for erasure and for typing. -/
+private def withImportedEffects (config : PipelineConfig) : PipelineConfig :=
+  let exported := config.imported.filter (·.exported)
+  { config with
+    erasureEnv := { config.erasureEnv with
+      word := fun name =>
+        match exported.find? (·.name == name) with
+        | some word => some (signatureOfEffect word.effect)
+        | none => config.erasureEnv.word name }
+    typingEnv := { config.typingEnv with
+      word := fun name =>
+        match exported.find? (·.name == name) with
+        | some word => (schemeOfEffect word.effect).toOption
+        | none => config.typingEnv.word name } }
 
 private def refinementDiagnostics (word : String) :
     Refinement.PipelineResult → List PipelineDiagnostic
@@ -495,7 +535,7 @@ private def withCallAccount (config : PipelineConfig) (source : String)
           | .failure _ => none
         -- Other words keep whatever errors they have: only this one must
         -- resolve.
-        let (resolved, _) ← (resolveEach file.declarations (fun name => (config.erasureEnv.word name).isSome)).toOption
+        let (resolved, _) ← (resolveFile config file.declarations).toOption
         let editedWords := resolved.map (·.1)
         let word ← (resolved.find? fun (word, error) => word.name == name && error.isNone).map (·.1)
         let operation := ((diagnostic.primary.start.offset : Int) + shift).toNat
@@ -547,7 +587,7 @@ private def checkCallEdit (config : PipelineConfig) (source : String) (word : Wo
   let file ← match parse edited with
     | .success file => some file
     | .failure _ => none
-  let (resolved, _) ← (resolveEach file.declarations (fun name => (config.erasureEnv.word name).isSome)).toOption
+  let (resolved, _) ← (resolveFile config file.declarations).toOption
   let editedWords := resolved.map (·.1)
   let editedWord ← (resolved.find? fun (candidate, error) => candidate.name == word.name && error.isNone).map (·.1)
   let operation := start + operationAt
@@ -773,7 +813,7 @@ private def checkBranchEdit (config : PipelineConfig) (source wordName : String)
   let file ← match parse edited with
     | .success file => some file
     | .failure _ => none
-  let (resolved, _) ← (resolveEach file.declarations (fun name => (config.erasureEnv.word name).isSome)).toOption
+  let (resolved, _) ← (resolveFile config file.declarations).toOption
   let editedWords := resolved.map (·.1)
   let word ← (resolved.find? fun (word, error) => word.name == wordName && error.isNone).map (·.1)
   let at_ := ((ifStart : Int) + shift).toNat
@@ -1069,7 +1109,7 @@ private def conditionEdit (config : PipelineConfig) (source : String) (words : L
   let file ← match parse edited with
     | .success file => some file
     | .failure _ => none
-  let (resolved, _) ← (resolveEach file.declarations (fun name => (config.erasureEnv.word name).isSome)).toOption
+  let (resolved, _) ← (resolveFile config file.declarations).toOption
   let editedWords := resolved.map (·.1)
   let edited_ ← (resolved.find? fun (w, error) => w.name == word.name && error.isNone).map (·.1)
   let ifStart := start + replacement.utf8ByteSize - 2
@@ -1254,10 +1294,11 @@ one error per word, so a mistake is reported where it is made and not again
 at every later operation it upsets. A word that calls one whose declared
 effect is no type scheme is not type-checked, and is reported as unchecked. -/
 def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResult :=
+  let config := withImportedEffects config
   match parse source with
   | .failure errors => .failure (errors.map PipelineDiagnostic.parse)
   | .success file =>
-      match resolveEach file.declarations (fun name => (config.erasureEnv.word name).isSome) with
+      match resolveFile config file.declarations with
       | .error error => .failure [.parse error]
       | .ok (resolved, stop) =>
           let words := resolved.map (·.1)
@@ -1344,7 +1385,8 @@ def elaborateWith (config : PipelineConfig) (source : String) : ElaborationResul
                     else .assumes word.name named edits diagnostic
               | .skipped callee span => [.unchecked word.name callee span]
               | .checked _ => []
-          let tail := (stop.map PipelineDiagnostic.parse).toList
+          let tail := (stop.map PipelineDiagnostic.parse).toList ++
+            (checkExports file.declarations).map PipelineDiagnostic.parse
           if !(errors ++ tail).isEmpty then .failure (errors ++ tail)
           else if words.isEmpty then
             .failure [.parse { code := "firth.elaboration.empty-program"

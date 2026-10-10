@@ -55,6 +55,11 @@ python3 tools/loop/firth_run.py check add.firth
 python3 tools/loop/firth_run.py run add.firth --entry main
 ```
 
+A program with imports is loaded from the source file's directory. `--root DIR`
+(accepted by `check` and `run`) names another source root, for imports that use
+`..` to reach files above it; `test` loads relative to the suite's source file
+directory.
+
 The run result is a JSON object containing:
 
 ```json
@@ -267,7 +272,8 @@ execution-trace equivalence.
 | `send`, file/network I/O, external resources | Not implemented by this portable execution path |
 | Source refinement annotations `{...}` | Rejected with `firth.refinement.unsupported-source` until source predicates and bodies are translated and checked, even when the annotation happens to be true |
 | Linear effects and pushed linear quotation values | Not supported by the portable compiler; unsupported ownership is rejected rather than erased |
-| Core vocabulary | `stdlib/core.firth` contains identity, duplication, discard and exchange examples; it is not automatically imported |
+| Multi-file programs | `import "path.firth";` first in a file, then `export name ...;` to offer words; paths are relative to the importing file and stay inside the source root; an importer sees the exported words of its direct imports only; one program is one dictionary, so two files defining one name are refused; files load imports first, the root last, and cycles are refused |
+| Core vocabulary | `stdlib/core.firth` exports its words (`export core.identity ...`); a program imports it by a relative path and then writes `use core;`. It is not automatically imported |
 | General-purpose standard library, package manager, editor language server | Future work |
 
 In particular, the `send-once` example in the frozen agent guide describes the

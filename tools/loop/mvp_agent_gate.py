@@ -119,7 +119,7 @@ TRACE_PREFIX_AGREED = "agreed-prefix"
 BUILD_TIMEOUT_SECONDS = 900
 ADAPTER_TIMEOUT_SECONDS = 60
 
-LEAN_ADAPTERS = ("firthElaborate", "firthCompile", "firthReferenceRun", "firthTargetRun")
+LEAN_ADAPTERS = ("firthElaborate", "firthCompile", "firthReferenceRun", "firthTargetRun", "firthSources")
 # The primitives the portable elaborator, compiler and VM all execute
 # (`surfacePrimitives` in src/interpreter/Firth/Interpreter.lean).
 PORTABLE_PRIMITIVES = ("+", "-", "*", "<", "=", "<=", ">", ">=", "div", "mod", "and", "or", "not", "seq-int.empty", "seq-int.len", "seq-int.at", "seq-int.push", "seq-int.set", "seq-bool.empty", "seq-bool.len", "seq-bool.at", "seq-bool.push", "seq-bool.set")
@@ -876,12 +876,40 @@ def compare_target_semantics(vm: dict[str, Any], semantics: dict[str, Any], name
             fail(f"{label}: {key} differs: VM {vm.get(key)!r}, Lean {semantics.get(key)!r}")
 
 
+def load_sources(name: str, source: Path, root: Path, workspace: Path) -> dict[str, Any]:
+    """The program's root file and every file it imports, read by `firthSources`.
+
+    `root` is the source root: imports are resolved relative to each file and
+    may not leave it (dec.multi-file-imports). Returns the source part of an
+    elaborate request: `source_path` (relative to `root`), `source_text` and
+    `files`, the imported files in load order.
+    """
+    root, source = root.resolve(), source.resolve()
+    try:
+        relative = source.relative_to(root).as_posix()
+    except ValueError:
+        fail(f"{name}: {source} is not inside the source root {root}")
+    response = adapter([str(LEAN_BIN / "firthSources")],
+                       {"request_id": name, "source_root": str(root), "source_path": relative},
+                       workspace, f"{name} sources")
+    expect_status(response, "success", f"{name} sources")
+    files = response.get("files")
+    if response.get("source_path") != relative or not isinstance(response.get("source_text"), str) \
+            or not isinstance(files, list) or not all(
+                isinstance(file, dict) and set(file) == {"source_path", "source_text"}
+                and all(isinstance(value, str) for value in file.values()) for file in files):
+        fail(f"{name} sources: malformed response")
+    return {"source_path": relative, "source_text": response["source_text"], "files": files}
+
+
 def rebuild(entry: dict[str, Any], workspace: Path, *,
             stack: list[Any] | None = None, fuel: int = FUEL,
             expected_trap: str | None = None) -> dict[str, Any]:
-    """Rebuilds one application in a workspace holding only its source.
+    """Rebuilds one application in a workspace holding only its source files.
 
-    With `expected_trap`, both hosts must stop with that trap (see `compare`).
+    The source is `entry["source"]`; the files it imports are read from
+    `entry["source_root"]`, by default the source's directory. With
+    `expected_trap`, both hosts must stop with that trap (see `compare`).
     """
     name = entry["name"]
     if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", name):
@@ -892,19 +920,30 @@ def rebuild(entry: dict[str, Any], workspace: Path, *,
     entry_word = entry.get("entry", name)
     scratch = workspace / name
     scratch.mkdir()
-    source_name = Path(entry["source_path"]).name
-    scratch_source = scratch / source_name
-    shutil.copyfile(entry["source"], scratch_source)
-    if sorted(item.name for item in scratch.iterdir()) != [source_name]:
-        fail(f"{name}: the scratch workspace holds more than the application source")
+    source = Path(entry["source"])
+    loaded = load_sources(name, source, Path(entry.get("source_root") or source.parent), workspace)
+    files = loaded["files"]
+    # A program without imports keeps the name its entry gives it; one with
+    # imports is named by its path under the source root, which they resolve
+    # against.
+    source_name = loaded["source_path"] if files else Path(entry["source_path"]).name
+    source_text = loaded["source_text"]
+    written = [source_name] + [file["source_path"] for file in files]
+    for path, text in zip(written, [source_text] + [file["source_text"] for file in files]):
+        (scratch / path).parent.mkdir(parents=True, exist_ok=True)
+        (scratch / path).write_text(text, encoding="utf-8")
+    held = sorted(item.relative_to(scratch).as_posix() for item in scratch.rglob("*") if item.is_file())
+    if held != sorted(written):
+        fail(f"{name}: the scratch workspace holds more than the application's source files")
 
-    source_text = scratch_source.read_text(encoding="utf-8")
+    source_envelope = {"source_path": source_name, "source_text": source_text}
+    if files:
+        source_envelope["files"] = files
     elaboration = adapter(
         [str(LEAN_BIN / "firthElaborate")],
         {
             "request_id": name,
-            "source_path": source_name,
-            "source_text": source_text,
+            **source_envelope,
             "language_version": LANGUAGE_VERSION,
             "gamma_version": GAMMA_VERSION,
         },
@@ -930,8 +969,7 @@ def rebuild(entry: dict[str, Any], workspace: Path, *,
             "erased_word_types": elaboration["erased_word_types"],
             "gamma_version": GAMMA_VERSION,
             "target_version": TARGET_VERSION,
-            "source": {"source_path": source_name, "source_text": source_text,
-                       "language_version": LANGUAGE_VERSION},
+            "source": {**source_envelope, "language_version": LANGUAGE_VERSION},
         },
         scratch,
         f"{name} compile",

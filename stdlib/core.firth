@@ -1,3 +1,5 @@
+export core.identity core.duplicate-int core.discard-int core.exchange-int core.example;
+
 vocab core {
   : identity
     ( forall ρ; ρ -- ρ )

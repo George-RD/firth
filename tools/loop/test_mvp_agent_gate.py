@@ -472,6 +472,8 @@ class ExecutionWiringTests(unittest.TestCase):
         reference, target = self.observations()
         def adapter(command, request, workspace, label):
             calls[label] = request
+            if label.endswith("sources"):
+                return sources_response(request)
             if label.endswith("elaborate"):
                 return elaboration
             if label.endswith("compile"):
@@ -542,6 +544,8 @@ class ExecutionWiringTests(unittest.TestCase):
                              "kernel_cost": 1, "image_version": 1, "frames": []}],
                   "cost": {"total": 1, "kernel": 1, "steps": 1}, "world_observation": {"bytes": [0]}}
         def adapter(command, request, workspace, label):
+            if label.endswith("sources"):
+                return sources_response(request)
             if label.endswith("elaborate"):
                 return elaboration
             if label.endswith("compile"):
@@ -557,6 +561,41 @@ class ExecutionWiringTests(unittest.TestCase):
             with patch.object(self.gate, "adapter", adapter):
                 return self.gate.rebuild({"name": "test", "entry": "main", "source": str(source),
                                          "source_path": "source.firth"}, root)
+
+    def test_rebuild_passes_imported_files_to_elaborate_and_compile(self) -> None:
+        # A program with imports: its files reach the scratch workspace, the
+        # elaborate request and the compiler's source binding, under their
+        # paths relative to the source root.
+        lib = {"source_path": "lib/one.firth", "source_text": "export one; : one ( -- n:Int ) 1;"}
+        calls: dict[str, dict] = {}
+        held: list[str] = []
+        original = self.gate.adapter
+
+        def recording(command, request, workspace, label):
+            calls[label] = request
+            if label.endswith("sources"):
+                return {**sources_response(request), "files": [lib]}
+            if label.endswith("elaborate"):
+                held.extend(sorted(item.relative_to(workspace).as_posix()
+                                   for item in workspace.rglob("*") if item.is_file()))
+            return original(command, request, workspace, label)
+
+        with patch.object(self.gate, "adapter", recording), \
+                self.assertRaises(self.gate.GateError):
+            # The real elaborator is not called here; stop at it.
+            with patch.object(self.gate, "run", side_effect=self.gate.GateError("stop")):
+                with tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory)
+                    (root / "app").mkdir()
+                    source = root / "app" / "main.firth"
+                    source.write_text('import "../lib/one.firth"; : main ( -- n:Int ) one;', encoding="utf-8")
+                    self.gate.rebuild({"name": "test", "entry": "main", "source": str(source),
+                                       "source_path": "main.firth", "source_root": str(root)}, root)
+        self.assertEqual(calls["test sources"]["source_path"], "app/main.firth")
+        request = calls["test elaborate"]
+        self.assertEqual(request["source_path"], "app/main.firth")
+        self.assertEqual(request["files"], [lib])
+        self.assertEqual(held, ["app/main.firth", "lib/one.firth"])
 
     def test_rebuild_fails_when_the_lean_target_semantics_disagrees(self) -> None:
         # Deleting the `compare_target_semantics` call from `rebuild` must turn
@@ -576,6 +615,13 @@ class ExecutionWiringTests(unittest.TestCase):
             with self.subTest(fuel=fuel), self.assertRaisesRegex(self.gate.GateError, "fuel"):
                 self.gate.rebuild({"name": "test", "entry": "main", "source": "x", "source_path": "x"},
                                   Path("/nonexistent"), fuel=fuel)
+
+
+def sources_response(request: dict[str, object]) -> dict[str, object]:
+    """What `firthSources` answers for a program without imports."""
+    path = Path(str(request["source_root"])) / str(request["source_path"])
+    return {"status": "success", "source_path": request["source_path"],
+            "source_text": path.read_text(encoding="utf-8"), "files": []}
 
 
 def render_toml(data: dict[str, object]) -> str:
