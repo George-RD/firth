@@ -1260,6 +1260,7 @@ def deepseek_driver() -> None:
                     answer("HELIOTROPE-47", model="deepseek-v4-pro"),
                     answer("HELIOTROPE-47", done=False), answer("HELIOTROPE-47", done=1),
                     (502, "bad gateway"),
+                    (502, answer("HELIOTROPE-47")[1]),  # the codeword, but not a 200
                     (200, "<html></html>"), OSError("reset")):
         check(probed(planted) == 1, f"planted: the probe fails on {planted!r}")
 
