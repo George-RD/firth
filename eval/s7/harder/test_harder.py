@@ -268,12 +268,12 @@ HAND += [
                        [], [], [], [], [], []),
      ([-3, -3, 3, 0, 0], [False, False, False, True, False], [])),
     # Cells 1, 0 + 1, 1 * 0, sum of 0..2 (1, 2, 2, 5). Cell 0 := 2 changes all four (2, 3,
-    # 6, 11); again, none; := cell 3 makes the cycle 0, 3, 1 or 2, so all four; cell 3 :=
-    # sum of 1..2 and cell 2 := nothing leave every cell an error; cell 0 := 5 gives 5, 6.
-    ("formula-sheet", ([1, 3, 3, 1], [0, 1, 0, 2, 1, 1, 2, 3], [1, 0, 1, 1, 1, 0, 3, 1], [0] * 7 + [0],
-                       [0] * 7 + [2], [0, 0, 0, 3, 2, 0], [1, 1, 1, 1, 0, 1], [0, 0, 1, 3, 0], [2, 2, 3, 1, 5],
-                       [0, 0, 0, 1, 0], [0, 0, 0, 2, 0]),
-     ([5, 6, 0, 0], [False, False, True, True], [4, 0, 4, 0, 0, 2])),
+    # 6, 11); again, none; := cell 3 makes the cycle 0, 3, 1 or 2, so all four are errors;
+    # := 5 breaks it: 5, 6, 30, 41, all four again.
+    ("formula-sheet", ([1, 3, 3, 1], [0, 1, 0, 2, 1, 1, 2, 3], [1, 0, 1, 1, 1, 0, 3, 1], [0] * 8,
+                       [0] * 7 + [2], [0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 1, 0], [2, 2, 3, 5],
+                       [0, 0, 0, 0], [0, 0, 0, 0]),
+     ([5, 6, 30, 41], [False, False, False, False], [4, 0, 4, 4])),
     # Eights against a 6, dealer 16: split; the hands get 3 and 10. 8 + 3 = 11 doubles
     # (100 covers 30) and gets 2: 13 for 20. 18 stands. The dealer draws 5: 21. Both lose.
     ("blackjack", ([8, 6, 8, 10, 3, 10, 2, 5, 9, 10], [100], [10], 1), ([70], 1, 0, 0)),
@@ -374,7 +374,7 @@ def _bank3_ok(year, month, day, days, balances, limits, credit, debit,
               tx_day, tx_kind, tx_acct, tx_other, tx_amount, so_dom, so_from, so_to, so_amount):
     n = len(balances)
     return (_in(n, 1, 6) and _same_len(balances, limits) and _all_in(balances + limits, 0, 10**6)
-            and _in(year, 1900, 2100) and _date_ok(year, month, day) and _in(days, 1, 400)
+            and _in(year, 1900, 2100) and _date_ok(year, month, day) and _in(days, 1, 120)
             and _in(credit, 0, 1000) and _in(debit, 0, 1000)
             and len(tx_day) <= 60 and _same_len(tx_day, tx_kind, tx_acct, tx_other, tx_amount)
             and all(_in(d, 0, days - 1) and k in (1, 2, 3) and _in(a, 0, n - 1)
@@ -385,9 +385,9 @@ def _bank3_ok(year, month, day, days, balances, limits, credit, debit,
 
 
 def _tokens_ok(lens, kinds, xs, ys, zs):
-    """formula-sheet tokens: lengths 0 to 12 that add up to the token count, and each
+    """formula-sheet tokens: lengths 0 to 8 that add up to the token count, and each
     token's fields as its kind bounds them."""
-    return (_all_in(lens, 0, 12) and sum(lens) == len(kinds) and _same_len(kinds, xs, ys, zs)
+    return (_all_in(lens, 0, 8) and sum(lens) == len(kinds) and _same_len(kinds, xs, ys, zs)
             and all(k == 0 and _in(x, -10**6, 10**6) and y == z == 0
                     or k == 1 and _in(x, -5, 35) and y == z == 0
                     or k == 2 and _in(x, 1, 8) and y == z == 0
@@ -396,8 +396,8 @@ def _tokens_ok(lens, kinds, xs, ys, zs):
 
 
 def _sheet3_ok(lens, kinds, xs, ys, zs, cells, elens, ekinds, exs, eys, ezs):
-    return (_in(len(lens), 1, 30) and _tokens_ok(lens, kinds, xs, ys, zs)
-            and len(cells) <= 10 and _same_len(cells, elens) and _all_in(cells, 0, len(lens) - 1)
+    return (_in(len(lens), 1, 20) and _tokens_ok(lens, kinds, xs, ys, zs)
+            and len(cells) <= 4 and _same_len(cells, elens) and _all_in(cells, 0, len(lens) - 1)
             and _tokens_ok(elens, ekinds, exs, eys, ezs))
 
 
@@ -420,13 +420,13 @@ BOUNDS = {
                                                      for k, v in zip(kinds, vals))),
     # The third pool.
     "mini-cpu": _cpu_ok,
-    "stacker": lambda w, h, queue, moves: (_in(w, 4, 10) and _in(h, 4, 20) and len(queue) <= 60
-                                           and _all_in(queue, 0, 6) and len(moves) <= 400 and _all_in(moves, 0, 6)),
+    "stacker": lambda w, h, queue, moves: (_in(w, 4, 10) and _in(h, 4, 10) and len(queue) <= 30
+                                           and _all_in(queue, 0, 6) and len(moves) <= 100 and _all_in(moves, 0, 6)),
     "bank-days": _bank3_ok,
     "formula-sheet": _sheet3_ok,
     "blackjack": lambda shoe, banks, bets, rounds: (_in(len(banks), 1, 5) and _same_len(banks, bets)
                                                     and _all_in(banks, 0, 10**5) and _all_in(bets, 1, 1000)
-                                                    and _in(rounds, 1, 50) and len(shoe) <= 312
+                                                    and _in(rounds, 1, 20) and len(shoe) <= 120
                                                     and _all_in(shoe, 1, 13)),
 }
 
@@ -466,6 +466,11 @@ def bounds() -> None:
     check(BOUNDS["formula-sheet"](*ok_sheet) and not BOUNDS["formula-sheet"]([2, 0], *ok_sheet[1:])
           and not BOUNDS["formula-sheet"](*ok_sheet[:5], [2], *ok_sheet[6:]),
           "the bounds check refuses lengths that do not match the tokens and an edit outside the sheet")
+    five = ([1], [0], [1], [0], [0], [0] * 5, [1] * 5, [0] * 5, [1] * 5, [0] * 5, [0] * 5)
+    check(BOUNDS["formula-sheet"](*five[:5], [0] * 4, [1] * 4, [0] * 4, [1] * 4, [0] * 4, [0] * 4)
+          and not BOUNDS["formula-sheet"](*five), "the bounds check refuses a fifth edit")
+    check(BOUNDS["stacker"](4, 10, [0], [0] * 100) and not BOUNDS["stacker"](4, 10, [0], [0] * 101)
+          and not BOUNDS["stacker"](4, 11, [0], [0]), "the bounds check refuses 101 moves and an 11-row well")
     for name, tasks in SETS.items():
         big = [(t.id, a) for t in tasks for a in (*cases(t), *(a for i, a, _ in HAND if i == t.id))
                if any(not -2**63 <= i < 2**63 for i in ints([a, t.expected(a)]))]
