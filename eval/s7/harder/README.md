@@ -480,12 +480,16 @@ is the one write its log records.
 The context scan, as for the second pool: each raw log through
 `eval/s7/context_seen.py` (`context-seen.json`), and a search of the whole
 log for the other five authors' directory names and agent ids,
-`task_status`, task notifications, compaction and `queued_command`. None
-has any of them, and no author was shown a project message. Every author
-was shown the same kinds of injected item as the second pool's: the
-session's system prompt, tool list and reminders (the repository's
-`AGENTS.md` among them, an S7 input), and the pre-registered
-`hook_non_blocking_error` items, two per round.
+`task_status`, task notifications, compaction and `queued_command`
+(`runs/2026-10-10-calibration3/scan.sh`, its output in `scan-output.txt`).
+`context_seen.py` ran without `--sample`, because on this commit it fails
+on a Sonnet sample name, so the grep is the cross-sample check. None has
+any of them, and no author was shown a project message. Every author was
+shown the same kinds of injected item as the second pool's: the session's
+system prompt, tool list and reminders (the repository's `AGENTS.md`
+among them, an S7 input), and the pre-registered `hook_non_blocking_error`
+items: two for each author, and six for Firth 3, which also had a
+feedback round.
 
 | | round 1 | within two rounds |
 | --- | --- | --- |

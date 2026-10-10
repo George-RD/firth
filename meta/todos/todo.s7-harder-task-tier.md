@@ -72,10 +72,26 @@ until the tasks get harder.
   round 1; Firth 10 of 10 for the two valid authors. Firth 3 was void
   (audit flag; 4 of 5, then 5 of 5, not scored). At the ceiling in both
   languages, so size alone does not separate Sonnet.
-- The audit flags an author who writes the same answer file more than
-  once, since it compares every write with the kept copy (Firth 3, pool
-  3). Before a scored run, either pre-register that rule as it stands or
-  change the audit to compare only the last write, with a planted case.
+- The audit flags each successful write that differs from the kept copy
+  (Firth 3, pool 3). Before a scored run, either pre-register that rule
+  as it stands or change the audit to compare only the last write, with
+  a planted case.
+- `eval/s7/context_seen.py --sample` fails on a Sonnet sample name (its
+  sample pattern knows only `haiku-...` names), so the pool-3 scan ran
+  without `--sample` and checked other authors' names with a grep
+  (`runs/2026-10-10-calibration3/scan.sh`, `scan-output.txt`). Before a
+  scored run, extend its sample names to Sonnet and DeepSeek, with a
+  planted case, keeping the Haiku call pattern `session.py` uses.
+- Two wording gaps in pool 3's formula-sheet description (review on
+  #223, checked against `calibration3.py`): "whose size is more than
+  1,000,000,000" does not say size means absolute value, and "An operator
+  or function 1 to 3 gives an error when any of its arguments ... is an
+  error" leaves operators 4 to 6 and 8 to be inferred. Hidden tests reach
+  both (a negative overflow in hidden test 7; error operands of `<`, `=`,
+  `/` or negate in hidden tests 13, 14, 18 and 19). The run stands, since
+  every author met the meaning, but pool 3's descriptions must be fixed
+  before any reuse, and the scored tasks' descriptions checked for the
+  same two kinds of gap.
 - Subject models (maintainer's decision cards, answered 10 October 2026):
   Sonnet 5.5 is confirmed as the primary subject, and DeepSeek v4.1 Flash
   joins the scored tier only (not calibration), through the connected
