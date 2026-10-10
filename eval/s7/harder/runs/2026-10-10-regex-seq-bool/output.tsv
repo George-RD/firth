@@ -1,0 +1,41 @@
+nest20	516278	success	True
+astar10	118531	success	True
+dotstar10	149393	success	True
+alt20	563579	success	True
+star20	432988	success	True
+a*x10 on a	148553	success	True
+a*x10 on ab	118153	success	True
+a*x10 on abc	115507	success	True
+.*x10 on a	149393	success	True
+.*x10 on ab	149393	success	True
+.*x10 on abc	149393	success	True
+(a*)*x4 on a	157263	success	True
+(a*)*x4 on ab	131319	success	True
+(a*)*x4 on abc	112188	success	True
+(a|b)*x5 on a	578612	success	True
+(a|b)*x5 on ab	582692	success	True
+(a|b)*x5 on abc	213363	success	True
+(.*)+x4 on a	196687	success	True
+(.*)+x4 on ab	196687	success	True
+(.*)+x4 on abc	196687	success	True
+a?x10 on a	184529	success	True
+a?x10 on ab	176897	success	True
+a?x10 on abc	175210	success	True
+(a*b*)* on a	235840	success	True
+(a*b*)* on ab	405320	success	True
+(a*b*)* on abc	177337	success	True
+a+x10 on a	186833	success	True
+a+x10 on ab	169001	success	True
+a+x10 on abc	168749	success	True
+(a|.)*x3 on a	590300	success	True
+(a|.)*x3 on ab	590732	success	True
+(a|.)*x3 on abc	590849	success	True
+((a*)*)* on a	261980	success	True
+((a*)*)* on ab	226764	success	True
+((a*)*)* on abc	138387	success	True
+(.?)*x4 on a	493775	success	True
+(.?)*x4 on ab	493775	success	True
+(.?)*x4 on abc	493775	success	True
+(a|b|c)* on a	812837	success	True
+(a|b|c)* on ab	815717	success	True
+(a|b|c)* on abc	816497	success	True

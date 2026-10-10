@@ -621,9 +621,15 @@ ran out of the budget at the drafted bounds (30 tokens, 10 strings of 20
 letters); the bounds were cut to 20 tokens and 8 strings of 12 letters and
 the reference rewritten as a position automaton with sets held as bits
 in one `Int` (Firth has no bitwise operations, so it ORs through a
-literal table). The first version costs up to 563,579 steps at the new
-bounds on five patterns built to be slow, so an answer written that way
-fits the budget too. `test_harder.py`
+literal table). The first version is kept, with its measurement, in
+`runs/2026-10-10-regex-seq-bool/` (`measure.py`, `output.tsv`). At the new
+bounds, on five patterns built to be slow and the 36 `regex` candidates of
+`costliest.py`, it agrees with the meaning on all 41 and costs up to
+816,497 steps (`(a|b|c)*` twice and `.*` twice against strings of `a`,
+`b` and `c`), so an answer written that way fits the budget on these
+inputs, though with less room than the bitset reference. That is a
+measurement, not a bound: a slower correct Firth answer can run out of
+steps where the same algorithm in Python passes. `test_harder.py`
 holds hand values for each task, checks every input against its stated
 bounds (structural ones included: the walls around a sokoban floor, the
 pieces on a draughts board, string lengths that add up to the letters, a
