@@ -6,7 +6,8 @@
    second and third pools and of the scored set keeps to its description's
    stated bounds, and every input and expected integer fits in an `Int`.
 2. Each task's Python reference solution (`reference/<set>/python/<id>.py`, written
-   separately from the ref) passes its example and hidden tests.
+   separately from the ref) passes its example and hidden tests, and the scored
+   set's agree with the meanings on 3,000 seeded random inputs per task.
 3. Each task's Firth reference solution (`reference/<set>/firth/<id>.firth`)
    passes its example and hidden tests on both hosts, using at most a
    quarter of the step budget on every case, so an author's slower but
@@ -365,6 +366,38 @@ HAND += [
     ("cache-sim", (1, 1, 1, 1, [5, 6, 7], [T, T, F]), (0, 3, 0, 3, 3, 1, 1, [7])),
 ]
 
+SCORED_EX = {t.id: t.example for t in SETS["scored"]}
+
+# The scored set's six examples, which an author is shown, also worked out by hand so
+# that the shown result does not rest on the meaning alone (Codex, #229).
+HAND += [
+    # Push down (box 15 to 21: wall below, but no wall left or right, so not dead); step
+    # right to 16 and down to 22; push left twice (box to 20, then 19: wall below and to
+    # the left, so dead); two undos (box back to 21, worker 22); up to 16, left to 15 and
+    # 14; undo (back to 15); right to 16; right into the wall at 17 is blocked.
+    ("sokoban", SCORED_EX["sokoban"], (16, [21], 13, 6, 3, 1, 3, 1, F)),
+    # White's man on 28 must capture. Over 24 it lands on 21; from there over 16 (to 12,
+    # where it stops) takes two, over 17 (to 14), then over 10 (to 7, row 1, where it
+    # stops) takes three, so it plays the three. Black's last man, on 16, steps to the
+    # lower of 20 and 21. Two plies played; white still has a move.
+    ("checkers", SCORED_EX["checkers"],
+     ([0] * 7 + [1] + [0] * 12 + [3] + [0] * 11, 2, 3, 0, 0, 0)),
+    ("regex", SCORED_EX["regex"], ([T, T, T, F, F, T, F], [3, 2, 4, -1, 2, 1, 2], 4, T)),
+    # Round 1: 3 (white) beats 1, 0 (white) draws with 2. Round 2 ranks 3, 0, 2, 1: 3 and 0
+    # have each had white once and last played white, so 3 (taken first) has white and
+    # loses; 2 and 1 last played black, so 2 has white and wins.
+    ("swiss", SCORED_EX["swiss"], ([3, 0, 3, 2], [5, 5, 3, 3], [0, 2, 3, 1], [1, 0, 1, 2], 0)),
+    # Day 0: 5 arrive (expiring day 1), 2 shipped. Day 2: the other 3 are thrown away and a
+    # supply is ordered, due day 12, after the last day. The orders of 4 (day 3) and 1
+    # (day 4) are owed and cancelled on days 10 and 11.
+    ("warehouse", SCORED_EX["warehouse"], ([0], 6, 2, 3, 5, 1, 0)),
+    # L1 one set of two, L2 one set of two: 1 and 2 miss both; 1 hits L1; 3 misses both,
+    # pushing clean 1 out of L2 and dirty 2 out of L1 into L2 (there, so used, dirty);
+    # 2 hits L2; 4 misses both (clean 3 leaves each level); 5 misses both, pushing dirty 2
+    # out of L2 to memory. Hits 1, 6, 1, 5; 5 reads, 1 write; dirty 4 in L1; L1 holds 4, 5.
+    ("cache-sim", SCORED_EX["cache-sim"], (1, 6, 1, 5, 5, 1, 1, [4, 5])),
+]
+
 
 def hand_values() -> None:
     for tid, args, want in HAND:
@@ -673,6 +706,33 @@ def python_references() -> None:
             bad = [args for args in cases(t)
                    if not harness.same(json.loads(json.dumps(as_list(ns["main"](*args), t))), t.expected(args))]
             check(not bad, f"Python reference {name}/{t.id} passes {len(cases(t))} cases (failing: {bad[:1]})")
+
+
+def scored_random_agreement(n: int = 3000) -> None:
+    """The scored set's Python references, written from the descriptions alone, agree
+    with the meanings on n seeded random inputs per task, beyond the hidden tests."""
+    import scored
+    gens = {"sokoban": lambda s: scored._random_sokoban(s, solve_at=s % 50) if s % 3 == 0
+            else scored._random_sokoban(s),
+            "checkers": scored._random_checkers, "regex": scored._random_regex,
+            "swiss": scored._random_swiss, "warehouse": scored._random_warehouse,
+            "cache-sim": scored._random_cache}
+    check(set(gens) == {t.id for t in SETS["scored"]}, "every scored task has a generator")
+
+    def disagree(src: str, tid: str) -> int:
+        ns: dict = {}
+        exec(compile(src, f"{tid}.py", "exec"), ns)
+        t = BY_ID[tid]
+        return sum(not harness.same(json.loads(json.dumps(as_list(ns["main"](*a), t))), t.expected(a))
+                   for a in map(gens[tid], range(n)))
+    for tid in gens:
+        src = (HERE / "reference" / "scored" / "python" / f"{tid}.py").read_text()
+        check(disagree(src, tid) == 0, f"Python reference scored/{tid} agrees with the meaning on {n} seeded inputs")
+    # Planted: a reference that cancels a backorder a day late disagrees.
+    src = (HERE / "reference" / "scored" / "python" / "warehouse.py").read_text()
+    assert src.count("d - 7") == 1
+    check(disagree(src.replace("d - 7", "d - 8"), "warehouse") > 0,
+          "the seeded comparison catches a warehouse reference that cancels a day late")
 
 
 def as_list(r, t):
@@ -1025,6 +1085,7 @@ def main() -> int:
     bounds()
     refusals()
     python_references()
+    scored_random_agreement()
     python_mutants()
     prompt_and_repair()
     if "--no-firth" not in sys.argv:

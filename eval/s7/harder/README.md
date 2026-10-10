@@ -576,7 +576,10 @@ reordering (`warehouse`) and a two-level write-back cache (`cache-sim`).
 Its Python references are 47 to 116 lines (466 in all) and its Firth ones
 139 to 454 (1,859), measured with `wc -l`. A Sonnet worker wrote the
 Python references from the descriptions alone; they agree with the
-meanings on 3,000 seeded random inputs per task.
+meanings on 3,000 seeded random inputs per task (`test_harder.py`,
+`scored_random_agreement`, with a planted reference that disagrees). Each
+example, which the author is shown, also has its result worked out by
+hand in `test_harder.py`.
 
 These are not longer programs than the third pool's (its Python references
 were 94 to 144 lines): that pool showed size alone does not separate
