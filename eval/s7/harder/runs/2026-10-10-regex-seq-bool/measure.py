@@ -50,9 +50,12 @@ def inputs() -> list[tuple[str, tuple]]:
 def run(name: str, args: tuple) -> tuple[str, str, str, bool]:
     t = {t.id: t for t in scored.SCORED}["regex"]
     args = json.loads(json.dumps(list(args)))
-    p = subprocess.run([sys.executable, "tools/loop/firth_run.py", "run", str(HERE / "regex-seq-bool.firth"),
-                        "--entry", "main", "--stack", json.dumps(args), "--fuel", "1000000"],
-                       cwd=ROOT, capture_output=True, text=True, timeout=3600)
+    try:
+        p = subprocess.run([sys.executable, "tools/loop/firth_run.py", "run", str(HERE / "regex-seq-bool.firth"),
+                            "--entry", "main", "--stack", json.dumps(args), "--fuel", "1000000"],
+                           cwd=ROOT, capture_output=True, text=True, timeout=3600)
+    except subprocess.TimeoutExpired:
+        return name, "None", "timeout", False
     try:
         out = json.loads(p.stdout)
     except json.JSONDecodeError:

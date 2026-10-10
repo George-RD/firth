@@ -147,7 +147,7 @@
   (forall ρ; ρ s:Seq Int^many c:Int^many inset:Seq Bool^many out:Seq Bool^many -- ρ r:Seq Bool^many)
   locals { s c inset out }
   { out prim seq-bool.len 1 prim - s prim seq-int.len prim <
-    [ out prim seq-bool.len 1 prim - 
+    [ out prim seq-bool.len 1 prim -
       locals { p }
       { s c inset
         out inset p prim seq-bool.at

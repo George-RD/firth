@@ -80,13 +80,17 @@ def candidates() -> dict[str, list[tuple[str, tuple]]]:
 def run(tid: str, name: str, args: tuple) -> tuple[str, str, int | None, bool]:
     t = {t.id: t for t in scored.SCORED}[tid]
     args = json.loads(json.dumps(list(args)))
-    p = subprocess.run([sys.executable, "tools/loop/firth_run.py", "run",
-                        str(HERE / "reference/scored/firth" / f"{tid}.firth"), "--entry", "main",
-                        "--stack", json.dumps(args), "--fuel", "1000000"],
-                       cwd=ROOT, capture_output=True, text=True, timeout=1800)
-    if p.returncode:
+    try:
+        p = subprocess.run([sys.executable, "tools/loop/firth_run.py", "run",
+                            str(HERE / "reference/scored/firth" / f"{tid}.firth"), "--entry", "main",
+                            "--stack", json.dumps(args), "--fuel", "1000000"],
+                           cwd=ROOT, capture_output=True, text=True, timeout=1800)
+        out = json.loads(p.stdout)
+    except (subprocess.TimeoutExpired, json.JSONDecodeError) as e:
+        # One failed candidate is recorded as a failure row, never stops the search.
+        detail = e if isinstance(e, subprocess.TimeoutExpired) else (p.stderr or p.stdout)[-300:]
+        print(f"{tid} {name}: {detail}", file=sys.stderr)
         return tid, name, None, False
-    out = json.loads(p.stdout)
     ok = out.get("status") == "success" and harness.same(out["stack"], t.expected(args))
     return tid, name, out.get("kernel_cost"), ok
 
