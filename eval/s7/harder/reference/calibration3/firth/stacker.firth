@@ -1,0 +1,325 @@
+\ Falling-blocks game ("stacker").
+\
+\ All mutable game state lives in one Seq Int called s (the "state"), so each
+\ word passes a single value around instead of a dozen. Slots:
+\    0 width        1 height       2 next queue index   3 next move index
+\    4 current kind (-1 = none)    5 rotation   6 x   7 y
+\    8 held kind (-1 = none)       9 may hold (0 or 1)
+\   10 score       11 rows removed 12 locks
+\   13 last row-clearing lock removed 4 rows (0 or 1)
+\   14 combo (locks in a row that cleared rows)
+\   15 status (-1 while running)
+\   16 stride (width + 16)    17 origin: slot of cell (0, 0)     18, 19 unused
+\   20 to 131 the shape table (below), copied into s so that a lookup is one `at`
+\   132 on: the well inside a wall 8 cells thick on every side, row-major with
+\   the given stride: cell (x, y) is slot 17's value + y * stride + x. A cell is
+\   0 when empty, 1 when filled or wall, so a piece that strays outside the well
+\   simply meets filled cells and no bounds checks are needed (a piece, or a
+\   piece tried at a kick offset, never strays more than 8 cells out).
+\ The queue and the moves are read-only and passed alongside s.
+
+\ Encoded square i of a piece: slot 20 + (kind * 4 + rotation) * 4 + i of s holds
+\ dx * 4 + dy (dx and dy are both 0 to 3). main fills the table in.
+\ Slot of cell (x, y) in the state.
+: cell
+  (forall ρ; ρ s:Seq Int^many x:Int^many y:Int^many -- ρ i:Int^many)
+  locals { s x y }
+  { s 17 prim seq-int.at y s 16 prim seq-int.at prim * prim + x prim + };
+
+\ True when (cx, cy) is inside the well and empty.
+: cell-free?
+  (forall ρ; ρ s:Seq Int^many cx:Int^many cy:Int^many -- ρ ok:Bool^many)
+  locals { s cx cy }
+  { cx 0 prim >=
+    [ cx s 0 prim seq-int.at prim <
+      [ cy 0 prim >=
+        [ cy s 1 prim seq-int.at prim <
+          [ s 132 cy s 0 prim seq-int.at prim * prim + cx prim + prim seq-int.at 0 prim = ]
+          [ false ] if ]
+        [ false ] if ]
+      [ false ] if ]
+    [ false ] if };
+
+\ True when squares i to 3 of the piece fit: square i of the piece whose shape
+\ starts at slot base of s is at (x + dx, y + dy), where slot base + i holds
+\ dx * 4 + dy.
+: fits-from
+  (forall ρ; ρ s:Seq Int^many base:Int^many x:Int^many y:Int^many i:Int^many -- ρ ok:Bool^many)
+  locals { s base x y i }
+  { i 4 prim <
+    [ s base i prim + prim seq-int.at
+      locals { code }
+      { s s x code 4 prim div prim + y code 4 prim mod prim + cell prim seq-int.at 0 prim =
+        [ s base x y i 1 prim + fits-from ]
+        [ false ] if } ]
+    [ true ] if };
+
+\ True when the piece of this kind fits at this rotation and position.
+: fits
+  (forall ρ; ρ s:Seq Int^many kind:Int^many rot:Int^many x:Int^many y:Int^many -- ρ ok:Bool^many)
+  locals { s kind rot x y }
+  { s kind 4 prim * rot prim + 4 prim * 20 prim + x y 0 fits-from };
+
+\ Makes kind the current piece at the spawn position; status 2 if it does not fit.
+: spawn
+  (forall ρ; ρ s:Seq Int^many kind:Int^many -- ρ r:Seq Int^many)
+  locals { s kind }
+  { s 4 kind prim seq-int.set
+    5 0 prim seq-int.set
+    6 s 0 prim seq-int.at 4 prim - 2 prim div prim seq-int.set
+    7 s 1 prim seq-int.at 4 prim - prim seq-int.set
+    9 1 prim seq-int.set
+    locals { t }
+    { t kind 0 t 6 prim seq-int.at t 7 prim seq-int.at fits
+      [ t ] [ t 15 2 prim seq-int.set ] if } };
+
+\ Spawns the next kind of the queue, or stops with status 0 when it has run out.
+: take-next
+  (forall ρ; ρ s:Seq Int^many queue:Seq Int^many -- ρ r:Seq Int^many)
+  locals { s queue }
+  { s 2 prim seq-int.at queue prim seq-int.len prim <
+    [ s 2 s 2 prim seq-int.at 1 prim + prim seq-int.set
+      queue s 2 prim seq-int.at prim seq-int.at spawn ]
+    [ s 15 0 prim seq-int.set ] if };
+
+\ Spawns a piece if there is none.
+: ensure-piece
+  (forall ρ; ρ s:Seq Int^many queue:Seq Int^many -- ρ r:Seq Int^many)
+  locals { s queue }
+  { s 4 prim seq-int.at -1 prim =
+    [ s queue take-next ] [ s ] if };
+
+\ Moves the piece one column by dx if it fits there.
+: shift
+  (forall ρ; ρ s:Seq Int^many dx:Int^many -- ρ r:Seq Int^many)
+  locals { s dx }
+  { s s 4 prim seq-int.at s 5 prim seq-int.at s 6 prim seq-int.at dx prim + s 7 prim seq-int.at fits
+    [ s 6 s 6 prim seq-int.at dx prim + prim seq-int.set ] [ s ] if };
+
+\ Moves the piece down one row if it fits there.
+: step-down
+  (forall ρ; ρ s:Seq Int^many -- ρ r:Seq Int^many)
+  locals { s }
+  { s s 4 prim seq-int.at s 5 prim seq-int.at s 6 prim seq-int.at s 7 prim seq-int.at 1 prim - fits
+    [ s 7 s 7 prim seq-int.at 1 prim - prim seq-int.set ] [ s ] if };
+
+\ Moves the piece down as far as it goes.
+: fall
+  (forall ρ; ρ s:Seq Int^many -- ρ r:Seq Int^many)
+  locals { s }
+  { s s 4 prim seq-int.at s 5 prim seq-int.at s 6 prim seq-int.at s 7 prim seq-int.at 1 prim - fits
+    [ s 7 s 7 prim seq-int.at 1 prim - prim seq-int.set fall ] [ s ] if };
+
+\ Kick offsets, tried in order.
+: kick-x
+  (forall ρ; ρ i:Int^many -- ρ r:Int^many)
+  { 0 -1 1 0 -2 2 } swap prim seq-int.at;
+: kick-y
+  (forall ρ; ρ i:Int^many -- ρ r:Int^many)
+  { 0 0 0 1 0 0 } swap prim seq-int.at;
+
+\ Tries kick i onward for the turned piece (rotation nr).
+: turn-try
+  (forall ρ; ρ s:Seq Int^many nr:Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { s nr i }
+  { i 6 prim <
+    [ s s 4 prim seq-int.at nr s 6 prim seq-int.at i kick-x prim + s 7 prim seq-int.at i kick-y prim + fits
+      [ s 5 nr prim seq-int.set
+        6 s 6 prim seq-int.at i kick-x prim + prim seq-int.set
+        7 s 7 prim seq-int.at i kick-y prim + prim seq-int.set ]
+      [ s nr i 1 prim + turn-try ] if ]
+    [ s ] if };
+
+\ Turns the piece: d is 1 (command 3) or 3 (command 4).
+: turn
+  (forall ρ; ρ s:Seq Int^many d:Int^many -- ρ r:Seq Int^many)
+  locals { s d }
+  { s s 5 prim seq-int.at d prim + 4 prim mod 0 turn-try };
+
+\ Command 6: swap with (or take into) the held kind.
+: hold
+  (forall ρ; ρ s:Seq Int^many queue:Seq Int^many -- ρ r:Seq Int^many)
+  locals { s queue }
+  { s 9 prim seq-int.at 0 prim =
+    [ s ]
+    [ s 8 prim seq-int.at -1 prim =
+      [ s 8 s 4 prim seq-int.at prim seq-int.set queue take-next 9 0 prim seq-int.set ]
+      [ s 8 s 4 prim seq-int.at prim seq-int.set s 8 prim seq-int.at spawn 9 0 prim seq-int.set ] if ] if };
+
+\ Fills squares i to 3 of the (landed) piece.
+: lock-cells
+  (forall ρ; ρ s:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { s i }
+  { i 4 prim <
+    [ s 20 s 4 prim seq-int.at 4 prim * s 5 prim seq-int.at prim + 4 prim * prim + i prim + prim seq-int.at
+      locals { code }
+      { s s s 6 prim seq-int.at code 4 prim div prim + s 7 prim seq-int.at code 4 prim mod prim + cell
+        1 prim seq-int.set
+        i 1 prim + lock-cells } ]
+    [ s ] if };
+
+\ True when row r is filled from column x to the right edge.
+: row-full?
+  (forall ρ; ρ s:Seq Int^many r:Int^many x:Int^many -- ρ ok:Bool^many)
+  locals { s r x }
+  { x s 0 prim seq-int.at prim <
+    [ s s x r cell prim seq-int.at 0 prim =
+      [ false ] [ s r x 1 prim + row-full? ] if ]
+    [ true ] if };
+
+\ Copies row from onto row to, columns x on.
+: copy-row
+  (forall ρ; ρ s:Seq Int^many from:Int^many to:Int^many x:Int^many -- ρ r:Seq Int^many)
+  locals { s from to x }
+  { x s 0 prim seq-int.at prim <
+    [ s
+      s x to cell
+      s s x from cell prim seq-int.at
+      prim seq-int.set
+      from to x 1 prim + copy-row ]
+    [ s ] if };
+
+\ Reads row rr upward, writing the rows that stay at wr upward.
+\ Leaves the state and the number of rows kept.
+: compact
+  (forall ρ; ρ s:Seq Int^many rr:Int^many wr:Int^many -- ρ r:Seq Int^many kept:Int^many)
+  locals { s rr wr }
+  { rr s 1 prim seq-int.at prim <
+    [ s rr 0 row-full?
+      [ s rr 1 prim + wr compact ]
+      [ rr wr prim =
+        [ s rr 1 prim + wr 1 prim + compact ]
+        [ s rr wr 0 copy-row rr 1 prim + wr 1 prim + compact ] if ] if ]
+    [ s wr ] if };
+
+\ Empties columns x on of row r.
+: clear-row
+  (forall ρ; ρ s:Seq Int^many r:Int^many x:Int^many -- ρ r:Seq Int^many)
+  locals { s r x }
+  { x s 0 prim seq-int.at prim <
+    [ s s x r cell 0 prim seq-int.set r x 1 prim + clear-row ] [ s ] if };
+
+\ Empties rows r up to the top.
+: clear-rows
+  (forall ρ; ρ s:Seq Int^many r:Int^many -- ρ r:Seq Int^many)
+  locals { s r }
+  { r s 1 prim seq-int.at prim <
+    [ s r 0 clear-row r 1 prim + clear-rows ] [ s ] if };
+
+\ Base score for clearing k rows (1200 for a back-to-back 4).
+: line-base
+  (forall ρ; ρ s:Seq Int^many k:Int^many -- ρ b:Int^many)
+  locals { s k }
+  { k 4 prim = s 13 prim seq-int.at 1 prim = prim and
+    [ 1200 ] [ { 0 100 300 500 800 } k prim seq-int.at ] if };
+
+\ Counts the lock and scores k removed rows (k may be 0).
+: score-lock
+  (forall ρ; ρ s:Seq Int^many k:Int^many -- ρ r:Seq Int^many)
+  locals { s k }
+  { s 12 s 12 prim seq-int.at 1 prim + prim seq-int.set
+    locals { t }
+    { k 0 prim =
+      [ t 14 0 prim seq-int.set ]
+      [ t
+        10 t 10 prim seq-int.at
+        s k line-base t 14 prim seq-int.at 50 prim * prim +
+        t 11 prim seq-int.at 10 prim div 1 prim + prim * prim +
+        prim seq-int.set
+        11 t 11 prim seq-int.at k prim + prim seq-int.set
+        14 t 14 prim seq-int.at 1 prim + prim seq-int.set
+        13 k 4 prim = [ 1 ] [ 0 ] if prim seq-int.set ] if } };
+
+\ Command 0: drop, lock, clear full rows, score.
+: drop-piece
+  (forall ρ; ρ s:Seq Int^many -- ρ r:Seq Int^many)
+  locals { s }
+  { s fall 0 lock-cells 4 -1 prim seq-int.set
+    0 0 compact
+    locals { t wr }
+    { t wr clear-rows
+      s 1 prim seq-int.at wr prim - score-lock } };
+
+\ Carries out one command.
+: command
+  (forall ρ; ρ s:Seq Int^many queue:Seq Int^many cmd:Int^many -- ρ r:Seq Int^many)
+  locals { s queue cmd }
+  { cmd 0 prim =
+    [ s drop-piece ]
+    [ cmd 1 prim =
+      [ s -1 shift ]
+      [ cmd 2 prim =
+        [ s 1 shift ]
+        [ cmd 3 prim =
+          [ s 1 turn ]
+          [ cmd 4 prim =
+            [ s 3 turn ]
+            [ cmd 5 prim =
+              [ s step-down ]
+              [ s queue hold ] if ] if ] if ] if ] if ] if };
+
+\ One round: spawn if needed, then carry out the next command.
+: round
+  (forall ρ; ρ s:Seq Int^many queue:Seq Int^many moves:Seq Int^many -- ρ r:Seq Int^many)
+  locals { s queue moves }
+  { s queue ensure-piece
+    locals { t }
+    { t 15 prim seq-int.at -1 prim =
+      [ t 3 prim seq-int.at moves prim seq-int.len prim <
+        [ t 3 t 3 prim seq-int.at 1 prim + prim seq-int.set
+          queue moves t 3 prim seq-int.at prim seq-int.at command ]
+        [ t 15 1 prim seq-int.set ] if ]
+      [ t ] if } };
+
+\ Rounds until the status is set.
+: run
+  (forall ρ; ρ s:Seq Int^many queue:Seq Int^many moves:Seq Int^many -- ρ r:Seq Int^many)
+  locals { s queue moves }
+  { s 15 prim seq-int.at -1 prim =
+    [ s queue moves round queue moves run ] [ s ] if };
+
+\ Appends ones until the sequence has n elements.
+: pad
+  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Seq Int^many)
+  locals { xs n }
+  { xs prim seq-int.len n prim <
+    [ xs 1 prim seq-int.push n pad ] [ xs ] if };
+
+\ Height of column x, looking down from row y.
+: col-height
+  (forall ρ; ρ s:Seq Int^many x:Int^many y:Int^many -- ρ h:Int^many)
+  locals { s x y }
+  { y 0 prim <
+    [ 0 ]
+    [ s s x y cell prim seq-int.at 0 prim =
+      [ s x y 1 prim - col-height ] [ y 1 prim + ] if ] if };
+
+\ The heights of columns x on, appended to out.
+: heights
+  (forall ρ; ρ s:Seq Int^many x:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { s x out }
+  { x s 0 prim seq-int.at prim <
+    [ s x 1 prim + out s x s 1 prim seq-int.at 1 prim - col-height prim seq-int.push heights ]
+    [ out ] if };
+
+: main
+  (forall ρ; ρ width:Int^many height:Int^many queue:Seq Int^many moves:Seq Int^many -- ρ heights:Seq Int^many score:Int^many rows:Int^many locks:Int^many status:Int^many held:Int^many)
+  locals { width height queue moves }
+  { { 0 0 0 0 -1 0 0 0 -1 0 0 0 0 0 0 -1 0 0 0 0
+  2 6 10 14 8 9 10 11 1 5 9 13 4 5 6 7
+       5 9 6 10 5 9 6 10 5 9 6 10 5 9 6 10
+       2 6 10 7 5 6 7 10 2 6 10 5 5 6 7 2
+       2 6 7 11 7 6 10 9 1 5 6 10 3 2 6 5
+       3 7 6 10 11 10 6 5 2 6 5 9 7 6 2 1
+       2 6 10 11 7 6 5 9 1 2 6 10 3 7 6 5
+       3 2 6 10 5 6 7 11 2 6 10 9 1 5 6 7 }
+    0 width prim seq-int.set 1 height prim seq-int.set
+    16 width 16 prim + prim seq-int.set
+    17 132 width 16 prim + 8 prim * prim + 8 prim + prim seq-int.set
+    132 width 16 prim + height 16 prim + prim * prim + pad
+    0 clear-rows
+    queue moves run
+    locals { s }
+    { s 0 prim seq-int.empty heights
+      s 10 prim seq-int.at s 11 prim seq-int.at s 12 prim seq-int.at
+      s 15 prim seq-int.at s 8 prim seq-int.at } };

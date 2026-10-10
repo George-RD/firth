@@ -475,7 +475,8 @@ class ExecutionWiringTests(unittest.TestCase):
             if label.endswith("elaborate"):
                 return elaboration
             if label.endswith("compile"):
-                return {"status": "success", "target_program": {"entry": "main", "words": [main, helper]}}
+                return {"status": "success", "target_program": {"entry": "main", "words": [
+                    {**word, "body_digest": "0" * 64} for word in (main, helper)]}}
             if label.endswith("target-run"):
                 return lean_semantics(target)
             return reference if label.endswith("reference-run") else target
@@ -544,7 +545,8 @@ class ExecutionWiringTests(unittest.TestCase):
             if label.endswith("elaborate"):
                 return elaboration
             if label.endswith("compile"):
-                return {"status": "success", "target_program": {"entry": "main", "words": [main]}}
+                return {"status": "success", "target_program": {"entry": "main", "words": [
+                    {**main, "body_digest": "0" * 64}]}}
             if label.endswith("target-run"):
                 return semantics_of(target)
             return reference if label.endswith("reference-run") else target

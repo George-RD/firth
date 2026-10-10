@@ -990,6 +990,8 @@ def rebuild(entry: dict[str, Any], workspace: Path, *,
         "entry": entry_word,
         "target_entry": target_program["target_program"]["entry"],
         "words": len(target_program["target_program"]["words"]),
+        "image": [{"name": word["name"], "body_digest": word["body_digest"]}
+                  for word in target_program["target_program"]["words"]],
         "stack": vm["stack"],
         "cost": vm["cost"]["total"],
         "kernel_cost": vm["cost"]["kernel"],

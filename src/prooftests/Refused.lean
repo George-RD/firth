@@ -74,4 +74,21 @@ theorem foreignDictionary :
   intro ⟨x, y⟩ tail (h : InInt64 (x - y))
   exact (show Runs int64Gamma _ defaultCosts _ _ _ 1 1 by runs_chain).within
 
+/-- A target theorem or `True`, which holds whatever the image does. Named as
+`sumTo`'s target in `refused.json`, it must refuse that contract. -/
+theorem targetOrTrue : Firth.Compiler.ContractTarget.TargetHolds sumToContract dictionary
+    (Firth.Compiler.ContractTarget.exportPrograms words) "sum-to" «sum-to».body ∨ True :=
+  .inr trivial
+
+/-- A target theorem under a hypothesis that cannot hold. -/
+theorem targetFalseHypothesis (h : 1 = 2) : Firth.Compiler.ContractTarget.TargetHolds sumToContract
+    dictionary (Firth.Compiler.ContractTarget.exportPrograms words) "sum-to" «sum-to».body :=
+  absurd h (by decide)
+
+/-- `sumTo`'s real target theorem named for `abs`'s contract: about another
+word, contract and export, so not the statement the audit builds. -/
+theorem targetOtherWord : Firth.Compiler.ContractTarget.TargetHolds sumToContract dictionary
+    (Firth.Compiler.ContractTarget.exportPrograms words) "sum-to" «sum-to».body :=
+  sumToTarget
+
 end Firth.ProofTests.Refused

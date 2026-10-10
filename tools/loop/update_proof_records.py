@@ -9,7 +9,8 @@ writes that report to `src/proofs/records.json`.
 Before trusting the audit, it runs it on the fixtures in `src/prooftests/`:
 every contract in `refused.json` must be refused for its expected reason, and
 every contract in `accepted.json` must be accepted with exactly its expected
-coverage and cost table. An audit that stopped refusing, or began to
+coverage and cost table, and the one with a target theorem with exactly its
+expected target image. An audit that stopped refusing, or began to
 overclaim coverage, fails here rather than admitting a proof.
 
 It also plants two narrowed helpers, a definition and an inductive type, in
@@ -25,6 +26,11 @@ stale cost table digest, a stale registry digest, a stale body digest, a stale
 erased type, a stale statement digest, a stale Lean version, an edited
 precondition, and a forged cover for a word the record does not cover. The
 stale body digest is planted on each covered word in turn, callees included.
+A record that names a target theorem also gets a stale body digest on each
+word of its target image in turn, and another entry name. Since two records
+can cover the same words, each plant must also remove the record's own
+theorem from every word's list of theorems. A contract whose target fields are
+present but malformed must refuse the whole run.
 Each must withdraw contract_verified from the words that record covers, and
 the forged cover must not verify its word.
 
@@ -51,6 +57,7 @@ FIXTURES = ROOT / "src" / "prooftests"
 REFUSED = "Firth.ProofTests.Refused"
 ACCEPTED = "Firth.ProofTests.Accepted"
 NOT_THE_CONTRACT = "its statement is not"
+NOT_THE_TARGET = "its target statement is not"
 # Each refused fixture and the start of its expected reason. The four
 # NOT_THE_CONTRACT probes from falseHypothesis on were all accepted, as
 # covering sum-to, by the audit this replaced.
@@ -66,6 +73,11 @@ EXPECTED_REFUSALS = {
     f"{REFUSED}.foreignDictionary": NOT_THE_CONTRACT,
     f"{ACCEPTED}.absOnly": NOT_THE_CONTRACT,
     "Firth.ProofTests.Gone.anything": "the source of prooftests.Gone",
+    # Target theorems (src/compiler/Firth/ContractTarget.lean), each named for a
+    # contract the audit otherwise accepts, so the target alone refuses it.
+    f"{REFUSED}.targetOrTrue": NOT_THE_TARGET,
+    f"{REFUSED}.targetFalseHypothesis": NOT_THE_TARGET,
+    f"{REFUSED}.targetOtherWord": NOT_THE_TARGET,
 }
 # Each accepted fixture, the exact (module, word) pairs it must cover, and the
 # cost table it must be bound to. sum-to calls sum-acc; abs calls nothing and
@@ -92,6 +104,11 @@ EXPECTED_ACCEPTED = {
                                      f"{ACCEPTED}.doubledPrimitives"),
     "Firth.ProofTests.Helper.absAllowed": ([("Programs.Signed", "abs")], DEFAULT_COSTS),
     "Firth.ProofTests.Helper.absOk": ([("Programs.Signed", "abs")], DEFAULT_COSTS),
+}
+# The accepted fixture with a target theorem: its entry's target name and the
+# (word, target name) of every word of its export, in declaration order.
+EXPECTED_TARGETS = {
+    f"{ACCEPTED}.sumTo": ("sum_hto", [("sum-to", "sum_hto"), ("sum-acc", "sum_hacc")]),
 }
 
 
@@ -146,6 +163,30 @@ def check_helper_edit(report: str, theorem: str, original_text: str,
     return []
 
 
+def check_malformed_targets() -> list[str]:
+    """A contract whose target fields are present but malformed must refuse
+    the run, never be read as a contract without a target."""
+    problems: list[str] = []
+    base = json.loads((FIXTURES / "accepted.json").read_text(encoding="utf-8"))[0]
+    for theorem, module in ((5, "prooftests.Accepted"),
+                            (5, 6),
+                            ("Firth.ProofTests.Accepted.sumToTarget", None),
+                            ("Firth.ProofTests.Accepted.sumToTarget", ["prooftests.Accepted"])):
+        contract = {**base, "target_theorem": theorem}
+        if module is None:
+            contract.pop("target_module", None)
+        else:
+            contract["target_module"] = module
+        with tempfile.TemporaryDirectory() as scratch:
+            path = Path(scratch) / "malformed.json"
+            path.write_text(json.dumps([contract]), encoding="utf-8")
+            result = audit("--fixtures", str(path))
+        if result.returncode != 1 or "target" not in result.stderr:
+            problems.append(f"malformed target fields {theorem!r}, {module!r} were not refused: "
+                            f"exit {result.returncode}, {result.stderr.strip()}")
+    return problems
+
+
 def check_fixtures() -> list[str]:
     problems: list[str] = []
     result = audit("--fixtures", str(FIXTURES / "refused.json"))
@@ -175,8 +216,26 @@ def check_fixtures() -> list[str]:
         if binding["name"] != costs:
             problems.append(f"{name} is bound to cost table {binding}, expected {costs}")
         digests[binding["name"]] = binding["digest"]
+        target = records[name].get("target")
+        if name in EXPECTED_TARGETS:
+            entry, image = EXPECTED_TARGETS[name]
+            found = None if target is None else (
+                target["entry"], [(row["word"], row["target_word"]) for row in target["image"]])
+            if found != (entry, image):
+                problems.append(f"{name} names target {found}, expected {(entry, image)}")
+            # The audit lowers each word and digests the code itself; the
+            # export's digest comes from the compiler's own JSON, so the two
+            # must agree word for word.
+            exported = {item["word"]: item["body_digest"] for item in records[name]["covers"]}
+            for row in [] if target is None else target["image"]:
+                if row["body_digest"] != exported.get(row["word"]):
+                    problems.append(f"{name} target digest of {row['word']} is {row['body_digest']}, "
+                                    f"the export's is {exported.get(row['word'])}")
+        elif target is not None:
+            problems.append(f"{name} names a target it does not claim")
     if len(set(digests.values())) != len(digests):
         problems.append(f"different cost tables share a digest: {digests}")
+    problems += check_malformed_targets()
     for theorem, original_text, planted_text in HELPER_EDITS:
         problems += check_helper_edit(result.stdout, theorem, original_text, planted_text)
     return problems
@@ -212,6 +271,10 @@ def plant(record: dict, change: str, words: list[dict], cover: int = 0) -> str |
         record["statement_digest"] = "0" * 64
     elif change == "precondition":
         record["statement"]["pre"] = "fun _ => True"
+    elif change == "target image":
+        record["target"]["image"][cover]["body_digest"] = "0" * 64
+    elif change == "target entry":
+        record["target"]["entry"] = record["target"]["image"][-1]["target_word"] + "x"
     elif change == "forged cover":
         covered = {(item["module"], item["word"]) for item in record["covers"]}
         other = next(word for word in words if (word["module"], word["word"]) not in covered)
@@ -246,21 +309,31 @@ def check_staleness(report: str) -> list[str]:
                                              "statement digest", "toolchain",
                                              "precondition", "forged cover")]
         plants += [("body digest", cover) for cover in range(len(record["covers"]))]
+        if "target" in record:
+            plants += [("target entry", 0)]
+            plants += [("target image", row) for row in range(len(record["target"]["image"]))]
         for change, cover in plants:
             planted = json.loads(report)
             plant(planted["records"][index], change, parsed["words"], cover)
             label = f"{change} ({record['covers'][cover]['word']})" if change == "body digest" \
-                else change
+                else f"{change} ({record['target']['image'][cover]['word']})" \
+                if change == "target image" else change
             result = status(json.dumps(planted))
             if result.returncode != 0:
                 problems.append(f"--status failed on a planted {label} in "
                                 f"{record['theorem']}:\n{result.stderr}")
                 continue
-            still = verified_words(json.loads(result.stdout)["words"])
+            words = json.loads(result.stdout)["words"]
+            still = verified_words(words)
             if still != expected:
                 problems.append(f"a planted {label} in {record['theorem']} left "
                                 f"{sorted(still - expected)} contract_verified"
                                 f" or withdrew {sorted(expected - still)}")
+            # Two records can cover the same words (the allocator's two
+            # contracts do), so the record's own theorem must be gone too.
+            if any(record["theorem"] in word.get("theorems", []) for word in words):
+                problems.append(f"a planted {label} in {record['theorem']} still "
+                                f"counts that theorem for a word")
     return problems
 
 

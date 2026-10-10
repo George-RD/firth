@@ -1,0 +1,348 @@
+\ Blackjack rounds dealt from a fixed shoe.
+\
+\ A hand is carried as two numbers: s, the sum of its cards with every ace
+\ counting 1, and a, 1 when it holds an ace and 0 otherwise. Its total is
+\ s + 10 when a = 1 and that stays at 21 or less (a soft hand), else s.
+\
+\ The shoe is read through a position pos. Reading past the end gives
+\ card 0 and sets pos to length + 1, which stays there: "pos > length" means
+\ "a card was needed and none was left". Every drawing loop stops once that
+\ holds, and the round that hit it is dropped by the caller.
+\
+\ Hands played by the players are collected in one flat sequence of triples
+\ (player, total, stake). The dealer then draws and every triple is settled
+\ against the dealer's total, adding wins and losses to a per-player delta
+\ sequence that is applied to the bankrolls when the round completes.
+
+\ xs[i].
+: at
+  (forall ρ; ρ xs:Seq Int^many i:Int^many -- ρ x:Int^many)
+  prim seq-int.at;
+
+\ What a rank counts for: 10 for ranks 10 to 13, the rank otherwise (ace = 1).
+: cval
+  (forall ρ; ρ r:Int^many -- ρ v:Int^many)
+  locals { r }
+  { r 10 prim > [ 10 ] [ r ] if };
+
+\ Adds a card of rank r to the hand (s, a).
+: add-card
+  (forall ρ; ρ s:Int^many a:Int^many r:Int^many -- ρ s2:Int^many a2:Int^many)
+  locals { s a r }
+  { s r cval prim +
+    r 1 prim = [ 1 ] [ a ] if };
+
+\ True when the hand counts an ace as 11.
+: soft?
+  (forall ρ; ρ s:Int^many a:Int^many -- ρ r:Bool^many)
+  locals { s a }
+  { a 1 prim = s 10 prim + 21 prim <= prim and };
+
+\ The hand's total.
+: htotal
+  (forall ρ; ρ s:Int^many a:Int^many -- ρ t:Int^many)
+  locals { s a }
+  { s a soft? [ s 10 prim + ] [ s ] if };
+
+\ True when the two cards of ranks r1 and r2 are a natural (21 with two cards).
+: nat?
+  (forall ρ; ρ r1:Int^many r2:Int^many -- ρ r:Bool^many)
+  locals { r1 r2 }
+  { 0 0 r1 add-card r2 add-card htotal 21 prim = };
+
+\ True when a card was needed and the shoe had none left.
+: failed?
+  (forall ρ; ρ shoe:Seq Int^many pos:Int^many -- ρ r:Bool^many)
+  locals { shoe pos }
+  { pos shoe prim seq-int.len prim > };
+
+\ Takes the card at pos: the card and the next position (see the header).
+: draw
+  (forall ρ; ρ shoe:Seq Int^many pos:Int^many -- ρ card:Int^many npos:Int^many)
+  locals { shoe pos }
+  { pos shoe prim seq-int.len prim <
+    [ shoe pos at pos 1 prim + ]
+    [ 0 shoe prim seq-int.len 1 prim + ] if };
+
+\ Whether a player holding (s, a) wants another card against up card `up`:
+\ soft hands up to 17; hard hands up to 11, and 12 to 16 when the up card is
+\ an ace or of rank 7 or more.
+: want-more?
+  (forall ρ; ρ s:Int^many a:Int^many up:Int^many -- ρ r:Bool^many)
+  locals { s a up }
+  { s a htotal
+    locals { t }
+    { s a soft?
+      [ t 17 prim <= ]
+      [ t 11 prim <=
+        t 12 prim >= t 16 prim <= prim and
+        up 1 prim = up 7 prim >= prim or
+        prim and
+        prim or ] if } };
+
+\ A player draws while they want a card, stopping if the shoe runs dry.
+: hit-loop
+  (forall ρ; ρ shoe:Seq Int^many pos:Int^many s:Int^many a:Int^many up:Int^many -- ρ rpos:Int^many rs:Int^many ra:Int^many)
+  locals { shoe pos s a up }
+  { shoe pos failed?
+    [ pos s a ]
+    [ s a up want-more?
+      [ shoe pos draw
+        locals { c np }
+        { shoe np s a c add-card up hit-loop } ]
+      [ pos s a ] if ] if };
+
+\ Plays one hand of two cards. afford is whether the bankroll covers doubling.
+\ A hard 10 or 11 against an up card of 2 to 9 doubles: one card, then stand.
+\ Returns the position, the final hand and 1 if the stake was doubled.
+: play-hand
+  (forall ρ; ρ shoe:Seq Int^many pos:Int^many s:Int^many a:Int^many up:Int^many afford:Bool^many -- ρ rpos:Int^many rs:Int^many ra:Int^many dbl:Int^many)
+  locals { shoe pos s a up afford }
+  { s a htotal
+    locals { t }
+    { afford
+      t 10 prim >= t 11 prim <= prim and
+      up 2 prim >= up 9 prim <= prim and
+      prim and prim and
+      [ shoe pos draw
+        locals { c np }
+        { np s a c add-card 1 } ]
+      [ shoe pos s a up hit-loop 0 ] if } };
+
+\ Appends the triple (player i, total t, stake k) to the hand list.
+: add-hand
+  (forall ρ; ρ hands:Seq Int^many i:Int^many t:Int^many k:Int^many -- ρ rhands:Seq Int^many)
+  locals { hands i t k }
+  { hands i prim seq-int.push t prim seq-int.push k prim seq-int.push };
+
+\ Plays a split pair of eights: hand 1 (s1, a1) then hand 2 (s2, a2), each by
+\ the usual rules. Staked so far on the player's hands is 2 bets for hand 1,
+\ and hand 1's stake plus one bet for hand 2.
+: play-eights
+  (forall ρ; ρ shoe:Seq Int^many pos:Int^many hands:Seq Int^many i:Int^many s1:Int^many a1:Int^many s2:Int^many a2:Int^many up:Int^many bank:Int^many bet:Int^many -- ρ rpos:Int^many rhands:Seq Int^many)
+  locals { shoe pos hands i s1 a1 s2 a2 up bank bet }
+  { shoe pos s1 a1 up bank bet 3 prim * prim >= play-hand
+    locals { pa sa aa da }
+    { bet da 1 prim + prim *
+      locals { stake1 }
+      { shoe pa s2 a2 up bank stake1 bet 2 prim * prim + prim >= play-hand
+        locals { pb sb ab db }
+        { pb
+          hands i sa aa htotal stake1 add-hand
+          i sb ab htotal bet db 1 prim + prim * add-hand } } } };
+
+\ Plays a player's turn on two non-natural cards r1 and r2: splits aces and
+\ eights when the bankroll allows, otherwise plays one hand.
+: play-player
+  (forall ρ; ρ shoe:Seq Int^many pos:Int^many hands:Seq Int^many i:Int^many r1:Int^many r2:Int^many up:Int^many bank:Int^many bet:Int^many -- ρ rpos:Int^many rhands:Seq Int^many)
+  locals { shoe pos hands i r1 r2 up bank bet }
+  { r1 r2 prim =
+    r1 1 prim = r1 8 prim = prim or prim and
+    bank bet 2 prim * prim >= prim and
+    [ \ split: each card becomes a hand, which gets one more card in turn
+      shoe pos draw
+      locals { x1 p1 }
+      { shoe p1 draw
+        locals { x2 p2 }
+        { 0 0 r1 add-card x1 add-card
+          locals { s1 a1 }
+          { 0 0 r2 add-card x2 add-card
+            locals { s2 a2 }
+            { r1 1 prim =
+              [ \ split aces stand
+                p2
+                hands i s1 a1 htotal bet add-hand
+                i s2 a2 htotal bet add-hand ]
+              [ shoe p2 hands i s1 a1 s2 a2 up bank bet play-eights ] if } } } } ]
+    [ \ one hand
+      shoe pos 0 0 r1 add-card r2 add-card up bank bet 2 prim * prim >= play-hand
+      locals { np s a d }
+      { np hands i s a htotal bet d 1 prim + prim * add-hand } ] if };
+
+\ Players i on, in order: each participant without a natural plays.
+\ c1 and c2 hold the two cards dealt to each player (0 for non-participants).
+: play-pass
+  (forall ρ; ρ shoe:Seq Int^many bank:Seq Int^many bets:Seq Int^many c1:Seq Int^many c2:Seq Int^many up:Int^many i:Int^many pos:Int^many hands:Seq Int^many -- ρ rpos:Int^many rhands:Seq Int^many)
+  locals { shoe bank bets c1 c2 up i pos hands }
+  { i bank prim seq-int.len prim <
+    [ bank i at bets i at prim >=
+      c1 i at c2 i at nat? prim not prim and
+      [ shoe pos hands i c1 i at c2 i at up bank i at bets i at play-player ]
+      [ pos hands ] if
+      locals { p2 h2 }
+      { shoe bank bets c1 c2 up i 1 prim + p2 h2 play-pass } ]
+    [ pos hands ] if };
+
+\ True when some hand in the triples from index j on has a total of 21 or less.
+: live?
+  (forall ρ; ρ hands:Seq Int^many j:Int^many -- ρ r:Bool^many)
+  locals { hands j }
+  { j hands prim seq-int.len prim <
+    [ hands j 1 prim + at 21 prim <=
+      [ true ]
+      [ hands j 3 prim + live? ] if ]
+    [ false ] if };
+
+\ The dealer draws while below 17 (standing on every 17).
+: dealer-loop
+  (forall ρ; ρ shoe:Seq Int^many pos:Int^many s:Int^many a:Int^many -- ρ rpos:Int^many rs:Int^many ra:Int^many)
+  locals { shoe pos s a }
+  { shoe pos failed?
+    [ pos s a ]
+    [ s a htotal 17 prim <
+      [ shoe pos draw
+        locals { c np }
+        { shoe np s a c add-card dealer-loop } ]
+      [ pos s a ] if ] if };
+
+\ Settles the triples from index j on against the dealer total dt, adding
+\ each win or loss to delta.
+: settle
+  (forall ρ; ρ hands:Seq Int^many j:Int^many dt:Int^many delta:Seq Int^many -- ρ rdelta:Seq Int^many)
+  locals { hands j dt delta }
+  { j hands prim seq-int.len prim <
+    [ hands j at
+      hands j 1 prim + at
+      hands j 2 prim + at
+      locals { p t k }
+      { t 21 prim >
+        [ 0 k prim - ]
+        [ dt 21 prim > dt t prim < prim or
+          [ k ]
+          [ dt t prim > [ 0 k prim - ] [ 0 ] if ] if ] if
+        locals { amt }
+        { hands j 3 prim + dt delta p delta p at amt prim + prim seq-int.set settle } } ]
+    [ delta ] if };
+
+\ Deals one card to each participant (bankroll at least bet), in player order,
+\ starting at position p; non-participants get 0. Returns the cards and the
+\ next position.
+: deal-pass
+  (forall ρ; ρ shoe:Seq Int^many bank:Seq Int^many bets:Seq Int^many i:Int^many p:Int^many out:Seq Int^many -- ρ rout:Seq Int^many rp:Int^many)
+  locals { shoe bank bets i p out }
+  { i bank prim seq-int.len prim <
+    [ bank i at bets i at prim >=
+      [ shoe bank bets i 1 prim + p 1 prim + out shoe p at prim seq-int.push deal-pass ]
+      [ shoe bank bets i 1 prim + p out 0 prim seq-int.push deal-pass ] if ]
+    [ out p ] if };
+
+\ How many players from i on can cover their bet.
+: count-part
+  (forall ρ; ρ bank:Seq Int^many bets:Seq Int^many i:Int^many acc:Int^many -- ρ n:Int^many)
+  locals { bank bets i acc }
+  { i bank prim seq-int.len prim <
+    [ bank bets i 1 prim + bank i at bets i at prim >= [ acc 1 prim + ] [ acc ] if count-part ]
+    [ acc ] if };
+
+\ How many players from i on were dealt a natural.
+: count-nat
+  (forall ρ; ρ c1:Seq Int^many c2:Seq Int^many i:Int^many acc:Int^many -- ρ n:Int^many)
+  locals { c1 c2 i acc }
+  { i c1 prim seq-int.len prim <
+    [ c1 c2 i 1 prim + c1 i at c2 i at nat? [ acc 1 prim + ] [ acc ] if count-nat ]
+    [ acc ] if };
+
+\ The immediate result for each player from i on, pushed onto out: if the
+\ dealer has a natural (dn), a player with a natural keeps their bet (0) and
+\ every other participant loses it; otherwise a player with a natural wins
+\ 3 times the bet divided by 2, rounded down, and everyone else gets 0 for now.
+: init-delta
+  (forall ρ; ρ bank:Seq Int^many bets:Seq Int^many c1:Seq Int^many c2:Seq Int^many i:Int^many dn:Bool^many out:Seq Int^many -- ρ rout:Seq Int^many)
+  locals { bank bets c1 c2 i dn out }
+  { i bank prim seq-int.len prim <
+    [ bank bets c1 c2 i 1 prim + dn
+      out
+      c1 i at c2 i at nat?
+      locals { nat }
+      { dn
+        [ nat
+          [ 0 ]
+          [ bank i at bets i at prim >= [ 0 bets i at prim - ] [ 0 ] if ] if ]
+        [ nat [ bets i at 3 prim * 2 prim div ] [ 0 ] if ] if }
+      prim seq-int.push init-delta ]
+    [ out ] if };
+
+\ Elementwise a + b, for the indices from i on, pushed onto out.
+: add-seqs
+  (forall ρ; ρ a:Seq Int^many b:Seq Int^many i:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { a b i out }
+  { i a prim seq-int.len prim <
+    [ a b i 1 prim + out a i at b i at prim + prim seq-int.push add-seqs ]
+    [ out ] if };
+
+\ The deal: the first cards, the up card, the second cards, the dealer's
+\ second card. Returns the two card sequences, the up card, the dealer's
+\ second card and the next position.
+: deal-all
+  (forall ρ; ρ shoe:Seq Int^many bank:Seq Int^many bets:Seq Int^many pos:Int^many -- ρ c1:Seq Int^many c2:Seq Int^many up:Int^many hole:Int^many rpos:Int^many)
+  locals { shoe bank bets pos }
+  { shoe bank bets 0 pos prim seq-int.empty deal-pass
+    locals { c1 p1 }
+    { shoe p1 at
+      locals { up }
+      { shoe bank bets 0 p1 1 prim + prim seq-int.empty deal-pass
+        locals { c2 p3 }
+        { c1 c2 up shoe p3 at p3 1 prim + } } } };
+
+\ A round after the deal: ok, the bankroll changes, 1 if the dealer bust,
+\ the naturals dealt to players, and the next position.
+: play-round
+  (forall ρ; ρ shoe:Seq Int^many bank:Seq Int^many bets:Seq Int^many c1:Seq Int^many c2:Seq Int^many up:Int^many hole:Int^many pos:Int^many -- ρ ok:Bool^many delta:Seq Int^many dbust:Int^many nats:Int^many rpos:Int^many)
+  locals { shoe bank bets c1 c2 up hole pos }
+  { up hole nat?
+    locals { dn }
+    { bank bets c1 c2 0 dn prim seq-int.empty init-delta
+      locals { delta }
+      { c1 c2 0 0 count-nat
+        locals { ns }
+        { dn
+          [ true delta 0 ns pos ]
+          [ shoe bank bets c1 c2 up 0 pos prim seq-int.empty play-pass
+            locals { p2 hands }
+            { 0 0 up add-card hole add-card
+              locals { ds da }
+              { hands 0 live?
+                [ shoe p2 ds da dealer-loop ]
+                [ p2 ds da ] if
+                locals { p3 es ea }
+                { shoe p3 failed?
+                  [ false delta 0 0 p3 ]
+                  [ true hands 0 es ea htotal delta settle
+                    es ea htotal 21 prim > [ 1 ] [ 0 ] if
+                    ns p3 ] if } } } ] if } } } };
+
+\ One round: not ok when no player can bet or the shoe runs out.
+: do-round
+  (forall ρ; ρ shoe:Seq Int^many bank:Seq Int^many bets:Seq Int^many pos:Int^many -- ρ ok:Bool^many delta:Seq Int^many dbust:Int^many nats:Int^many rpos:Int^many)
+  locals { shoe bank bets pos }
+  { bank bets 0 0 count-part
+    locals { m }
+    { m 0 prim =
+      [ false prim seq-int.empty 0 0 pos ]
+      [ pos m 2 prim * prim + 2 prim + shoe prim seq-int.len prim >
+        [ false prim seq-int.empty 0 0 pos ]
+        [ shoe bank bets pos deal-all
+          locals { c1 c2 up hole p }
+          { shoe bank bets c1 c2 up hole p play-round } ] if ] if } };
+
+\ Rounds until `left` runs out or a round cannot be completed.
+: play-rounds
+  (forall ρ; ρ shoe:Seq Int^many bank:Seq Int^many bets:Seq Int^many pos:Int^many left:Int^many played:Int^many db:Int^many nats:Int^many -- ρ final:Seq Int^many rplayed:Int^many rdb:Int^many rnats:Int^many)
+  locals { shoe bank bets pos left played db nats }
+  { left 0 prim >
+    [ shoe bank bets pos do-round
+      locals { ok delta dbu ns np }
+      { ok
+        [ bank delta 0 prim seq-int.empty add-seqs
+          locals { nbank }
+          { shoe nbank bets np left 1 prim - played 1 prim + db dbu prim + nats ns prim + play-rounds } ]
+        [ bank played db nats ] if } ]
+    [ bank played db nats ] if };
+
+\ Inputs: shoe, bankrolls, bets, rounds.
+\ Outputs: final bankrolls, rounds completed, rounds with a dealer bust,
+\ naturals dealt to players in completed rounds.
+: main
+  (forall ρ; ρ shoe:Seq Int^many bankrolls:Seq Int^many bets:Seq Int^many rounds:Int^many -- ρ final:Seq Int^many played:Int^many dbusts:Int^many naturals:Int^many)
+  locals { shoe bankrolls bets rounds }
+  { shoe bankrolls bets 0 rounds 0 0 0 play-rounds };
