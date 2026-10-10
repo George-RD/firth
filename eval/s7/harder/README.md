@@ -605,7 +605,9 @@ These are not longer programs than the third pool's (its Python references
 were 94 to 144 lines): that pool showed size alone does not separate
 Sonnet. They are rule-dense instead, each with several interacting rules,
 tie-breaks and edge cases a reader must hold together. Who is run on them,
-and how, is pre-registered separately before any trial. Whether any
+and how, is pre-registered before any trial in
+`scored-run/preregistration.md`, with the sample order in
+`scored-run/run-plan.md`. Whether any
 subject is below the ceiling on them is what the scored run measures; it
 is not assumed here.
 
