@@ -1,0 +1,377 @@
+\ Regular-expression matcher over letter tokens.
+\
+\ Method: a position automaton (Glushkov construction) with sets of
+\ positions held as bit masks in one Int.
+\
+\ Every letter or '.' token of the pattern is a "position", numbered in
+\ order from 0. A string matches when some path through the positions spells
+\ it. The parser computes, for each subexpression, whether it matches the
+\ empty string (nullable), the positions that can start a match of it (first)
+\ and the positions that can end one (last); and, for the whole pattern, the
+\ positions that can follow each position (follow). This is exact language
+\ semantics: a postfix operator only changes nullable and adds follow links,
+\ so (x*)* and x* give the same automaton (the second loop adds nothing and
+\ is skipped).
+\
+\ Matching keeps the set of positions the string so far can end on. One
+\ extra position, number n (n = the number of positions), stands for "start,
+\ nothing read yet". Running one letter c from a set S gives
+\   (union of follow[p] for p in S)  intersected with  letters[c],
+\ where letters[c] is the set of positions whose token is c or '.'.
+\
+\ There are no bitwise primitives, so union and intersection go through a
+\ 32 x 32 table of 5-bit ORs (or-table), one 5-bit chunk at a time. The union
+\ of follow sets is precomputed per 5-bit chunk of S (the chunk table), so a
+\ letter costs one table lookup per non-empty chunk of S plus a few ORs.
+\ Each chunk-table entry holds 2 * (union of follow) + (1 if the chunk holds
+\ a position in last), so bit 0 of the combined value says whether S accepts.
+
+\ ------------------------------------------------------------- bit helpers
+
+\ x OR y for x, y in 0..31, at index 32 * x + y.
+: or-table
+  (forall ρ; ρ -- ρ t:Seq Int^many)
+  {
+    0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+    1 1 3 3 5 5 7 7 9 9 11 11 13 13 15 15 17 17 19 19 21 21 23 23 25 25 27 27 29 29 31 31
+    2 3 2 3 6 7 6 7 10 11 10 11 14 15 14 15 18 19 18 19 22 23 22 23 26 27 26 27 30 31 30 31
+    3 3 3 3 7 7 7 7 11 11 11 11 15 15 15 15 19 19 19 19 23 23 23 23 27 27 27 27 31 31 31 31
+    4 5 6 7 4 5 6 7 12 13 14 15 12 13 14 15 20 21 22 23 20 21 22 23 28 29 30 31 28 29 30 31
+    5 5 7 7 5 5 7 7 13 13 15 15 13 13 15 15 21 21 23 23 21 21 23 23 29 29 31 31 29 29 31 31
+    6 7 6 7 6 7 6 7 14 15 14 15 14 15 14 15 22 23 22 23 22 23 22 23 30 31 30 31 30 31 30 31
+    7 7 7 7 7 7 7 7 15 15 15 15 15 15 15 15 23 23 23 23 23 23 23 23 31 31 31 31 31 31 31 31
+    8 9 10 11 12 13 14 15 8 9 10 11 12 13 14 15 24 25 26 27 28 29 30 31 24 25 26 27 28 29 30 31
+    9 9 11 11 13 13 15 15 9 9 11 11 13 13 15 15 25 25 27 27 29 29 31 31 25 25 27 27 29 29 31 31
+    10 11 10 11 14 15 14 15 10 11 10 11 14 15 14 15 26 27 26 27 30 31 30 31 26 27 26 27 30 31 30 31
+    11 11 11 11 15 15 15 15 11 11 11 11 15 15 15 15 27 27 27 27 31 31 31 31 27 27 27 27 31 31 31 31
+    12 13 14 15 12 13 14 15 12 13 14 15 12 13 14 15 28 29 30 31 28 29 30 31 28 29 30 31 28 29 30 31
+    13 13 15 15 13 13 15 15 13 13 15 15 13 13 15 15 29 29 31 31 29 29 31 31 29 29 31 31 29 29 31 31
+    14 15 14 15 14 15 14 15 14 15 14 15 14 15 14 15 30 31 30 31 30 31 30 31 30 31 30 31 30 31 30 31
+    15 15 15 15 15 15 15 15 15 15 15 15 15 15 15 15 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31
+    16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+    17 17 19 19 21 21 23 23 25 25 27 27 29 29 31 31 17 17 19 19 21 21 23 23 25 25 27 27 29 29 31 31
+    18 19 18 19 22 23 22 23 26 27 26 27 30 31 30 31 18 19 18 19 22 23 22 23 26 27 26 27 30 31 30 31
+    19 19 19 19 23 23 23 23 27 27 27 27 31 31 31 31 19 19 19 19 23 23 23 23 27 27 27 27 31 31 31 31
+    20 21 22 23 20 21 22 23 28 29 30 31 28 29 30 31 20 21 22 23 20 21 22 23 28 29 30 31 28 29 30 31
+    21 21 23 23 21 21 23 23 29 29 31 31 29 29 31 31 21 21 23 23 21 21 23 23 29 29 31 31 29 29 31 31
+    22 23 22 23 22 23 22 23 30 31 30 31 30 31 30 31 22 23 22 23 22 23 22 23 30 31 30 31 30 31 30 31
+    23 23 23 23 23 23 23 23 31 31 31 31 31 31 31 31 23 23 23 23 23 23 23 23 31 31 31 31 31 31 31 31
+    24 25 26 27 28 29 30 31 24 25 26 27 28 29 30 31 24 25 26 27 28 29 30 31 24 25 26 27 28 29 30 31
+    25 25 27 27 29 29 31 31 25 25 27 27 29 29 31 31 25 25 27 27 29 29 31 31 25 25 27 27 29 29 31 31
+    26 27 26 27 30 31 30 31 26 27 26 27 30 31 30 31 26 27 26 27 30 31 30 31 26 27 26 27 30 31 30 31
+    27 27 27 27 31 31 31 31 27 27 27 27 31 31 31 31 27 27 27 27 31 31 31 31 27 27 27 27 31 31 31 31
+    28 29 30 31 28 29 30 31 28 29 30 31 28 29 30 31 28 29 30 31 28 29 30 31 28 29 30 31 28 29 30 31
+    29 29 31 31 29 29 31 31 29 29 31 31 29 29 31 31 29 29 31 31 29 29 31 31 29 29 31 31 29 29 31 31
+    30 31 30 31 30 31 30 31 30 31 30 31 30 31 30 31 30 31 30 31 30 31 30 31 30 31 30 31 30 31 30 31
+    31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31 31
+  };
+
+\ pow2 at i is 2^i.
+: pow2
+  (forall ρ; ρ i:Int^many -- ρ r:Int^many)
+  { 1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768 65536 131072
+    262144 524288 1048576 2097152 4194304 8388608 16777216 33554432 67108864
+    134217728 268435456 536870912 1073741824 2147483648 4294967296 8589934592
+    17179869184 34359738368 68719476736 137438953472 274877906944
+    549755813888 1099511627776 }
+  swap prim seq-int.at;
+
+\ Index of the highest set bit of v, for v in 1..31 (entry 0 unused).
+: high-bit
+  (forall ρ; ρ v:Int^many -- ρ b:Int^many)
+  { 0 0 1 1 2 2 2 2 3 3 3 3 3 3 3 3 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 }
+  swap prim seq-int.at;
+
+\ Bitwise OR of two non-negative masks, five bits at a time.
+: or2
+  (forall ρ; ρ x:Int^many y:Int^many -- ρ r:Int^many)
+  locals { x y }
+  { x 0 prim =
+    [ y ]
+    [ y 0 prim =
+      [ x ]
+      [ or-table x 32 prim mod 32 prim * y 32 prim mod prim + prim seq-int.at
+        x 32 prim div y 32 prim div or2 32 prim * prim + ] if ] if };
+
+\ Bitwise AND, as x + y - (x OR y).
+: and2
+  (forall ρ; ρ x:Int^many y:Int^many -- ρ r:Int^many)
+  locals { x y } { x y prim + x y or2 prim - };
+
+\ Whether bit i of m is set.
+: bit?
+  (forall ρ; ρ m:Int^many i:Int^many -- ρ b:Bool^many)
+  pow2 prim div 2 prim mod 1 prim =;
+
+\ For every position p in mask m (bit 0 is position p0), adds the mask f to
+\ fol[p].
+: add-follow
+  (forall ρ; ρ fol:Seq Int^many m:Int^many f:Int^many p:Int^many -- ρ r:Seq Int^many)
+  locals { fol m f p }
+  { m 0 prim =
+    [ fol ]
+    [ m 2 prim mod 1 prim =
+      [ fol p fol p prim seq-int.at f or2 prim seq-int.set ]
+      [ fol ] if
+      m 2 prim div f p 1 prim + add-follow ] if };
+
+\ ------------------------------------------------------------------- parser
+\
+\ Every parse word takes the pattern, the letter of each position so far
+\ (lt, 26 for '.'), the follow masks so far (fol) and the token index p, and
+\ returns lt, fol, the new index and the subexpression's nullable, first and
+\ last. A failed parse sets the index to 1000, past the end of any pattern;
+\ that stops every parse loop and fails the final "all tokens used" test.
+
+\ alternation := sequence ('|' sequence)*
+: parse-alt
+  (forall ρ; ρ pat:Seq Int^many lt:Seq Int^many fol:Seq Int^many p:Int^many -- ρ lt2:Seq Int^many fol2:Seq Int^many p2:Int^many nl:Bool^many fs:Int^many ls:Int^many)
+  locals { pat lt fol p }
+  { pat lt fol p parse-seq
+    locals { lt1 fol1 p1 n1 f1 l1 }
+    { pat lt1 fol1 p1 n1 f1 l1 alt-rest } };
+
+\ Takes further '|' branches while the next token is '|'.
+: alt-rest
+  (forall ρ; ρ pat:Seq Int^many lt:Seq Int^many fol:Seq Int^many p:Int^many n:Bool^many f:Int^many l:Int^many -- ρ lt2:Seq Int^many fol2:Seq Int^many p2:Int^many nl:Bool^many fs:Int^many ls:Int^many)
+  locals { pat lt fol p n f l }
+  { p pat prim seq-int.len prim <
+    [ pat p prim seq-int.at 30 prim =
+      [ pat lt fol p 1 prim + parse-seq
+        locals { lt2 fol2 p2 n2 f2 l2 }
+        { pat lt2 fol2 p2 n n2 prim or f f2 or2 l l2 or2 alt-rest } ]
+      [ lt fol p n f l ] if ]
+    [ lt fol p n f l ] if };
+
+\ sequence := item*   (stops at '|', ')' or the end). The empty sequence is
+\ nullable with empty first and last.
+: parse-seq
+  (forall ρ; ρ pat:Seq Int^many lt:Seq Int^many fol:Seq Int^many p:Int^many -- ρ lt2:Seq Int^many fol2:Seq Int^many p2:Int^many nl:Bool^many fs:Int^many ls:Int^many)
+  true 0 0 seq-loop;
+
+\ Appends one item: every last position of the sequence so far is followed
+\ by every first position of the item.
+: seq-loop
+  (forall ρ; ρ pat:Seq Int^many lt:Seq Int^many fol:Seq Int^many p:Int^many n:Bool^many f:Int^many l:Int^many -- ρ lt2:Seq Int^many fol2:Seq Int^many p2:Int^many nl:Bool^many fs:Int^many ls:Int^many)
+  locals { pat lt fol p n f l }
+  { p pat prim seq-int.len prim <
+    [ pat p prim seq-int.at
+      locals { tok }
+      { tok 30 prim =  tok 32 prim =  prim or
+        [ lt fol p n f l ]
+        [ pat lt fol p parse-item
+          locals { lt2 fol2 p2 n2 f2 l2 }
+          { pat lt2
+            fol2 l f2 0 add-follow
+            p2
+            n n2 prim and
+            n [ f f2 or2 ] [ f ] if
+            n2 [ l l2 or2 ] [ l2 ] if
+            seq-loop } ] if } ]
+    [ lt fol p n f l ] if };
+
+\ item := atom postfix*
+: parse-item
+  (forall ρ; ρ pat:Seq Int^many lt:Seq Int^many fol:Seq Int^many p:Int^many -- ρ lt2:Seq Int^many fol2:Seq Int^many p2:Int^many nl:Bool^many fs:Int^many ls:Int^many)
+  locals { pat lt fol p }
+  { pat lt fol p parse-atom
+    locals { lt1 fol1 p1 n1 f1 l1 }
+    { pat lt1 fol1 p1 n1 f1 l1 false postfix-loop } };
+
+\ '?' makes the item nullable; '*' and '+' link every last position back to
+\ every first position ('*' also makes it nullable). first and last never
+\ change, so once one loop is linked (looped) a further '*' or '+' adds no
+\ links and only the nullable flag is updated.
+: postfix-loop
+  (forall ρ; ρ pat:Seq Int^many lt:Seq Int^many fol:Seq Int^many p:Int^many n:Bool^many f:Int^many l:Int^many looped:Bool^many -- ρ lt2:Seq Int^many fol2:Seq Int^many p2:Int^many nl:Bool^many fs:Int^many ls:Int^many)
+  locals { pat lt fol p n f l looped }
+  { p pat prim seq-int.len prim <
+    [ pat p prim seq-int.at
+      locals { tok }
+      { tok 29 prim =
+        [ pat lt fol p 1 prim + true f l looped postfix-loop ]
+        [ tok 27 prim =  tok 28 prim =  prim or
+          [ pat lt
+            looped [ fol ] [ fol l f 0 add-follow ] if
+            p 1 prim +
+            n tok 27 prim = prim or
+            f l true postfix-loop ]
+          [ lt fol p n f l ] if ] if } ]
+    [ lt fol p n f l ] if };
+
+\ atom := letter | '.' | '(' alternation ')'
+: parse-atom
+  (forall ρ; ρ pat:Seq Int^many lt:Seq Int^many fol:Seq Int^many p:Int^many -- ρ lt2:Seq Int^many fol2:Seq Int^many p2:Int^many nl:Bool^many fs:Int^many ls:Int^many)
+  locals { pat lt fol p }
+  { p pat prim seq-int.len prim <
+    [ pat p prim seq-int.at
+      locals { tok }
+      { tok 26 prim <=
+        [ lt prim seq-int.len pow2
+          locals { bitq }
+          { lt tok prim seq-int.push  fol 0 prim seq-int.push  p 1 prim +
+            false bitq bitq } ]
+        [ tok 31 prim =
+          [ pat lt fol p 1 prim + parse-alt
+            locals { lt2 fol2 p2 n2 f2 l2 }
+            { p2 pat prim seq-int.len prim <
+              [ pat p2 prim seq-int.at 32 prim = [ p2 1 prim + ] [ 1000 ] if ]
+              [ 1000 ] if
+              locals { p3 }
+              { lt2 fol2 p3 n2 f2 l2 } } ]
+          [ lt fol 1000 false 0 0 ] if ] if } ]
+    [ lt fol 1000 false 0 0 ] if };
+
+\ ------------------------------------------------------- automaton tables
+
+\ fe[p] for each position p < n is 2 * follow[p] + (1 if p is in last);
+\ fe[n], the start, is 2 * first + (1 if the pattern is nullable).
+: fe-loop
+  (forall ρ; ρ fol:Seq Int^many last:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { fol last out }
+  { out prim seq-int.len fol prim seq-int.len prim <
+    [ out prim seq-int.len
+      locals { p }
+      { fol last
+        out fol p prim seq-int.at 2 prim * last p bit? [ 1 prim + ] [ ] if
+        prim seq-int.push
+        fe-loop } ]
+    [ out ] if };
+
+\ The chunk table: entry 32 * k + v is the OR of fe[5k + b] over the set
+\ bits b of v (positions past fe count as 0). Entry v is built from entry
+\ v - 2^b, b the highest bit of v. nch chunks are built.
+: chunk-loop
+  (forall ρ; ρ fe:Seq Int^many nch:Int^many tab:Seq Int^many -- ρ r:Seq Int^many)
+  locals { fe nch tab }
+  { tab prim seq-int.len
+    locals { j }
+    { j nch 32 prim * prim <
+      [ j 32 prim mod
+        locals { v }
+        { fe nch tab
+          v 0 prim =
+          [ 0 ]
+          [ j 32 prim div
+            locals { k }
+            { v high-bit
+              locals { b }
+              { k 5 prim * b prim +
+                locals { q }
+                { tab k 32 prim * v prim + b pow2 prim - prim seq-int.at
+                  q fe prim seq-int.len prim <
+                  [ fe q prim seq-int.at ] [ 0 ] if
+                  or2 } } } ] if
+          prim seq-int.push
+          chunk-loop } ]
+      [ tab ] if } };
+
+\ Mask of the positions whose letter is 26 ('.'), from position q on.
+: dot-mask
+  (forall ρ; ρ lt:Seq Int^many q:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { lt q acc }
+  { q lt prim seq-int.len prim <
+    [ lt q 1 prim +
+      lt q prim seq-int.at 26 prim = [ acc q pow2 prim + ] [ acc ] if
+      dot-mask ]
+    [ acc ] if };
+
+\ out holds n copies of x.
+: fill-int
+  (forall ρ; ρ n:Int^many x:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { n x out }
+  { out prim seq-int.len n prim <
+    [ n x out x prim seq-int.push fill-int ]
+    [ out ] if };
+
+\ letters[c] for c in 0..25: the dot mask plus each letter position whose
+\ letter is c (the bits are distinct, so + is OR here).
+: letter-loop
+  (forall ρ; ρ lt:Seq Int^many q:Int^many lm:Seq Int^many -- ρ r:Seq Int^many)
+  locals { lt q lm }
+  { q lt prim seq-int.len prim <
+    [ lt q 1 prim +
+      lt q prim seq-int.at
+      locals { c }
+      { c 26 prim <
+        [ lm c lm c prim seq-int.at q pow2 prim + prim seq-int.set ]
+        [ lm ] if }
+      letter-loop ]
+    [ lm ] if };
+
+\ ----------------------------------------------------------------- matching
+
+\ 2 * (union of follow over S) + (1 if S accepts), from the chunk table,
+\ chunk k of S first.
+: expand
+  (forall ρ; ρ tab:Seq Int^many s:Int^many k:Int^many -- ρ g:Int^many)
+  locals { tab s k }
+  { s 0 prim =
+    [ 0 ]
+    [ tab k 32 prim * s 32 prim mod prim + prim seq-int.at
+      tab s 32 prim div k 1 prim + expand
+      or2 ] if };
+
+\ Runs chars[i .. end-1] from the set s. best is the index after the
+\ longest accepted start so far (off - 1 if none). Returns best and whether
+\ the whole string is accepted.
+: run-chars
+  (forall ρ; ρ tab:Seq Int^many lm:Seq Int^many chars:Seq Int^many i:Int^many end:Int^many s:Int^many best:Int^many -- ρ best2:Int^many whole:Bool^many)
+  locals { tab lm chars i end s best }
+  { s 0 prim =
+    [ best false ]
+    [ tab s 0 expand
+      locals { g }
+      { g 2 prim mod 1 prim =
+        locals { acc }
+        { acc [ i ] [ best ] if
+          locals { best2 }
+          { i end prim =
+            [ best2 acc ]
+            [ tab lm chars i 1 prim + end
+              g 2 prim div lm chars i prim seq-int.at prim seq-int.at and2
+              best2 run-chars ] if } } } ] if };
+
+\ Runs every string j of lens from the start set.
+: run-strings
+  (forall ρ; ρ tab:Seq Int^many lm:Seq Int^many start:Int^many lens:Seq Int^many chars:Seq Int^many j:Int^many off:Int^many full:Seq Bool^many longest:Seq Int^many count:Int^many -- ρ full2:Seq Bool^many longest2:Seq Int^many count2:Int^many)
+  locals { tab lm start lens chars j off full longest count }
+  { j lens prim seq-int.len prim <
+    [ off lens j prim seq-int.at prim +
+      locals { end }
+      { tab lm chars off end start off 1 prim - run-chars
+        locals { best whole }
+        { tab lm start lens chars j 1 prim + end
+          full whole prim seq-bool.push
+          longest best off prim - prim seq-int.push
+          count whole [ 1 prim + ] [ ] if
+          run-strings } } ]
+    [ full longest count ] if };
+
+: fill-bool
+  (forall ρ; ρ n:Int^many out:Seq Bool^many -- ρ r:Seq Bool^many)
+  locals { n out }
+  { out prim seq-bool.len n prim <
+    [ n out false prim seq-bool.push fill-bool ]
+    [ out ] if };
+
+: main
+  (forall ρ; ρ pat:Seq Int^many lens:Seq Int^many chars:Seq Int^many -- ρ full:Seq Bool^many longest:Seq Int^many count:Int^many valid:Bool^many)
+  locals { pat lens chars }
+  { pat prim seq-int.empty prim seq-int.empty 0 parse-alt
+    locals { lt fol p nl first last }
+    { p pat prim seq-int.len prim =
+      [ fol last prim seq-int.empty fe-loop
+        first 2 prim * nl [ 1 prim + ] [ ] if prim seq-int.push
+        locals { fe }
+        { fe fe prim seq-int.len 4 prim + 5 prim div prim seq-int.empty chunk-loop
+          lt 0 0 dot-mask
+          locals { tab dots }
+          { tab
+            lt 0 26 dots prim seq-int.empty fill-int letter-loop
+            lt prim seq-int.len pow2
+            lens chars 0 0 prim seq-bool.empty prim seq-int.empty 0 run-strings
+            true } } ]
+      [ lens prim seq-int.len prim seq-bool.empty fill-bool
+        lens prim seq-int.len -1 prim seq-int.empty fill-int
+        0 false ] if } };

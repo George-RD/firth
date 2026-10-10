@@ -3,8 +3,8 @@
 
 1. Each task's Python `ref` agrees with values worked out by hand from the
    description, written here without running the refs. Every input of the
-   second and third pools keeps to its description's stated bounds, and
-   every input and expected integer fits in an `Int`.
+   second and third pools and of the scored set keeps to its description's
+   stated bounds, and every input and expected integer fits in an `Int`.
 2. Each task's Python reference solution (`reference/<set>/python/<id>.py`, written
    separately from the ref) passes its example and hidden tests.
 3. Each task's Firth reference solution (`reference/<set>/firth/<id>.firth`)
@@ -14,7 +14,7 @@
    which include edge cases the hidden tests lack.
 4. The hidden tests catch the mistakes a careful author is likely to make:
    for every task, a planted Python mutant with one such mistake fails, and
-   in each pool a planted mutant of a Firth reference fails.
+   in each pool and the scored set a planted mutant of a Firth reference fails.
 5. The prompt carries no hidden input and repair shows only the example.
 6. The audit refuses options that widen an author's tools, scoring refuses
    a link named as the answer directory, and the scan run before scoring
@@ -289,6 +289,83 @@ HAND += [
 ]
 
 
+# The scored set, worked out the same way: by hand from the descriptions, before the
+# meanings were run on these inputs.
+HAND += [
+    # One push puts the box on the goal; the puzzle is then solved before the second move.
+    ("sokoban", (5, 3, [1, 1, 1, 1, 1, 1, 0, 0, 2, 1, 1, 1, 1, 1, 1], 6, [7], [1, 1]),
+     (7, [8], 1, 1, 1, 0, 0, 0, True)),
+    # Push right to 8: not a goal, wall above and to the right, so dead. Right again is
+    # blocked by the wall at 9. Undo takes the push back (worker 6, box 7); two undos with
+    # an empty history do nothing; left is blocked by the wall at 5.
+    ("sokoban", (5, 4, [1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 2, 1, 1, 1, 1, 1, 1], 6, [7], [1, 1, 4, 4, 4, 3]),
+     (6, [7], 6, 0, 1, 2, 1, 1, False)),
+    # Down is blocked by two boxes (9, then 13). Right to 6, down to 10 and 14; left from 14
+    # would push the box on 13 into the wall at 12, so it is blocked.
+    ("sokoban", (4, 5, [1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 2, 1, 1, 1, 1, 1], 5, [9, 13], [2, 1, 2, 2, 3]),
+     (14, [9, 13], 5, 3, 0, 2, 0, 0, False)),
+    # The only box starts on a goal: solved before the first move, so none is read.
+    ("sokoban", (4, 3, [1, 1, 1, 1, 1, 0, 2, 1, 1, 1, 1, 1], 5, [6], [3, 4]), (5, [6], 0, 0, 0, 0, 0, 0, True)),
+    # The man on 22 must take 17, landing on 13 with no further jump; black then has no
+    # piece, so no move, and white has won.
+    ("checkers", ([0] * 17 + [3] + [0] * 4 + [1] + [0] * 9, 0, 1),
+     ([0] * 13 + [1] + [0] * 18, 1, 1, 0, 0, 1)),
+    # No capture: white's lowest piece, 20, steps to 16; black's man on 0 steps to 4; then
+    # the two plies are played.
+    ("checkers", ([3] + [0] * 19 + [1, 1] + [0] * 10, 0, 2),
+     ([0] * 4 + [3] + [0] * 11 + [1] + [0] * 4 + [1] + [0] * 10, 2, 0, 0, 0, 0)),
+    # 5 steps to 0 and is crowned; black's 27 steps to 31 and is crowned; the white king on
+    # 0 steps to 4. Three plies played, black still has a move.
+    ("checkers", ([0] * 5 + [1] + [0] * 21 + [3] + [0] * 4, 0, 3),
+     ([0] * 4 + [2] + [0] * 26 + [4], 3, 0, 0, 2, 0)),
+    # Black first: 9 takes 13 (landing on 16) and then 21 (landing on 25). White's man on 31
+    # steps to 26; two plies.
+    ("checkers", ([0] * 9 + [3] + [0] * 3 + [1] + [0] * 7 + [1] + [0] * 9 + [1], 1, 2),
+     ([0] * 25 + [3, 1] + [0] * 5, 2, 0, 2, 0, 0)),
+    # 21 and 22 can each take 17 (landing on 14 and 13); 21 starts lower.
+    ("checkers", ([0] * 17 + [3] + [0] * 3 + [1, 1] + [0] * 9, 0, 1),
+     ([0] * 14 + [1] + [0] * 7 + [1] + [0] * 9, 1, 1, 0, 0, 1)),
+    # a*b: aab and b match whole; aa and the empty string have no matching start.
+    ("regex", ([0, 27, 1], [3, 1, 2, 0], [0, 0, 1, 1, 0, 0]), ([T, T, F, F], [3, 1, -1, -1], 2, T)),
+    # (a)+ then a ')' with no '(' open: invalid.
+    ("regex", ([31, 0, 32, 28, 32], [2], [0, 0]), ([F], [-1], 0, F)),
+    # (a|b)+c?: abc and ba whole; c has no start with an a or b; abcc's longest is abc.
+    ("regex", ([31, 0, 30, 1, 32, 28, 2, 29], [3, 2, 1, 4], [0, 1, 2, 1, 0, 2, 0, 1, 2, 2]),
+     ([T, T, F, F], [3, 2, -1, 3], 2, T)),
+    # a|: the empty branch matches the empty string, and the empty start of b.
+    ("regex", ([0, 30], [0, 1, 1], [0, 1]), ([T, T, F], [0, 1, 0], 2, T)),
+    # ab*: the star takes only the b, so abab is not whole; its longest start is ab.
+    ("regex", ([0, 1, 27], [4, 1], [0, 1, 0, 1, 0]), ([F, T], [2, 1], 1, T)),
+    # Round 1: 1, 2, 0 by rating; 0 has the bye; 1 (white, taken first) loses to 2. Round 2:
+    # 2 and 0 on 2, then 1, who has the bye. 2 and 0 have had white 0 times; 2's last game
+    # was as black and 0 has played none, so 2 has white; a draw. Scores 3, 2, 3;
+    # Buchholz 3 (2), 3 (2), 2 + 3.
+    ("swiss", ([1500, 2500, 2000], 2, [2, 1]), ([3, 2, 3], [3, 3, 5], [2, 0, 1], [0, 1, 1], 0)),
+    # One drawn game; ties broken by rating.
+    ("swiss", ([1200, 1300], 1, [1]), ([1, 1], [1, 1], [1, 0], [0, 1], 0)),
+    # Round 1: 0 (white) beats 1, 3 (black) beats 2. Round 2 ranks 0, 3, 1, 2: 3 has had
+    # white fewer times than 0, so has white, and draws; 1 has white over 2 and wins.
+    ("swiss", ([2000, 1900, 1800, 1700], 2, [0, 2, 1, 0]), ([3, 2, 0, 3], [5, 3, 5, 3], [0, 3, 1, 2], [1, 1, 1, 1], 0)),
+    # Day 0: 3 ordered, none in stock, all owed; a supply due day 1. Day 1: its 2 units go
+    # to the backorder; another supply, due day 2, whose 2 units pay the last 1, leaving 1.
+    ("warehouse", (3, [5], [0], [2], [1], [1], [0], [2], [0], [3], [0]), ([1], 15, 3, 0, 0, 2, 0)),
+    # The 4 expiring on day 1 are sold first on day 1, then 1 of the 3 expiring on day 2;
+    # the other 2 are thrown away on day 3, where the order of 1 is owed and a supply ordered.
+    ("warehouse", (4, [2], [0], [1], [10], [1], [0, 0, 1, 3], [1, 1, 2, 2], [0, 0, 0, 0], [3, 4, 5, 1], [2, 1, 0, 0]),
+     ([0], 10, 5, 2, 0, 1, 1)),
+    # 2 owed from day 0, 1 paid on day 1; the other is cancelled on day 7.
+    ("warehouse", (9, [1], [0], [1], [10], [1], [0, 1], [2, 1], [0, 0], [2, 1], [0, 5]), ([0], 1, 1, 0, 1, 1, 0)),
+    # Read 3 (miss, miss), write 3 (hit), read 4 (miss, miss): 3 leaves L2 clean, then
+    # leaves L1 dirty and goes back into L2 dirty, pushing out the clean 4.
+    ("cache-sim", (1, 1, 1, 1, [3, 3, 4], [F, T, F]), (1, 2, 0, 2, 2, 0, 1, [4])),
+    # 2 shares L1 set 0 with the dirty 0, which goes back into L2 dirty in place of the clean
+    # 1; reading 0 again hits in L2.
+    ("cache-sim", (2, 1, 1, 2, [0, 1, 2, 0], [T, F, F, F]), (0, 4, 1, 3, 3, 0, 1, [0, 1])),
+    # Reading 7 pushes the dirty 5 out of L2 to memory; the dirty 6 from L1 takes its place.
+    ("cache-sim", (1, 1, 1, 1, [5, 6, 7], [T, T, F]), (0, 3, 0, 3, 3, 1, 1, [7])),
+]
+
+
 def hand_values() -> None:
     for tid, args, want in HAND:
         check(tuple(BY_ID[tid].ref(*args)) == want, f"hand value: {tid}{args} = {want}")
@@ -401,7 +478,38 @@ def _sheet3_ok(lens, kinds, xs, ys, zs, cells, elens, ekinds, exs, eys, ezs):
             and _tokens_ok(elens, ekinds, exs, eys, ezs))
 
 
-# Each pool-2 and pool-3 task's stated input bounds, as a check on its own inputs.
+def _soko_ok(width, height, cells, player, boxes, moves):
+    """sokoban: the walls all round, and the worker and boxes on distinct cells that are not walls."""
+    n = width * height
+    if not (_in(width, 3, 12) and _in(height, 3, 12) and len(cells) == n and _all_in(cells, 0, 2)):
+        return False
+    edge = [r * width + c for r in range(height) for c in range(width)
+            if r in (0, height - 1) or c in (0, width - 1)]
+    places = [player, *boxes]
+    return (all(cells[i] == 1 for i in edge) and _in(len(boxes), 1, 6)
+            and all(_in(x, 0, n - 1) and cells[x] != 1 for x in places) and len(set(places)) == len(places)
+            and len(moves) <= 200 and _all_in(moves, 0, 4))
+
+
+def _checkers_ok(board, turn, plies):
+    return (len(board) == 32 and _all_in(board, 0, 4)
+            and sum(v in (1, 2) for v in board) <= 12 and sum(v in (3, 4) for v in board) <= 12
+            and 1 not in board[:4] and 3 not in board[28:] and turn in (0, 1) and _in(plies, 1, 40))
+
+
+def _warehouse_ok(days, price, rp, rq, lead, shelf, ev_day, ev_kind, ev_prod, ev_qty, ev_expiry):
+    """warehouse: events in day order within the days run, and each expiry as its kind bounds it."""
+    p = len(price)
+    return (_in(p, 1, 5) and _same_len(price, rp, rq, lead, shelf) and _all_in(price, 1, 1000)
+            and _all_in(rp, 0, 100) and _all_in(rq, 1, 200) and _all_in(lead, 1, 10) and _all_in(shelf, 1, 30)
+            and _in(days, 1, 60) and len(ev_day) <= 80 and _same_len(ev_day, ev_kind, ev_prod, ev_qty, ev_expiry)
+            and all(a <= b for a, b in zip(ev_day, ev_day[1:]))
+            and all(_in(d, 0, days - 1) and k in (1, 2) and _in(q, 0, p - 1) and _in(n, 1, 200)
+                    and (_in(x, d, d + 60) if k == 1 else x == 0)
+                    for d, k, q, n, x in zip(ev_day, ev_kind, ev_prod, ev_qty, ev_expiry)))
+
+
+# Each pool-2, pool-3 and scored task's stated input bounds, as a check on its own inputs.
 BOUNDS = {
     "poker": lambda r1, s1, r2, s2: (all(len(q) == 5 for q in (r1, s1, r2, s2))
                                      and _all_in(r1 + r2, 2, 14) and _all_in(s1 + s2, 0, 3)
@@ -428,6 +536,21 @@ BOUNDS = {
                                                     and _all_in(banks, 0, 10**5) and _all_in(bets, 1, 1000)
                                                     and _in(rounds, 1, 20) and len(shoe) <= 120
                                                     and _all_in(shoe, 1, 13)),
+    # The scored set.
+    "sokoban": _soko_ok,
+    "checkers": _checkers_ok,
+    "regex": lambda pattern, lens, chars: (len(pattern) <= 20 and _all_in(pattern, 0, 32) and _in(len(lens), 1, 8)
+                                           and _all_in(lens, 0, 12) and sum(lens) == len(chars)
+                                           and _all_in(chars, 0, 25)),
+    "swiss": lambda ratings, rounds, results: (_in(len(ratings), 2, 12) and _all_in(ratings, 1000, 3000)
+                                               and _in(rounds, 1, 7) and rounds < len(ratings)
+                                               and len(results) == rounds * (len(ratings) // 2)
+                                               and _all_in(results, 0, 2)),
+    "warehouse": _warehouse_ok,
+    "cache-sim": lambda s1, w1, s2, w2, addrs, writes: (_in(s1, 1, 4) and _in(w1, 1, 4) and _in(s2, 1, 8)
+                                                        and _in(w2, 1, 8) and len(addrs) <= 200
+                                                        and _same_len(addrs, writes) and _all_in(addrs, 0, 255)
+                                                        and all(isinstance(w, bool) for w in writes)),
 }
 
 
@@ -440,10 +563,10 @@ def ints(v):
 
 
 def bounds() -> None:
-    """Every pool-2 input keeps to its description's stated bounds, and every
-    input and expected integer of every task fits in an `Int`."""
-    check(set(BOUNDS) == {t.id for t in SETS["calibration2"] + SETS["calibration3"]},
-          "every pool-2 and pool-3 task has its bounds")
+    """Every pool-2, pool-3 and scored input keeps to its description's stated
+    bounds, and every input and expected integer of every task fits in an `Int`."""
+    check(set(BOUNDS) == {t.id for t in SETS["calibration2"] + SETS["calibration3"] + SETS["scored"]},
+          "every pool-2, pool-3 and scored task has its bounds")
     for tid, check_args in BOUNDS.items():
         t = BY_ID[tid]
         every = [*cases(t), *(a for i, a, _ in HAND if i == tid)]
@@ -475,11 +598,66 @@ def bounds() -> None:
     check(bj([1] * 120, [0], [1], 20) and not bj([1] * 121, [0], [1], 20) and not bj([1] * 120, [0], [1], 21)
           and not bj([14], [0], [1], 1) and not bj([1], [0], [0], 1),
           "the bounds check refuses a 121-card shoe, a 21st round, a card of 14 and a bet of 0")
+    scored_planted()
     for name, tasks in SETS.items():
         big = [(t.id, a) for t in tasks for a in (*cases(t), *(a for i, a, _ in HAND if i == t.id))
                if any(not -2**63 <= i < 2**63 for i in ints([a, t.expected(a)]))]
         check(not big, f"{name}: every input and expected integer fits in an Int (outside: {big[:1]})")
     check(not all(-2**63 <= i < 2**63 for i in ints([[1, 2**63]])), "the Int check refuses 2^63")
+
+
+def scored_planted() -> None:
+    """Each kind of scored-set constraint, shown to refuse a known-bad input: a good
+    input passes, and each planted change of it fails."""
+    def refuses(tid, good, bad, what):
+        check(BOUNDS[tid](*good) and not any(BOUNDS[tid](*b) for b in bad), f"the bounds check refuses {what}")
+    room = [1, 1, 1, 1, 1, 1, 0, 0, 2, 1, 1, 1, 1, 1, 1]          # 5 by 3, floor at 6 and 7, a goal at 8
+    soko = (5, 3, room, 6, [7], [1])
+    refuses("sokoban", soko, [(5, 3, room[:-1], 6, [7], [1]), (5, 3, room[:5] + [0] + room[6:], 6, [7], [1]),
+                              (5, 3, room, 5, [7], [1]), (5, 3, room, 7, [7], [1]), (5, 3, room, 6, [], [1]),
+                              (5, 3, room, 6, [7], [5])],
+            "a sokoban floor of the wrong size, an edge cell that is not a wall, the worker on a wall, "
+            "the worker on a box, no box and a move of 5")
+    big = [1] * 8 + [1, 0, 0, 0, 0, 0, 0, 1] * 6 + [1] * 8          # 8 by 8, 36 floor cells
+    refuses("sokoban", (8, 8, big, 9, [10, 11, 12, 13, 14, 17], [0] * 200),
+            [(8, 8, big, 9, [10, 11, 12, 13, 14, 17, 18], [0] * 200), (8, 8, big, 9, [10, 10], [0]),
+             (8, 8, big, 9, [10], [0] * 201)],
+            "a seventh box, two boxes on one cell and a 201st move")
+    board = [3] * 12 + [0] * 8 + [1] * 12
+    refuses("checkers", (board, 0, 40),
+            [(board[:31], 0, 40), (board[:12] + [1] + board[13:], 0, 40), ([1] + [0] * 31, 0, 1),
+             ([0] * 31 + [3], 0, 1), (board, 2, 1), (board, 0, 41)],
+            "a board of 31 squares, 13 white pieces, a white man on row 0, a black man on row 7, "
+            "a turn of 2 and 41 plies")
+    check(BOUNDS["checkers"]([2] + [0] * 30 + [4], 0, 1), "the bounds check takes kings on the far rows")
+    refuses("regex", ([0, 27], [1, 2], [0, 0, 1]),
+            [([0, 27], [1, 2], [0, 0]), ([0, 27], [1, 2], [0, 0, 1, 1]), ([0] * 21, [0], []),
+             ([0], [0] * 9, []), ([0], [13], [0] * 13), ([33], [0], [])],
+            "string lengths that do not add up to the letters, 21 tokens, 9 strings, a 13-letter string "
+            "and a token of 33")
+    refuses("swiss", ([1500, 1600, 1700], 2, [0, 1]),
+            [([1500, 1600, 1700], 2, [0]), ([1500, 1600, 1700], 2, [0, 1, 2]), ([1500, 1600, 1700], 3, [0, 1, 2]),
+             ([1500, 999], 1, [0])],
+            "too few or too many results, as many rounds as players and a rating of 999")
+    wh = (10, [5], [0], [1], [2], [3], [0, 2, 2], [1, 2, 1], [0, 0, 0], [4, 1, 2], [60, 0, 2])
+    def ev(*cols):
+        return (*wh[:6], *cols)
+    refuses("warehouse", wh,
+            [ev([0, 2], [1, 2, 1], [0, 0, 0], [4, 1, 2], [60, 0, 2]), ev([0, 3, 2], [1, 2, 1], [0, 0, 0], [4, 1, 2],
+                                                                        [60, 0, 3]),
+             ev([0, 2, 10], [1, 2, 1], [0, 0, 0], [4, 1, 2], [60, 0, 10]),
+             ev([0, 2, 2], [1, 2, 1], [0, 0, 0], [4, 1, 2], [61, 0, 2]),
+             ev([0, 2, 2], [1, 2, 1], [0, 0, 0], [4, 1, 2], [60, 0, 1]),
+             ev([0, 2, 2], [1, 2, 1], [0, 0, 0], [4, 1, 2], [60, 3, 2]),
+             ev([0, 2, 2], [1, 2, 1], [0, 1, 0], [4, 1, 2], [60, 0, 2]),
+             (10, [5, 6], [0], [1], [2], [3], *wh[6:])],
+            "event sequences of unequal length, days that go back, an event on the day after the last, "
+            "a delivery expiring 61 days after its day, one expiring the day before its day, an order "
+            "with an expiry, a product outside the list and product sequences of unequal length")
+    refuses("cache-sim", (4, 4, 8, 8, [0, 255], [True, False]),
+            [(4, 4, 8, 8, [0, 255], [True]), (4, 4, 8, 8, [256], [True]), (5, 4, 8, 8, [], []),
+             (4, 4, 8, 9, [], [])],
+            "addresses and writes of unequal length, block 256, 5 first-level sets and 9 second-level places")
 
 
 def cases(t):
@@ -655,6 +833,26 @@ PY_MUTANTS |= {
                                  "    if soft:\n        return t <= 16", "calibration3.py")),
 }
 
+PY_MUTANTS |= {
+    "sokoban": ("a pushed box dead whenever two of its sides are walls",
+                meaning_mutant("_sokoban", "return (up or down) and (left or right)",
+                               "return up + down + left + right >= 2", "scored.py")),
+    "checkers": ("a man crowned during a capture jumps on as a king",
+                 meaning_mutant("_checkers", "        if _crowns(v, lr):\n            out.append(([land], [over]))\n"
+                                "            continue\n        more = _jumps(b, land, v)",
+                                "        more = _jumps(b, land, v + 1 if _crowns(v, lr) else v)", "scored.py")),
+    "regex": ("a ')' with no '(' open ends the pattern instead of making it invalid",
+              meaning_mutant("_regex", "    if pos != len(toks):\n        raise _Bad", "    pass", "scored.py")),
+    "swiss": ("with equal whites, white always to the player taken first",
+              meaning_mutant("_swiss", 'elif (last[a] == "b") != (last[b] == "b"):', "elif False:", "scored.py")),
+    "warehouse": ("stock taken from the lot that arrived first, not the one expiring first",
+                  meaning_mutant("_warehouse", "lots[p].sort(key=lambda lot: (lot[1], lot[2]))",
+                                 "lots[p].sort(key=lambda lot: lot[2])", "scored.py")),
+    "cache-sim": ("a dirty block evicted from the first level written straight to memory",
+                  meaning_mutant("_cache_sim", "            l2_write(v[0])", '            c["mw"] += 1', "scored.py")),
+}
+
+
 def python_mutants() -> None:
     check(set(PY_MUTANTS) == set(BY_ID), "every task has a Python mutant")
     for tid, (what, src) in PY_MUTANTS.items():
@@ -702,6 +900,18 @@ def firth_mutant() -> None:
     check(all(c["ok"] for c in res["cases"]), "the stacker mutant checks and runs on every case")
     check(res["cases"][0]["pass"] and not res["pass"],
           "a Firth stacker reference with no back-to-back bonus passes the example "
+          f"and fails the hidden tests ({res['hidden_passed']}/{res['hidden_total']})")
+
+    # The scored set: a box pushed into a corner counted as dead even on a goal.
+    src = (HERE / "reference/scored/firth/sokoban.firth").read_text()
+    t = BY_ID["sokoban"]
+    goal = "cells u prim seq-int.at 2 prim = prim not"
+    mutant = src.replace(goal, "true", 1)
+    check(src.count(goal) == 1 and mutant != src, "the sokoban mutant changes the reference")
+    res = tier.score({"sokoban": mutant}, "firth", [t])["tasks"]["sokoban"]
+    check(all(c["ok"] for c in res["cases"]), "the sokoban mutant checks and runs on every case")
+    check(res["cases"][0]["pass"] and not res["pass"],
+          "a Firth sokoban reference that counts a box in a corner on a goal as dead passes the example "
           f"and fails the hidden tests ({res['hidden_passed']}/{res['hidden_total']})")
 
 def prompt_and_repair() -> None:
