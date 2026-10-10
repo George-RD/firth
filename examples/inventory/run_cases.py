@@ -36,6 +36,10 @@ import mvp_agent_gate as gate  # noqa: E402
 
 SOURCE = HERE / "allocator.firth"
 RECORDS = ROOT / "src" / "proofs" / "records.json"
+# The allocator's target theorems, named here rather than read from the records,
+# so a record that loses its target altogether cannot drop out unnoticed.
+TARGET_THEOREMS = {"Firth.Proofs.Inventory.Target.allocate_batch_host_target",
+                   "Firth.Proofs.Inventory.Target.allocate_batch_target"}
 EXPORT = "Inventory.Allocator"
 HOST = ROOT / ".lake" / "build" / "bin" / "inventoryHost"
 ENTRY = "allocate-batch"
@@ -95,6 +99,10 @@ def check_image(observation: dict[str, Any], records: dict[str, Any]) -> list[st
     images = proved_images(records)
     if not images:
         return [f"no proof record of {ENTRY} names a target theorem"]
+    found = {theorem for theorem, _, _ in images}
+    if found != TARGET_THEOREMS:
+        return [f"the records name target theorems {sorted(found)}, "
+                f"expected {sorted(TARGET_THEOREMS)}"]
     names = [word["name"] for word in observation["image"]]
     if len(set(names)) != len(names):
         return [f"the image publishes a name twice: {names}"]

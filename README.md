@@ -159,7 +159,9 @@ reference interpreter on the target semantics, a Lean model of the VM's
 contract (`compileWords_correct` in
 `src/compiler/Firth/LoweringSimulation.lean`), and a proof record can name a
 target theorem that carries its contract to the compiled image
-(`src/compiler/Firth/ContractTarget.lean`). The Rust VM is not proved: it is
+(`src/compiler/Firth/ContractTarget.lean`), for the kernel cost only and
+except where the target exceeds its 256-frame call-depth bound or the run takes
+the length of a sequence of 2^63 or more elements. The Rust VM is not proved: it is
 tested against the target semantics and the reference interpreter, and
 `specs/tcb-boundary.toml` lists the parts that stay trusted.
 

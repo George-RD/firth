@@ -93,6 +93,12 @@ class CheckImageTest(unittest.TestCase):
             record.pop("target_theorem", None)
         self.assert_refused(proved_observation(), records, reason="names a target theorem")
 
+    def test_a_record_that_lost_its_whole_target_is_refused(self) -> None:
+        records = copy.deepcopy(RECORDS)
+        lost = next(record for record in records["records"] if "target" in record)
+        del lost["target"], lost["target_theorem"]
+        self.assert_refused(proved_observation(), records, reason="expected")
+
     def test_a_record_that_lost_its_target_image_is_refused(self) -> None:
         records = copy.deepcopy(RECORDS)
         lost = next(record for record in records["records"] if "target" in record)
