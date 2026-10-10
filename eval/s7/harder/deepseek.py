@@ -30,7 +30,7 @@ the model answered, and the round is scored as a failed answer; its text is
 kept as `cut-ROUND.md` and resent as the model's turn in a feedback round.
 Anything else that is not a complete answer exits 3 and voids the sample: a
 request that failed (a network error, which may come after the server
-answered, a body that is not UTF-8, or any HTTP status other than 200), a
+answered, a body cut short or not UTF-8, or any HTTP status other than 200), a
 reply that is not a chat reply (not JSON, or no string `message.content`), a
 message whose role is not `assistant`, another model's name, `done` not
 `true`, or a `done_reason` other than `stop` or `length`. Either way the round records what came back and is
@@ -41,6 +41,7 @@ network.
 """
 from __future__ import annotations
 
+import http.client
 import json
 import sys
 import urllib.error
@@ -108,7 +109,7 @@ def run(prompt: Path, d: Path, rnd: int, send=post) -> int:
 
     try:
         status, reply = send(body)
-    except (OSError, ValueError) as e:  # the server may have answered: never sent again
+    except (OSError, ValueError, http.client.HTTPException) as e:  # the server may have answered: never sent again
         record["outcome"] = {"error": repr(e)}
         return done("void", "the request failed", 3)
     record["outcome"] = {"status": status}
@@ -206,6 +207,7 @@ def self_test() -> None:
                           (UnicodeDecodeError("utf-8", b"\xff", 0, 1, "bad"), 3),  # body not UTF-8
                           ((200, "[]"), 3),                                      # not an object
                           (OSError("reset"), 3),                                 # no reply seen
+                          (http.client.IncompleteRead(b"{\"mo"), 3),             # body cut short
                           ((502, "bad gateway"), 3),                             # a 5xx
                           ((400, "bad request"), 3)):                            # a 4xx
         with tempfile.TemporaryDirectory() as t:

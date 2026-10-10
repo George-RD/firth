@@ -2,7 +2,7 @@
 """Run one DeepSeek sample of the harder tier through both rounds and score it
 (`todo.s7-harder-task-tier`).
 
-    python3 deepseek_sample.py --set SET --lang firth|python PROMPT DIR
+    python3 deepseek_sample.py --set scored --lang firth|python PROMPT DIR
 
 A Sonnet sample is run by hand with `tier.py`'s steps; a DeepSeek author has
 no hands, so this runs the same steps around `deepseek.py`:
@@ -18,7 +18,8 @@ no hands, so this runs the same steps around `deepseek.py`:
    list is not taken, and is named in `outcome.json`.
 
 A reply cut off at the length limit (`deepseek.py` exit 2) is a failed answer:
-nothing in it is scored, whatever it holds. After a round-1 cut-off the
+nothing in it is scored, whatever it holds, and a round-2 cut-off keeps round
+1's results as they were scored, without scoring again. After a round-1 cut-off the
 feedback says so and lists every task, and round 2 resends the cut text as
 the model's turn (`cut-1.md`). A void round (exit 3: the request failed or the
 reply was not a complete answer from the model) voids the whole sample, which
@@ -86,7 +87,10 @@ def sample(prompt: Path, d: Path, set_name: str, lang: str, send=deepseek.post, 
         entry["not_taken"] = sorted(set(got) - set(taken))
         solutions = {**solutions, **taken}
         deepseek.write(d / f"solutions-{rnd}.json", json.dumps(solutions, indent=2) + "\n")
-        res = score(solutions)
+        if rnd == 2 and code == 2:
+            res = json.loads(deepseek.text(d / "results-1.json"))  # nothing new: round 1's results stand
+        else:
+            res = score(solutions)
         deepseek.write(d / f"results-{rnd}.json", json.dumps(res, indent=2) + "\n")
         passed = {tid: r["pass"] for tid, r in res["tasks"].items()}
         out["round1" if rnd == 1 else "within_two"] = passed
@@ -107,7 +111,8 @@ def sample(prompt: Path, d: Path, set_name: str, lang: str, send=deepseek.post, 
 
 def main(argv: list[str]) -> int:
     cli = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    cli.add_argument("--set", required=True, choices=sorted(tier.SETS))
+    # DeepSeek is a subject on the scored set only; tests call `sample` with calibration fixtures.
+    cli.add_argument("--set", required=True, choices=["scored"])
     cli.add_argument("--lang", required=True, choices=["firth", "python"])
     cli.add_argument("prompt", type=Path)
     cli.add_argument("dir", type=Path)

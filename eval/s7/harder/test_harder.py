@@ -1279,7 +1279,10 @@ def deepseek_sample_driver() -> None:
     tasks = [t.id for t in SETS["calibration"]]
     first, second = tasks[0], tasks[1]
 
+    scored_calls: list = []
+
     def fake_score(sols: dict) -> dict:
+        scored_calls.append(dict(sols))
         per = {}
         for tid in tasks:
             ok = sols.get(tid) == f"good {tid}\n"
@@ -1307,6 +1310,7 @@ def deepseek_sample_driver() -> None:
                 raise o
             return o
         d = Path(tempfile.mkdtemp())
+        scored_calls.clear()
         (d / "prompt.md").write_text("Answer the tasks.")
         with contextlib.redirect_stderr(io.StringIO()):
             out = ds.sample(d / "prompt.md", d, "calibration", "firth", send, fake_score)
@@ -1339,6 +1343,8 @@ def deepseek_sample_driver() -> None:
     out, d, sent = go(reply(answer({**good, first: "bad"})), reply(answer(good), "length"))
     check(out["status"] == "scored" and out["passed"] == {"round1": n - 1, "within_two": n - 1},
           "a cut-off round 2 adds nothing")
+    check(len(scored_calls) == 1 and (d / "results-2.json").read_text() == (d / "results-1.json").read_text(),
+          "a cut-off round 2 is not scored again; round 1's results stand")
     # A void round voids the sample, and nothing is scored after it.
     out, d, sent = go((502, "bad gateway"))
     check(out["status"] == "void" and out["void"]["round"] == 1 and not (d / "results-1.json").exists()

@@ -677,7 +677,7 @@ the round is scored as a failed answer, not replaced (decided on 10 October
 2026, `todo.s7-harder-task-tier`); its text is kept as `cut-ROUND.md`.
 Everything else that is not a complete answer voids the sample (exit 3): a
 request that failed (a network error, which may come after the server
-answered, a body that is not UTF-8, or any HTTP status but 200), a reply that
+answered, a body cut short or not UTF-8, or any HTTP status but 200), a reply that
 is not a chat reply, a message not in the `assistant` role, another model's
 name, `done` not `true`, or any other `done_reason`. A failed request is
 never sent again, so no answer is ever asked for twice. The whole reply, the
@@ -686,14 +686,15 @@ kept in `response-ROUND.json` and is never scored. `deepseek.py
 --self-test` checks this against planted replies with no network, and
 `test_harder.py` runs it.
 
-`deepseek_sample.py --set SET --lang LANG PROMPT DIR` runs one DeepSeek
+`deepseek_sample.py --set scored --lang LANG PROMPT DIR` runs one DeepSeek
 sample through both rounds with `tier.py`'s steps, as a Sonnet sample is run
 by hand: round 1 is asked, extracted and scored; `tier.py repair`'s feedback
 (nothing from a hidden test) is sent as round 2 when any answer failed its
 example; round 2's answers replace round 1's for the tasks the feedback
 listed, and the whole set is scored again. Round 2's answer to a task the
 feedback did not list is not taken, and `outcome.json` names it. A cut-off
-round scores nothing, whatever it holds; after a round-1 cut-off the feedback
+round scores nothing, whatever it holds (a round-2 cut-off keeps round 1's
+results without scoring again); after a round-1 cut-off the feedback
 says the reply was cut off and lists every task, and round 2 resends the cut
 text as the model's turn. A void round voids the sample: nothing is scored,
 and `outcome.json` records the round and why. `outcome.json` also records

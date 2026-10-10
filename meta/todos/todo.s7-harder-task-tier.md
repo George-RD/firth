@@ -125,7 +125,8 @@ until the tasks get harder.
   replaced. A round-1 cut-off gets a feedback round like any other failed
   answer, saying the reply was cut off, on both language arms.
   `eval/s7/harder/deepseek_sample.py` runs a DeepSeek sample by these rules
-  (README, "DeepSeek"). The pre-registration states them.
+  (README, "DeepSeek"). The pre-registration, not yet written, must state
+  them.
 
 ## Before any scored run (reviewer, #209)
 
