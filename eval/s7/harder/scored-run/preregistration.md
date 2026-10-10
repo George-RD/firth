@@ -318,7 +318,9 @@ outputs that need it:
   a sub-agent that ended without handing back, a crash;
 - the run directory's context scan output: context voids.
 
-The void and crash counts per arm and by cause come from the last four.
+The void and crash counts per arm and by cause come from `outcome.json`,
+`response-N.json`, `request-N.json`, `transcript.json` and the context
+scan output.
 Its permutation test and bootstrap are checked against a hand-worked
 example in its own test.
 
