@@ -19,7 +19,7 @@ open Firth.Interpreter
 open Firth.ReferenceRun
 
 /-- SHA-256 of the source text these definitions were generated from. -/
-def sourceDigest : String := "427f33a5a998cf5defca5e4155d96eb33933a1f1659bd3b674ba026649031ac6"
+def sourceDigest : String := "3c2af5a601576b94c514ee9257793a83325960e941acbfd93d381cc44bd22919"
 
 namespace «sum-from»
 
@@ -289,6 +289,39 @@ def erasedType : String := "(forallρ;ρ,v0:SeqInt^many,v1:Int^many--ρ,v0:Int^m
 
 end «element»
 
+namespace «flag»
+
+/-- The erased kernel program of `flag`. -/
+def body : Program :=
+  .cons (.prim "seq-bool.at") <|
+  .empty
+
+/-- The image's `body_digest` for `flag`: SHA-256 of `body` lowered to
+target code, hex encoded. -/
+def bodyDigest : String := "7dff27dac64043ed2c073bb9e5637fc926c67199a5cb8b77508c7ac4d446005e"
+
+/-- The erased word type the image records for `flag`. -/
+def erasedType : String := "(forallρ;ρ,v0:SeqBool^many,v1:Int^many--ρ,v0:Bool^many)"
+
+end «flag»
+
+namespace «clear-flag»
+
+/-- The erased kernel program of `clear-flag`. -/
+def body : Program :=
+  .cons (.lit (.bool false)) <|
+  .cons (.prim "seq-bool.set") <|
+  .empty
+
+/-- The image's `body_digest` for `clear-flag`: SHA-256 of `body` lowered to
+target code, hex encoded. -/
+def bodyDigest : String := "47259d44f9eb82daa8da05aac4cfd8ee3e1bf9b57e72af47169c5d91cfba959d"
+
+/-- The erased word type the image records for `clear-flag`. -/
+def erasedType : String := "(forallρ;ρ,v0:SeqBool^many,v1:Int^many--ρ,v0:SeqBool^many)"
+
+end «clear-flag»
+
 /-- Every word, in declaration order: its name, body, body digest and erased
 type. -/
 def words : List (String × Program × String × String) := [
@@ -301,7 +334,9 @@ def words : List (String × Program × String × String) := [
   ("literal-sum", «literal-sum».body, «literal-sum».bodyDigest, «literal-sum».erasedType),
   ("literal-mask", «literal-mask».body, «literal-mask».bodyDigest, «literal-mask».erasedType),
   ("third", «third».body, «third».bodyDigest, «third».erasedType),
-  ("element", «element».body, «element».bodyDigest, «element».erasedType)]
+  ("element", «element».body, «element».bodyDigest, «element».erasedType),
+  ("flag", «flag».body, «flag».bodyDigest, «flag».erasedType),
+  ("clear-flag", «clear-flag».body, «clear-flag».bodyDigest, «clear-flag».erasedType)]
 
 /-- The dictionary the reference runner builds for this source. -/
 def dictionary : Dictionary
@@ -315,6 +350,8 @@ def dictionary : Dictionary
   | "literal-mask" => some { type := adapterWordType, body := «literal-mask».body }
   | "third" => some { type := adapterWordType, body := «third».body }
   | "element" => some { type := adapterWordType, body := «element».body }
+  | "flag" => some { type := adapterWordType, body := «flag».body }
+  | "clear-flag" => some { type := adapterWordType, body := «clear-flag».body }
   | _ => none
 
 /-! Each word's dictionary entry, which a proof unfolding a call to it needs. -/
@@ -348,5 +385,11 @@ theorem «third».entry :
 
 theorem «element».entry :
     dictionary "element" = some { type := adapterWordType, body := «element».body } := rfl
+
+theorem «flag».entry :
+    dictionary "flag" = some { type := adapterWordType, body := «flag».body } := rfl
+
+theorem «clear-flag».entry :
+    dictionary "clear-flag" = some { type := adapterWordType, body := «clear-flag».body } := rfl
 
 end Firth.Exports.Programs.Sequences

@@ -58,3 +58,13 @@
 : element
   (forall ρ; ρ xs:Seq Int^many i:Int^many -- ρ r:Int^many)
   prim seq-int.at;
+
+\ The same for `Seq Bool`: an index outside the sequence traps on both
+\ hosts, whether it is read with `at` or replaced with `set`.
+: flag
+  (forall ρ; ρ flags:Seq Bool^many i:Int^many -- ρ r:Bool^many)
+  prim seq-bool.at;
+
+: clear-flag
+  (forall ρ; ρ flags:Seq Bool^many i:Int^many -- ρ r:Seq Bool^many)
+  false prim seq-bool.set;

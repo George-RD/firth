@@ -1,0 +1,6 @@
+\ `stdlib/core.firth` is not imported automatically, so its words are not
+\ in scope: `core.duplicate-int` is an unknown name here, not a call into
+\ the standard library.
+: twice
+  ( n:Int^many -- a:Int^many b:Int^many )
+  core.duplicate-int ;
