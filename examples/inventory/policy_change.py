@@ -226,7 +226,7 @@ def main() -> int:
             failed = True
         alone = compile_program("compile-allocator", host.SOURCE, host.HERE, workspace,
                                 entry="allocate-batch")
-        for policy, program in zip(CLIENTS, (before, after)):
+        for policy, program in zip(CLIENTS, (before, after), strict=True):
             differing = standalone_differences(alone, program)
             print(f"{policy}: {len(alone['digests']) - len(differing)} of {len(alone['digests'])} "
                   "allocator words as compiled alone")

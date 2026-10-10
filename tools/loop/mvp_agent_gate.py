@@ -941,7 +941,7 @@ def rebuild(entry: dict[str, Any], workspace: Path, *,
     source_name = loaded["source_path"] if nested else Path(entry["source_path"]).name
     source_text = loaded["source_text"]
     written = [source_name] + [file["source_path"] for file in files]
-    for path, text in zip(written, [source_text] + [file["source_text"] for file in files]):
+    for path, text in zip(written, [source_text] + [file["source_text"] for file in files], strict=True):
         (scratch / path).parent.mkdir(parents=True, exist_ok=True)
         (scratch / path).write_text(text, encoding="utf-8")
     held = sorted(item.relative_to(scratch).as_posix() for item in scratch.rglob("*") if item.is_file())
