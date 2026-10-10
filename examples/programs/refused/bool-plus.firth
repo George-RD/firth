@@ -1,0 +1,6 @@
+\ A comparison leaves a Bool, not 0 or 1, so adding it to a count is a type
+\ error: `Int` and `Bool` are distinct types and neither is read as the
+\ other. The checker must refuse the `prim +`, whose top input is the Bool.
+: count-positive
+  (forall ρ; ρ n:Int^many x:Int^many -- ρ r:Int^many)
+  0 prim > prim + ;
