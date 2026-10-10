@@ -251,10 +251,25 @@ def main : IO Unit := do
   let warnings ← match (← member (← elaborateJson warnedMain [warned]) "warnings").getArr? with
     | .ok values => pure values.toList
     | .error error => fail s!"adapter: warnings {error}"; pure []
-  let warningPaths := warnings.map fun warning =>
-    ((warning.getObjValAs? String "word").toOption, (warning.getObjValAs? String "source_path").toOption)
-  if warningPaths.eraseDups != [(some "lib-deep", some "warned.firth"), (some "main-deep", some "main.firth")] then
-    fail s!"adapter: warning paths {repr warningPaths}"
+  -- Five locals give each word one `LOCAL_DEPTH` and one `STACK_JUGGLE`.
+  let warningPaths (warnings : List Lean.Json) :=
+    warnings.map fun warning =>
+      ((warning.getObjValAs? String "word").toOption, (warning.getObjValAs? String "code").toOption,
+       (warning.getObjValAs? String "source_path").toOption)
+  let expectedPaths := ["lib-deep", "main-deep"].flatMap fun word =>
+    let path := if word == "lib-deep" then "warned.firth" else "main.firth"
+    ["LOCAL_DEPTH", "STACK_JUGGLE"].map fun code => (some word, some code, some path)
+  if warningPaths warnings != expectedPaths then
+    fail s!"adapter: warning paths {repr (warningPaths warnings)}"
+  -- Known-bad responses the check must reject: the path dropped, and every
+  -- warning named with the root's path.
+  let dropped := warnings.map fun warning => Lean.Json.mkObj
+    [("word", warning.getObjValD "word"), ("code", warning.getObjValD "code"),
+     ("range", warning.getObjValD "range")]
+  let rootOnly := warnings.map (·.setObjVal! "source_path" (.str "main.firth"))
+  for bad in [dropped, rootOnly] do
+    if warningPaths bad == expectedPaths then
+      fail s!"adapter: the warning-path check accepted {repr (warningPaths bad)}"
   match Firth.Agent.Elaborate.runRequest (elaborateRequest (main₀ "2 helper") [lib]) with
   | .ok output =>
       if !(output.contains "firth.name.not-exported" && output.contains "\"path\":\"main.firth\"") then
