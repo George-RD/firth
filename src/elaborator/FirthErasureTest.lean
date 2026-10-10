@@ -269,11 +269,11 @@ def main : IO Unit := do
     | _ => false) unboundSpan
 
   let linearCopy ← parsed ": lin ( h:Handle^linear -- ) locals { h } { h h } ;"
-  let linearCopySpan := match linearCopy.body with
-    | [.locals _ [.word _ _, .word _ span] _] => span
+  let (linearCopyFirst, linearCopySpan) := match linearCopy.body with
+    | [.locals _ [.word _ first, .word _ span] _] => (first, span)
     | _ => panic! "linear-copy fixture changed"
   expectErrorAt linearCopy (fun error => match error with
-    | .linearCopy name _ _ => name == "h"
+    | .linearCopy name _ (some first) => name == "h" && first == linearCopyFirst
     | _ => false) linearCopySpan
 
   -- A linear local used in an inner block and again after it is used twice

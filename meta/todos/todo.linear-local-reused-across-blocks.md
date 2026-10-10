@@ -42,3 +42,9 @@ that binds the name again hides the enclosing blocks' later uses of it
 the same name are still two locals. `firthErasureTest` holds both cases
 (`across`, `rebound`), and `examples/programs/nested-loop.firth` runs the
 `many` version of the second (`rebound`).
+
+The tests are known-bad inputs for the old counting, and each fails with the
+change undone: restoring `|| slot.usage == .linear` in `useCount` makes
+`across` report the old span, `shadowAfter` returning `after` unchanged makes
+`rebound` refused as used twice, and leaving the first use out makes `across`
+(and `lin`, the same-block copy) get no first use.
