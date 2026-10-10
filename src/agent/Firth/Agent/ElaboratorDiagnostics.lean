@@ -607,7 +607,17 @@ private def declaredInputsExplanation (word : String) (short : Firth.Elaborator.
   let more := inputs.takes - inputs.declared
   let them := if more == 1 then "1 more input" else s!"{more} more inputs"
   let message := s!"{subject} in `{word}` {wants}, but {present}. {declaredInputsText word inputs}."
-  let hint := s!"A word's body starts with only the inputs its stack effect declares. If these values are to come from the caller of `{word}`, declare {them} in its stack effect{if inputs.exact then "" else ", or more"}. Otherwise push them before {subject}."
+  -- `call`, `dip` and `if` take their quotations, and the value `dip` keeps
+  -- or the condition `if` tests, from the top, so the values missing go
+  -- before those, not just before the atom.
+  let push := match short.operation, short.present with
+    | "call", _ => "push them before the quotation `call` runs"
+    | "dip", 1 => "push them before the quotation `dip` runs"
+    | "dip", _ => "push them before the value `dip` keeps"
+    | "if", 2 => "push them before the quotations `if` chooses between"
+    | "if", _ => "push them before the condition `if` tests"
+    | _, _ => s!"push them before {subject}"
+  let hint := s!"A word's body starts with only the inputs its stack effect declares. If these values are to come from the caller of `{word}`, declare {them} in its stack effect{if inputs.exact then "" else ", or more"}. Otherwise {push}."
   (message, hint)
 
 private def erasureDiagnostic (word : String) : Firth.Elaborator.ErasureError → ErasureDiagnostic

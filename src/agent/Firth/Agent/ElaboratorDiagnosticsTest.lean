@@ -570,17 +570,48 @@ private def runDeclaredInputsTests : IO Unit := do
   declaredCase "quote" ": f ( -- r:Int^many ) quote call ;\n"
     ["`quote` in `f` needs 1 value, but no value is on the stack before it. `f` declares no inputs, but its body takes 1 input."]
     ": f ( a:Int^many -- r:Int^many ) quote call ;\n"
-  -- `call` and `dip` count the values the quotation they run takes.
+  -- `call` and `dip` count the values the quotation they run takes, and the
+  -- values missing go below the quotation, not just before the atom:
+  -- `[ prim + ] x call` would run `x`. Each hint is followed in `fixed`
+  -- below: the value pushed before the quotation, or the condition, checks.
   declaredCase "call" ": f ( a:Int^many -- r:Int^many ) [ prim + ] call ;\n"
-    ["`call` in `f` needs 3 values, but only 2 values are on the stack before it. `f` declares 1 input, but its body takes 2 inputs."]
+    ["`call` in `f` needs 3 values, but only 2 values are on the stack before it. `f` declares 1 input, but its body takes 2 inputs.",
+      "Otherwise push them before the quotation `call` runs."]
     ": f ( a:Int^many b:Int^many -- r:Int^many ) [ prim + ] call ;\n"
   declaredCase "dip" ": f ( -- r:Int^many ) [ 1 ] dip prim + ;\n"
-    ["`dip` in `f` needs 2 values, but only 1 value is on the stack before it. `f` declares no inputs, but its body takes 1 input."]
+    ["`dip` in `f` needs 2 values, but only 1 value is on the stack before it. `f` declares no inputs, but its body takes 1 input.",
+      "Otherwise push them before the quotation `dip` runs."]
     ": f ( a:Int^many -- r:Int^many ) [ 1 ] dip prim + ;\n"
   -- `if` counts its condition and the values its branches take.
   declaredCase "if" ": f ( -- r:Int^many ) true [ prim + ] [ prim - ] if ;\n"
-    ["`if` in `f` needs 5 values, but only 3 values are on the stack before it. `f` declares no inputs, but its body takes 2 inputs."]
+    ["`if` in `f` needs 5 values, but only 3 values are on the stack before it. `f` declares no inputs, but its body takes 2 inputs.",
+      "Otherwise push them before the condition `if` tests."]
     ": f ( a:Int^many b:Int^many -- r:Int^many ) true [ prim + ] [ prim - ] if ;\n"
+  declaredCase "dip keeping a value" ": f ( -- r:Int^many ) 5 [ prim + ] dip prim + ;\n"
+    ["`f` declares no inputs, but its body takes 2 inputs.", "Otherwise push them before the value `dip` keeps."]
+    ": f ( a:Int^many b:Int^many -- r:Int^many ) 5 [ prim + ] dip prim + ;\n"
+  declaredCase "if with no condition" ": f ( -- r:Int^many ) [ 1 ] [ 2 ] if ;\n"
+    ["`f` declares no inputs, but its body takes 1 input.", "Otherwise push them before the quotations `if` chooses between."]
+    ": f ( c:Bool^many -- r:Int^many ) [ 1 ] [ 2 ] if ;\n"
+  -- The hint's other way, followed as written for each case above: the
+  -- values pushed where it says, and the word checks.
+  for (label, pushed) in [
+      ("call", ": f ( a:Int^many -- r:Int^many ) 7 [ prim + ] call ;\n"),
+      ("dip", ": f ( -- r:Int^many ) 5 [ 1 ] dip prim + ;\n"),
+      ("dip keeping a value", ": f ( -- r:Int^many ) 7 8 5 [ prim + ] dip prim + ;\n"),
+      ("if", ": f ( -- r:Int^many ) 3 4 true [ prim + ] [ prim - ] if ;\n"),
+      ("if with no condition", ": f ( -- r:Int^many ) true [ 1 ] [ 2 ] if ;\n")] do
+    match elaboratePipeline pipelineContext pushed agentConfig with
+    | .success _ => pure ()
+    | .failure envelopes => fail s!"{label}: pushed where the hint says, the word is refused: {envelopes.map encode}"
+  -- A quotation whose effect rests on a call to a word with no row is not
+  -- exact, since typing has that word take the whole stack. The count still
+  -- holds: had the call been refused with the input declared, it would be
+  -- refused inside the quotation, before the `call`, and nothing would be said.
+  let closedOne := ": w ( -- x:Int^many ) 1 ;\n"
+  declaredCase "an inexact quotation" (closedOne ++ ": f ( -- r:Int^many ) [ drop w ] call ;\n")
+    ["`f` declares no inputs, but its body takes 1 input."]
+    (closedOne ++ ": f ( a:Int^many -- r:Int^many ) [ drop w ] call ;\n")
   -- The body takes one input and leaves nothing: the comparison with the
   -- declared result is made at the signature, before the `drop`, but after
   -- the body is checked, so it does not stop the count.
