@@ -33,13 +33,16 @@ one change. The change is not made here.
   `0 <= r < |b|`. A zero divisor is a primitive fault on both hosts. The one
   quotient outside the range, `-2^63 div -1`, is the `div` overflow above.
 - **Sequence length.** `seq-int.len` and `seq-bool.len` return the length as
-  an `Int`; a length of 2^63 or more cannot be represented
-  (`LenOverflowAt` in `compiler/Firth/LoweringSimulation.lean`).
+  an `Int`. For a sequence of 2^63 or more elements the reference returns
+  the length and the target faults; that is the `LenOverflowAt` exception
+  in `compileWords_correct` (`compiler/Firth/LoweringSimulation.lean`). No
+  such sequence can be built in practice (inferred, not proved).
 - **The reference interpreter.** The runner's registry, `adapterGamma`
   (`interpreter/FirthReferenceRun.lean`), computes on Lean's unbounded `Int`.
   So `MAX 1 prim +` and `-2^63 -1 prim div` succeed there with results
-  outside the range, where the VM traps. Only the zero divisor and the
-  sequence index faults are shared.
+  outside the range, where the VM traps, and so does the length of a
+  sequence of 2^63 or more elements. Only the zero divisor and the sequence
+  index faults are shared.
 - **The checked registry.** `int64Gamma` (`interpreter/Firth/ProgramLogic.lean`)
   is `adapterGamma` with `+`, `-`, `*` and `div` faulting outside the range,
   as the VM's do. Every proof record's contract is stated under it, so a
@@ -60,9 +63,10 @@ AGENTS.md rule 12 says the reference interpreter defines behaviour, so a
 divergence is a VM or compiler bug unless the reference disagrees with the
 kernel specification. The kernel is parameterised by its primitive signature
 `Γ` and says nothing about integer width. So today the reference "defines"
-an unbounded result that no VM run can produce. Overflow is the one place
-where the defining semantics is not the one programs run under, and where
-the two hosts are allowed to disagree and still pass.
+an unbounded result that no VM run can produce. Integer overflow and the
+length of a sequence of 2^63 or more elements are the two places where the
+defining semantics is not the one programs run under, and where the two
+hosts may disagree.
 
 ## Options
 
@@ -72,10 +76,15 @@ the two hosts are allowed to disagree and still pass.
    passing for overflow, with its own prefix rule, and the gate cannot expect
    a trap on both hosts there as it can for a zero divisor. An author reading
    the reference result also learns a value the VM will never return.
-2. **Run the reference under `int64Gamma`.** The reference faults wherever
-   the VM traps, so overflow becomes an `expected-trap` with matching stacks,
-   costs and traces up to the fault, the same as a zero divisor. The
-   reference, the proofs and the VM then share one registry. This needs:
+2. **Run the reference under `int64Gamma`, with `len` checked too.** Add
+   `seq-int.len` and `seq-bool.len` to `int64Gamma`'s checked set
+   (`Int64Checked` covers only `+`, `-`, `*` and `div` today), faulting on a
+   length outside the range. The reference then faults wherever the VM
+   traps, so overflow becomes an `expected-trap` with matching stacks, costs
+   and traces up to the fault, the same as a zero divisor. The reference, the
+   proofs and the VM share one registry, and the `LenOverflowAt` exception
+   leaves `compileWords_correct` and `TargetHolds`, which then have only the
+   call-depth bound as an exception. This needs:
    - progress for `int64Gamma` (`PrimitivesWellFormed`: its checked
      primitives are declared `faults := true`, so totality exempts them; preservation
      should follow from `adapterGamma`'s, since a checked delta either refuses
@@ -95,9 +104,11 @@ the two hosts are allowed to disagree and still pass.
 ## Recommendation
 
 Option 2. It is the harder change now and removes a category every
-comparison tool would otherwise carry forever (rule 4). It also makes rule 12
-true without an exception: the reference would define the behaviour programs
-actually have. The easier option, keeping the split, would cost a permanent
+comparison tool would otherwise carry forever (rule 4). With `len` in the
+checked set it also makes rule 12 true for integers without an exception:
+the reference would define the arithmetic programs actually have. The
+256-frame call-depth bound stays a VM resource limit the reference does not
+model, as it is today; this decision does not change it. The easier option, keeping the split, would cost a permanent
 second notion of agreement and a reference that answers questions about
 values no program can hold.
 

@@ -24,9 +24,11 @@ Deliver the portable arithmetic and comparisons required by allocation.
   (`dec.comparison-primitives`); minimum is not, and each example defines its
   own, so a shared `min`/`max` waits for multi-file imports
   (`todo.language-12-data-and-modules`). `dec.int64-arithmetic` (proposed)
-  records the integer range, overflow and `MIN div -1` semantics and the one
-  divergence left: the reference's integers are unbounded where the VM traps;
-  it recommends running the reference under `int64Gamma`. Still open: that
+  records the integer range, overflow and `MIN div -1` semantics and the two
+  divergences left, both from the reference's unbounded integers: overflow,
+  and the length of a sequence of 2^63 or more elements, where the VM traps
+  and the reference does not. It recommends running the reference under
+  `int64Gamma` with `seq-int.len` and `seq-bool.len` checked too. Still open: that
   decision and its change, a hand-written VM overflow trap and a Bool-for-Int
   refusal among the example cases, and a capability table whose rows name
   their tests (`docs/getting-started.md`, held while an S7 authoring window
