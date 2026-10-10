@@ -26,14 +26,18 @@ Deliver the portable arithmetic and comparisons required by allocation.
   own, so a shared `min`/`max` waits for multi-file imports
   (`todo.language-12-data-and-modules`). `dec.int64-arithmetic` (proposed)
   records the integer range, overflow and `MIN div -1` semantics and the two
-  divergences left, both from the reference's unbounded integers: overflow,
-  and the length of a sequence of 2^63 or more elements, where the VM traps
-  and the reference does not. It recommends running the reference under
-  `int64Gamma` with `seq-int.len` and `seq-bool.len` checked too. Still open: that
-  decision and its change, a hand-written VM overflow trap and a Bool-for-Int
-  refusal among the example cases, and a capability table whose rows name
-  their tests (`docs/getting-started.md`, held while an S7 authoring window
-  is open).
+  integer-width divergences left, both from the reference's unbounded
+  integers: overflow, and the theoretical length of a sequence of 2^63 or
+  more elements, where the VM traps and the reference does not (the VM's
+  256-frame call-depth bound is a separate difference). It recommends running
+  the reference under `int64Gamma` with `seq-int.len` and `seq-bool.len`
+  checked too. Still open: that decision and its change, a hand-written VM
+  overflow trap among the example cases, and a capability table whose rows
+  name their tests (`docs/getting-started.md`, held while an S7 authoring
+  window is open).
+- 10 October 2026: the example cases refuse a Bool used as an Int
+  (`examples/programs/refused/bool-plus.firth`, a comparison's result added
+  to a count, refused with `firth.type.primitive-input-mismatch`).
 
 ## Traceability
 

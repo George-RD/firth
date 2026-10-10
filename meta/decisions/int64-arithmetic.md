@@ -115,8 +115,13 @@ hosts may disagree.
      `qs` of any length, so their preconditions would gain a length bound
      below 2^63 (the spec's batch limit is 64, enforced by the host). That
      narrows a recorded contract, so it is part of what the maintainer
-     approves here, and only after those proofs pass does the
-     `LenOverflowAt` exception leave the target theorems.
+     approves here. It narrows no goal, since a valid batch has at most 64
+     requests, but the published evidence changes with it: the S5 row in
+     `docs/roadmap.md` (the contract "assumes nothing about the stock or the
+     quantities"), the claim text in `src/proofs/contracts.json` and the
+     regenerated proof records, the roadmap row under rule 1. Only after
+     those proofs pass does the `LenOverflowAt` exception leave the target
+     theorems.
 3. **Make the VM unbounded.** This was rejected: it gives up the fixed-width
    target the cost model and the compiler proof assume, for no program that
    needs it.
