@@ -194,6 +194,19 @@ structure CallEdit where
   reached : Option (Nat × Nat) := none
   deriving Repr, BEq
 
+/-- For a word whose stack effect has no row and whose body runs short of
+values where no unused local could have been meant: how many inputs the
+effect declares, and how many the body takes. `takes` is found by checking
+the word again with more inputs declared below its own, adding as many as the
+body ran short each time, until the body no longer runs short (`exact`) or
+the word is refused for another reason first, when the body takes at least
+`takes`. Diagnostics only. -/
+structure DeclaredInputs where
+  declared : Nat
+  takes : Nat
+  exact : Bool
+  deriving Repr, BEq
+
 /-- The values an operation the checker refused was handed, named by the
 source that pushed them, as `BranchReach` names them. Diagnostics only. -/
 structure CallAccount where
@@ -236,6 +249,9 @@ structure CallAccount where
   the source that pushed the value for it where that is certain, and
   otherwise the sources that could have pushed it. Diagnostics only. -/
   assignment : List (String × List String) := []
+  /-- When the inputs missing can only have been meant to come from the
+  word's caller (`DeclaredInputs`). Filled by the agent's diagnostics. -/
+  declaredInputs : Option DeclaredInputs := none
   deriving Repr, BEq
 
 /-- For a depth-mismatched `if`: what the condition and the values its
@@ -248,11 +264,28 @@ structure BranchLocals where
   missing : Nat := 0
   deriving Repr, BEq
 
+/-- What a `locals` block that names more values than the body can see was
+short of: the names it binds, how many values the body could see for them,
+and how many unused locals are on the stack (a block's unused locals are
+names, not values the body can see). `tracked` is false once a quotation of
+unknown stack effect has run, when the stack as tracked may not be the real
+one. Diagnostics only. -/
+structure Shortfall where
+  names : List String
+  present : Nat
+  hidden : Nat
+  tracked : Bool
+  /-- Filled by the agent's diagnostics (`DeclaredInputs`). -/
+  inputs : Option DeclaredInputs := none
+  deriving Repr, BEq
+
 inductive ErasureError where
   | duplicateLocal (name : String) (span : Span)
   | unboundLocal (name : String) (span : Span)
   | unsupportedCapture (name : String) (span : Span)
-  | missingStackValue (span : Span)
+  /-- No value where one is needed. `short` is filled where a `locals` block
+  names more values than the body can see. -/
+  | missingStackValue (span : Span) (short : Option Shortfall)
   /-- A linear local used again at `span`; `first` is its use before, when
   there was one. -/
   | linearCopy (name : String) (span : Span) (first : Option Span)
@@ -352,7 +385,7 @@ private def located (span : Span) (atom : Atom) : LocatedKernel := { span, atom 
 private def emptySpan : Span :=
   { start := { offset := 0, line := 1, column := 1 }, stop := { offset := 0, line := 1, column := 1 } }
 
-private instance : Inhabited ErasureError := ⟨.missingStackValue emptySpan⟩
+private instance : Inhabited ErasureError := ⟨.missingStackValue emptySpan none⟩
 
 private def toProgram : KernelProgram → Program
   | [] => .empty
@@ -585,7 +618,7 @@ private structure FocusRun (id : Nat) (stack : List StackEntry) where
 
 private def focusAtomsWithProof (id : Nat) (span : Span) :
     (stack : List StackEntry) → Except ErasureError (FocusRun id stack)
-  | [] => .error (.missingStackValue span)
+  | [] => .error (.missingStackValue span none)
   | target :: rest =>
       match targetEq : isFocusTarget id target with
       | true => .ok { depth := 0, focused := target :: rest, evidence := .top targetEq }
@@ -646,6 +679,11 @@ def nameInPlace : List StackEntry → List StackEntry → List StackEntry
       if hiddenEntry entry then entry :: nameInPlace (name :: names) rest
       else name :: nameInPlace names rest
 
+/-- What a `locals` block naming `names` is short of on `state`. -/
+private def shortfall (names : List LocatedName) (state : State) : Shortfall :=
+  { names := names.map (·.name), present := (bindable names.length state.stack).length
+    hidden := (state.stack.filter hiddenEntry).length, tracked := !state.untracked }
+
 private def boundSlots (names : List LocatedName) (state : State) : List Slot :=
   let top := bindable names.length state.stack
   let slots : List Slot := (names.zip top.reverse).map (fun (name, entry) =>
@@ -663,7 +701,8 @@ private def enteredLocalState (names : List LocatedName) (state : State) : State
   { state with stack := nameInPlace named state.stack, nextId := state.nextId + names.length }
 
 private def localStack (names : List LocatedName) (state : State) : Except ErasureError (State × List Slot) :=
-  if (bindable names.length state.stack).length < names.length then .error (.missingStackValue (names.head?.map (·.span) |>.getD emptySpan))
+  if (bindable names.length state.stack).length < names.length then
+    .error (.missingStackValue (names.head?.map (·.span) |>.getD emptySpan) (some (shortfall names state)))
   else .ok (enteredLocalState names state, boundSlots names state)
 
 /-- When a block ends its names go out of scope. Whatever is left on the stack
@@ -1327,7 +1366,7 @@ private def applySignatureWithProof (name : String) (span : Span) (signature : S
 private def bindLocalsWithProof (names : List LocatedName) (state : State) :
     Except ErasureError (BindingRun names state) :=
   if short : (bindable names.length state.stack).length < names.length then
-    .error (.missingStackValue (names.head?.map (·.span) |>.getD emptySpan))
+    .error (.missingStackValue (names.head?.map (·.span) |>.getD emptySpan) (some (shortfall names state)))
   else .ok {
     entered := enteredLocalState names state
     slots := boundSlots names state
@@ -1346,11 +1385,11 @@ private def cleanupWithProof (slots : List Slot) (state : State) :
     Except ErasureError (CleanupRun slots state) :=
   let rec loop (fuel : Nat) (current : State) : Except ErasureError (CleanupRun slots current) :=
     match fuel with
-    | 0 => .error (.missingStackValue emptySpan)
+    | 0 => .error (.missingStackValue emptySpan none)
     | fuel + 1 => match nearestEq : current.stack.find? (cleanupCandidate slots) with
       | none => .ok { program := [], final := current, evidence := .done nearestEq }
       | some entry => match slotEq : entry.slot with
-        | none => .error (.missingStackValue emptySpan)
+        | none => .error (.missingStackValue emptySpan none)
         | some candidate => match usageEq : candidate.usage with
           | .linear => .error (.linearUnused candidate.name candidate.origin)
           | .many => match focusEq : focusAtoms candidate.id candidate.origin current.stack with
@@ -1383,7 +1422,7 @@ private def quotationAttemptsWithProof (seedCounts : List Nat) (env : EffectEnv)
         evidence := bodyRun.evidence }
     | .error (.effectUnderflow _ _ _) =>
         quotationAttemptsWithProof rest env body visible span run
-    | .error (.missingStackValue _) =>
+    | .error (.missingStackValue _ _) =>
         quotationAttemptsWithProof rest env body visible span run
     | .error error => .error error
 

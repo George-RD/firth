@@ -121,7 +121,7 @@ private def expectErrorAt (word : WordDefinition) (expected : ErasureError → B
       if expected error then
         let actual := match error with
           | .duplicateLocal _ actual | .unboundLocal _ actual | .unsupportedCapture _ actual
-          | .missingStackValue actual | .linearCopy _ actual _ | .linearUnused _ actual
+          | .missingStackValue actual _ | .linearCopy _ actual _ | .linearUnused _ actual
           | .unresolvedEffect _ actual | .effectUnderflow _ actual _ | .unsupportedLiteral actual
           | .unsupportedAtom _ actual | .usageMismatch _ actual
           | .untrackedStack _ actual _ | .hiddenLocal _ actual | .branchShape actual _ _ _ _ => actual
@@ -176,7 +176,7 @@ def main : IO Unit := do
     | [.locals _ [.locals (first :: _) _ _, _] _] => first.span
     | _ => panic! "shadow-linear fixture changed"
   expectErrorAt shadowLinear (fun error => match error with
-    | .missingStackValue _ => true
+    | .missingStackValue _ _ => true
     | _ => false) shadowLinearSpan
 
   -- `swap` exchanges the two values below the block's unused local, so it
@@ -217,7 +217,7 @@ def main : IO Unit := do
   -- `a` from the stack, and resolution must not fall through to it either.
   let exhaustedShadow ← parsed ": exhausted-shadow ( a:Int^many -- ) locals { a } { locals { a } { a } a } ;"
   match erase arithmetic exhaustedShadow.effect exhaustedShadow.body with
-  | .error (.missingStackValue _) => pure ()
+  | .error (.missingStackValue _ _) => pure ()
   | .error error => fail s!"wrong exhausted-shadow error: {repr error}"
   | .ok result => fail s!"exhausted shadow incorrectly succeeded: {repr result}"
 
