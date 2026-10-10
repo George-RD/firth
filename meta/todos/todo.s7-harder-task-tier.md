@@ -83,12 +83,12 @@ until the tasks get harder.
   (Firth 3, pool 3). Before a scored run, either pre-register that rule
   as it stands or change the audit to compare only the last write, with
   a planted case.
-- `eval/s7/context_seen.py --sample` fails on a Sonnet sample name (its
-  sample pattern knows only `haiku-...` names), so the pool-3 scan ran
-  without `--sample` and checked other authors' names with a grep
-  (`runs/2026-10-10-calibration3/scan.sh`, `scan-output.txt`). Before a
-  scored run, extend its sample names to Sonnet and DeepSeek, with a
-  planted case, keeping the Haiku call pattern `session.py` uses.
+- `eval/s7/context_seen.py --sample` failed on a Sonnet sample name, so
+  the pool-3 scan ran without `--sample` and checked other authors' names
+  with a grep (`runs/2026-10-10-calibration3/scan.sh`, `scan-output.txt`).
+  Done in #230: Sonnet and DeepSeek names are compared whole, with planted
+  cases, and run 14's Haiku call pattern gives byte-for-byte the same
+  results (`eval/s7/runs/2026-10-10-context-seen-names/haiku_same.py`).
 - Two wording gaps in pool 3's formula-sheet description (review on
   #223, checked against `calibration3.py`): "whose size is more than
   1,000,000,000" does not say size means absolute value, and "An operator
@@ -111,11 +111,13 @@ until the tasks get harder.
 
 ## Before any scored run (reviewer, #209)
 
-- `eval/s7/context_seen.py` knows only Haiku sample names (`SAMPLE`) and
-  `author [AB]N` labels (`LABEL`), so calibration's cross-author check was
-  a hand search. Extend both to the scored run's names and labels, with a
-  planted Sonnet-named item in its self-test. This is an edit to a run 14
-  file, so it waits until run 14 is done.
+- `eval/s7/context_seen.py` knew only Haiku sample names (`SAMPLE`), so
+  calibration's cross-author check was a hand search. Sample names are
+  done in #230, which edits this run 14 file with the coordinator's go-ahead
+  on condition that run 14's calls give the same results (shown there).
+  Still open: its labels (`LABEL`, `author [AB]N`) cover only the A/B
+  runs; the scored run's pre-registration must name how its authors are
+  labelled, and `LABEL` be extended to match, with a planted case.
 - Calibration authors were shown two project messages as spawn background
   (George's of 30 September and 2 October), and a session hook's
   `hook_non_blocking_error` text. Neither names an author, but both are
