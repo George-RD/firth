@@ -16,3 +16,8 @@ python-2 context_seen exit 0
 python-3 context_seen exit 0
   others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  George: 0
   attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'auto_mode': 1, 'total_tokens_reminder': 2}
+
+# Items of kind other in context-seen.json, quoted from the raw logs (message content only)
+firth-1 line 21: "Output token limit hit. Resume directly \u2014 no apology, no recap of what you were doing. Pick up mid-thought if that is where the cut happened. Break remaining work into smaller pieces." 2026-10-10T08:52:58.941Z
+firth-1 line 27: "[Request interrupted by user]" 2026-10-10T09:04:58.128Z
+firth-3 line 21: "Output token limit hit. Resume directly \u2014 no apology, no recap of what you were doing. Pick up mid-thought if that is where the cut happened. Break remaining work into smaller pieces." 2026-10-10T10:42:44.225Z

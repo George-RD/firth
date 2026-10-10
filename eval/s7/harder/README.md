@@ -458,7 +458,8 @@ except as stated.
 
 ## Third pool results: 10 October 2026
 
-Run as planned above, in the planned order, as Agent-tool sub-agents.
+Run as planned above, in the planned order, as Agent-tool sub-agents,
+except that the Firth row has two valid authors (below).
 Everything is in `runs/2026-10-10-calibration3/`. The prompts were built,
 and every author was scored, at `7e013b3` (`commit.txt`, `firth_commit` in
 each result), with one task set and scorer hash (`eval_sha256`). Every
@@ -477,6 +478,13 @@ Firth 1's session was cut off by an API error two minutes after its only
 write and before it handed back. The audit passed it, and its kept answer
 is the one write its log records.
 
+So the Firth row has two valid authors, not the three planned, and no
+replacement was run. The plan's decision turns on Python ("if it is still
+at the ceiling in Python, size alone does not separate it"), which had
+all three. A replacement would have needed the toolchain at `7e013b3`
+rebuilt in a separate checkout, and could not change that decision, so
+the Firth result below is reported as incomplete rather than re-run.
+
 The context scan, as for the second pool: each raw log through
 `eval/s7/context_seen.py` (`context-seen.json`), and a search of the whole
 log for the other five authors' directory names and agent ids,
@@ -489,7 +497,18 @@ shown the same kinds of injected item as the second pool's: the session's
 system prompt, tool list and reminders (the repository's `AGENTS.md`
 among them, an S7 input), and the pre-registered `hook_non_blocking_error`
 items: two for each author, and six for Firth 3, which also had a
-feedback round.
+feedback round. Two Firth authors were also shown items that were not
+pre-registered, the three of kind `other` in their `context-seen.json`
+(the raw log lines, by line number, are quoted in `scan-output.txt`):
+Firth 1 and Firth 3 each hit the output token limit once, and the harness
+added "Output token limit hit. Resume directly ... Break remaining work
+into smaller pieces." (183 characters); Firth 1's last item is "[Request
+interrupted by user]" (29 characters), the API error cut-off after its
+write. None names another author or carries a project message. They are
+harness continuation text, but they were not pre-registered, and they
+reached only two authors; Firth 3's three writes of `answer-1.md` may
+follow from its cut-off, which is inferred, not checked. The scored
+tier's pre-registration has to list them.
 
 | | round 1 | within two rounds |
 | --- | --- | --- |
@@ -515,7 +534,8 @@ Answer lengths, in lines per task (`mini-cpu`, `stacker`, `bank-days`,
 
 ### What this says about the scored tier
 
-Sonnet is at the ceiling in both languages on this pool. Following the
+Sonnet is at the ceiling in both languages on this pool (in Firth, on
+its two valid authors). Following the
 plan, that is reported as it stands: making the programs several times
 longer did not separate it. The Python answers are about as long as the
 Python references (612 to 618 lines against 638). The valid Firth answers
