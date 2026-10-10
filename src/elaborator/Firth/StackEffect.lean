@@ -57,6 +57,8 @@ structure ClosedCall where
   ...)`, when the word is defined in the source checked and its effect has no
   row binders or refinements. -/
   withRow : Option String := none
+  /-- The name of the row in `withRow`. -/
+  rowName : String := "ρ"
   /-- Whether, with only the word's effect written as `withRow`, the source is
   refused in the word's own body: its body has to change as well. -/
   rowRefusesBody : Bool := false
@@ -626,10 +628,13 @@ private def openScheme (scheme : Scheme) : Scheme :=
     input := onRow row scheme.input
     output := onRow row scheme.output }
 
-/-- A declared effect with `forall ρ;` and `ρ` below its inputs and outputs,
-as the author would write it. -/
-def withRowText (effect : StackEffect) : Option String := do
-  if !effect.rowBinders.isEmpty then none
+/-- A declared effect that uses no row, with a row below its inputs and
+outputs, as the author would write it, and the row's name. The row is the
+first one the effect binds, else `ρ`, bound with `forall`. -/
+def withRowText (effect : StackEffect) : Option (String × String) := do
+  let row := (effect.rowBinders.head?.map (·.name)).getD "ρ"
+  let binders := if effect.rowBinders.isEmpty then row
+    else " ".intercalate (effect.rowBinders.map (·.name))
   let item : StackItem → Option String
     | .row _ _ => none
     | .value name type _ =>
@@ -638,8 +643,8 @@ def withRowText (effect : StackEffect) : Option String := do
         some ((if name.isEmpty then "" else name ++ ":") ++ type.name ++ usage)
   let input ← effect.input.mapM item
   let output ← effect.output.mapM item
-  let side (items : List String) := " ".intercalate ("ρ" :: items)
-  pure s!"(forall ρ; {side input} -- {side output})"
+  let side (items : List String) := " ".intercalate (row :: items)
+  pure (s!"(forall {binders}; {side input} -- {side output})", row)
 
 private def checkOnce (env : Env) (scheme : Scheme) (program : KernelProgram)
     (boundary : Span) : Except Diagnostic Effect :=

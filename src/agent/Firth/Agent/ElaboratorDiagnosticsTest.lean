@@ -508,9 +508,9 @@ private def runClosedCalleeTests : IO Unit := do
             fail s!"{label}: the report does not say {needle}: {emitted}"
         if emitted.contains "own body is refused" then
           fail s!"{label}: the report says the callee's body is then refused: {emitted}"
-        let marker := s!"declare it `: {word} "
+        let marker := s!"declare it `: {(word.splitOn ".").getLastD word} "
         let written := (((hintOf envelope).splitOn marker)[1]?.map fun rest => (rest.splitOn "`")[0]!).getD ""
-        unless written.startsWith "(forall ρ; ρ " do
+        unless written.startsWith "(forall " do
           fail s!"{label}: the hint does not write `{word}` with a row: {hintOf envelope}"
         unless (source.splitOn declared).length == 2 do
           fail s!"{label}: the declared effect is not in the source once"
@@ -543,6 +543,18 @@ private def runClosedCalleeTests : IO Unit := do
     "add2" "( a:Int^many b:Int^many -- r:Int^many )"
     ["`add2` takes the whole stack: its effect has no row, but here in `value-below` the stack before it is Int Int Int, more than its inputs.",
       "declare it `: add2 (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)`"]
+  -- In a vocabulary, the hint declares the word by its own name, which
+  -- is how it is written there (Codex on #228).
+  closedCase "closed callee in a vocabulary" "firth.type.word-input-mismatch"
+    "vocab v {\n: add2 ( a:Int^many b:Int^many -- r:Int^many ) prim + ;\n\n: value-below\n  ( x:Int^many n:Int^many -- r:Int^many s:Int^many )\n  locals { x n } { n x 1 add2 };\n}\n"
+    "v.add2" "( a:Int^many b:Int^many -- r:Int^many )"
+    ["declare it `: add2 (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)`"]
+  -- An effect that binds a row it does not use: the hint uses that row
+  -- rather than binding another (Codex on #228).
+  closedCase "closed callee with an unused row binder" "firth.type.word-input-mismatch"
+    ": add2 (forall ρ2; a:Int^many b:Int^many -- r:Int^many) prim + ;\n\n: value-below\n  ( x:Int^many n:Int^many -- r:Int^many s:Int^many )\n  locals { x n } { n x 1 add2 };\n"
+    "add2" "(forall ρ2; a:Int^many b:Int^many -- r:Int^many)"
+    ["declare it `: add2 (forall ρ2; ρ2 a:Int^many b:Int^many -- ρ2 r:Int^many)`: ρ2 stands for the values below its inputs"]
   -- `outer` calls `inner`, which has no row either: with only `outer`'s
   -- effect given a row, `outer`'s own body is refused, and the hint says
   -- so (the pipeline checks the source with that effect).

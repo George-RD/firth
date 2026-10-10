@@ -1011,13 +1011,16 @@ private def closedCallExplanation (inWord : String) (diagnostic : Firth.Elaborat
         s!"The {name} branch of `if`{inWord} cannot run on the stack it is given, because of its call to `{word}`. {capitalize because}, so the {name} branch {runsOn}, but below the condition and the two quotations the stack is {renderStack diagnostic.state}."
     | none =>
         s!"{capitalize because}, but here{inWord} the stack before it is {renderStack diagnostic.state}, more than its inputs."
+  -- A word in a vocabulary is declared by its own name, not the one that
+  -- qualifies it.
+  let declared := (word.splitOn ".").getLastD word
   let declare := match closed.withRow with
-    | some effect => s!"declare it `: {word} {effect}`"
-    | none => "add `forall ρ;` to its effect, with `ρ` below its inputs and below its outputs"
+    | some effect => s!"declare it `: {declared} {effect}`: {closed.rowName} stands for the values below its inputs, which it leaves untouched"
+    | none => "give its effect a row: a row variable bound with `forall`, below its inputs and below its outputs, stands for the values below its inputs, which it leaves untouched"
   let body := if closed.rowRefusesBody then
       s!" With only that change, `{word}`'s own body is refused, so its body has to change as well."
     else ""
-  (message, s!"A word whose effect has no row can be called only where its inputs are all that is on the stack. To call `{word}` with other values below its inputs, {declare}: ρ stands for the values below its inputs, which it leaves untouched.{body} Otherwise, call it only where nothing is below its inputs.")
+  (message, s!"A word whose effect has no row can be called only where its inputs are all that is on the stack. To call `{word}` with other values below its inputs, {declare}.{body} Otherwise, call it only where nothing is below its inputs.")
 
 open Firth.Elaborator.StackEffect in
 /-- A plain-language sentence and a repair hint for a checker diagnostic,
@@ -1449,7 +1452,7 @@ private partial def withClosedEffect (context : EmissionContext)
         | some word =>
         match Firth.Elaborator.StackEffect.withRowText word.effect with
         | none => closed
-        | some withRow =>
+        | some (withRow, rowName) =>
         let span := word.effect.span
         let edited := sourceBytes source 0 span.start.offset ++ withRow ++
           sourceBytes source span.stop.offset source.utf8ByteSize
@@ -1467,7 +1470,7 @@ private partial def withClosedEffect (context : EmissionContext)
           | .success _, _ => false
           | .failure _, none => true
           | .failure again, some editedWord => within editedWord.span again
-        { closed with withRow, rowRefusesBody } }
+        { closed with withRow, rowName, rowRefusesBody } }
   | .assumes word callees edits inner =>
       .assumes word callees edits (withClosedEffect context config source declared reports inner)
   | other => other
