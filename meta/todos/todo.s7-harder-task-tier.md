@@ -67,8 +67,15 @@ until the tasks get harder.
   lines of Python and 320 to 348 of Firth, against 31 to 77 and 41 to 194
   for the second pool. Every bound stated and checked, constraints between
   inputs included; input sizes cut so each Firth reference's costliest
-  measured case is at most 207,659 kernel steps. Calibration plan in the
-  README; not yet run.
+  measured case is at most 207,659 kernel steps. Calibrated on 10 October
+  2026 at `7e013b3` (README, "Third pool results"): Python 15 of 15 in
+  round 1; Firth 10 of 10 for the two valid authors. Firth 3 was void
+  (audit flag; 4 of 5, then 5 of 5, not scored). At the ceiling in both
+  languages, so size alone does not separate Sonnet.
+- The audit flags an author who writes the same answer file more than
+  once, since it compares every write with the kept copy (Firth 3, pool
+  3). Before a scored run, either pre-register that rule as it stands or
+  change the audit to compare only the last write, with a planted case.
 - Subject models (maintainer's decision cards, answered 10 October 2026):
   Sonnet 5.5 is confirmed as the primary subject, and DeepSeek v4.1 Flash
   joins the scored tier only (not calibration), through the connected

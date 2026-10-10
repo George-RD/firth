@@ -455,3 +455,77 @@ except as stated.
   still at the ceiling in Python, size alone does not separate it, and
   that is reported as it stands. These results are calibration only,
   never S7 evidence.
+
+## Third pool results: 10 October 2026
+
+Run as planned above, in the planned order, as Agent-tool sub-agents.
+Everything is in `runs/2026-10-10-calibration3/`. The prompts were built,
+and every author was scored, at `7e013b3` (`commit.txt`, `firth_commit` in
+each result), with one task set and scorer hash (`eval_sha256`). Every
+transcript records `claude-sonnet-5-5`.
+
+The audit (`audit.py --set calibration3`) passed five authors with nothing
+flagged. It flagged Firth 3, so Firth 3 is void as the protocol is
+written. Firth 3 wrote `answer-1.md` three times, at 7,359, 15,290 and
+40,384 characters, and the audit compares every successful write with the
+kept copy, which is the last. Each of the first two writes is "not what
+the author wrote". It used no tool beyond reading its prompt and repair
+file and writing its own answers. Its results are below, marked not
+scored.
+
+Firth 1's session was cut off by an API error two minutes after its only
+write and before it handed back. The audit passed it, and its kept answer
+is the one write its log records.
+
+The context scan, as for the second pool: each raw log through
+`eval/s7/context_seen.py` (`context-seen.json`), and a search of the whole
+log for the other five authors' directory names and agent ids,
+`task_status`, task notifications, compaction and `queued_command`. None
+has any of them, and no author was shown a project message. Every author
+was shown the same kinds of injected item as the second pool's: the
+session's system prompt, tool list and reminders (the repository's
+`AGENTS.md` among them, an S7 input), and the pre-registered
+`hook_non_blocking_error` items, two per round.
+
+| | round 1 | within two rounds |
+| --- | --- | --- |
+| Python, 3 authors | 15 of 15 | 15 of 15 |
+| Firth, authors 1 and 2 | 10 of 10 | 10 of 10 |
+| Firth 3 (void, not scored) | 4 of 5 | 5 of 5 |
+
+Every passing answer passed all of its task's hidden tests. The only
+failure was Firth 3's round-1 `mini-cpu`, which did not parse:
+`firth.syntax.invalid-item`, a stray `}` at line 148 of the answer.
+Shown that, it fixed it, and its round-2 `mini-cpu` passed all 31 hidden
+tests.
+
+Answer lengths, in lines per task (`mini-cpu`, `stacker`, `bank-days`,
+`formula-sheet`, `blackjack`):
+
+- Python 1: 128, 126, 99, 138, 121 (612 in all).
+- Python 2: 136, 127, 98, 141, 116 (618).
+- Python 3: 128, 126, 94, 137, 128 (613).
+- Firth 1: 119, 159, 128, 184, 208 (798).
+- Firth 2: 371, 365, 296, 424, 468 (1,924).
+- Firth 3, round 2's set: 188, 207, 173, 238, 230 (1,036).
+
+### What this says about the scored tier
+
+Sonnet is at the ceiling in both languages on this pool. Following the
+plan, that is reported as it stands: making the programs several times
+longer did not separate it. The Python answers are about as long as the
+Python references (612 to 618 lines against 638). The valid Firth answers
+run from 798 to 1,924 lines, against 1,668 for the references.
+
+Across the three pools, Sonnet has failed only three things within two
+rounds:
+
+- one ambiguously worded clause (pool 2's `spreadsheet`);
+- a toolchain defect, since fixed (#213);
+- here, a syntax slip that one round of feedback fixed.
+
+It is inferred, not measured, that fully specified tasks with stated
+rules and bounds do not separate this subject at sizes the step budget
+allows, in either language. The next design question is not size. These
+results are calibration only. They are not S7 evidence, and the Python
+and Firth rows are not a comparison of the languages.
