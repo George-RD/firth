@@ -48,17 +48,24 @@ wrong value.
 
 `extraValuesHint` in `src/agent/Firth/Agent/ElaboratorDiagnostics.lean`
 places the declared values among what the body leaves, in order and by type,
-counting values of one type in a row as interchangeable. It says "on top"
-only when that placement puts every extra value above the declared ones and
-no other placement puts them below; "under" only the other way round, with
-their types and depth; "among" with each group's depth when the extra values
-are between declared ones; and no place when the types allow either, or more
-than one placement. The case above now reads "The top 3 values match the
-declared output, and under them the body leaves 1 extra value (Seq Int),
-value 4 from the top."
+counting values of one type in a row as interchangeable. When there is one
+such placement and every run of one type holding an extra value is wholly
+extra, the types fix where each extra value is: the hint says "on top" when
+they are all above the declared ones, "under" with their types and depth
+when they are all below, and "among" with each group's depth otherwise.
+When a run is only partly extra, the types do not tell which of its values
+is the extra one, so the hint names the run and its depths, says the types
+do not tell which value it is, and names no edit that relies on a place.
+The hint names no place either when all the values are of one type, or when
+more than one placement fits. The case above now reads "The body leaves 1
+extra value: 1 of the 2 Seq Int values, values 3 to 4 from the top."
 
-`firthAgentDiagnosticTest` holds that case, the existing on-top cases and the
-others above. Each of these fails a test: the old wording restored (always
-"on top"); "on top" given where both placements fit; the kept-value check
-for "on top" taken from the wrong placement; a unique placement treated as
-several; and adjacent wholly extra runs not merged.
+`firthAgentDiagnosticTest` holds that case, the existing on-top cases, an
+extra Int among two on top (`( -- b:Bool n:Int ) true 1 2`) and among two
+under the top (`( -- n:Int b:Bool ) 1 2 true`), and the others above. Each
+of these fails a test: the old wording restored (always "on top"); a run
+only partly extra treated as placed, which restores the first version's
+"on top" and "the third value from the top" for those two; the one-type
+stack listed as a run; "under" missed when the kept values are counted from
+runs with extra values in them; a unique placement treated as several; and
+adjacent wholly extra runs not merged.

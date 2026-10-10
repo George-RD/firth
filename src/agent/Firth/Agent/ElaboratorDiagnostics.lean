@@ -788,48 +788,47 @@ private def extraValuesHint (declared left : List AType) : String :=
         fun (start, spans) ((type, count), keptHere) =>
           (start + count, spans ++ [(type, count, start, count - keptHere)])
       let extras := spans.filter fun (_, _, _, extraHere) => extraHere > 0
-      -- The extra values of a run can be taken from its bottom or from its
-      -- top: by type, either is the same stack.
-      let lowest := extras.flatMap fun (_, _, start, extraHere) => (List.range extraHere).map (start + ·)
-      let keptAboveLowest := spans.flatMap fun (_, count, start, extraHere) =>
-        (List.range (count - extraHere)).map (start + extraHere + ·)
-      let highest := extras.flatMap fun (_, count, start, extraHere) =>
-        (List.range extraHere).map (start + count - extraHere + ·)
-      let keptBelowHighest := spans.flatMap fun (_, count, start, extraHere) =>
-        (List.range (count - extraHere)).map (start + ·)
-      let under := lowest.all fun i => keptAboveLowest.all (i < ·)
-      let above := highest.all fun i => keptBelowHighest.all (· < i)
-      -- The extra values' types, bottom to top, for a hint that names no
-      -- place: one placement fixes how many of each run are extra.
-      let extraTypes := extras.flatMap fun (type, _, _, extraHere) => List.replicate extraHere type
-      if above && !under then onTop
-      else if above && under then
-        s!"The body leaves {plural extra "value"} more than declared ({" ".intercalate extraTypes}), and the types do not tell which {if extra == 1 then "one is" else "ones are"} extra. Find the {if extra == 1 then "value" else "values"} the word should not leave and consume {them} before the end of the word, or declare {them} in the signature's output."
-      else if under then
-        let depth := if extra == 1 then ordinalFromTop declared.length
-          else depthsFromTop declared.length (left.length - 1)
-        let top := if declared.length == 1 then "The top value matches the declared output, and under it"
-          else s!"The top {declared.length} values match the declared output, and under them"
-        s!"{top} the body leaves {plural extra "extra value"} ({renderValues (left.take extra)}), {depth}. Push {them} only where needed, or consume {them} before the values the word leaves are pushed, or declare {them} in the signature's output, under the others."
+      -- One placement fixes how many values of each run are extra, but in a
+      -- run only partly extra the types do not tell which of its values
+      -- those are, so no place is named for them.
+      let partialRun := extras.any fun (_, count, _, extraHere) => extraHere < count
+      let n := left.length
+      -- From the top, runs that are wholly extra and next to each other
+      -- are one group; a run only partly extra is a group of its own.
+      let groups := extras.reverse.foldl (init := ([] : List (Bool × List String × Nat × Nat × Nat)))
+        fun groups (type, count, start, extraHere) =>
+          let whole := extraHere == count
+          match groups with
+          | (true, types, low, high, size) :: rest =>
+              if whole && low == start + count then (true, List.replicate count type ++ types, start, high, size + count) :: rest
+              else (whole, List.replicate count type, start, start + count - 1, extraHere) :: groups
+          | _ => (whole, List.replicate count type, start, start + count - 1, extraHere) :: groups
+      let described := groups.reverse.map fun (whole, types, low, high, size) =>
+        let place := depthsFromTop (n - 1 - high) (n - 1 - low)
+        if whole then s!"{place} ({" ".intercalate types})"
+        else s!"{size} of the {types.length} {(types.head?).getD "?"} values, {place}"
+      if partialRun then
+        -- All the values are of one type: naming the run adds nothing.
+        if runs.length == 1 then
+          let extraTypes := extras.flatMap fun (type, _, _, extraHere) => List.replicate extraHere type
+          s!"The body leaves {plural extra "value"} more than declared ({" ".intercalate extraTypes}), and the types do not tell which {if extra == 1 then "one is" else "ones are"} extra. Find the {if extra == 1 then "value" else "values"} the word should not leave and consume {them} before the end of the word, or declare {them} in the signature's output."
+        else
+          s!"The body leaves {plural extra "extra value"}: {listing described}. Where more values of one type are in a row than declared, the types do not tell which of them is extra. Find the {if extra == 1 then "value" else "values"} the word should not leave and consume {them} before the end of the word, or declare {them} in the signature's output."
       else
-        let n := left.length
-        -- From the top, runs that are wholly extra and next to each other
-        -- are one group; a run only partly extra is a group of its own.
-        let groups := extras.reverse.foldl (init := ([] : List (Bool × List String × Nat × Nat × Nat)))
-          fun groups (type, count, start, extraHere) =>
-            let whole := extraHere == count
-            match groups with
-            | (true, types, low, high, size) :: rest =>
-                if whole && low == start + count then (true, List.replicate count type ++ types, start, high, size + count) :: rest
-                else (whole, List.replicate count type, start, start + count - 1, extraHere) :: groups
-            | _ => (whole, List.replicate count type, start, start + count - 1, extraHere) :: groups
-        let described := groups.reverse.map fun (whole, types, low, high, size) =>
-          let place := depthsFromTop (n - 1 - high) (n - 1 - low)
-          if whole then s!"{place} ({" ".intercalate types})"
-          else s!"{size} of the {types.length} {(types.head?).getD "?"} values, {place}"
-        let partialRun := groups.any fun (whole, _, _, _, _) => !whole
-        let which := if partialRun then " Where more values of one type are in a row than declared, the types do not tell which of them is extra." else ""
-        s!"The body leaves {plural extra "extra value"} among the values the signature declares: {listing described}.{which} Push {them} only where needed, or consume {them} before the end of the word, or declare {them} in the signature's output at that place."
+        -- Every run with extra values is wholly extra, so the types fix
+        -- where each extra value is.
+        let extraAt := extras.flatMap fun (_, count, start, _) => (List.range count).map (start + ·)
+        let keptAt := spans.flatMap fun (_, count, start, extraHere) =>
+          if extraHere == 0 then (List.range count).map (start + ·) else []
+        if extraAt.all fun i => keptAt.all (· < i) then onTop
+        else if extraAt.all fun i => keptAt.all (i < ·) then
+          let depth := if extra == 1 then ordinalFromTop declared.length
+            else depthsFromTop declared.length (left.length - 1)
+          let top := if declared.length == 1 then "The top value matches the declared output, and under it"
+            else s!"The top {declared.length} values match the declared output, and under them"
+          s!"{top} the body leaves {plural extra "extra value"} ({renderValues (left.take extra)}), {depth}. Push {them} only where needed, or consume {them} before the values the word leaves are pushed, or declare {them} in the signature's output, under the others."
+        else
+          s!"The body leaves {plural extra "extra value"} among the values the signature declares: {listing described}. Push {them} only where needed, or consume {them} before the end of the word, or declare {them} in the signature's output at that place."
 
 private def capitalize (text : String) : String :=
   match text.toList with
