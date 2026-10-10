@@ -88,4 +88,40 @@ theorem max_int_contract :
     maxIntContract.Holds int64Gamma dictionary defaultCosts «core.max-int».body :=
   fun args tail _ => (max_int args.1 args.2 tail).within
 
+/-!
+### The contracts tell the two words apart
+
+A planted bug for each contract (rule 9): each contract fails for the other
+word's body, so a `core.min-int` that returned the larger value, or a
+`core.max-int` that returned the smaller, could not be proved. Both use the
+reference interpreter's determinism through `run_of_runs`: on `0 1` the two
+bodies end with different stacks.
+-/
+
+/-- `core.max-int`'s body does not meet `core.min-int`'s contract. -/
+theorem minIntContract_rejects_max :
+    ¬ minIntContract.Holds int64Gamma dictionary defaultCosts «core.max-int».body := by
+  intro hHolds
+  obtain ⟨steps, cost, hRuns, -, -⟩ := hHolds (0, 1) [] trivial
+  simp only [minIntContract, List.append_nil] at hRuns
+  have hMin := run_of_runs hRuns 13
+  have hMax := run_of_runs (max_int 0 1 []) steps
+  rw [Nat.add_comm 13 steps] at hMax
+  rw [hMin] at hMax
+  simp [Int.max_def] at hMax
+  exact absurd hMax.1 (by decide)
+
+/-- `core.min-int`'s body does not meet `core.max-int`'s contract. -/
+theorem maxIntContract_rejects_min :
+    ¬ maxIntContract.Holds int64Gamma dictionary defaultCosts «core.min-int».body := by
+  intro hHolds
+  obtain ⟨steps, cost, hRuns, -, -⟩ := hHolds (0, 1) [] trivial
+  simp only [maxIntContract, List.append_nil] at hRuns
+  have hMax := run_of_runs hRuns 13
+  have hMin := run_of_runs (min_int 0 1 []) steps
+  rw [Nat.add_comm 13 steps] at hMin
+  rw [hMax] at hMin
+  simp [Int.min_def] at hMin
+  exact absurd hMin.1 (by decide)
+
 end Firth.Proofs.Stdlib.Core

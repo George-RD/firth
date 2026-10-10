@@ -1,4 +1,5 @@
 import elaborator.Firth.Pipeline
+import agent.Firth.Agent.ElaborateAdapter
 
 open Firth.Elaborator
 open Firth.Elaborator.StackEffect
@@ -123,8 +124,14 @@ def runPipelineTests : IO Unit := do
       | _ => fail "checked word is absent"
   | .failure diagnostics => fail s!"valid source failed: {repr diagnostics}"
   let stdlibSource ← IO.FS.readFile "stdlib/core.firth"
-  match elaborateWith { sourcePath := "stdlib/core.firth" } stdlibSource with
-  | .success { words := [identity, duplicate, discard, exchange, exampleWord] } =>
+  -- `core.min-int` and `core.max-int` compare with `prim <`, so the core
+  -- vocabulary is checked against the manifest's primitive table.
+  let stdlibConfig : PipelineConfig :=
+    { sourcePath := "stdlib/core.firth"
+      erasureEnv := Firth.Agent.Elaborate.gammaErasure
+      typingEnv := Firth.Agent.Elaborate.gammaTyping }
+  match elaborateWith stdlibConfig stdlibSource with
+  | .success { words := [identity, duplicate, discard, exchange, exampleWord, minInt, maxInt] } =>
       expectEq (identity.program.map (·.atom)) []
         "core identity lowers to an empty kernel program"
       expectEq (duplicate.program.map (·.atom)) [.dup]
@@ -136,6 +143,15 @@ def runPipelineTests : IO Unit := do
       expectEq (exampleWord.program.map (·.atom))
         [.lit (.int 7), .word "core.duplicate-int", .word "core.discard-int", .word "core.identity"]
         "core example uses the checked vocabulary words"
+      -- The locals lower to stack shuffles; the two words differ only in
+      -- which local the true branch reads.
+      let keep (first second : Atom) : List Atom :=
+        [.pick 1, .pick 1, .prim "<", first, .quote, .quotation .empty, .compose,
+          second, .quote, .quotation .empty, .compose, .ifThenElse]
+      expectEq (minInt.program.map (·.atom)) (keep (.roll 2) (.roll 2))
+        "core min-int lowers to a comparison and a choice between its locals"
+      expectEq (maxInt.program.map (·.atom)) (keep .swap (.roll 2))
+        "core max-int lowers to the same comparison with the branches read the other way"
   | .success program => fail s!"unexpected core vocabulary words: {program.words.map (·.name)}"
   | .failure diagnostics => fail s!"core vocabulary failed: {repr diagnostics}"
 
