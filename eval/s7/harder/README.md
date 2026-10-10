@@ -617,9 +617,14 @@ strings of twelve `a`s), 108,057 (`swiss`), 179,655 (`warehouse`) and
 161,365 (`cache-sim`), all within a quarter of the 1,000,000-step budget.
 That is a measured figure over these inputs, not a bound. The first
 Firth reference for `regex`, which kept sets of positions as `Seq Bool`,
-ran out of the budget at the drafted bounds (30 tokens, 10 strings of 20
-letters); the bounds were cut to 20 tokens and 8 strings of 12 letters and
-the reference rewritten as a position automaton with sets held as bits
+ran out of the budget on inputs within the drafted bounds (30 tokens, 10
+strings of 20 letters): `(a|b|c)*` three times then `.*` three times,
+against strings of `a` or of `a`, `b` and `c`, ends with the VM's
+`fuel-exhausted` trap after 1,000,000 steps, while `a*` fifteen times
+finishes in up to 395,604 (`measure.py --drafted`, recorded in
+`drafted.tsv`; `test_harder.py` checks the record and runs one of the
+traps again). The bounds were cut to 20 tokens and 8 strings of 12 letters
+and the reference rewritten as a position automaton with sets held as bits
 in one `Int` (Firth has no bitwise operations, so it ORs through a
 literal table). The first version is kept, with its measurement, in
 `runs/2026-10-10-regex-seq-bool/` (`measure.py`, `output.tsv`). At the new

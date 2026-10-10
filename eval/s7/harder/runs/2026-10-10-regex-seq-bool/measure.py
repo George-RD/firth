@@ -11,6 +11,17 @@ meaning, and prints one line per input:
     input <TAB> kernel steps <TAB> run status <TAB> agrees with the meaning
 
     measure.py > output.tsv
+
+With `--drafted` it runs instead the inputs of `DRAFTED`, which sit within
+the bounds first drafted for the task (patterns of up to 30 tokens, 10
+strings of up to 20 letters; README, "The scored set") and outside the
+bounds it was given, and prints the same columns. A run that ends with the
+VM's `fuel-exhausted` trap is shown with that status and no step count:
+
+    measure.py --drafted > drafted.tsv
+
+`test_harder.py` (`regex_drafted_bounds`) checks the record against these
+inputs and runs its first out-of-steps input again.
 """
 from __future__ import annotations
 
@@ -18,6 +29,7 @@ import concurrent.futures as cf
 import json
 import os
 import random
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -37,6 +49,21 @@ FIVE = {
     "star20": [31, 0, 27, 1, 27, 30, 2, 27, 26, 32, 27, 31, 26, 27, 32, 27, 26, 27, 0, 28],
 }
 
+def _drafted(pattern: list[int], alphabet: str) -> tuple:
+    letter = costliest.ALPHABETS[alphabet]
+    return pattern, [20] * 10, [letter(i) for i in range(200)]
+
+
+# Two patterns of 30 tokens against 10 strings of 20 letters: `a*` fifteen
+# times, and `(a|b|c)*` three times then `.*` three times (the costliest
+# pattern measured at the scored bounds, made longer).
+DRAFTED = [
+    (f"{name} on {alphabet}", _drafted(pattern, alphabet))
+    for name, pattern in (("a*x15", [0, 27] * 15),
+                          ("(a|b|c)*x3 .*x3", [31, 0, 30, 1, 30, 2, 32, 27] * 3 + [26, 27] * 3))
+    for alphabet in ("a", "abc")
+]
+
 
 def inputs() -> list[tuple[str, tuple]]:
     rng = random.Random(1)
@@ -45,27 +72,47 @@ def inputs() -> list[tuple[str, tuple]]:
     return out + costliest.candidates()["regex"]
 
 
-def run(name: str, args: tuple) -> tuple[str, str, str, bool]:
+def outcome(stdout: str, stderr: str, returncode: int) -> tuple[str, str]:
+    """The kernel steps and status of one `firth_run.py run`. A run whose VM
+    stopped with the `fuel-exhausted` trap after the whole 1,000,000-step
+    budget is `fuel-exhausted`; any other failure keeps its exit code."""
+    try:
+        out = json.loads(stdout)
+        return str(out.get("kernel_cost")), str(out.get("status"))
+    except json.JSONDecodeError:
+        pass
+    try:
+        error = json.loads(stderr)["error"]
+    except (json.JSONDecodeError, KeyError, TypeError):
+        return "None", f"exit {returncode}"
+    if (error.startswith("application vm-run: status 'trap'") and "'trap': 'fuel-exhausted'" in error
+            and re.search(r"'steps': 1000000\b", error)):
+        return "None", "fuel-exhausted"
+    return "None", f"exit {returncode}"
+
+
+def run(name: str, args: tuple, source: Path = HERE / "regex-seq-bool.firth") -> tuple[str, str, str, bool]:
     args = json.loads(json.dumps(list(args)))
     try:
-        p = subprocess.run([sys.executable, "tools/loop/firth_run.py", "run", str(HERE / "regex-seq-bool.firth"),
+        p = subprocess.run([sys.executable, "tools/loop/firth_run.py", "run", str(source),
                             "--entry", "main", "--stack", json.dumps(args), "--fuel", "1000000"],
                            cwd=ROOT, capture_output=True, text=True, timeout=3600)
     except subprocess.TimeoutExpired:
         return name, "None", "timeout", False
-    try:
-        out = json.loads(p.stdout)
-    except json.JSONDecodeError:
-        return name, "None", f"exit {p.returncode}", False
-    return name, str(out.get("kernel_cost")), str(out.get("status")), costliest.agrees("regex", args, out)
+    cost, status = outcome(p.stdout, p.stderr, p.returncode)
+    agrees = status == "success" and costliest.agrees("regex", args, json.loads(p.stdout))
+    return name, cost, status, agrees
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
+    if argv not in ([], ["--drafted"]):
+        raise SystemExit(__doc__)
+    jobs = DRAFTED if argv else inputs()
     with cf.ThreadPoolExecutor(os.cpu_count() or 4) as ex:
-        for name, cost, status, ok in ex.map(lambda j: run(*j), inputs()):
+        for name, cost, status, ok in ex.map(lambda j: run(*j), jobs):
             print(f"{name}\t{cost}\t{status}\t{ok}", flush=True)
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))
