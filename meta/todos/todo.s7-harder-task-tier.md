@@ -124,7 +124,10 @@ until the tasks get harder.
   (a failed request, or any other reply that is not a complete answer; a
   length cut-off is not void) voids the whole sample, and only void samples
   are replaced. A round-1 cut-off gets a feedback round like any other
-  failed answer, saying the reply was cut off, on both language arms.
+  failed answer, saying the reply was cut off, on both language arms. A
+  round-2 answer to a task the feedback did not list is not taken, for a
+  Sonnet and a DeepSeek sample and on both arms alike (`tier.py take`; the
+  MVP tier took every task).
   `eval/s7/harder/deepseek_sample.py` runs a DeepSeek sample by these rules
   (README, "DeepSeek"). The pre-registration, not yet written, must state
   them.

@@ -3,6 +3,7 @@
 
     tier.py prompt --set calibration|calibration2|calibration3|scored --lang firth|python [--rounds 1] > prompt.md
     tier.py extract answer.md > solutions.json
+    tier.py take --set ... answer-N.md [--after solutions-(N-1).json results-(N-1).json] > solutions-N.json
     tier.py score  --set calibration|calibration2|calibration3|scored --lang firth solutions.json > results.json
     tier.py repair --set calibration|calibration2|calibration3|scored --lang firth solutions.json results.json > repair.md
     tier.py report results-*.json
@@ -13,6 +14,13 @@ answer did on its task's visible example and may fix it, up to `--rounds`
 times. "Correct on the first attempt" is round 1; "correct within two
 attempts" is round 2. The Firth author gets the MVP documents and the MVP
 step budget. Hidden tests are never shown.
+
+`take` builds each round's solutions: round 1's are the set's tasks answered
+in `answer-1.md`; a later round's are the earlier round's, with the answers
+in `answer-N.md` to the tasks that round's feedback listed put in their
+place. An answer to a task the feedback did not list is not taken, and is
+named on stderr. (The MVP tier and this tier's calibration pools took every
+task in a later answer instead.)
 
 This tier lives apart from `harness.py` and its task sets, so it changes
 nothing a pinned S7 run scores with. It reuses the harness's runners,
@@ -310,6 +318,35 @@ def scored(solutions: dict[str, str], lang: str, tasks: list[Task], jobs: int) -
     return res
 
 
+def listed(results: dict, tasks: list[Task]) -> list[str]:
+    """The tasks a round's feedback lists (`repair`): each scored task with no
+    answer, or whose answer failed its visible example."""
+    out = []
+    for t in tasks:
+        r = results["tasks"].get(t.id)
+        if r is None:
+            continue
+        vis = next((c for c in r["cases"] if c["visible"]), None)
+        if not (r["submitted"] and vis and vis["pass"]):
+            out.append(t.id)
+    return out
+
+
+def take(answer: str, tasks: list[Task], after: tuple[dict[str, str], dict] | None = None
+         ) -> tuple[dict[str, str], list[str]]:
+    """A round's solutions and the answers not taken. Round 1 (`after` None)
+    takes the set's tasks from the answer. A later round starts from the
+    earlier round's solutions and takes only the tasks that round's results
+    listed in its feedback (`listed`); any other answer is not taken."""
+    got = harness.extract(answer)
+    if after is None:
+        prev, open_ = {}, {t.id for t in tasks}
+    else:
+        prev, open_ = after[0], set(listed(after[1], tasks))
+    taken = {k: v for k, v in got.items() if k in open_}
+    return {**prev, **taken}, sorted(set(got) - set(taken))
+
+
 def repair(solutions: dict[str, str], results: dict, lang: str, tasks: list[Task]) -> str:
     """The next round's prompt: each failed answer's outcome on its visible
     example only (`harness.repair`), never a hidden test. Empty when every
@@ -317,13 +354,12 @@ def repair(solutions: dict[str, str], results: dict, lang: str, tasks: list[Task
     shown, and no round is run."""
     parts = [f"Some of your {lang} answers did not work on the visible example. Fix them. "
              "Answer only the tasks listed, in the same format as before.\n"]
+    shown = set(listed(results, tasks))
     for t in tasks:
-        r = results["tasks"].get(t.id)
-        if r is None:
+        if t.id not in shown:
             continue
+        r = results["tasks"][t.id]
         vis = next((c for c in r["cases"] if c["visible"]), None)
-        if r["submitted"] and vis and vis["pass"]:
-            continue
         what = ("no answer was given" if not vis else
                 f"the run failed:\n{harness.readable(vis['error'])}" if not vis["ok"] else
                 f"it returned {vis['stack']} instead of {vis['expected']}")
@@ -364,6 +400,10 @@ def main() -> int:
     p.add_argument("--lang", required=True, choices=["firth", "python"])
     p.add_argument("--rounds", type=int, default=1)
     e = sub.add_parser("extract"); e.add_argument("answer", type=Path)
+    t = sub.add_parser("take")
+    t.add_argument("--set", required=True, choices=sorted(SETS))
+    t.add_argument("answer", type=Path)
+    t.add_argument("--after", nargs=2, type=Path, metavar=("SOLUTIONS", "RESULTS"))
     s = sub.add_parser("score")
     s.add_argument("--set", required=True, choices=sorted(SETS))
     s.add_argument("--lang", required=True, choices=["firth", "python"])
@@ -378,6 +418,13 @@ def main() -> int:
         print(prompt(list(SETS[a.set]), a.lang, a.rounds).rstrip("\n"))
     elif a.cmd == "extract":
         print(json.dumps(harness.extract(harness.read_regular(a.answer, harness.plain_parent(a.answer))), indent=2))
+    elif a.cmd == "take":
+        text = harness.read_regular(a.answer, harness.plain_parent(a.answer))
+        after = None if a.after is None else (json.loads(a.after[0].read_text()), json.loads(a.after[1].read_text()))
+        sols, not_taken = take(text, list(SETS[a.set]), after)
+        if not_taken:
+            print(f"not taken (not a task this round asked for): {', '.join(not_taken)}", file=sys.stderr)
+        print(json.dumps(sols, indent=2))
     elif a.cmd == "score":
         sols = load(a.solutions, a.lang)
         res = scored(sols, a.lang, list(SETS[a.set]), a.jobs)

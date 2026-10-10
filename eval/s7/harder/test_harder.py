@@ -1260,6 +1260,7 @@ def deepseek_driver() -> None:
                     answer("HELIOTROPE-47", model="deepseek-v4-pro"),
                     answer("HELIOTROPE-47", done=False), answer("HELIOTROPE-47", done=1),
                     (502, "bad gateway"),
+                    (502, answer("HELIOTROPE-47")[1]),  # the codeword, but not a 200
                     (200, "<html></html>"), OSError("reset")):
         check(probed(planted) == 1, f"planted: the probe fails on {planted!r}")
 
@@ -1378,6 +1379,81 @@ def deepseek_sample_driver() -> None:
     check(stopped and crashed["status"] == "crashed" and "tree changed" in crashed["error"]
           and "passed" not in crashed, "a run that stops part way is recorded as crashed, not finished")
     base.cleanup()
+
+
+def take_rule() -> None:
+    """`tier.take` builds every round's solutions, for a Sonnet sample (`tier.py
+    take`) and a DeepSeek one alike: round 1 takes the set's tasks, and a later
+    round takes only the tasks the feedback listed. `audit.py` rebuilds kept
+    solutions by the same rule, where the MVP audit takes every answered task.
+    Expected values are written here, not taken from `tier`."""
+    import contextlib
+    import io
+    import tempfile
+    import audit
+    import audit_subagent
+    tasks = list(SETS["calibration"])
+    a, b, c = (t.id for t in tasks[:3])
+
+    def results(passing: set[str], answered: set[str]) -> dict:
+        per = {}
+        for t in tasks:
+            ok = t.id in passing
+            per[t.id] = {"submitted": t.id in answered, "pass": ok, "hidden_passed": int(ok), "hidden_total": 1,
+                         "cases": [{"visible": True, "ok": True, "pass": ok, "stack": [], "expected": []}]}
+        return {"lang": "firth", "tasks": per}
+
+    def answer(sols: dict) -> str:  # each answer ends in a newline, which extract keeps
+        return "".join(f"### task: {k}\n```firth\n{v}```\n\n" for k, v in sols.items())
+
+    others = {t.id: "ok\n" for t in tasks[3:]}
+    one = {a: "A1\n", b: "B1\n", **others}
+    # Round 1: the set's tasks are taken; a task from no set is not.
+    sols, not_taken = tier.take(answer({**one, "no_such_task": "x\n"}), tasks)
+    check(sols == one and not_taken == ["no_such_task"], "round 1 takes the set's tasks only")
+    # a failed its example and c has no answer; b and the rest passed.
+    res1 = results(passing={b, *others}, answered={a, b, *others})
+    check(tier.listed(res1, tasks) == [a, c], "the feedback lists the failed and the unanswered tasks")
+    shown = tier.repair(one, res1, "firth", tasks)
+    check(f"## {a}\n" in shown and f"## {c}\n" in shown and f"## {b}\n" not in shown,
+          "repair shows exactly the listed tasks")
+    sols2, not_taken2 = tier.take(answer({a: "A2\n", b: "B2\n", c: "C2\n"}), tasks, (one, res1))
+    check(sols2 == {**one, a: "A2\n", c: "C2\n"} and not_taken2 == [b],
+          "a later round takes only the listed tasks and names the rest")
+    # The audit rebuilds by the same rule, wired in by audit.main.
+    with tempfile.TemporaryDirectory() as t:
+        kept = Path(t)
+        (kept / "answer-1.md").write_text(answer(one))
+        (kept / "solutions-1.json").write_text(json.dumps(one))
+        (kept / "results-1.json").write_text(json.dumps(res1))
+        (kept / "answer-2.md").write_text(answer({a: "A2\n", b: "B2\n", c: "C2\n"}))
+        (kept / "solutions-2.json").write_text(json.dumps(sols2))
+        check(audit.solutions_mismatch(kept, tasks) == [], "the audit accepts solutions taken by the rule")
+        mvp = {**one, a: "A2\n", b: "B2\n", c: "C2\n"}  # every answered task, as the MVP audit rebuilds
+        (kept / "solutions-2.json").write_text(json.dumps(mvp))
+        flagged = audit.solutions_mismatch(kept, tasks)
+        check(len(flagged) == 1 and f"tasks {b}" in flagged[0], "the audit flags an unlisted answer taken")
+        seen = []
+        real = audit_subagent.main, audit_subagent.solutions_mismatch, audit_subagent.repair, sys.argv
+        audit_subagent.main = lambda: seen.append(audit_subagent.solutions_mismatch(kept)) or 0
+        try:
+            sys.argv = ["audit.py", "/dev/null", "--set", "calibration", "--lang", "firth"]
+            with contextlib.redirect_stderr(io.StringIO()):
+                audit.main()
+        finally:
+            audit_subagent.main, audit_subagent.solutions_mismatch, audit_subagent.repair, sys.argv = real
+        check(len(seen) == 1 and len(seen[0]) == 1 and f"tasks {b}" in seen[0][0],
+              "audit.main audits kept solutions by this tier's rule")
+        (kept / "results-1.json").unlink()
+        check(any("results-1.json: missing" in m for m in audit.solutions_mismatch(kept, tasks)),
+              "the audit flags round 2 when round 1's results are not kept")
+    # The calibration pools' round-2 records took no unlisted answer, so the
+    # rule leaves them as they were scored.
+    for run, name in (("2026-10-02-calibration/sonnet-firth-1", "calibration"),
+                      ("2026-10-02-calibration2/sonnet-firth-3", "calibration2"),
+                      ("2026-10-10-calibration3/sonnet-firth-3", "calibration3")):
+        check(audit.solutions_mismatch(HERE / "runs" / run, list(SETS[name])) == [],
+              f"{run}'s kept solutions are what the rule takes")
 
 
 def deepseek_sample_scored() -> None:
@@ -1575,6 +1651,7 @@ def main() -> int:
     regex_drafted_bounds()
     deepseek_driver()
     deepseek_sample_driver()
+    take_rule()
     prompt_and_repair()
     if "--no-firth" not in sys.argv:
         firth_references()
