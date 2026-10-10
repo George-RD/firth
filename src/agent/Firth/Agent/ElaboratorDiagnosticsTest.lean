@@ -566,6 +566,7 @@ private def runDeclaredInputsTests : IO Unit := do
   -- A word with a row takes the values below its inputs from its caller.
   notDeclared "an effect with a row"
     ": f (forall ρ; ρ a:Int^many -- ρ r:Int^many) locals { a } { a drop locals { b c } { b c prim + } } ;\n"
+    ["A `locals` block or an operation here needs more values than the stack holds."]
 
 private def runClosedCalleeTests : IO Unit := do
   let pipelineContext := contextWithSource "pipeline-closed" "main.fth"
