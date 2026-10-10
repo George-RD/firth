@@ -294,6 +294,48 @@ def main : IO Unit := do
   | .ok _ => pure ()
   | .error error => fail s!"rebound: expected the outer and middle `h` to be two locals: {repr error}"
 
+  -- A word whose effect has no row takes the whole stack
+  -- (todo.closed-effect-under-locals). A local still to be used lies below
+  -- its inputs, so the local is lifted above them and the call runs under
+  -- `dip`: `h` is then not a top-level atom. With a row, `h` takes only its
+  -- inputs and is called where it is written.
+  let closedEnv : EffectEnv :=
+    { word := fun name => if name == "h" then some { input := [.many, .many], output := [.many], closed := true } else none
+      primitive := arithmetic.primitive }
+  let openEnv : EffectEnv :=
+    { word := fun name => if name == "h" then some { input := [.many, .many], output := [.many] } else none
+      primitive := arithmetic.primitive }
+  let calledAtTop (program : KernelProgram) : Bool := shapes program |>.contains "word:h"
+  let calledUnderDip (program : KernelProgram) : Bool :=
+    let atoms := shapes program
+    (atoms.zip (atoms.drop 1)).any fun (quoted, next) =>
+      quoted.startsWith "[" && (quoted.splitOn "word:h").length > 1 && next == "dip"
+  for (label, source) in [
+      ("closed call with a later local", ": g ( x:Int n:Int -- r:Int s:Int ) locals { x n } { x 1 h n } ;"),
+      ("closed call in an inner block", ": g ( x:Int n:Int -- r:Int s:Int ) locals { x n } { x locals { y } { y 1 h } n } ;")] do
+    let word ← parsed source
+    match erase closedEnv word.effect word.body with
+    | .ok result =>
+        unless !calledAtTop result.program && calledUnderDip result.program do
+          fail s!"{label}: expected `h` to run under `dip` with the local above it: {repr (shapes result.program)}"
+    | .error error => fail s!"{label}: unexpected erasure error: {repr error}"
+    match erase openEnv word.effect word.body with
+    | .ok result =>
+        unless calledAtTop result.program do
+          fail s!"{label}: a call with a row should run where it is written: {repr (shapes result.program)}"
+    | .error error => fail s!"{label}: unexpected erasure error with a row: {repr error}"
+  -- With nothing left below its inputs, a closed call is not moved. The
+  -- second is the todo's third program, which `n`'s move at its last use
+  -- (#213) already made acceptable.
+  for source in [": g ( x:Int n:Int -- r:Int ) locals { x n } { x n h } ;",
+      ": g ( x:Int n:Int -- r:Int ) locals { x n } { x locals { y } { y n h } } ;"] do
+    let word ← parsed source
+    match erase closedEnv word.effect word.body with
+    | .ok result =>
+        unless calledAtTop result.program do
+          fail s!"closed call alone: expected `h` where it is written: {source}: {repr (shapes result.program)}"
+    | .error error => fail s!"closed call alone: unexpected erasure error: {source}: {repr error}"
+
   let linearUnused ← parsed ": unused-h ( h:Handle^linear -- ) locals { h } { } ;"
   let linearBindingSpan := match linearUnused.body with
     | [.locals [binding] _ _] => binding.span

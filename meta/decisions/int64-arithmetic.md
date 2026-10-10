@@ -51,7 +51,12 @@ one change. The change is not made here.
   value from the input stays in range only where the contract's
   precondition says so (the allocator's program checks its own inputs and its contract states the result; a contract that
   admits an out-of-range input can return it unchanged). The
-  kernel's progress theorem is not yet proved for this registry.
+  kernel's progress and preservation premises are proved for this registry
+  (`int64Gamma_primitivesWellFormed` and `int64Gamma_progress` in
+  `src/interpreter/Firth/RegistryProgress.lean`), so under it a well-typed
+  configuration with program left steps or stops at a primitive fault, and
+  the faulting primitives are the reference's plus the checked four
+  (`int64Gamma_faults_iff`).
 - **How the gap is tested.** The differential harness classifies a run where
   the reference succeeds and the VM faults at the first primitive that leaves
   the range as `expected-portable-overflow` (`src/diffharness/README.md`). It
@@ -89,10 +94,12 @@ hosts may disagree.
    proofs and the VM share one registry, and the `LenOverflowAt` exception
    leaves `compileWords_correct` and `TargetHolds`, which then have only the
    call-depth bound as an exception. This needs:
-   - progress for `int64Gamma` (`PrimitivesWellFormed`: its checked
-     primitives are declared `faults := true`, so totality exempts them; preservation
-     should follow from `adapterGamma`'s, since a checked delta either refuses
-     or returns the same `Int` (inferred, not yet proved);
+   - progress for the registry with `len` checked. It is proved for
+     today's `int64Gamma` (`int64Gamma_primitivesWellFormed`): the checked
+     primitives are declared `faults := true`, so totality exempts them, and
+     a checked delta either refuses or returns the reference's result, so
+     preservation transfers. Checked `len` primitives would need the same
+     two facts, for their deltas and their `faults` declarations;
    - the runner switched to it, with a Gamma version bump so an old request
      is refused rather than run differently;
    - the reference runner refusing integer literals and starting-stack
@@ -140,8 +147,8 @@ values no program can hold.
 Option 2 changes the reference registry, which is part of `Γ`.
 `dec.comparison-primitives` treated a `Γ` change as needing the maintainer,
 so this should be approved the same way before any code changes. The change
-would land in its own PR, after progress for `int64Gamma` is proved and
-outside an S7 authoring window.
+would land in its own PR, with progress proved for the extended registry,
+and outside an S7 authoring window.
 
 ## Approval
 

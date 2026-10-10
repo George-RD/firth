@@ -39,3 +39,16 @@
 : swap-below
   (forall ρ; ρ x:Int^many y:Int^many z:Int^many -- ρ p:Int^many q:Int^many)
   locals { a } { swap };
+
+\ A word whose effect has no row, like `add2`, takes the whole stack. Inside a
+\ `locals` block it sees only the values pushed for it: the block's names are
+\ off the stack, so `n`, still to be used, is not in its way.
+: add2 ( a:Int^many b:Int^many -- r:Int^many ) prim + ;
+
+: add-then-keep
+  ( x:Int^many n:Int^many -- r:Int^many s:Int^many )
+  locals { x n } { x 1 add2 n };
+
+: add-in-block
+  ( x:Int^many n:Int^many -- r:Int^many )
+  locals { x n } { x locals { y } { y n add2 } };
