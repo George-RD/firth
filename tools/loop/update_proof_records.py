@@ -169,6 +169,7 @@ def check_malformed_targets() -> list[str]:
     problems: list[str] = []
     base = json.loads((FIXTURES / "accepted.json").read_text(encoding="utf-8"))[0]
     for theorem, module in ((5, "prooftests.Accepted"),
+                            (5, 6),
                             ("Firth.ProofTests.Accepted.sumToTarget", None),
                             ("Firth.ProofTests.Accepted.sumToTarget", ["prooftests.Accepted"])):
         contract = {**base, "target_theorem": theorem}
