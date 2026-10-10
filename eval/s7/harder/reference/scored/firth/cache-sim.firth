@@ -1,0 +1,250 @@
+\ Two-level write-back cache simulation with LRU sets, as in the task text.
+\
+\ A level is one Seq Int, laid out as
+\     [ places-per-set, sets, top, pos(0) .. pos(255), order(0) .. order(sets-1),
+\       then the places of set 0, of set 1, ... ]
+\ An entry (the content of a place) is -1 (empty) or block*2 + dirty, so the
+\ block is e div 2 and the dirty mark e mod 2 (test e >= 0 first, since -1 mod 2
+\ is 1). pos(b) is the index of the place holding block b, or -1 when the level
+\ does not hold it, so a lookup needs no scan. No place ever moves; what changes
+\ is the recency order of the places of a set, kept as one number: its digits in
+\ base 8, lowest first, are the places' numbers within the set (0 .. places-1),
+\ least recently used first. So the digit 0 names the place to fill or evict.
+\ Initially the order is 0, 1, 2, ..., which fills the empty places in turn.
+\ Using a place moves its digit to the top (weight top = 8^(places-1)).
+\ The six counters live in one Seq Int:
+\   0 l1 hits, 1 l1 misses, 2 l2 hits, 3 l2 misses, 4 memory reads, 5 memory writes.
+
+\ Where pos(0) and order(0) start in a level.
+: pos0 (forall ρ; ρ -- ρ r:Int^many) 3;
+: ord0 (forall ρ; ρ -- ρ r:Int^many) 259;
+
+\ out grown with v until it has n values.
+: pad
+  (forall ρ; ρ n:Int^many out:Seq Int^many v:Int^many -- ρ r:Seq Int^many)
+  locals { n out v }
+  { out prim seq-int.len n prim <
+    [ n out v prim seq-int.push v pad ]
+    [ out ] if };
+
+\ 8 to the power k, times acc.
+: pow8
+  (forall ρ; ρ k:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { k acc }
+  { k 0 prim =
+    [ acc ]
+    [ k 1 prim - acc 8 prim * pow8 ] if };
+
+\ The order whose digits, lowest first, are 0, 1, ..., j, followed by the digits of ord
+\ (called with j = places-1 and ord = 0: the initial order of a set).
+: init-order
+  (forall ρ; ρ j:Int^many ord:Int^many -- ρ r:Int^many)
+  locals { j ord }
+  { j 0 prim <
+    [ ord ]
+    [ j 1 prim - ord 8 prim * j prim + init-order ] if };
+
+\ An empty level of the given sets and places per set.
+: new-level
+  (forall ρ; ρ sets:Int^many cap:Int^many -- ρ lvl:Seq Int^many)
+  locals { sets cap }
+  { prim seq-int.empty cap prim seq-int.push sets prim seq-int.push
+    cap 1 prim - 1 pow8 prim seq-int.push
+    locals { h }
+    { ord0 h -1 pad
+      locals { p1 }
+      { ord0 sets prim + p1 cap 1 prim - 0 init-order pad
+        locals { p2 }
+        { ord0 sets prim + sets cap prim * prim + p2 -1 pad } } } };
+
+\ ctr with counter i raised by one.
+: bump
+  (forall ρ; ρ ctr:Seq Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { ctr i }
+  { ctr i ctr i prim seq-int.at 1 prim + prim seq-int.set };
+
+\ Index of the order number of the set of block b.
+: ord-ix
+  (forall ρ; ρ lvl:Seq Int^many b:Int^many -- ρ ix:Int^many)
+  locals { lvl b }
+  { ord0 b lvl 1 prim seq-int.at prim mod prim + };
+
+\ Index of place 0 of the set of block b.
+: set-base
+  (forall ρ; ρ lvl:Seq Int^many b:Int^many -- ρ base:Int^many)
+  locals { lvl b }
+  { ord0 lvl 1 prim seq-int.at prim +
+    b lvl 1 prim seq-int.at prim mod lvl 0 prim seq-int.at prim * prim + };
+
+\ Index of the place of block b if the level holds it, else -1.
+: where
+  (forall ρ; ρ lvl:Seq Int^many b:Int^many -- ρ p:Int^many)
+  pos0 prim + prim seq-int.at;
+
+\ Weight 8^r of the digit p in order o, from weight m on.
+: weight
+  (forall ρ; ρ o:Int^many p:Int^many m:Int^many -- ρ r:Int^many)
+  locals { o p m }
+  { o 8 prim mod p prim =
+    [ m ]
+    [ o 8 prim div p m 8 prim * weight ] if };
+
+\ Moves the place idx (of the set of block b) to the recent end of its set's order.
+: promote
+  (forall ρ; ρ lvl:Seq Int^many b:Int^many idx:Int^many -- ρ r:Seq Int^many)
+  locals { lvl b idx }
+  { lvl b ord-ix
+    locals { ix }
+    { lvl ix prim seq-int.at
+      locals { o }
+      { idx lvl b set-base prim -
+        locals { j }
+        { o j 1 weight
+          locals { m }
+          { lvl ix
+            o m prim mod  o m 8 prim * prim div m prim * prim +  j lvl 2 prim seq-int.at prim * prim +
+            prim seq-int.set } } } } };
+
+\ Entry e with its dirty mark raised when d is 1.
+: mark
+  (forall ρ; ρ e:Int^many d:Int^many -- ρ r:Int^many)
+  locals { e d }
+  { e d 1 e 2 prim mod prim - prim * prim + };
+
+\ Uses block b, held in place idx, dirty too if d is 1.
+: touch
+  (forall ρ; ρ lvl:Seq Int^many b:Int^many idx:Int^many d:Int^many -- ρ r:Seq Int^many)
+  locals { lvl b idx d }
+  { lvl idx lvl idx prim seq-int.at d mark prim seq-int.set b idx promote };
+
+\ Puts entry e (of a block b that is not in the level) in the place at the head of
+\ its set's order, the least recently used. Leaves the level and the entry that was there (-1 if none).
+: put-new
+  (forall ρ; ρ lvl:Seq Int^many b:Int^many e:Int^many -- ρ r:Seq Int^many ev:Int^many)
+  locals { lvl b e }
+  { lvl b set-base  lvl lvl b ord-ix prim seq-int.at 8 prim mod prim +
+    locals { idx }
+    { lvl idx prim seq-int.at
+      locals { ev }
+      { ev 0 prim >=
+        [ lvl ev 2 prim div pos0 prim + -1 prim seq-int.set ]
+        [ lvl ] if
+        idx e prim seq-int.set
+        b pos0 prim + idx prim seq-int.set
+        b idx promote
+        ev } } };
+
+\ Counts a memory write when the evicted entry ev is dirty.
+: account
+  (forall ρ; ρ ctr:Seq Int^many ev:Int^many -- ρ r:Seq Int^many)
+  locals { ctr ev }
+  { ev 0 prim >=
+    [ ev 2 prim mod 1 prim =
+      [ ctr 5 bump ]
+      [ ctr ] if ]
+    [ ctr ] if };
+
+\ The block b is wanted from below the first level: second-level hit or miss.
+: fill-l2
+  (forall ρ; ρ l2:Seq Int^many ctr:Seq Int^many b:Int^many -- ρ l2r:Seq Int^many ctrr:Seq Int^many)
+  locals { l2 ctr b }
+  { l2 b where
+    locals { p }
+    { p 0 prim >=
+      [ l2 b p 0 touch  ctr 2 bump ]
+      [ l2 b b 2 prim * put-new
+        ctr 3 bump 4 bump swap account ] if } };
+
+\ A dirty block (entry e) leaves the first level and is written to the second.
+: write-back
+  (forall ρ; ρ l2:Seq Int^many ctr:Seq Int^many e:Int^many -- ρ l2r:Seq Int^many ctrr:Seq Int^many)
+  locals { l2 ctr e }
+  { l2 e 2 prim div where
+    locals { p }
+    { p 0 prim >=
+      [ l2 e 2 prim div p 1 touch  ctr ]
+      [ l2 e 2 prim div e put-new ctr swap account ] if } };
+
+\ A first-level miss on block b (d is 1 for a write).
+: miss
+  (forall ρ; ρ l1:Seq Int^many l2:Seq Int^many ctr:Seq Int^many b:Int^many d:Int^many -- ρ l1r:Seq Int^many l2r:Seq Int^many ctrr:Seq Int^many)
+  locals { l1 l2 ctr b d }
+  { l2 ctr 1 bump b fill-l2
+    locals { l2a ctr2 }
+    { l1 b b 2 prim * d prim + put-new
+      locals { l1a ev }
+      { ev 0 prim >=
+        [ ev 2 prim mod 1 prim =
+          [ l1a l2a ctr2 ev write-back ]
+          [ l1a l2a ctr2 ] if ]
+        [ l1a l2a ctr2 ] if } } };
+
+\ One access to block b (d is 1 for a write).
+: access
+  (forall ρ; ρ l1:Seq Int^many l2:Seq Int^many ctr:Seq Int^many b:Int^many d:Int^many -- ρ l1r:Seq Int^many l2r:Seq Int^many ctrr:Seq Int^many)
+  locals { l1 l2 ctr b d }
+  { l1 b where
+    locals { p }
+    { p 0 prim >=
+      [ l1 b p d touch  l2  ctr 0 bump ]
+      [ l1 l2 ctr b d miss ] if } };
+
+\ Plays accesses i onward.
+: run
+  (forall ρ; ρ addrs:Seq Int^many writes:Seq Bool^many i:Int^many l1:Seq Int^many l2:Seq Int^many ctr:Seq Int^many -- ρ ctrr:Seq Int^many l1r:Seq Int^many l2r:Seq Int^many)
+  locals { addrs writes i l1 l2 ctr }
+  { i addrs prim seq-int.len prim <
+    [ addrs writes i 1 prim +
+      l1 l2 ctr addrs i prim seq-int.at
+      writes i prim seq-bool.at [ 1 ] [ 0 ] if
+      access
+      run ]
+    [ ctr l1 l2 ] if };
+
+\ Number of dirty entries in the places of lvl from index i on, plus acc.
+: count-dirty
+  (forall ρ; ρ lvl:Seq Int^many i:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { lvl i acc }
+  { i lvl prim seq-int.len prim <
+    [ lvl i 1 prim +
+      acc lvl i prim seq-int.at dup 0 prim >= [ 2 prim mod ] [ drop 0 ] if prim +
+      count-dirty ]
+    [ acc ] if };
+
+\ Appends to out the blocks of set s, least recently used first: the digits of o
+\ name the places, j of them still to read.
+: emit-set
+  (forall ρ; ρ lvl:Seq Int^many s:Int^many o:Int^many j:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { lvl s o j out }
+  { j 0 prim >
+    [ lvl s o 8 prim div j 1 prim -
+      lvl
+      ord0 lvl 1 prim seq-int.at prim + s lvl 0 prim seq-int.at prim * prim + o 8 prim mod prim +
+      prim seq-int.at
+      dup 0 prim >=
+      [ out swap 2 prim div prim seq-int.push ]
+      [ drop out ] if
+      emit-set ]
+    [ out ] if };
+
+\ The blocks of sets s onward, set by set, appended to out.
+: blocks
+  (forall ρ; ρ lvl:Seq Int^many s:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { lvl s out }
+  { s lvl 1 prim seq-int.at prim <
+    [ lvl s 1 prim +
+      lvl s lvl ord0 s prim + prim seq-int.at lvl 0 prim seq-int.at out emit-set
+      blocks ]
+    [ out ] if };
+
+: main
+  (forall ρ; ρ s1:Int^many w1:Int^many s2:Int^many w2:Int^many addrs:Seq Int^many writes:Seq Bool^many -- ρ l1h:Int^many l1m:Int^many l2h:Int^many l2m:Int^many reads:Int^many wr:Int^many dirty:Int^many l1b:Seq Int^many)
+  locals { s1 w1 s2 w2 addrs writes }
+  { addrs writes 0 s1 w1 new-level s2 w2 new-level { 0 0 0 0 0 0 }
+    run
+    locals { ctr l1 l2 }
+    { ctr 0 prim seq-int.at  ctr 1 prim seq-int.at  ctr 2 prim seq-int.at
+      ctr 3 prim seq-int.at  ctr 4 prim seq-int.at  ctr 5 prim seq-int.at
+      l1 ord0 l1 1 prim seq-int.at prim + 0 count-dirty
+      l2 ord0 l2 1 prim seq-int.at prim + 0 count-dirty prim +
+      l1 0 prim seq-int.empty blocks } };

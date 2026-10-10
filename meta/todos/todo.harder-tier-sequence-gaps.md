@@ -61,6 +61,23 @@ programs, hit these as well, again written by hand in each program:
   (`LOCAL_DEPTH` warnings at 15 to 20 locals); `bank-days` had to skip
   quiet days in a tight loop to fit its first, larger bounds.
 
+Writing the scored set's references
+(`eval/s7/harder/reference/scored/firth/`, 10 October 2026) hit most of
+the above again (no records, no bitwise operations, no fill or slice, no
+`min` or `max`, no multi-way branch, many-locals cost), and these as well:
+
+- `prim and` and `prim or` evaluate both sides, so a bounds test cannot
+  guard the read it protects: `p < n and pat[p] = c` traps when `p` is out
+  of range, and every guarded `seq.at` becomes a nested `if` (`regex`,
+  `checkers`, `warehouse`, `cache-sim`).
+- No bitwise operations cost most in `regex`: its first reference kept
+  position sets as `Seq Bool` and ran past the 1,000,000-step budget at
+  the drafted bounds; the kept one holds a set as bits of one `Int` and ORs
+  through a 1,024-entry literal table five bits at a time.
+- No pop or shrink: `sokoban`'s undo history keeps a separate depth and
+  overwrites stale slots.
+- `use` is a keyword, so it cannot name a word (`cache-sim`).
+
 ## Acceptance criteria
 
 - For each gap, either a primitive or library word with a stated stack

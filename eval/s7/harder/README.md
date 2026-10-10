@@ -17,7 +17,8 @@ It has two task sets, kept apart:
   before any scored trial. No scored task is run during calibration, so no
   task is swapped out after a ceiling result. If the frozen set lands at the
   ceiling anyway, it is kept and its result reported as it stands; a further
-  tier would be a new frozen set, reported alongside it. Not written yet.
+  tier would be a new frozen set, reported alongside it. `scored.py` (see
+  "The scored set").
 
 Nothing here changes what an S7 run on the earlier tiers measures: the tier
 has its own directory, task ids and scorer, and does not edit `harness.py`,
@@ -71,8 +72,9 @@ in and reads back.
 
 ## Files
 
-- `calibration.py`, `calibration2.py` and `calibration3.py`: the pools. Each task's `ref` is
-  its meaning, in plain Python written independently of any Firth code.
+- `calibration.py`, `calibration2.py` and `calibration3.py`: the pools, and
+  `scored.py`: the scored set. Each task's `ref` is its meaning, in plain
+  Python written independently of any Firth code.
 - `reference/<pool>/firth/<id>.firth` and `reference/<pool>/python/<id>.py`:
   a Firth and a Python reference solution per task. The Python ones are
   written separately from the refs, so they check them. The second and
@@ -543,7 +545,7 @@ run from 798 to 1,924 lines, against 1,668 for the references.
 
 Across the three pools, Sonnet's valid authors have failed these things:
 
-- left failing after two rounds: one ambiguously worded clause (pool 2's
+- still failing within two rounds: one ambiguously worded clause (pool 2's
   `spreadsheet`), and the nested-`locals` tail-call defect in the
   toolchain, since fixed by #213 (pool 1's `tiny-vm`, pool 2's
   `elevator`);
@@ -560,3 +562,85 @@ rules and bounds do not separate this subject at the sizes tried, in
 either language. The next design question is not size. These
 results are calibration only. They are not S7 evidence, and the Python
 and Firth rows are not a comparison of the languages.
+
+## The scored set
+
+`scored.py`: six tasks, written after the third pool's results and not run
+in calibration: a warehouse puzzle with undo and dead-box counting
+(`sokoban`), draughts played by a fixed rule with forced and multiple
+captures and two tie-breaks (`checkers`), a regular expression matcher
+with its own grammar and invalid patterns (`regex`), a Swiss-system
+tournament with byes, forced rematches, colour rules and Buchholz scores
+(`swiss`), a warehouse with expiring lots, backorders, cancellation and
+reordering (`warehouse`) and a two-level write-back cache (`cache-sim`).
+Its Python references are 47 to 116 lines (466 in all) and its Firth ones
+139 to 454 (1,859), measured with `wc -l`. A Sonnet worker wrote the
+Python references from the descriptions alone; they agree with the
+meanings on 3,000 seeded random inputs per task (`test_harder.py`,
+`scored_random_agreement`, with a planted reference that disagrees). Each
+example, which the author is shown, also has its result worked out by
+hand in `test_harder.py`.
+
+These are not longer programs than the third pool's (its Python references
+were 94 to 144 lines): that pool showed size alone does not separate
+Sonnet. They are rule-dense instead, each with several interacting rules,
+tie-breaks and edge cases a reader must hold together. Who is run on them,
+and how, is pre-registered separately before any trial. Whether any
+subject is below the ceiling on them is what the scored run measures; it
+is not assumed here.
+
+Before the set was frozen, each description was checked for sentences a
+careful reader could take two ways that the hidden tests tell apart (each
+other reading was run as a mutant of the meaning). Twelve were made
+explicit, and each of their other readings is kept as a mutant that at
+least one hidden test tells apart (`test_harder.py`, `scored_readings`,
+with the unchanged meaning as a planted case that none does): the solved check before the first `sokoban` move, its dead-box
+rule, the `checkers` landing-square tie-break, its starting square during
+a capture, losing with no move at the ply limit, which men count as
+crowned, what a `regex` postfix operator applies to, a `swiss` player with
+no last game, its bye being given before pairing, which units a
+`warehouse` cancellation counts, its reorder on a supply's due day, and
+how `cache-sim` counts dirty blocks.
+
+Each task has 15 to 25 hidden tests: hand-picked cases aimed at each rule
+its description states, a few random inputs and, last, the costliest input
+for its Firth reference among a fixed list of candidates at the largest
+sizes the description allows: 40 to 50 seeded random inputs per task (and
+for `checkers` the opening with each side first), and for `regex` 12
+patterns built to be slow, each against 8 strings of 12 letters in three
+alphabets. `costliest.py` is that search; its recorded output is
+`costliest.tsv`, where every candidate's result also agreed with the
+meaning, and `test_harder.py` (`scored_costliest`) checks that each last
+hidden test is the record's costliest candidate. The most kernel steps on such an input are 144,953
+(`sokoban`), 209,279 (`checkers`), 98,097 (`regex`, `a*` ten times against
+strings of twelve `a`s), 108,057 (`swiss`), 179,655 (`warehouse`) and
+161,365 (`cache-sim`), all within a quarter of the 1,000,000-step budget.
+That is a measured figure over these inputs, not a bound. The first
+Firth reference for `regex`, which kept sets of positions as `Seq Bool`,
+ran out of the budget at the drafted bounds (30 tokens, 10 strings of 20
+letters); the bounds were cut to 20 tokens and 8 strings of 12 letters and
+the reference rewritten as a position automaton with sets held as bits
+in one `Int` (Firth has no bitwise operations, so it ORs through a
+literal table). The first version is kept, with its measurement, in
+`runs/2026-10-10-regex-seq-bool/` (`measure.py`, `output.tsv`). At the new
+bounds, on five patterns built to be slow and the 36 `regex` candidates of
+`costliest.py`, it agrees with the meaning on all 41 and costs up to
+816,497 steps (`(a|b|c)*` twice and `.*` twice against strings of `a`,
+`b` and `c`), so an answer written that way fits the budget on these
+inputs, though with less room than the bitset reference. That is a
+measurement, not a bound: a slower correct Firth answer can run out of
+steps where the same algorithm in Python passes. `test_harder.py`
+holds hand values for each task, checks every input against its stated
+bounds (structural ones included: the walls around a sokoban floor, the
+pieces on a draughts board, string lengths that add up to the letters, a
+result for every game, events in day order) with a planted bad input for
+each kind, and a Python mutant per task and a Firth `sokoban` mutant that
+the hidden tests fail.
+
+One rule cannot be seen in any result: `warehouse` takes stock from lots
+with equal expiry in order of arrival, but such lots are always thrown
+away together and every output is a total, so no test can tell that
+order from another. In `checkers`, taking a jumped piece off at once
+cannot be told apart from taking it off at the end of the capture, since
+a jump never lands on a square a jumped piece stood on; the rule that the
+moving piece's own square is empty during the capture is tested.

@@ -72,6 +72,13 @@ until the tasks get harder.
   round 1; Firth 10 of 10 for the two valid authors. Firth 3 was void
   (audit flag; 4 of 5, then 5 of 5, not scored). At the ceiling in both
   languages, so size alone does not separate Sonnet.
+- Scored set written 10 October 2026 (`eval/s7/harder/scored.py`,
+  README "The scored set"): six rule-dense tasks not run in calibration,
+  with Firth and Python references, hand values, bounds checks with order
+  and structural constraints, and a mutant per task. Its references' most
+  costly hidden test is 98,097 to 209,279 kernel steps. No scored trial has
+  run; the pre-registration (subjects, authors per arm, voids, analysis)
+  comes before any.
 - The audit flags each successful write that differs from the kept copy
   (Firth 3, pool 3). Before a scored run, either pre-register that rule
   as it stands or change the audit to compare only the last write, with

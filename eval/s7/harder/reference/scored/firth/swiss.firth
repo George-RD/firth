@@ -1,0 +1,312 @@
+\ Swiss-system chess tournament.
+\
+\ All tournament state lives in one Seq Int `st` (stride 16 per table, at most
+\ 12 players), so most words take and return only `st`:
+\    0 + p   score of player p (half points)
+\   16 + p   times p has had white
+\   32 + p   colour of p's last game: 0 none yet, 1 white, 2 black
+\   48 + p   1 once p has had a bye
+\   64       rematches so far
+\   65       index of the next result to read (offset into the results block)
+\   66       number of players n
+\   67       number of rounds
+\   80 + p   1 when p is already paired or on a bye in the current round
+\   96 + r   player ranked r at the start of the current round
+\  112 + p   rating of p
+\  128 + 16 p + q   games played between p and q (a rematch is a second one)
+\  400 + i   result i (0 white won, 1 draw, 2 black won)
+
+\ ---------------------------------------------------------------- basics
+
+\ st[i]
+: get
+  (forall ρ; ρ s:Seq Int^many i:Int^many -- ρ v:Int^many)
+  prim seq-int.at;
+
+\ st[i] += d
+: bump
+  (forall ρ; ρ s:Seq Int^many i:Int^many d:Int^many -- ρ r:Seq Int^many)
+  locals { s i d }
+  { s i s i prim seq-int.at d prim + prim seq-int.set };
+
+\ out padded with zeros up to length n
+: zeros-to
+  (forall ρ; ρ out:Seq Int^many n:Int^many -- ρ r:Seq Int^many)
+  locals { out n }
+  { out prim seq-int.len n prim <
+    [ out 0 prim seq-int.push n zeros-to ]
+    [ out ] if };
+
+\ n zeros
+: zeros
+  (forall ρ; ρ n:Int^many -- ρ r:Seq Int^many)
+  prim seq-int.empty swap zeros-to;
+
+\ Copies src[i..] into st starting at st[off + i].
+: copy-into
+  (forall ρ; ρ s:Seq Int^many src:Seq Int^many off:Int^many i:Int^many -- ρ r:Seq Int^many)
+  locals { s src off i }
+  { i src prim seq-int.len prim <
+    [ s off i prim + src i prim seq-int.at prim seq-int.set
+      src off i 1 prim + copy-into ]
+    [ s ] if };
+
+\ Appends s[off + i] for i from i up to n - 1 onto out.
+: slice-loop
+  (forall ρ; ρ s:Seq Int^many off:Int^many n:Int^many i:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { s off n i out }
+  { i n prim <
+    [ s off n i 1 prim + out s off i prim + prim seq-int.at prim seq-int.push slice-loop ]
+    [ out ] if };
+
+\ s[off .. off + n - 1]
+: slice
+  (forall ρ; ρ s:Seq Int^many off:Int^many n:Int^many -- ρ r:Seq Int^many)
+  0 prim seq-int.empty slice-loop;
+
+\ ------------------------------------------------------------- ranking
+
+\ How many of ks[q..] exceed c, added to acc.
+: count-above
+  (forall ρ; ρ ks:Seq Int^many c:Int^many q:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { ks c q acc }
+  { q ks prim seq-int.len prim <
+    [ ks c q 1 prim +
+      acc ks q prim seq-int.at c prim > [ 1 ] [ 0 ] if prim +
+      count-above ]
+    [ acc ] if };
+
+\ Sets out[base + rank] = p for each p from p on, where rank is the number of
+\ keys above ks[p]. The keys are distinct, so the ranks are 0 .. n-1.
+: order-of
+  (forall ρ; ρ ks:Seq Int^many base:Int^many p:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { ks base p out }
+  { p ks prim seq-int.len prim <
+    [ ks base p 1 prim +
+      out base ks ks p prim seq-int.at 0 0 count-above prim + p prim seq-int.set
+      order-of ]
+    [ out ] if };
+
+\ Appends the key of each player from p on: a major value (higher is better),
+\ then rating, then lower number first, packed into one integer.
+: mk-keys
+  (forall ρ; ρ major:Seq Int^many rat:Seq Int^many p:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { major rat p out }
+  { p major prim seq-int.len prim <
+    [ major rat p 1 prim +
+      out major p prim seq-int.at 4096 prim * rat p prim seq-int.at prim +
+      16 prim * 15 p prim - prim + prim seq-int.push
+      mk-keys ]
+    [ out ] if };
+
+\ ---------------------------------------------------------------- byes
+
+\ p takes the bye: two points, and is out of the pairing.
+: give-bye
+  (forall ρ; ρ s:Seq Int^many p:Int^many -- ρ r:Seq Int^many)
+  locals { s p }
+  { s 48 p prim + 1 prim seq-int.set
+    p 2 bump
+    80 p prim + 1 prim seq-int.set };
+
+\ Walks the ranking upward from the last rank r; the first player without a
+\ bye takes it.
+: bye-scan
+  (forall ρ; ρ s:Seq Int^many r:Int^many -- ρ out:Seq Int^many)
+  locals { s r }
+  { s 48 s 96 r prim + get prim + get 0 prim =
+    [ s s 96 r prim + get give-bye ]
+    [ s r 1 prim - bye-scan ] if };
+
+\ Clears the paired marks of players p on.
+: clear-paired
+  (forall ρ; ρ s:Seq Int^many p:Int^many -- ρ r:Seq Int^many)
+  locals { s p }
+  { p s 66 get prim <
+    [ s 80 p prim + 0 prim seq-int.set p 1 prim + clear-paired ]
+    [ s ] if };
+
+\ --------------------------------------------------------------- pairing
+
+\ True when q is unpaired and p has not played q.
+: fresh?
+  (forall ρ; ρ s:Seq Int^many p:Int^many q:Int^many -- ρ r:Bool^many)
+  locals { s p q }
+  { s 80 q prim + get 0 prim =
+    s 128 p 16 prim * prim + q prim + get 0 prim =
+    prim and };
+
+\ The highest-ranked player from rank r2 on who is unpaired and not yet met by
+\ p, or -1.
+: find-fresh
+  (forall ρ; ρ s:Seq Int^many p:Int^many r2:Int^many -- ρ q:Int^many)
+  locals { s p r2 }
+  { r2 s 66 get prim <
+    [ s p s 96 r2 prim + get fresh?
+      [ s 96 r2 prim + get ]
+      [ s p r2 1 prim + find-fresh ] if ]
+    [ -1 ] if };
+
+\ The highest-ranked unpaired player from rank r2 on (a rematch), or -1.
+: find-any
+  (forall ρ; ρ s:Seq Int^many r2:Int^many -- ρ q:Int^many)
+  locals { s r2 }
+  { r2 s 66 get prim <
+    [ s 80 s 96 r2 prim + get prim + get 0 prim =
+      [ s 96 r2 prim + get ]
+      [ s r2 1 prim + find-any ] if ]
+    [ -1 ] if };
+
+\ True when p is given white: p has had white fewer times than q, or as often
+\ and not (q's last game was black and p's was not). Equal counts with neither
+\ or both last on black go to p, the player taken first.
+: p-white?
+  (forall ρ; ρ s:Seq Int^many p:Int^many q:Int^many -- ρ r:Bool^many)
+  locals { s p q }
+  { s 16 p prim + get s 16 q prim + get prim <
+    [ true ]
+    [ s 16 p prim + get s 16 q prim + get prim >
+      [ false ]
+      [ s 32 q prim + get 2 prim =
+        s 32 p prim + get 2 prim = prim not
+        prim and
+        prim not ] if ] if };
+
+\ Records that p and q meet: counts a rematch, bumps the games table both
+\ ways and marks q paired.
+: mark-played
+  (forall ρ; ρ s:Seq Int^many p:Int^many q:Int^many -- ρ r:Seq Int^many)
+  locals { s p q }
+  { s 128 p 16 prim * prim + q prim + get 0 prim >
+    [ s 64 1 bump ]
+    [ s ] if
+    128 p 16 prim * prim + q prim + 1 bump
+    128 q 16 prim * prim + p prim + 1 bump
+    80 q prim + 1 prim seq-int.set };
+
+\ White w plays black b: reads the next result, scores it, updates colours.
+: play-game
+  (forall ρ; ρ s:Seq Int^many w:Int^many b:Int^many -- ρ r:Seq Int^many)
+  locals { s w b }
+  { s 400 s 65 get prim + get
+    locals { res }
+    { s 65 1 bump
+      16 w prim + 1 bump
+      32 w prim + 1 prim seq-int.set
+      32 b prim + 2 prim seq-int.set
+      w 2 res prim - bump
+      b res bump } };
+
+\ p and q are paired: records the meeting, gives out colours, plays.
+: play
+  (forall ρ; ρ s:Seq Int^many p:Int^many q:Int^many -- ρ r:Seq Int^many)
+  locals { s p q }
+  { s p q mark-played
+    locals { s1 }
+    { s1 p q p-white?
+      [ s1 p q ]
+      [ s1 q p ] if
+      play-game } };
+
+\ Pairs the player at rank r, unless already paired.
+: pair-one
+  (forall ρ; ρ s:Seq Int^many r:Int^many p:Int^many -- ρ out:Seq Int^many)
+  locals { s r p }
+  { s 80 p prim + get 0 prim =
+    [ s 80 p prim + 1 prim seq-int.set
+      locals { s1 }
+      { s1 p r 1 prim + find-fresh
+        locals { q0 }
+        { q0 0 prim <
+          [ s1 r 1 prim + find-any ]
+          [ q0 ] if
+          locals { q }
+          { s1 p q play } } } ]
+    [ s ] if };
+
+\ Pairs every player from rank r on, highest rank first.
+: pair-loop
+  (forall ρ; ρ s:Seq Int^many r:Int^many -- ρ out:Seq Int^many)
+  locals { s r }
+  { r s 66 get prim <
+    [ s r s 96 r prim + get pair-one
+      r 1 prim + pair-loop ]
+    [ s ] if };
+
+\ ---------------------------------------------------------------- rounds
+
+\ One round: rank, give the bye if the count is odd, pair and play.
+: do-round
+  (forall ρ; ρ s:Seq Int^many -- ρ r:Seq Int^many)
+  locals { s }
+  { s 0 s 66 get slice
+    s 112 s 66 get slice
+    0 prim seq-int.empty mk-keys
+    96 0 s order-of
+    0 clear-paired
+    locals { s1 }
+    { s1 66 get 2 prim mod 1 prim =
+      [ s1 s1 66 get 1 prim - bye-scan ]
+      [ s1 ] if
+      0 pair-loop } };
+
+: rounds-loop
+  (forall ρ; ρ s:Seq Int^many k:Int^many -- ρ r:Seq Int^many)
+  locals { s k }
+  { k s 67 get prim <
+    [ s do-round k 1 prim + rounds-loop ]
+    [ s ] if };
+
+\ ------------------------------------------------------------- final tables
+
+\ Sum over players q from q on of (games p played with q) * (score of q).
+: buch-of
+  (forall ρ; ρ s:Seq Int^many p:Int^many q:Int^many acc:Int^many -- ρ r:Int^many)
+  locals { s p q acc }
+  { q s 66 get prim <
+    [ s p q 1 prim +
+      acc s 128 p 16 prim * prim + q prim + get s q get prim * prim +
+      buch-of ]
+    [ acc ] if };
+
+\ Appends the Buchholz score of each player from p on.
+: buch-seq
+  (forall ρ; ρ s:Seq Int^many p:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { s p out }
+  { p s 66 get prim <
+    [ s p 1 prim + out s p 0 0 buch-of prim seq-int.push buch-seq ]
+    [ out ] if };
+
+\ Appends score * 256 + Buchholz for each player from p on.
+: major-seq
+  (forall ρ; ρ sc:Seq Int^many bh:Seq Int^many p:Int^many out:Seq Int^many -- ρ r:Seq Int^many)
+  locals { sc bh p out }
+  { p sc prim seq-int.len prim <
+    [ sc bh p 1 prim +
+      out sc p prim seq-int.at 256 prim * bh p prim seq-int.at prim + prim seq-int.push
+      major-seq ]
+    [ out ] if };
+
+\ Inputs: ratings, number of rounds, results.
+\ Outputs: scores, Buchholz scores, ranking, times white, rematches.
+: main
+  (forall ρ; ρ ratings:Seq Int^many rounds:Int^many results:Seq Int^many -- ρ scores:Seq Int^many buch:Seq Int^many ranking:Seq Int^many whites:Seq Int^many rem:Int^many)
+  locals { ratings rounds results }
+  { prim seq-int.empty 448 zeros-to
+    66 ratings prim seq-int.len prim seq-int.set
+    67 rounds prim seq-int.set
+    ratings 112 0 copy-into
+    results 400 0 copy-into
+    0 rounds-loop
+    locals { s }
+    { s 0 s 66 get slice
+      s 0 prim seq-int.empty buch-seq
+      locals { sc bh }
+      { sc
+        bh
+        sc bh 0 prim seq-int.empty major-seq
+        s 112 s 66 get slice
+        0 prim seq-int.empty mk-keys
+        0 0 s 66 get zeros order-of
+        s 16 s 66 get slice
+        s 64 get } } };
