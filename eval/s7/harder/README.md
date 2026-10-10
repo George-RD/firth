@@ -673,16 +673,17 @@ A round is asked once: `request-ROUND.json` is created before the request
 is sent, and a round whose request file exists is refused. Only a complete
 reply is kept as an answer. A reply cut off at the length limit
 (`done_reason` `length`, exit 2) is the model's answer running too long, so
-the round is scored as a failed answer, not replaced (decided on 10 October
-2026, `todo.s7-harder-task-tier`); its text is kept as `cut-ROUND.md`.
-Everything else that is not a complete answer voids the sample (exit 3): a
-request that failed (a network error, which may come after the server
-answered, a body cut short or not UTF-8, or any HTTP status but 200), a reply that
-is not a chat reply, a message not in the `assistant` role, another model's
-name, `done` not `true`, or any other `done_reason`. A failed request is
-never sent again, so no answer is ever asked for twice. The whole reply, the
-model's `thinking` included, is
-kept in `response-ROUND.json` and is never scored. `deepseek.py
+the round is a failed answer, not replaced (decided on 10 October 2026,
+`todo.s7-harder-task-tier`): nothing in it is scored, so in round 1 every
+task counts as unanswered. Its text is kept as `cut-ROUND.md`. Everything
+else that is not a complete answer voids the sample (exit 3): a request
+that failed (a network error, which may come after the server answered, a
+body cut short or not UTF-8, or any HTTP status but 200), a reply that is
+not a chat reply, a message not in the `assistant` role, text that cannot
+be written as UTF-8, another model's name, `done` not `true`, or any other
+`done_reason`. A failed request is never sent again, so no answer is ever
+asked for twice. The whole reply, the model's `thinking` included, is kept
+in `response-ROUND.json` and is never scored. `deepseek.py
 --self-test` checks this against planted replies with no network, and
 `test_harder.py` runs it.
 
@@ -690,19 +691,19 @@ kept in `response-ROUND.json` and is never scored. `deepseek.py
 sample through both rounds with `tier.py`'s steps, as a Sonnet sample is run
 by hand: round 1 is asked, extracted and scored; `tier.py repair`'s feedback
 (nothing from a hidden test) is sent as round 2 when any task has no answer
-or an answer failed its example; round 2's answers replace round 1's for the tasks the feedback
-listed, and the whole set is scored again. Round 2's answer to a task the
-feedback did not list is not taken, and `outcome.json` names it. Nothing in a
-cut-off reply is taken, whatever it holds: a round-1 cut-off scores every
-task as unanswered, and a round-2 cut-off keeps round 1's results without
-scoring again. After a round-1 cut-off the feedback
-says the reply was cut off and lists every task, and round 2 resends the cut
-text as the model's turn. A void round voids the sample: nothing is scored,
-and `outcome.json` records the round and why. A run that stops part way
-leaves `outcome.json` with status `crashed` and the error, never read as a
-finished sample. `outcome.json` also records
-each round's verdict and which tasks passed in round 1 and within two
-rounds. `test_harder.py` runs it against planted replies with a stand-in
+or an answer failed its example; round 2's answers replace round 1's for
+the tasks the feedback listed, and the whole set is scored again. Round 2's
+answer to a task the feedback did not list is not taken, and `outcome.json`
+names it. Nothing in a cut-off reply is taken, whatever it holds: a round-1
+cut-off scores every task as unanswered, and a round-2 cut-off keeps round
+1's results without scoring again. After a round-1 cut-off the feedback
+says the reply was cut off and lists every task, and round 2 resends the
+cut text as the model's turn. A void round voids the sample: nothing is
+scored, and `outcome.json` records the round and why. A run that stops part
+way leaves `outcome.json` with status `crashed` and the error, never read
+as a finished sample. `outcome.json` also records each round's verdict
+and which tasks passed in round 1 and within two rounds. `test_harder.py`
+runs it against planted replies with a stand-in
 scorer, and once end to end with `tier.py`'s scorer on the first
 calibration pool's Firth references.
 
