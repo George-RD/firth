@@ -1397,6 +1397,7 @@ def take_rule() -> None:
     Expected values are written here, not taken from `tier`."""
     import contextlib
     import io
+    import shutil
     import tempfile
     import audit
     import audit_subagent
@@ -1455,13 +1456,29 @@ def take_rule() -> None:
         (kept / "results-1.json").unlink()
         check(any("results-1.json: missing" in m for m in audit.solutions_mismatch(kept, tasks)),
               "the audit flags round 2 when round 1's results are not kept")
-    # The calibration pools' round-2 records took no unlisted answer, so the
-    # rule leaves them as they were scored.
-    for run, name in (("2026-10-02-calibration/sonnet-firth-1", "calibration"),
-                      ("2026-10-02-calibration2/sonnet-firth-3", "calibration2"),
-                      ("2026-10-10-calibration3/sonnet-firth-3", "calibration3")):
-        check(audit.solutions_mismatch(HERE / "runs" / run, list(SETS[name])) == [],
-              f"{run}'s kept solutions are what the rule takes")
+    # Every calibration sample, both languages and both rounds, kept the
+    # solutions the rule takes: the round-2 records took no unlisted answer, so
+    # the rule leaves all 18 as they were scored. The count guards against a
+    # glob that finds nothing; a planted change to a kept round-1 Python
+    # solution shows the walk reads those samples too.
+    pools = (("2026-10-02-calibration", "calibration"), ("2026-10-02-calibration2", "calibration2"),
+             ("2026-10-10-calibration3", "calibration3"))
+    samples = [(d, name) for run, name in pools for d in sorted((HERE / "runs" / run).glob("sonnet-*"))]
+    check(len(samples) == 18, f"18 calibration samples are kept ({len(samples)} found)")
+    for d, name in samples:
+        check(audit.solutions_mismatch(d, list(SETS[name])) == [],
+              f"{d.parent.name}/{d.name}'s kept solutions are what the rule takes")
+    with tempfile.TemporaryDirectory() as tmp:
+        src = HERE / "runs" / "2026-10-02-calibration" / "sonnet-python-1"
+        kept = Path(tmp) / src.name
+        shutil.copytree(src, kept)
+        sols = json.loads((kept / "solutions-1.json").read_text())
+        first = sorted(sols)[0]
+        sols[first] += "# planted\n"
+        (kept / "solutions-1.json").write_text(json.dumps(sols))
+        flagged = audit.solutions_mismatch(kept, list(SETS["calibration"]))
+        check(len(flagged) == 1 and f"tasks {first}" in flagged[0],
+              "planted: a kept round-1 Python solution that is not the answer is flagged")
 
 
 def deepseek_sample_scored() -> None:
