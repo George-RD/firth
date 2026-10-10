@@ -692,12 +692,15 @@ by hand: round 1 is asked, extracted and scored; `tier.py repair`'s feedback
 (nothing from a hidden test) is sent as round 2 when any task has no answer
 or an answer failed its example; round 2's answers replace round 1's for the tasks the feedback
 listed, and the whole set is scored again. Round 2's answer to a task the
-feedback did not list is not taken, and `outcome.json` names it. A cut-off
-round scores nothing, whatever it holds (a round-2 cut-off keeps round 1's
-results without scoring again); after a round-1 cut-off the feedback
+feedback did not list is not taken, and `outcome.json` names it. Nothing in a
+cut-off reply is taken, whatever it holds: a round-1 cut-off scores every
+task as unanswered, and a round-2 cut-off keeps round 1's results without
+scoring again. After a round-1 cut-off the feedback
 says the reply was cut off and lists every task, and round 2 resends the cut
 text as the model's turn. A void round voids the sample: nothing is scored,
-and `outcome.json` records the round and why. `outcome.json` also records
+and `outcome.json` records the round and why. A run that stops part way
+leaves `outcome.json` with status `crashed` and the error, never read as a
+finished sample. `outcome.json` also records
 each round's verdict and which tasks passed in round 1 and within two
 rounds. `test_harder.py` runs it against planted replies with a stand-in
 scorer, and once end to end with `tier.py`'s scorer on the first

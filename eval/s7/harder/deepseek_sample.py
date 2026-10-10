@@ -24,7 +24,10 @@ feedback says so and lists every task, and round 2 resends the cut text as
 the model's turn (`cut-1.md`). A void round (exit 3: the request failed or the
 reply was not a complete answer from the model) voids the whole sample, which
 is replaced as the pre-registration says; nothing is scored and `outcome.json`
-records the round and why.
+records the round and why. A run that stops part way (an error, or a guard in
+`deepseek.py` or `tier.py` refusing) leaves `outcome.json` with status
+`crashed` and the error, so a half-finished directory is never read as a
+finished sample; the directory is not reused.
 
 `outcome.json` records each round's verdict, which tasks passed in round 1
 and within two rounds, and the totals. Exit 0 for a scored sample, 3 for a
@@ -64,14 +67,23 @@ def sample(prompt: Path, d: Path, set_name: str, lang: str, send=deepseek.post, 
     tasks = list(tier.SETS[set_name])
     score = score or (lambda sols: tier.scored(sols, lang, tasks, jobs=4))
     out: dict = {"set": set_name, "lang": lang, "model": deepseek.MODEL, "rounds": []}
-    with open(d / "outcome.json", "x"):  # one sample per directory
-        pass
+    with open(d / "outcome.json", "x") as f:  # one sample per directory
+        f.write(json.dumps({**out, "status": "running"}, indent=1) + "\n")
 
     def finish(status: str) -> dict:
         out["status"] = status
         deepseek.write(d / "outcome.json", json.dumps(out, indent=1) + "\n")
         return out
 
+    try:
+        return rounds(prompt, d, tasks, lang, send, score, out, finish)
+    except BaseException as e:  # a run that stops part way is recorded as such, never as finished
+        out["error"] = repr(e)
+        finish("crashed")
+        raise
+
+
+def rounds(prompt, d, tasks, lang, send, score, out, finish) -> dict:
     solutions: dict[str, str] = {}
     open_tasks = {t.id for t in tasks}
     for rnd in (1, 2):

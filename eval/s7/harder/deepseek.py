@@ -32,8 +32,9 @@ Anything else that is not a complete answer exits 3 and voids the sample: a
 request that failed (a network error, which may come after the server
 answered, a body cut short or not UTF-8, or any HTTP status other than 200), a
 reply that is not a chat reply (not JSON, or no string `message.content`), a
-message whose role is not `assistant`, another model's name, `done` not
-`true`, or a `done_reason` other than `stop` or `length`. Either way the round records what came back and is
+message whose role is not `assistant`, text that cannot be written as UTF-8
+(a lone surrogate), another model's name, `done` not `true`, or a
+`done_reason` other than `stop` or `length`. Either way the round records what came back and is
 never asked again, so no answer is ever asked for twice.
 
 `python3 deepseek.py --self-test` runs the driver against planted replies, with no
@@ -111,7 +112,7 @@ def run(prompt: Path, d: Path, rnd: int, send=post) -> int:
         status, reply = send(body)
     except (OSError, ValueError, http.client.HTTPException) as e:  # the server may have answered: never sent again
         record["outcome"] = {"error": repr(e)}
-        return done("void", "the request failed", 3)
+        return done("void", f"the request failed ({e!r})", 3)
     record["outcome"] = {"status": status}
     write(d / f"response-{rnd}.json", reply)
     if status != 200:
@@ -126,6 +127,10 @@ def run(prompt: Path, d: Path, rnd: int, send=post) -> int:
     if model != MODEL or finished is not True or role != "assistant" or not isinstance(content, str):
         return done("void", f"not a complete answer from {MODEL}: model {model!r}, "
                             f"done {finished!r}, role {role!r}", 3)
+    try:
+        content.encode("utf-8")
+    except UnicodeEncodeError as e:  # a lone surrogate from a JSON escape cannot be kept byte for byte
+        return done("void", f"the reply's text is not UTF-8 ({e!r})", 3)
     if reason == "length":
         # Scored as a failed answer; the cut text is kept, apart from any
         # answer, so a feedback round can resend it as the model's turn.
@@ -204,6 +209,8 @@ def self_test() -> None:
                                              "done_reason": "stop"})), 3),
                           ((200, reply(None)), 3),                               # null content
                           ((200, reply("x", role="user")), 3),                   # not the model's turn
+                          ((200, reply("a\ud800b")), 3),                         # a lone surrogate
+                          ((200, reply("a\ud800b", reason="length")), 3),        # also when cut off
                           (UnicodeDecodeError("utf-8", b"\xff", 0, 1, "bad"), 3),  # body not UTF-8
                           ((200, "[]"), 3),                                      # not an object
                           (OSError("reset"), 3),                                 # no reply seen

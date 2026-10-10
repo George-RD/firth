@@ -1299,6 +1299,7 @@ def deepseek_sample_driver() -> None:
                                 "message": {"role": "assistant", "content": content}})
 
     good = {t: f"good {t}" for t in tasks}
+    base = tempfile.TemporaryDirectory()
 
     def go(*outcomes) -> tuple[dict, Path, list]:
         sent = []
@@ -1309,7 +1310,7 @@ def deepseek_sample_driver() -> None:
             if isinstance(o, Exception):
                 raise o
             return o
-        d = Path(tempfile.mkdtemp())
+        d = Path(tempfile.mkdtemp(dir=base.name))
         scored_calls.clear()
         (d / "prompt.md").write_text("Answer the tasks.")
         with contextlib.redirect_stderr(io.StringIO()):
@@ -1348,10 +1349,11 @@ def deepseek_sample_driver() -> None:
     # A void round voids the sample, and nothing is scored after it.
     out, d, sent = go((502, "bad gateway"))
     check(out["status"] == "void" and out["void"]["round"] == 1 and not (d / "results-1.json").exists()
-          and "passed" not in out, "a void round 1 voids the sample with nothing scored")
+          and "passed" not in out and scored_calls == [], "a void round 1 voids the sample with nothing scored")
     out, d, sent = go(reply(answer({**good, first: "bad"})), OSError("reset"))
-    check(out["status"] == "void" and out["void"]["round"] == 2 and "passed" not in out,
-          "a void round 2 voids the sample")
+    check(out["status"] == "void" and out["void"]["round"] == 2 and "passed" not in out
+          and len(scored_calls) == 1 and not (d / "results-2.json").exists(),
+          "a void round 2 voids the sample, with only round 1 scored")
     check(json.loads((d / "outcome.json").read_text())["status"] == "void", "outcome.json records the void")
     try:
         with contextlib.redirect_stderr(io.StringIO()):
@@ -1360,6 +1362,22 @@ def deepseek_sample_driver() -> None:
     except FileExistsError:
         again = False
     check(not again, "a second sample in the same directory is refused")
+    # A run that stops part way says so in outcome.json, and the error is not swallowed.
+    d = Path(tempfile.mkdtemp(dir=base.name))
+    (d / "prompt.md").write_text("Answer the tasks.")
+
+    def refusing_score(sols: dict) -> dict:
+        raise SystemExit("the Firth tree changed while scoring")
+    try:
+        with contextlib.redirect_stderr(io.StringIO()):
+            ds.sample(d / "prompt.md", d, "calibration", "firth", lambda b: reply(answer(good)), refusing_score)
+        stopped = False
+    except SystemExit:
+        stopped = True
+    crashed = json.loads((d / "outcome.json").read_text())
+    check(stopped and crashed["status"] == "crashed" and "tree changed" in crashed["error"]
+          and "passed" not in crashed, "a run that stops part way is recorded as crashed, not finished")
+    base.cleanup()
 
 
 def deepseek_sample_scored() -> None:
