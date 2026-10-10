@@ -128,7 +128,13 @@ toolchain produces:
   unless every allocator word has the same body digest and type in both
   clients' images, so the clients run the words `run_cases.py`, the cost
   bound and the Lean proofs are about. The mutant must fail this too, with
-  `allocate-one` the one word that differs.
+  `allocate-one` the one word that differs. The proofs themselves carry over
+  by a theorem, not by this check: `src/proofs/Inventory/Imported.lean`
+  restates both allocator contracts for the all-or-nothing client's export,
+  whose dictionary extends the allocator's (`WordContract.Holds.extend`), so
+  its 10 allocator words are `contract_verified` in `records.json` too. The
+  partial client is not in `src/exports/manifest.json`, so nothing is
+  recorded for it.
 - **Regression.** Each of the 30 cases that reach Firth runs through both
   clients on the VM and the reference interpreter, 60 runs in all. Where the
   case's policy is the client's, the result must equal the corpus's fixed

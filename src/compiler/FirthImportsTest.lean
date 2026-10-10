@@ -280,6 +280,24 @@ def main : IO Unit := do
         pure true
       catch _ => pure false
     if leaked then fail "loader: read a file through a link out of the source root"
+    -- The same through a linked directory, and for the root file itself.
+    let dirLink ← IO.Process.output { cmd := "ln", args := #["-s", outside.toString,
+      (scratch / "elsewhere").toString] }
+    if dirLink.exitCode != 0 then fail s!"loader: ln failed {dirLink.stderr}"
+    IO.FS.writeFile (scratch / "via-dir.firth") "import \"elsewhere/secret.firth\"; : via ( -- ) secret;"
+    let refuses (path : String) : IO Bool := do
+      try
+        let _ ← Firth.Agent.Sources.load scratch.toString path
+        pure false
+      catch _ => pure true
+    if !(← refuses "via-dir.firth") then
+      fail "loader: read a file through a linked directory out of the source root"
+    if !(← refuses "elsewhere/secret.firth") then
+      fail "loader: read a root file through a link out of the source root"
+    -- A file that is not UTF-8 is refused rather than decoded.
+    IO.FS.writeBinFile (scratch / "latin.firth") (ByteArray.mk #[0x3a, 0x20, 0xe9, 0x20, 0x3b])
+    IO.FS.writeFile (scratch / "reads-latin.firth") "import \"latin.firth\"; : r ( -- ) ;"
+    if !(← refuses "reads-latin.firth") then fail "loader: read a file that is not UTF-8"
   finally
     IO.FS.removeDirAll scratch
     IO.FS.removeDirAll outside

@@ -139,10 +139,18 @@ Target names are still the compiler's mangling of canonical keys, so imports
 add nothing to image naming, and the image is one flat dictionary: the VM
 sees no difference between a word written in the root file and one imported.
 Because neither the key nor the body of an imported word depends on who
-imports it, its body digest is the same in every program that contains it.
-A Lean proof record bound to that digest (`src/proofs/records.json`) therefore
-covers the word in an importing program's image unchanged; a record covers
-words by digest, never by file. `firthExportLean` exports a source with
+imports it, its body digest is the same in every program that contains it
+(tested in `FirthImportsTest`). An importing program's dictionary therefore
+extends the imported file's: it gives every word of that file the same entry.
+`WordContract.Holds.extend` (`Firth/ProgramLogic.lean`) proves that a contract
+holding under one dictionary holds under any dictionary that extends it, since
+a run only consults the dictionary to unfold a word. A contract proved about
+an imported file thus carries to an importing program by restating it there,
+with no new proof about the words: `proofs/Inventory/Imported.lean` does this
+for the allocator's two contracts in `all-or-nothing.firth`, and
+`src/proofs/records.json` records them against that export. The restatement is
+per importing export; nothing records a contract for an importer
+automatically. `firthExportLean` exports a source with
 imports as the whole dictionary the reference runner builds for it, loading
 imports with the same loader; `sourceDigest` stays the root text's digest and
 an export with imports also lists each imported file's digest.
