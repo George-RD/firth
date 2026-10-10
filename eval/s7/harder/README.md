@@ -668,13 +668,16 @@ byte for byte, as `answer-ROUND.md`. In a feedback round it sends the
 conversation so far again, with `repair-<n>.md` as the next user turn: the
 same files a Sonnet author reads and writes, scored by the same `tier.py`.
 A round is asked once: `request-ROUND.json` is created before the request
-is sent, and a round whose request file exists is refused. A reply that is
-not complete (a `done_reason` other than `stop`, or another model's name)
-is never kept as an answer, and a request that failed (a network error,
-which may come after the server answered, or any HTTP status but 200) is
-never sent again; either way the round writes no answer, and the sample is
-void as the pre-registration will say. So no answer is ever asked for
-twice. The whole reply, the model's `thinking` included, is
+is sent, and a round whose request file exists is refused. Only a complete
+reply is kept as an answer. A reply cut off at the length limit
+(`done_reason` `length`, exit 2) is the model's answer running too long, so
+the round is scored as a failed answer, not replaced (coordinator's decision,
+10 October 2026, for the scored run's pre-registration). Everything else that
+is not a complete answer voids the sample (exit 3): a request that failed (a
+network error, which may come after the server answered, or any HTTP status
+but 200), a reply that is not a chat reply, another model's name, or any
+other `done_reason`. A failed request is never sent again, so no answer is
+ever asked for twice. The whole reply, the model's `thinking` included, is
 kept in `response-ROUND.json` and is never scored. `deepseek.py
 --self-test` checks this against planted replies with no network, and
 `test_harder.py` runs it.
@@ -690,7 +693,10 @@ a codeword first, then the three MVP documents twice (91,647 characters,
 against 63,949 for the third pool's Firth prompt,
 `runs/2026-10-10-calibration3/prompt-firth.md`), and asks for the codeword last.
 On 10 October 2026 the reply was the codeword, with `done_reason` `stop`
-and 22,632 prompt tokens (`probe.out`). That is one probe, not a bound on
+and 22,632 prompt tokens (`probe.out`). The probe exits 1 unless the
+reply is the codeword, complete, from the scored model; `test_harder.py`
+plants a wrong reply, a cut-off, another model, a 502, a non-JSON body and a
+network error, and each fails it. That is one probe, not a bound on
 the prompt length the server keeps; each scored round's
 `prompt_eval_count` is in its `response-ROUND.json`. No task has been sent
 to DeepSeek.

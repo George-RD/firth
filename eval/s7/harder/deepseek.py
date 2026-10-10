@@ -10,7 +10,7 @@ the same prompt text as the user turn and keeps the reply's text, untouched, as
 (prompt, answer 1, ...) with `repair-<n-1>.md` as the next user turn, the same
 text a Sonnet author reads.
 
-    deepseek.py PROMPT DIR ROUND
+    python3 deepseek.py PROMPT DIR ROUND
 
 writes into DIR (which must not already hold `request-ROUND.json`):
 
@@ -22,15 +22,17 @@ writes into DIR (which must not already hold `request-ROUND.json`):
 
 A round is asked exactly once. `request-ROUND.json` is created before the
 request is sent, and a round whose request file exists is refused, whatever
-happened to it. A reply that is not a complete answer is never kept as one:
-if `done_reason` is not `stop` (for example `length`, a cut-off) or the reply
-names another model, the round writes no answer, records the reply, and exits
-2. A request that failed (a network error, which may come after the server
-answered, or any HTTP status other than 200) is never sent again; the round
-records it and exits 3. Either way the sample is void as the
-pre-registration says, so no answer is ever asked for twice.
+happened to it. Only a complete reply is kept as an answer. A reply cut off
+at the length limit (`done_reason` `length`) writes no answer and exits 2:
+the model answered, and the round is scored as a failed answer. Anything else
+that is not a complete answer exits 3 and voids the sample: a request that
+failed (a network error, which may come after the server answered, or any
+HTTP status other than 200), a reply that is not a chat reply (not JSON, or
+no string `message.content`), another model's name, or a `done_reason` other
+than `stop` or `length`. Either way the round records what came back and is
+never asked again, so no answer is ever asked for twice.
 
-`deepseek.py --self-test` runs the driver against planted replies, with no
+`python3 deepseek.py --self-test` runs the driver against planted replies, with no
 network.
 """
 from __future__ import annotations
@@ -57,10 +59,13 @@ def post(body: dict) -> tuple[int, str]:
 
 
 def messages(prompt: Path, d: Path, rnd: int) -> list[dict]:
-    out = [{"role": "user", "content": prompt.read_text()}]
+    def text(path: Path) -> str:  # byte for byte: no newline translation
+        with path.open(encoding="utf-8", newline="") as f:
+            return f.read()
+    out = [{"role": "user", "content": text(prompt)}]
     for k in range(1, rnd):
-        out.append({"role": "assistant", "content": (d / f"answer-{k}.md").read_text()})
-        out.append({"role": "user", "content": (d / f"repair-{k}.md").read_text()})
+        out.append({"role": "assistant", "content": text(d / f"answer-{k}.md")})
+        out.append({"role": "user", "content": text(d / f"repair-{k}.md")})
     return out
 
 
@@ -86,12 +91,24 @@ def run(prompt: Path, d: Path, rnd: int, send=post) -> int:
     if status != 200:
         print(f"request failed ({record['outcome']}); the round is void", file=sys.stderr)
         return 3
-    r = json.loads(reply)
-    if r.get("model") != MODEL or not r.get("done") or r.get("done_reason") != "stop":
-        print(f"not a complete answer: model {r.get('model')!r}, done {r.get('done')!r}, "
-              f"done_reason {r.get('done_reason')!r}; no answer kept", file=sys.stderr)
+    try:
+        r = json.loads(reply)
+        content = r["message"]["content"]
+        model, done, reason = r.get("model"), r.get("done"), r.get("done_reason")
+    except (ValueError, KeyError, TypeError, AttributeError) as e:
+        print(f"not a chat reply ({e!r}); the round is void", file=sys.stderr)
+        return 3
+    if model != MODEL or done is not True or not isinstance(content, str):
+        print(f"not a complete answer from {MODEL}: model {model!r}, done {done!r}; "
+              "the round is void", file=sys.stderr)
+        return 3
+    if reason == "length":
+        print("the reply was cut off at the length limit; no answer kept", file=sys.stderr)
         return 2
-    (d / f"answer-{rnd}.md").write_text(r["message"]["content"])
+    if reason != "stop":
+        print(f"done_reason {reason!r}; the round is void", file=sys.stderr)
+        return 3
+    (d / f"answer-{rnd}.md").write_text(content, encoding="utf-8", newline="")
     return 0
 
 
@@ -122,9 +139,9 @@ def self_test() -> None:
         p = d / "prompt.md"
         p.write_text("Write `main`.")
         # A complete reply is kept byte for byte; thinking is not in the answer.
-        send, sent = scripted((200, reply("```firth\nmain\n```\n")))
+        send, sent = scripted((200, reply("```firth\r\nmain\n```\n")))
         assert run(p, d, 1, send) == 0
-        assert (d / "answer-1.md").read_text() == "```firth\nmain\n```\n"
+        assert (d / "answer-1.md").read_bytes() == b"```firth\r\nmain\n```\n"
         assert sent[0]["messages"] == [{"role": "user", "content": "Write `main`."}]
         assert json.loads((d / "request-1.json").read_text())["outcome"] == {"status": 200}
         # A round is asked once.
@@ -135,8 +152,16 @@ def self_test() -> None:
         assert run(p, d, 2, send) == 0 and len(sent) == 1
         assert [m["role"] for m in sent[0]["messages"]] == ["user", "assistant", "user"]
         assert sent[0]["messages"][2]["content"] == "Feedback round 1 of 1: fix it."
+        # The earlier answer is resent as it came, carriage return included.
+        assert sent[0]["messages"][1]["content"] == "```firth\r\nmain\n```\n"
     for planted, code in (((200, reply("half an answ", reason="length")), 2),   # a cut-off reply
-                          ((200, reply("x", model="deepseek-v4-pro:0813")), 2),  # another model
+                          ((200, reply("x", model="deepseek-v4-pro:0813")), 3),  # another model
+                          ((200, reply("x", reason="load")), 3),                 # not stop or length
+                          ((200, "<html>bad gateway</html>"), 3),                # not JSON
+                          ((200, json.dumps({"model": MODEL, "done": True,       # no message
+                                             "done_reason": "stop"})), 3),
+                          ((200, reply(None)), 3),                               # null content
+                          ((200, "[]"), 3),                                      # not an object
                           (OSError("reset"), 3),                                 # no reply seen
                           ((502, "bad gateway"), 3),                             # a 5xx
                           ((400, "bad request"), 3)):                            # a 4xx

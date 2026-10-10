@@ -109,13 +109,15 @@ until the tasks get harder.
   `OLLAMA_API_KEY` for ollama.com, so it can be reached without new
   credentials. No completion request was sent. Whether to spend that account on it is the maintainer's call.
 - DeepSeek driver: `eval/s7/harder/deepseek.py` sends a prompt and keeps the
-  reply as the answer file, asks each round once, and voids a cut-off or
-  other-model reply and a failed request; its self-test runs in
+  reply as the answer file and asks each round once; a reply cut off at the
+  length limit is a failed answer, and a failed request, malformed reply or
+  other-model reply voids the sample; its self-test runs in
   `test_harder.py` (README, "DeepSeek"). A probe on 10 October 2026
   (`runs/2026-10-10-deepseek-probe/`) showed a 91,647-character prompt read
   whole; no task has been sent. The pre-registration must state that a
-  DeepSeek author sees only the prompt and feedback, while a Sonnet
-  author also sees its session's system prompt and `AGENTS.md`.
+  DeepSeek author sees the prompt and, on feedback rounds, its prior reply
+  and the feedback, while a Sonnet author also sees its session's system
+  prompt and `AGENTS.md`.
 
 ## Before any scored run (reviewer, #209)
 

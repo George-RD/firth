@@ -1222,14 +1222,44 @@ def regex_drafted_rerun() -> None:
 def deepseek_driver() -> None:
     """The DeepSeek driver's self-test, against planted replies with no
     network: a complete reply is kept byte for byte, a round is asked once,
-    and a cut-off reply, another model's reply or a failed request is not
-    kept, not sent again, and voids the round. "self-test ok" is printed only after
-    every assertion, so a self-test that checks nothing fails here."""
+    a cut-off reply is a failed answer (exit 2), and another model's reply, a
+    malformed reply or a failed request voids the round (exit 3); none is kept
+    or sent again. "self-test ok" is printed only after every assertion, so a
+    self-test that checks nothing fails here. Then the long-prompt probe, with
+    its one request planted: it passes only on the codeword, whole, from the
+    scored model."""
+    import contextlib
+    import importlib.util
+    import io
     import subprocess
     p = subprocess.run([sys.executable, str(HERE / "deepseek.py"), "--self-test"],
                        capture_output=True, text=True, timeout=120)
     ok = p.returncode == 0 and p.stdout.strip().splitlines()[-1:] == ["self-test ok"]
     check(ok, "deepseek.py's self-test passes" + ("" if ok else f": {(p.stdout + p.stderr).strip()[-300:]}"))
+    spec = importlib.util.spec_from_file_location(
+        "deepseek_probe", HERE / "runs" / "2026-10-10-deepseek-probe" / "probe.py")
+    probe = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(probe)
+    def answer(content, model="deepseek-v4.1-flash", reason="stop"):
+        return 200, json.dumps({"model": model, "message": {"content": content},
+                                "done": True, "done_reason": reason})
+    def probed(outcome):
+        def post(body):
+            if isinstance(outcome, Exception):
+                raise outcome
+            return outcome
+        saved, probe.deepseek.post = probe.deepseek.post, post
+        try:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                return probe.main()
+        finally:
+            probe.deepseek.post = saved
+    check(probed(answer("HELIOTROPE-47")) == 0, "the probe passes on the codeword")
+    # Planted: a probe that passes any of these would vouch for a cut prompt.
+    for planted in (answer("I don't know."), answer("HELIOTROPE-47", reason="length"),
+                    answer("HELIOTROPE-47", model="deepseek-v4-pro"), (502, "bad gateway"),
+                    (200, "<html></html>"), OSError("reset")):
+        check(probed(planted) == 1, f"planted: the probe fails on {planted!r}")
 
 
 def firth_mutant() -> None:
