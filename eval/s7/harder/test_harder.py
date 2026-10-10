@@ -1725,6 +1725,8 @@ def main() -> int:
         part = sys.argv[i + 1] if i + 1 < len(sys.argv) else ""
         if part not in PARTS:
             raise SystemExit(f"--only takes one of {', '.join(PARTS)}")
+        if part != "rest" and "--no-firth" in sys.argv:
+            raise SystemExit(f"--only {part} runs only Firth references; --no-firth would leave nothing")
         ci_matrix(ci_path())
         if FAILED:
             print(f"\n{len(FAILED)} failed")
