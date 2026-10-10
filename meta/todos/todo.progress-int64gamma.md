@@ -20,9 +20,10 @@ on a declared-faulting primitive" is not yet a theorem.
   non-faulting primitive), with no `sorry`, `admit`, `axiom` or
   `native_decide`.
 - A corollary `int64Gamma_progress` that applies `progress` with them.
-- The checked arithmetic (`+`, `-`, `*`, declared faulting by
+- The checked arithmetic (`+`, `-`, `*` and `div`, declared faulting by
   `int64Gamma_checked_faults`) is the only new exception, and the theorem's
-  statement shows it.
+  statement shows it. (`div` joined the checked set after this todo was
+  written.)
 
 ## Progress
 
@@ -32,10 +33,9 @@ on a declared-faulting primitive" is not yet a theorem.
   `adapterGamma_primitivesWellFormed` (every primitive's stack types are
   base types alone, and typing those reads only the shared literal types).
   `int64Gamma_faults_iff` states the exception: the faulting primitives are
-  the reference registry's plus the checked `+`, `-`, `*` and `div` (`div`
-  joined the checked set after this todo was written). The mutant
-  `int64GammaUnflagged`, which keeps the reference's `faults` flags on the
-  checked deltas, is proved not total (`int64GammaUnflagged_not_total`, at
+  the reference registry's plus the checked `+`, `-`, `*` and `div`. The
+  mutant `int64GammaUnflagged`, which keeps the reference's `faults` flags
+  on the checked deltas, is proved not total (`int64GammaUnflagged_not_total`, at
   `9223372036854775807 1 prim +`), so the result depends on those
   declarations.
 

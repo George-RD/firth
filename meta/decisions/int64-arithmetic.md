@@ -53,9 +53,10 @@ one change. The change is not made here.
   admits an out-of-range input can return it unchanged). The
   kernel's progress and preservation premises are proved for this registry
   (`int64Gamma_primitivesWellFormed` and `int64Gamma_progress` in
-  `src/interpreter/Firth/RegistryProgress.lean`), so a well-typed run under
-  it steps or stops at a primitive fault, and the faulting primitives are
-  the reference's plus the checked four (`int64Gamma_faults_iff`).
+  `src/interpreter/Firth/RegistryProgress.lean`), so under it a well-typed
+  configuration with program left steps or stops at a primitive fault, and
+  the faulting primitives are the reference's plus the checked four
+  (`int64Gamma_faults_iff`).
 - **How the gap is tested.** The differential harness classifies a run where
   the reference succeeds and the VM faults at the first primitive that leaves
   the range as `expected-portable-overflow` (`src/diffharness/README.md`). It
