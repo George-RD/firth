@@ -19,9 +19,10 @@ Deliver the portable arithmetic and comparisons required by allocation.
 
 ## Progress
 
-- 10 October 2026: audit against the criteria. Subtraction and the
-  comparisons `<=`, `>`, `>=` are Gamma primitives on every host
-  (`dec.comparison-primitives`); minimum is not, and each example defines its
+- 10 October 2026: audit against the criteria. Subtraction (since
+  #122; `runs_sub` in `interpreter/Firth/ProgramLogic.lean`) and the
+  comparisons `<=`, `>`, `>=` (`dec.comparison-primitives`) are Gamma
+  primitives on every host; minimum is not, and each example defines its
   own, so a shared `min`/`max` waits for multi-file imports
   (`todo.language-12-data-and-modules`). `dec.int64-arithmetic` (proposed)
   records the integer range, overflow and `MIN div -1` semantics and the two

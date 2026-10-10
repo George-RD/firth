@@ -49,7 +49,7 @@ one change. The change is not made here.
   proved run under it has no checked `+`, `-`, `*` or `div` result outside
   the range. It does not range-check literals or the starting stack, so a
   value from the input stays in range only where the contract's
-  precondition says so (the allocator's contract does; a contract that
+  precondition says so (the allocator's program checks its own inputs and its contract states the result; a contract that
   admits an out-of-range input can return it unchanged). The
   kernel's progress theorem is not yet proved for this registry.
 - **How the gap is tested.** The differential harness classifies a run where
