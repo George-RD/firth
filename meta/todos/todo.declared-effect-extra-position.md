@@ -62,4 +62,3 @@ others above. Each of these fails a test: the old wording restored (always
 "on top"); "on top" given where both placements fit; the kept-value check
 for "on top" taken from the wrong placement; a unique placement treated as
 several; and adjacent wholly extra runs not merged.
-
