@@ -119,9 +119,9 @@ hosts may disagree.
      requests, but the published evidence changes with it: the S5 row in
      `docs/roadmap.md` (the contract "assumes nothing about the stock or the
      quantities"), the claim text in `src/proofs/contracts.json` and the
-     regenerated proof records, the roadmap row under rule 1. Only after
-     those proofs pass does the `LenOverflowAt` exception leave the target
-     theorems.
+     regenerated proof records. The S5 row's text changes in a rule 1 PR.
+     Only after those proofs pass does the `LenOverflowAt` exception leave
+     the target theorems.
 3. **Make the VM unbounded.** This was rejected: it gives up the fixed-width
    target the cost model and the compiler proof assume, for no program that
    needs it.
