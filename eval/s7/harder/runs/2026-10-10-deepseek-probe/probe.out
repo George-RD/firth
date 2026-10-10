@@ -1,0 +1,6 @@
+prompt characters	91647
+HTTP status	200
+model	deepseek-v4.1-flash
+reply	HELIOTROPE-47
+done_reason	stop
+prompt_eval_count	22632

@@ -94,6 +94,7 @@ in and reads back.
 - `audit.py`: the MVP tier's transcript audit (`audit_subagent.py`), with
   this tier's feedback for the check that each `repair-<n>.md` is what the
   author was shown.
+- `deepseek.py`: the DeepSeek author's driver (below, "DeepSeek").
 - `test_harder.py`: hand-worked values for every task, both reference
   solutions on every case, the mutants, a check that every second- and
   third-pool input keeps to its description's bounds and every integer fits in an
@@ -615,7 +616,11 @@ hidden test is the record's costliest candidate. The most kernel steps on such a
 (`sokoban`), 209,279 (`checkers`), 98,097 (`regex`, `a*` ten times against
 strings of twelve `a`s), 108,057 (`swiss`), 179,655 (`warehouse`) and
 161,365 (`cache-sim`), all within a quarter of the 1,000,000-step budget.
-That is a measured figure over these inputs, not a bound. The first
+That is a measured figure over these inputs, not a bound. On a fresh
+build, a first run of `costliest.py` or `measure.py`, with several
+`firth_run.py` processes starting at once, has recorded `None False` or
+`exit 1` for inputs that finish when run again alone (reviewer, #229 and
+#231), so any such row is re-run on its own before it is trusted. The first
 Firth reference for `regex`, which kept sets of positions as `Seq Bool`,
 ran out of the budget on inputs within the drafted bounds (30 tokens, 10
 strings of 20 letters): `(a|b|c)*` three times then `.*` three times,
@@ -649,3 +654,43 @@ order from another. In `checkers`, taking a jumped piece off at once
 cannot be told apart from taking it off at the end of the capture, since
 a jump never lands on a square a jumped piece stood on; the rule that the
 moving piece's own square is empty during the capture is tested.
+
+## DeepSeek
+
+DeepSeek v4.1 Flash joins the scored tier only, not calibration, through
+ollama.com's chat API, billed to the project's ollama.com account
+(`todo.s7-harder-task-tier`). The environment's proxy adds the key, so no
+key is in the repository, the driver or what it records.
+
+DeepSeek has no tools, so `deepseek.py PROMPT DIR ROUND` is its hands. It
+sends the prompt file's text as the user turn and keeps the reply's text,
+byte for byte, as `answer-ROUND.md`. In a feedback round it sends the
+conversation so far again, with `repair-<n>.md` as the next user turn: the
+same files a Sonnet author reads and writes, scored by the same `tier.py`.
+A round is asked once: `request-ROUND.json` is created before the request
+is sent, and a round whose request file exists is refused. A reply that is
+not complete (a `done_reason` other than `stop`, or another model's name)
+is never kept as an answer, and a request that failed (a network error,
+which may come after the server answered, or any HTTP status but 200) is
+never sent again; either way the round writes no answer, and the sample is
+void as the pre-registration will say. So no answer is ever asked for
+twice. The whole reply, the model's `thinking` included, is
+kept in `response-ROUND.json` and is never scored. `deepseek.py
+--self-test` checks this against planted replies with no network, and
+`test_harder.py` runs it.
+
+A Sonnet author differs in what else it sees: it is a sub-agent, so its
+context also holds the session's system prompt and the repository's
+`AGENTS.md` (through `CLAUDE.md`), and it reads the prompt with a tool.
+DeepSeek sees only the prompt and, in round 2, its own answer and the
+feedback. The scored run's pre-registration states this difference.
+
+A long prompt is read whole: `runs/2026-10-10-deepseek-probe/probe.py` puts
+a codeword first, then the three MVP documents twice (91,647 characters,
+against 63,949 for the third pool's Firth prompt,
+`runs/2026-10-10-calibration3/prompt-firth.md`), and asks for the codeword last.
+On 10 October 2026 the reply was the codeword, with `done_reason` `stop`
+and 22,632 prompt tokens (`probe.out`). That is one probe, not a bound on
+the prompt length the server keeps; each scored round's
+`prompt_eval_count` is in its `response-ROUND.json`. No task has been sent
+to DeepSeek.

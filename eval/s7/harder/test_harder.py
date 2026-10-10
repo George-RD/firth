@@ -1084,10 +1084,12 @@ DRAFTED_EXPECTED = {
     # `a*` fifteen times finishes; `(a|b|c)*` three times then `.*` three
     # times runs out of steps; each against 10 strings of 20 `a`s, and of
     # `a`, `b` and `c`.
-    "a*x15 on a": ([0, 27] * 15, "a", "success"),
-    "a*x15 on abc": ([0, 27] * 15, "abc", "success"),
-    "(a|b|c)*x3 .*x3 on a": ([31, 0, 30, 1, 30, 2, 32, 27] * 3 + [26, 27] * 3, "a", "fuel-exhausted"),
-    "(a|b|c)*x3 .*x3 on abc": ([31, 0, 30, 1, 30, 2, 32, 27] * 3 + [26, 27] * 3, "abc", "fuel-exhausted"),
+    # The README gives the finished runs' kernel steps (up to 395,604);
+    # a run that ran out has no count.
+    "a*x15 on a": ([0, 27] * 15, "a", "success", "395604"),
+    "a*x15 on abc": ([0, 27] * 15, "abc", "success", "286716"),
+    "(a|b|c)*x3 .*x3 on a": ([31, 0, 30, 1, 30, 2, 32, 27] * 3 + [26, 27] * 3, "a", "fuel-exhausted", "None"),
+    "(a|b|c)*x3 .*x3 on abc": ([31, 0, 30, 1, 30, 2, 32, 27] * 3 + [26, 27] * 3, "abc", "fuel-exhausted", "None"),
 }
 
 
@@ -1111,7 +1113,7 @@ def drafted_problems(record: str, drafted: list[tuple[str, tuple]]) -> list[str]
         problems.append("the drafted inputs are not the ones the README names")
     for name, (pattern, lens, chars) in drafted:
         if name in DRAFTED_EXPECTED:
-            pat, alphabet, _ = DRAFTED_EXPECTED[name]
+            pat, alphabet, _, _ = DRAFTED_EXPECTED[name]
             if json.dumps([pattern, lens, chars]) != json.dumps([pat, [20] * 10, _letters(alphabet)]):
                 problems.append(f"{name}: not the input the README names")
         if not (len(pattern) <= b["tokens"] and _all_in(pattern, 0, 32) and _in(len(lens), 1, b["strings"])
@@ -1123,16 +1125,18 @@ def drafted_problems(record: str, drafted: list[tuple[str, tuple]]) -> list[str]
             problems.append(f"{name}: not a valid pattern")
     rows = {}
     for line in record.splitlines():
-        name, _, status, ok = line.split("\t")
+        name, cost, status, ok = line.split("\t")
         if name in rows:
             problems.append(f"{name}: recorded twice")
-        rows[name] = (status, ok == "True")
+        rows[name] = (cost, status, ok == "True")
     if set(rows) != {name for name, _ in drafted}:
         return problems + ["the record does not cover exactly the drafted inputs"]
-    for name, (status, ok) in rows.items():
-        want = DRAFTED_EXPECTED.get(name, (None, None, None))[2]
+    for name, (cost, status, ok) in rows.items():
+        _, _, want, want_cost = DRAFTED_EXPECTED.get(name, (None, None, None, None))
         if status != want:
             problems.append(f"{name}: recorded {status}, where the README reports {want}")
+        elif cost != want_cost:
+            problems.append(f"{name}: recorded {cost} steps, where the README reports {want_cost}")
         elif status == "success" and not ok:
             problems.append(f"{name}: finished but disagreed")
         elif status != "success" and ok:
@@ -1157,7 +1161,10 @@ def regex_drafted_bounds() -> None:
                       (record + lines[0] + "\n", "a row recorded twice"),
                       (record.replace("\tsuccess\tTrue", "\tsuccess\tFalse", 1), "a finished run that disagreed"),
                       (record.replace("\tfuel-exhausted\tFalse", "\tfuel-exhausted\tTrue", 1),
-                       "a run that ran out of steps recorded as agreeing")):
+                       "a run that ran out of steps recorded as agreeing"),
+                      (record.replace("395604", "395605", 1), "a finished run's steps changed"),
+                      (record.replace("None\tfuel-exhausted", "999999\tfuel-exhausted", 1),
+                       "a step count on a run that ran out")):
         check(bad != record and drafted_problems(bad, measure.DRAFTED) != [], f"a drafted record with {what} is refused")
     (name, (pattern, lens, chars)), *rest = measure.DRAFTED
     for bad, why in (([*pattern, 0], "not within the drafted bounds"),
@@ -1183,7 +1190,7 @@ def rerun_problems(source: Path) -> list[str]:
     reports as running out of steps, which must run out again, and on the
     regex example, which must finish and agree with the meaning."""
     measure = _seq_bool_measure()
-    name = next(n for n, (_, _, want) in DRAFTED_EXPECTED.items() if want == "fuel-exhausted")
+    name = next(n for n, (_, _, want, _) in DRAFTED_EXPECTED.items() if want == "fuel-exhausted")
     problems = []
     got = measure.run(name, dict(measure.DRAFTED)[name], source)
     if got[2] != "fuel-exhausted":
@@ -1210,6 +1217,19 @@ def regex_drafted_rerun() -> None:
         (Path(d) / "regex-seq-bool.firth").write_text(mutant)
         check(mutant != src and any(q.startswith("the example") for q in rerun_problems(Path(d) / "regex-seq-bool.firth")),
               "a Seq Bool reference that counts each whole match twice is refused on the example")
+
+
+def deepseek_driver() -> None:
+    """The DeepSeek driver's self-test, against planted replies with no
+    network: a complete reply is kept byte for byte, a round is asked once,
+    and a cut-off reply, another model's reply or a failed request is not
+    kept, not sent again, and voids the round. "self-test ok" is printed only after
+    every assertion, so a self-test that checks nothing fails here."""
+    import subprocess
+    p = subprocess.run([sys.executable, str(HERE / "deepseek.py"), "--self-test"],
+                       capture_output=True, text=True, timeout=120)
+    ok = p.returncode == 0 and p.stdout.strip().splitlines()[-1:] == ["self-test ok"]
+    check(ok, "deepseek.py's self-test passes" + ("" if ok else f": {(p.stdout + p.stderr).strip()[-300:]}"))
 
 
 def firth_mutant() -> None:
@@ -1375,6 +1395,7 @@ def main() -> int:
     scored_readings()
     scored_costliest()
     regex_drafted_bounds()
+    deepseek_driver()
     prompt_and_repair()
     if "--no-firth" not in sys.argv:
         firth_references()
