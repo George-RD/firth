@@ -1,0 +1,113 @@
+---
+id: dec.int64-arithmetic
+nodes: [firth.language.kernel, firth.toolchain.interpreter, firth.runtime.vm]
+status: proposed
+related: [dec.comparison-primitives, dec.agent-development-rules]
+date: 2026-10-10
+---
+# Signed 64-bit integers, overflow and `MIN div -1`
+
+## Context
+
+`todo.language-11-arithmetic-comparison` asks for numeric ranges, underflow
+and overflow to be stated exactly, and for the `Int` name and its execution to
+agree. Integers became signed in #122 (Gamma 0.4), and `div` and `mod` became
+Euclidean later, but no decision records the semantics or says why the two
+hosts differ on overflow. This record states what ships today and recommends
+one change. The change is not made here.
+
+## Semantics as shipped (Gamma 0.8)
+
+- **The type.** `Int` is a signed integer. The VM holds it as an i64, in
+  `-9223372036854775808..9223372036854775807`. Source literals may be
+  negative. A literal outside that range is refused by the compiler
+  (`firth.compile.unsupported-literal`, "int literal exceeds the target
+  integer"), so no program that runs on the VM starts from an out-of-range
+  value. Host inputs are checked against the same range
+  (`compiler/Firth/TargetRun.lean`, "integer outside the signed 64-bit
+  range").
+- **Overflow.** `+`, `-`, `*` and `div` trap on the VM with a primitive fault
+  when their exact result leaves the range. Nothing wraps. `mod` cannot
+  overflow: its result lies in `0..|b|-1`.
+- **Division.** `div` and `mod` are Euclidean: `a = b*q + r` with
+  `0 <= r < |b|`. A zero divisor is a primitive fault on both hosts. The one
+  quotient outside the range, `-2^63 div -1`, is the `div` overflow above.
+- **Sequence length.** `seq-int.len` and `seq-bool.len` return the length as
+  an `Int`; a length of 2^63 or more cannot be represented
+  (`LenOverflowAt` in `compiler/Firth/LoweringSimulation.lean`).
+- **The reference interpreter.** The runner's registry, `adapterGamma`
+  (`interpreter/FirthReferenceRun.lean`), computes on Lean's unbounded `Int`.
+  So `MAX 1 prim +` and `-2^63 -1 prim div` succeed there with results
+  outside the range, where the VM traps. Only the zero divisor and the
+  sequence index faults are shared.
+- **The checked registry.** `int64Gamma` (`interpreter/Firth/ProgramLogic.lean`)
+  is `adapterGamma` with `+`, `-`, `*` and `div` faulting outside the range,
+  as the VM's do. Every proof record's contract is stated under it, so a
+  proved fact about a program also says that no value leaves the range. The
+  kernel's progress theorem is not yet proved for this registry.
+- **How the gap is tested.** The differential harness classifies a run where
+  the reference succeeds and the VM faults at the first primitive that leaves
+  the range as `expected-portable-overflow` (`src/diffharness/README.md`). It
+  is a pass, but the README says it is the documented difference between the
+  hosts, not an agreement. `FirthLogicTest.lean` pins both registries'
+  behaviour at `-2^63 div -1`. `docs/getting-started.md` tells authors that
+  the reference's integers are unbounded and the VM's refusal is not
+  evidence of agreement.
+
+## The question
+
+AGENTS.md rule 12 says the reference interpreter defines behaviour, so a
+divergence is a VM or compiler bug unless the reference disagrees with the
+kernel specification. The kernel is parameterised by its primitive signature
+`Γ` and says nothing about integer width. So today the reference "defines"
+an unbounded result that no VM run can produce. Overflow is the one place
+where the defining semantics is not the one programs run under, and where
+the two hosts are allowed to disagree and still pass.
+
+## Options
+
+1. **Keep the split** (status quo). The reference stays unbounded, and
+   overflow stays a documented, tested divergence. This costs nothing now.
+   But every tool that compares the hosts has to carry a second notion of
+   passing for overflow, with its own prefix rule, and the gate cannot expect
+   a trap on both hosts there as it can for a zero divisor. An author reading
+   the reference result also learns a value the VM will never return.
+2. **Run the reference under `int64Gamma`.** The reference faults wherever
+   the VM traps, so overflow becomes an `expected-trap` with matching stacks,
+   costs and traces up to the fault, the same as a zero divisor. The
+   reference, the proofs and the VM then share one registry. This needs:
+   - progress for `int64Gamma` (`PrimitivesWellFormed`: its checked
+     primitives are declared `faults := true`, so totality exempts them; preservation
+     should follow from `adapterGamma`'s, since a checked delta either refuses
+     or returns the same `Int` (inferred, not yet proved);
+   - the runner switched to it, with a Gamma version bump so an old request
+     is refused rather than run differently;
+   - the harness's `expected-portable-overflow` category retired or folded
+     into `expected-trap`, with its planted-bug tests kept;
+   - the S7-input wording in `docs/getting-started.md` changed (an S7 input,
+     so outside an authoring window);
+   - `adapterGamma` kept in `ProofRecords.allowedGammas` or retired, so
+     existing records under either registry stay sound.
+3. **Make the VM unbounded.** This was rejected: it gives up the fixed-width
+   target the cost model and the compiler proof assume, for no program that
+   needs it.
+
+## Recommendation
+
+Option 2. It is the harder change now and removes a category every
+comparison tool would otherwise carry forever (rule 4). It also makes rule 12
+true without an exception: the reference would define the behaviour programs
+actually have. The easier option, keeping the split, would cost a permanent
+second notion of agreement and a reference that answers questions about
+values no program can hold.
+
+Option 2 changes the reference registry, which is part of `Γ`.
+`dec.comparison-primitives` treated a `Γ` change as needing the maintainer,
+so this should be approved the same way before any code changes. The change
+would land in its own PR, after progress for `int64Gamma` is proved and
+outside an S7 authoring window.
+
+## Approval
+
+Not yet approved. The semantics section records what ships; the change in
+option 2 waits for the maintainer's decision.
