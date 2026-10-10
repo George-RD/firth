@@ -695,8 +695,8 @@ against 63,949 for the third pool's Firth prompt,
 On 10 October 2026 the reply was the codeword, with `done_reason` `stop`
 and 22,632 prompt tokens (`probe.out`). The probe exits 1 unless the
 reply is the codeword, complete, from the scored model; `test_harder.py`
-plants a wrong reply, a cut-off, another model, a 502, a non-JSON body and a
-network error, and each fails it. That is one probe, not a bound on
+plants a wrong reply, a cut-off, another model, `done` false, a 502, a
+non-JSON body and a network error, and each fails it. That is one probe, not a bound on
 the prompt length the server keeps; each scored round's
 `prompt_eval_count` is in its `response-ROUND.json`. No task has been sent
 to DeepSeek.

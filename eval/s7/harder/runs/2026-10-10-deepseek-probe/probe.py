@@ -50,7 +50,8 @@ def main() -> int:
     print(f"reply\t{content}")
     print(f"done_reason\t{r.get('done_reason')}")
     print(f"prompt_eval_count\t{r.get('prompt_eval_count')}")
-    if (status != 200 or r.get("model") != deepseek.MODEL or r.get("done_reason") != "stop"
+    if (status != 200 or r.get("model") != deepseek.MODEL or r.get("done") is not True
+            or r.get("done_reason") != "stop"
             or not isinstance(content, str) or content.strip() != "HELIOTROPE-47"):
         print("probe failed: the prompt was not read whole", file=sys.stderr)
         return 1

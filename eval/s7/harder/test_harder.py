@@ -1240,9 +1240,9 @@ def deepseek_driver() -> None:
         "deepseek_probe", HERE / "runs" / "2026-10-10-deepseek-probe" / "probe.py")
     probe = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(probe)
-    def answer(content, model="deepseek-v4.1-flash", reason="stop"):
+    def answer(content, model="deepseek-v4.1-flash", reason="stop", done=True):
         return 200, json.dumps({"model": model, "message": {"content": content},
-                                "done": True, "done_reason": reason})
+                                "done": done, "done_reason": reason})
     def probed(outcome):
         def post(body):
             if isinstance(outcome, Exception):
@@ -1257,7 +1257,8 @@ def deepseek_driver() -> None:
     check(probed(answer("HELIOTROPE-47")) == 0, "the probe passes on the codeword")
     # Planted: a probe that passes any of these would vouch for a cut prompt.
     for planted in (answer("I don't know."), answer("HELIOTROPE-47", reason="length"),
-                    answer("HELIOTROPE-47", model="deepseek-v4-pro"), (502, "bad gateway"),
+                    answer("HELIOTROPE-47", model="deepseek-v4-pro"),
+                    answer("HELIOTROPE-47", done=False), (502, "bad gateway"),
                     (200, "<html></html>"), OSError("reset")):
         check(probed(planted) == 1, f"planted: the probe fails on {planted!r}")
 
