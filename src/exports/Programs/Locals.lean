@@ -19,7 +19,7 @@ open Firth.Interpreter
 open Firth.ReferenceRun
 
 /-- SHA-256 of the source text these definitions were generated from. -/
-def sourceDigest : String := "e8b3b77a63e41ea9491a985fc97c6d73b333ffc252fcddcc1abc0125e3f7804e"
+def sourceDigest : String := "6764b05e63eb809cddd04c190de198e624bdf547d2c0b8755b289ad5d20c75e9"
 
 namespace «fact»
 
@@ -336,6 +336,62 @@ def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many,v2:Int^many--ρ
 
 end «swap-below»
 
+namespace «add2»
+
+/-- The erased kernel program of `add2`. -/
+def body : Program :=
+  .cons (.prim "+") <|
+  .empty
+
+/-- The image's `body_digest` for `add2`: SHA-256 of `body` lowered to
+target code, hex encoded. -/
+def bodyDigest : String := "f2b9f8cb81a38e4def032e19aff74872aa6cf2913a40031dd21dbc646bcf13bd"
+
+/-- The erased word type the image records for `add2`. -/
+def erasedType : String := "(v0:Int^many,v1:Int^many--v0:Int^many)"
+
+end «add2»
+
+namespace «add-then-keep»
+
+/-- The erased kernel program of `add-then-keep`. -/
+def body : Program :=
+  .cons .swap <|
+  .cons (.lit (.int 1)) <|
+  .cons (.roll 2) <|
+  .cons (.quotation (
+    .cons (.word "add2") <|
+    .empty)) <|
+  .cons .dip <|
+  .empty
+
+/-- The image's `body_digest` for `add-then-keep`: SHA-256 of `body` lowered to
+target code, hex encoded. -/
+def bodyDigest : String := "ea8b6e2022d41074f0cb6b588c59ebb05cd873bd85632b3e864a62b8a384065e"
+
+/-- The erased word type the image records for `add-then-keep`. -/
+def erasedType : String := "(v0:Int^many,v1:Int^many--v0:Int^many,v1:Int^many)"
+
+end «add-then-keep»
+
+namespace «add-in-block»
+
+/-- The erased kernel program of `add-in-block`. -/
+def body : Program :=
+  .cons .swap <|
+  .cons .swap <|
+  .cons (.word "add2") <|
+  .empty
+
+/-- The image's `body_digest` for `add-in-block`: SHA-256 of `body` lowered to
+target code, hex encoded. -/
+def bodyDigest : String := "5fc170e07e3a3613d99141a6b1ffea58f39aa2c91f63a5227748781d386426d4"
+
+/-- The erased word type the image records for `add-in-block`. -/
+def erasedType : String := "(v0:Int^many,v1:Int^many--v0:Int^many)"
+
+end «add-in-block»
+
 /-- Every word, in declaration order: its name, body, body digest and erased
 type. -/
 def words : List (String × Program × String × String) := [
@@ -344,7 +400,10 @@ def words : List (String × Program × String × String) := [
   ("fib", «fib».body, «fib».bodyDigest, «fib».erasedType),
   ("allocate-partial", «allocate-partial».body, «allocate-partial».bodyDigest, «allocate-partial».erasedType),
   ("sort3", «sort3».body, «sort3».bodyDigest, «sort3».erasedType),
-  ("swap-below", «swap-below».body, «swap-below».bodyDigest, «swap-below».erasedType)]
+  ("swap-below", «swap-below».body, «swap-below».bodyDigest, «swap-below».erasedType),
+  ("add2", «add2».body, «add2».bodyDigest, «add2».erasedType),
+  ("add-then-keep", «add-then-keep».body, «add-then-keep».bodyDigest, «add-then-keep».erasedType),
+  ("add-in-block", «add-in-block».body, «add-in-block».bodyDigest, «add-in-block».erasedType)]
 
 /-- The dictionary the reference runner builds for this source. -/
 def dictionary : Dictionary
@@ -354,6 +413,9 @@ def dictionary : Dictionary
   | "allocate-partial" => some { type := adapterWordType, body := «allocate-partial».body }
   | "sort3" => some { type := adapterWordType, body := «sort3».body }
   | "swap-below" => some { type := adapterWordType, body := «swap-below».body }
+  | "add2" => some { type := adapterWordType, body := «add2».body }
+  | "add-then-keep" => some { type := adapterWordType, body := «add-then-keep».body }
+  | "add-in-block" => some { type := adapterWordType, body := «add-in-block».body }
   | _ => none
 
 /-! Each word's dictionary entry, which a proof unfolding a call to it needs. -/
@@ -375,5 +437,14 @@ theorem «sort3».entry :
 
 theorem «swap-below».entry :
     dictionary "swap-below" = some { type := adapterWordType, body := «swap-below».body } := rfl
+
+theorem «add2».entry :
+    dictionary "add2" = some { type := adapterWordType, body := «add2».body } := rfl
+
+theorem «add-then-keep».entry :
+    dictionary "add-then-keep" = some { type := adapterWordType, body := «add-then-keep».body } := rfl
+
+theorem «add-in-block».entry :
+    dictionary "add-in-block" = some { type := adapterWordType, body := «add-in-block».body } := rfl
 
 end Firth.Exports.Programs.Locals
