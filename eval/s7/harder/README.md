@@ -541,15 +541,22 @@ longer did not separate it. The Python answers are about as long as the
 Python references (612 to 618 lines against 638). The valid Firth answers
 run from 798 to 1,924 lines, against 1,668 for the references.
 
-Across the three pools, Sonnet has failed only three things within two
-rounds:
+Across the three pools, Sonnet's valid authors have failed these things:
 
-- one ambiguously worded clause (pool 2's `spreadsheet`);
-- a toolchain defect, since fixed (#213);
-- here, a syntax slip that one round of feedback fixed.
+- left failing after two rounds: one ambiguously worded clause (pool 2's
+  `spreadsheet`), and the nested-`locals` tail-call defect in the
+  toolchain, since fixed by #213 (pool 1's `tiny-vm`, pool 2's
+  `elevator`);
+- fixed by one round of feedback: pool 1's `rpn`, which compared two
+  `Bool`s with `prim =` (a gap in Firth,
+  `todo.harder-tier-sequence-gaps`), and pool 2's `elevator`, whose round
+  1 left an extra value on the stack.
+
+This pool's valid authors failed nothing. The void Firth 3's syntax slip,
+fixed by its feedback round, is not scored and is not counted here.
 
 It is inferred, not measured, that fully specified tasks with stated
-rules and bounds do not separate this subject at sizes the step budget
-allows, in either language. The next design question is not size. These
+rules and bounds do not separate this subject at the sizes tried, in
+either language. The next design question is not size. These
 results are calibration only. They are not S7 evidence, and the Python
 and Firth rows are not a comparison of the languages.
