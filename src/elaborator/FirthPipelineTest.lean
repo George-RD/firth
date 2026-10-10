@@ -96,7 +96,7 @@ private def expectEq [BEq α] [Repr α] (actual expected : α) (message : String
 
 private def isLinearCopyAtSpan (error : ErasureError) (expectedStart expectedStop : Nat) : Bool :=
   match error with
-  | .linearCopy name sourceSpan =>
+  | .linearCopy name sourceSpan _ =>
       name == "h" && sourceSpan.start.offset == expectedStart &&
         sourceSpan.stop.offset == expectedStop
   | _ => false
