@@ -813,7 +813,19 @@ private def extraValuesHint (declared left : List AType) : String :=
           let extraTypes := extras.flatMap fun (type, _, _, extraHere) => List.replicate extraHere type
           s!"The body leaves {plural extra "value"} more than declared ({" ".intercalate extraTypes}), and the types do not tell which {if extra == 1 then "one is" else "ones are"} extra. Find the {if extra == 1 then "value" else "values"} the word should not leave and consume {them} before the end of the word, or declare {them} in the signature's output."
         else
-          s!"The body leaves {plural extra "extra value"}: {listing described}. Where more values of one type are in a row than declared, the types do not tell which of them is extra. Find the {if extra == 1 then "value" else "values"} the word should not leave and consume {them} before the end of the word, or declare {them} in the signature's output."
+          -- When every run with no extra value in it is above every run
+          -- with one, the values above those runs are declared ones and
+          -- the extra values are under them, wherever they are in their runs.
+          let extrasTop := (extras.getLast?.map fun (_, count, start, _) => start + count).getD n
+          let clearAbove := spans.all fun (_, _, start, extraHere) => extraHere > 0 || start >= extrasTop
+          let above := n - extrasTop
+          let intro :=
+            if clearAbove && above > 0 then
+              let top := if above == 1 then "The top value matches the top of the declared output, and under it"
+                else s!"The top {above} values match the top of the declared output, and under them"
+              s!"{top} the body leaves"
+            else "The body leaves"
+          s!"{intro} {plural extra "extra value"}: {listing described}. Where more values of one type are in a row than declared, the types do not tell which of them is extra. Find the {if extra == 1 then "value" else "values"} the word should not leave and consume {them} before the end of the word, or declare {them} in the signature's output."
       else
         -- Every run with extra values is wholly extra, so the types fix
         -- where each extra value is.
