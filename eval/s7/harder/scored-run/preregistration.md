@@ -53,11 +53,14 @@ stands and the set is not edited or replaced
 
 | Subject | Role | How it runs | Python | Firth |
 | --- | --- | --- | --- | --- |
-| Sonnet 5.5 | primary | Agent-tool sub-agent, type `general-purpose`, model `sonnet` | 5 | 5 |
+| Sonnet 5.5 | primary | Agent-tool sub-agent, type `general-purpose`, model `sonnet` | 8 | 8 |
 | DeepSeek v4.1 Flash | secondary | `deepseek_sample.py`, ollama.com chat API, the connected key | 5 | 5 |
 | Haiku 5.5 | secondary, how learnable for a small model | Agent-tool sub-agent, type `general-purpose`, model `haiku` | 5 | 5 |
 
-- That is 30 valid samples in all, and every sample answers all six tasks.
+- That is 36 valid samples in all, and every sample answers all six tasks.
+- Sonnet, the primary subject, runs 8 per arm for power ("Analysis",
+  "Sample size"). DeepSeek and Haiku run 5 per arm; every comparison is
+  within one subject, so their smaller rows cost samples and dilute nothing.
 - Samples are named `<subject>-<lang>-<n>`, for example `sonnet-firth-3`.
 - The roadmap and `todo.s7-harder-task-tier` name Haiku 4.5. The Agent
   tool offers only `haiku`, which runs Haiku 5.5, so Haiku 4.5 cannot be
@@ -105,7 +108,9 @@ stands and the set is not edited or replaced
 
 - `tier.py take --after` builds `solutions-2.json`. It takes only the tasks
   the feedback listed; an answer to any other task is not taken, and is
-  named. Round 2 is then scored.
+  named. Round 2 is then scored. This differs from the MVP tier's protocol,
+  and from this tier's calibration as run, which took every task in a
+  round-2 answer (README, "Protocol").
 - An author whose answers all passed their examples gets no round 2. Its
   result within two attempts is its round-1 result.
 
@@ -159,10 +164,16 @@ A sample is void when:
 - for DeepSeek, a round is void (`deepseek.py` exit 3: a failed request,
   any status but 200, a reply that is not a complete chat reply from the
   scored model). A void round voids the whole sample;
-- for DeepSeek, a round's `prompt_eval_count` in `response-N.json` is
+- for DeepSeek, round 1's `prompt_eval_count` in `response-1.json` is
   below one token per eight characters of what was sent. That is half the
   rate the probe measured (91,647 characters read as 22,632 tokens), so a
-  prompt the server cut short counts as a transport void.
+  prompt the server cut short counts as a transport void. The rule is not
+  applied to round 2: `prompt_eval_count` counts only the prompt tokens
+  the server evaluated, and round 2 repeats round 1's whole prompt as its
+  prefix, so a server that reuses a cached prefix can report only the new
+  tokens and void a round 2 nothing cut. The probe was one uncached
+  request, so it cannot rule this out. Round 2's `prompt_eval_count` is
+  still reported.
 
 A sample is **crashed** when the run stopped part way: `outcome.json`
 status `crashed` for DeepSeek, or a sub-agent that ended without handing
@@ -182,7 +193,7 @@ never silently replaced.
   language, and runs at the end of the plan, in the order the voids
   happened.
 - Replacement stops for a cell (one subject and language) at 3 voids and
-  crashes. That cell then has fewer than 5 samples, and the subject's
+  crashes. That cell then has fewer than its planned samples, and the subject's
   comparison is reported as incomplete, not as a result.
 - Voids and crashes are counted per arm and by cause:
   - audit flag;
@@ -217,7 +228,9 @@ message, and are not given the project's messages.
 
 Each sub-agent's raw log is scanned:
 - by `eval/s7/context_seen.py --sample <name>`, which compares whole sample
-  names (#230);
+  names (#230). The statement that run 14's results are unchanged by that
+  whole-name comparison holds only for logs that name no `sonnet-` or
+  `deepseek-` sample;
 - by a search for every other sample's name, agent id and directory,
   `task_status`, task notifications, compaction and `queued_command`.
 
@@ -267,7 +280,8 @@ way still fails. The steps are fixed:
 - **Primary measure.** The difference in mean tasks passed per author
   within two rounds, Firth minus Python. Round 1 is the secondary measure.
 - **Tests.** A two-sided exact permutation test over the authors' labels
-  (all 252 ways to split 10 authors 5 and 5), and a 95% percentile
+  (every way to split the subject's authors between the arms: 12,870 for
+  Sonnet's 8 and 8, 252 for 5 and 5), and a 95% percentile
   bootstrap interval for the difference (10,000 resamples within each
   arm, seed 0).
 - **Material.** A difference of at least 1 task of 6 per author, with the
@@ -280,14 +294,35 @@ way still fails. The steps are fixed:
   convenience, not matched units: each author is independent, and a
   replacement breaks the pair. A within-pair permutation over 5 pairs has
   only 32 assignments, so its smallest two-sided p is 0.0625, and no
-  result could reach p below 0.05. As a check on time effects, the report
+  result could reach p below 0.05 for DeepSeek or Haiku. As a check on time effects, the report
   gives each arm's results in run order.
-- **Sample size.** With 5 authors per arm only large differences can
-  show. A difference that is not material is reported with its interval,
-  and is not evidence of parity beyond that interval.
+- **Sample size.** The chance that this rule finds a material difference,
+  simulated by `power.py` next to this file (binomial tasks, 2,000
+  replicates, seed 0; output in `power-output.txt`), for a true mean of 5.5
+  tasks in the higher arm:
+
+  | True difference | 5 per arm | 8 per arm |
+  | --- | --- | --- |
+  | 1 task (4.5) | 0.20 | 0.40 |
+  | 1.5 tasks (4.0) | 0.42 | 0.74 |
+  | 2 tasks (3.5) | 0.67 | 0.93 |
+
+  So Sonnet's row has about 0.75 power only for a true difference near 1.5
+  tasks, and DeepSeek's and Haiku's about 0.67 only near 2 tasks. For a
+  true difference of 1 task, the smallest material one, power is 0.40 for
+  Sonnet and 0.20 for the others; because the observed difference must
+  itself reach 1, it stays near 0.5 or below at any size this run could
+  afford. Calibration put Sonnet's Python answers at or near the ceiling
+  (pools 1 and 3: every author passed every task), so the ceiling rule may
+  decide Sonnet's row whatever the sample size. A difference that is not
+  material is reported with its interval, and is not evidence of parity
+  beyond that interval.
 - **Ceiling.** If both arms of a subject average 5.5 tasks or more of 6
   within two rounds, that subject's row is parity at the ceiling, never a
   pass.
+- **Floor.** If both arms of a subject average 0.5 tasks or fewer of 6
+  within two rounds, that subject's row is parity at the floor, never a
+  result either way.
 - **Haiku** is a secondary check. Its row is reported the same way, but S7
   is judged on Sonnet, the primary subject. DeepSeek's row shows whether
   the result holds for a non-Anthropic model.
@@ -304,7 +339,7 @@ reads only the run directory's kept files. Each file is listed with the
 outputs that need it:
 - `results-N.json`: tasks passed per round, each failure's cause (the
   per-case error, out of steps included), the per-author means, the S7
-  difference and its tests, the ceiling rule, and the guarantees (a
+  difference and its tests, the ceiling and floor rules, and the guarantees (a
   refusal on the visible example in round 1, and whether round 2's
   answer behaves differently on a hidden test);
 - `answer-N.md`: answer lengths;
