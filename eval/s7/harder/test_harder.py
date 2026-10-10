@@ -27,9 +27,10 @@
     python3 eval/s7/harder/test_harder.py --only rest # everything else
 
 CI runs one job per `--only` part (`.github/workflows/ci.yml`, job
-`s7-harder`): the parts together are everything, and the `rest` part checks
-that the job's matrix names every set and `rest`, so a part dropped from CI
-fails it.
+`s7-harder`): the parts together are everything. Every part first checks
+that the job's matrix names every set and `rest`, and stops there if it does
+not, so a part dropped from CI fails each part that is left. `--ci PATH`
+reads another copy of ci.yml, for the plant that shows this.
 """
 from __future__ import annotations
 
@@ -1648,11 +1649,15 @@ def sandbox_scan() -> None:
 
 CI = HERE.parent.parent.parent / ".github" / "workflows" / "ci.yml"
 PARTS = (*SETS, "rest")
+# The job's last check: the part's log shows the matrix check ran and passed,
+# so a part that stops calling it fails in CI.
+CONFIRM = "grep -qxF 'ok   CI runs every part of test_harder.py (all listed)' /tmp/s7-harder.log"
 
 
 def matrix_problems(ci: str) -> list[str]:
-    """What is wrong with the `s7-harder` job's matrix in CI_TEXT: it must list
-    exactly every `--only` part, and run each with `--only`."""
+    """What is wrong with the `s7-harder` job in CI_TEXT: its matrix must list
+    exactly every `--only` part, run each with `--only`, and confirm from the
+    log that the part ran this check."""
     import re
     job = ci.split("\n  s7-harder:\n", 1)
     if len(job) != 2:
@@ -1667,22 +1672,51 @@ def matrix_problems(ci: str) -> list[str]:
         out.append(f"the s7-harder matrix lists {listed}, not every part {list(PARTS)}")
     if "test_harder.py --only ${{ matrix.part }}" not in body:
         out.append("the s7-harder job does not run test_harder.py --only ${{ matrix.part }}")
+    if CONFIRM not in body:
+        out.append("the s7-harder job does not confirm from its log that the part checked the matrix")
     return out
 
 
-def ci_matrix() -> None:
+def ci_path() -> Path:
+    if "--ci" in sys.argv:
+        i = sys.argv.index("--ci")
+        if i + 1 < len(sys.argv):
+            return Path(sys.argv[i + 1])
+        raise SystemExit("--ci takes a path")
+    return CI
+
+
+def ci_matrix(path: Path) -> None:
     """Every part of this suite runs in CI: the job's matrix names each set and
-    `rest`. Planted: a matrix missing a set, and a job that does not pass the
-    part, are each caught."""
-    text = CI.read_text()
+    `rest`. Planted: a matrix missing a set, a matrix missing `rest`, and a job
+    that does not pass the part, are each caught; and a real run of one part
+    against a ci.yml without `rest` fails, so the call site is pinned too."""
+    text = path.read_text()
     problems = matrix_problems(text)
     check(problems == [], f"CI runs every part of test_harder.py ({problems or 'all listed'})")
+    if problems:
+        return
     dropped = text.replace("part: [calibration, ", "part: [", 1)
     check(dropped != text and any("not every part" in p for p in matrix_problems(dropped)),
           "planted: a CI matrix that drops the calibration set is caught")
+    no_rest = text.replace(", rest]", "]", 1)
+    check(no_rest != text and any("not every part" in p for p in matrix_problems(no_rest)),
+          "planted: a CI matrix that drops the rest part is caught")
     unpassed = text.replace("test_harder.py --only ${{ matrix.part }}", "test_harder.py", 1)
     check(unpassed != text and any("does not run" in p for p in matrix_problems(unpassed)),
           "planted: a CI job that does not pass its part is caught")
+    unconfirmed = text.replace(CONFIRM, "true", 1)
+    check(unconfirmed != text and any("does not confirm" in p for p in matrix_problems(unconfirmed)),
+          "planted: a CI job that does not confirm the matrix check from its log is caught")
+    import subprocess
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        copy = Path(d) / "ci.yml"
+        copy.write_text(no_rest)
+        p = subprocess.run([sys.executable, __file__, "--only", "calibration", "--ci", str(copy)],
+                           capture_output=True, text=True, timeout=120)
+    check(p.returncode == 1 and "not every part" in p.stdout and "1 failed" in p.stdout,
+          "planted: --only calibration against a ci.yml without rest fails")
 
 
 def main() -> int:
@@ -1691,6 +1725,10 @@ def main() -> int:
         part = sys.argv[i + 1] if i + 1 < len(sys.argv) else ""
         if part not in PARTS:
             raise SystemExit(f"--only takes one of {', '.join(PARTS)}")
+        ci_matrix(ci_path())
+        if FAILED:
+            print(f"\n{len(FAILED)} failed")
+            return 1
         if part != "rest":
             firth_references((part,))
             print(f"\n{len(FAILED)} failed" if FAILED else "\nall passed")
@@ -1710,8 +1748,6 @@ def main() -> int:
     deepseek_sample_driver()
     take_rule()
     prompt_and_repair()
-    if part == "rest":
-        ci_matrix()
     if "--no-firth" not in sys.argv:
         if part is None:
             firth_references()
