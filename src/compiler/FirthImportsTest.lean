@@ -143,6 +143,11 @@ def main : IO Unit := do
   -- An importer of a refused file is not checked, even for a key it shares with that file.
   reject "refused import before its collision" (src "main.firth" "import \"lib.firth\"; : w ( -- ) ;") [badExport]
     [("firth.name.unresolved", "lib.firth", []), ("firth.name.import-failed", "main.firth", ["lib.firth"])]
+  -- A file with a bad import still reports a collision among the files it did load.
+  reject "bad import beside a collision"
+    (src "main.firth" "import \"lib.firth\"; import \"absent.firth\"; : double ( -- ) ;") [lib]
+    [("firth.name.import-not-found", "main.firth", ["absent.firth"]),
+     ("firth.name.duplicate-canonical", "main.firth", ["lib.firth"])]
   reject "duplicate export" (src "main.firth" "export w w; : w ( -- ) ;") []
     [("firth.name.duplicate-export", "main.firth", [])]
   -- Import errors, each at its import.

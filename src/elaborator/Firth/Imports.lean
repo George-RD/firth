@@ -161,7 +161,7 @@ def importedWords (file : LoadedFile) : List ImportedWord :=
 /-- Checks a program file by file in load order. `check` checks one file
 against the words of its direct imports, as `elaborateWith` does, and
 `report` renders an import error of that file. A file with import errors is
-refused with them; a file that imports a refused file is not checked, not
+refused with them and with any collision in its program; a file that imports a refused file is not checked, not
 even for collisions, and is refused with `firth.name.import-failed` at each
 such import; a file whose program holds a key twice is refused with the
 collision. Every other file is checked. The program is accepted with each file's checked words, in load
@@ -177,7 +177,7 @@ def elaborateProgram {α : Type} (check : Source → List ImportedWord → Excep
       let refused := file.imports.filter fun (_, path) =>
         outcomes.any fun (source, outcome) => source.path == path && outcome matches .error _
       let outcome : Except (List α) CheckedProgram :=
-        if !file.errors.isEmpty then .error (file.errors.map (report file.source))
+        if !file.errors.isEmpty then .error ((file.errors ++ clash).map (report file.source))
         else if !refused.isEmpty then
           .error (refused.map fun (decl, path) => report file.source
             (importError "firth.name.import-failed" decl [path]))

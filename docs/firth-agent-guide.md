@@ -71,8 +71,9 @@ forward declarations.
 A program may span files. `import` lines come first, and the path is relative
 to the importing file's directory (letters, digits, `.`, `_`, `-`, `/`, ending
 in `.firth`; `..` is allowed but may not leave the source root). Inside a file
-every word is visible. Across files only words listed in `export` are visible,
-and only from files you import directly: imports are not transitive.
+words are visible as described above. Across files only words listed in
+`export` are visible, and only from files you import directly: imports are not
+transitive.
 
 ```text
 \ lib/math.firth
