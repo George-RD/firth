@@ -140,6 +140,9 @@ def main : IO Unit := do
   let badExport := src "lib.firth" "export missing; : w ( -- ) ;"
   reject "unresolved export" (main₀ "1") [badExport]
     [("firth.name.unresolved", "lib.firth", []), ("firth.name.import-failed", "main.firth", ["lib.firth"])]
+  -- An importer of a refused file is not checked, even for a key it shares with that file.
+  reject "refused import before its collision" (src "main.firth" "import \"lib.firth\"; : w ( -- ) ;") [badExport]
+    [("firth.name.unresolved", "lib.firth", []), ("firth.name.import-failed", "main.firth", ["lib.firth"])]
   reject "duplicate export" (src "main.firth" "export w w; : w ( -- ) ;") []
     [("firth.name.duplicate-export", "main.firth", [])]
   -- Import errors, each at its import.

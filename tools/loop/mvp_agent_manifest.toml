@@ -11,7 +11,7 @@ gate_path = "tools/loop/mvp_agent_gate.py"
 [inputs]
 model_only = true
 guide_path = "docs/firth-agent-guide.md"
-guide_sha256 = "596c867a39b18876f287bc537f47d538c0cbe9f919c98fbbc74fb049223d744f"
+guide_sha256 = "4926fbb2184f3e7351d68510e852343cbff7714d9a1fe8edfaf89ceba2c7c0de"
 interface_paths = [
   "src/agent/Firth/Agent/DiagnosticEnvelope.lean",
   "src/agent/Firth/Agent/Validation.lean",

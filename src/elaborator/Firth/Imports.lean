@@ -161,9 +161,10 @@ def importedWords (file : LoadedFile) : List ImportedWord :=
 /-- Checks a program file by file in load order. `check` checks one file
 against the words of its direct imports, as `elaborateWith` does, and
 `report` renders an import error of that file. A file with import errors is
-refused with them; a file that imports a refused file is not checked and is
-refused with `firth.name.import-failed` at each such import. Every other file
-is checked. The program is accepted with each file's checked words, in load
+refused with them; a file that imports a refused file is not checked, not
+even for collisions, and is refused with `firth.name.import-failed` at each
+such import; a file whose program holds a key twice is refused with the
+collision. Every other file is checked. The program is accepted with each file's checked words, in load
 order, when every file is. -/
 def elaborateProgram {α : Type} (check : Source → List ImportedWord → Except (List α) CheckedProgram)
     (report : Source → ParseError → α) (root : Source) (files : List Source) :
@@ -172,14 +173,15 @@ def elaborateProgram {α : Type} (check : Source → List ImportedWord → Excep
   let clashes := collisions loaded
   let outcomes := loaded.foldl (init := ([] : List (Source × Except (List α) CheckedProgram)))
     fun outcomes file =>
-      let errors := file.errors ++ (((clashes.find? (·.1 == file.source.path)).map (·.2)).getD [])
+      let clash := ((clashes.find? (·.1 == file.source.path)).map (·.2)).getD []
       let refused := file.imports.filter fun (_, path) =>
         outcomes.any fun (source, outcome) => source.path == path && outcome matches .error _
       let outcome : Except (List α) CheckedProgram :=
-        if !errors.isEmpty then .error (errors.map (report file.source))
+        if !file.errors.isEmpty then .error (file.errors.map (report file.source))
         else if !refused.isEmpty then
           .error (refused.map fun (decl, path) => report file.source
             (importError "firth.name.import-failed" decl [path]))
+        else if !clash.isEmpty then .error (clash.map (report file.source))
         else
           let imported := file.imports.flatMap fun (_, path) =>
             ((loaded.find? (·.source.path == path)).map importedWords).getD []
