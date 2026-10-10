@@ -124,7 +124,7 @@
 \ --------------------------------------------------------------- set helpers
 
 \ Adds to acc every position of add that acc lacks, from index i on, and says
-\ whether any was missing (changed is true if it already was).
+\ whether any was missing: ch is true if changed already was or one was added.
 : merge-loop
   (forall ρ; ρ acc:Seq Bool^many add:Seq Bool^many i:Int^many changed:Bool^many -- ρ r:Seq Bool^many ch:Bool^many)
   locals { acc add i changed }
