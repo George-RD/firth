@@ -48,6 +48,8 @@ for something else first. All 15 round-1 answers get it
 unused local is on the stack, where a local is in scope at the operation, or
 in a word whose effect has a row, keeps its message.
 
-Not covered: `if` and `dip`, which have no account of the values they are
-handed (`todo.underflow-declared-inputs-if-dip`), and a word whose effect
-has a row (`todo.locals-binds-row`).
+Not covered, so the first criterion is met for `locals` blocks, words and
+primitives only: kernel atoms (`if`, `dip`, `call`, `swap`, `pick`, `roll`
+and the others), which have no account of the values they are handed
+(`todo.underflow-declared-inputs-atoms`), and a word whose effect has a row
+(`todo.locals-binds-row`).
