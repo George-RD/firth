@@ -355,8 +355,10 @@ the run showed it catching a real error:
   with a wrong result, per task, from `kernel_cost` in each case of
   `results-N.json`. Passed cases and wrong-result cases are reported
   separately, with their total, so a cheap wrong answer cannot make an arm
-  look efficient. A refusal, a trap or a timeout has no measured cost,
-  and the report says so for those cases. It is measured, never a bound;
+  look efficient. A run out of steps (`trap fuel-exhausted`) is reported
+  as at least 1,000,000 steps, the budget it used up. Any other trap, a
+  refusal or a timeout has no measured cost, and the report says so for
+  those cases. It is measured, never a bound;
 - a proved cost bound: none of the six tasks has a Lean cost contract, so
   the report says no proved bound applies. No guarantee is called proved
   in the report unless a Lean contract exists for it.
@@ -369,7 +371,10 @@ line in the error is one diagnostic, and each is sorted by its code,
 never by its message. The report counts diagnostics per row, and counts
 the refusal once under every row that at least one of its diagnostics
 falls in; a refusal whose diagnostics are all other refusal is an other
-refusal. The table:
+refusal. The kept error is what `harness.readable` wrote, and it keeps
+only diagnostics that carry a message, so a diagnostic without one is
+not in `results-1.json` and is not counted; the report says so if a
+refusal's error holds no `code:` line at all. The table:
 
 | Code | Row |
 | --- | --- |
