@@ -391,8 +391,9 @@ instance (primitive : Prim) : Decidable (Int64Checked primitive) := by
 
 /-- The reference registry with `+`, `-`, `*` and `div` checked for i64 overflow.
 The checked primitives are declared `faults := true`, since an overflow is a
-primitive fault on a well-typed stack, as the VM's trap is. The kernel's
-progress theorem is not yet proved for this registry. -/
+primitive fault on a well-typed stack, as the VM's trap is. Progress and
+preservation hold for this registry (`int64Gamma_primitivesWellFormed` and
+`int64Gamma_progress` in `Firth/RegistryProgress.lean`). -/
 def int64Gamma : Gamma :=
   { adapterGamma with
     primitive := fun primitive => (adapterGamma.primitive primitive).map fun specification =>
