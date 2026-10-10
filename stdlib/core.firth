@@ -1,4 +1,5 @@
-export core.identity core.duplicate-int core.discard-int core.exchange-int core.example;
+export core.identity core.duplicate-int core.discard-int core.exchange-int core.example
+  core.min-int core.max-int;
 
 vocab core {
   : identity
@@ -20,4 +21,15 @@ vocab core {
   : example
     ( -- result:Int^many )
     7 duplicate-int discard-int identity;
+
+  \ The smaller of two integers; when they are equal, that value. Only `<` is
+  \ used, so no arithmetic can overflow.
+  : min-int
+    ( forall ρ; ρ first:Int^many second:Int^many -- ρ smaller:Int^many )
+    locals { first second } { first second prim < [ first ] [ second ] if };
+
+  \ The larger of two integers; when they are equal, that value.
+  : max-int
+    ( forall ρ; ρ first:Int^many second:Int^many -- ρ larger:Int^many )
+    locals { first second } { first second prim < [ second ] [ first ] if };
 }

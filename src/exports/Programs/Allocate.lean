@@ -19,7 +19,147 @@ open Firth.Interpreter
 open Firth.ReferenceRun
 
 /-- SHA-256 of the source text these definitions were generated from. -/
-def sourceDigest : String := "5d4a81f6b04870aa8e67989046798d8f58db200c624a4811183f26af42bfa3d2"
+def sourceDigest : String := "5ec2697cc12f3dcb9927d019437936a7ac37bc03383b6dab19c218bb7cdaa796"
+
+/-- The files `examples/programs/allocate.firth` imports, in load order, each with the SHA-256 of
+its text. Their words come first in `words` and `dictionary`. -/
+def importedSources : List (String × String) := [
+  ("stdlib/core.firth", "df18e4642c05b857d27047bdf01b4c01b296b21afd1630c23ae3291040f05fb5")]
+
+namespace «core.identity»
+
+/-- The erased kernel program of `core.identity`. -/
+def body : Program :=.empty
+
+/-- The image's `body_digest` for `core.identity`: SHA-256 of `body` lowered to
+target code, hex encoded. -/
+def bodyDigest : String := "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+
+/-- The erased word type the image records for `core.identity`. -/
+def erasedType : String := "(forallρ;ρ--ρ)"
+
+end «core.identity»
+
+namespace «core.duplicate-int»
+
+/-- The erased kernel program of `core.duplicate-int`. -/
+def body : Program :=
+  .cons .dup <|
+  .empty
+
+/-- The image's `body_digest` for `core.duplicate-int`: SHA-256 of `body` lowered to
+target code, hex encoded. -/
+def bodyDigest : String := "c79b932e1e1da3c0e098e5ad2c422937eb904a76cf61d83975a74a68fbb04b99"
+
+/-- The erased word type the image records for `core.duplicate-int`. -/
+def erasedType : String := "(forallρ;ρ,v0:Int^many--ρ,v0:Int^many,v1:Int^many)"
+
+end «core.duplicate-int»
+
+namespace «core.discard-int»
+
+/-- The erased kernel program of `core.discard-int`. -/
+def body : Program :=
+  .cons .drop <|
+  .empty
+
+/-- The image's `body_digest` for `core.discard-int`: SHA-256 of `body` lowered to
+target code, hex encoded. -/
+def bodyDigest : String := "a8d5dd63fba471ebcb1f3e8f7c1e1879b7152a6e7298a91ce119a63400ade7c5"
+
+/-- The erased word type the image records for `core.discard-int`. -/
+def erasedType : String := "(forallρ;ρ,v0:Int^many--ρ)"
+
+end «core.discard-int»
+
+namespace «core.exchange-int»
+
+/-- The erased kernel program of `core.exchange-int`. -/
+def body : Program :=
+  .cons .swap <|
+  .empty
+
+/-- The image's `body_digest` for `core.exchange-int`: SHA-256 of `body` lowered to
+target code, hex encoded. -/
+def bodyDigest : String := "bc5959f43bc6e47175374b6716e53c9a7d72c59424c821336995bad760d9aeb3"
+
+/-- The erased word type the image records for `core.exchange-int`. -/
+def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many,v1:Int^many)"
+
+end «core.exchange-int»
+
+namespace «core.example»
+
+/-- The erased kernel program of `core.example`. -/
+def body : Program :=
+  .cons (.lit (.int 7)) <|
+  .cons (.word "core.duplicate-int") <|
+  .cons (.word "core.discard-int") <|
+  .cons (.word "core.identity") <|
+  .empty
+
+/-- The image's `body_digest` for `core.example`: SHA-256 of `body` lowered to
+target code, hex encoded. -/
+def bodyDigest : String := "e36bd603e5d474ad258ca72152c184bc0ff1f21fb6f6c339e19611802843fb4b"
+
+/-- The erased word type the image records for `core.example`. -/
+def erasedType : String := "(--v0:Int^many)"
+
+end «core.example»
+
+namespace «core.min-int»
+
+/-- The erased kernel program of `core.min-int`. -/
+def body : Program :=
+  .cons (.pick 1) <|
+  .cons (.pick 1) <|
+  .cons (.prim "<") <|
+  .cons (.roll 2) <|
+  .cons .quote <|
+  .cons (.quotation (.empty)) <|
+  .cons .compose <|
+  .cons (.roll 2) <|
+  .cons .quote <|
+  .cons (.quotation (.empty)) <|
+  .cons .compose <|
+  .cons .ifThenElse <|
+  .empty
+
+/-- The image's `body_digest` for `core.min-int`: SHA-256 of `body` lowered to
+target code, hex encoded. -/
+def bodyDigest : String := "6dd6b263c5211d933884bec5c5ec6e5db718daa97fd1687a1a96d5f5dfc7c82f"
+
+/-- The erased word type the image records for `core.min-int`. -/
+def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many)"
+
+end «core.min-int»
+
+namespace «core.max-int»
+
+/-- The erased kernel program of `core.max-int`. -/
+def body : Program :=
+  .cons (.pick 1) <|
+  .cons (.pick 1) <|
+  .cons (.prim "<") <|
+  .cons .swap <|
+  .cons .quote <|
+  .cons (.quotation (.empty)) <|
+  .cons .compose <|
+  .cons (.roll 2) <|
+  .cons .quote <|
+  .cons (.quotation (.empty)) <|
+  .cons .compose <|
+  .cons .ifThenElse <|
+  .empty
+
+/-- The image's `body_digest` for `core.max-int`: SHA-256 of `body` lowered to
+target code, hex encoded. -/
+def bodyDigest : String := "38be2d70291a51270e08587f89a198750594e08dec0d7cbfcdf0cf3be4364a53"
+
+/-- The erased word type the image records for `core.max-int`. -/
+def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many)"
+
+end «core.max-int»
 
 namespace «over»
 
@@ -41,38 +181,12 @@ def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many
 
 end «over»
 
-namespace «min»
-
-/-- The erased kernel program of `min`. -/
-def body : Program :=
-  .cons (.word "over") <|
-  .cons (.word "over") <|
-  .cons (.prim "<") <|
-  .cons (.quotation (
-    .cons .drop <|
-    .empty)) <|
-  .cons (.quotation (
-    .cons .swap <|
-    .cons .drop <|
-    .empty)) <|
-  .cons .ifThenElse <|
-  .empty
-
-/-- The image's `body_digest` for `min`: SHA-256 of `body` lowered to
-target code, hex encoded. -/
-def bodyDigest : String := "85f510b41223b7bf38d6c9f27623477e1ec2646229ac6879bfa31a7736d9b10d"
-
-/-- The erased word type the image records for `min`. -/
-def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many)"
-
-end «min»
-
 namespace «allocate-partial»
 
 /-- The erased kernel program of `allocate-partial`. -/
 def body : Program :=
   .cons (.word "over") <|
-  .cons (.word "min") <|
+  .cons (.word "core.min-int") <|
   .cons .dup <|
   .cons (.quotation (
     .cons (.prim "-") <|
@@ -82,7 +196,7 @@ def body : Program :=
 
 /-- The image's `body_digest` for `allocate-partial`: SHA-256 of `body` lowered to
 target code, hex encoded. -/
-def bodyDigest : String := "8bbb50eee18894a29f4a7f28af31a1f3b0bbfb91eb672a217dac1b42220865bf"
+def bodyDigest : String := "c3d91659c753a5d4d520919c27773ab06eebc05745e744bb77bcbb8185e80622"
 
 /-- The erased word type the image records for `allocate-partial`. -/
 def erasedType : String := "(forallρ;ρ,v0:Int^many,v1:Int^many--ρ,v0:Int^many,v1:Int^many)"
@@ -210,8 +324,14 @@ end «allocate»
 /-- Every word, in declaration order: its name, body, body digest and erased
 type. -/
 def words : List (String × Program × String × String) := [
+  ("core.identity", «core.identity».body, «core.identity».bodyDigest, «core.identity».erasedType),
+  ("core.duplicate-int", «core.duplicate-int».body, «core.duplicate-int».bodyDigest, «core.duplicate-int».erasedType),
+  ("core.discard-int", «core.discard-int».body, «core.discard-int».bodyDigest, «core.discard-int».erasedType),
+  ("core.exchange-int", «core.exchange-int».body, «core.exchange-int».bodyDigest, «core.exchange-int».erasedType),
+  ("core.example", «core.example».body, «core.example».bodyDigest, «core.example».erasedType),
+  ("core.min-int", «core.min-int».body, «core.min-int».bodyDigest, «core.min-int».erasedType),
+  ("core.max-int", «core.max-int».body, «core.max-int».bodyDigest, «core.max-int».erasedType),
   ("over", «over».body, «over».bodyDigest, «over».erasedType),
-  ("min", «min».body, «min».bodyDigest, «min».erasedType),
   ("allocate-partial", «allocate-partial».body, «allocate-partial».bodyDigest, «allocate-partial».erasedType),
   ("allocate-whole", «allocate-whole».body, «allocate-whole».bodyDigest, «allocate-whole».erasedType),
   ("reason", «reason».body, «reason».bodyDigest, «reason».erasedType),
@@ -219,8 +339,14 @@ def words : List (String × Program × String × String) := [
 
 /-- The dictionary the reference runner builds for this source. -/
 def dictionary : Dictionary
+  | "core.identity" => some { type := adapterWordType, body := «core.identity».body }
+  | "core.duplicate-int" => some { type := adapterWordType, body := «core.duplicate-int».body }
+  | "core.discard-int" => some { type := adapterWordType, body := «core.discard-int».body }
+  | "core.exchange-int" => some { type := adapterWordType, body := «core.exchange-int».body }
+  | "core.example" => some { type := adapterWordType, body := «core.example».body }
+  | "core.min-int" => some { type := adapterWordType, body := «core.min-int».body }
+  | "core.max-int" => some { type := adapterWordType, body := «core.max-int».body }
   | "over" => some { type := adapterWordType, body := «over».body }
-  | "min" => some { type := adapterWordType, body := «min».body }
   | "allocate-partial" => some { type := adapterWordType, body := «allocate-partial».body }
   | "allocate-whole" => some { type := adapterWordType, body := «allocate-whole».body }
   | "reason" => some { type := adapterWordType, body := «reason».body }
@@ -229,11 +355,29 @@ def dictionary : Dictionary
 
 /-! Each word's dictionary entry, which a proof unfolding a call to it needs. -/
 
+theorem «core.identity».entry :
+    dictionary "core.identity" = some { type := adapterWordType, body := «core.identity».body } := rfl
+
+theorem «core.duplicate-int».entry :
+    dictionary "core.duplicate-int" = some { type := adapterWordType, body := «core.duplicate-int».body } := rfl
+
+theorem «core.discard-int».entry :
+    dictionary "core.discard-int" = some { type := adapterWordType, body := «core.discard-int».body } := rfl
+
+theorem «core.exchange-int».entry :
+    dictionary "core.exchange-int" = some { type := adapterWordType, body := «core.exchange-int».body } := rfl
+
+theorem «core.example».entry :
+    dictionary "core.example" = some { type := adapterWordType, body := «core.example».body } := rfl
+
+theorem «core.min-int».entry :
+    dictionary "core.min-int" = some { type := adapterWordType, body := «core.min-int».body } := rfl
+
+theorem «core.max-int».entry :
+    dictionary "core.max-int" = some { type := adapterWordType, body := «core.max-int».body } := rfl
+
 theorem «over».entry :
     dictionary "over" = some { type := adapterWordType, body := «over».body } := rfl
-
-theorem «min».entry :
-    dictionary "min" = some { type := adapterWordType, body := «min».body } := rfl
 
 theorem «allocate-partial».entry :
     dictionary "allocate-partial" = some { type := adapterWordType, body := «allocate-partial».body } := rfl

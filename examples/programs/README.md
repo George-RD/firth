@@ -117,6 +117,19 @@ from the word's signature:
 python3 tools/loop/firth_run.py run examples/programs/sequences.firth --entry sum --stack '[[4, 5, 6]]'
 ```
 
+## Standard library
+
+`stdlib/core.firth` offers `core.min-int` and `core.max-int`
+(`Int Int -- Int`), the smaller and the larger of two integers. Their
+contracts are proved for every pair of integers
+(`src/proofs/Stdlib/Core.lean`). `allocate.firth` imports the file with
+`import "../../stdlib/core.firth";` and calls `core.min-int`. That path
+leaves `examples/programs/`, so name the repository as the source root:
+
+```sh
+python3 tools/loop/firth_run.py run examples/programs/allocate.firth --root . --entry allocate --stack '[5, 7, false]'
+```
+
 ## Limits
 
 - `allocate.firth` is one step of `specs/inventory-allocation.md`; the whole

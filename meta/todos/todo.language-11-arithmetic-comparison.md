@@ -47,6 +47,17 @@ Deliver the portable arithmetic and comparisons required by allocation.
   also checks that `MIN div -1` traps on the VM, and `test_firth_run.py`
   refuses a quotation-shaped input. Still open: `dec.int64-arithmetic` and
   its change, the VM overflow trap among the example cases, and `min`.
+- 10 October 2026: minimum is a checked word. `stdlib/core.firth` exports
+  `core.min-int` and `core.max-int`, whose contracts are proved for every
+  pair of integers (`min_int_contract`, `max_int_contract` in
+  `src/proofs/Stdlib/Core.lean`, recorded in `src/proofs/records.json`) and
+  which the example cases run on both hosts, i64 extremes included.
+  `examples/programs/allocate.firth` imports the file and uses `core.min-int`
+  for its partial policy in place of its own `min`. The inventory allocator
+  does not use it: `allocate-one` branches on `requested < remaining + 1` to
+  choose the reason code as well as the amount, so a `min` call would add a
+  comparison without removing one. S4 therefore stays open
+  (`docs/roadmap.md`): the M1 component does not yet use the library.
 
 ## Traceability
 
