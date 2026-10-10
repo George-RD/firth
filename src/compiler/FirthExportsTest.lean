@@ -37,8 +37,9 @@ private def checkModule (module source : String)
     | .ok actual =>
         if actual != digest then
           fail s!"{module}.{name}: body lowers to {actual}, recorded {digest}"
-  let sourceText ← IO.FS.readFile source
-  match ExportLean.exportedWords source sourceText with
+  -- The source and the files it imports, from the repository root.
+  let (main, files) ← Firth.Agent.Sources.load "." source
+  match ExportLean.exportedWords (if files.isEmpty then source else main.path) main.text files with
   | .error message => fail s!"{module}: {source} no longer exports: {message}"
   | .ok fresh =>
       if fresh.map (·.name) != names then

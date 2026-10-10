@@ -20,6 +20,11 @@ reference runner's registry, and `induction_on_measure` for recursion.
 
 Also in the library:
 
+- `WordContract.Holds.extend` (with `Runs.extend` and `RunsWithin.extend`),
+  which carries a contract to any dictionary that gives the same entry to
+  every word the original dictionary defines (`DictionaryExtends`), such as
+  the export of a program that imports the proved file
+  (`Inventory/Imported.lean`);
 - `RunsWithin … maxSteps maxCost`, the upper-bound form for words whose exact
   cost depends on the data, with the same rules and `run_of_runsWithin`;
 - `runs_if_of_true` and `runs_if_of_false`, which take the condition as an

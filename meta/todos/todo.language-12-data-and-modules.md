@@ -17,6 +17,14 @@ Make bounded application data and reusable vocabularies practical.
 - Define ownership, bounds, termination and serialization at the host boundary; any required frozen-spec extension needs a separate accepted decision and proof gates.
 - Add core library examples, malformed-data tests and differential coverage. Do not start a package registry or general framework.
 
+## Progress
+
+- Multi-file vocabularies: `import "path";` and `export name ...;`, with
+  deterministic load order and stable `firth.name.*` errors
+  (`dec.multi-file-imports`). `examples/inventory/policy-change/` clients
+  import `allocator.firth`.
+- Still open: typed records/results and the other criteria above.
+
 ## Traceability
 
 PRD G3/G8/G9; scope-language-vocabulary-layering and scope-ecosystem-stdlib.

@@ -48,21 +48,54 @@ A line comment begins with `\` and ends at the newline. A block comment begins
 with `(*` and ends at the first `*)`; block comments do not nest. Unterminated
 strings and comments are errors.
 
-A source file contains vocabulary declarations, `use` declarations, and word
-definitions:
+A source file contains imports, vocabulary declarations, `use` declarations,
+exports and word definitions:
 
 ```text
+import "<path>.firth";
+export <name> ...;
 vocab <name> { ... }
 use <vocabulary> [as <alias>];
 : <word-name> <stack-effect> <body>;
 ```
 
-The outer file is an implicit vocabulary. A word is exported by default. A
-qualified reference is resolved by its canonical name. An unqualified
-reference is accepted only when exactly one visible candidate exists. Ambiguous
-or missing names are errors. Definitions in one vocabulary are visible
+The outer file is an implicit vocabulary. Within its file a word declared in a
+vocabulary is visible from every vocabulary by its qualified name, but a word
+declared outside any vocabulary is visible only outside them. Other files see a
+word only if it is exported (below). A qualified reference is resolved by its canonical name.
+An unqualified reference is accepted only when exactly one visible candidate
+exists. Ambiguous or missing names are errors. Definitions in one vocabulary are visible
 throughout that vocabulary, so recursive words may be declared without textual
 forward declarations.
+
+A program may span files. `import` lines come first, and the path is relative
+to the importing file's directory (letters, digits, `.`, `_`, `-`, `/`, ending
+in `.firth`; `..` is allowed but may not leave the source root). Inside a file
+words are visible as described above. Across files only words listed in
+`export` are visible, and only from files you import directly: imports are not
+transitive.
+
+```text
+\ lib/math.firth
+export twice;
+: twice (forall ρ; ρ n:Int^many -- ρ r:Int^many) dup prim +;
+
+\ main.firth
+import "lib/math.firth";
+: main ( -- r:Int^many ) 21 twice;
+```
+
+An imported word keeps its own canonical name, with no file prefix, and the
+whole program is one dictionary. Two files that define the same name are
+refused (`firth.name.duplicate-canonical`), even if neither exports it. So wrap
+a library's helper words in a `vocab` (export `util.helper`, then `use util;`),
+or keep top-level names distinct. Calling an unexported word gives
+`firth.name.not-exported`.
+
+Files load once each, imports first, the root last; cycles are refused. Each
+file is checked on its own. An error in an imported file is reported with that
+file's path, and the importer gets `firth.name.import-failed` at the import
+instead of being checked. Fix the imported file first.
 
 A body contains literals, quotations, kernel atoms, primitives, word names, and
 local blocks:
@@ -300,7 +333,9 @@ by saying so ("That edit was
 checked assuming `f`, which has an error of its own, keeps its stack
 effect."), and `message_params.edit_assumes` lists those words.
 A syntax error, a duplicate name or a `use` that names no vocabulary in the
-file or reuses an alias ends the file there: the words before a bad `use` are still reported.
+file or reuses an alias ends that file there: the words before a bad `use` are still reported.
+An imported file that ends this way is reported under its own path, and each
+file that imports it gets `firth.name.import-failed`.
 Each diagnostic in one response has its own payload identifier.
 
 The diagnostic loop is:

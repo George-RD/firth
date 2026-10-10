@@ -11,7 +11,7 @@ gate_path = "tools/loop/mvp_agent_gate.py"
 [inputs]
 model_only = true
 guide_path = "docs/firth-agent-guide.md"
-guide_sha256 = "5c31edaa53448f7ad29fe3082cc2eac1b4c8c870825d66c14895e35b390af208"
+guide_sha256 = "5a5e6f2d3b001cd3aca4c3a58fe4566d8eda6c352371e9fe9d99520f5b92c1e5"
 interface_paths = [
   "src/agent/Firth/Agent/DiagnosticEnvelope.lean",
   "src/agent/Firth/Agent/Validation.lean",
@@ -30,7 +30,7 @@ role = "envelope-validation"
 
 [[inputs.interface]]
 path = "src/agent/Firth/Agent/ElaboratorDiagnostics.lean"
-sha256 = "0324ed937b7ca599bfa1227f6c8a06eac57685aa646111543d428e522a6185fe"
+sha256 = "45f92cc5c051847ec27cebeeac95f904bda0aad4660567016a9fbc303e8ea1e0"
 role = "elaborator-to-envelope-adapters"
 
 [gamma]
@@ -200,12 +200,12 @@ diagnostic_code_namespaces = [
 [schema."firth.source.v1"]
 version = "1.0"
 encoding = "utf-8"
-fields = ["request_id:string", "source_path:string", "source_text:string", "language_version:string", "gamma_version:string"]
+fields = ["request_id:string", "source_path:string", "source_text:string", "files:array (optional; the files the root imports)", "language_version:string", "gamma_version:string"]
 
 [schema."firth.elaboration.v1"]
 version = "1.0"
 encoding = "json"
-fields = ["request_id:string", "status:success|failure", "checked_words:array", "erased_word_types:array", "kernel_programs:array", "warnings:array", "diagnostics:array"]
+fields = ["request_id:string", "status:success|failure", "checked_words:array", "erased_word_types:array", "kernel_programs:array", "warnings:array", "sources:array", "diagnostics:array"]
 
 [schema."firth.checked-kernel.v1"]
 version = "1.0"
@@ -243,11 +243,12 @@ response_schema = "firth.elaboration.v1"
 
 [entry_point.elaborate.request]
 required = ["request_id", "source_path", "source_text", "language_version", "gamma_version"]
+optional = ["files"]
 source_encoding = "utf-8"
 
 [entry_point.elaborate.response]
 required = ["request_id", "status"]
-success = ["checked_words", "erased_word_types", "kernel_programs", "warnings"]
+success = ["checked_words", "erased_word_types", "kernel_programs", "warnings", "sources"]
 failure = ["diagnostics"]
 
 [entry_point.compile]

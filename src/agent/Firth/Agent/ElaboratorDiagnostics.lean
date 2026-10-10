@@ -4,6 +4,7 @@ import elaborator.Firth.Erasure
 import elaborator.Firth.StackEffect
 import elaborator.Firth.Refinement
 import elaborator.Firth.Pipeline
+import elaborator.Firth.Imports
 
 namespace Firth.Agent
 
@@ -122,6 +123,17 @@ private def effectNameHint (name : String) (inputs : List String) : String :=
 /-- A plain-language sentence and a repair hint for a syntax or name error. -/
 private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
   let actual := error.actual.map (s!"`{·}`") |>.getD "the end of the input"
+  let fallback : String × String :=
+    let expected := match error.expected with
+      | some expected => s!", expected `{expected}`"
+      | none => ""
+    -- Only a report at the end of the input has no text of its own.
+    let message := match error.actual with
+      | some _ => s!"Unexpected {actual}{expected}."
+      | none =>
+          if error.code == "firth.syntax.unexpected-eof" then s!"The input ends here{expected}."
+          else s!"This is not valid here ({(lastSegment error.code).replace "-" " "}){expected}."
+    (message, definitionShape)
   let (message, hint) := match error.code with
     | "firth.name.unresolved" =>
         match error.actual, error.effectInputs ++ error.effectOutputs with
@@ -160,6 +172,45 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
         (s!"A `locals` block binds the word's inputs in a different order from its stack effect: " ++
             "; ".intercalate described ++ ".",
           s!"A `locals` block takes one value off the stack for each name, the last name from the top, so the names must follow the stack effect's inputs from left to right.{plainFix}{String.join reachingFix}{String.join uncheckedFix} Swapping values with `swap` would not help, because the names are what is wrong.")
+    | "firth.name.not-exported" =>
+        let file := error.files.head?.getD "the imported file"
+        (s!"{actual} is defined in `{file}`, which does not export it.",
+          s!"A file offers only the words its `export` declarations list to the files that import it. Add the word to one in `{file}`, as in `export {error.expected.getD (error.actual.getD "name")};`, or use a word it exports.")
+    | "firth.name.import-not-found" =>
+        let resolved := error.files.head?.map (s!" It names `{·}` from the source root, and") |>.getD ""
+        (s!"No file of the program is at the import path {actual}.{resolved} no such file was found.",
+          "An import path is relative to the directory of the file that imports it, with `/` between directories and `..` for the directory above. Check the path and the file's name.")
+    | "firth.name.import-path" =>
+        (s!"{actual} is not an import path.",
+          "An import path is relative to the directory of the file that imports it, as in `import \"lib/core.firth\";`. It separates directories with `/`, uses only letters, digits, `.`, `_` and `-` in each part, ends in a `.firth` file name, and stays inside the source root: `..` cannot climb above it.")
+    | "firth.name.duplicate-import" =>
+        let target := (error.files.head?.map (s!"`{·}`")).getD actual
+        (s!"This file imports {target} more than once, here as {actual}.", "Delete all but one of the imports of that file.")
+    | "firth.name.import-cycle" =>
+        let around := " imports ".intercalate (error.files.map (s!"`{·}`"))
+        (s!"This import closes a cycle: {around}.",
+          "Files cannot import each other in a cycle. Move the words both files need into a third file, and import it from both.")
+    | "firth.name.import-failed" =>
+        let file := error.files.head?.getD "the imported file"
+        (s!"`{file}` has errors of its own, reported with its path, so this file was not checked.",
+          s!"Fix the errors in `{file}` first. This file is then checked against the words it exports.")
+    | "firth.name.duplicate-export" =>
+        (s!"{actual} is exported twice.", "List each word in one `export` declaration only; delete the repeat.")
+    | "firth.name.duplicate-canonical" =>
+        match error.files with
+        | [] => fallback
+        | [other] =>
+            (s!"{actual} is also defined in `{other}`, which this file imports. A program has one word of each name, whichever file defines it.",
+              s!"Rename one of the two words, or put one file's words in a vocabulary (`vocab name \{ ... }`), which gives them the keys `name.{error.actual.getD "word"}`.")
+        | files =>
+            (s!"Two files this file imports both define {actual}: {" and ".intercalate (files.map (s!"`{·}`"))}. A program has one word of each name, whichever file defines it.",
+              s!"Rename the word in one of the files, or put one file's words in a vocabulary (`vocab name \{ ... }`), which gives them the keys `name.{error.actual.getD "word"}`.")
+    | "firth.syntax.misplaced-import" =>
+        ("`import` is only allowed at the start of a file, before any other declaration.",
+          "Move every `import \"path\";` to the top of the file, outside any vocabulary.")
+    | "firth.syntax.misplaced-export" =>
+        ("`export` is only allowed at the top level of a file, not inside a vocabulary.",
+          "Move it after the vocabulary's closing `}` and name each word by its full key, as in `export core.identity;`.")
     | "firth.syntax.parenthesis-in-body" =>
         (s!"{actual} is not allowed in a word's body: parentheses only enclose the stack effect after the word's name.",
           "Pass values to an operation by pushing them in the order it takes them, with no grouping: write `n 1 prim +`, not `(n 1 prim +)`, and `xs i 1 prim + f`, not `xs (i 1 prim +) f`. To keep code to run later, quote it with `[ ... ]`. A comment is written `(* ... *)`, or `\\` to the end of the line.")
@@ -185,17 +236,7 @@ private def parseParams (error : Firth.Elaborator.ParseError) : Json :=
     | "firth.syntax.quote-in-name" =>
         (s!"{error.actual.map (s!"`{·}`") |>.getD "This name"} is not a name: a name cannot contain `'`.",
           "Rename it without the `'`, for example `q'` as `q2`, and use the new name everywhere the old one appears.")
-    | _ =>
-        let expected := match error.expected with
-          | some expected => s!", expected `{expected}`"
-          | none => ""
-        -- Only a report at the end of the input has no text of its own.
-        let message := match error.actual with
-          | some _ => s!"Unexpected {actual}{expected}."
-          | none =>
-              if error.code == "firth.syntax.unexpected-eof" then s!"The input ends here{expected}."
-              else s!"This is not valid here ({(lastSegment error.code).replace "-" " "}){expected}."
-        (message, definitionShape)
+    | _ => fallback
   .mkObj [("message", .str message), ("hint", .str hint)]
 
 def parserEnvelope (context : EmissionContext)
@@ -1496,5 +1537,25 @@ def elaboratePipeline (context : EmissionContext) (source : String)
       .failure (uniquePayloadIds (sortDiagnosticEnvelopes
         (diagnostics.map (withWord words ∘ pipelineDiagnosticEnvelope context ∘
           withClosedEffect context config source declared diagnostics))))
+
+/-- A program of several files (`dec.multi-file-imports`): `root` and the
+files it imports, transitively, from `files`. Each file is checked by
+`elaboratePipeline` against the words its direct imports export, and its
+diagnostics carry its own path. On success, every file's checked words in
+load order, the root last. -/
+def elaborateSources (context : EmissionContext) (root : Firth.Elaborator.Source)
+    (files : List Firth.Elaborator.Source) (config : Firth.Elaborator.PipelineConfig := {}) :
+    Except (List Envelope) (List (Firth.Elaborator.Source × Firth.Elaborator.CheckedProgram)) :=
+  let contextFor (source : Firth.Elaborator.Source) : EmissionContext :=
+    if source.path == root.path then context else { context with source := .path source.path }
+  let check (source : Firth.Elaborator.Source) (imported : List Firth.Elaborator.ImportedWord) :
+      Except (List Envelope) Firth.Elaborator.CheckedProgram :=
+    match elaboratePipeline (contextFor source) source.text { config with imported } with
+    | .success program => .ok program
+    | .failure diagnostics => .error diagnostics
+  match Firth.Elaborator.elaborateProgram check (fun source error => parserEnvelope (contextFor source) error)
+      root files with
+  | .ok programs => .ok programs
+  | .error envelopes => .error (uniquePayloadIds (sortDiagnosticEnvelopes envelopes))
 
 end Firth.Agent

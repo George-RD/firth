@@ -19,7 +19,7 @@ open Firth.Interpreter
 open Firth.ReferenceRun
 
 /-- SHA-256 of the source text these definitions were generated from. -/
-def sourceDigest : String := "33adee2a28d0775a77f4bc03070b15fcce3ff65b14403a8a44890e023b55d2b0"
+def sourceDigest : String := "ea52e0abb0cad4c7fe895ee9cd9001e3ca981b84e938a1748ea43e3df5fc2c6d"
 
 namespace «quantities-in-range-from»
 

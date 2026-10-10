@@ -13,6 +13,12 @@ requires: every colliding declaration behind `firth.name.duplicate-canonical`
 and `firth.name.duplicate-alias`, and every candidate behind
 `firth.name.ambiguous-use`, sorted by canonical key then source range.
 
+Since `dec.multi-file-imports`, a `firth.name.duplicate-canonical` can name
+words in two files (`Imports.collisions`). Its error records the import or
+word span and both file paths, not either declaration's span, so each related
+entry needs the declaring file's path as well as its span. Found by Codex on
+PR #225 (`src/elaborator/Firth/Imports.lean`).
+
 ## Why this is a todo and not a fix
 
 The accepted envelope (`meta/decisions/agent-diagnostic-envelope.md`,

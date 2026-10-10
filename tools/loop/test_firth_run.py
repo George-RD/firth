@@ -27,6 +27,14 @@ class SavedCaseTests(unittest.TestCase):
         self.suite = {"schema": "firth.tests.v1", "source": self.source.name,
                       "cases": [deepcopy(self.case)]}
         self.write()
+        # The import loader is a Lean binary: answer for it with the source as
+        # it is on disk and the files `self.imported` holds.
+        self.imported: list[dict[str, str]] = []
+        loader = patch.object(gate, "load_sources", side_effect=lambda name, source, root, workspace: {
+            "source_path": Path(source).relative_to(root).as_posix(),
+            "source_text": Path(source).read_text(encoding="utf-8"), "files": list(self.imported)})
+        loader.start()
+        self.addCleanup(loader.stop)
 
     def write(self, suite: object | None = None) -> None:
         self.path.write_text(json.dumps(self.suite if suite is None else suite), encoding="utf-8")
@@ -231,7 +239,8 @@ class SavedCaseTests(unittest.TestCase):
         entry, workspace = rebuild.call_args.args
         self.assertEqual(entry, {"name": "case-0", "entry": "main",
                                  "source": str(workspace / "source" / "double.firth"),
-                                 "source_path": "double.firth"})
+                                 "source_path": "double.firth",
+                                 "source_root": str(workspace / "source")})
         self.assertEqual(rebuild.call_args.kwargs, {"stack": [21], "fuel": 32})
         self.assertFalse(workspace.exists())
         self.assertEqual(result["source"], str(self.source))
@@ -239,6 +248,52 @@ class SavedCaseTests(unittest.TestCase):
         self.assertEqual(result["schema"], "firth.test-results.v1")
         self.assertEqual(result["cases"][0]["stack"], [42])
         self.assertEqual(result["cases"][0]["trace_comparison"], gate.TRACE_AGREED)
+
+    def test_imported_files_are_frozen_beside_the_source(self) -> None:
+        self.imported = [{"source_path": "lib/math.firth", "source_text": ": twice ( -- ) ;\n"}]
+        frozen = []
+
+        def run_case(entry, workspace, **_):
+            root = Path(entry["source_root"])
+            frozen.append((Path(entry["source"]).relative_to(root).as_posix(),
+                           (root / "lib" / "math.firth").read_text(encoding="utf-8")))
+            return self.observation([42])
+
+        with patch.object(gate, "build_toolchain"), patch.object(gate, "rebuild", side_effect=run_case):
+            code, _, _ = self.invoke()
+        self.assertEqual(code, 0)
+        self.assertEqual(frozen, [("double.firth", ": twice ( -- ) ;\n")])
+
+    def test_a_suite_source_resolves_its_imports_under_the_given_root(self) -> None:
+        # Without `--root` the suite's directory is the root; with it, the
+        # source is named and frozen by its path under that root.
+        seen = []
+
+        def run_case(entry, workspace, **_):
+            seen.append(Path(entry["source"]).relative_to(Path(entry["source_root"])).as_posix())
+            return self.observation([42])
+
+        with patch.object(gate, "build_toolchain"), patch.object(gate, "rebuild", side_effect=run_case):
+            code, _, _ = self.invoke("--root", str(self.root.parent))
+        self.assertEqual(code, 0)
+        self.assertEqual(seen, [f"{self.root.name}/double.firth"])
+
+    def test_check_names_a_nested_source_by_its_root_path_without_imported_files(self) -> None:
+        # The elaborator resolves imports against `source_path`, so it must be
+        # the path under the root even when no imported file was found.
+        requests = []
+
+        def adapter(command, request, workspace, label):
+            requests.append(request)
+            return {"status": "success", "checked_words": [], "warnings": []}
+
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with patch.object(gate, "build_toolchain"), patch.object(gate, "adapter", side_effect=adapter), \
+                redirect_stdout(stdout), redirect_stderr(stderr):
+            code = runner.main(["check", str(self.source), "--root", str(self.root.parent)])
+        self.assertEqual(code, 0, stderr.getvalue())
+        self.assertEqual(requests[0]["source_path"], f"{self.root.name}/double.firth")
+        self.assertNotIn("files", requests[0])
 
     def test_display_names_never_become_scratch_paths(self) -> None:
         self.write({**self.suite, "cases": [{**self.case, "name": "../human readable label"}]})
