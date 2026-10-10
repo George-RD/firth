@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.agent
-status: open
+status: done
 created: 2026-10-10
 ---
 
@@ -28,3 +28,16 @@ refers to. Diagnostics already carry their file's path
 
 Codex on PR #225 (`src/agent/Firth/Agent/ElaborateAdapter.lean`), found after
 the PR was approved; filed under rule 15 to ride a later PR.
+
+## Resolution
+
+The elaborate adapter's `successJson` now gives each warning its file's
+`source_path`, beside `word`, `code` and `range`, so `firth_run.py check`
+passes it through unchanged. No schema lists a warning's members:
+`firth.elaboration.v1` in `check_mvp_agent_inputs.py` lists only
+`warnings:array`, and the adapter's docstring now names the members.
+
+`firthImportsTest` elaborates a root and an imported file that each define a
+word with a `LOCAL_DEPTH` warning, and checks that the imported word's
+warnings name `warned.firth` and the root's name `main.firth`. Dropping the
+member, or naming every warning with the root's path, fails it.

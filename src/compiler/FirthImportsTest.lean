@@ -243,6 +243,18 @@ def main : IO Unit := do
   let sources := (← member elaboration "sources").compress
   if !(sources.contains "\"source_path\":\"lib.firth\"" && sources.contains "\"words\":[\"double\",\"helper\"]") then
     fail s!"adapter: sources {sources}"
+  -- A warning's range is in its word's own file, so the warning names that file.
+  let deep (name : String) : String :=
+    s!": {name} ( a:Int^many b:Int^many c:Int^many d:Int^many e:Int^many -- ) locals \{ a b c d e } \{ } ;"
+  let warned := src "warned.firth" (deep "lib-deep" ++ "\nexport lib-deep;")
+  let warnedMain := src "main.firth" ("import \"warned.firth\";\n" ++ deep "main-deep")
+  let warnings ← match (← member (← elaborateJson warnedMain [warned]) "warnings").getArr? with
+    | .ok values => pure values.toList
+    | .error error => fail s!"adapter: warnings {error}"; pure []
+  let warningPaths := warnings.map fun warning =>
+    ((warning.getObjValAs? String "word").toOption, (warning.getObjValAs? String "source_path").toOption)
+  if warningPaths.eraseDups != [(some "lib-deep", some "warned.firth"), (some "main-deep", some "main.firth")] then
+    fail s!"adapter: warning paths {repr warningPaths}"
   match Firth.Agent.Elaborate.runRequest (elaborateRequest (main₀ "2 helper") [lib]) with
   | .ok output =>
       if !(output.contains "firth.name.not-exported" && output.contains "\"path\":\"main.firth\"") then
