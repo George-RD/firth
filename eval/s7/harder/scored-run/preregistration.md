@@ -300,11 +300,27 @@ answer behaves differently on some hidden test. The rest are reported as
 refusals.
 
 These numbers are computed by a script committed with the results, which
-reads only the run directory's kept files: `results-N.json`,
-`outcome.json`, `answer-N.md` (for answer lengths) and, for DeepSeek,
-`response-N.json` (for `prompt_eval_count` and `done_reason`). Its
-permutation test and bootstrap are checked against a hand-worked example
-in its own test.
+reads only the run directory's kept files. Each file is listed with the
+outputs that need it:
+- `results-N.json`: tasks passed per round, each failure's cause (the
+  per-case error, out of steps included), the per-author means, the S7
+  difference and its tests, the ceiling rule, and the guarantees (a
+  refusal on the visible example in round 1, and whether round 2's
+  answer behaves differently on a hidden test);
+- `answer-N.md`: answer lengths;
+- `outcome.json` (DeepSeek): each round's verdict, length cut-offs, void
+  and crash status with its cause, and answers not taken in round 2;
+- `response-N.json` (DeepSeek): `prompt_eval_count`, for the
+  truncated-prompt void and the report, and `done_reason`;
+- `request-N.json` (DeepSeek): the characters sent, for the
+  truncated-prompt rule;
+- `transcript.json` (sub-agents): audit flags, which are void causes, and
+  a sub-agent that ended without handing back, a crash;
+- the run directory's context scan output: context voids.
+
+The void and crash counts per arm and by cause come from the last four.
+Its permutation test and bootstrap are checked against a hand-worked
+example in its own test.
 
 ## Before the pin
 
