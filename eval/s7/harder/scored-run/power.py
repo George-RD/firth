@@ -9,7 +9,9 @@ uses 2,000 resamples for speed (the analysis uses 10,000).
 
     python3 eval/s7/harder/scored-run/power.py
 
-prints the table recorded in `power-output.txt`. Standard library only.
+prints the table recorded in `power-output.txt`. Standard library only. It
+first checks its exact permutation p against enumeration, and checks that
+the same comparison rejects a planted one-sided p.
 """
 
 from __future__ import annotations
@@ -92,19 +94,41 @@ def power(n: int, mean_hi: float, mean_lo: float, rng: random.Random) -> float:
     return hits / REPLICATES
 
 
-def self_check() -> None:
+def self_check(perm=perm_p) -> list[str]:
+    """Problems found comparing PERM against brute-force enumeration and
+    the known 2/252 minimum; empty when it agrees."""
+    problems = []
     rng = random.Random(1)
     for n in (3, 5):
         for _ in range(50):
             a = [rng.randint(0, TASKS) for _ in range(n)]
             b = [rng.randint(0, TASKS) for _ in range(n)]
-            assert abs(perm_p(a, b) - perm_p_brute(a, b)) < 1e-12, (a, b)
+            if abs(perm(a, b) - perm_p_brute(a, b)) > 1e-12:
+                problems.append(f"differs from enumeration on {a} {b}")
     # The smallest two-sided p for 5 against 5 is 2/252.
-    assert abs(perm_p([6] * 5, [0] * 5) - 2 / 252) < 1e-12
+    if abs(perm([6] * 5, [0] * 5) - 2 / 252) > 1e-12:
+        problems.append("smallest p is not 2/252")
+    return problems
+
+
+def planted_one_sided(a: list[int], b: list[int]) -> float:
+    """A planted bug: `perm_p` without the absolute value, a one-sided p.
+    `self_check` must reject it."""
+    pooled = a + b
+    n, m = len(a), len(b)
+    total = sum(pooled)
+    obs = sum(a) / n - sum(b) / m
+    splits = list(itertools.combinations(range(n + m), n))
+    hits = sum(
+        1 for c in splits
+        if (s := sum(pooled[i] for i in c)) / n - (total - s) / m >= obs - 1e-12)
+    return hits / len(splits)
 
 
 def main() -> None:
-    self_check()
+    problems = self_check()
+    assert not problems, problems
+    assert self_check(planted_one_sided), "self_check accepted the planted one-sided p"
     rng = random.Random(SEED)
     print(f"replicates {REPLICATES}, bootstrap {BOOT}, seed {SEED}")
     print("true means (higher arm vs lower arm) | n per arm | power")
