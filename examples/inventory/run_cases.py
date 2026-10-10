@@ -72,6 +72,14 @@ def proved_images(records: dict[str, Any]) -> list[tuple[str, str, dict[str, str
             if record["export"] == EXPORT and record["word"] == ENTRY and "target" in record]
 
 
+def unrecorded_targets(records: dict[str, Any]) -> list[str]:
+    """Each allocator record that names a target theorem but carries no target
+    image, so a record that lost its payload fails rather than drops out."""
+    return [record["target_theorem"] for record in records["records"]
+            if record["export"] == EXPORT and record["word"] == ENTRY
+            and "target_theorem" in record and "target" not in record]
+
+
 def check_image(observation: dict[str, Any], records: dict[str, Any]) -> list[str]:
     """Why the image the VM ran is not the one every target theorem of the
     allocator's records is about, or nothing. That theorem holds of any image
@@ -81,6 +89,9 @@ def check_image(observation: dict[str, Any], records: dict[str, Any]) -> list[st
     its body digest, which the VM recomputes from the code it decoded and
     refuses to load on a mismatch. A miscompile that changes any word's code,
     even one that runs the same, changes its digest and fails here."""
+    missing = unrecorded_targets(records)
+    if missing:
+        return [f"the record of {theorem} carries no target image" for theorem in missing]
     images = proved_images(records)
     if not images:
         return [f"no proof record of {ENTRY} names a target theorem"]
@@ -221,7 +232,8 @@ def run_case(index: int, case: dict[str, Any]) -> dict[str, Any]:
     if result.get("ran") == "firth" and result["kernel_cost"] > cost_bound(result["requests"]):
         result.update(outcome="fail", detail=f"cost {result['kernel_cost']} over the bound")
     if image_problems:
-        result.update(outcome="fail", detail="; ".join(image_problems))
+        details = [result["detail"]] if "detail" in result else []
+        result.update(outcome="fail", detail="; ".join(details + image_problems))
     if result["outcome"] == "fail":
         result["actual"] = actual
     return result

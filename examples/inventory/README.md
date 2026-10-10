@@ -76,8 +76,12 @@ on the target semantics, a Lean model of the VM's contract, the compiled image
 run from the same input with at least the proved step bound as fuel halts with
 the same output at a kernel cost within the same bound, unless it exceeds the
 256-frame call-depth bound or takes the length of a sequence of 2^63 or more
-elements. At 64 requests the step bound is 361,269, so the 1,000,000 fuel the
-cases run with is enough on the target semantics. `run_cases.py` requires the
+elements. The contract does not cap the number of requests (the host enforces
+the spec's 64); up to 64 the step bound is at most 361,269, so the 1,000,000
+fuel the cases run with is enough on the target semantics outside those two
+exceptions
+(that the length overflow cannot happen on admitted input is inferred, not
+proved). `run_cases.py` requires the
 image the VM runs to be the one the record names, word by word, by target name
 and body digest (`check_image`). The Rust VM is tested against the target
 semantics on every run, not proved against it; `specs/tcb-boundary.toml` lists

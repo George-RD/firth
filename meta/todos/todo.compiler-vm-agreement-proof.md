@@ -99,8 +99,8 @@ bug the two sides share.
   statement is definitionally that `TargetHolds` (fixtures: one accepted, three
   refused), and the record lists the image it is about: each word, its target
   name and its body digest, recomputed by lowering the exported program.
-  `examples/inventory/run_cases.py` requires the image the VM runs on every
-  case to be exactly that one (`check_image`); `test_inventory_target_image.py`
+  `examples/inventory/run_cases.py` requires the image the VM runs on each
+  VM-executed case to be exactly that one (`check_image`); `test_inventory_target_image.py`
   plants miscompiled images (one word's code changed, two swapped, a word
   missing or added, another entry) and the call site.
   `specs/tcb-boundary.toml` names the parts between the theorem and a VM run,

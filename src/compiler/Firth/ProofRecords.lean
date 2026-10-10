@@ -165,10 +165,15 @@ def decodeContract (root : Name) (item : Json) : Except String Contract := do
   let claim ← item.getObjValAs? String "claim"
   if module.getRoot != root then err s!"{theoremName}: module {module} is not under {root}."
   if claim.isEmpty then err s!"{theoremName}: empty claim"
-  let target ← match item.getObjValAs? String "target_theorem",
-      item.getObjValAs? String "target_module" with
-    | .error _, .error _ => pure none
-    | .ok name, .ok targetModule => do
+  -- An absent pair means no target; a present but malformed one is refused,
+  -- never read as absent.
+  let target ← match (item.getObjVal? "target_theorem").toOption,
+      (item.getObjVal? "target_module").toOption with
+    | none, none => pure none
+    | some name, some targetModule => do
+        let name ← name.getStr?.mapError fun _ => s!"{theoremName}: target_theorem is not a string"
+        let targetModule ← targetModule.getStr?.mapError fun _ =>
+          s!"{theoremName}: target_module is not a string"
         let targetModule ← parseName targetModule
         if targetModule.getRoot != root then
           err s!"{theoremName}: target module {targetModule} is not under {root}."

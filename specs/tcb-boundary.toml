@@ -52,7 +52,7 @@ condition = "The VM is the trusted execution boundary. Its target contract, deco
 [[trusted_components.parts]]
 id = "json-emitter"
 paths = ["src/compiler/Firth/Compile.lean"]
-role = "instructionJson, codeJson and wordJson write the image as JSON. Each word's body_digest is computed in Lean from its code, so an emitter fault that changes code is refused by VM image admission, unless canonical encoding hides it."
+role = "instructionJson, codeJson and wordJson write the image as JSON. Each word's body_digest is computed in Lean from its code. VM image admission refuses an image whose code and digest disagree; a fault that rewrites both consistently passes admission and is caught by image-match, which compares the digests with the proof records, unless canonical encoding hides it."
 
 [[trusted_components.parts]]
 id = "canonical-code"
@@ -71,13 +71,13 @@ role = "validate_image recomputes each word's body_digest from the decoded code 
 
 [[trusted_components.parts]]
 id = "rust-vm"
-paths = ["src/runtime/vm/src"]
+paths = ["src/runtime/vm/src", "tools/loop/mvp_agent_gate.py"]
 role = "Executes the image: steps, frames, fuel, costs and traps. mvp_agent_gate.rebuild requires it to agree with the target semantics (lake exe firthTargetRun, whose JSON decoder in src/compiler/Firth/TargetRun.lean is part of that test) on status, stack, cost and trap for every program it runs. Tested, not proved."
 
 [[trusted_components.parts]]
 id = "image-match"
-paths = ["src/compiler/Firth/ProofRecords.lean", "examples/inventory/run_cases.py"]
-role = "firthProofRecords lowers each exported word and records its target name and body_digest (an evaluated program, not a proof); run_cases.check_image requires the image the VM ran to publish exactly those."
+paths = ["src/compiler/Firth/ProofRecords.lean", "examples/inventory/run_cases.py", "tools/loop/mvp_agent_gate.py"]
+role = "firthProofRecords lowers each exported word and records its target name and body_digest (an evaluated program, not a proof); mvp_agent_gate.rebuild builds the list of names and body digests of the image it hands the VM; run_cases.check_image requires that image to publish exactly those."
 
 [smt_policy]
 required_terms = ["unsat", "pinned", "content-addressed", "Lean", "rechecked"]

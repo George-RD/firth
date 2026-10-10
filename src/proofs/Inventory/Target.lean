@@ -11,9 +11,14 @@ running `allocate-batch`'s target name from a stack that stands for the
 contract's input, given at least the contract's step bound as fuel, the target
 halts with a stack that stands for the contract's output at a kernel cost
 within the contract's cost bound, unless it exceeds its 256-frame call-depth
-bound or takes the length of a sequence of 2^63 or more elements. At 64
-requests the step bound is 361,269, inside the 1,000,000 fuel the inventory
-cases run with, so on the target semantics no admitted input runs out of fuel.
+bound or takes the length of a sequence of 2^63 or more elements. The step
+bound grows with the number of requests and the contract does not cap it; the
+spec's limit of 64 requests is checked by the host. Up to 64 requests the step
+bound is at most 361,269, inside the 1,000,000 fuel the inventory cases run
+with, so on the target semantics no batch the host admits runs out of fuel
+outside those two exceptions. When the reference run reaches a length overflow
+the theorem says nothing about the target; that this cannot happen on admitted
+input is inferred, not proved.
 
 These are facts about the target semantics, a Lean model of `target-spec.md`.
 The Rust VM is tested against it, not proved; `examples/inventory/run_cases.py`
