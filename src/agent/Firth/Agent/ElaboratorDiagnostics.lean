@@ -1439,7 +1439,7 @@ private def sourceBytes (source : String) (start stop : Nat) : String :=
 effect written with a row, when the word is declared in the source, and
 whether the source with only that effect changed is refused in the word's own
 body (a word it calls with no row, say) where `reports`, the source's own
-reports, have nothing there. -/
+reports other than this one, have nothing there. -/
 private partial def withClosedEffect (context : EmissionContext)
     (config : Firth.Elaborator.PipelineConfig) (source : String)
     (declared : List Firth.Elaborator.WordDefinition) (reports : List Firth.Elaborator.PipelineDiagnostic) :
@@ -1464,7 +1464,10 @@ private partial def withClosedEffect (context : EmissionContext)
             match (pipelineDiagnosticEnvelope context report).body with
             | .diagnostic body => positionWithin span body.location.range.start
             | _ => false
-        let refusedBefore := within word.span reports
+        -- This report itself does not count: the callee may be the word it
+        -- is in, calling itself.
+        let refusedBefore := within word.span
+          (reports.filter (· != Firth.Elaborator.PipelineDiagnostic.stackEffect diagnostic))
         let rowRefusesBody := !refusedBefore &&
           match Firth.Elaborator.elaborateWith config edited, editedWord with
           | .success _, _ => false

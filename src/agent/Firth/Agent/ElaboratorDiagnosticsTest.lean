@@ -571,6 +571,17 @@ private def runClosedCalleeTests : IO Unit := do
       | [] => fail "closed callee calling a closed word: with the row, `outer` is not refused"
       | _ => pure ()
   | envelopes => fail s!"closed callee calling a closed word: expected one report, got {envelopes.length}"
+  -- A closed word that calls itself with a value below: with a row it
+  -- would leave that value behind, so its body is refused too, though this
+  -- report is already in it (Codex on #228).
+  let recursive := ": outer ( a:Int^many -- r:Int^many ) 1 swap outer ;\n"
+  match reportsWithCode (elaboratePipeline pipelineContext recursive agentConfig) "firth.type.word-input-mismatch" with
+  | [envelope] =>
+      let emitted := encode envelope
+      for needle in [closedText, "With only that change, `outer`'s own body is refused"] do
+        unless emitted.contains needle do
+          fail s!"closed word calling itself: the report does not say {needle}: {emitted}"
+  | envelopes => fail s!"closed word calling itself: expected one report, got {envelopes.length}"
   -- The same calls with a row, given values of the wrong types.
   notClosed "a callee with a row" "firth.type.word-input-mismatch"
     ": add2 (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) prim + ;\n: w (forall ρ; ρ x:Int^many -- ρ r:Int^many) locals { x } { true x add2 } ;\n"
