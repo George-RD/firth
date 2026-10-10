@@ -689,8 +689,8 @@ kept in `response-ROUND.json` and is never scored. `deepseek.py
 `deepseek_sample.py --set scored --lang LANG PROMPT DIR` runs one DeepSeek
 sample through both rounds with `tier.py`'s steps, as a Sonnet sample is run
 by hand: round 1 is asked, extracted and scored; `tier.py repair`'s feedback
-(nothing from a hidden test) is sent as round 2 when any answer failed its
-example; round 2's answers replace round 1's for the tasks the feedback
+(nothing from a hidden test) is sent as round 2 when any task has no answer
+or an answer failed its example; round 2's answers replace round 1's for the tasks the feedback
 listed, and the whole set is scored again. Round 2's answer to a task the
 feedback did not list is not taken, and `outcome.json` names it. A cut-off
 round scores nothing, whatever it holds (a round-2 cut-off keeps round 1's

@@ -120,9 +120,9 @@ until the tasks get harder.
   prompt and `AGENTS.md`.
 - Decided on 10 October 2026 by the project's coordinator, under the
   maintainer's delegation, for the scored run: a DeepSeek reply cut off at
-  the length limit is scored as a failed answer, not replaced; only void
-  rounds (a failed request or a reply that is not a complete answer) are
-  replaced. A round-1 cut-off gets a feedback round like any other failed
+  the length limit is scored as a failed answer, not replaced; a void round
+  (a failed request or a reply that is not a complete answer) voids the
+  whole sample, and only void samples are replaced. A round-1 cut-off gets a feedback round like any other failed
   answer, saying the reply was cut off, on both language arms.
   `eval/s7/harder/deepseek_sample.py` runs a DeepSeek sample by these rules
   (README, "DeepSeek"). The pre-registration, not yet written, must state
