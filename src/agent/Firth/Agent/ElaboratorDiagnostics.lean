@@ -525,6 +525,12 @@ private def operationRoles (operation : String) : Option (List String) :=
     primitiveRoles ((operation.drop 6).dropEnd 1).toString
   else none
 
+/-- "`w` declares no inputs, but its body takes 2". -/
+private def declaredInputsText (word : String) (inputs : Firth.Elaborator.DeclaredInputs) : String :=
+  let count (n : Nat) := if n == 1 then "1 input" else s!"{n} inputs"
+  let declared := if inputs.declared == 0 then "no inputs" else count inputs.declared
+  s!"`{word}` declares {declared}, but its body takes {if inputs.exact then "" else "at least "}{count inputs.takes}"
+
 /-- The message and hint for a word or primitive handed fewer values than it
 takes, as the body is written (`CallAccount.missing`): what it takes, the
 values it gets by source, and, when the pipeline found and checked one, the
@@ -547,7 +553,10 @@ private def shortExplanation (inWord : String) (word : Option String)
     | 0 => "but nothing is on the stack before it"
     | 1 => s!"but only 1 value is on the stack before it: {listing typed}"
     | n => s!"but only {n} values are on the stack before it, bottom to top: {listing typed}"
-  let message := s!"{account.operation}{inWord} takes {valueCount count} ({takes}), bottom to top, {gets}."
+  let declared := match word, account.declaredInputs with
+    | some word, some inputs => s!" {declaredInputsText word inputs}."
+    | _, _ => ""
+  let message := s!"{account.operation}{inWord} takes {valueCount count} ({takes}), bottom to top, {gets}.{declared}"
   let them := if account.missing == 1 then "the missing value" else s!"the {account.missing} missing values"
   let hint := match account.edit with
     | some edit =>
@@ -582,6 +591,23 @@ private def shortExplanation (inWord : String) (word : Option String)
           s!"Push {them} before {account.operation}. {theLocals} on the stack: writing a local's name pushes its value."
   (message, hint)
 
+/-- A `locals` block in `word` that names more values than are on the stack,
+where they can only have been meant to come from the word's caller
+(`DeclaredInputs`). Declaring more inputs is one way to fix it, so the hint
+gives both. -/
+private def declaredInputsExplanation (word : String) (short : Firth.Elaborator.Shortfall)
+    (inputs : Firth.Elaborator.DeclaredInputs) : String × String :=
+  let block := s!"`locals \{ {" ".intercalate short.names} }`"
+  let present := match short.present with
+    | 0 => "no value is on the stack before it"
+    | 1 => "only 1 value is on the stack before it"
+    | n => s!"only {n} values are on the stack before it"
+  let more := inputs.takes - inputs.declared
+  let them := if more == 1 then "1 more input" else s!"{more} more inputs"
+  let message := s!"{block} in `{word}` names {valueCount short.names.length}, but {present}. {declaredInputsText word inputs}."
+  let hint := s!"A word's body starts with only the inputs its stack effect declares. If these values are to come from the caller of `{word}`, declare {them} in its stack effect{if inputs.exact then "" else ", or more"}. Otherwise push them before {block}."
+  (message, hint)
+
 private def erasureDiagnostic (word : String) : Firth.Elaborator.ErasureError → ErasureDiagnostic
   | .duplicateLocal name span =>
       { code := "firth.name.duplicate-local", cause := "name-resolution", params := namedParams name, span }
@@ -589,8 +615,14 @@ private def erasureDiagnostic (word : String) : Firth.Elaborator.ErasureError �
       { code := "firth.name.unbound-local", cause := "name-resolution", params := namedParams name, span }
   | .unsupportedCapture name span =>
       { code := "firth.elaboration.unsupported-capture", cause := "elaboration", params := namedParams name, span }
-  | .missingStackValue span =>
-      { code := "firth.type.stack-underflow", cause := "type-checking", params := .mkObj [], span }
+  | .missingStackValue span short =>
+      let params := match short, short.bind (·.inputs) with
+        | some short, some inputs =>
+            if word.isEmpty then .mkObj [] else
+            let (message, hint) := declaredInputsExplanation word short inputs
+            .mkObj [("word", .str word), ("message", .str message), ("hint", .str hint)]
+        | _, _ => .mkObj []
+      { code := "firth.type.stack-underflow", cause := "type-checking", params, span }
   | .linearCopy name span first =>
       let params := match first with
         | some first => .mkObj [("name", .str name), ("first_line", .num first.start.line),
@@ -1519,6 +1551,109 @@ private partial def withClosedEffect (context : EmissionContext)
       .assumes word callees edits (withClosedEffect context config source declared reports inner)
   | other => other
 
+/-- `source` with `count` more inputs, `taken1` to `takenN` of type `Int`,
+declared at the bottom of `word`'s stack effect, or at the top when `atTop`,
+when the effect has no row and those names are free. Only how many values
+the body takes is checked with it, not their types. A `locals` block that
+opens the body and names the declared inputs, and then more, reads the
+inputs added at the top as the ones it names (`checkInputLocals`). -/
+private def withMoreInputs (source : String) (word : Firth.Elaborator.WordDefinition)
+    (count : Nat) (atTop : Bool) : Option String := do
+  let effect := word.effect
+  if (effect.input ++ effect.output).any (· matches .row ..) then none
+  let names := (effect.input ++ effect.output).filterMap fun item => match item with
+    | .value name _ _ => some name
+    | .row .. => none
+  let added := (List.range count).map (s!"taken{· + 1}")
+  if added.any names.contains then none
+  let text := String.join (added.map (s!" {·}:Int^many")) ++ " "
+  let at_ ← match (if atTop then effect.input.getLast? else effect.input.head?) with
+    | some (.value _ _ span) => some (if atTop then span.stop.offset else span.start.offset)
+    | _ =>
+        let effectText := sourceBytes source effect.span.start.offset effect.span.stop.offset
+        match effectText.splitOn "--" with
+        | before :: _ :: _ => some (effect.span.start.offset + before.utf8ByteSize)
+        | _ => none
+  some (sourceBytes source 0 at_ ++ text ++ sourceBytes source at_ source.utf8ByteSize)
+
+/-- The erasure report of the word `name` itself, if `report` is one. -/
+private def erasureReportOf (name : String) :
+    Firth.Elaborator.PipelineDiagnostic → Option Firth.Elaborator.ErasureError
+  | .erasure word error => if word == name then some error else none
+  | .assumes _ _ _ inner => erasureReportOf name inner
+  | _ => none
+
+/-- How many more values than its stack effect declares an underflow shows
+the body of a word takes, where it can only have been meant to take them from
+its caller: a `locals` block with no unused local on the stack, or an
+operation with no local in scope and no edit that pushes its values in order. -/
+private def shortOfInputs : Firth.Elaborator.ErasureError → Option Nat
+  | .missingStackValue _ (some short) =>
+      if short.hidden == 0 && short.tracked && short.present < short.names.length then
+        some (short.names.length - short.present) else none
+  | .effectUnderflow _ _ (some account) =>
+      if account.missing > 0 && account.locals.isEmpty && account.edit.isNone then
+        some account.missing else none
+  | _ => none
+
+/-- How many inputs `word`'s stack effect declares, and how many its body
+takes (`DeclaredInputs`): the source is checked again with `extra` more
+inputs declared, and each time the body still runs short of values from its
+caller, with as many more again. -/
+private def inputsTaken (config : Firth.Elaborator.PipelineConfig) (source : String)
+    (word : Firth.Elaborator.WordDefinition) (declared extra : Nat) :
+    (fuel : Nat) → Firth.Elaborator.DeclaredInputs
+  | 0 => { declared, takes := declared + extra, exact := false }
+  | fuel + 1 =>
+      let atLeast : Firth.Elaborator.DeclaredInputs := { declared, takes := declared + extra, exact := false }
+      -- The reports of the source with the inputs added, at the bottom or
+      -- else at the top, the first that gets the word past name resolution
+      -- and `checkInputLocals` to erasure. Another word's reports from
+      -- before erasure do not stop this one.
+      let attempt (atTop : Bool) : Option (List Firth.Elaborator.PipelineDiagnostic) := do
+        let edited ← withMoreInputs source word extra atTop
+        match Firth.Elaborator.elaborateWith { config with checkEdits := false } edited with
+        | .success _ => some []
+        | .failure reports =>
+            -- The word, where it is in the edited source.
+            let stop := word.span.stop.offset + edited.utf8ByteSize - source.utf8ByteSize
+            let inWord := reports.any fun report => match report with
+              | .parse error => word.span.start.offset ≤ error.primary.start.offset &&
+                  error.primary.start.offset ≤ stop
+              | _ => false
+            if inWord then none else some reports
+      match (attempt false).orElse fun _ => attempt true with
+      | none => atLeast
+      | some reports =>
+          match reports.findSome? (erasureReportOf word.name) with
+          | none => { atLeast with exact := true }
+          | some error => match shortOfInputs error with
+            | some more => inputsTaken config source word declared (extra + more) fuel
+            | none => atLeast
+
+/-- An underflow in a word whose stack effect has no row, where the values
+missing can only have been meant to come from the word's caller
+(`shortOfInputs`), with how many inputs the effect declares and how many the
+body takes. -/
+private partial def withDeclaredInputs (config : Firth.Elaborator.PipelineConfig) (source : String)
+    (declared : List Firth.Elaborator.WordDefinition) :
+    Firth.Elaborator.PipelineDiagnostic → Firth.Elaborator.PipelineDiagnostic
+  | .erasure name error =>
+      match declared.find? (·.name == name), shortOfInputs error with
+      | some word, some missing =>
+          if (word.effect.input ++ word.effect.output).any (· matches .row ..) then .erasure name error else
+          let count := (word.effect.input.filter (· matches .value ..)).length
+          let inputs := some (inputsTaken config source word count missing 8)
+          match error with
+          | .missingStackValue span (some short) => .erasure name (.missingStackValue span (some { short with inputs }))
+          | .effectUnderflow operation span (some account) =>
+              .erasure name (.effectUnderflow operation span (some { account with declaredInputs := inputs }))
+          | other => .erasure name other
+      | _, _ => .erasure name error
+  | .assumes word callees edits inner =>
+      .assumes word callees edits (withDeclaredInputs config source declared inner)
+  | other => other
+
 def elaboratePipeline (context : EmissionContext) (source : String)
     (config : Firth.Elaborator.PipelineConfig := {}) : StructuredElaborationResult :=
   let config := { config with
@@ -1536,6 +1671,7 @@ def elaboratePipeline (context : EmissionContext) (source : String)
       let words := declared.map fun word => (word.name, word.span)
       .failure (uniquePayloadIds (sortDiagnosticEnvelopes
         (diagnostics.map (withWord words ∘ pipelineDiagnosticEnvelope context ∘
+          withDeclaredInputs config source declared ∘
           withClosedEffect context config source declared diagnostics))))
 
 /-- A program of several files (`dec.multi-file-imports`): `root` and the
