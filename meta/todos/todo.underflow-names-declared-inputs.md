@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.agent
-status: open
+status: done
 created: 2026-09-29
 ---
 
@@ -32,3 +32,22 @@ reliably handle multiple locals value references").
   15 round-1 answers above.
 - An underflow in a word whose effect declares enough inputs keeps a
   message that does not blame the effect.
+
+## Done
+
+A `locals` block that names more values than are on the stack, with no
+unused local on it, in a word whose stack effect has no row, now says how
+many inputs the effect declares and how many the body takes. For sample 2's
+`seq-sum`: "`locals { xs }` in `main` names 1 value, but no value is on the
+stack before it. `main` declares no inputs, but its body takes 1 input." An
+operation handed fewer values than it takes, with no local in scope, gets
+the same sentence. The count is found by checking the word again with that
+many more inputs declared, and says "at least" when the body is then refused
+for something else first. All 15 round-1 answers get it
+(`runDeclaredInputsTests` has `seq-sum` verbatim). An underflow where an
+unused local is on the stack, where a local is in scope at the operation, or
+in a word whose effect has a row, keeps its message.
+
+Not covered: `if` and `dip`, which have no account of the values they are
+handed (`todo.underflow-declared-inputs-if-dip`), and a word whose effect
+has a row (`todo.locals-binds-row`).
