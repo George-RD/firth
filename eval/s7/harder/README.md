@@ -95,6 +95,8 @@ in and reads back.
   this tier's feedback for the check that each `repair-<n>.md` is what the
   author was shown.
 - `deepseek.py`: the DeepSeek author's driver (below, "DeepSeek").
+- `deepseek_sample.py`: one DeepSeek sample through both rounds, scored
+  (below, "DeepSeek").
 - `test_harder.py`: hand-worked values for every task, both reference
   solutions on every case, the mutants, a check that every second- and
   third-pool input keeps to its description's bounds and every integer fits in an
@@ -671,16 +673,34 @@ A round is asked once: `request-ROUND.json` is created before the request
 is sent, and a round whose request file exists is refused. Only a complete
 reply is kept as an answer. A reply cut off at the length limit
 (`done_reason` `length`, exit 2) is the model's answer running too long, so
-the round is scored as a failed answer, not replaced (coordinator's decision,
-10 October 2026, for the scored run's pre-registration). Everything else that
-is not a complete answer voids the sample (exit 3): a request that failed (a
-network error, which may come after the server answered, or any HTTP status
-but 200), a reply that is not a chat reply, another model's name, or any
-other `done_reason`. A failed request is never sent again, so no answer is
-ever asked for twice. The whole reply, the model's `thinking` included, is
+the round is scored as a failed answer, not replaced (decided on 10 October
+2026, `todo.s7-harder-task-tier`); its text is kept as `cut-ROUND.md`.
+Everything else that is not a complete answer voids the sample (exit 3): a
+request that failed (a network error, which may come after the server
+answered, a body that is not UTF-8, or any HTTP status but 200), a reply that
+is not a chat reply, a message not in the `assistant` role, another model's
+name, `done` not `true`, or any other `done_reason`. A failed request is
+never sent again, so no answer is ever asked for twice. The whole reply, the
+model's `thinking` included, is
 kept in `response-ROUND.json` and is never scored. `deepseek.py
 --self-test` checks this against planted replies with no network, and
 `test_harder.py` runs it.
+
+`deepseek_sample.py --set SET --lang LANG PROMPT DIR` runs one DeepSeek
+sample through both rounds with `tier.py`'s steps, as a Sonnet sample is run
+by hand: round 1 is asked, extracted and scored; `tier.py repair`'s feedback
+(nothing from a hidden test) is sent as round 2 when any answer failed its
+example; round 2's answers replace round 1's for the tasks the feedback
+listed, and the whole set is scored again. Round 2's answer to a task the
+feedback did not list is not taken, and `outcome.json` names it. A cut-off
+round scores nothing, whatever it holds; after a round-1 cut-off the feedback
+says the reply was cut off and lists every task, and round 2 resends the cut
+text as the model's turn. A void round voids the sample: nothing is scored,
+and `outcome.json` records the round and why. `outcome.json` also records
+each round's verdict and which tasks passed in round 1 and within two
+rounds. `test_harder.py` runs it against planted replies with a stand-in
+scorer, and once end to end with `tier.py`'s scorer on the first
+calibration pool's Firth references.
 
 A Sonnet author differs in what else it sees: it is a sub-agent, so its
 context also holds the session's system prompt and the repository's
@@ -695,8 +715,8 @@ against 63,949 for the third pool's Firth prompt,
 On 10 October 2026 the reply was the codeword, with `done_reason` `stop`
 and 22,632 prompt tokens (`probe.out`). The probe exits 1 unless the
 reply is the codeword, complete, from the scored model; `test_harder.py`
-plants a wrong reply, a cut-off, another model, `done` false, a 502, a
-non-JSON body and a network error, and each fails it. That is one probe, not a bound on
+plants a wrong reply, a cut-off, another model, `done` false, `done` 1, a
+502, a non-JSON body and a network error, and each fails it. That is one probe, not a bound on
 the prompt length the server keeps; each scored round's
 `prompt_eval_count` is in its `response-ROUND.json`. No task has been sent
 to DeepSeek.

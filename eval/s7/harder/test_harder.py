@@ -1258,10 +1258,133 @@ def deepseek_driver() -> None:
     # Planted: a probe that passes any of these would vouch for a cut prompt.
     for planted in (answer("I don't know."), answer("HELIOTROPE-47", reason="length"),
                     answer("HELIOTROPE-47", model="deepseek-v4-pro"),
-                    answer("HELIOTROPE-47", done=False), (502, "bad gateway"),
+                    answer("HELIOTROPE-47", done=False), answer("HELIOTROPE-47", done=1),
+                    (502, "bad gateway"),
                     (200, "<html></html>"), OSError("reset")):
         check(probed(planted) == 1, f"planted: the probe fails on {planted!r}")
 
+
+
+def deepseek_sample_driver() -> None:
+    """`deepseek_sample.py` runs a DeepSeek sample through both rounds against
+    planted replies, with no network, and a stand-in scorer: an answer passes
+    exactly when its text is `good <task id>`. Its scoring rules are checked
+    against values written here, not taken from the driver: a cut-off scores
+    nothing whatever it holds, round 2 takes only the tasks its feedback
+    listed, and a void round voids the sample with nothing scored."""
+    import contextlib
+    import io
+    import tempfile
+    import deepseek_sample as ds
+    tasks = [t.id for t in SETS["calibration"]]
+    first, second = tasks[0], tasks[1]
+
+    def fake_score(sols: dict) -> dict:
+        per = {}
+        for tid in tasks:
+            ok = sols.get(tid) == f"good {tid}\n"
+            per[tid] = {"submitted": tid in sols, "pass": ok, "hidden_passed": int(ok), "hidden_total": 1,
+                        "cases": [{"visible": True, "ok": True, "pass": ok, "stack": [int(ok)], "expected": [1]},
+                                  {"visible": False, "ok": True, "pass": ok, "stack": [int(ok)], "expected": [1]}]}
+        return {"lang": "firth", "tasks": per}
+
+    def answer(sols: dict) -> str:
+        return "".join(f"### task: {k}\n```firth\n{v}\n```\n\n" for k, v in sols.items())
+
+    def reply(content: str, reason: str = "stop") -> tuple:
+        return 200, json.dumps({"model": ds.deepseek.MODEL, "done": True, "done_reason": reason,
+                                "message": {"role": "assistant", "content": content}})
+
+    good = {t: f"good {t}" for t in tasks}
+
+    def go(*outcomes) -> tuple[dict, Path, list]:
+        sent = []
+
+        def send(body):
+            sent.append(body)
+            o = outcomes[len(sent) - 1]
+            if isinstance(o, Exception):
+                raise o
+            return o
+        d = Path(tempfile.mkdtemp())
+        (d / "prompt.md").write_text("Answer the tasks.")
+        with contextlib.redirect_stderr(io.StringIO()):
+            out = ds.sample(d / "prompt.md", d, "calibration", "firth", send, fake_score)
+        return out, d, sent
+
+    n = len(tasks)
+    # Every answer passes its example: no feedback, no round 2.
+    out, d, sent = go(reply(answer(good)))
+    check(out["status"] == "scored" and out["passed"] == {"round1": n, "within_two": n} and len(sent) == 1
+          and not (d / "repair-1.md").exists(), "a sample whose answers all pass has no round 2")
+    # One answer fails; round 2 fixes it and also answers a task that passed.
+    out, d, sent = go(reply(answer({**good, first: "bad"})),
+                      reply(answer({first: f"good {first}", second: "bad"})))
+    check(out["passed"] == {"round1": n - 1, "within_two": n} and out["rounds"][1]["not_taken"] == [second],
+          "round 2 takes only the tasks its feedback listed")
+    check([m["role"] for m in sent[1]["messages"]] == ["user", "assistant", "user"]
+          and f"## {first}\n" in sent[1]["messages"][2]["content"]
+          and f"## {second}\n" not in sent[1]["messages"][2]["content"],
+          "the feedback round shows only the failed task")
+    # Round 1 is cut off: nothing in it is scored, even complete answers.
+    cut = answer(good)
+    out, d, sent = go(reply(cut, "length"), reply(answer(good)))
+    check(out["passed"] == {"round1": 0, "within_two": n} and out["rounds"][0]["result"] == "cut-off",
+          "a cut-off round scores nothing, whatever it holds")
+    fb = sent[1]["messages"][2]["content"]
+    check(sent[1]["messages"][1]["content"] == cut and fb.startswith("Your reply was cut off at the length limit")
+          and all(f"## {t}\n" in fb for t in tasks),
+          "after a cut-off, round 2 resends the cut text and its feedback says so and lists every task")
+    # Round 2 is cut off: the sample keeps round 1's answers.
+    out, d, sent = go(reply(answer({**good, first: "bad"})), reply(answer(good), "length"))
+    check(out["status"] == "scored" and out["passed"] == {"round1": n - 1, "within_two": n - 1},
+          "a cut-off round 2 adds nothing")
+    # A void round voids the sample, and nothing is scored after it.
+    out, d, sent = go((502, "bad gateway"))
+    check(out["status"] == "void" and out["void"]["round"] == 1 and not (d / "results-1.json").exists()
+          and "passed" not in out, "a void round 1 voids the sample with nothing scored")
+    out, d, sent = go(reply(answer({**good, first: "bad"})), OSError("reset"))
+    check(out["status"] == "void" and out["void"]["round"] == 2 and "passed" not in out,
+          "a void round 2 voids the sample")
+    check(json.loads((d / "outcome.json").read_text())["status"] == "void", "outcome.json records the void")
+    try:
+        with contextlib.redirect_stderr(io.StringIO()):
+            ds.sample(d / "prompt.md", d, "calibration", "firth", lambda b: reply("x"), fake_score)
+        again = True
+    except FileExistsError:
+        again = False
+    check(not again, "a second sample in the same directory is refused")
+
+
+def deepseek_sample_scored() -> None:
+    """End to end with the real scorer: a planted DeepSeek sample answers the
+    first calibration pool with its Firth references, one of them broken, and
+    fixes it in round 2."""
+    import contextlib
+    import io
+    import tempfile
+    import deepseek_sample as ds
+    tasks = [t.id for t in SETS["calibration"]]
+    refs = {t: (HERE / "reference" / "calibration" / "firth" / f"{t}.firth").read_text() for t in tasks}
+    broken = {**refs, tasks[0]: ": main ( -- ) ;\n"}
+
+    def answer(sols: dict) -> str:
+        return "".join(f"### task: {k}\n```firth\n{v}```\n\n" for k, v in sols.items())
+    replies = iter([answer(broken), answer({tasks[0]: refs[tasks[0]]})])
+
+    def send(body):
+        return 200, json.dumps({"model": ds.deepseek.MODEL, "done": True, "done_reason": "stop",
+                                "message": {"role": "assistant", "content": next(replies)}})
+    with tempfile.TemporaryDirectory() as t:
+        d = Path(t)
+        (d / "prompt.md").write_text("Answer the tasks.")
+        with contextlib.redirect_stderr(io.StringIO()):
+            out = ds.sample(d / "prompt.md", d, "calibration", "firth", send)
+        res = json.loads((d / "results-2.json").read_text())
+    n = len(tasks)
+    check(out["status"] == "scored" and out["passed"] == {"round1": n - 1, "within_two": n}
+          and not out["round1"][tasks[0]] and "eval_sha256" in res,
+          f"a DeepSeek sample scored by tier.py: {n - 1} of {n} in round 1, {n} within two rounds")
 
 def firth_mutant() -> None:
     """A planted bug in a Firth reference of each pool: the scorer must fail it."""
@@ -1427,11 +1550,13 @@ def main() -> int:
     scored_costliest()
     regex_drafted_bounds()
     deepseek_driver()
+    deepseek_sample_driver()
     prompt_and_repair()
     if "--no-firth" not in sys.argv:
         firth_references()
         firth_mutant()
         regex_drafted_rerun()
+        deepseek_sample_scored()
     print(f"\n{len(FAILED)} failed" if FAILED else "\nall passed")
     return 1 if FAILED else 0
 
