@@ -96,8 +96,10 @@ hosts may disagree.
    - the runner switched to it, with a Gamma version bump so an old request
      is refused rather than run differently;
    - the reference runner refusing integer literals and starting-stack
-     values outside the range, as the target boundary does
-     (`TargetRun.lean`, the compiler's literal check). `int64Gamma` inherits
+     values outside the range, as the target already does in two places: the
+     request check in `src/compiler/Firth/TargetRun.lean` refuses starting
+     values, and the compiler refuses source literals
+     (`firth.compile.unsupported-literal`). `int64Gamma` inherits
      `adapterGamma`'s literal typing, so without this a request starting
      from 2^63 still succeeds on the reference and is refused by the target;
    - the harness's `expected-portable-overflow` category retired or folded
@@ -105,7 +107,16 @@ hosts may disagree.
    - the S7-input wording in `docs/getting-started.md` changed (an S7 input,
      so outside an authoring window);
    - `adapterGamma` kept in `ProofRecords.allowedGammas` or retired, so
-     existing records under either registry stay sound.
+     existing records under either registry stay sound;
+   - the contracts recorded under `int64Gamma` revised and re-proved. Once
+     `len` is checked, a sequence of 2^63 or more elements faults at its
+     first `len`, so a contract whose precondition admits such sequences no
+     longer holds as stated. The two allocator contracts admit `ids` and
+     `qs` of any length, so their preconditions would gain a length bound
+     below 2^63 (the spec's batch limit is 64, enforced by the host). That
+     narrows a recorded contract, so it is part of what the maintainer
+     approves here, and only after those proofs pass does the
+     `LenOverflowAt` exception leave the target theorems.
 3. **Make the VM unbounded.** This was rejected: it gives up the fixed-width
    target the cost model and the compiler proof assume, for no program that
    needs it.
