@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.compiler
-status: open
+status: done
 created: 2026-09-28
 ---
 
@@ -86,3 +86,41 @@ bug the two sides share.
   source-level `push` atom (`todo.compiler-source-push-atoms`), so the
   `noPushProgram` hypothesis is gone and `compileWords_correct` covers every
   program `compileWords` accepts.
+- 2 October 2026, step 4 of 4. `src/compiler/Firth/ContractTarget.lean`
+  proves `targetHolds_of_holds`: a word contract proved of an exported body
+  under `int64Gamma` holds of the target semantics running any image that
+  publishes each exported word, under the name `nameMapOf` gives it, as the
+  code `lowerProgram` lowers its body to. From a stack that stands for the
+  contract's input, with at least the contract's step bound as fuel, the
+  target halts with a stack that stands for its output at a kernel cost within
+  its cost bound, with the two exceptions above (depth bound, length overflow).
+  `src/proofs/Inventory/Target.lean` applies it to both allocator contracts.
+  The proof-record audit accepts a contract's `target_theorem` only when its
+  statement is definitionally that `TargetHolds` (fixtures: one accepted, three
+  refused), and the record lists the image it is about: each word, its target
+  name and its body digest, recomputed by lowering the exported program.
+  `examples/inventory/run_cases.py` requires the image the VM runs on every
+  case to be exactly that one (`check_image`); `test_inventory_target_image.py`
+  plants miscompiled images (one word's code changed, two swapped, a word
+  missing or added, another entry) and the call site.
+  `specs/tcb-boundary.toml` names the parts between the theorem and a VM run,
+  all trusted and tested, not proved: the JSON emitter, the Lean and Rust
+  canonical encodings with SHA-256, the Rust decoder, VM image admission, the
+  Rust VM (with the Lean decoder `firthTargetRun` uses to test it), and the
+  image match itself.
+
+## Resolution
+
+Done on 2 October 2026, by the second branch of the second criterion: the VM
+is not proved; its trusted part is named in `specs/tcb-boundary.toml`, and the
+claim says it is tested against the proved target semantics. The first
+criterion is met with stated exceptions (`compileWords_correct`): the target's
+256-frame call-depth bound, the length of a sequence of 2^63 or more elements,
+the kernel cost spent before a fault, and the word-entry charges, since only
+kernel cost is related. The allocator's records name the target result
+(`allocate_batch_target`, `allocate_batch_host_target`) and the image the VM
+runs is checked to be the one they are about. The planted miscompiles are in
+`LoweringSimulationMutants.lean` (images the theorem rejects) and
+`tools/loop/test_inventory_target_image.py` (images the gate refuses); a
+changed lowering rule breaks the build of `lowerProgram_rel` and so of every
+target theorem.

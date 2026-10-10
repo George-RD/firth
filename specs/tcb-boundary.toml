@@ -43,6 +43,41 @@ excluded_results = ["sat", "unknown", "timeout", "resource-exhausted", "malforme
 id = "vm"
 name = "Firth VM"
 condition = "The VM is the trusted execution boundary. Its target contract, decoding, image, patch, and conformance evidence remain explicit."
+# A proof record with a target theorem (src/compiler/Firth/ContractTarget.lean)
+# is proved of the Lean target semantics running an image that publishes each
+# exported word's lowered code. The parts below carry that to a run of the
+# Rust VM. Each is trusted: tested, not proved. The claim for such a record is
+# that the VM is tested against the proved target semantics, not that the VM
+# is proved.
+[[trusted_components.parts]]
+id = "json-emitter"
+paths = ["src/compiler/Firth/Compile.lean"]
+role = "instructionJson, codeJson and wordJson write the image as JSON. Each word's body_digest is computed in Lean from its code, so an emitter fault that changes code is refused by VM image admission, unless canonical encoding hides it."
+
+[[trusted_components.parts]]
+id = "canonical-code"
+paths = ["src/compiler/Firth/Target.lean", "src/runtime/vm/src/encoding.rs"]
+role = "Target.canonicalCode in Lean and canonical_code in Rust, with SHA-256, are assumed to agree and to be injective, so an equal body_digest means equal code."
+
+[[trusted_components.parts]]
+id = "rust-decoder"
+paths = ["src/runtime/vm/src/adapter.rs"]
+role = "adapter_code and adapter_word_entry decode the JSON image into the instructions the VM runs."
+
+[[trusted_components.parts]]
+id = "vm-image-admission"
+paths = ["src/runtime/vm/src/validation.rs"]
+role = "validate_image recomputes each word's body_digest from the decoded code and refuses the image on a mismatch."
+
+[[trusted_components.parts]]
+id = "rust-vm"
+paths = ["src/runtime/vm/src"]
+role = "Executes the image: steps, frames, fuel, costs and traps. mvp_agent_gate.rebuild requires it to agree with the target semantics (lake exe firthTargetRun, whose JSON decoder in src/compiler/Firth/TargetRun.lean is part of that test) on status, stack, cost and trap for every program it runs. Tested, not proved."
+
+[[trusted_components.parts]]
+id = "image-match"
+paths = ["src/compiler/Firth/ProofRecords.lean", "examples/inventory/run_cases.py"]
+role = "firthProofRecords lowers each exported word and records its target name and body_digest (an evaluated program, not a proof); run_cases.check_image requires the image the VM ran to publish exactly those."
 
 [smt_policy]
 required_terms = ["unsat", "pinned", "content-addressed", "Lean", "rechecked"]

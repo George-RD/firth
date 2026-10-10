@@ -1,5 +1,6 @@
 import proofs.Programs.SumTo
 import proofs.Programs.Signed
+import compiler.Firth.ContractTarget
 
 /-!
 Theorems the proof-record audit must accept, with exactly the coverage and
@@ -15,6 +16,20 @@ theorem sumTo : Firth.Proofs.Programs.SumTo.sumToContract.Holds int64Gamma
     Firth.Exports.Programs.SumTo.dictionary defaultCosts
     Firth.Exports.Programs.SumTo.«sum-to».body :=
   Firth.Proofs.Programs.SumTo.sum_to_contract
+
+/-- `sumTo` carried to the target semantics. Its record names the image of
+both `sum-to` and `sum-acc`, with `sum-to` published as `sum_hto`. -/
+theorem sumToTarget : Firth.Compiler.ContractTarget.TargetHolds
+    Firth.Proofs.Programs.SumTo.sumToContract Firth.Exports.Programs.SumTo.dictionary
+    (Firth.Compiler.ContractTarget.exportPrograms Firth.Exports.Programs.SumTo.words) "sum-to"
+    Firth.Exports.Programs.SumTo.«sum-to».body := by
+  refine Firth.Compiler.ContractTarget.targetHolds_of_holds
+    Firth.Proofs.Programs.SumTo.sum_to_contract ?_ (by simp [Firth.Compiler.ContractTarget.exportPrograms,
+      Firth.Exports.Programs.SumTo.words])
+  intro p hp
+  simp only [Firth.Compiler.ContractTarget.exportPrograms, Firth.Exports.Programs.SumTo.words,
+    List.map_cons, List.map_nil, List.mem_cons, List.not_mem_nil, or_false] at hp
+  rcases hp with rfl | rfl <;> exact ⟨_, rfl, rfl⟩
 
 /-- `abs` calls nothing, so its record covers `abs` alone and none of the
 other words of its source. -/

@@ -345,7 +345,8 @@ The target v1 evidence slots are legacy content identifiers: the first hashes
 canonical code, the second the erased type. Neither is an authenticated proof,
 and the second does not establish a refinement. The adapter reports that
 limitation separately; target-image/patch authentication remains a different
-boundary. No compiler-correctness theorem is claimed by this function. -/
+boundary. `compileWords_correct` (`LoweringSimulation.lean`) is the
+correctness theorem about what this function emits. -/
 def compileWords (words : List CheckedWord) : Except CompileError (List Target.WordEntry) := do
   let mapping ← nameMap words
   let prepared ← words.mapM (prepareWord mapping)

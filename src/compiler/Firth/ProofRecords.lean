@@ -1,4 +1,5 @@
 import Lean
+import compiler.Firth.ContractTarget
 import compiler.Firth.Digest
 import exports.All
 import Firth.ProgramLogic
@@ -29,6 +30,22 @@ and refuses the whole run unless, for every contract:
 * Lean's definitional equality (`isDefEq`) says the theorem's statement is that
   statement. A statement with an extra hypothesis, a disjunction, another
   registry or another dictionary is a different proposition and is refused.
+
+A contract may also name a target theorem (`target_theorem`, `target_module`),
+which carries the contract to the target semantics. The audit accepts it only
+under `int64Gamma` and the default costs, with the same checks on its module,
+kind and axioms, and only when its statement is definitionally
+
+    TargetHolds contract <export>.dictionary (exportPrograms <export>.words)
+      "<word>" <export>.«word».body
+
+(`compiler/Firth/ContractTarget.lean`). The record then names the image that
+statement is about: each exported word, the target name `nameMapOf` gives it
+and its `body_digest`, which the audit recomputes from the exported program
+with `Lowering.bodyDigest` and refuses if it differs from the export's. A gate
+compares that list with the image it hands the VM
+(`examples/inventory/run_cases.py`). A refused target refuses the whole
+contract.
 
 A `WordContract` carries a `witness` that some arguments meet its
 precondition, so a precondition no input satisfies cannot be declared, and a
@@ -74,6 +91,8 @@ structure Contract where
   gamma : Name
   costs : Name
   claim : String
+  /-- The target theorem and its module, if the contract names one. -/
+  target : Option (Name × Name) := none
 
 structure Covered where
   module : String
@@ -97,6 +116,19 @@ structure Statement where
   steps : String
   cost : String
 
+/-- One word of the image a target theorem is about. -/
+structure ImageRow where
+  word : String
+  targetWord : String
+  bodyDigest : String
+
+/-- What the audit found of a contract's target theorem. -/
+structure TargetRecord where
+  statementDigest : String
+  axioms : List Name
+  entry : String
+  image : List ImageRow
+
 structure ProofRecord where
   contract : Contract
   statement : Statement
@@ -105,6 +137,7 @@ structure ProofRecord where
   gamma : Binding
   costTable : Binding
   covers : List Covered
+  target : Option TargetRecord := none
 
 private def err (message : String) : Except String α := .error message
 
@@ -120,7 +153,8 @@ private def parseName (text : String) : Except String Name := do
   pure (parts.foldl Name.str .anonymous)
 
 def contractFields : List String :=
-  ["theorem", "module", "export", "word", "contract", "gamma", "costs", "claim"]
+  ["theorem", "module", "export", "word", "contract", "gamma", "costs", "claim",
+   "target_theorem", "target_module"]
 
 def decodeContract (root : Name) (item : Json) : Except String Contract := do
   let obj ← item.getObj?
@@ -131,7 +165,16 @@ def decodeContract (root : Name) (item : Json) : Except String Contract := do
   let claim ← item.getObjValAs? String "claim"
   if module.getRoot != root then err s!"{theoremName}: module {module} is not under {root}."
   if claim.isEmpty then err s!"{theoremName}: empty claim"
-  pure { theoremName, module, claim,
+  let target ← match item.getObjValAs? String "target_theorem",
+      item.getObjValAs? String "target_module" with
+    | .error _, .error _ => pure none
+    | .ok name, .ok targetModule => do
+        let targetModule ← parseName targetModule
+        if targetModule.getRoot != root then
+          err s!"{theoremName}: target module {targetModule} is not under {root}."
+        pure (some (← parseName name, targetModule))
+    | _, _ => err s!"{theoremName}: target_theorem and target_module go together"
+  pure { theoremName, module, claim, target,
          exportModule := ← item.getObjValAs? String "export",
          word := ← item.getObjValAs? String "word",
          contract := ← parseName (← item.getObjValAs? String "contract"),
@@ -310,29 +353,94 @@ def statementOf (contract : Contract) (theoremType : Expr) : MetaM (Expr × Stat
   let statement : Statement := { args, pre, input, output, steps, cost }
   pure (expected, statement)
 
+/-- The statement the audit admits for a contract's target theorem, checked
+against that theorem's own type. -/
+def targetStatementOf (contract : Contract) (theoremType : Expr) : MetaM Expr := do
+  unless contract.gamma == ``Firth.Logic.int64Gamma && contract.costs == ``Firth.Interpreter.defaultCosts do
+    throwError "a target theorem needs the contract under int64Gamma and defaultCosts"
+  let base := moduleBase contract.exportModule
+  let expected := mkAppN (mkConst ``Firth.Compiler.ContractTarget.TargetHolds)
+    #[mkConst contract.contract, mkConst (Name.str base "dictionary"),
+      mkApp (mkConst ``Firth.Compiler.ContractTarget.exportPrograms) (mkConst (Name.str base "words")),
+      toExpr contract.word, mkConst (Name.str (Name.str base contract.word) "body")]
+  check expected
+  unless ← withTransparency .default (isDefEq theoremType expected) do
+    throwError "its target statement is not {← ppExpr expected}"
+  pure expected
+
+/-- The image a target theorem is about: every word of the export, the target
+name `nameMapOf` gives it, and the `body_digest` of its lowered body, which must
+be the one the export records. -/
+def targetImage (exportModule word : String) : Except String (String × List ImageRow) := do
+  let some (_, _, words) := Firth.Exports.all.find? (·.1 == exportModule)
+    | err s!"no export module {exportModule}"
+  let names := words.map (·.1)
+  let mapping ← match Firth.Compiler.Lowering.nameMapOf names with
+    | .ok mapping => pure mapping
+    | .error e => err s!"{exportModule}: no name map: {e.message}"
+  let rows ← words.mapM fun (name, program, digest, _) => do
+    let some (_, targetWord) := mapping.find? (·.1 == name)
+      | err s!"{exportModule}: {name} is not mapped"
+    let lowered ← match Firth.Compiler.Lowering.bodyDigest names name program with
+      | .ok lowered => pure (Digest.toHex lowered)
+      | .error e => err s!"{exportModule}: {name} does not lower: {e.message}"
+    if lowered != digest then
+      err s!"{exportModule}: {name} lowers to body digest {lowered}, not the exported {digest}"
+    pure { word := name, targetWord, bodyDigest := digest : ImageRow }
+  let some entry := rows.find? (·.word == word) | err s!"{exportModule} exports no word {word}"
+  pure (entry.targetWord, rows)
+
 /-- The source file of a proof or fixture module, relative to the repository
 root. -/
 def sourceOf (module : Name) : System.FilePath :=
   ⟨"src/" ++ "/".intercalate (module.components.map toString) ++ ".lean"⟩
 
+/-- The checks every recorded theorem must pass before its statement is
+compared: its module's source exists, it is a theorem declared in that module,
+and nothing it rests on is refused (`allowedAxioms`). Its type and the
+constants without a proof it rests on, or why it is refused. -/
+def theoremChecks (env : Environment) (theoremName module : Name) :
+    IO (Except String (Expr × List Name)) := do
+  unless ← (sourceOf module).pathExists do
+    return .error s!"the source of {module} ({sourceOf module}) is gone, so its build may be stale"
+  let some info := env.find? theoremName | return .error "no such declaration"
+  unless info matches .thmInfo _ do return .error "not a theorem"
+  match env.getModuleIdxFor? theoremName with
+  | some index =>
+      if env.header.moduleNames[index.toNat]? != some module then
+        return .error s!"not declared in {module}"
+  | none => return .error "not declared in an imported module"
+  let axioms ← match reach env theoremName with
+    | .ok (_, axioms) => pure (axioms.toList.mergeSort (fun a b => a.toString ≤ b.toString))
+    | .error message => return .error message
+  let refused := axioms.filter (!allowedAxioms.contains ·)
+  unless refused.isEmpty do return .error s!"rests on refused axioms {refused}"
+  pure (.ok (info.type, axioms))
+
+/-- Audits a contract's target theorem. A refusal names the target theorem. -/
+def auditTarget (env : Environment) (contract : Contract) (theoremName module : Name) :
+    IO (Except String TargetRecord) := do
+  let fail (message : String) : IO (Except String TargetRecord) :=
+    pure (.error s!"{theoremName}: {message}")
+  let (type, axioms) ← match ← theoremChecks env theoremName module with
+    | .ok result => pure result
+    | .error message => return ← fail message
+  let expected ← match ← runMeta env (targetStatementOf contract type) with
+    | .ok expected => pure expected
+    | .error message => return ← fail message
+  let some statementDigest := statementDigest env expected
+    | fail "its target statement names an unknown constant"
+  match targetImage contract.exportModule contract.word with
+  | .ok (entry, image) => pure (.ok { statementDigest, axioms, entry, image })
+  | .error message => fail message
+
 def audit (env : Environment) (contract : Contract) : IO (Except String ProofRecord) := do
   let fail (message : String) : IO (Except String ProofRecord) :=
     pure (.error s!"{contract.theoremName}: {message}")
-  unless ← (sourceOf contract.module).pathExists do
-    return ← fail s!"the source of {contract.module} ({sourceOf contract.module}) is gone, so its build may be stale"
-  let some info := env.find? contract.theoremName | fail "no such declaration"
-  unless info matches .thmInfo _ do return ← fail "not a theorem"
-  match env.getModuleIdxFor? contract.theoremName with
-  | some index =>
-      if env.header.moduleNames[index.toNat]? != some contract.module then
-        return ← fail s!"not declared in {contract.module}"
-  | none => return ← fail "not declared in an imported module"
-  let axioms ← match reach env contract.theoremName with
-    | .ok (_, axioms) => pure (axioms.toList.mergeSort (fun a b => a.toString ≤ b.toString))
+  let (type, axioms) ← match ← theoremChecks env contract.theoremName contract.module with
+    | .ok result => pure result
     | .error message => return ← fail message
-  let refused := axioms.filter (!allowedAxioms.contains ·)
-  unless refused.isEmpty do return ← fail s!"rests on refused axioms {refused}"
-  let (expected, statement) ← match ← runMeta env (statementOf contract info.type) with
+  let (expected, statement) ← match ← runMeta env (statementOf contract type) with
     | .ok result => pure result
     | .error message => return ← fail message
   let covers ← match coveredWords contract.exportModule contract.word with
@@ -343,14 +451,41 @@ def audit (env : Environment) (contract : Contract) : IO (Except String ProofRec
     | none => .error s!"{name} has no definition to bind"
   let some statementDigest := statementDigest env expected
     | fail "its statement names an unknown constant"
+  let target ← match contract.target with
+    | none => pure none
+    | some (theoremName, module) => match ← auditTarget env contract theoremName module with
+        | .ok target => pure (some target)
+        | .error message => return .error message
   match bind contract.gamma, bind contract.costs with
   | .ok gamma, .ok costTable =>
-      pure (.ok { contract, statement, axioms, gamma, costTable, covers, statementDigest })
+      pure (.ok { contract, statement, axioms, gamma, costTable, covers, statementDigest, target })
   | .error message, _ => fail message
   | _, .error message => fail message
 
 private def coveredJson (covered : Covered) : String :=
   s!"\{\"module\": {quote covered.module}, \"source\": {quote covered.source}, \"word\": {quote covered.word}, \"body_digest\": {quote covered.bodyDigest}, \"erased_type\": {quote covered.erasedType}}"
+
+private def imageRowJson (row : ImageRow) : String :=
+  s!"\{\"word\": {quote row.word}, \"target_word\": {quote row.targetWord}, \"body_digest\": {quote row.bodyDigest}}"
+
+/-- The record's target fields, empty when the contract names no target. -/
+private def targetJson (contract : Contract) : Option TargetRecord → String
+  | some target =>
+      match contract.target with
+      | some (theoremName, module) =>
+          let image := ",\n        ".intercalate (target.image.map imageRowJson)
+          let axioms := ", ".intercalate (target.axioms.map (quote ·.toString))
+          s!",
+    \"target_theorem\": {quote theoremName.toString},
+    \"target_module\": {quote module.toString},
+    \"target\": \{
+      \"statement_digest\": {quote target.statementDigest},
+      \"axioms\": [{axioms}],
+      \"entry\": {quote target.entry},
+      \"image\": [
+        {image}]}"
+      | none => ""
+  | none => ""
 
 private def bindingJson (binding : Binding) : String :=
   s!"\{\"name\": {quote binding.name.toString}, \"digest\": {quote binding.digest}}"
@@ -382,7 +517,7 @@ private def recordBody (record : ProofRecord) : String :=
     \"gamma_binding\": {bindingJson record.gamma},
     \"cost_binding\": {bindingJson record.costTable},
     \"covers\": [
-      {covers}]"
+      {covers}]{targetJson c record.target}"
 
 def recordJson (record : ProofRecord) : String :=
   let body := recordBody record
@@ -401,6 +536,11 @@ def statusJson (records : List ProofRecord) : String :=
 
 def reportJson (records : List ProofRecord) : String :=
   s!"\{\"records\": [\n{",\n".intercalate (records.map recordJson)}],\n\"words\": [\n{statusJson records}]}\n"
+
+/-- The proof and target modules the contracts name whose source files exist. -/
+private def presentModules (contracts : List Contract) : IO (List Name) :=
+  (contracts.flatMap fun contract => contract.module :: (contract.target.map (·.2)).toList).filterM
+    fun module => (sourceOf module).pathExists
 
 private def importFor (modules : List Name) : IO Environment := do
   initSearchPath (← findSysroot)
@@ -422,8 +562,7 @@ def status (root : Name) (path : String) : IO UInt32 := do
   let recorded ← match parsed with
     | .ok recorded => pure recorded
     | .error message => IO.eprintln s!"{path}: {message}"; return 1
-  let present ← recorded.filterM fun (contract, _) => (sourceOf contract.module).pathExists
-  let env ← importFor (present.map (·.1.module))
+  let env ← importFor (← presentModules (recorded.map (·.1)))
   let mut current : List ProofRecord := []
   for (contract, text) in recorded do
     if let .ok record ← audit env contract then
@@ -449,8 +588,7 @@ def main (args : List String) : IO UInt32 := do
   let contracts ← match Json.parse (← IO.FS.readFile path) >>= decodeContracts root with
     | .ok contracts => pure contracts
     | .error message => IO.eprintln s!"{path}: {message}"; return 1
-  let present ← contracts.filterM fun contract => (sourceOf contract.module).pathExists
-  let env ← importFor (present.map (·.module))
+  let env ← importFor (← presentModules contracts)
   let mut records : List ProofRecord := []
   let mut failures : List String := []
   for contract in contracts do
