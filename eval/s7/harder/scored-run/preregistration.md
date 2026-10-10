@@ -168,7 +168,10 @@ A sample is void when:
 - for DeepSeek, round 1's `prompt_eval_count` in `response-1.json` is
   below one token per eight characters of what was sent. That is half the
   rate the probe measured (91,647 characters read as 22,632 tokens), so a
-  prompt the server cut short counts as a transport void. The rule is not
+  prompt the server cut short counts as a transport void. A round-1
+  response whose `prompt_eval_count` is missing or not a number is a
+  transport void too, with its own cause, "missing prompt count", since
+  the rule cannot be applied to it. The rule is not
   applied to round 2: `prompt_eval_count` counts only the prompt tokens
   the server evaluated, and round 2 repeats round 1's whole prompt as its
   prefix, so a server that reuses a cached prefix can report only the new
@@ -183,9 +186,12 @@ back. A crash is replaced like a void, and counted with the voids
 
 A crash caused by an author's answer is different: the scorer or the
 harness failing on what the model wrote. That is a harness bug. The run
-stops, the bug is fixed in its own reviewed PR, and the sample is scored
-again from its kept answers at the fixed commit, which is recorded. It is
-never silently replaced.
+stops, the bug is fixed in its own reviewed PR, and every kept sample of
+the run so far, in both arms and every subject, is scored again from its
+kept answers at the fixed commit, so no comparison mixes two scorers. The
+fixed commit is recorded and replaces the pin for scoring only; prompts
+and the authors' inputs stay at the pin. The sample is never silently
+replaced.
 
 **Replacement.**
 - A void or crashed sample keeps its number, and is reported with its
@@ -194,12 +200,14 @@ never silently replaced.
   language, and runs at the end of the plan, in the order the voids
   happened.
 - Replacement stops for a cell (one subject and language) at 3 voids and
-  crashes. That cell then has fewer than its planned samples, and the subject's
+  crashes. That cell then has fewer than its planned samples, and the
+  subject's
   comparison is reported as incomplete, not as a result.
 - Voids and crashes are counted per arm and by cause:
   - audit flag;
   - context;
   - transport (a DeepSeek request or reply);
+  - missing prompt count (DeepSeek, round 1);
   - crash.
 
   If a subject's voids and crashes differ between its two arms by 2 or
@@ -295,7 +303,10 @@ way still fails. The steps are fixed:
   convenience, not matched units: each author is independent, and a
   replacement breaks the pair. A within-pair permutation over 5 pairs has
   only 32 assignments, so its smallest two-sided p is 0.0625, and no
-  result could reach p below 0.05 for Haiku. As a check on time effects, the report
+  result could reach p below 0.05 for Haiku. With 8 pairs a within-pair
+  test could reach it (smallest p 2/256), but the unpaired test is kept
+  for Sonnet and DeepSeek as well, on exchangeability alone, so every
+  subject is tested the same way. As a check on time effects, the report
   gives each arm's results in run order.
 - **Sample size.** The chance that this rule finds a material difference,
   simulated by `power.py` next to this file (binomial tasks, 2,000
@@ -311,9 +322,10 @@ way still fails. The steps are fixed:
   So Sonnet's and DeepSeek's rows (8 per arm) have about 0.75 power only
   for a true difference near 1.5 tasks, and Haiku's (5 per arm) about 0.67
   only near 2 tasks. For a true difference of 1 task, the smallest material
-  one, power is 0.40 for Sonnet and DeepSeek and 0.20 for Haiku; because the observed difference must
-  itself reach 1, it stays near 0.5 or below at any size this run could
-  afford. Calibration put Sonnet's Python answers at or near the ceiling
+  one, power is 0.40 for Sonnet and DeepSeek and 0.20 for Haiku; because
+  the observed difference must itself reach 1, it stays near 0.5 or
+  below at any size this run could afford. Calibration put Sonnet's
+  Python answers at or near the ceiling
   (pools 1 and 3: every author passed every task), so the ceiling rule may
   decide Sonnet's row whatever the sample size. A difference that is not
   material is reported with its interval, and is not evidence of parity
@@ -328,26 +340,46 @@ way still fails. The steps are fixed:
   is judged on Sonnet, the primary subject. DeepSeek's row shows whether
   the result holds for a non-Anthropic model.
 
-**The guarantees.** For each Firth answer that the checker or the runtime
-refused on its visible example, the report says what was caught (a type
-or stack-effect error, linearity, a declared effect, the step budget). A
-refusal counts as catching a real error only when the author's corrected
-answer behaves differently on some hidden test. The rest are reported as
-refusals.
+**The guarantees.** The report lists every guarantee the roadmap names
+for Firth ("S7 baseline and eval subjects"), and for each says whether
+the run showed it catching a real error:
+- checked types, stack effects, linear ownership and declared effects:
+  each refusal by the checker on the visible example in round 1, named by
+  which of these it was, from the visible case's error in
+  `results-1.json`;
+- the step budget: each run that used it up, on a visible or a hidden
+  input, per task, from each case's error in `results-N.json`;
+- runtime refusals on hidden inputs (a fault the runner reported), per
+  task, from each hidden case's error in `results-N.json`;
+- the measured cost of each run: the kernel steps the reference
+  interpreter counted for every passed case, per task, from `kernel_cost`
+  in each case of `results-N.json`. It is measured, never a bound;
+- a proved cost bound: none of the six tasks has a Lean cost contract, so
+  the report says no proved bound applies. No guarantee is called proved
+  in the report unless a Lean contract exists for it.
+
+A refusal on the visible example counts as catching a real error only
+when the author's corrected answer behaves differently on some hidden
+test. A refusal on a hidden input is reported as a failure of that task
+and is not counted as a catch. The rest are reported as refusals. A
+guarantee that refused nothing is listed with a count of 0.
 
 These numbers are computed by a script committed with the results, which
 reads only the run directory's kept files. Each file is listed with the
 outputs that need it:
 - `results-N.json`: tasks passed per round, each failure's cause (the
   per-case error, out of steps included), the per-author means, the S7
-  difference and its tests, the ceiling and floor rules, and the guarantees (a
-  refusal on the visible example in round 1, and whether round 2's
-  answer behaves differently on a hidden test);
+  difference and its tests, the ceiling and floor rules, and the
+  guarantees (a refusal on the visible example in round 1 and whether
+  round 2's answer behaves differently on a hidden test, out of steps and
+  runtime refusals on hidden inputs, and the kernel steps of each passed
+  case);
 - `answer-N.md`: answer lengths;
 - `outcome.json` (DeepSeek): each round's verdict, length cut-offs, void
   and crash status with its cause, and answers not taken in round 2;
 - `response-N.json` (DeepSeek): `prompt_eval_count`, for the
-  truncated-prompt void and the report, and `done_reason`;
+  truncated-prompt and missing-prompt-count voids and the report, and
+  `done_reason`;
 - `request-N.json` (DeepSeek): the characters sent, for the
   truncated-prompt rule;
 - `transcript.json` (sub-agents): audit flags, which are void causes, and

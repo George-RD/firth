@@ -80,7 +80,8 @@ until the tasks get harder.
   run; the pre-registration (subjects, authors per arm, voids, analysis)
   comes before any. Written in `eval/s7/harder/scored-run/preregistration.md`
   with the run order in `run-plan.md`: Sonnet 5.5 (primary), DeepSeek v4.1
-  Flash and Haiku 5.5, five authors per language each. It is pinned with
+  Flash and Haiku 5.5; eight authors per language for Sonnet and DeepSeek,
+  five for Haiku, 42 samples. It is pinned with
   the prompts once the coordinator confirms the S7 inputs are settled; the
   run is the decision card's recommended option (a), unless the maintainer
   answers otherwise. The Agent tool offers only `haiku` (Haiku 5.5), so
