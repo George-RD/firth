@@ -41,7 +41,21 @@ def main : IO Unit := do
   reject "use absent; : main ( -- ) ;" "firth.name.unresolved"
   reject ": same ( -- ) ; : same ( -- ) ;" "firth.name.duplicate-canonical"
   reject "vocab a {} vocab a {}" "firth.name.duplicate-canonical"
-  reject ": root ( -- ) ; vocab a { : caller ( -- ) root; }" "firth.name.unresolved"
+  -- A word declared outside any vocabulary is a candidate inside every
+  -- vocabulary (`dec.top-level-words-in-vocabularies`).
+  check ": root ( -- ) ; vocab a { : caller ( -- ) root; }" ["root", "a.caller"]
+  check "vocab a { : caller ( -- ) root; } : root ( -- ) ;" ["a.caller", "root"]
+  -- It is one candidate among the others, never a shadow: beside a word of
+  -- the current vocabulary or of a `use`d one with the same name, the
+  -- unqualified reference is ambiguous, and the qualified one still resolves.
+  reject ": id ( -- ) ; vocab a { : id ( -- ) ; : caller ( -- ) id; }" "firth.name.ambiguous-use"
+  reject ": id ( -- ) ; vocab u { : id ( -- ) ; } vocab a { use u; : caller ( -- ) id; }"
+    "firth.name.ambiguous-use"
+  check ": id ( -- ) ; vocab a { : id ( -- ) ; : caller ( -- ) a.id; }" ["id", "a.id", "a.caller"]
+  -- Only top-level words join: a sibling vocabulary's word still needs its
+  -- qualified name or a `use`, and a name defined nowhere is still refused.
+  reject "vocab b { : x ( -- ) ; } vocab a { : caller ( -- ) x; }" "firth.name.unresolved"
+  reject "vocab a { : caller ( -- ) root; }" "firth.name.unresolved"
   -- A reference with no candidate is refused by the resolver with the
   -- normative code, whether it is unqualified, qualified into a known
   -- vocabulary, or qualified with a prefix that names nothing.

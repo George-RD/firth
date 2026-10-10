@@ -105,7 +105,9 @@ Name resolution constructs its candidate set before checking a body. Qualified
 lookup first expands a leading alias to its canonical vocabulary prefix, then
 the resulting canonical reference must match exactly one canonical dictionary
 key and is never shadowed. An unqualified reference considers the current
-vocabulary and the exported words made visible by its active `use` declarations.
+vocabulary, the exported words made visible by its active `use` declarations
+and, inside a vocabulary, the top-level word of the same name, which has no
+qualified spelling (`dec.top-level-words-in-vocabularies`).
 Candidates are compared by canonical key, not declaration or import order. A
 duplicate canonical name, duplicate alias binding, ambiguous unqualified
 candidate set, or empty candidate set is rejected with the stable diagnostics
@@ -179,7 +181,8 @@ with no `export` is still a complete program.
 An importing file sees the exported words of the files it imports directly, and
 nothing else from them. They join its own words as resolution candidates under
 the rules above: a qualified reference names a key exactly, and an unqualified
-reference considers the current vocabulary and active `use` declarations. A
+reference considers the current vocabulary, active `use` declarations and the
+top-level words. A
 `use` may name a vocabulary of a directly imported file only if that vocabulary
 exports at least one word. Imports are not transitive: to use a word of a file
 that an imported file imports, import that file too.
