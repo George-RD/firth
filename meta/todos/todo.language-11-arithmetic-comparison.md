@@ -40,9 +40,10 @@ Deliver the portable arithmetic and comparisons required by allocation.
   to a count, refused with `firth.type.primitive-input-mismatch`).
 - 10 October 2026: the capability table in `docs/getting-started.md` has a
   "Checked by" column naming the cases and tests behind each row. Rows that
-  had none now have refused cases: a text literal, a literal past the signed
-  64-bit range, an unimported `stdlib/core.firth` word and a word using
-  `prim send` (`examples/programs/refused/`). `check_language_examples.py`
+  had none now have cases: out-of-range `Seq Bool` `at` and `set` trap on
+  both hosts, and refused cases cover a text literal, a character literal,
+  a literal past the signed 64-bit range, an unimported `stdlib/core.firth`
+  word and a word using `prim send` (`examples/programs/refused/`). `check_language_examples.py`
   also checks that `MIN div -1` traps on the VM, and `test_firth_run.py`
   refuses a quotation-shaped input. Still open: `dec.int64-arithmetic` and
   its change, the VM overflow trap among the example cases, and `min`.

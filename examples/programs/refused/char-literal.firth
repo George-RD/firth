@@ -1,0 +1,6 @@
+\ Characters, like text, have no runtime representation yet
+\ (`todo.language-text-values`). The parser reads `'a'`, but the word is
+\ refused when it is elaborated rather than run with some stand-in value.
+: initial
+  ( -- n:Int^many )
+  'a' drop 1 ;
