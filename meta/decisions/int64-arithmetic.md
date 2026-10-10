@@ -24,7 +24,7 @@ one change. The change is not made here.
   (`firth.compile.unsupported-literal`, "int literal exceeds the target
   integer"), so no program that runs on the VM starts from an out-of-range
   value. Host inputs are checked against the same range
-  (`compiler/Firth/TargetRun.lean`, "integer outside the signed 64-bit
+  (`src/compiler/Firth/TargetRun.lean`, "integer outside the signed 64-bit
   range").
 - **Overflow.** `+`, `-`, `*` and `div` trap on the VM with a primitive fault
   when their exact result leaves the range. Nothing wraps. `mod` cannot
@@ -35,15 +35,15 @@ one change. The change is not made here.
 - **Sequence length.** `seq-int.len` and `seq-bool.len` return the length as
   an `Int`. For a sequence of 2^63 or more elements the reference returns
   the length and the target faults; that is the `LenOverflowAt` exception
-  in `compileWords_correct` (`compiler/Firth/LoweringSimulation.lean`). No
+  in `compileWords_correct` (`src/compiler/Firth/LoweringSimulation.lean`). No
   such sequence can be built in practice (inferred, not proved).
 - **The reference interpreter.** The runner's registry, `adapterGamma`
-  (`interpreter/FirthReferenceRun.lean`), computes on Lean's unbounded `Int`.
+  (`src/interpreter/FirthReferenceRun.lean`), computes on Lean's unbounded `Int`.
   So `MAX 1 prim +` and `-2^63 -1 prim div` succeed there with results
   outside the range, where the VM traps, and so does the length of a
   sequence of 2^63 or more elements. Only the zero divisor and the sequence
   index faults are shared.
-- **The checked registry.** `int64Gamma` (`interpreter/Firth/ProgramLogic.lean`)
+- **The checked registry.** `int64Gamma` (`src/interpreter/Firth/ProgramLogic.lean`)
   is `adapterGamma` with `+`, `-`, `*` and `div` faulting outside the range,
   as the VM's do. Every proof record's contract is stated under it (all six in `src/proofs/contracts.json`), so a
   proved run under it has no checked `+`, `-`, `*` or `div` result outside

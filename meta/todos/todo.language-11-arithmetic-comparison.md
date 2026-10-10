@@ -20,7 +20,7 @@ Deliver the portable arithmetic and comparisons required by allocation.
 ## Progress
 
 - 10 October 2026: audit against the criteria. Subtraction (since
-  #122; `runs_sub` in `interpreter/Firth/ProgramLogic.lean`) and the
+  #122; `runs_sub` in `src/interpreter/Firth/ProgramLogic.lean`) and the
   comparisons `<=`, `>`, `>=` (`dec.comparison-primitives`) are Gamma
   primitives on every host; minimum is not, and each example defines its
   own, so a shared `min`/`max` waits for multi-file imports
