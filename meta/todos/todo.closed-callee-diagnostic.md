@@ -36,11 +36,15 @@ Typing finds the word (`closedCallFor` in
 `src/elaborator/Firth/StackEffect.lean`). When a definition is refused with a
 word-input mismatch, or with an `if` branch that cannot run on the stack below
 it, the definition is checked again once for each word it calls whose effect
-has no row, with that word given a row. If exactly one of them removes the
-refusal, the diagnostic names it. The report then says that the word takes the
+has no row, with that word given a row. If exactly one of them means the
+definition is no longer refused there, the diagnostic names it (it may still be
+refused elsewhere). The report then says that the word takes the
 whole stack because its effect has no row, and the hint writes the effect with
 `forall ρ` from the source (`withRowText`). The hint also gives the other way:
-call the word only where nothing is below its inputs. It names no single fix,
+call the word only where nothing is below its inputs. `elaboratePipeline`
+checks the source again with only that effect changed. If the word's own body
+is then refused (say it calls another word with no row), the hint says so.
+The hint names no single fix,
 because in both primes-up-to answers giving the calling word no row makes the
 program check as well.
 
@@ -54,7 +58,8 @@ pools changes, and no answer moves between accepted and refused.
 `runClosedCalleeTests` in `ElaboratorDiagnosticsTest.lean` covers the branch
 case (primes-up-to, verbatim) and the call case. The test writes the hint's
 effect into the source and checks that the program is then accepted. It also
-checks that a call with a row, and a closed call given values of the wrong
+checks that a closed callee which calls another closed word is reported with
+its own body refused, and that a call with a row, and a closed call given values of the wrong
 types (at the call and in a branch), are not given this report. A call or
 `dip` of a quotation refused this way (`firth.type.quotation-input-mismatch`)
 is not covered: no corpus answer has one.

@@ -57,6 +57,9 @@ structure ClosedCall where
   ...)`, when the word is defined in the source checked and its effect has no
   row binders or refinements. -/
   withRow : Option String := none
+  /-- Whether, with only the word's effect written as `withRow`, the source is
+  refused in the word's own body: its body has to change as well. -/
+  rowRefusesBody : Bool := false
   /-- The diagnostic's `primary` when this was found. A later pass that moves
   the report to another operation leaves it behind, so a reader compares. -/
   reported : Span

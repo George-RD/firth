@@ -1014,7 +1014,10 @@ private def closedCallExplanation (inWord : String) (diagnostic : Firth.Elaborat
   let declare := match closed.withRow with
     | some effect => s!"declare it `: {word} {effect}`"
     | none => "add `forall ρ;` to its effect, with `ρ` below its inputs and below its outputs"
-  (message, s!"A word whose effect has no row can be called only where its inputs are all that is on the stack. To call `{word}` with other values below its inputs, {declare}: ρ stands for the values below its inputs, which it leaves untouched. Otherwise, call it only where nothing is below its inputs.")
+  let body := if closed.rowRefusesBody then
+      s!" With only that change, `{word}`'s own body is refused, so its body has to change as well."
+    else ""
+  (message, s!"A word whose effect has no row can be called only where its inputs are all that is on the stack. To call `{word}` with other values below its inputs, {declare}: ρ stands for the values below its inputs, which it leaves untouched.{body} Otherwise, call it only where nothing is below its inputs.")
 
 open Firth.Elaborator.StackEffect in
 /-- A plain-language sentence and a repair hint for a checker diagnostic,
@@ -1425,17 +1428,48 @@ private def renumberVariables (text : String) : String :=
             (pieces ++ [s!"{seen.idxOf digits}" ++ String.ofList (part.toList.drop digits.length)], seen)
           (pre.intercalate pieces, seen)).1
 
+/-- The bytes of `source` from `start` to `stop`. -/
+private def sourceBytes (source : String) (start stop : Nat) : String :=
+  (String.fromUTF8? (source.toUTF8.extract start stop)).getD ""
+
 /-- A report of a call to a word whose effect has no row, with that word's
-effect written with a row when the word is declared in `effects`, the
-source's words. -/
-private def withClosedEffect (effects : List (String × Firth.Elaborator.StackEffect)) :
+effect written with a row, when the word is declared in the source, and
+whether the source with only that effect changed is refused in the word's own
+body (a word it calls with no row, say) where `reports`, the source's own
+reports, have nothing there. -/
+private partial def withClosedEffect (context : EmissionContext)
+    (config : Firth.Elaborator.PipelineConfig) (source : String)
+    (declared : List Firth.Elaborator.WordDefinition) (reports : List Firth.Elaborator.PipelineDiagnostic) :
     Firth.Elaborator.PipelineDiagnostic → Firth.Elaborator.PipelineDiagnostic
   | .stackEffect diagnostic => .stackEffect { diagnostic with
       closedCall := diagnostic.closedCall.map fun closed =>
         if closed.withRow.isSome then closed else
-        let withRow := (effects.lookup closed.word).bind Firth.Elaborator.StackEffect.withRowText
-        { closed with withRow } }
-  | .assumes word callees edits inner => .assumes word callees edits (withClosedEffect effects inner)
+        match declared.find? (·.name == closed.word) with
+        | none => closed
+        | some word =>
+        match Firth.Elaborator.StackEffect.withRowText word.effect with
+        | none => closed
+        | some withRow =>
+        let span := word.effect.span
+        let edited := sourceBytes source 0 span.start.offset ++ withRow ++
+          sourceBytes source span.stop.offset source.utf8ByteSize
+        let editedWord := match Firth.Elaborator.parse edited with
+          | .success file => (Firth.Elaborator.collectWords file.declarations).find? (fun (found : Firth.Elaborator.WordDefinition) => found.name == closed.word)
+          | .failure _ => none
+        let within (span : Firth.Elaborator.Span) (found : List Firth.Elaborator.PipelineDiagnostic) :=
+          found.any fun report =>
+            match (pipelineDiagnosticEnvelope context report).body with
+            | .diagnostic body => positionWithin span body.location.range.start
+            | _ => false
+        let refusedBefore := within word.span reports
+        let rowRefusesBody := !refusedBefore &&
+          match Firth.Elaborator.elaborateWith config edited, editedWord with
+          | .success _, _ => false
+          | .failure _, none => true
+          | .failure again, some editedWord => within editedWord.span again
+        { closed with withRow, rowRefusesBody } }
+  | .assumes word callees edits inner =>
+      .assumes word callees edits (withClosedEffect context config source declared reports inner)
   | other => other
 
 def elaboratePipeline (context : EmissionContext) (source : String)
@@ -1453,8 +1487,8 @@ def elaboratePipeline (context : EmissionContext) (source : String)
         | .success file => Firth.Elaborator.collectWords file.declarations
         | .failure _ => []
       let words := declared.map fun word => (word.name, word.span)
-      let effects := declared.map fun word => (word.name, word.effect)
       .failure (uniquePayloadIds (sortDiagnosticEnvelopes
-        (diagnostics.map (withWord words ∘ pipelineDiagnosticEnvelope context ∘ withClosedEffect effects))))
+        (diagnostics.map (withWord words ∘ pipelineDiagnosticEnvelope context ∘
+          withClosedEffect context config source declared diagnostics))))
 
 end Firth.Agent

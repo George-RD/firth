@@ -506,6 +506,8 @@ private def runClosedCalleeTests : IO Unit := do
         for needle in (closedText :: needles) do
           unless emitted.contains needle do
             fail s!"{label}: the report does not say {needle}: {emitted}"
+        if emitted.contains "own body is refused" then
+          fail s!"{label}: the report says the callee's body is then refused: {emitted}"
         let marker := s!"declare it `: {word} "
         let written := (((hintOf envelope).splitOn marker)[1]?.map fun rest => (rest.splitOn "`")[0]!).getD ""
         unless written.startsWith "(forall ρ; ρ " do
@@ -541,6 +543,22 @@ private def runClosedCalleeTests : IO Unit := do
     "add2" "( a:Int^many b:Int^many -- r:Int^many )"
     ["`add2` takes the whole stack: its effect has no row, but here in `value-below` the stack before it is Int Int Int, more than its inputs.",
       "declare it `: add2 (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many)`"]
+  -- `outer` calls `inner`, which has no row either: with only `outer`'s
+  -- effect given a row, `outer`'s own body is refused, and the hint says
+  -- so (the pipeline checks the source with that effect).
+  let nested := ": inner ( a:Int^many -- r:Int^many ) 1 prim + ;\n: outer ( a:Int^many -- r:Int^many ) inner ;\n: w ( x:Int^many n:Int^many -- r:Int^many s:Int^many ) locals { x n } { n x outer } ;\n"
+  match reportsWithCode (elaboratePipeline pipelineContext nested agentConfig) "firth.type.word-input-mismatch" with
+  | [envelope] =>
+      let emitted := encode envelope
+      for needle in [closedText, "declare it `: outer (forall ρ; ρ a:Int^many -- ρ r:Int^many)`",
+          "With only that change, `outer`'s own body is refused, so its body has to change as well."] do
+        unless emitted.contains needle do
+          fail s!"closed callee calling a closed word: the report does not say {needle}: {emitted}"
+      let edited := nested.replace "outer ( a:Int^many -- r:Int^many )" "outer (forall ρ; ρ a:Int^many -- ρ r:Int^many)"
+      match reportsIn (elaboratePipeline pipelineContext edited agentConfig) "outer" with
+      | [] => fail "closed callee calling a closed word: with the row, `outer` is not refused"
+      | _ => pure ()
+  | envelopes => fail s!"closed callee calling a closed word: expected one report, got {envelopes.length}"
   -- The same calls with a row, given values of the wrong types.
   notClosed "a callee with a row" "firth.type.word-input-mismatch"
     ": add2 (forall ρ; ρ a:Int^many b:Int^many -- ρ r:Int^many) prim + ;\n: w (forall ρ; ρ x:Int^many -- ρ r:Int^many) locals { x } { true x add2 } ;\n"
