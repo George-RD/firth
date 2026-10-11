@@ -13,7 +13,7 @@ R=/home/user/firth-ds/eval/s7/harder/runs/2026-10-11-scored
 scan() {  # scan NAME LABEL LOG IDS
   local NAME=$1 L=$3 IDS=$4
   local others names pat
-  others=$(awk -v n="$NAME" '$1 != n {printf "%s|%s|", $1, $2}' "$IDS")
+  others=$(awk -v n="$NAME" '$1 != n {printf "%s([^0-9]|$)|%s|", $1, $2}' "$IDS")
   # every planned sample name except this one, run or not
   names=$(for s in sonnet deepseek haiku; do for l in python firth; do for i in $(seq 1 11); do
     [ "$s-$l-$i" != "$NAME" ] && printf '%s-%s-%s([^0-9]|$)|' $s $l $i; done; done; done)
@@ -51,6 +51,10 @@ EOF
     got=$(scan haiku-firth-1 x "$T/bad.jsonl" "$T/ids" | sed -n 2p)
     [ "$got" != "$want" ] || { echo "self-test FAILED: planted $planted not flagged"; exit 1; }
   done
+  # A two-digit name must not match a recorded one-digit name (haiku-firth-1).
+  printf '{"type":"user","message":{"content":"write haiku-firth-10/answer-1.md"}}\n' > "$T/ten.jsonl"
+  got=$(scan haiku-firth-10 x "$T/ten.jsonl" "$T/ids" | sed -n 2p)
+  [ "$got" = "$want" ] || { echo "self-test FAILED on haiku-firth-10's own name: $got"; exit 1; }
   rm -r "$T"
   echo "self-test ok"
   exit 0
