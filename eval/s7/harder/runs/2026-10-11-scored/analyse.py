@@ -214,8 +214,14 @@ def void_cause(d: Path, scans: dict) -> str | None:
     t = d / "transcript.json"
     if not t.exists():
         return "crash"
-    if json.loads(t.read_text()).get("flagged"):
+    tr = json.loads(t.read_text())
+    if tr.get("flagged"):
         return "audit flag"
+    # Ended without handing back: some round's answer has no hand-back after it.
+    tools = [c.get("tool") for c in tr.get("tool_calls", [])]
+    rounds = sum(1 for n in (1, 2) if (d / f"answer-{n}.md").exists())
+    if not tools or tools[-1] != "SubagentHandback" or tools.count("SubagentHandback") < rounds:
+        return "crash"
     c = json.loads((d / "context-seen.json").read_text())
     for item in c.get("injected", []):
         k = item.get("kind")
@@ -411,6 +417,8 @@ def readings_check(kept: list[dict], readings: dict | None) -> tuple[list[str], 
             if r is None:
                 problems.append(f"no ruling on rule {tr['rule']!r} for {tr['sample']} r{tr['round']} {tr['task']}, "
                                 "traced to another reading")
+            elif not r.get("sentence") or not r.get("by"):
+                problems.append(f"ruling on rule {tr['rule']!r} for {tr['task']} names no sentence or no reviewer")
             elif r.get("admits"):
                 admitted.setdefault(tr["sample"].split("-")[0], set()).add(tr["task"])
     if want - got:
@@ -630,13 +638,17 @@ def self_test() -> None:
     assert readings_check(ks, {"traces": [t1, t2]})[0], "missing ruling not reported"
     wrong_rule = [{"subject": "sonnet", "task": "swiss", "rule": "other", "admits": True}]
     assert readings_check(ks, {"traces": [t1, t2], "rulings": wrong_rule})[0], "ruling on another rule accepted"
-    ok = {"traces": [t1, t2], "rulings": [{"subject": "sonnet", "task": "swiss", "rule": "r", "admits": True}]}
+    bare = {"traces": [t1, t2], "rulings": [{"subject": "sonnet", "task": "swiss", "rule": "r", "admits": True}]}
+    assert readings_check(ks, bare)[0], "ruling with no sentence or reviewer accepted"
+    ok = {"traces": [t1, t2], "rulings": [{"subject": "sonnet", "task": "swiss", "rule": "r", "admits": True,
+                                           "sentence": "s", "by": "reviewer"}]}
     assert readings_check(ks, ok) == ([], {"sonnet": {"swiss"}}, [t1])
     for bad in ([], [0], [7]):  # no case, a passing visible case, no such case
         bt = {**t1, "task": "swiss", "cases": bad}
         pr, adm, _ = readings_check(ks, {"traces": [t1, t2, {**bt, "rule": "s"}],
                                          "rulings": ok["rulings"] + [{"subject": "sonnet", "task": "swiss",
-                                                                      "rule": "s", "admits": True}]})
+                                                                      "rule": "s", "admits": True,
+                                                                      "sentence": "s", "by": "reviewer"}]})
         assert pr, f"trace naming {bad} accepted"
     # Costs: round 1's runs count, and round 2 counts only the task it took.
     g = guarantees([{"name": "sonnet-firth-1", "lang": "firth", "results": [r1, r2]}])
@@ -654,7 +666,10 @@ def self_test() -> None:
             d = run / name
             d.mkdir()
             if transcript:
-                (d / "transcript.json").write_text(json.dumps({"flagged": list(flagged), "started": "t"}))
+                calls = [{"tool": "Read"}, {"tool": "Write"}] + ([{"tool": "SubagentHandback"}] if transcript != "no-handback" else [])
+                (d / "transcript.json").write_text(json.dumps({"flagged": list(flagged), "started": "t",
+                                                               "tool_calls": calls}))
+                (d / "answer-1.md").write_text("x")
             (d / "context-seen.json").write_text(json.dumps(ctx))
             scan.append(f"{name} (a0)\n  {scanline}")
 
@@ -673,6 +688,7 @@ def self_test() -> None:
             "queued_command: 0  project message: 0")
         sub("sonnet-firth-6", transcript=False)
         sub("sonnet-firth-7", ctx={**clean_ctx, "cross_sample": [3]})
+        sub("sonnet-firth-8", transcript="no-handback")
         ds("deepseek-firth-1")
         ds("deepseek-firth-2", status="void")
         ds("deepseek-firth-3", count=999, chars=8000)
@@ -682,7 +698,7 @@ def self_test() -> None:
         got = {d.name: void_cause(d, scans) for d in run.iterdir() if d.is_dir()}
         want = {"sonnet-firth-1": None, "sonnet-firth-2": "audit flag", "sonnet-firth-3": "context",
                 "sonnet-firth-4": "context", "sonnet-firth-5": "context", "sonnet-firth-6": "crash",
-                "sonnet-firth-7": "context", "deepseek-firth-1": None, "deepseek-firth-2": "transport",
+                "sonnet-firth-7": "context", "sonnet-firth-8": "crash", "deepseek-firth-1": None, "deepseek-firth-2": "transport",
                 "deepseek-firth-3": "transport", "deepseek-firth-4": "missing prompt count"}
         assert got == want, got
         fake = {n: {"void": v} for n, v in got.items()}
