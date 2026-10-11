@@ -257,6 +257,20 @@ def join_problems(joiner) -> list[str]:
     return out
 
 
+def asks_streamed(runner) -> bool:
+    """Whether `runner` (`run`, or a mutant of it) asks for a streamed reply."""
+    import tempfile
+    sent = []
+    def send(body):
+        sent.append(body)
+        return 500, ""
+    with tempfile.TemporaryDirectory() as t:
+        p = Path(t) / "prompt.md"
+        p.write_text("Write `main`.")
+        runner(p, Path(t), 1, send)
+    return len(sent) == 1 and sent[0].get("stream") is True
+
+
 def self_test() -> None:
     import tempfile
     def reply(content, reason="stop", model=MODEL, done=True, role="assistant"):
@@ -379,6 +393,15 @@ def self_test() -> None:
     for mutant in (drops_last, says_stop, no_thinking, drops_counts, scored_fields_only,
                    keeps_after_done):
         assert join_problems(mutant) != [], mutant.__name__
+    # Streamed, so a long think is not cut at the ~30 s idle limit. Planted:
+    # this file's own `run` with the request reverted to non-streamed is caught.
+    assert asks_streamed(run)
+    source = Path(__file__).read_text(encoding="utf-8")
+    streamed = '"stream": ' + "True}"  # split, so only `run`'s line matches
+    assert source.count(streamed) == 1
+    reverted = {"__name__": "deepseek_reverted"}
+    exec(compile(source.replace(streamed, '"stream": ' + "False}"), __file__, "exec"), reverted)
+    assert not asks_streamed(reverted["run"])
     print("self-test ok")
 
 
