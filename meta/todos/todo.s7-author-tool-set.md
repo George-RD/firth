@@ -25,3 +25,13 @@ the tools is the smaller step and can land first.
 - The audit still flags any call beyond the allowed tools, with a planted
   call it must flag.
 - The run's pre-registration states the tool set the authors had.
+
+## Progress
+
+- 11 October 2026: the agent type `s7-harder-author` (`tools: Read,
+  Write`, no hooks), the check `eval/s7/harder/author_tools.py` with its
+  planted logs (`test_author_tools.py`), and the next tier's steps
+  (`eval/s7/harder/README.md`, "Author tool set"). Still open: no
+  `s7-harder-author` has run yet, so nothing shows its tool list is
+  honoured; the next tier's probe (step 3 there) is the first that can, and
+  its pre-registration must state the tool set.
