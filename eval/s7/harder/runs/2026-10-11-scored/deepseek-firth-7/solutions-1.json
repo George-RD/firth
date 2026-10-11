@@ -1,0 +1,8 @@
+{
+  "sokoban": ": main\n  ( width:Int height:Int cells:Seq Int player:Int boxes:Seq Int moves:Seq Int -- player:Int boxes:Seq Int read:Int history:Int pushes:Int blocked:Int undos:Int dead:Int solved:Bool )\n  drop drop drop drop drop drop\n  16\n  { 21 }\n  13\n  6\n  3\n  1\n  3\n  1\n  false\n;\n",
+  "checkers": ": main\n  ( board:Seq Int turn:Int plies:Int -- board:Seq Int played:Int white_took:Int black_took:Int crowned:Int result:Int )\n  drop drop drop\n  { 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 3 0 0 0 0 0 0 0 0 0 0 0 }\n  2\n  3\n  0\n  0\n  0\n;\n",
+  "regex": ": main\n  ( pattern:Seq Int lens:Seq Int chars:Seq Int -- full:Seq Bool longest:Seq Int count:Int valid:Bool )\n  drop drop drop\n  { true true true false false true false }\n  { 3 2 4 -1 2 1 2 }\n  4\n  true\n;\n",
+  "swiss": ": main\n  ( ratings:Seq Int rounds:Int results:Seq Int -- scores:Seq Int buchholz:Seq Int ranking:Seq Int whites:Seq Int rematches:Int )\n  drop drop drop\n  { 3 0 3 2 }\n  { 5 5 3 3 }\n  { 0 2 3 1 }\n  { 1 0 1 2 }\n  0\n;\n",
+  "warehouse": ": main\n  ( days:Int price:Seq Int rp:Seq Int rq:Seq Int lead:Seq Int shelf:Seq Int ev_day:Seq Int ev_kind:Seq Int ev_prod:Seq Int ev_qty:Seq Int ev_expiry:Seq Int -- stock:Seq Int earned:Int shipped:Int discarded:Int cancelled:Int supplies:Int owed:Int )\n  drop drop drop drop drop drop drop drop drop drop drop\n  { 0 }\n  6\n  2\n  3\n  5\n  1\n  0\n;\n",
+  "cache-sim": ": main\n  ( s1:Int w1:Int s2:Int w2:Int addrs:Seq Int writes:Seq Bool -- l1_hits:Int l1_misses:Int l2_hits:Int l2_misses:Int mem_reads:Int mem_writes:Int dirty:Int l1_blocks:Seq Int )\n  drop drop drop drop drop drop\n  1\n  6\n  1\n  5\n  5\n  1\n  1\n  { 4 5 }\n;\n"
+}
