@@ -199,7 +199,7 @@ private def withAccount (config : PipelineConfig) (source : String)
 
 private def erasureSpan : ErasureError → Span
   | .duplicateLocal _ span | .unboundLocal _ span | .unsupportedCapture _ span
-  | .missingStackValue span | .linearCopy _ span _ | .linearUnused _ span
+  | .missingStackValue span _ | .linearCopy _ span _ | .linearUnused _ span
   | .unresolvedEffect _ span | .effectUnderflow _ span _ | .usageMismatch _ span
   | .unsupportedLiteral span | .unsupportedAtom _ span | .untrackedStack _ span _
   | .branchShape span .. | .hiddenLocal _ span => span

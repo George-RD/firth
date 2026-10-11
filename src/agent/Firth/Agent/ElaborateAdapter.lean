@@ -392,10 +392,12 @@ private partial def spanTreeJson (located : LocatedKernel) : String :=
 private def spansJson (program : KernelProgram) : String :=
   arr (program.map spanTreeJson)
 
-private def warningsJson (word : CheckedWord) : List String :=
+/-- A word's lint warnings. The range is in the word's own file, so each
+warning names that file's path, as a diagnostic does. -/
+private def warningsJson (source : Source) (word : CheckedWord) : List String :=
   word.warnings.map fun warning =>
     obj [("word", quote word.name), ("code", quote warning.code),
-         ("range", spanJson warning.span)]
+         ("source_path", quote source.path), ("range", spanJson warning.span)]
 
 /-- Renders a successful elaboration.
 
@@ -404,21 +406,22 @@ Its entries can be passed verbatim to the compile and reference-run adapters.
 The compiler independently rechecks them; source-backed callers also pass the
 original source envelope to bind these entries by fresh re-elaboration. Each
 entry also carries `spans`, the source span of every atom, so the compiler can
-attribute its debug metadata to source positions. -/
+attribute its debug metadata to source positions. Each `warnings` entry
+carries `word`, `code`, `source_path` (the word's own file) and `range`. -/
 def successJson (request : Request) (programs : List (Source × CheckedProgram)) :
     Except String String := do
   let mut checked : List String := []
   let mut erased : List String := []
   let mut kernels : List String := []
   let mut warnings : List String := []
-  for word in programs.flatMap (·.2.words) do
+  for (source, word) in programs.flatMap fun (source, program) => program.words.map (source, ·) do
     let body := kernelProgram word.program
     checked := checked ++ [obj [("name", quote word.name),
       ("checking_state", quote "checked"), ("proof_state", quote "available"),
       ("program", programJson body), ("spans", spansJson word.program)]]
     erased := erased ++ [obj [("word", quote word.name), ("type", ← schemeJson word.scheme)]]
     kernels := kernels ++ [obj [("word", quote word.name), ("program", programJson body)]]
-    warnings := warnings ++ warningsJson word
+    warnings := warnings ++ warningsJson source word
   -- Each file of the program in load order, the root last, with the words
   -- it defines: the compile adapter attributes debug locations to them.
   let sources := programs.map fun (source, program) =>

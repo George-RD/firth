@@ -10,8 +10,9 @@ them as the source part of a `firth.source.v1` request (`source_path`,
 (`dec.multi-file-imports`).
 
 Request: `{"request_id", "source_root", "source_path"}`, where `source_root`
-is a directory and `source_path` the root file's path relative to it,
-normalised. Imports are found with the elaborator's own parser and path rules
+is a directory and `source_path` the root file's path relative to it. A root
+that imports files must have a normalised path, since its imports resolve
+against it; one that imports nothing may have any name. Imports are found with the elaborator's own parser and path rules
 (`Firth.Elaborator.loadProgram`), so the loader and the checker cannot
 disagree on which files a program has. An import naming no file on disk is
 left out, and the elaborator reports it as `firth.name.import-not-found`. A
