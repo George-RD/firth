@@ -359,10 +359,14 @@ the run showed it catching a real error:
   with a wrong result, per task, from `kernel_cost` in each case of
   `results-N.json`. Passed cases and wrong-result cases are reported
   separately, with their total, so a cheap wrong answer cannot make an arm
-  look efficient. A run out of steps (`trap fuel-exhausted`) is reported
-  as at least 1,000,000 steps, the budget it used up. Any other trap, a
-  refusal or a timeout has no measured cost, and the report says so for
-  those cases. It is measured, never a bound;
+  look efficient. A run out of steps (`trap fuel-exhausted`) has no
+  measured kernel cost: the budget is applied on both hosts and the error
+  does not say which ran out, and the VM spends it on target instructions
+  that cost no kernel step. Such runs are counted on their own line, as
+  having used up the 1,000,000-step budget, and never added to the
+  measured costs. Any other trap, a refusal or a timeout has no measured
+  cost either, and the report says so for those cases. It is measured,
+  never a bound;
 - a proved cost bound: none of the six tasks has a Lean cost contract, so
   the report says no proved bound applies. No guarantee is called proved
   in the report unless a Lean contract exists for it.
