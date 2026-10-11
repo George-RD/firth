@@ -17,3 +17,4 @@ haiku-python-4 a7e379a218a63377f
 sonnet-python-5 a926375dbc42cc9c2
 sonnet-firth-5 a5192b3cdee8bef58
 haiku-python-5 a7b743ece91b74f62
+haiku-firth-5 af9ba7dd6cbaad50e
