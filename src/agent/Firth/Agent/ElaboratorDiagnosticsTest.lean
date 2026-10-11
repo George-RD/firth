@@ -1502,6 +1502,13 @@ private def runCallAccountTests : IO Unit := do
     ["`insert-sorted` in `insert-sorted` takes 3 values (result:Seq Int, value:Int, pos:Int), bottom to top, but only 2 values are on the stack before it",
      "Push the missing value (value:Int) by moving the local of that name, `value`, written after `insert-sorted`, into its place before it: write `value result pos prim seq-int.at prim < [ result pos value prim seq-int.set ] [ result ] if value pos 1 prim + insert-sorted` in place of `value result pos prim seq-int.at prim < [ result pos value prim seq-int.set ] [ result ] if pos 1 prim + insert-sorted value` on line 18. With that edit, the next error in `insert-sorted` is at line 19, column 7."]
     ["`value insert-sorted` in place of", "`value` is written after it"]
+  -- A word over an unknown type elsewhere does not change the report: it is
+  -- left out of the recheck that finds the next error, as it is out of the
+  -- word's own typing. Counted in, its refusal read as the edited word
+  -- passing.
+  let _ ← callReport "a value for another input, beside an unknown type" "firth.type.stack-underflow"
+    (insertSorted ++ "\n: odd ( x:Foo -- x:Foo ) ;\n")
+    ["With that edit, the next error in `insert-sorted` is at line 19, column 7."]
   -- With the move made, the word's next error is the condition written as
   -- a quotation, not a value left over.
   let insertMoved := (s!"{insertSorted}").replace "pos 1 prim + insert-sorted value" "value pos 1 prim + insert-sorted"
@@ -1533,6 +1540,261 @@ private def runPrimitiveRolesTests : IO Unit := do
     | none =>
         if repeats && mixed then
           fail s!"primitive roles: `{surface}` repeats an input type beside another but has no roles"
+
+mutual
+  private partial def typeBaseNames : Firth.Elaborator.StackEffect.AType → List String
+    | .base name _ => [name]
+    | .quotation input output _ => stackBaseNamesDeep input ++ stackBaseNamesDeep output
+    | .mvar _ _ => []
+  private partial def stackBaseNamesDeep : Firth.Elaborator.StackEffect.AStack → List String
+    | .snoc rest type => stackBaseNamesDeep rest ++ typeBaseNames type
+    | _ => []
+end
+
+/-- The base types a program can make a value of: those in the scheme of
+every primitive it can write and of every literal kind it can write. -/
+private def writableTypes : List String :=
+  let fromPrimitives := languagePrimitives.flatMap fun surface =>
+    match Elaborate.gammaTyping.primitive surface with
+    | some scheme => stackBaseNamesDeep scheme.input ++ stackBaseNamesDeep scheme.output
+    | none => []
+  let fromLiterals := [Firth.Interpreter.Literal.int 0, .bool true, .intSeq [], .boolSeq []].flatMap
+    fun literal => (Elaborate.gammaTyping.literal literal).toList.flatMap typeBaseNames
+  (fromPrimitives ++ fromLiterals).eraseDups
+
+/-- What `types` leaves out of `writableTypes`, then what it has that no
+program can make. -/
+private def typeListGaps (types : List String) : List String × List String :=
+  (writableTypes.filter (!types.contains ·), types.filter (!writableTypes.contains ·))
+
+/-- A stack effect may declare exactly the types a program can make a value
+of (`dec.source-type-names`), and the three reports S7 authors got wrong
+(the harder tier's scored run, 11 October 2026) now say what the text is and
+where. -/
+private def runSourceTypeTests : IO Unit := do
+  let gaps := typeListGaps sourceTypes
+  unless gaps.1.isEmpty && gaps.2.isEmpty do
+    fail s!"source types: the checker's list leaves out {gaps.1} and has {gaps.2}, which no program can make"
+  -- The default pipeline's list, written out in the elaborator, is the
+  -- same; a planted list one short of `Bytes` is not.
+  let sameTypes (types : List String) : Bool :=
+    types.all sourceTypes.contains && sourceTypes.all types.contains
+  unless sameTypes Firth.Elaborator.StackEffect.sourceTypeNames do
+    fail s!"source types: the default pipeline's {Firth.Elaborator.StackEffect.sourceTypeNames} differs from {sourceTypes}"
+  if sameTypes (Firth.Elaborator.StackEffect.sourceTypeNames.erase "Bytes") then
+    fail "source types: a default list without `Bytes` was not caught"
+  -- Planted lists: one short of a type, one with the kernel's `Unit`.
+  unless (typeListGaps (sourceTypes.erase "Handle")).1 == ["Handle"] do
+    fail "source types: a list without `Handle` was not caught"
+  unless (typeListGaps (sourceTypes ++ ["Unit"])).2 == ["Unit"] do
+    fail "source types: a list with `Unit` was not caught"
+  let pipelineContext := contextWithSource "pipeline-types" "main.fth"
+  let agentConfig : Firth.Elaborator.PipelineConfig :=
+    { erasureEnv := Elaborate.gammaErasure, typingEnv := Elaborate.gammaTyping }
+  let report (source : String) : String × String × String × Nat × Nat :=
+    match elaboratePipeline pipelineContext source agentConfig with
+    | .failure (envelope :: _) =>
+        match Lean.Json.parse (encode envelope) with
+        | .ok json =>
+            let body := json.getObjValD "body"
+            let params := body.getObjValD "message_params"
+            let start := ((body.getObjValD "location").getObjValD "range").getObjValD "start"
+            ((body.getObjValD "code").getStr?.toOption.getD "",
+              (params.getObjValD "message").getStr?.toOption.getD "",
+              (params.getObjValD "hint").getStr?.toOption.getD "",
+              (start.getObjValD "line").getNat?.toOption.getD 0,
+              (start.getObjValD "column").getNat?.toOption.getD 0)
+        | .error _ => ("", "", "", 0, 0)
+    | _ => ("accepted", "", "", 0, 0)
+  -- What is wrong with a report, if anything, against the one expected.
+  let mismatch (got : String × String × String × Nat × Nat)
+      (code message hint : String) (line column : Nat) : Option String :=
+    let (gotCode, gotMessage, gotHint, gotLine, gotColumn) := got
+    if gotCode != code then some s!"code {gotCode}, not {code}"
+    else if gotMessage != message then some s!"message {gotMessage}"
+    else if !(hint.isEmpty || (gotHint.splitOn hint).length > 1) then
+      some s!"the hint does not contain {hint}: {gotHint}"
+    else if (gotLine, gotColumn) != (line, column) then
+      some s!"place {gotLine}:{gotColumn}, not {line}:{column}"
+    else none
+  let expectReport (name source code message hint : String) (line column : Nat) : IO Unit :=
+    match mismatch (report source) code message hint line column with
+    | some problem => fail s!"{name}: {problem}"
+    | none => pure ()
+  -- Planted: the reports main gave for the three todos' programs (at
+  -- 627a0eb) each fail the check their case below makes.
+  let planted : List (String × (String × String × String × Nat × Nat) × String × String × Nat × Nat) := [
+    ("unnamed output at the end of the file",
+      ("firth.syntax.unexpected-eof", "The input ends here, expected `:`.",
+        "A definition looks like `: name (forall ρ; ρ n:Int^many -- ρ r:Int^many) body;`.", 4, 1),
+      "firth.syntax.unnamed-stack-item",
+      "`Int` here is a type with no name: every item in a stack effect is written `name:Type`.", 2, 16),
+    ("underscore as an unexpected token",
+      ("firth.syntax.unexpected-token", "Unexpected `_`, expected `:`.",
+        "A definition looks like `: name (forall ρ; ρ n:Int^many -- ρ r:Int^many) body;`.", 1, 17),
+      "firth.syntax.underscore-in-name", "`b_c` is not a name: a name cannot contain `_`.", 1, 16),
+    ("a made-up type accepted", ("accepted", "", "", 0, 0),
+      "firth.type.unknown-type", "`Foo` in the stack effect of `main` is not a type.", 2, 18)]
+  for (name, old, code, message, line, column) in planted do
+    if (mismatch old code message "" line column).isNone then
+      fail s!"source types: the old report passes the check for {name}"
+  -- `todo.unnamed-output-diagnostic`'s program: refused at `Bool` in `g`,
+  -- not at line 4, column 1, after the last line, as before.
+  let unnamed := ": f ( a:Int -- b:Int ) drop 0 ;\n: g ( a:Int -- Int ) drop 0 ;\n: h ( a:Int -- b:Int ) drop 1 ;\n"
+  expectReport "unnamed output" unnamed "firth.syntax.unnamed-stack-item"
+    "`Int` here is a type with no name: every item in a stack effect is written `name:Type`."
+    "Give it a name, as in `name:Int`." 2 16
+  expectReport "unnamed sequence input"
+    ": f ( Seq Int -- n:Int ) drop 0 ;" "firth.syntax.unnamed-stack-item"
+    "`Seq Int` here is a type with no name: every item in a stack effect is written `name:Type`."
+    "Any name will do" 1 7
+  -- A name with no type is still the missing `:`, at the `)` where it is
+  -- missing, not at the end of the input.
+  expectReport "a name with no type" ": f ( a:Int -- b ) drop 0 ;\n: g ( -- ) ;\n"
+    "firth.syntax.unexpected-token" "Unexpected `)`, expected `:`." "" 1 18
+  -- `todo.underscore-name-diagnostic`'s program, then a body name.
+  let underscoreHint (renamed : String) :=
+    s!"Rename it everywhere it appears, for example as `{renamed}`."
+  expectReport "underscore in an output name" ": f ( a:Int -- b_c:Int ) drop 0 ;"
+    "firth.syntax.underscore-in-name" "`b_c` is not a name: a name cannot contain `_`."
+    (underscoreHint "b-c") 1 16
+  let whiteTook := ": white_took ( -- n:Int ) 0 ;\n: main ( -- n:Int ) white_took ;"
+  expectReport "underscore in a word name" whiteTook
+    "firth.syntax.underscore-in-name" "`white_took` is not a name: a name cannot contain `_`."
+    (underscoreHint "white-took") 1 3
+  -- The example rename, applied everywhere, checks; it is only an example,
+  -- as `whiteTook` checks too, so the hint does not call it the fix.
+  for renamed in ["white-took", "whiteTook"] do
+    let (code, message, _, _, _) := report (whiteTook.replace "white_took" renamed)
+    unless code == "accepted" do
+      fail s!"underscore in a word name: renamed to `{renamed}`, the program is refused: {code} {message}"
+  -- A leading `_` is part of the name too (Codex on #250); the example
+  -- drops it, since a name cannot start with `-`, and applied it checks.
+  let leading := ": _helper ( -- n:Int ) 0 ;\n: main ( -- n:Int ) _helper ;"
+  expectReport "a name that starts with `_`" leading
+    "firth.syntax.underscore-in-name" "`_helper` is not a name: a name cannot contain `_`."
+    (underscoreHint "helper") 1 3
+  let (leadingCode, leadingMessage, _, _, _) := report (leading.replace "_helper" "helper")
+  unless leadingCode == "accepted" do
+    fail s!"a name that starts with `_`: renamed, the program is refused: {leadingCode} {leadingMessage}"
+  expectReport "a local that starts with `_`"
+    ": f ( a:Int -- b:Int ) locals { _value } { _value } ;"
+    "firth.syntax.underscore-in-name" "`_value` is not a name: a name cannot contain `_`."
+    (underscoreHint "value") 1 33
+  -- When the file already uses the example name, the hint offers none:
+  -- `white-took` here would define a word twice.
+  let taken := ": white-took ( -- n:Int ) 1 ;\n: white_took ( -- n:Int ) 0 ;"
+  expectReport "underscore in a name whose rename is taken" taken
+    "firth.syntax.underscore-in-name" "`white_took` is not a name: a name cannot contain `_`."
+    "Rename it everywhere it appears, to a name the file does not already use." 2 3
+  let (_, _, takenHint, _, _) := report taken
+  if (takenHint.splitOn "white-took").length > 1 then
+    fail s!"underscore in a name whose rename is taken: the hint offers the taken name: {takenHint}"
+  -- When the example would be a reserved name, the hint offers none
+  -- either: `if` and `dup` are atoms, so `_if` renamed to `if` everywhere
+  -- is refused, and so is `_dup` renamed to `dup` (reviewer on #250).
+  let noRenameHint := "Rename it everywhere it appears, to a name the file does not already use."
+  for atom in ["if", "dup"] do
+    let reservedRename := s!": _{atom} ( -- n:Int ) 0 ;\n: main ( -- n:Int ) _{atom} ;"
+    expectReport s!"underscore in a name whose rename is `{atom}`" reservedRename
+      "firth.syntax.underscore-in-name" s!"`_{atom}` is not a name: a name cannot contain `_`."
+      noRenameHint 1 3
+    let (reservedCode, _, _, _, _) := report (reservedRename.replace s!"_{atom}" atom)
+    if reservedCode == "accepted" then
+      fail s!"underscore in a name whose rename is `{atom}`: `{atom}` in place of `_{atom}` checks, so the case does not test the reserved-name guard"
+  -- Planted: the report without the reserved-name guard offers `if`; it
+  -- fails the check.
+  if (mismatch ("firth.syntax.underscore-in-name", "`_if` is not a name: a name cannot contain `_`.",
+      underscoreHint "if", 1, 3)
+      "firth.syntax.underscore-in-name" "`_if` is not a name: a name cannot contain `_`." noRenameHint 1 3).isNone then
+    fail "source types: the `_if` hint offering `if` passes the check"
+  -- Planted: the hint this PR first gave states a rule (`-` joins parts)
+  -- that is not one; it fails the check.
+  if (mismatch ("firth.syntax.underscore-in-name", "`b_c` is not a name: a name cannot contain `_`.",
+      "Names join their parts with `-`. Write `b-c` in place of `b_c`, and the same everywhere else it appears.", 1, 16)
+      "firth.syntax.underscore-in-name" "`b_c` is not a name: a name cannot contain `_`." (underscoreHint "b-c") 1 16).isNone then
+    fail "source types: the old `_` hint passes the check"
+  -- The reviewer's probe on #250: the next error after `at`'s edit is
+  -- `at`'s own, not `Foo` in `other` (line 4, column 13), which `other`'s
+  -- own report gives.
+  let atProbe := ": at\n  (forall ρ; ρ xs:Seq Int^many n:Int^many -- ρ r:Int^many)\n  locals { xs n } { xs n swap prim seq-int.at };\n: other ( a:Foo -- a:Foo ) ;"
+  let (atCode, _, atHint, _, _) := report atProbe
+  unless (atHint.splitOn "With that edit `at` checks.").length > 1 do
+    fail s!"the probe beside an unknown type: the {atCode} hint for `at` does not say it checks: {atHint}"
+
+  -- A bare `Seq` with no name: `name:Seq` would be refused in turn, so the
+  -- hint gives both sequence types, and each, applied, checks.
+  let bareSeq := ": f ( Seq -- n:Int ) drop 0 ;"
+  expectReport "an unnamed bare Seq" bareSeq "firth.syntax.unnamed-stack-item"
+    "`Seq` here is a type with no name: every item in a stack effect is written `name:Type`."
+    "Give it a name, as in `name:Seq Int` or `name:Seq Bool`." 1 7
+  for typed in ["name:Seq Int", "name:Seq Bool"] do
+    let (code, message, _, _, _) := report (bareSeq.replace "( Seq --" s!"( {typed} --")
+    unless code == "accepted" do
+      fail s!"an unnamed bare Seq: written `{typed}`, the program is refused: {code} {message}"
+  -- `Seq Foo` with no name: `name:Seq Foo` would be refused too (Codex on
+  -- #250), so the same two are given.
+  expectReport "an unnamed Seq of a made-up type" ": f ( Seq Foo -- n:Int ) drop 0 ;"
+    "firth.syntax.unnamed-stack-item"
+    "`Seq Foo` here is a type with no name: every item in a stack effect is written `name:Type`."
+    "Give it a name, as in `name:Seq Int` or `name:Seq Bool`." 1 7
+  -- An unknown type is reported before a refinement on it, before the
+  -- body's `locals`, and before a name in the body that does not resolve
+  -- (Codex on #250).
+  expectReport "an unknown type before an unresolved name"
+    ": f ( x:Foo -- y:Foo ) missing ;"
+    "firth.type.unknown-type" "`Foo` in the stack effect of `f` is not a type." "The types a stack effect can declare are" 1 9
+  -- Planted: the report a288045 gave, at `missing`, fails the check.
+  if (mismatch (report ": f ( x:Int -- y:Int ) missing ;")
+      "firth.type.unknown-type" "`Foo` in the stack effect of `f` is not a type." "The types a stack effect can declare are" 1 9).isNone then
+    fail "source types: the unresolved-name report ahead of `Foo` passes the check"
+  expectReport "an unknown type with a refinement" ": keep ( x:Foo{true} -- x:Foo ) ;"
+    "firth.type.unknown-type" "`Foo` in the stack effect of `keep` is not a type." "The types a stack effect can declare are" 1 12
+  expectReport "an unknown type with misordered locals"
+    ": f ( a:Foo b:Int -- r:Int ) locals { b a } { b } ;"
+    "firth.type.unknown-type" "`Foo` in the stack effect of `f` is not a type." "The types a stack effect can declare are" 1 9
+  if (mismatch ("firth.syntax.unnamed-stack-item",
+      "`Seq` here is a type with no name: every item in a stack effect is written `name:Type`.",
+      "Give it a name, as in `name:Seq`. Any name will do: stack-effect names only document the stack.", 1, 7)
+      "firth.syntax.unnamed-stack-item"
+      "`Seq` here is a type with no name: every item in a stack effect is written `name:Type`."
+      "Give it a name, as in `name:Seq Int` or `name:Seq Bool`." 1 7).isNone then
+    fail "source types: the old bare `Seq` hint passes the check"
+  -- The first error in the source is reported, whether the `_` comes
+  -- after it (deepseek-firth-9's sokoban: an unnamed output on line 1, then
+  -- `new_cell` on line 58) or before it, ahead of a later lexical error.
+  expectReport "an unnamed output before a `_`"
+    ": f ( a:Int -- Bool ) drop true ;\n: g ( new_cell:Int -- n:Int ) ;" "firth.syntax.unnamed-stack-item"
+    "`Bool` here is a type with no name: every item in a stack effect is written `name:Type`." "" 1 16
+  expectReport "a `_` before an unnamed output"
+    ": g ( new_cell:Int -- n:Int ) ;\n: f ( a:Int -- Bool ) drop true ;" "firth.syntax.underscore-in-name"
+    "`new_cell` is not a name: a name cannot contain `_`." "" 1 7
+  expectReport "a `_` before a lexical error"
+    ": g ( a:Int -- n:Int ) a_b ;\n: f ( -- c:Int ) 'ab' ;" "firth.syntax.underscore-in-name"
+    "`a_b` is not a name: a name cannot contain `_`." "" 1 24
+  expectReport "a `_` in a program that otherwise parses"
+    ": g ( a:Int -- n:Int ) a_b ;" "firth.syntax.underscore-in-name"
+    "`a_b` is not a name: a name cannot contain `_`." "" 1 24
+  -- `todo.unknown-base-type`'s program and its three planted types, and
+  -- the target spelling `SeqInt`.
+  let typeHint := "The types a stack effect can declare are `Int`, `Bool`, `Seq Int` and `Seq Bool`, and `World`, `Handle` and `Bytes` for effects."
+  expectReport "a made-up type" ": main\n  (forall ρ; ρ s:Foo^many -- ρ n:Int^many)\n  drop 0 ;"
+    "firth.type.unknown-type" "`Foo` in the stack effect of `main` is not a type." typeHint 2 18
+  expectReport "Seq alone" ": main\n  (forall ρ; ρ cells:Seq^many -- ρ n:Int^many)\n  drop 0 ;"
+    "firth.type.unknown-type" "`Seq` in the stack effect of `main` needs its element type."
+    s!"Write `Seq Int` or `Seq Bool`. {typeHint}" 2 22
+  expectReport "a sequence of a made-up type" ": main ( s:Seq Foo -- n:Int ) drop 0 ;"
+    "firth.type.unknown-type"
+    "`Seq Foo` in the stack effect of `main` is not a type: a sequence holds `Int` or `Bool`."
+    typeHint 1 12
+  expectReport "the target spelling" ": main ( s:SeqInt -- n:Int ) drop 0 ;"
+    "firth.type.unknown-type" "`SeqInt` in the stack effect of `main` is not a type." typeHint 1 12
+  -- Every type in the list is accepted.
+  for type in sourceTypes do
+    let source := s!": keep ( x:{type}^linear -- x:{type}^linear ) ;"
+    let (code, message, _, _, _) := report source
+    unless code == "accepted" do
+      fail s!"source types: `{type}` was refused: {code} {message}"
 
 /-- `locals` blocks bound out of order: what the report says, and the edits
 its hint gives, applied and run. -/
@@ -2853,6 +3115,7 @@ def runElaboratorDiagnosticTests : IO Unit := do
   runDeclaredInputsTests
   runCallAccountTests
   runPrimitiveRolesTests
+  runSourceTypeTests
   runEveryErrorTests
   runSyntaxMessageTests
   runAssumesTests

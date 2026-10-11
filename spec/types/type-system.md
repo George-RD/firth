@@ -378,6 +378,7 @@ own contracts.
 | `firth.type.branch-mismatch` | `if` branch effects differ |
 | `firth.type.stack-underflow` | an atom lacks a required stack entry |
 | `firth.type.unknown-literal` | a literal has no declaration in `Γ` |
+| `firth.type.unknown-type` | a stack effect names a type that is not a declared sort a program can make a value of (`dec.source-type-names`) |
 | `firth.type.declared-effect-mismatch` | a body does not satisfy its declared effect |
 | `firth.type.unresolved-obligation` | inference leaves an unsupported equation |
 

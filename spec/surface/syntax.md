@@ -344,6 +344,12 @@ The chosen v0.1 annotation is a parenthesised effect at the word boundary:
                        [ "^" , ( "many" | "linear" ) ] ,
                        [ "{" , predicate , { "," , predicate } , "}" ] ;
 
+A stack effect may declare only the types a program can make a value of:
+`Int`, `Bool`, `Seq Int` and `Seq Bool`, and the effect types `World`,
+`Handle` and `Bytes` that the world primitives thread. A stack effect naming anything else, `Seq` with no element
+type, or the target spellings `SeqInt` and `SeqBool`, is refused with
+`firth.type.unknown-type` at that type (`dec.source-type-names`).
+
 Every row variable must be explicitly bound by the prenex `forall` clause. A
 row variable is written as a stack item by itself, for example
 `(forall ρ; ρ -- ρ x:Int^many)`. The semicolon terminates the prenex binder;

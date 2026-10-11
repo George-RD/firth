@@ -194,9 +194,11 @@ def gammaErasure : EffectEnv :=
                  rowPreserving := schemeRow scheme.input == schemeRow scheme.output } }
 
 /-- The same table as a typing scheme, read from `defaultGamma` for every
-surface primitive and from `worldPrimitiveSchemes` for the rest. -/
+surface primitive and from `worldPrimitiveSchemes` for the rest. A stack
+effect may declare only the `sourceTypes`. -/
 def gammaTyping : Env :=
-  { literal := defaultLiteralType
+  { types := some sourceTypes
+    literal := defaultLiteralType
     primitive := fun name =>
       match kernelSpec name with
       | some spec => some { rowVariables := ["ρ"]

@@ -227,6 +227,21 @@ def runPipelineTests : IO Unit := do
         "stack-effect diagnostics retain the stage code"
   | result => fail s!"expected a stack-effect diagnostic, got {repr result}"
 
+  -- The default pipeline refuses a type outside `sourceTypeNames`, as the
+  -- agent's does (`dec.source-type-names`), and accepts one inside it; with
+  -- no list (`types := none`) the same program checks.
+  match elaborate ": keep ( x:Foo -- x:Foo ) ;" with
+  | .failure [.stackEffect diagnostic] =>
+      expectEq diagnostic.code "firth.type.unknown-type" "the default pipeline refuses an unknown type"
+      expectEq diagnostic.subject (some "Foo") "the unknown type is named"
+  | result => fail s!"expected an unknown type to be refused, got {repr result}"
+  match elaborate ": keep ( w:World^linear -- w:World^linear ) ;" with
+  | .success _ => pure ()
+  | result => fail s!"expected World to be accepted, got {repr result}"
+  match elaborateWith { typingEnv := { literal := defaultLiteralType } } ": keep ( x:Foo -- x:Foo ) ;" with
+  | .success _ => pure ()
+  | result => fail s!"expected an unrestricted environment to accept Foo, got {repr result}"
+
   match elaborate ":" with
   | .failure [.parse error] =>
       expectTrue (error.code.startsWith "firth.syntax") "parse diagnostic retains its syntax code"

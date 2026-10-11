@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.agent
-status: open
+status: done
 created: 2026-10-11
 ---
 
@@ -35,3 +35,17 @@ not cost Python; a later task set should say so or use names valid in both.
 - A `_` in a name gets a diagnostic that says names use `-`, not `_`, and
   shows the name rewritten, checked on the 30 refused answers above.
 - A planted case keeps the old message from passing.
+
+## Done
+
+A name with `_` touching it is refused with `firth.syntax.underscore-in-name`
+over the whole name: "`b_c` is not a name: a name cannot contain `_`.", with
+the hint "Rename it everywhere it appears, for example as `b-c`." The rename
+is only an example (`bC` checks too), and none is offered when the file
+already uses it. The name is kept as one token, so an
+error earlier in the file is still reported first. `runSourceTypeTests`
+checks the program above (line 1, column 16), a word name, and both orders
+against another error, and a planted copy of the old report fails the check.
+In the corpus comparison in `dec.source-type-names`, all 38 of the scored
+run's task answers that main refused with `firth.syntax.unexpected-token`,
+which include the 30 counted in its `results.md`, now get `firth.syntax.underscore-in-name`.

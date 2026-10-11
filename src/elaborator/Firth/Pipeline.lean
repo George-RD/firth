@@ -77,7 +77,7 @@ structure ImportedWord where
 
 structure PipelineConfig where
   erasureEnv : EffectEnv := {}
-  typingEnv : Env := { literal := defaultLiteralType }
+  typingEnv : Env := { literal := defaultLiteralType, types := some sourceTypeNames }
   requestId : String := "firth.elaborator"
   sourcePath : String := "<source>"
   refinementBuilder : RefinementBuilder := emptyRefinementBuilder
@@ -364,7 +364,7 @@ private def firstErrorAlone (config : PipelineConfig) (words : List WordDefiniti
   match erase (makeErasureEnv config (word :: others)) word.effect word.body with
   | .error error => some (.erasure word.name error)
   | .ok erased =>
-      let typed := others.filter fun other => (schemeOfEffect other.effect).toOption.isSome
+      let typed := others.filter fun other => (schemeIn config.typingEnv other.effect).toOption.isSome
       let definitions : List StackEffect.Definition :=
         { name := word.name, declared := word.effect, program := erased.program, span := word.span } ::
           typed.map fun other => { name := other.name, declared := other.effect, program := [], span := other.span }
@@ -1190,8 +1190,15 @@ private inductive WordOutcome where
   scheme, so there is nothing to check its call against. -/
   | skipped (callee : String) (span : Span)
 
+/-- A refused type in `word`'s stack effect names `word`, so the report can
+say whose effect it is in. Other refusals of the effect are left as they are. -/
+private def namedUnknownType (word : WordDefinition) (diagnostic : StackEffect.Diagnostic) :
+    StackEffect.Diagnostic :=
+  if diagnostic.code == "firth.type.unknown-type" then { diagnostic with word := some word.name }
+  else diagnostic
+
 /-- One word, stage by stage, as the whole-program pipeline would check it:
-names, the `locals` order, source refinements, erasure, the declared effect,
+the declared types, names, the `locals` order, source refinements, erasure, the declared effect,
 typing and refinements. A word that calls a word whose effect is refused is
 skipped before erasure, unless its own effect is refused too. The other words are trusted to have their declared
 effects, whatever their bodies do, so an error in one word is never charged
@@ -1200,6 +1207,13 @@ private def checkWord (config : PipelineConfig) (source : String)
     (words written : List WordDefinition) (env : EffectEnv) (typing : Env)
     (unusable : List String) (word : WordDefinition) (resolution : Option ParseError) :
     WordOutcome :=
+  -- A type the effect declares that is not one is the effect's first
+  -- error, before a name in the body that does not resolve, its
+  -- refinements, the body's `locals` or anything that counts or checks
+  -- values of that type.
+  match unknownType typing word.effect with
+  | some diagnostic => .refused [.stackEffect (namedUnknownType word diagnostic)]
+  | none =>
   match resolution with
   | some error => .refused [.parse error]
   | none =>
@@ -1212,16 +1226,16 @@ private def checkWord (config : PipelineConfig) (source : String)
   -- Before erasure: erasing a call to a word whose effect is refused reads
   -- that effect's shape all the same, and an underflow it finds there says
   -- nothing about this word. The word's own effect is its own error.
-  match (calledWords [] word.body).find? (unusable.contains ·.1), schemeOfEffect word.effect with
-  | some _, .error diagnostic => .refused [.stackEffect diagnostic]
+  match (calledWords [] word.body).find? (unusable.contains ·.1), schemeIn typing word.effect with
+  | some _, .error diagnostic => .refused [.stackEffect (namedUnknownType word diagnostic)]
   | some (callee, span), .ok _ => .skipped callee span
   | none, _ =>
   match erase env word.effect word.body with
   | .error error => .refused [withShortCall config source words word
       (withBranchEdit config source (withAccount config source words (.erasure word.name error)))]
   | .ok erased =>
-  match schemeOfEffect word.effect with
-  | .error diagnostic => .refused [.stackEffect diagnostic]
+  match schemeIn typing word.effect with
+  | .error diagnostic => .refused [.stackEffect (namedUnknownType word diagnostic)]
   | .ok declared =>
   match check typing declared erased.program word.effect.span with
   | .error diagnostic =>
@@ -1247,7 +1261,7 @@ private def checkWord (config : PipelineConfig) (source : String)
 for erasure and for typing, and the words whose effect is no type scheme. -/
 private def environments (config : PipelineConfig) (declared : List WordDefinition) :
     EffectEnv × Env × List String :=
-  let schemes := declared.map fun word => (word.name, (schemeOfEffect word.effect).toOption)
+  let schemes := declared.map fun word => (word.name, (schemeIn config.typingEnv word.effect).toOption)
   let typing : Env := { config.typingEnv with
     word := fun name =>
       match schemes.find? (·.1 == name) with

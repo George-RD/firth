@@ -1,6 +1,6 @@
 ---
 node: firth.toolchain.agent
-status: open
+status: done
 created: 2026-10-11
 ---
 
@@ -42,3 +42,17 @@ but the error is elsewhere.
   that says every item needs a name (`b:Bool`), checked on the program above
   and on deepseek-firth-9's answer.
 - A planted case keeps the old location from passing.
+
+## Done
+
+A type where a stack item's name should be (`Int`, `Bool`, `Seq`, `Seq Int`,
+`World`, `Handle`, `Bytes`) is refused with `firth.syntax.unnamed-stack-item`
+at that type: "`Int` here is a type with no name: every item in a stack
+effect is written `name:Type`." Any other missing `:` inside a stack effect
+is reported at the `)` that closes it, not at the end of the input. The
+program above is refused at line 2, column 16; `runSourceTypeTests` checks
+that, and a planted copy of the old report (line 4, column 1) fails the same
+check. deepseek-firth-9's sokoban also writes `new_cell` on line 58; names
+with `_` are now reported in source order, so its first report is the
+unnamed `Bool` at line 1, column 57 (tested on a two-line copy of that shape, and on the
+answer itself in the corpus comparison in `dec.source-type-names`).
