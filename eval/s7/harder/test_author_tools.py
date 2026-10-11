@@ -7,8 +7,9 @@ log (`agent-<id>.meta.json` and `agent-<id>.jsonl`), not made by the check.
 A clean author passes, and each planted log is refused for its own reason:
 an extra session-messaging tool, a deferred tool, a missing Write, the wrong
 agent type, no tool list, a moved working directory, a missing log, and an
-empty id list, an author that ran but is not listed, and a name or id
-listed twice. A bad author is refused even if its sample was voided.
+empty id list, an author that ran but is not listed (with or without a
+meta file), a name or id listed twice, no probe row, a malformed row, half
+a log, a meta file with no type, and a missing or empty log directory. A bad author is refused even if its sample was voided.
 The real probe log in
 `runs/2026-10-11-tool-probe/` (a built-in agent type with Read and Edit) is
 refused for its type and its Edit.
@@ -133,6 +134,35 @@ def main() -> int:
             failures.append("--voids accepted: it would let a voided author skip the check")
         except SystemExit:
             pass
+        # The probe must be listed once.
+        ids.write_text("sonnet-firth-1 good\nsonnet-python-1 good2\nhaiku-firth-2 extra\n")
+        expect("no probe row", ["--logs", r, "--cwd", CWD, "--ids", str(ids)], 1,
+               "must list the probe author once", failures)
+        # A row that is not "name agent-id".
+        ids.write_text("probe p1\nsonnet-firth-1 good\nsonnet-python-1\nhaiku-firth-2 extra\n")
+        expect("malformed row", ["--logs", r, "--cwd", CWD, "--ids", str(ids)], 1,
+               "row 'sonnet-python-1' in", failures)
+        # An unlisted sub-agent whose log has no meta file still counts as run.
+        (rd / "agent-extra.meta.json").unlink()
+        ids.write_text("probe p1\nsonnet-firth-1 good\nsonnet-python-1 good2\n")
+        expect("unlisted log without meta", ["--logs", r, "--cwd", CWD, "--ids", str(ids)], 1,
+               "agent extra ran in this session but is not in", failures)
+        # Listed, half a log is refused.
+        ids.write_text("probe p1\nsonnet-firth-1 good\nsonnet-python-1 good2\nhaiku-firth-2 extra\n")
+        expect("half a log", ["--logs", r, "--cwd", CWD, "--ids", str(ids)], 1,
+               "no log for agent extra", failures)
+        # A meta file with no agent type.
+        (rd / "agent-extra.jsonl").unlink()
+        write_log(rd, "notype", agent_type=None)
+        ids.write_text("probe p1\nsonnet-firth-1 good\nsonnet-python-1 good2\nhaiku-firth-2 notype\n")
+        expect("no agent type", ["--logs", r, "--cwd", CWD, "--ids", str(ids)], 1,
+               "agent type is None, not 's7-harder-author'", failures)
+        # A log directory that is missing, or empty, checks nobody's tools.
+        expect("missing log dir", ["--logs", str(logs / "absent"), "--cwd", CWD,
+                                   "--ids", str(ids)], 1, "no log for agent p1", failures)
+        (logs / "empty").mkdir()
+        expect("empty log dir", ["--logs", str(logs / "empty"), "--cwd", CWD,
+                                 "--ids", str(ids)], 1, "no log for agent p1", failures)
         ids.write_text("# nothing\n")
         expect("empty ids", ["--logs", r, "--cwd", CWD, "--ids", str(ids)], 1,
                "names no author", failures)

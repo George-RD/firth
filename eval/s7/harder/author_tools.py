@@ -15,9 +15,11 @@ session log and refuses the run unless, for every author:
   before the first author (`--cwd`).
 
 With `--ids`, the list must also name every sub-agent that ran: each
-`agent-<id>.meta.json` in the log directory must be a row of
-`agent-ids.txt` (the probe author is the row named `probe`), and no name or
-agent id may be listed twice. So an author left out of the list, or listed
+`agent-<id>.meta.json` or `agent-<id>.jsonl` in the log directory must be a
+row of `agent-ids.txt` (the probe author is the row named `probe`, listed
+once), each row is a name and an agent id, and no name or agent id may be
+listed twice. A listed author with no log, or with only half of one, is
+refused, and a meta file with no agent type fails the type check. So an author left out of the list, or listed
 under another author's id, refuses the run instead of going unchecked.
 
 It prints one line per author with its agent type, model, working directory
@@ -84,8 +86,8 @@ def check_log(logs: Path, agent: str, cwd: str) -> tuple[dict, list[str]]:
     return record, errors
 
 
-def read_ids(path: Path) -> list[tuple[str, str]]:
-    return [tuple(l.split()[:2]) for l in path.read_text().splitlines()
+def read_ids(path: Path) -> list[list[str]]:
+    return [l.split() for l in path.read_text().splitlines()
             if l.strip() and not l.startswith("#")]
 
 
@@ -106,14 +108,22 @@ def main(argv: list[str]) -> int:
             return 1
     refused = 0
     if a.ids:
+        for row in [r for r in authors if len(r) != 2]:
+            print(f"refused: row {' '.join(row)!r} in {a.ids} is not 'name agent-id'")
+            refused += 1
+        authors = [tuple(r) for r in authors if len(r) == 2]
+        if [n for n, _ in authors].count("probe") != 1:
+            print(f"refused: {a.ids} must list the probe author once, as the row 'probe <id>'")
+            refused += 1
         for col, what in ((0, "name"), (1, "agent id")):
             seen = [row[col] for row in authors]
             for v in sorted({v for v in seen if seen.count(v) > 1}):
                 print(f"refused: {what} {v} is listed twice in {a.ids}")
                 refused += 1
         listed = {agent for _, agent in authors}
-        for meta in sorted(a.logs.glob("agent-*.meta.json")):
-            agent = meta.name[len("agent-"):-len(".meta.json")]
+        ran = {f.name[len("agent-"):-len(".meta.json")] for f in a.logs.glob("agent-*.meta.json")}
+        ran |= {f.name[len("agent-"):-len(".jsonl")] for f in a.logs.glob("agent-*.jsonl")}
+        for agent in sorted(ran):
             if agent not in listed:
                 print(f"refused: agent {agent} ran in this session but is not in {a.ids}")
                 refused += 1
