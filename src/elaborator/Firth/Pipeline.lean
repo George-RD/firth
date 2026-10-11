@@ -607,6 +607,87 @@ private def checkCallEdit (config : PipelineConfig) (source : String) (word : Wo
   pure { start, stop, line, column, written, replacement, after, reached
          consulted := consultedWords config editedWords editedWord }
 
+/-- The items of a body with quotations and `locals` blocks opened, each with
+its span and the locals bound around it. -/
+private partial def leafItems (bound : List String) : List Item → List (Item × Span × List String)
+  | [] => []
+  | .quotation inner _ :: rest => leafItems bound inner ++ leafItems bound rest
+  | .locals names inner _ :: rest =>
+      leafItems (names.map (·.name) ++ bound) inner ++ leafItems bound rest
+  | item@(.literal _ span) :: rest => (item, span, bound) :: leafItems bound rest
+  | item@(.word _ span) :: rest => (item, span, bound) :: leafItems bound rest
+  | item@(.atom _ span) :: rest => (item, span, bound) :: leafItems bound rest
+  | item@(.primitive _ span) :: rest => (item, span, bound) :: leafItems bound rest
+
+/-- For a word or primitive handed values it does not take, where no other
+edit was found: the edit that removes one value written before it, in the
+same run of items, as the extra `m` in `m e m m e 16 prim div dlt undo4`
+for `undo4 ( m:Seq Int e:Int d:Int -- ... )`. Each local and literal written
+before the operation, with no bracket between them, is removed in turn and
+the word checked again (`checkCallEdit`); the edit is kept only when exactly
+one edited source lets the word check, so removing either of two adjacent
+`m`s, which leaves one text, counts once. It never changes what is
+accepted. -/
+private def extraValueEdit (config : PipelineConfig) (source : String) (word : WordDefinition)
+    (operation : Span) : Option CallEdit :=
+  if !config.checkEdits then none else
+  let opStart := operation.start.offset
+  let bound := (leafItems [] word.body).filterMap fun (item, span, bound) =>
+    if span.stop.offset > opStart then none else
+    let removable := match item with
+      | .literal _ _ => true
+      | .word name _ => bound.contains name
+      | _ => false
+    if !removable then none else
+    -- In the same run of items as the operation: no bracket between them.
+    let between := (collapseSpace (bytesText source span.stop.offset opStart)).splitOn " "
+    if between.any (fun token => token == "[" || token == "]" || token == "{" || token == "}") then none else
+    some span
+  -- Up to the last item before the operation, as for a reordering.
+  let found := bound.filterMap fun span =>
+    let start := span.start.offset
+    let stop := start + (bytesText source start opStart).trimAsciiEnd.toString.utf8ByteSize
+    let replacement := collapseSpace (bytesText source span.stop.offset stop)
+    let edited := bytesText source 0 start ++ replacement ++ bytesText source stop source.utf8ByteSize
+    let removed := bytesText source start span.stop.offset
+    let (line, column) := lineColumn source start
+    -- Only a removal after which the word checks: one that gets past the
+    -- operation to a later error is not shown to be the fix.
+    (checkCallEdit config source word start stop replacement
+        (replacement.utf8ByteSize + (opStart - stop))).bind fun edit =>
+      if edit.after.isSome then none else
+      -- Compared as items: removing the last of two `m`s just before the
+      -- operation leaves a space more than removing the first.
+      some (collapseSpace edited, { edit with removed := some (removed, line, column) })
+  match (found.map (·.1)).eraseDups, found.getLast? with
+  | [_], some (_, edit) => some edit
+  | _, _ => none
+
+/-- `extraValueEdit` for a word or primitive the checker refused because the
+values it was handed are not the ones it takes, when `withCallAccount`
+found no reordering and the order is not open. -/
+private def withExtraValue (config : PipelineConfig) (source : String) (word : WordDefinition) :
+    PipelineDiagnostic → PipelineDiagnostic
+  | .stackEffect diagnostic =>
+      if diagnostic.code != "firth.type.word-input-mismatch" &&
+          diagnostic.code != "firth.type.primitive-input-mismatch" then .stackEffect diagnostic else
+      match diagnostic.callAccount with
+      | some account =>
+          if account.edit.isSome || !account.assignment.isEmpty || account.missing > 0 then .stackEffect diagnostic else
+          -- Only where the report lists a value for each input, as the
+          -- hint naming the removal does.
+          let listed := match diagnostic.expected, diagnostic.actual with
+            | some expected, some actual =>
+                let wanted := (stackValues expected).1.length
+                account.values.length == wanted && (stackValues actual).1.length ≥ wanted
+            | _, _ => false
+          if !listed then .stackEffect diagnostic else
+          match extraValueEdit config source word diagnostic.primary with
+          | some edit => .stackEffect { diagnostic with callAccount := some { account with edit := some edit } }
+          | none => .stackEffect diagnostic
+      | none => .stackEffect diagnostic
+  | other => other
+
 /-- For an operation handed fewer values than it takes (`CallAccount.missing`),
 the edit that moves the values written just after it to before it, when
 there are exactly as many of those as it is missing and each is for the
@@ -1018,18 +1099,6 @@ private def itemsIn (source : String) (start stop : Nat) : List (String × Nat �
   | some (item, from_) => items ++ [(item, from_, stop)]
   | none => items
 
-/-- The items of a body with quotations and `locals` blocks opened, each with
-its span and the locals bound around it. -/
-private partial def leafItems (bound : List String) : List Item → List (Item × Span × List String)
-  | [] => []
-  | .quotation inner _ :: rest => leafItems bound inner ++ leafItems bound rest
-  | .locals names inner _ :: rest =>
-      leafItems (names.map (·.name) ++ bound) inner ++ leafItems bound rest
-  | item@(.literal _ span) :: rest => (item, span, bound) :: leafItems bound rest
-  | item@(.word _ span) :: rest => (item, span, bound) :: leafItems bound rest
-  | item@(.atom _ span) :: rest => (item, span, bound) :: leafItems bound rest
-  | item@(.primitive _ span) :: rest => (item, span, bound) :: leafItems bound rest
-
 /-- Whether a run of items, as written, takes a value from below where it
 starts: `some false` when every item's arity is known and none reaches
 below, `some true` when one does, `none` when an item's arity is not known
@@ -1240,8 +1309,8 @@ private def checkWord (config : PipelineConfig) (source : String)
   match check typing declared erased.program word.effect.span with
   | .error diagnostic =>
       let diagnostic := withFirstMisfed config source words { diagnostic with word := some word.name }
-      .refused [withShortCall config source words word (withConditionEdit config source words word (withCallAccount config source words
-        (withBranchEdit config source (withAccount config source words (.stackEffect diagnostic)))))]
+      .refused [withShortCall config source words word (withConditionEdit config source words word (withExtraValue config source word (withCallAccount config source words
+        (withBranchEdit config source (withAccount config source words (.stackEffect diagnostic))))))]
   | .ok _ =>
       let premises := config.refinementBuilder config.requestId config.sourcePath
         word erased.program declared

@@ -1514,6 +1514,41 @@ private def runCallAccountTests : IO Unit := do
   let insertMoved := (s!"{insertSorted}").replace "pos 1 prim + insert-sorted value" "value pos 1 prim + insert-sorted"
   let _ ← callReport "insert-sorted with the move made" "firth.type.expected-bool" insertMoved
     ["`if` in `insert-sorted` needs a Bool condition"]
+  -- One value too many (sonnet-firth-6's sokoban in the scored run of
+  -- 2026-10-11, reduced): `m` is written twice before `undo4`. Removing
+  -- either of the two leaves one text, and nothing else removed lets
+  -- `undo3` check, so the report names that one removal and says it is one
+  -- value too many. [5, 6, 7] with `e` = 1: `dlt` reads m[0] = 5, written
+  -- at 1.
+  let extra := ": dlt (forall ρ; ρ m:Seq Int^many x:Int^many -- ρ r:Int^many) prim seq-int.at ;\n: undo4 (forall ρ; ρ m:Seq Int^many e:Int^many d:Int^many -- ρ r:Seq Int^many) prim seq-int.set ;\n: undo3 (forall ρ; ρ m:Seq Int^many e:Int^many -- ρ r:Seq Int^many)\n  locals { m e } { m e m m e 16 prim div dlt undo4 } ;"
+  callCase "one value too many" "firth.type.word-input-mismatch" extra
+      ["`undo4` in `undo3` takes m:Seq Int, e:Int, d:Int, bottom to top, but here it gets, bottom to top, `e` (Int), `m` (Seq Int) and the result of `dlt` (Int). One value too many is pushed before it.",
+       "Remove the `m` written at line 4, column 26: write `e 16 prim div dlt` in place of `m e 16 prim div dlt` on line 4. With that edit `undo3` checks."]
+      [] "undo3" [.intSeq [5, 6, 7], .int 1] [.intSeq [5, 5, 7]]
+  -- Planted: the report main gave (at 35c73c1) names no removal, so it
+  -- fails the case.
+  let oldExtra := "The second value from the top, `m` (Seq Int), is not what `undo4` takes there (Int). Check that it gets the values it should, in its order (`swap` exchanges the top two values), or the operation."
+  if (oldExtra.splitOn "Remove the `m` written at line 4, column 26").length > 1 then
+    fail "one value too many: the old report passes the check"
+  -- Three removals let `ac` check (sonnet-firth-9's checkers, reduced: the
+  -- author meant `40 cnt 1 prim - prim +`, an operation missing): `40`,
+  -- `cnt` or `1`. None is named, and the report does not say the count is
+  -- off.
+  let _ ← callReport "several values whose removal checks" "firth.type.word-input-mismatch"
+    ": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: ac (forall ρ; ρ m:Seq Int^many cnt:Int^many -- ρ r:Int^many)\n  locals { m cnt } { m 40 cnt 1 prim - gt } ;"
+    ["is not what `gt` takes there (Seq Int)"] ["Remove the", "One value too many", "in place of"]
+  -- The extra value just before the operation: removing the last `i`
+  -- leaves a space more than removing the first, but the same items, so
+  -- it is one removal. Nothing is written in its place.
+  let _ ← callReport "the extra value just before the operation" "firth.type.word-input-mismatch"
+    ": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals { m i } { m i i gt } ;"
+    ["One value too many is pushed before it.", "Remove the `i` written at line 3, column 24. With that edit `f` checks."] ["in place of"]
+  -- One removal gets past the first `gt`, the extra `i`, but `f` still
+  -- does not check: the second `gt` gets two Ints. A removal is named only
+  -- when the word then checks, so none is here.
+  let _ ← callReport "a removal that leaves a later error" "firth.type.word-input-mismatch"
+    ": gt (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ v:Int^many) prim seq-int.at ;\n: f (forall ρ; ρ m:Seq Int^many i:Int^many -- ρ r:Int^many)\n  locals { m i } { m i i gt 1 gt } ;"
+    ["is not what `gt` takes there"] ["Remove the", "One value too many"]
 
 private def stackTypes : Firth.Elaborator.StackEffect.AStack → List Firth.Elaborator.StackEffect.AType
   | .snoc rest type => stackTypes rest ++ [type]
