@@ -23,7 +23,9 @@ Results read from `rescore-pin`. Produced by `analyse.py`.
 
 ### python (8 kept), in run order
 
-| sample | model | started | round 1 | within two | lengths | per task, round 1 | per task, round 2 |
+Run order is by `time`: a sub-agent's start, or for DeepSeek its round-1 reply's `created_at` (the request's start is not recorded).
+
+| sample | model | time | round 1 | within two | lengths | per task, round 1 | per task, round 2 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | sonnet-python-1 | claude-sonnet-5-5 | 2026-10-11T03:37:05 | 6 | 6 | [13816] | sokoban: passed; checkers: passed; regex: passed; swiss: passed; warehouse: passed; cache-sim: passed | no round 2 (every example passed) |
 | sonnet-python-2 | claude-sonnet-5-5 | 2026-10-11T04:59:45 | 6 | 6 | [13927] | sokoban: passed; checkers: passed; regex: passed; swiss: passed; warehouse: passed; cache-sim: passed | no round 2 (every example passed) |
@@ -38,7 +40,9 @@ Total: round 1 46, within two 48.
 
 ### firth (8 kept), in run order
 
-| sample | model | started | round 1 | within two | lengths | per task, round 1 | per task, round 2 |
+Run order is by `time`: a sub-agent's start, or for DeepSeek its round-1 reply's `created_at` (the request's start is not recorded).
+
+| sample | model | time | round 1 | within two | lengths | per task, round 1 | per task, round 2 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | sonnet-firth-1 | claude-sonnet-5-5 | 2026-10-11T03:41:29 | 4 | 4 | [36722] | sokoban: passed; checkers: passed; regex: out of steps {"out of steps": 1}; swiss: runtime error {"runtime error": 1}; warehouse: passed; cache-sim: passed | no round 2 (every example passed) |
 | sonnet-firth-2 | claude-sonnet-5-5 | 2026-10-11T04:28:08 | 4 | 5 | [40340, 8030] | sokoban: passed; checkers: passed; regex: refusal {"refusal": 26}; swiss: runtime error {"runtime error": 1}; warehouse: passed; cache-sim: passed | sokoban: passed; checkers: passed; regex: passed; swiss: runtime error {"runtime error": 1}; warehouse: passed; cache-sim: passed |
@@ -55,7 +59,7 @@ Total: round 1 35, within two 44.
 
 **Secondary, round 1:** Firth 4.375, Python 5.750, difference -1.375, exact two-sided p 0.0078, 95% bootstrap interval [-2.000, -0.750]: materially higher in Python.
 
-**Readings (preregistration.md, "A reading nobody listed") not complete:** readings.json is missing: 27 failed hidden tests are not traced. The result above is not final until they are.
+Readings: every failed hidden test is traced; no sentence was ruled to admit another reading.
 
 ### sonnet Firth guarantees
 
@@ -94,7 +98,9 @@ Cases with no measured cost, by cause: {'out of steps': 1, 'runtime error': 2, '
 
 ### python (8 kept), in run order
 
-| sample | model | started | round 1 | within two | lengths | per task, round 1 | per task, round 2 |
+Run order is by `time`: a sub-agent's start, or for DeepSeek its round-1 reply's `created_at` (the request's start is not recorded).
+
+| sample | model | time | round 1 | within two | lengths | per task, round 1 | per task, round 2 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | deepseek-python-2 | deepseek-v4.1-flash | 2026-10-11T06:24:38 | 6 | 6 | [20307] | sokoban: passed; checkers: passed; regex: passed; swiss: passed; warehouse: passed; cache-sim: passed | no round 2 (every example passed) |
 | deepseek-python-3 | deepseek-v4.1-flash | 2026-10-11T06:28:00 | 6 | 6 | [20709] | sokoban: passed; checkers: passed; regex: passed; swiss: passed; warehouse: passed; cache-sim: passed | no round 2 (every example passed) |
@@ -111,7 +117,9 @@ DeepSeek rounds (prompt_eval_count, done_reason): deepseek-python-2 r1 4634 stop
 
 ### firth (8 kept), in run order
 
-| sample | model | started | round 1 | within two | lengths | per task, round 1 | per task, round 2 |
+Run order is by `time`: a sub-agent's start, or for DeepSeek its round-1 reply's `created_at` (the request's start is not recorded).
+
+| sample | model | time | round 1 | within two | lengths | per task, round 1 | per task, round 2 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | deepseek-firth-3 | deepseek-v4.1-flash | 2026-10-11T06:28:31 | 0 | 0 | [1687, 918] | sokoban: wrong result {"wrong result": 15}; checkers: refusal {"refusal": 19}; regex: wrong result {"wrong result": 25}; swiss: wrong result {"wrong result": 16}; warehouse: refusal {"refusal": 16}; cache-sim: refusal {"refusal": 16} | sokoban: wrong result {"wrong result": 15}; checkers: wrong result {"wrong result": 18}; regex: wrong result {"wrong result": 25}; swiss: wrong result {"wrong result": 16}; warehouse: wrong result {"wrong result": 15}; cache-sim: wrong result {"wrong result": 15} |
 | deepseek-firth-4 | deepseek-v4.1-flash | 2026-10-11T06:30:44 | 0 | 0 | [2174, 1154] | sokoban: wrong result {"wrong result": 15}; checkers: refusal {"refusal": 19}; regex: wrong result {"wrong result": 25}; swiss: wrong result {"wrong result": 16}; warehouse: refusal {"refusal": 16}; cache-sim: refusal {"refusal": 16} | sokoban: wrong result {"wrong result": 15}; checkers: wrong result {"wrong result": 18}; regex: wrong result {"wrong result": 25}; swiss: wrong result {"wrong result": 16}; warehouse: wrong result {"wrong result": 15}; cache-sim: wrong result {"wrong result": 15} |
@@ -130,7 +138,9 @@ DeepSeek rounds (prompt_eval_count, done_reason): deepseek-firth-3 r1 16670 stop
 
 **Secondary, round 1:** Firth 0.000, Python 5.375, difference -5.375, exact two-sided p 0.0002, 95% bootstrap interval [-5.875, -4.750]: materially higher in Python.
 
-**Readings (preregistration.md, "A reading nobody listed") not complete:** readings.json is missing: 771 failed hidden tests are not traced. The result above is not final until they are.
+**Declared deviation, not as pre-registered:** the pinned driver sent non-streamed requests (`"stream": false`); after its three requests failed with HTTP 502, #246 (8ce2c8f) streamed the reply and changed nothing else. Requests by `stream`: kept 27 True; void 3 False. Counted with this deviation under the coordinator's ruling (a) (`run-notes.md`); the independent reviewer may overrule it.
+
+Readings: every failed hidden test is traced; no sentence was ruled to admit another reading.
 
 ### deepseek Firth guarantees
 
@@ -169,7 +179,9 @@ Cases with no measured cost, by cause: {'refusal': 389}
 
 ### python (5 kept), in run order
 
-| sample | model | started | round 1 | within two | lengths | per task, round 1 | per task, round 2 |
+Run order is by `time`: a sub-agent's start, or for DeepSeek its round-1 reply's `created_at` (the request's start is not recorded).
+
+| sample | model | time | round 1 | within two | lengths | per task, round 1 | per task, round 2 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | haiku-python-1 | claude-haiku-5-5 | 2026-10-11T04:13:10 | 6 | 6 | [14243] | sokoban: passed; checkers: passed; regex: passed; swiss: passed; warehouse: passed; cache-sim: passed | no round 2 (every example passed) |
 | haiku-python-2 | claude-haiku-5-5 | 2026-10-11T05:42:14 | 6 | 6 | [13935] | sokoban: passed; checkers: passed; regex: passed; swiss: passed; warehouse: passed; cache-sim: passed | no round 2 (every example passed) |
@@ -181,7 +193,9 @@ Total: round 1 30, within two 30.
 
 ### firth (2 kept), in run order
 
-| sample | model | started | round 1 | within two | lengths | per task, round 1 | per task, round 2 |
+Run order is by `time`: a sub-agent's start, or for DeepSeek its round-1 reply's `created_at` (the request's start is not recorded).
+
+| sample | model | time | round 1 | within two | lengths | per task, round 1 | per task, round 2 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | haiku-firth-1 | claude-haiku-5-5 | 2026-10-11T04:16:50 | 0 | 0 | [739, 2855] | sokoban: no answer; checkers: no answer; regex: no answer; swiss: no answer; warehouse: no answer; cache-sim: no answer | sokoban: refusal {"refusal": 16}; checkers: refusal {"refusal": 19}; regex: wrong result {"wrong result": 26}; swiss: refusal {"refusal": 17}; warehouse: refusal {"refusal": 16}; cache-sim: refusal {"refusal": 16} |
 | haiku-firth-4 | claude-haiku-5-5 | 2026-10-11T07:31:22 | 0 | 0 | [3347, 3260] | sokoban: refusal {"refusal": 16}; checkers: refusal {"refusal": 19}; regex: refusal {"refusal": 26}; swiss: refusal {"refusal": 17}; warehouse: refusal {"refusal": 16}; cache-sim: refusal {"refusal": 16} | sokoban: wrong result {"wrong result": 15}; checkers: wrong result {"wrong result": 19}; regex: wrong result {"wrong result": 26}; swiss: wrong result {"wrong result": 17}; warehouse: wrong result {"wrong result": 16}; cache-sim: wrong result {"wrong result": 15} |
@@ -192,7 +206,7 @@ Total: round 1 0, within two 0.
 
 **Secondary, round 1:** Firth 0.000, Python 6.000, difference -6.000, exact two-sided p 0.0476, 95% bootstrap interval [-6.000, -6.000]: incomplete: reported, not a result.
 
-**Readings (preregistration.md, "A reading nobody listed") not complete:** readings.json is missing: 127 failed hidden tests are not traced. The result above is not final until they are.
+Readings: every failed hidden test is traced; no sentence was ruled to admit another reading.
 
 Voids and crashes differ between arms by 2 (Firth 3, Python 1): the surviving samples may differ between arms.
 

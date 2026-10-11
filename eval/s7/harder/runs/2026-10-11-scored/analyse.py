@@ -288,8 +288,10 @@ def load(run: Path, results: Path) -> dict:
                         resp = json.loads(f.read_text())
                     except ValueError:  # a void round's raw reply
                         resp = {"prompt_eval_count": None, "done_reason": "not a chat reply"}
+                    q = d / f"request-{n}.json"
+                    stream = json.loads(q.read_text())["body"].get("stream") if q.exists() else None
                     s["rounds"].append({"round": n, "prompt_eval_count": resp.get("prompt_eval_count"),
-                                        "done_reason": resp.get("done_reason")})
+                                        "done_reason": resp.get("done_reason"), "stream": stream})
         samples[d.name] = s
     return samples
 
@@ -372,16 +374,15 @@ def guarantees(kept: list[dict]) -> dict:
 
 
 def hidden_failures(kept: list[dict]) -> set[tuple[str, int, str, int]]:
-    """(sample, round, task, case index) of every hidden test an answer ran
-    and failed, in each round (round 2: the tasks it took): a wrong result,
-    runtime error, out of steps or timeout. These are what "A reading nobody
-    listed" traces; a refusal or no answer turns on no sentence of the task."""
+    """(sample, round, task, case index) of every failed hidden test, in each
+    round (round 2: the tasks it took), refusals included: "Every failed
+    hidden test is traced" (preregistration.md, "A reading nobody listed").
+    A task with no answer has no test cases, so it has none here."""
     out = set()
     for s in kept:
         for n, t, task in runs(s):
             for i, c in enumerate(task.get("cases", [])):
-                if not c.get("visible") and case_cause(s["lang"], c) in (
-                        "wrong result", "runtime error", "out of steps", "timeout"):
+                if not c.get("visible") and case_cause(s["lang"], c) != "passed":
                     out.add((s["name"], n, t, i))
     return out
 
@@ -426,6 +427,31 @@ def readings_check(kept: list[dict], readings: dict | None) -> tuple[list[str], 
     return problems, admitted, other
 
 
+def transport_note(samples: dict) -> str:
+    """The DeepSeek transport deviation, stated next to its result
+    (run-notes.md, coordinator's ruling (a)): the pinned driver sent
+    `"stream": false`; count each kept and void sample's requests by the
+    `stream` value it actually sent."""
+    by = {}
+    for s in samples.values():
+        if s["subject"] != "deepseek":
+            continue
+        key = "void" if s["void"] else "kept"
+        for r in s.get("rounds", []):
+            k = (key, r.get("stream"))
+            by[k] = by.get(k, 0) + 1
+    streamed_kept = by.get(("kept", True), 0)
+    if not streamed_kept:
+        return ""
+    return ("**Declared deviation, not as pre-registered:** the pinned driver sent non-streamed requests "
+            "(`\"stream\": false`); after its three requests failed with HTTP 502, #246 (8ce2c8f) streamed the "
+            "reply and changed nothing else. Requests by `stream`: kept " +
+            ", ".join(f"{v} {k[1]}" for k, v in sorted(by.items(), key=str) if k[0] == "kept") + "; void " +
+            ", ".join(f"{v} {k[1]}" for k, v in sorted(by.items(), key=str) if k[0] == "void") +
+            ". Counted with this deviation under the coordinator's ruling (a) (`run-notes.md`); the "
+            "independent reviewer may overrule it.\n")
+
+
 def report(samples: dict, results_dir: str, readings: dict | None = None) -> str:
     out = [f"# Scored run analysis\n\nResults read from `{results_dir}`. Produced by `analyse.py`.\n"]
     voids = [s for s in samples.values() if s["void"]]
@@ -452,7 +478,9 @@ def report(samples: dict, results_dir: str, readings: dict | None = None) -> str
         out.append(f"## {subj}\n")
         for lang, a in arms.items():
             out.append(f"### {lang} ({len(a)} kept), in run order\n")
-            out.append("| sample | model | started | round 1 | within two | lengths | "
+            out.append("Run order is by `time`: a sub-agent's start, or for DeepSeek its round-1 reply's "
+                       "`created_at` (the request's start is not recorded).\n")
+            out.append("| sample | model | time | round 1 | within two | lengths | "
                        "per task, round 1 | per task, round 2 |")
             out.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
             for s in a:
@@ -481,6 +509,8 @@ def report(samples: dict, results_dir: str, readings: dict | None = None) -> str
                            f"Firth {v['firth_mean']:.3f}, Python {v['python_mean']:.3f}, difference "
                            f"{v['difference']:+.3f}, exact two-sided p {v['p']:.4f}, 95% bootstrap interval "
                            f"[{v['interval'][0]:+.3f}, {v['interval'][1]:+.3f}]: {v['rule']}.\n")
+        if subj == "deepseek":
+            out.append(transport_note(samples))
         problems, admitted, other = readings_check(arms["firth"] + arms["python"], readings)
         for tr in other:
             out.append(f"- Another reading: {tr['sample']} round {tr['round']} {tr['task']}, hidden cases "
@@ -621,6 +651,13 @@ def self_test() -> None:
     assert g["refusals"]["stack effects"] == 1 and g["catches"]["stack effects"] == 1
     assert g["refusals"]["other refusal"] == 1 and g["catches"]["other refusal"] == 0, g["catches"]
     assert g["catches_run"]["other refusal"] == 0
+    # Transport: a kept streamed DeepSeek request must be declared as a deviation.
+    tn = {"a": {"subject": "deepseek", "void": None, "rounds": [{"stream": True}, {"stream": True}]},
+          "b": {"subject": "deepseek", "void": "transport", "rounds": [{"stream": False}]},
+          "c": {"subject": "sonnet", "void": None}}
+    note = transport_note(tn)
+    assert "Declared deviation" in note and "kept 2 True" in note and "void 1 False" in note, note
+    assert transport_note({"a": {**tn["a"], "rounds": [{"stream": False}]}}) == ""
     # Readings: an untraced hidden failure, and a traced other reading with no
     # ruling, are each reported; an admitted reading gives a sensitivity check.
     wrong = {"submitted": True, "pass": False, "cases": [{"visible": True, "ok": True, "pass": True, "kernel_cost": 1},
@@ -631,6 +668,13 @@ def self_test() -> None:
     r2 = {"tasks": {**{t: fixed for t in TASKS}, "swiss": wrong, "regex": wrong}}
     ks = [{"name": "sonnet-firth-1", "lang": "firth", "results": [r1, r2]}]
     assert hidden_failures(ks) == {("sonnet-firth-1", 1, "swiss", 1), ("sonnet-firth-1", 2, "regex", 1)}
+    # Planted: a refused hidden test is a failed hidden test, and must be traced.
+    rr = [{"name": "sonnet-firth-1", "lang": "firth", "results": [{"tasks": {**r1["tasks"], "sokoban": refused("firth.syntax.x")}}, r2]}]
+    assert ("sonnet-firth-1", 1, "sokoban", 1) in hidden_failures(rr), "refused hidden test not traced"
+    assert readings_check(rr, {"traces": [t for t in (
+        {"sample": "sonnet-firth-1", "round": 1, "task": "swiss", "cases": [1], "rule": "r", "other_reading": False},
+        {"sample": "sonnet-firth-1", "round": 2, "task": "regex", "cases": [1], "rule": "q", "other_reading": False})]})[0], \
+        "untraced refusal accepted"
     assert readings_check(ks, None)[0]
     t1 = {"sample": "sonnet-firth-1", "round": 1, "task": "swiss", "cases": [1], "rule": "r", "other_reading": True}
     t2 = {"sample": "sonnet-firth-1", "round": 2, "task": "regex", "cases": [1], "rule": "q", "other_reading": False}

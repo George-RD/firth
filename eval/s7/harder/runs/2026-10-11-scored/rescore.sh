@@ -22,12 +22,14 @@ same = diff = 0
 for d in sorted(p for p in OUT.iterdir() if p.is_dir()):
     for f in sorted(d.glob("*-[12].json")):
         live, pin = json.loads((R / d.name / f.name).read_text()), json.loads(f.read_text())
+        header = True
         if f.name.startswith("results"):
             for k in ("eval_sha256", "fuel", "lang"):
                 if live.get(k) != pin.get(k):
                     print("HEADER DIFFERS", d.name, f.name, k)
+                    header = False
             live, pin = live["tasks"], pin["tasks"]
-        if live == pin:
+        if header and live == pin:
             same += 1
         else:
             diff += 1
@@ -46,7 +48,7 @@ if [ "$1" = "--self-test" ]; then
   # Planted: a flipped pass, a changed cost, a changed solution, a changed header.
   for plant in 's/"pass": true, "cases"/"pass": false, "cases"/' 's/"kernel_cost": 5/"kernel_cost": 6/' 's/1000000/999/'; do
     sed "$plant" "$T/run/s-firth-1/results-1.json" > "$T/out/s-firth-1/results-1.json"
-    compare "$T/run" "$T/out" | grep "DIFFERS" >/dev/null || { echo "self-test FAILED: planted $plant not reported"; exit 1; }
+    compare "$T/run" "$T/out" | grep -x "files identical: 1, differing: 1" >/dev/null || { echo "self-test FAILED: planted $plant not counted as differing"; exit 1; }
   done
   cp "$T/run/s-firth-1/results-1.json" "$T/out/s-firth-1/"
   printf '%s' '{"a": "other code"}' > "$T/out/s-firth-1/solutions-1.json"
