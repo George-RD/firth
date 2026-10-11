@@ -1,0 +1,18 @@
+sonnet-python-1 (ae558afd413328220)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 2}
+sonnet-firth-1 (aa3e80bf9d59ef1b6)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 2}
+haiku-python-1 (a27b0002d5d298cf6)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 1}
+haiku-firth-1 (a240cd24227534291)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 4, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 4}
+sonnet-firth-2 (a3090bfc9c25b49b7)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 4, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 4}
+sonnet-python-2 (a829da11bdf8ea410)
+  others: 0  task_status: 0  notification: 0  compact: 0  queued_command: 0  project message: 0
+  attachments: {'deferred_tools_delta': 1, 'environment': 1, 'model': 1, 'skill_listing': 1, 'instructions': 1, 'session_context': 1, 'date': 1, 'credential_org': 1, 'remote_session_change': 1, 'prompt_snapshot': 2, 'hook_non_blocking_error': 2, 'mcp_instructions_delta': 1, 'nested_memory': 2, 'auto_mode': 1, 'total_tokens_reminder': 2}
