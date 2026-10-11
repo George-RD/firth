@@ -166,14 +166,20 @@ hand-back (`todo.s7-author-tool-set`).
    no model), with the subject's model passed when it is started. The
    harness adds `SubagentHandback` to the listed tools
    (`runs/2026-10-11-tool-probe/notes.md`). No other agent type starts an
-   author. Agent types are read when a session starts, so the driver's
-   session must start with this definition on its checkout.
+   author. A session may not see an agent type added after it started (the
+   session that added this one saw it only some minutes later), so the
+   driver's session must start with this definition on its checkout. The
+   probe of 11 October 2026 shows an author of this type got exactly Read,
+   Write and `SubagentHandback` (`runs/2026-10-11-tool-probe/`).
 2. **The working directory.** Before the first author starts, the driver
    sets its working directory to the pinned checkout and writes that path
    in `run-notes.md`. Until the last author has handed back it does not
    `cd` anywhere else (it uses absolute paths, `git -C` and subshells) and
-   opens no other checkout in that session. Each line of a sub-agent's raw
-   log records the working directory, so the check below sees a move.
+   opens no other checkout in that session. It also starts no sub-agent
+   other than the probe and the authors: the check below refuses any
+   sub-agent log that `agent-ids.txt` does not list. Each line of a
+   sub-agent's raw log records the working directory, so the check below
+   sees a move.
 3. **A probe first.** Still before the first sample, the driver starts one
    author of that type that is not a sample, with a prompt asking it to
    name its tools and write nothing else, and runs

@@ -11,9 +11,9 @@ working directory, a missing log, an empty id list, an author that ran but
 is not listed (with or without a meta file), a name or id listed twice, no
 probe row, a malformed row, half a log, a meta file with no type, and a
 missing or empty log directory. A bad author is refused even if its sample
-was voided. The real probe log in
-`runs/2026-10-11-tool-probe/` (a built-in agent type with Read and Edit) is
-refused for its type and its Edit.
+was voided. Of the two real probe logs in
+`runs/2026-10-11-tool-probe/`, the built-in type with Read and Edit is
+refused for its type and its Edit, and the `s7-harder-author` passes.
 
     python3 eval/s7/harder/test_author_tools.py
 """
@@ -179,6 +179,14 @@ def main() -> int:
     _, out = run(["--logs", str(real), "--cwd", "/home/user", "--probe", "a973715484d11fd44"])
     if out != (real / "check-output.txt").read_text():
         failures.append("real probe log: output differs from check-output.txt")
+    # The real s7-harder-author probe has exactly the allowed tools.
+    expect("real s7-harder-author probe", ["--logs", str(real), "--cwd", "/home/user/firth",
+                                           "--probe", "aeaa153e26921b4be"], 0,
+           "type=s7-harder-author model=haiku cwd=/home/user/firth "
+           "tools=Read,SubagentHandback,Write", failures)
+    _, out = run(["--logs", str(real), "--cwd", "/home/user/firth", "--probe", "aeaa153e26921b4be"])
+    if out != (real / "tool-probe.txt").read_text():
+        failures.append("real s7-harder-author probe: output differs from tool-probe.txt")
 
     for f in failures:
         print("FAIL", f)

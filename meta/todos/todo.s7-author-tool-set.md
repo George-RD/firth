@@ -35,3 +35,11 @@ the tools is the smaller step and can land first.
   `s7-harder-author` has run yet, so nothing shows its tool list is
   honoured; the next tier's probe (step 3 there) is the first that can, and
   its pre-registration must state the tool set.
+- 11 October 2026, later (#248 merged): a non-sample `s7-harder-author`
+  author's raw log shows exactly Read, Write and `SubagentHandback`, no
+  deferred tool and one working directory, and `author_tools.py --probe`
+  prints `ok` (`eval/s7/harder/runs/2026-10-11-tool-probe/tool-probe.txt`).
+  Still open: no tier has run its authors as this type yet, and its
+  pre-registration must state the tool set. It must also list, or remove,
+  the context the author still receives: the MCP server instructions and
+  the `omega-memory` hook errors (`notes.md` there).
