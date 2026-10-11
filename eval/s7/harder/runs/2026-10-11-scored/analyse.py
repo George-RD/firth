@@ -399,8 +399,12 @@ def readings_check(kept: list[dict], readings: dict | None) -> tuple[list[str], 
     for tr in readings.get("traces", []):
         if tr["sample"] not in names:
             continue
-        for i in tr["cases"]:
-            got.add((tr["sample"], tr["round"], tr["task"], i))
+        keys = {(tr["sample"], tr["round"], tr["task"], i) for i in tr["cases"]}
+        if not keys or keys - want:
+            problems.append(f"trace {tr['sample']} r{tr['round']} {tr['task']} {tr['cases']} names no case "
+                            "or a case that is not a failed hidden test; its ruling is not applied")
+            continue
+        got |= keys
         if tr.get("other_reading"):
             other.append(tr)
             r = rulings.get((tr["sample"].split("-")[0], tr["task"], tr["rule"]))
@@ -628,6 +632,12 @@ def self_test() -> None:
     assert readings_check(ks, {"traces": [t1, t2], "rulings": wrong_rule})[0], "ruling on another rule accepted"
     ok = {"traces": [t1, t2], "rulings": [{"subject": "sonnet", "task": "swiss", "rule": "r", "admits": True}]}
     assert readings_check(ks, ok) == ([], {"sonnet": {"swiss"}}, [t1])
+    for bad in ([], [0], [7]):  # no case, a passing visible case, no such case
+        bt = {**t1, "task": "swiss", "cases": bad}
+        pr, adm, _ = readings_check(ks, {"traces": [t1, t2, {**bt, "rule": "s"}],
+                                         "rulings": ok["rulings"] + [{"subject": "sonnet", "task": "swiss",
+                                                                      "rule": "s", "admits": True}]})
+        assert pr, f"trace naming {bad} accepted"
     # Costs: round 1's runs count, and round 2 counts only the task it took.
     g = guarantees([{"name": "sonnet-firth-1", "lang": "firth", "results": [r1, r2]}])
     assert len(g["cost"][1]["sokoban"]["passed"]) == 2 and not g["cost"][2]["sokoban"]["passed"]
