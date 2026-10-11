@@ -1,0 +1,2 @@
+probe aeaa153e26921b4be: type=s7-harder-author model=haiku cwd=/home/user/firth tools=Read,SubagentHandback,Write
+ok: every author had exactly Read, SubagentHandback, Write
