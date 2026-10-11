@@ -159,10 +159,11 @@ def stage(source: str, root: Path) -> Path:
 def stdlib_note() -> str:
     """What the Firth prompt says about the staged standard library, with the
     text of every file in it."""
-    parts = ["The standard library is next to every answer when it runs: write "
-             "`import \"stdlib/core.firth\";` as the first line of an answer to use the words that "
-             "file exports (its `export` line). An import is not transitive, and an answer may "
-             "import no other file. The library's files follow.\n"]
+    imports = ", ".join(f"`import \"{f.relative_to(STDLIB.parent)}\";`" for f in STDLIB_FILES)
+    parts = ["The standard library is next to every answer when it runs. To use the words a "
+             "library file exports (its `export` line), put its import line at the top of the "
+             f"answer: {imports}. An import is not transitive, and an answer may import no other "
+             "file. The library's files follow.\n"]
     for f in STDLIB_FILES:
         rel = f.relative_to(STDLIB.parent)
         parts.append(f"<document path=\"{rel}\">\n{f.read_text()}\n</document>\n")

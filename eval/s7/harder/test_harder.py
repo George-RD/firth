@@ -1695,11 +1695,19 @@ def stdlib_note_problems(firth: str, python: str) -> list[str]:
     if firth.count(note) != 1:
         out.append(f"the Firth prompt holds the stdlib note {firth.count(note)} times, not once")
     for f in tier.STDLIB_FILES:
+        rel = f.relative_to(tier.STDLIB.parent)
         if f.read_text() not in firth:
-            out.append(f"the Firth prompt lacks {f.name}")
+            out.append(f"the Firth prompt lacks {rel}")
+    out += missing_imports(firth)
     if "stdlib/" in python:
         out.append("the Python prompt mentions stdlib/")
     return out
+
+
+def missing_imports(text: str) -> list[str]:
+    """Each staged library file whose import line TEXT does not give."""
+    return [f"no import line for {f.relative_to(tier.STDLIB.parent)}" for f in tier.STDLIB_FILES
+            if f'`import "{f.relative_to(tier.STDLIB.parent)}";`' not in text]
 
 
 def stdlib_prompt() -> None:
@@ -1713,6 +1721,26 @@ def stdlib_prompt() -> None:
           "planted: a Firth prompt without the stdlib note is caught")
     check(stdlib_note_problems(firth, python + tier.stdlib_note()) != [],
           "planted: a Python prompt with the stdlib note is caught")
+    # Planted (Codex on #249): a second library file must get its own import
+    # line, not only core.firth's.
+    import tempfile
+    saved = (tier.STDLIB, tier.STDLIB_FILES)
+    with tempfile.TemporaryDirectory() as d:
+        lib = Path(d) / "stdlib"
+        lib.mkdir()
+        for f in saved[1]:
+            (lib / f.name).write_text(f.read_text())
+        (lib / "more.firth").write_text("export more.one;\nvocab more { : one ( -- r:Int ) 1; }\n")
+        tier.STDLIB, tier.STDLIB_FILES = lib, tuple(sorted(lib.rglob("*.firth")))
+        try:
+            two = tier.stdlib_note()
+            check('`import "stdlib/more.firth";`' in two and '`import "stdlib/core.firth";`' in two,
+                  "with a second library file, the note gives an import line for each")
+            check(missing_imports(two) == [], "with a second library file, no import line is missing")
+            check(missing_imports(two.replace('`import "stdlib/more.firth";`', "")) == ["no import line for stdlib/more.firth"],
+                  "planted: a note naming only core.firth's import, with a second file staged, is caught")
+        finally:
+            tier.STDLIB, tier.STDLIB_FILES = saved
 
 
 PY_KEYWORDS = frozenset(__import__("keyword").kwlist)
