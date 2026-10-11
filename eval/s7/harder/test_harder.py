@@ -18,12 +18,14 @@
    in each pool and the scored set a planted mutant of a Firth reference fails.
 5. The prompt carries no hidden input and repair shows only the example.
    The scored run's pinned Firth prompt says exactly once that imports are
-   not available, and the Python prompt does not say it.
+   not available, and the Python prompt does not say it. A refusal keeps
+   the `code:` lines the pre-registration says it counts.
 6. The audit refuses options that widen an author's tools, scoring refuses
    a link named as the answer directory, and the scan run before scoring
    Python finds planted copies of this tier's hidden files.
 7. A scored Firth answer that imports `stdlib/` is refused with
-   `firth.name.import-path`, which is why the Firth prompt says so.
+   `firth.name.import-path`, and runs without the import, which is why the
+   Firth prompt says imports are not available.
 
     python3 eval/s7/harder/test_harder.py            # everything (needs the toolchain)
     python3 eval/s7/harder/test_harder.py --no-firth # 1, 2, the Python part of 4, 5 and 6
@@ -40,6 +42,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -1602,12 +1605,44 @@ def import_problems(run) -> list[str]:
     return []
 
 
+NO_MESSAGE = ("checker refused: [{'code': 'firth.type.stack-underflow', 'word': 'a'}, "
+              "{'code': 'firth.name.unresolved', 'word': 'b'}]")
+SOME_MESSAGE = ("checker refused: [{'code': 'firth.type.stack-underflow', 'word': 'a'}, "
+                "{'code': 'firth.name.unresolved', 'word': 'b', 'message': 'm'}]")
+
+
+def kept_code_problems(compact) -> list[str]:
+    """What is wrong with the pre-registration's rule for diagnostics without
+    a message, read against COMPACT (`harness.compact`'s shape): the `code:`
+    lines it keeps are the ones the report counts."""
+    def codes(text: str) -> list[str]:
+        return [line[len("code: "):] for line in compact(text).splitlines() if line.startswith("code: ")]
+    problems = []
+    if codes(NO_MESSAGE) != ["firth.type.stack-underflow"]:
+        problems.append(f"with no message, kept {codes(NO_MESSAGE)}, not the first code alone")
+    if codes(SOME_MESSAGE) != ["firth.name.unresolved"]:
+        problems.append(f"with one message, kept {codes(SOME_MESSAGE)}, not only that diagnostic's code")
+    return problems
+
+
+def messageless_diagnostics() -> None:
+    """Pins the pre-registration's "Sorting a case's error" rule. Planted: a
+    compact that keeps every code is caught."""
+    check(kept_code_problems(harness.compact) == [],
+          "a refusal with no message keeps its first code alone; with messages, only theirs")
+    check(kept_code_problems(lambda t: "\n".join(f"code: {c}" for c in re.findall(r"'code': '([^']+)'", t))) != [],
+          "planted: a compact that keeps every code is caught")
+
+
 def stdlib_import_refused() -> None:
     """Pins why the scored Firth prompt says imports are unavailable. Planted:
     a runner that accepts the import, and one that refuses it with another
     code, are each caught."""
     check(import_problems(tier.run_firth) == [],
           "a scored answer that imports stdlib is refused with firth.name.import-path")
+    bare = STDLIB_IMPORT.replace('import "../../stdlib/core.firth";\n', "").replace("core.identity", "")
+    check(tier.run_firth(bare, (3,)) == {"ok": True, "stack": [3], "kernel_cost": 0, "vm_cost": 0},
+          "the same word without the import and its call to core.identity runs, so the refusal is the import's")
     check(import_problems(lambda src, args: {"ok": True, "stack": [3]}) != [],
           "planted: a runner that accepts a stdlib import is caught")
     check(import_problems(lambda src, args: {"ok": False, "error": "code: firth.name.import-not-found"}) != [],
@@ -1849,6 +1884,7 @@ def main() -> int:
     take_rule()
     prompt_and_repair()
     pinned_prompts()
+    messageless_diagnostics()
     if "--no-firth" not in sys.argv:
         if part is None:
             firth_references()

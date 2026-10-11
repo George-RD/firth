@@ -5,11 +5,12 @@ any scored task has been sent to a model. This file and `run-plan.md`
 next to it fix the run. Neither is changed after the pin below; anything
 learnt during the run is reported, not folded back in.
 
-**Not yet pinned.** The run is option (a) on the maintainer's open
-decision card, the scored head-to-head, which the card recommends. Under
-the maintainer's standing instruction to proceed on the recommended option,
-it goes ahead unless the maintainer answers otherwise. It starts only after
-all of the following:
+**Pinned on 11 October 2026 at main 627a0eb, in `runs/2026-10-11-scored/`;
+the conditions below are met ("Before the pin").** The run is option (a)
+on the maintainer's open decision card, the scored head-to-head, which the
+card recommends. Under the maintainer's standing instruction to proceed
+on the recommended option, it goes ahead unless the maintainer answers
+otherwise. It starts only after all of the following:
 - the project's coordinator confirms that the S7 inputs are settled and
   freezes them (`docs/getting-started.md`,
   `docs/firth-agent-guide.md`, `examples/programs/README.md`, `AGENTS.md`);
@@ -379,10 +380,14 @@ line in the error is one diagnostic, and each is sorted by its code,
 never by its message. The report counts diagnostics per row, and counts
 the refusal once under every row that at least one of its diagnostics
 falls in; a refusal whose diagnostics are all other refusal is an other
-refusal. The kept error is what `harness.readable` wrote, and it keeps
-only diagnostics that carry a message, so a diagnostic without one is
-not in `results-1.json` and is not counted; the report says so if a
-refusal's error holds no `code:` line at all. The table:
+refusal. The kept error is what `harness.compact` wrote. When at least
+one diagnostic carries a message, it keeps only those (`harness.readable`),
+so a diagnostic without one is not in `results-1.json` and is not counted.
+When none carries a message, it keeps the first diagnostic's code as one
+`code:` line, then the first 300 characters of the raw error; that one
+code is counted, and the others are not. The report says so for each such
+refusal, and for any refusal whose error holds no `code:` line at all.
+The table:
 
 | Code | Row |
 | --- | --- |
@@ -452,7 +457,8 @@ temporary file and check it there, in both rounds, so that file's
 directory is the source root. Measured on main at 627a0eb after a fresh
 build: an answer with `import "../../stdlib/core.firth"` is refused with
 `code: firth.name.import-path` ("is not an import path"; the path must stay
-inside the source root), and the same answer without it runs.
+inside the source root). The same word with the import and its call to
+`core.identity` removed runs, so the refusal is the import's.
 
 So, once `tier.py prompt` has built `prompt-firth.md` and before the pin,
 this sentence is appended to it, once, so every Firth author (Sonnet,
@@ -463,8 +469,9 @@ Haiku and DeepSeek) reads the same text:
 
 `tier.py` is not changed. `test_harder.py` pins the refusal through
 `tier.run_firth` (`stdlib_import_refused`, with a planted runner that
-accepts the import and one that refuses it with another code), and checks
-that the pinned `prompt-firth.md` holds the sentence exactly once.
+accepts the import and one that refuses it with another code), checks that
+the word runs without the import, and checks that the pinned
+`prompt-firth.md` holds the sentence exactly once.
 
 ## Before the pin
 
